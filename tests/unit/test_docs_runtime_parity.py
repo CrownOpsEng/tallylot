@@ -11,12 +11,15 @@ from typer.models import CommandInfo
 
 from tallylot.infrastructure.workspace.layout import SEED_FILES
 from tallylot.interfaces.cli import app
+from tools import docs_maintenance
 from tools.oracles.cli import app as oracle_app
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_ROUTE_DOC_PATHS = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
+    REPO_ROOT / "docs" / "guides" / "source-intake.md",
+    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
     REPO_ROOT / "docs" / "reference" / "wallet-inventory-artifacts.md",
     REPO_ROOT / "docs" / "workspace" / "analysis" / "inventory" / "README.md",
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
@@ -28,6 +31,8 @@ ORACLE_ROUTE_DOC_PATHS = [
     REPO_ROOT / "docs" / "reference" / "export-checklist.md",
     REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
     REPO_ROOT / "docs" / "guides" / "full-operator-workflow.md",
+    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
+    REPO_ROOT / "docs" / "guides" / "verify-a-round.md",
     REPO_ROOT / ".claude" / "commands" / "round-verification.md",
     REPO_ROOT / ".claude" / "commands" / "source-diff.md",
 ]
@@ -42,6 +47,9 @@ ENV_PREFIX_REQUIRED_DOC_PATHS = (
     REPO_ROOT / "README.md",
     REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
     REPO_ROOT / "docs" / "guides" / "full-operator-workflow.md",
+    REPO_ROOT / "docs" / "guides" / "source-intake.md",
+    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
+    REPO_ROOT / "docs" / "guides" / "verify-a-round.md",
     REPO_ROOT / "docs" / "reference" / "baseline-validation-contract.md",
     REPO_ROOT / "docs" / "reference" / "export-checklist.md",
     REPO_ROOT / "docs" / "reference" / "wallet-inventory-artifacts.md",
@@ -262,6 +270,7 @@ def test_repo_docs_do_not_reference_personal_workspace_roots() -> None:
         REPO_ROOT / "AGENTS.md",
         REPO_ROOT / "tallylot.toml",
         *sorted((REPO_ROOT / "docs").rglob("*.md")),
+        *sorted((REPO_ROOT / "agents").rglob("*.md")),
         *sorted((REPO_ROOT / ".claude").rglob("*.md")),
     )
 
@@ -308,6 +317,32 @@ def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
     assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>' in text
     assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>' in text
     assert "git show HEAD:<path>" in text
+
+
+def test_repo_markdown_surfaces_do_not_reference_retired_docs_paths() -> None:
+    paths = (
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "AGENTS.md",
+        *sorted((REPO_ROOT / "docs").rglob("*.md")),
+        *sorted((REPO_ROOT / "agents").rglob("*.md")),
+        *sorted((REPO_ROOT / ".claude" / "commands").glob("*.md")),
+    )
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for retired_reference in docs_maintenance.RETIRED_REFERENCES:
+            assert retired_reference not in text, f"{path} still references retired path {retired_reference}"
+
+
+def test_implementation_anchor_references_use_explicit_doc_paths() -> None:
+    paths = (
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "docs" / "standards" / "implementation.md",
+    )
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        assert "implementation plan" not in text.lower(), f"{path} still uses vague implementation-plan wording"
 
 
 def test_reference_docs_do_not_check_in_oracle_data_files() -> None:

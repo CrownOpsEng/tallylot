@@ -55,7 +55,8 @@ supported path.
 Agents should assume all of these are expected unless the task explicitly says
 otherwise:
 
-- keep the architecture aligned with the implementation plan
+- keep the architecture aligned with
+  `docs/concepts/reconciliation-tax-architecture.md`
 - refactor when a clearer shared seam is already visible
 - extract shared components before copy-paste patterns harden
 - create or update tests alongside the implementation

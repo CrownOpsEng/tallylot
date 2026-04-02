@@ -7,8 +7,8 @@ owner: repo
 status: active
 ---
 
-This repo ships a typed Python package and CLI for source-backed crypto
-reconciliation, checkpointing, journal output, and tax computation work.
+TallyLot ships a typed Python package and CLI for source-backed transaction
+intake, checkpointing, verification, output rendering, and tax-oriented work.
 
 ## Core Shape
 

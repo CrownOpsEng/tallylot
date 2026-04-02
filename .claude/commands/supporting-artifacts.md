@@ -10,5 +10,6 @@ path.
    do not treat them as canonical transaction imports
 
 Use `docs/guides/operator-quickstart.md` for the short surrounding workflow,
-`docs/guides/full-operator-workflow.md` for the detailed procedure, and
-`docs/README.md` when you need the nearest human-facing entrypoint.
+`docs/guides/normalize-screen-stage.md` and `docs/guides/verify-a-round.md`
+for the detailed operator procedures, and `docs/README.md` when you need the
+nearest human-facing entrypoint.

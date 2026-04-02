@@ -34,7 +34,7 @@ Do not pre-load every repo doc by default.
 | Source or output adapter work | `docs/guides/write-an-adapter.md` |
 | Docs structure, generated index sections, or doc placement | `agents/docs-maintenance.md`, `docs/README.md` |
 | External workspace layout and seeded files | `docs/concepts/workspace-model.md`, `docs/workspace/README.md` |
-| Operational state or manual workflow | `docs/status/current-state.md`, `docs/guides/operator-quickstart.md`, `docs/guides/full-operator-workflow.md` |
+| Operational state or manual workflow | `docs/status/current-state.md`, `docs/guides/operator-quickstart.md`, `docs/guides/source-intake.md`, `docs/guides/normalize-screen-stage.md`, `docs/guides/verify-a-round.md`, `docs/guides/full-operator-workflow.md` |
 | Repo-specific baseline and verification context | `agents/repo-context.md` |
 | Workspace subtree conventions, checklists, or templates | `docs/workspace/README.md` |
 | Commit messages, templates, and checkpoint behavior | `docs/standards/commits.md` |
@@ -128,7 +128,8 @@ Workspace resolution order:
   explicit one-time checkpoint import workflow adopts them with provenance.
 - Do not expand the current canonical event model into the long-term center of
   the system. New structural work should target the provider-neutral
-  transaction fact model described in the implementation plan.
+  transaction fact model described in
+  `docs/concepts/reconciliation-tax-architecture.md`.
 - Keep `pydantic` at boundaries:
   - config
   - external artifact parsing
@@ -142,4 +143,5 @@ Workspace resolution order:
   - refactor obvious shared seams during the task
   - commit at stable checkpoints without waiting to be reminded
 - When work affects architecture, schema, or execution sequencing, update
-  `ROADMAP.md` and the implementation plan together.
+  `ROADMAP.md` and `docs/concepts/reconciliation-tax-architecture.md`
+  together.
