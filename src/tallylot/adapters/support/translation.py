@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tallylot.domain.issues import IssueRecord
-from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_profiles import SourceProfile, parse_family_claim_tokens
 
 from .drafts import EconomicActivityDraft
 from .issues import IssueSpec, issue_record
@@ -58,10 +58,22 @@ def translate_file_families(
     matched_files: list[tuple[int, str, Path, FileTranslationRule]] = []
     adapter_id = str(profile.adapter_id)
     source = str(profile.source)
+    inventory_by_path = {entry.relative_path: entry for entry in profile.file_inventory}
     for path in matching_file_paths(raw_dir, pattern=pattern):
-        matching_rules: list[FileTranslationRule] = [candidate for candidate in rules if candidate.matches_path(path)]
+        relative_path = path.relative_to(raw_dir).as_posix()
+        entry = inventory_by_path.get(relative_path)
+        family_ids = {
+            family_id
+            for claim_adapter_id, family_id in parse_family_claim_tokens("" if entry is None else entry.family)
+            if claim_adapter_id == adapter_id
+        }
+        if family_ids:
+            matching_rules = [candidate for candidate in rules if candidate.family in family_ids]
+        else:
+            matching_rules = [candidate for candidate in rules if candidate.matches_path(path)]
         if not matching_rules:
             unmatched_paths.append(path.name)
+            family_text = "" if not family_ids else f" (recognized families: {', '.join(sorted(family_ids))})"
             issues.append(
                 issue_record(
                     IssueSpec(
@@ -69,7 +81,7 @@ def translate_file_families(
                         source=source,
                         adapter_id=adapter_id,
                         kind="unsupported_file",
-                        message=f"No translation rule registered for source file: {path.name}",
+                        message=f"No translation rule registered for source file: {path.name}{family_text}",
                         raw_file=path.name,
                     )
                 )

@@ -21,6 +21,7 @@ from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactS
         ("near-main", "near"),
         ("GTrade 1CT", "gtrade"),
         ("bsc-metamask1", "evm_explorer"),
+        ("ronin-main", "ronin"),
         ("Ledger Live", "ledger_live"),
         ("NEAR Wallet", "near"),
     ],
@@ -44,3 +45,19 @@ def test_profile_service_resolves_from_profile_inventory_before_source_label(tmp
     profile = BuildProfileUseCase(build_registry(), FilesystemArtifactStore()).create_profile("Future Broker", raw_dir)
 
     assert str(profile.adapter_id) == "wealthsimple"
+
+
+def test_profile_service_uses_content_family_for_ronin_exports(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "renamed.csv").write_text(
+        "Txhash,Blockno,UnixTimestamp,DateTime,From,To,Method,Token / Collectibles,"
+        "Value in,Value out,TxnFee(RON),Status\n"
+        "0xabc,1,1641068696,2022-01-01 20:24:56,0xb32e9a84ae0b55b8ab715e4ac793a61b277bafa3,"
+        "0x1b1953d5124442b879e3dfc6b9c413d0a8c03e94,transfer,Axie Infinity Shard,0.1950000000,0,0.000052,Success\n",
+        encoding="utf-8",
+    )
+
+    profile = BuildProfileUseCase(build_registry(), FilesystemArtifactStore()).create_profile("wallet-a", raw_dir)
+
+    assert str(profile.adapter_id) == "ronin"

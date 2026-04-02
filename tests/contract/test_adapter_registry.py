@@ -20,6 +20,7 @@ def test_adapter_registry_discovers_expected_adapters() -> None:
     assert "gtrade" in source_ids
     assert "evm_explorer" in source_ids
     assert "evm_wallet" in source_ids
+    assert "ronin" in source_ids
     assert "blockchain_stub" in source_ids
     assert "cointracking_portfolio" in source_ids
     assert "platform_api_stub" in source_ids

@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tallylot.adapters.sources.explorers.near.families import (
+    classified_csv_paths,
+    classify_inventory_families,
+    near_account_for_path,
+)
 from tallylot.adapters.sources.explorers.near.translation import translate_transactions
 from tallylot.adapters.support import (
-    location_id_from_parts,
+    canonical_location_id_from_identifier,
     location_record,
     match_intake_by_path_or_header,
     no_intake_route,
@@ -20,7 +25,7 @@ from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -36,12 +41,22 @@ class NearAdapter:
     )
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
-        del raw_dir
+        if self.classify_profile_families(source, raw_dir, inventory):
+            return 100
         if "near" in source.lower():
             return 100
-        if any(item.relative_path.endswith("_transactions.csv") for item in inventory):
+        if any("near" in item.relative_path.lower() for item in inventory):
             return 100
         return 0
+
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[FileInventoryEntry, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, raw_dir
+        return classify_inventory_families(inventory, adapter_id=self.manifest.adapter_id)
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(relative_path, facts, path_hints=("near",))
@@ -62,27 +77,40 @@ class NearAdapter:
         profile: SourceProfile,
     ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
+        identifiers = sorted(
+            {identifier for path, _ in classified_csv_paths(raw_dir) if (identifier := near_account_for_path(path))}
+        )
         evidence: list[LocationInventoryRecord] = []
-        for path in sorted(raw_dir.glob("*_transactions.csv")):
-            identifier = path.name.removesuffix("_transactions.csv")
+        for identifier in identifiers:
             evidence.append(
                 location_record(
                     LocationRecordSpec(
                         source=source,
-                        location_id=location_id_from_parts(source, "account", identifier),
+                        location_id=canonical_location_id_from_identifier("near_account", identifier),
                         location_kind=LocationKind.ACCOUNT,
                         location_label=identifier,
                         identifier_kind="near_account",
                         identifier_value=identifier,
                         network_scope="near",
-                        controller="NearBlocks export",
+                        controller="NEAR explorer export",
                         evidence_kind="filename",
-                        evidence_path=path.name,
+                        evidence_path=_evidence_path(raw_dir, identifier),
                         confidence="high",
                     )
                 )
             )
-        return tuple(evidence), ()
+        if evidence:
+            return tuple(evidence), ()
+        return (), (
+            IssueRecord(
+                issue_id=f"near:{source}:missing_identifier",
+                source=source,
+                adapter_id=str(self.manifest.adapter_id),
+                severity="medium",
+                kind="missing_identifier",
+                message="No NEAR account identifier could be extracted from the profiled explorer capture.",
+            ),
+        )
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         drafts, issues = translate_transactions(profile, raw_dir)
@@ -92,6 +120,13 @@ class NearAdapter:
             issues=issues,
             location_inventory=location_inventory,
         )
+
+
+def _evidence_path(raw_dir: Path, identifier: str) -> str:
+    for path, _ in classified_csv_paths(raw_dir):
+        if near_account_for_path(path) == identifier:
+            return path.name
+    return ""
 
 
 ADAPTER = NearAdapter()

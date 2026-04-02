@@ -14,6 +14,7 @@ from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryP
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 
 from .artifacts import write_profile_artifacts
+from .families import analyze_profile_families
 from .inventory import build_inventory, manifest_fingerprint
 
 
@@ -54,26 +55,38 @@ class BuildProfileUseCase:
         inspect_archives: bool = True,
     ) -> SourceProfile:
         inventory, scan_issues = build_inventory(raw_dir, inspect_archives=inspect_archives)
-        adapter = self._select_adapter(source, raw_dir, tuple(inventory))
-        fingerprint = manifest_fingerprint(inventory)
+        family_analysis = analyze_profile_families(
+            source=source,
+            raw_dir=raw_dir,
+            inventory=tuple(inventory),
+            adapters=self._registry.source_adapters,
+        )
+        adapter = self._select_adapter(
+            source,
+            raw_dir,
+            family_analysis.inventory,
+            selected_adapter_id=family_analysis.selected_adapter_id,
+        )
+        fingerprint = manifest_fingerprint(list(family_analysis.inventory))
         seed_profile = SourceProfile(
             source=SourceId(source),
             raw_dir=str(raw_dir),
             adapter_id=AdapterId(str(adapter.manifest.adapter_id)),
             manifest_fingerprint=fingerprint,
-            file_inventory=tuple(inventory),
-            supported=adapter.manifest.supported,
+            file_inventory=family_analysis.inventory,
+            supported=adapter.manifest.supported and family_analysis.supported,
             metadata={
                 "display_name": adapter.manifest.display_name,
-                "scan_issue_count": str(len(scan_issues)),
+                "recognized_adapter_ids": "; ".join(family_analysis.recognized_adapter_ids),
+                "scan_issue_count": str(len(scan_issues) + len(family_analysis.issues)),
             },
-            scan_issues=tuple(scan_issues),
+            scan_issues=(*scan_issues, *family_analysis.issues),
         )
         timezone_summary, timezone_issues = _validate_profile_timezones(
             adapter,
             source=source,
             profile=seed_profile,
-            inventory=inventory,
+            inventory=list(family_analysis.inventory),
         )
         return SourceProfile(
             source=seed_profile.source,
@@ -99,7 +112,11 @@ class BuildProfileUseCase:
         source: str,
         raw_dir: Path,
         inventory: tuple[FileInventoryEntry, ...],
+        *,
+        selected_adapter_id: str | None = None,
     ) -> SourceAdapter:
+        if selected_adapter_id is not None:
+            return self._registry.source_adapter(selected_adapter_id)
         ranked = sorted(
             ((adapter.match(source, raw_dir, inventory), adapter) for adapter in self._registry.source_adapters),
             key=lambda item: item[0],

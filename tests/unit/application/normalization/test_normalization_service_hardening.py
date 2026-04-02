@@ -24,6 +24,7 @@ from tallylot.domain.transactions import (
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemFactRepository
+from tallylot.ports.source_profiles import FileFamilyClaim
 from tallylot.ports.source_translation import (
     EconomicActivityDraft,
     SourceTranslationBatch,
@@ -430,6 +431,29 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
         )
 
 
+class EmptyFamilyTranslationAdapter(MatchingSourceAdapter):
+    @override
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[object, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, inventory
+        return (
+            FileFamilyClaim(
+                relative_path=raw_dir.joinpath("capture.csv").name,
+                adapter_id=self.manifest.adapter_id,
+                family_id="recognized_export",
+            ),
+        )
+
+    @override
+    def translate(self, profile: object, raw_dir: Path) -> SourceTranslationBatch:
+        del profile, raw_dir
+        return SourceTranslationBatch(drafts=(), balance_evidence=(), issues=(), reviews=(), location_inventory=())
+
+
 def test_normalization_service_persists_balance_evidence_separately_from_derived_balances(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
@@ -478,6 +502,73 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
     ]
     assert summary["balance_count"] == 1
     assert summary["balance_evidence_count"] == 1
+
+
+def test_normalization_service_blocks_mixed_capture_profiles(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "transactions.csv").write_text(
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
+        "2023-08-06 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n",
+        encoding="utf-8",
+    )
+    (raw_dir / "wallet-state.json").write_text(
+        json.dumps(
+            {
+                "wallet_state": {
+                    "internalAccounts": {
+                        "accounts": {
+                            "one": {
+                                "address": "0x1111111111111111111111111111111111111111",
+                                "type": "eip155:eoa",
+                                "scopes": ["eip155:1"],
+                                "metadata": {"name": "Primary"},
+                            }
+                        }
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    service = build_normalization_service(artifacts=FilesystemArtifactStore())
+
+    with pytest.raises(ValueError, match="blocking scan issues"):
+        service.execute(
+            NormalizeRequest(
+                source="mixed-capture",
+                raw_capture_ref=to_resource_ref(raw_dir),
+                normalized_output_ref=to_resource_ref(tmp_path / "normalized"),
+            )
+        )
+
+
+def test_normalization_service_surfaces_no_supported_activity_for_recognized_empty_translation(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "capture.csv").write_text("header\n", encoding="utf-8")
+    artifacts = FilesystemArtifactStore()
+    service = build_registry_backed_normalization_service(
+        registry=FakeSourceRegistry(source_adapters=(EmptyFamilyTranslationAdapter("recognized_empty"),)),
+        artifacts=artifacts,
+    )
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(
+            source="recognized-empty",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+
+    issue_rows = artifacts.read_rows(output_dir / "exceptions.csv")
+
+    assert response.fact_count == 0
+    assert response.issue_count == 1
+    assert [row["kind"] for row in issue_rows] == ["no_supported_activity"]
 
 
 def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp_path: Path) -> None:

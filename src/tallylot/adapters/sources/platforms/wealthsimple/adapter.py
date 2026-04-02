@@ -22,7 +22,7 @@ from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -42,6 +42,23 @@ class WealthsimpleAdapter:
         if any(item.header in {BROKER_HEADER, ACTIVITY_HEADER} for item in inventory):
             return 100
         return 0
+
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[FileInventoryEntry, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, raw_dir
+        return tuple(
+            FileFamilyClaim(
+                relative_path=item.relative_path,
+                adapter_id=self.manifest.adapter_id,
+                family_id="broker_activity" if item.header == BROKER_HEADER else "wallet_activity",
+            )
+            for item in inventory
+            if item.header in {BROKER_HEADER, ACTIVITY_HEADER}
+        )
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(

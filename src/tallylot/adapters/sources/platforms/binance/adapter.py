@@ -15,10 +15,18 @@ from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
-from .matching import match_binance_inventory
+from .matching import (
+    C2C_HEADER,
+    CONVERT_HEADER,
+    DEPOSIT_HEADER,
+    SPOT_HEADER,
+    TRANSACTION_HEADER,
+    WITHDRAW_HEADER,
+    match_binance_inventory,
+)
 from .pdf_balances import extract_pdf_balances as _extract_pdf_balances
 from .pdf_balances import match_pdf_statement as _match_pdf_statement
 from .translation import translate_binance_exports
@@ -36,6 +44,35 @@ class BinanceAdapter:
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
         del raw_dir
         return match_binance_inventory(source, inventory)
+
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[FileInventoryEntry, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, raw_dir
+        family_headers: dict[tuple[str, ...], str] = {
+            SPOT_HEADER: "spot_trade_history",
+            DEPOSIT_HEADER: "deposit_history",
+            WITHDRAW_HEADER: "withdraw_history",
+            CONVERT_HEADER: "convert_order_history",
+            C2C_HEADER: "c2c_order_history",
+            TRANSACTION_HEADER: "transaction_history",
+        }
+        claims: list[FileFamilyClaim] = []
+        for item in inventory:
+            family_id = family_headers.get(item.header, "")
+            if not family_id:
+                continue
+            claims.append(
+                FileFamilyClaim(
+                    relative_path=item.relative_path,
+                    adapter_id=self.manifest.adapter_id,
+                    family_id=family_id,
+                )
+            )
+        return tuple(claims)
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(

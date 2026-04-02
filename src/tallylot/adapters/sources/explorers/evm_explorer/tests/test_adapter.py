@@ -27,7 +27,7 @@ def test_evm_explorer_adapter_extracts_owned_address_from_single_to_column(tmp_p
 
     assert not issues
     assert [str(record.location_id) for record in records] == [
-        "ethereum_wallet:address:0x1111111111111111111111111111111111111111"
+        "evm:ethereum:0x1111111111111111111111111111111111111111"
     ]
     assert [record.network_scope for record in records] == ["ethereum"]
 
@@ -48,9 +48,7 @@ def test_evm_explorer_adapter_prefers_filename_address_and_network_scope(tmp_pat
     )
 
     assert not issues
-    assert [str(record.location_id) for record in records] == [
-        "polygon_wallet:address:0x2222222222222222222222222222222222222222"
-    ]
+    assert [str(record.location_id) for record in records] == ["evm:polygon:0x2222222222222222222222222222222222222222"]
     assert [record.network_scope for record in records] == ["polygon"]
 
 
@@ -99,7 +97,7 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(tmp_path: 
     assert facts[0].projection_hint == ProjectionHint.DEPOSIT
     assert facts[0].accounting_intent_hint == AccountingIntentHint.FUNDING_INFLOW
     assert facts[0].tax_treatment_hint == TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN
-    assert facts[0].legs[0].leg_id == "primary_in"
+    assert facts[0].legs[0].leg_id == "primary"
     assert facts[0].legs[0].quantity == Decimal("1.50000000")
     assert str(facts[0].legs[0].instrument_id) == "symbol:BNB@evm_explorer"
     assert not result.issues
@@ -125,8 +123,8 @@ def test_evm_explorer_adapter_surfaces_suspicious_nft_airdrops_for_review(tmp_pa
 
     assert not compile_activity_drafts(result.drafts)
     assert len(result.issues) == 1
-    assert result.issues[0].kind == "review_required"
-    assert "$SCAM AIRDROP" in result.issues[0].message
+    assert {issue.kind for issue in result.issues} == {"review_required"}
+    assert any("$SCAM AIRDROP" in issue.message for issue in result.issues)
 
 
 def test_evm_explorer_empty_chain_scoped_capture_reports_missing_identifier(tmp_path: Path) -> None:
@@ -166,13 +164,11 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames() -> None:
 
     assert str(profile.adapter_id) == "evm_explorer"
     assert issues == ()
-    assert [str(row.location_id) for row in evidence] == [
-        "bsc_wallet:address:0x1111111111111111111111111111111111111111"
-    ]
+    assert [str(row.location_id) for row in evidence] == ["evm:bsc:0x1111111111111111111111111111111111111111"]
     assert len(facts) == 1
     assert facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
     assert facts[0].projection_hint == ProjectionHint.DEPOSIT
-    assert facts[0].legs[0].leg_id == "primary_in"
+    assert facts[0].legs[0].leg_id == "primary"
     assert facts[0].legs[0].quantity == Decimal("1.50000000")
     assert str(facts[0].legs[0].instrument_id) == "symbol:BNB@evm_explorer"
 
@@ -200,5 +196,5 @@ def test_evm_explorer_suspicious_nft_fixture_surfaces_review_without_auto_import
 
     assert not compile_activity_drafts(result.drafts)
     assert len(result.issues) == 1
-    assert result.issues[0].kind == "review_required"
-    assert "suspicious NFT airdrop" in result.issues[0].message
+    assert {issue.kind for issue in result.issues} == {"review_required"}
+    assert any("suspicious NFT airdrop" in issue.message for issue in result.issues)

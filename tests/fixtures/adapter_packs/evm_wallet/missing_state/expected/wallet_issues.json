@@ -4,7 +4,7 @@
     "context_timestamp": "",
     "issue_id": "evm_wallet:EVM wallet:missing_identifier:missing_identifier",
     "kind": "missing_identifier",
-    "message": "No wallet identifiers could be extracted from the EVM wallet state export.",
+    "message": "No authoritative wallet identifiers could be extracted from the wallet-state export.",
     "raw_file": "",
     "raw_row_ref": "",
     "severity": "medium",

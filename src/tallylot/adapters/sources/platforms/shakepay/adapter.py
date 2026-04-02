@@ -23,7 +23,7 @@ from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -43,6 +43,34 @@ class ShakepayAdapter:
         if any("crypto_transactions_summary.csv" in item.relative_path for item in inventory):
             return 100
         return 0
+
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[FileInventoryEntry, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, raw_dir
+        claims: list[FileFamilyClaim] = []
+        for item in inventory:
+            lower_path = item.relative_path.lower()
+            if "crypto_transactions_summary.csv" in lower_path:
+                claims.append(
+                    FileFamilyClaim(
+                        relative_path=item.relative_path,
+                        adapter_id=self.manifest.adapter_id,
+                        family_id="crypto_summary",
+                    )
+                )
+            elif "cash_transactions_summary.csv" in lower_path:
+                claims.append(
+                    FileFamilyClaim(
+                        relative_path=item.relative_path,
+                        adapter_id=self.manifest.adapter_id,
+                        family_id="cash_summary",
+                    )
+                )
+        return tuple(claims)
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(

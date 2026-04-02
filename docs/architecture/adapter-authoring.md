@@ -13,6 +13,9 @@ automatically.
 - Prefer existing adapter support seams for stable cross-provider work such as
   file-family dispatch, CSV traversal, draft compilation, issue construction,
   wallet-record construction, and output projection so new adapters stay thin.
+- Publish stable file-family ids from schema or content signatures before using
+  filename or path hints. Translation code should consume those adapter-declared
+  family ids rather than rediscovering provider filenames in each workflow.
 - Keep shared support adapter-agnostic. It should work from registry-resolved
   manifests and adapter-published translation contracts, not from concrete
   provider ids hard-coded into support modules.
@@ -41,6 +44,14 @@ automatically.
 - Emit identifier claims that are sufficient for shared resolution to one
   canonical instrument. If resolution is unresolved or ambiguous, emit a review
   record plus a blocking issue and do not produce a fact for that activity.
+- Use identifier-rooted canonical on-chain location ids:
+  - EVM-family locations use `evm:<network>:<address>`
+  - non-EVM chains use their own namespace such as `near:<account>` or
+    `bitcoin:<address>`
+  - derived sublocations append a stable suffix such as `:staking`
+- Keep source labels, wallet names, and other friendly labels out of canonical
+  runtime `location_id` values. Those labels belong in `source`,
+  `location_label`, annotations, and output-adapter display logic.
 - Normalize runtime timestamps at the adapter edge. Draft, fact, balance, and
   balance-evidence timestamps must be timezone-aware UTC before they enter the
   shared domain or port models.
@@ -81,6 +92,14 @@ The core service should resolve the adapter through the registry and supply
 only the minimal context the adapter needs to translate correctly. Export
 families, translation registries, and provider-local coverage declarations come
 from the adapter package itself, not from a support-layer provider table.
+
+Mixed captures must fail explicitly. If profiling detects incompatible adapter
+families in one raw source directory, the adapter should rely on the shared
+blocking scan issue instead of attempting a best-effort normalization pass.
+
+Wallet-state adapters must treat UI identity maps and friendly labels as labels
+only. Emit canonical wallet inventory only when the export proves authoritative
+chain-scoped or chain-specific ownership.
 
 ## Discovery
 

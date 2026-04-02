@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from tallylot.adapters.support import is_onchain_canonical_location_id
 from tallylot.domain.transactions import EconomicLeg, LegKind, ProjectionHint, TransactionFact
 from tallylot.domain.value_objects import format_decimal, format_timestamp
 
@@ -39,7 +40,7 @@ def cointracking_row(transaction: TransactionFact) -> dict[str, str]:
         "Cur..1": "" if outbound_leg is None else str(outbound_leg.instrument_id),
         "Fee": format_decimal(None if charge_leg is None else abs(charge_leg.quantity)),
         "Cur..2": "" if charge_leg is None else str(charge_leg.instrument_id),
-        "Exchange": str(transaction.location_id),
+        "Exchange": _exchange_label(transaction),
         "Group": transaction.operation_group_id,
         "Comment": transaction.description,
         "Date": format_timestamp(transaction.timestamp),
@@ -81,3 +82,10 @@ def _reject_other_non_primary_legs(transaction: TransactionFact) -> None:
             f"fact {transaction.fact_id} has unsupported CoinTracking projection leg kinds: "
             f"{', '.join(unsupported_kinds)}"
         )
+
+
+def _exchange_label(transaction: TransactionFact) -> str:
+    location_id = str(transaction.location_id)
+    if is_onchain_canonical_location_id(location_id):
+        return str(transaction.source)
+    return location_id

@@ -29,6 +29,7 @@ def validate_source_adapter_contract(adapter: object, module: ModuleType) -> Sou
         raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} cannot declare output render capability")
     required_methods = (
         "match",
+        "classify_profile_families",
         "match_intake",
         "route_intake",
         "validate_profile_timezones",
