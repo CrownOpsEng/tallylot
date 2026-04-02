@@ -187,6 +187,8 @@ is inherently specific.
 - CoinTracking-specific column defaults, `Tx-ID` behavior, and row-shape
   metadata stay inside the CoinTracking output adapter package rather than in
   provider-local source code
+- CoinTracking rendering must validate that a fact stays within the adapter's
+  supported single-row shape rather than truncating richer legs silently
 - adapters do not own tax logic, checkpoint policy, or reconciliation rules
 - adapters should stay focused on source/output translation. Core data
   manipulation, verification, and workflow policy belong in application and
@@ -259,6 +261,8 @@ Required draft responsibilities:
 - timestamp and provenance
 - account and wallet scope
 - one or more economic legs plus optional fee legs
+- explicit leg-shape policy with a strict default of one inbound leg, one
+  outbound leg, and one fee leg unless the adapter opts into a richer shape
 - provider operation key and grouped-row support
 - layered classification hints:
   - economic kind
@@ -276,6 +280,8 @@ Rules:
 - shared support stays adapter-agnostic and registry-driven; adapters publish
   manifests, translation registries, and provider-local coverage metadata
 - one shared fact builder owns draft-to-fact conversion
+- draft-only provenance references and review markers must survive compilation
+  through a fact-keyed sidecar artifact instead of being dropped
 - one shared projection mapper owns the mapping from layered classifications
   into concrete output-adapter row types
 - one shared projection mapper owns CoinTracking CSV row construction
@@ -306,6 +312,7 @@ Required fields:
   - ownership scope
 - economics
   - `tuple[EconomicLeg, ...]`
+  - explicit leg-shape policy
   - optional grouped correction or bundle links
   - beneficial ownership change classification
 - valuation
@@ -315,6 +322,8 @@ Required fields:
   - optional `ProjectionType`
   - optional `TaxTreatmentCode`
   - optional `JournalIntent`
+- annotations
+  - fact-keyed provenance and review-marker sidecar for draft-only metadata
 - status
   - unsupported flag
   - ambiguity flag

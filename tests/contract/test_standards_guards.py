@@ -179,6 +179,18 @@ def test_transaction_fact_category_bridge_is_removed() -> None:
     assert not hasattr(TransactionFact, "category")
 
 
+def test_transaction_fact_single_leg_compatibility_helpers_are_removed() -> None:
+    for attribute in (
+        "asset_in",
+        "amount_in",
+        "asset_out",
+        "amount_out",
+        "fee_asset",
+        "fee_amount",
+    ):
+        assert not hasattr(TransactionFact, attribute)
+
+
 def test_repo_does_not_reference_fact_category_attribute() -> None:
     guarded_roots = (
         REPO_ROOT / "src" / "tallylot" / "adapters",
@@ -195,6 +207,29 @@ def test_repo_does_not_reference_fact_category_attribute() -> None:
             for node in ast.walk(_module(path)):
                 if isinstance(node, ast.Attribute):
                     assert node.attr != "category", f"{path} references removed fact category attribute"
+
+
+def test_repo_does_not_reference_removed_single_leg_fact_attributes() -> None:
+    guarded_roots = (
+        REPO_ROOT / "src" / "tallylot",
+        REPO_ROOT / "tests",
+    )
+    forbidden_attributes = {
+        "asset_in",
+        "amount_in",
+        "asset_out",
+        "amount_out",
+        "fee_asset",
+        "fee_amount",
+    }
+
+    for root in guarded_roots:
+        for path in _python_files(root):
+            for node in ast.walk(_module(path)):
+                if isinstance(node, ast.Attribute):
+                    assert node.attr not in forbidden_attributes, (
+                        f"{path} references removed single-leg fact attribute {node.attr}"
+                    )
 
 
 def test_source_adapters_do_not_pass_string_classification_values() -> None:
@@ -220,6 +255,14 @@ def test_projection_type_runtime_values_remain_machine_oriented() -> None:
     assert ProjectionType.TRADE.value == "trade"
     assert ProjectionType.DEPOSIT.value == "deposit"
     assert ProjectionType.WITHDRAWAL.value == "withdrawal"
+
+
+def test_balance_evidence_has_single_production_owner() -> None:
+    occurrences = 0
+    for path in _python_files(REPO_ROOT / "src" / "tallylot"):
+        text = path.read_text(encoding="utf-8")
+        occurrences += text.count("class BalanceEvidence")
+    assert occurrences == 1
 
 
 def test_transaction_classification_matrix_describes_runtime_projection_values() -> None:

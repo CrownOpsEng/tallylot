@@ -41,7 +41,8 @@ baseline export folder and review the generated reconciliation package.
 - run `source profile`
 - review `profile.json`, `profile_inventory.csv`, and `timezone_issues.csv`
 - run `source normalize`
-- review `exceptions.csv` and `normalization_reviews.csv`
+- review `exceptions.csv`, `normalization_reviews.csv`, and
+  `fact_annotations.json`
 - run `output render file` when the round needs `cointracking_candidate.csv`
 
 ### 4. Screen And Stage

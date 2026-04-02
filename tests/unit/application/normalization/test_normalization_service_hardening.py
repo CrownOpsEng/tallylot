@@ -9,7 +9,7 @@ from typing import override
 import pytest
 
 from tallylot.application.normalization import NormalizeRequest
-from tallylot.domain.checkpoints import BalanceEvidence
+from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.types import AssetSymbol, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
@@ -128,12 +128,20 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
     assert response.review_count == 3
 
     facts = FilesystemFactRepository().read_facts(output_dir / "facts.csv")
+    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
     summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
 
-    assert facts[0].amount_in == Decimal("1.5")
-    assert facts[0].amount_out == Decimal("10")
-    assert facts[0].fee_amount == Decimal("0.1")
+    assert facts[0].legs[0].amount == Decimal("1.5")
+    assert facts[0].legs[1].amount == Decimal("10")
+    assert facts[0].fee_legs[0].amount == Decimal("0.1")
+    assert fact_annotations == [
+        {
+            "fact_id": str(facts[0].fact_id),
+            "provenance_refs": [],
+            "review_markers": [],
+        }
+    ]
     assert [row["kind"] for row in review_rows] == [
         "outbound_amount_sign_normalized",
         "outbound_amount_sign_normalized",
@@ -317,3 +325,43 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
     ]
     assert summary["balance_count"] == 1
     assert summary["balance_evidence_count"] == 1
+
+
+def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    header = (
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
+        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+    )
+    (raw_dir / "transactions.csv").write_text(
+        header
+        + "2023-08-04 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-early,early,Fixture,Primary\n"
+        + "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,tx-keep,keep,Fixture,Primary\n",
+        encoding="utf-8",
+    )
+    artifacts = FilesystemArtifactStore()
+    service = build_normalization_service(artifacts=artifacts)
+    output_dir = tmp_path / "normalized"
+
+    service.execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_dir=raw_dir,
+            output_dir=output_dir,
+            window_start="2023-08-05 08:34:05",
+            window_end="2025-12-31 23:59:59",
+        )
+    )
+
+    fact_rows = artifacts.read_rows(output_dir / "facts.csv")
+    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
+
+    assert [row["fact_id"] for row in fact_rows] == ["fixture_source:3"]
+    assert fact_annotations == [
+        {
+            "fact_id": fact_rows[0]["fact_id"],
+            "provenance_refs": [],
+            "review_markers": [],
+        }
+    ]

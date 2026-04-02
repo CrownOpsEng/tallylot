@@ -6,12 +6,14 @@ from decimal import Decimal
 from pathlib import Path
 from typing import TypeVar
 
-from tallylot.domain.checkpoints import BalanceEvidence, BalanceSnapshot
+from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import (
     EconomicLeg,
     FactClassification,
     FactDirection,
+    FactLegPolicy,
     TransactionFact,
     parse_economic_kind,
     parse_journal_intent,
@@ -64,6 +66,9 @@ class FilesystemFactRepository:
                 "timestamp",
                 "account",
                 "wallet",
+                "max_in_legs",
+                "max_out_legs",
+                "max_fee_legs",
                 "economic_kind",
                 "projection_type",
                 "journal_intent",
@@ -152,6 +157,11 @@ def _fact_from_row(row: dict[str, str]) -> TransactionFact:
         timestamp=parse_timestamp(row["timestamp"]),
         account=row["account"],
         wallet=row["wallet"],
+        leg_policy=FactLegPolicy(
+            max_in_legs=_required_int(row.get("max_in_legs"), "max_in_legs"),
+            max_out_legs=_required_int(row.get("max_out_legs"), "max_out_legs"),
+            max_fee_legs=_required_int(row.get("max_fee_legs"), "max_fee_legs"),
+        ),
         classification=FactClassification(
             economic_kind=_required_enum(parse_economic_kind(row["economic_kind"]), "economic_kind"),
             journal_intent=_required_enum(parse_journal_intent(row["journal_intent"]), "journal_intent"),
@@ -210,3 +220,12 @@ def _required_decimal(value: Decimal | None, label: str) -> Decimal:
     if value is None:
         raise ValueError(f"missing required decimal field: {label}")
     return value
+
+
+def _required_int(value: str | None, label: str) -> int:
+    if value is None or not value.strip():
+        raise ValueError(f"missing required integer field: {label}")
+    try:
+        return int(value)
+    except ValueError as error:
+        raise ValueError(f"invalid integer field {label}: {value}") from error

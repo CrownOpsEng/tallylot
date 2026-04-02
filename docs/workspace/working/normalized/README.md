@@ -10,12 +10,16 @@ Per-source folders should use the typed pipeline artifact set:
 - `profile_inventory.csv`
 - `timezone_issues.csv`
 - `facts.csv`
+- `fact_annotations.json`
 - `balances.csv`
 - `balance_evidence.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
 - `wallet_inventory.csv`
 - `normalization_summary.json`
+
+`fact_annotations.json` preserves fact-keyed provenance references and
+review markers that originate on drafts.
 
 `balances.csv` contains application-derived balances from transaction facts.
 `balance_evidence.csv` contains source-backed checkpoint evidence when the

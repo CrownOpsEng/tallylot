@@ -16,7 +16,8 @@ uv run python -m tools.oracles.cli baseline validate \
 - run `source manifest`
 - run `source profile`
 - run `source normalize`
-- review `timezone_issues.csv`, `exceptions.csv`, and `normalization_reviews.csv`
+- review `timezone_issues.csv`, `exceptions.csv`,
+  `normalization_reviews.csv`, and `fact_annotations.json`
 - run `output render file` if the round needs `cointracking_candidate.csv`
 
 ## Batch Gate

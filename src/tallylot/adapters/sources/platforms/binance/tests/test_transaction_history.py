@@ -34,8 +34,8 @@ def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambigu
     assert len(events) == 1
     assert events[0].economic_kind == EconomicKind.ASSET_CONVERSION
     assert events[0].projection_type == ProjectionType.TRADE
-    assert str(events[0].asset_in) == "BNB"
-    assert str(events[0].asset_out) == "ADA"
+    assert str(events[0].legs[0].asset) == "BNB"
+    assert str(events[0].legs[1].asset) == "ADA"
     assert len(issues) == 1
     assert issues[0].kind == "ambiguous_group"
 
@@ -58,7 +58,7 @@ def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewar
     assert len(events) == 1
     assert events[0].economic_kind == EconomicKind.STAKING_REWARD
     assert events[0].projection_type == ProjectionType.STAKING
-    assert str(events[0].asset_in) == "ETH"
+    assert str(events[0].legs[0].asset) == "ETH"
     assert not issues
 
 

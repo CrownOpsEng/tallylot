@@ -18,9 +18,9 @@ def test_ledger_live_adapter_normalizes_grouped_trade_rows() -> None:
     assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert result.facts[0].legs[0].direction == "in"
     assert result.facts[0].legs[1].direction == "out"
-    assert str(result.facts[0].amount_in) == "0.01000000"
-    assert str(result.facts[0].asset_out) == "ETH"
-    assert str(result.facts[0].fee_amount) == "0.01000000"
+    assert str(result.facts[0].legs[0].amount) == "0.01000000"
+    assert str(result.facts[0].legs[1].asset) == "ETH"
+    assert str(result.facts[0].fee_legs[0].amount) == "0.01000000"
     assert result.issues == ()
 
 

@@ -14,6 +14,7 @@ from tools.adapter_packs import DEFAULT_PACK_ROOT, AdapterPack, select_adapter_p
 
 EXPECTED_NORMALIZATION_ARTIFACTS = (
     "facts",
+    "fact_annotations",
     "balances",
     "balance_evidence",
     "exceptions",
@@ -32,10 +33,7 @@ def _sanitize_public_fixture_payload(payload: object, *, raw_dir: Path) -> objec
 
     if isinstance(payload, dict):
         payload_dict = cast(dict[object, object], payload)
-        return {
-            key: _sanitize_public_fixture_payload(value, raw_dir=raw_dir)
-            for key, value in payload_dict.items()
-        }
+        return {key: _sanitize_public_fixture_payload(value, raw_dir=raw_dir) for key, value in payload_dict.items()}
     if isinstance(payload, list):
         payload_list = cast(list[object], payload)
         return [_sanitize_public_fixture_payload(item, raw_dir=raw_dir) for item in payload_list]
@@ -97,6 +95,7 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
             payloads.update(
                 {
                     "facts": artifacts.read_rows(output_dir / "facts.csv"),
+                    "fact_annotations": json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8")),
                     "balances": artifacts.read_rows(output_dir / "balances.csv"),
                     "balance_evidence": artifacts.read_rows(output_dir / "balance_evidence.csv"),
                     "exceptions": artifacts.read_rows(output_dir / "exceptions.csv"),

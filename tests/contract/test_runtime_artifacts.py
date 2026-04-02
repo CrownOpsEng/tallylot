@@ -76,5 +76,6 @@ def test_normalization_emits_fact_and_balance_artifacts(
     )
 
     assert (normalized_dir / "facts.csv").exists()
+    assert (normalized_dir / "fact_annotations.json").exists()
     assert (normalized_dir / "balances.csv").exists()
     assert (normalized_dir / "balance_evidence.csv").exists()

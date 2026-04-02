@@ -1,0 +1,32 @@
+[
+  {
+    "fact_id": "shakepay:cash_transactions_summary.csv:row:2",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "fact_id": "shakepay:cash_transactions_summary.csv:row:3",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "fact_id": "shakepay:cash_transactions_summary.csv:row:4",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "fact_id": "shakepay:crypto_transactions_summary.csv:row:2",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "fact_id": "shakepay:crypto_transactions_summary.csv:row:3",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "fact_id": "shakepay:crypto_transactions_summary.csv:row:4",
+    "provenance_refs": [],
+    "review_markers": []
+  }
+]

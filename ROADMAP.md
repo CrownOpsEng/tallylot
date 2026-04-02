@@ -11,8 +11,8 @@ decisions that should not be rediscovered from scratch.
 - CLI and library runtime only
 - Filesystem-backed operational storage
 - One concrete CoinTracking CSV edge adapter is implemented today
-- Normalization writes `facts.csv`, `balances.csv`, and
-  `balance_evidence.csv` as active runtime artifacts
+- Normalization writes `facts.csv`, `fact_annotations.json`, `balances.csv`,
+  and `balance_evidence.csv` as active runtime artifacts
 - Dev-only oracle workflows run through `uv run python -m tools.oracles.cli`
   and stay outside the production package and production CLI surface
 - Archive-aware source scanning and intake plan/apply workflows
@@ -179,6 +179,17 @@ decisions that should not be rediscovered from scratch.
 - Keep transaction facts structurally strict: every fact must retain at least
   one positive-value economic leg, and leg direction must be modeled
   explicitly rather than by signed magnitudes.
+- Keep fact leg shape explicit. Facts default to one inbound leg, one outbound
+  leg, and one fee leg unless the adapter declares a richer leg policy on the
+  emitted draft.
+- Do not reintroduce convenience selectors such as `asset_in`, `amount_out`,
+  or `fee_amount`. Engine code must consume `legs` and `fee_legs` directly.
+- Keep draft-only provenance references and review markers in
+  `fact_annotations.json` keyed by `fact_id` rather than dropping them during
+  draft-to-fact compilation or embedding them as CoinTracking-specific
+  metadata.
+- Keep `BalanceEvidence` owned by `domain/reconciliation`; checkpoint state is
+  downstream of reconciliation rather than a second owner of the same model.
 - Do not reintroduce a legacy fact `category` bridge. Layered classification
   fields are the stable center; compatibility labels belong only at adapter
   edges.

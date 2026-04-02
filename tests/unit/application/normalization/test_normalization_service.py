@@ -38,12 +38,21 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     )
 
     canonical_rows = read_rows(output_dir / "facts.csv")
+    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
     summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
 
     assert response.fact_count == 1
     assert len(canonical_rows) == 1
     assert canonical_rows[0]["tx_hash"] == "tx-keep"
+    assert canonical_rows[0]["fact_id"] == "fixture_source:3"
+    assert fact_annotations == [
+        {
+            "fact_id": canonical_rows[0]["fact_id"],
+            "provenance_refs": [],
+            "review_markers": [],
+        }
+    ]
     assert summary["fact_count"] == 1
     assert summary["facts_outside_normalization_window"] == 1
     assert summary["normalization_window_start"] == "2023-08-05 08:34:05"

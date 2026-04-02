@@ -71,6 +71,7 @@ def test_profile_normalize_and_render_cli(structured_source_dir: Path, tmp_path:
     assert render_result.exit_code == 0
     assert rendered_path.exists()
     assert (normalized_dir / "facts.csv").exists()
+    assert (normalized_dir / "fact_annotations.json").exists()
     assert (normalized_dir / "normalization_reviews.csv").exists()
 
 

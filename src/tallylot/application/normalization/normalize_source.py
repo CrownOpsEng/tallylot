@@ -13,12 +13,14 @@ from tallylot.ports.evidence import EvidenceRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_translation import transaction_facts_from_drafts
 
+from .annotations import annotation_records_from_drafts
 from .artifacts import write_normalization_artifacts
 from .balances import derive_balance_snapshots
 from .models import NormalizationOutputs, NormalizationWindowStats
 from .summary import build_normalization_summary
-from .window import filter_facts_by_window, filter_issues_by_window
+from .window import filter_drafts_by_window, filter_issues_by_window
 
 
 @dataclass(frozen=True)
@@ -59,11 +61,12 @@ class NormalizeSourceUseCase:
         if not profile.supported:
             raise ValueError(f"source adapter {profile.adapter_id} is not supported for normalization in this phase")
         result = adapter.translate(profile, request.raw_dir)
-        facts, facts_outside_window = filter_facts_by_window(
-            result.facts,
+        drafts, facts_outside_window = filter_drafts_by_window(
+            result.drafts,
             window_start=request.window_start,
             window_end=request.window_end,
         )
+        facts = transaction_facts_from_drafts(drafts)
         enriched_issues = enrich_issue_context_timestamps(
             result.issues,
             raw_dir=request.raw_dir,
@@ -77,6 +80,7 @@ class NormalizeSourceUseCase:
         derived_balances = derive_balance_snapshots(facts)
         outputs = NormalizationOutputs(
             facts=facts,
+            fact_annotations=annotation_records_from_drafts(drafts),
             derived_balances=derived_balances,
             balance_evidence=result.balance_evidence,
             issues=issue_records,
@@ -87,6 +91,7 @@ class NormalizeSourceUseCase:
             request.output_dir,
             facts=self._facts,
             evidence=self._evidence,
+            artifacts=self._artifacts,
             outputs=outputs,
         )
         self._artifacts.write_json(

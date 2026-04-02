@@ -93,7 +93,7 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(tmp_path: 
     assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
     assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
     assert result.facts[0].legs[0].direction == "in"
-    assert str(result.facts[0].amount_in) == "1.50000000"
+    assert str(result.facts[0].legs[0].amount) == "1.50000000"
     assert not result.issues
 
 
@@ -161,8 +161,8 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames() -> None:
     assert len(result.facts) == 1
     assert result.facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
     assert result.facts[0].projection_type == ProjectionType.DEPOSIT
-    assert str(result.facts[0].asset_in) == "BNB"
-    assert str(result.facts[0].amount_in) == "1.50000000"
+    assert str(result.facts[0].legs[0].asset) == "BNB"
+    assert str(result.facts[0].legs[0].amount) == "1.50000000"
 
 
 def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_path: Path) -> None:

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from tallylot.domain.checkpoints import BalanceEvidence
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import TransactionFact
 from tallylot.ports.evidence import WalletInventoryRecord
 from tallylot.ports.source_translation import EconomicActivityDraft, SourceTranslationBatch

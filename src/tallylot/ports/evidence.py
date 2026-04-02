@@ -6,8 +6,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from tallylot.domain.checkpoints import BalanceEvidence, BalanceSnapshot
+from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+from tallylot.domain.reconciliation import BalanceEvidence
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,17 @@
+[
+  {
+    "fact_id": "near:example.near_transactions.csv:row:2",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "fact_id": "near:example.near_transactions.csv:row:3:wallet",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "fact_id": "near:example.near_transactions.csv:row:3:staking",
+    "provenance_refs": [],
+    "review_markers": []
+  }
+]

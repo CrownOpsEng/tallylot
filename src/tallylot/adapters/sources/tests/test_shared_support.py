@@ -15,7 +15,7 @@ from tallylot.adapters.support.drafts import (
 )
 from tallylot.adapters.support.wallets import normalized_identifier, wallet_identifier_kind
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, FactLegPolicy, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.services import build_source_profile
 
 
@@ -46,7 +46,7 @@ def test_draft_compiler_preserves_internal_fields() -> None:
     assert event.journal_intent == JournalIntent.FUNDING_INFLOW
     assert event.tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
     assert event.description == "Fixture deposit"
-    assert str(event.asset_in) == "BTC"
+    assert str(event.legs[0].asset) == "BTC"
 
 
 def test_wallet_identifier_helpers_normalize_evm_and_classify_near_accounts() -> None:
@@ -80,6 +80,7 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
     assert fact.projection_type == ProjectionType.TRADE
     assert fact.journal_intent == JournalIntent.ASSET_EXCHANGE
     assert fact.tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
+    assert fact.leg_policy == FactLegPolicy()
     assert len(fact.legs) == 2
     assert fact.legs[0].asset == "BTC"
     assert fact.legs[1].asset == "CAD"
@@ -118,6 +119,7 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
     assert result.facts[0].projection_type == ProjectionType.DEPOSIT
     assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
     assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
+    assert result.facts[0].leg_policy == FactLegPolicy()
     assert not result.issues
 
 

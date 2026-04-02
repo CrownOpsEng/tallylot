@@ -18,38 +18,27 @@ def derive_balance_snapshots(
     latest_timestamp: datetime | None = None
     for fact in facts:
         latest_timestamp = fact.timestamp if latest_timestamp is None else max(latest_timestamp, fact.timestamp)
-        if fact.asset_in is not None and fact.amount_in is not None:
+        for leg in fact.legs:
             _apply_balance_delta(
                 balances,
                 key=(
                     str(fact.source),
-                    fact.account,
-                    fact.wallet,
-                    str(fact.asset_in),
+                    leg.account or fact.account,
+                    leg.wallet or fact.wallet,
+                    str(leg.asset),
                 ),
-                quantity=fact.amount_in,
+                quantity=leg.amount if leg.direction == "in" else -leg.amount,
             )
-        if fact.asset_out is not None and fact.amount_out is not None:
+        for fee_leg in fact.fee_legs:
             _apply_balance_delta(
                 balances,
                 key=(
                     str(fact.source),
-                    fact.account,
-                    fact.wallet,
-                    str(fact.asset_out),
+                    fee_leg.account or fact.account,
+                    fee_leg.wallet or fact.wallet,
+                    str(fee_leg.asset),
                 ),
-                quantity=-fact.amount_out,
-            )
-        if fact.fee_asset is not None and fact.fee_amount is not None:
-            _apply_balance_delta(
-                balances,
-                key=(
-                    str(fact.source),
-                    fact.account,
-                    fact.wallet,
-                    str(fact.fee_asset),
-                ),
-                quantity=-fact.fee_amount,
+                quantity=-fee_leg.amount,
             )
     as_of = latest_timestamp if latest_timestamp is not None else datetime.now(UTC)
     return tuple(

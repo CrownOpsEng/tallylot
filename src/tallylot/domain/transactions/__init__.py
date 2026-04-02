@@ -10,13 +10,14 @@ from .classification import (
     parse_projection_type,
     parse_tax_treatment_code,
 )
-from .facts import EconomicLeg, FactClassification, FactDirection, TransactionFact
+from .facts import EconomicLeg, FactClassification, FactDirection, FactLegPolicy, TransactionFact
 
 __all__ = [
     "EconomicKind",
     "EconomicLeg",
     "FactClassification",
     "FactDirection",
+    "FactLegPolicy",
     "JournalIntent",
     "ProjectionType",
     "TaxTreatmentCode",

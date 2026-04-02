@@ -13,6 +13,9 @@ FACT_HEADER = (
     "timestamp",
     "account",
     "wallet",
+    "max_in_legs",
+    "max_out_legs",
+    "max_fee_legs",
     "economic_kind",
     "projection_type",
     "journal_intent",
@@ -38,6 +41,9 @@ def _fact_row(*, projection_type: str) -> dict[str, str]:
         "timestamp": "2025-01-01 00:00:00",
         "account": "Taxable",
         "wallet": "Primary",
+        "max_in_legs": "1",
+        "max_out_legs": "1",
+        "max_fee_legs": "1",
         "economic_kind": "spot_trade",
         "projection_type": projection_type,
         "journal_intent": "asset_exchange",
@@ -62,3 +68,4 @@ def test_fact_repository_reads_machine_projection_values(tmp_path: Path) -> None
     facts = FilesystemFactRepository().read_facts(path)
 
     assert facts[0].projection_type == ProjectionType.TRADE
+    assert facts[0].leg_policy.max_fee_legs == 1

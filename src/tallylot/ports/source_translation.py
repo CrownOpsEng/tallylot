@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from tallylot.domain.checkpoints import BalanceEvidence
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import (
     EconomicKind,
     EconomicLeg,
     FactClassification,
+    FactLegPolicy,
     JournalIntent,
     ProjectionType,
     TaxTreatmentCode,
@@ -36,6 +37,7 @@ class ActivityClassification:
 class ActivityDraftSeed:
     activity_id: str
     timestamp: datetime
+    leg_policy: FactLegPolicy = field(default_factory=FactLegPolicy)
     description: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
@@ -73,6 +75,7 @@ class EconomicActivityDraft:
     wallet: str
     classification: ActivityClassification
     legs: tuple[EconomicLegDraft, ...]
+    leg_policy: FactLegPolicy = field(default_factory=FactLegPolicy)
     fee_legs: tuple[EconomicLegDraft, ...] = ()
     description: str = ""
     raw_file: str = ""
@@ -88,6 +91,14 @@ class EconomicActivityDraft:
     def __post_init__(self) -> None:
         if not self.legs:
             raise ValueError("draft must include at least one economic leg")
+        inbound_legs = sum(1 for leg in self.legs if leg.direction == "in")
+        outbound_legs = sum(1 for leg in self.legs if leg.direction == "out")
+        if inbound_legs > self.leg_policy.max_in_legs:
+            raise ValueError("draft inbound legs exceed declared leg policy")
+        if outbound_legs > self.leg_policy.max_out_legs:
+            raise ValueError("draft outbound legs exceed declared leg policy")
+        if len(self.fee_legs) > self.leg_policy.max_fee_legs:
+            raise ValueError("draft fee legs exceed declared leg policy")
 
 
 @dataclass(frozen=True)
@@ -163,6 +174,7 @@ def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact
             )
             for leg in draft.legs
         ),
+        leg_policy=draft.leg_policy,
         fee_legs=tuple(
             EconomicLeg(
                 direction=leg.direction,

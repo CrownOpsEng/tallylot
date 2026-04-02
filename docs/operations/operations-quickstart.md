@@ -72,6 +72,7 @@ supporting detail.
 
 2. Review:
    - `facts.csv`
+   - `fact_annotations.json`
    - `balances.csv`
    - `balance_evidence.csv`
    - `exceptions.csv`

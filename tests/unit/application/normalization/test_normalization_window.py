@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from tallylot.application.normalization import (
+    filter_drafts_by_window,
     filter_facts_by_window,
     filter_issues_by_window,
 )
@@ -18,6 +19,21 @@ from tallylot.domain.transactions import (
     TransactionFact,
 )
 from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.ports.source_translation import EconomicActivityDraft, classification, economic_leg
+
+
+def test_filter_drafts_by_window_excludes_rows_before_start() -> None:
+    early = _draft("txn-1", "2023-08-05 08:34:04")
+    in_window = _draft("txn-2", "2023-08-05 08:34:05")
+
+    filtered, excluded_count = filter_drafts_by_window(
+        (early, in_window),
+        window_start="2023-08-05 08:34:05",
+        window_end=None,
+    )
+
+    assert filtered == (in_window,)
+    assert excluded_count == 1
 
 
 def test_filter_facts_by_window_returns_original_events_without_bounds() -> None:
@@ -125,4 +141,22 @@ def _transaction(transaction_id: str, timestamp: str) -> TransactionFact:
             projection_type=ProjectionType.DEPOSIT,
         ),
         legs=(EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("1")),),
+    )
+
+
+def _draft(transaction_id: str, timestamp: str) -> EconomicActivityDraft:
+    return EconomicActivityDraft(
+        activity_id=transaction_id,
+        source="fixture-source",
+        adapter_id="fixture-adapter",
+        timestamp=datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC),
+        account="fixture-account",
+        wallet="fixture-wallet",
+        classification=classification(
+            economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
+            journal_intent=JournalIntent.FUNDING_INFLOW,
+            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+            projection_type=ProjectionType.DEPOSIT,
+        ),
+        legs=(economic_leg(direction="in", asset="BTC", amount=Decimal("1")),),
     )
