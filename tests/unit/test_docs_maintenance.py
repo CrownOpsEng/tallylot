@@ -726,6 +726,33 @@ def test_scaffold_rejects_absolute_path(
     assert not absolute_path.exists()
 
 
+def test_scaffold_rejects_slug_traversal(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    override_active_roots(monkeypatch, tmp_path)
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--section",
+            "guides",
+            "--slug",
+            "../escape",
+            "--title",
+            "Escape",
+            "--summary",
+            "Escape summary.",
+            "--nav-order",
+            "10",
+        ]
+    )
+
+    assert exit_code == 1
+    assert not (tmp_path / "docs" / "escape.md").exists()
+    assert not (tmp_path / "escape.md").exists()
+
+
 def test_scaffold_agents_doc_requires_explicit_doc_type(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -856,6 +883,40 @@ def test_scaffold_sync_managed_doc_accepts_nav_order(
     frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
 
     assert frontmatter["nav_order"] == 70
+
+
+def test_scaffold_sync_managed_doc_requires_docs_readme(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    override_active_roots(monkeypatch, tmp_path)
+
+    (tmp_path / "agents").mkdir()
+    docs_root = tmp_path / "docs"
+    (docs_root / "concepts").mkdir(parents=True)
+    (docs_root / "guides").mkdir(parents=True)
+    (docs_root / "reference").mkdir(parents=True)
+    (docs_root / "status").mkdir(parents=True)
+    (docs_root / "standards").mkdir(parents=True)
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--section",
+            "guides",
+            "--slug",
+            "example-guide",
+            "--title",
+            "Example Guide",
+            "--summary",
+            "Example guide summary.",
+            "--nav-order",
+            "70",
+        ]
+    )
+
+    assert exit_code == 1
+    assert not (tmp_path / "docs" / "guides" / "example-guide.md").exists()
 
 
 def test_scaffold_sync_managed_doc_escapes_yaml_sensitive_fields(

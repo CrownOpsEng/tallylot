@@ -166,6 +166,8 @@ def check_retired_references() -> None:
 
 def sync_docs_homepage(documents: list[Document], *, check: bool) -> bool:
     docs_readme = docs_root() / "README.md"
+    if not docs_readme.exists():
+        raise ValueError("docs/README.md is missing")
     original = docs_readme.read_text(encoding="utf-8")
     updated = original
     for marker in SYNCED_SECTIONS:
@@ -208,6 +210,9 @@ def scaffold_path(*, section: str | None, slug: str | None, path_argument: str |
         except ValueError as error:
             raise ValueError("--path must stay inside the repo") from error
     elif section is not None and slug is not None:
+        slug_path = Path(slug)
+        if slug_path.parent != Path() or slug_path.name != slug:
+            raise ValueError("--slug must be a single filename segment")
         path = agents_root() / f"{slug}.md" if section == "agents" else docs_root() / section / f"{slug}.md"
     else:
         raise ValueError("Provide either --path or both --section and --slug")
