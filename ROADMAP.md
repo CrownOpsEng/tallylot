@@ -206,15 +206,15 @@ Scope:
 
 - sanitize and maintain publishable fixtures
 - keep provenance and reuse documentation clear
-- keep the docs set navigable by ownership and concern
+- keep the docs set navigable by type and concern
 - keep public-facing scope descriptions aligned with the implemented runtime
 
 Exit criteria:
 
 - repo-safe fixtures and documentation are maintained without private workflow
   assumptions
-- a new contributor or coding agent can find the correct roadmap, state,
-  architecture, operations, and workspace docs without broad context loading
+- a new contributor or coding agent can find the correct roadmap, status,
+  concept, guide, and workspace docs without broad context loading
 
 ### 10. Post-Core Runtime Expansion
 
