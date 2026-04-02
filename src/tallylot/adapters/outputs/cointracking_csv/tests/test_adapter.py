@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from tallylot.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
 from tallylot.adapters.outputs.cointracking_csv.projection import _COINTRACKING_TYPE_LABELS, cointracking_row
+from tallylot.adapters.outputs.cointracking_csv.schema import COINTRACKING_HEADER
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.outputs import RenderOutputRequest
 from tallylot.application.resource_refs import to_resource_ref
