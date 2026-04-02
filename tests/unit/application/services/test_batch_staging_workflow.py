@@ -38,7 +38,7 @@ def test_batch_staging_uses_normalization_summary_window_and_import_ready_copy(
         ),
         (
             {
-                "Type": "Trade",
+                "Type": "trade",
                 "Buy": "1.0",
                 "Cur.": "BTC",
                 "Sell": "10.0",
@@ -107,7 +107,7 @@ def test_batch_staging_explicit_window_overrides_normalization_summary(
         ),
         (
             {
-                "Type": "Trade",
+                "Type": "trade",
                 "Buy": "1.0",
                 "Cur.": "BTC",
                 "Sell": "10.0",
@@ -172,7 +172,7 @@ def test_batch_staging_blocks_candidates_outside_normalization_window(
         ),
         (
             {
-                "Type": "Trade",
+                "Type": "trade",
                 "Buy": "1.0",
                 "Cur.": "BTC",
                 "Sell": "10.0",
@@ -210,7 +210,7 @@ def test_batch_staging_accepts_legacy_cointracking_currency_headers(
     candidate_path = tmp_path / "candidate.csv"
     candidate_path.write_text(
         "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
-        "Trade,1.0,BTC,10.0,CAD,0.1,CAD,Fixture,,legacy,2023-08-06 08:34:05,tx-2\n",
+        "trade,1.0,BTC,10.0,CAD,0.1,CAD,Fixture,,legacy,2023-08-06 08:34:05,tx-2\n",
         encoding="utf-8",
     )
 

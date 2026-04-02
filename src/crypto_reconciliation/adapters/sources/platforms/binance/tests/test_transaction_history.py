@@ -29,7 +29,7 @@ def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambigu
     )
 
     assert len(events) == 1
-    assert events[0].event_kind == "Trade"
+    assert events[0].category == "trade"
     assert str(events[0].asset_in) == "BNB"
     assert str(events[0].asset_out) == "ADA"
     assert len(issues) == 1
@@ -51,7 +51,7 @@ def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewar
     )
 
     assert len(events) == 1
-    assert events[0].event_kind == "Staking"
+    assert events[0].category == "staking_reward"
     assert str(events[0].asset_in) == "ETH"
     assert not issues
 

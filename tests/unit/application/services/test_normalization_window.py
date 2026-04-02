@@ -4,27 +4,27 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from crypto_reconciliation.application.services.normalization_window import (
-    filter_events_by_window,
     filter_issues_by_window,
+    filter_transactions_by_window,
 )
-from crypto_reconciliation.domain.models import CanonicalEvent, IssueRecord
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
+from crypto_reconciliation.domain.models import IssueRecord, NormalizedTransaction
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 
 
-def test_filter_events_by_window_returns_original_events_without_bounds() -> None:
-    event = _event("evt-1", "2023-08-05 08:34:04")
+def test_filter_transactions_by_window_returns_original_events_without_bounds() -> None:
+    event = _transaction("txn-1", "2023-08-05 08:34:04")
 
-    filtered, excluded_count = filter_events_by_window((event,), window_start=None, window_end=None)
+    filtered, excluded_count = filter_transactions_by_window((event,), window_start=None, window_end=None)
 
     assert filtered == (event,)
     assert excluded_count == 0
 
 
-def test_filter_events_by_window_excludes_rows_before_start() -> None:
-    early = _event("evt-1", "2023-08-05 08:34:04")
-    in_window = _event("evt-2", "2023-08-05 08:34:05")
+def test_filter_transactions_by_window_excludes_rows_before_start() -> None:
+    early = _transaction("txn-1", "2023-08-05 08:34:04")
+    in_window = _transaction("txn-2", "2023-08-05 08:34:05")
 
-    filtered, excluded_count = filter_events_by_window(
+    filtered, excluded_count = filter_transactions_by_window(
         (early, in_window),
         window_start="2023-08-05 08:34:05",
         window_end=None,
@@ -34,11 +34,11 @@ def test_filter_events_by_window_excludes_rows_before_start() -> None:
     assert excluded_count == 1
 
 
-def test_filter_events_by_window_excludes_rows_after_end() -> None:
-    in_window = _event("evt-1", "2023-08-05 08:34:04")
-    late = _event("evt-2", "2023-08-05 08:34:06")
+def test_filter_transactions_by_window_excludes_rows_after_end() -> None:
+    in_window = _transaction("txn-1", "2023-08-05 08:34:04")
+    late = _transaction("txn-2", "2023-08-05 08:34:06")
 
-    filtered, excluded_count = filter_events_by_window(
+    filtered, excluded_count = filter_transactions_by_window(
         (in_window, late),
         window_start=None,
         window_end="2023-08-05 08:34:05",
@@ -48,12 +48,12 @@ def test_filter_events_by_window_excludes_rows_after_end() -> None:
     assert excluded_count == 1
 
 
-def test_filter_events_by_window_keeps_only_events_inside_both_bounds() -> None:
-    early = _event("evt-1", "2023-08-05 08:34:03")
-    in_window = _event("evt-2", "2023-08-05 08:34:04")
-    late = _event("evt-3", "2023-08-05 08:34:06")
+def test_filter_transactions_by_window_keeps_only_events_inside_both_bounds() -> None:
+    early = _transaction("txn-1", "2023-08-05 08:34:03")
+    in_window = _transaction("txn-2", "2023-08-05 08:34:04")
+    late = _transaction("txn-3", "2023-08-05 08:34:06")
 
-    filtered, excluded_count = filter_events_by_window(
+    filtered, excluded_count = filter_transactions_by_window(
         (early, in_window, late),
         window_start="2023-08-05 08:34:04",
         window_end="2023-08-05 08:34:05",
@@ -101,15 +101,15 @@ def test_filter_issues_by_window_excludes_timestamped_issues_before_start() -> N
     assert [issue.issue_id for issue in filtered] == ["inside", "untimed"]
 
 
-def _event(event_id: str, timestamp: str) -> CanonicalEvent:
-    return CanonicalEvent(
-        event_id=EventId(event_id),
+def _transaction(transaction_id: str, timestamp: str) -> NormalizedTransaction:
+    return NormalizedTransaction(
+        transaction_id=TransactionId(transaction_id),
         source=SourceId("fixture-source"),
         adapter_id=AdapterId("fixture-adapter"),
         account="fixture-account",
         wallet="fixture-wallet",
         timestamp=datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC),
-        event_kind="Deposit",
+        category="deposit",
         asset_in=AssetSymbol("BTC"),
         amount_in=Decimal("1"),
     )

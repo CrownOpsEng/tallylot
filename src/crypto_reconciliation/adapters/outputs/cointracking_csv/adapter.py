@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, CanonicalEvent
+from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, NormalizedTransaction
 from crypto_reconciliation.domain.types import AdapterId
 from crypto_reconciliation.ports.adapters import RenderedArtifact
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
@@ -22,11 +22,13 @@ class CoinTrackingCsvAdapter:
         display_name="CoinTracking CSV",
         version="1.0.0",
         capabilities=frozenset({AdapterCapability.OUTPUT_RENDER, AdapterCapability.REVIEW}),
-        description="Render canonical events into CoinTracking-compatible CSV rows and review CoinTracking exports.",
+        description=(
+            "Render normalized transactions into CoinTracking-compatible CSV rows and review CoinTracking exports."
+        ),
     )
 
-    def render(self, events: tuple[CanonicalEvent, ...], output_path: Path) -> RenderedArtifact:
-        return render_output(events, output_path)
+    def render(self, transactions: tuple[NormalizedTransaction, ...], output_path: Path) -> RenderedArtifact:
+        return render_output(transactions, output_path)
 
     def candidate_artifact_name(self) -> str:
         return CANDIDATE_ARTIFACT_NAME

@@ -1,4 +1,4 @@
-"""Verification summary assembly for comparison workflows."""
+"""Verification comparison summary assembly."""
 
 from __future__ import annotations
 

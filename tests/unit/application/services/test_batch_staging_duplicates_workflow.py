@@ -35,7 +35,7 @@ def test_batch_staging_detects_duplicates(
         ),
         (
             {
-                "Type": "Trade",
+                "Type": "trade",
                 "Buy": "1.0",
                 "Cur.": "BTC",
                 "Sell": "10.0",

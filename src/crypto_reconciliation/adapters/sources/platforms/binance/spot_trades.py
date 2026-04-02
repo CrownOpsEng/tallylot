@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.mapped_event_support import MappedEventSpec, mapped_event
-from crypto_reconciliation.domain.models import CanonicalEvent, SourceProfile
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import MappedTransactionSpec, mapped_transaction
+from crypto_reconciliation.domain.models import NormalizedTransaction, SourceProfile
 
 from .csv_rows import read_rows
 from .field_parsing import amount_with_asset, split_pair
 from .timestamps import parse_export_timestamp
 
 
-def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[CanonicalEvent]:
-    events: list[CanonicalEvent] = []
+def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[NormalizedTransaction]:
+    events: list[NormalizedTransaction] = []
     for index, row in enumerate(read_rows(path), start=2):
         side = (row.get("Side") or "").strip().upper()
         pair = (row.get("Pair") or "").strip().upper()
@@ -24,15 +24,15 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[CanonicalEve
         timestamp = parse_export_timestamp((row.get("Time") or "").strip(), path.name)
         if side == "SELL":
             events.append(
-                mapped_event(
-                    MappedEventSpec(
-                        event_id=f"binance:{path.name}:row:{index}",
+                mapped_transaction(
+                    MappedTransactionSpec(
+                        transaction_id=f"binance:{path.name}:row:{index}",
                         source=str(profile.source),
                         adapter_id="binance",
                         account="Spot",
                         wallet="Spot",
                         timestamp=timestamp,
-                        event_kind="Trade",
+                        category="trade",
                         description=f"Binance spot sell {pair}",
                         raw_file=path.name,
                         raw_row_ref=f"row:{index}",
@@ -47,15 +47,15 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[CanonicalEve
             )
         elif side == "BUY":
             events.append(
-                mapped_event(
-                    MappedEventSpec(
-                        event_id=f"binance:{path.name}:row:{index}",
+                mapped_transaction(
+                    MappedTransactionSpec(
+                        transaction_id=f"binance:{path.name}:row:{index}",
                         source=str(profile.source),
                         adapter_id="binance",
                         account="Spot",
                         wallet="Spot",
                         timestamp=timestamp,
-                        event_kind="Trade",
+                        category="trade",
                         description=f"Binance spot buy {pair}",
                         raw_file=path.name,
                         raw_row_ref=f"row:{index}",

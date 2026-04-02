@@ -8,11 +8,11 @@ from typing import Protocol
 
 from crypto_reconciliation.domain.models import (
     AdapterManifest,
-    CanonicalBalance,
-    CanonicalEvent,
+    BalanceSnapshot,
     FileInventoryEntry,
     IssueRecord,
     NormalizationReviewRecord,
+    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -25,8 +25,8 @@ from .output_workflows import BaselineArtifacts, ScreeningResult
 
 @dataclass(frozen=True)
 class NormalizationResult:
-    canonical_events: tuple[CanonicalEvent, ...]
-    canonical_balances: tuple[CanonicalBalance, ...]
+    transactions: tuple[NormalizedTransaction, ...]
+    balances: tuple[BalanceSnapshot, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
     wallet_inventory: tuple[WalletInventoryRecord, ...]
@@ -66,7 +66,11 @@ class SourceAdapter(Protocol):
 class OutputAdapter(Protocol):
     manifest: AdapterManifest
 
-    def render(self, events: tuple[CanonicalEvent, ...], output_path: Path) -> RenderedArtifact: ...
+    def render(
+        self,
+        transactions: tuple[NormalizedTransaction, ...],
+        output_path: Path,
+    ) -> RenderedArtifact: ...
 
     def candidate_artifact_name(self) -> str: ...
 

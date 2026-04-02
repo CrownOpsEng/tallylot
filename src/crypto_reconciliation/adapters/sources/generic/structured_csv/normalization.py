@@ -6,16 +6,18 @@ import csv
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import cast
 
 from crypto_reconciliation.domain.models import (
-    CanonicalBalance,
-    CanonicalEvent,
+    BalanceSnapshot,
     IssueRecord,
     NormalizationReviewRecord,
+    NormalizedTransaction,
     SourceProfile,
+    TransactionCategory,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.domain.value_objects import parse_decimal, parse_timestamp
 from crypto_reconciliation.ports.adapters import NormalizationResult
 
@@ -37,8 +39,8 @@ def normalize_structured_csv(
         reader = csv.DictReader(handle)
         if tuple(reader.fieldnames or ()) != REQUIRED_HEADER:
             return NormalizationResult(
-                canonical_events=(),
-                canonical_balances=(),
+                transactions=(),
+                balances=(),
                 issues=(
                     IssueRecord(
                         issue_id=f"{profile.source}:schema",
@@ -63,7 +65,7 @@ def _normalized_result(
     feedback: StructuredCsvFeedbackFactory,
     validator: StructuredCsvRowValidator,
 ) -> NormalizationResult:
-    events: list[CanonicalEvent] = []
+    transactions: list[NormalizedTransaction] = []
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
     balances: dict[tuple[str, str, str], Decimal] = {}
@@ -73,26 +75,33 @@ def _normalized_result(
         if row_issue is not None:
             issues.append(row_issue)
             continue
-        event, row_reviews = _normalize_valid_row(
+        transaction, row_reviews = _normalize_valid_row(
             profile,
             row,
             index,
             validator=validator,
         )
-        events.append(event)
+        transactions.append(transaction)
         reviews.extend(row_reviews)
-        _apply_event_balance(balances, event)
-        wallet_rows[_wallet_id(profile, event.account, event.wallet)] = _wallet_record(
+        _apply_transaction_balance(balances, transaction)
+        wallet_rows[_wallet_id(profile, transaction.account, transaction.wallet)] = _wallet_record(
             profile,
             raw_dir,
-            event.account,
-            event.wallet,
+            transaction.account,
+            transaction.wallet,
         )
-    reviews.extend(_dataset_reviews(feedback, has_events=bool(events)))
+    reviews.extend(_dataset_reviews(feedback, has_transactions=bool(transactions)))
     return NormalizationResult(
-        canonical_events=tuple(events),
-        canonical_balances=_balance_rows(profile, balances, events),
-        issues=tuple(_issues_with_no_valid_rows(profile, feedback.adapter_id, issues, has_events=bool(events))),
+        transactions=tuple(transactions),
+        balances=_balance_rows(profile, balances, transactions),
+        issues=tuple(
+            _issues_with_no_valid_rows(
+                profile,
+                feedback.adapter_id,
+                issues,
+                has_transactions=bool(transactions),
+            )
+        ),
         reviews=tuple(reviews),
         wallet_inventory=tuple(wallet_rows.values()),
     )
@@ -104,20 +113,20 @@ def _normalize_valid_row(
     index: int,
     *,
     validator: StructuredCsvRowValidator,
-) -> tuple[CanonicalEvent, tuple[NormalizationReviewRecord, ...]]:
-    amount_out, amount_out_review = validator.canonicalize_outbound_amount(index, "amount_out", row["amount_out"])
-    fee_amount, fee_amount_review = validator.canonicalize_outbound_amount(index, "fee_amount", row["fee_amount"])
+) -> tuple[NormalizedTransaction, tuple[NormalizationReviewRecord, ...]]:
+    amount_out, amount_out_review = validator.normalize_outbound_amount(index, "amount_out", row["amount_out"])
+    fee_amount, fee_amount_review = validator.normalize_outbound_amount(index, "fee_amount", row["fee_amount"])
     reviews = tuple(review for review in (amount_out_review, fee_amount_review) if review is not None)
     account = row["account"].strip()
     wallet = row["wallet"].strip()
-    return CanonicalEvent(
-        event_id=EventId(f"{profile.source}:{index}"),
+    return NormalizedTransaction(
+        transaction_id=TransactionId(f"{profile.source}:{index}"),
         source=SourceId(str(profile.source)),
         adapter_id=AdapterId(validator.feedback.adapter_id),
         account=account,
         wallet=wallet,
         timestamp=parse_timestamp(row["timestamp"]),
-        event_kind=row["event_kind"],
+        category=cast(TransactionCategory, row["category"]),
         description=row["description"],
         asset_in=AssetSymbol(row["asset_in"]) if row["asset_in"] else None,
         amount_in=parse_decimal(row["amount_in"]),
@@ -131,19 +140,19 @@ def _normalize_valid_row(
     ), reviews
 
 
-def _apply_event_balance(
+def _apply_transaction_balance(
     balances: dict[tuple[str, str, str], Decimal],
-    event: CanonicalEvent,
+    transaction: NormalizedTransaction,
 ) -> None:
-    if event.asset_in is not None and event.amount_in is not None:
-        key = (event.account, event.wallet, str(event.asset_in))
-        balances[key] = balances.get(key, Decimal("0")) + event.amount_in
-    if event.asset_out is not None and event.amount_out is not None:
-        key = (event.account, event.wallet, str(event.asset_out))
-        balances[key] = balances.get(key, Decimal("0")) - event.amount_out
-    if event.fee_asset is not None and event.fee_amount is not None:
-        key = (event.account, event.wallet, str(event.fee_asset))
-        balances[key] = balances.get(key, Decimal("0")) - event.fee_amount
+    if transaction.asset_in is not None and transaction.amount_in is not None:
+        key = (transaction.account, transaction.wallet, str(transaction.asset_in))
+        balances[key] = balances.get(key, Decimal("0")) + transaction.amount_in
+    if transaction.asset_out is not None and transaction.amount_out is not None:
+        key = (transaction.account, transaction.wallet, str(transaction.asset_out))
+        balances[key] = balances.get(key, Decimal("0")) - transaction.amount_out
+    if transaction.fee_asset is not None and transaction.fee_amount is not None:
+        key = (transaction.account, transaction.wallet, str(transaction.fee_asset))
+        balances[key] = balances.get(key, Decimal("0")) - transaction.fee_amount
 
 
 def _wallet_id(profile: SourceProfile, account: str, wallet: str) -> str:
@@ -178,9 +187,9 @@ def _wallet_record(
 def _dataset_reviews(
     feedback: StructuredCsvFeedbackFactory,
     *,
-    has_events: bool,
+    has_transactions: bool,
 ) -> tuple[NormalizationReviewRecord, ...]:
-    if not has_events:
+    if not has_transactions:
         return ()
     return (
         feedback.dataset_review(
@@ -190,25 +199,17 @@ def _dataset_reviews(
                 "and those timestamps should be validated against the source system."
             ),
         ),
-        feedback.dataset_review(
-            "default_render_mapping",
-            (
-                "Structured CSV output projection defaults CoinTracking rows to "
-                "Type<-event_kind, Exchange<-account, and Comment<-description; "
-                "validate those mappings before import."
-            ),
-        ),
     )
 
 
 def _balance_rows(
     profile: SourceProfile,
     balances: dict[tuple[str, str, str], Decimal],
-    events: list[CanonicalEvent],
-) -> tuple[CanonicalBalance, ...]:
-    as_of = max(event.timestamp for event in events) if events else datetime.now(UTC)
+    transactions: list[NormalizedTransaction],
+) -> tuple[BalanceSnapshot, ...]:
+    as_of = max(transaction.timestamp for transaction in transactions) if transactions else datetime.now(UTC)
     return tuple(
-        CanonicalBalance(
+        BalanceSnapshot(
             source=SourceId(str(profile.source)),
             account=account,
             wallet=wallet,
@@ -225,9 +226,9 @@ def _issues_with_no_valid_rows(
     adapter_id: str,
     issues: list[IssueRecord],
     *,
-    has_events: bool,
+    has_transactions: bool,
 ) -> list[IssueRecord]:
-    if has_events:
+    if has_transactions:
         return issues
     return [
         *issues,

@@ -84,7 +84,7 @@ class NormalizeRequest:
 class NormalizeResponse:
     output_dir: Path
     adapter_id: str
-    event_count: int
+    transaction_count: int
     balance_count: int
     issue_count: int
     review_count: int

@@ -25,7 +25,7 @@ current round-close process.
 
 ### 1. Lock The Baseline
 
-Run `baseline validate` against the canonical CoinTracking export folder and
+Run `baseline validate` against the oracle CoinTracking export folder and
 review the generated reconciliation package.
 
 ### 2. Capture Raw Evidence
@@ -66,7 +66,7 @@ review the generated reconciliation package.
 ### 7. Reconcile When Needed
 
 Use `source diff` when you need a deterministic comparison between the
-candidate or canonical source slice and a reference ledger slice.
+candidate or reference source slice and a reference ledger slice.
 
 ## Supporting Artifacts
 

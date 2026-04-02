@@ -1,13 +1,13 @@
 # Implementation Migration Sequence
 
 Use this document to implement the next phase without a big-bang refactor. The
-goal is to move from the current canonical-event-centered flow to a
+goal is to move from the current normalized-transaction flow to a
 provider-neutral fact model with explicit parity gates.
 
 ## Migration Objectives
 
 - preserve current working behavior while new foundations land
-- avoid pushing more semantics into the legacy canonical event model
+- avoid pushing more semantics into the current normalized transaction model
 - keep adapters and services shippable at every checkpoint
 - make CoinTracking compatibility a projection, not the center
 
@@ -37,8 +37,8 @@ Rules:
 - use `pydantic` here
 - keep these models out of the core domain
 - do not let oracle readers create production facts automatically
-- keep CoinTracking compatibility metadata out of the legacy canonical-event
-  core while this phase lands
+- keep CoinTracking-specific metadata out of the normalized transaction core
+  while this phase lands
 
 Exit criteria:
 
@@ -47,25 +47,27 @@ Exit criteria:
 
 ## Phase 2. Introduce Transaction Facts
 
-Add the new domain packages and services for facts without removing the current
-canonical path yet.
+Add the new domain packages and services for facts without adding compatibility
+wrappers around the current normalized transaction path.
 
 Implementation rule:
 
 - normalization writes transaction facts first
-- compatibility projections may still emit legacy canonical artifacts
-- the old canonical shape becomes a downstream projection target
+- replace the normalized transaction artifact set directly once the fact path is
+  ready
+- CoinTracking output remains an adapter projection, not a second core model
 - until fact services land, keep CoinTracking candidate rendering as an
   explicit projection step rather than a normalization side effect
 
 Exit criteria:
 
-- at least one adapter writes fact artifacts and legacy artifacts in parallel
-- parity tests prove the legacy outputs still match current expectations
+- at least one adapter writes fact artifacts end to end
+- projection tests prove the CoinTracking adapter still renders the expected
+  external shape from the new facts
 
 ## Phase 3. Migrate Reconciliation To Facts
 
-Move these capabilities off canonical events:
+Move these capabilities off normalized transactions:
 
 - transfer linking
 - balance assertions
@@ -85,7 +87,8 @@ Rules:
 Exit criteria:
 
 - checkpoint assembly works from facts and source-backed evidence
-- reconciliation artifacts no longer depend on canonical-event-specific fields
+- reconciliation artifacts no longer depend on normalized-transaction-specific
+  stopgaps
 
 ## Phase 4. Add Accounting Layer
 
@@ -129,19 +132,19 @@ Exit criteria:
 - internal year-end and carry-forward logic is reproducible without CoinTracking
   tax reports
 
-## Phase 6. Retire Canonical-First Workflows
+## Phase 6. Retire The Current Normalized Workflow
 
-Retire or demote the canonical-event-first path only after:
+Retire or demote the current normalized-transaction-first path only after:
 
 - adapter parity tests exist
-- reconciliation no longer depends on canonical-event-specific assumptions
+- reconciliation no longer depends on normalized-transaction-specific
+  assumptions
 - accounting and tax consume facts directly
 - CoinTracking output remains available as a compatibility projection
 
-After this phase:
-
-- canonical events remain a compatibility/output shape only
-- new behavior must land in fact-based services first
+After this phase, new behavior must land in fact-based services first and the
+temporary normalized transaction shape should not continue as a second active
+center.
 
 ## Parity Gates
 

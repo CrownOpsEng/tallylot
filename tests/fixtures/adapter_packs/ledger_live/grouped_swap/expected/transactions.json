@@ -6,10 +6,9 @@
     "amount_out": "0.5",
     "asset_in": "BTC",
     "asset_out": "ETH",
+    "category": "trade",
     "confidence": "high",
     "description": "Bitcoin 1",
-    "event_id": "ledger_live:ledgerlive-operations.csv:op-1",
-    "event_kind": "Trade",
     "fee_amount": "0.01",
     "fee_asset": "ETH",
     "raw_file": "ledgerlive-operations.csv",
@@ -17,6 +16,7 @@
     "source": "ledger-live-main",
     "status": "mapped",
     "timestamp": "2026-03-23 10:11:12",
+    "transaction_id": "ledger_live:ledgerlive-operations.csv:op-1",
     "tx_hash": "op-1",
     "wallet": "Bitcoin 1"
   }

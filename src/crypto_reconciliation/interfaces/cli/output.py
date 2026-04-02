@@ -17,13 +17,13 @@ from .shared import emit_response
 @output_render_app.command("file")
 def render_output_file(
     output_adapter: Annotated[str, typer.Option()],
-    canonical_events: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    transactions: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
     response = render_service().execute(
         RenderOutputRequest(
             output_adapter=output_adapter,
-            canonical_events_path=canonical_events,
+            transactions_path=transactions,
             output_path=output,
         )
     )

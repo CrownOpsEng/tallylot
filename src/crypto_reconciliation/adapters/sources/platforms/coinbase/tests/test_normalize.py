@@ -12,7 +12,7 @@ def test_coinbase_adapter_reports_missing_retail_csv_as_explicit_issue(tmp_path:
         tmp_path,
     )
 
-    assert not result.canonical_events
+    assert not result.transactions
     assert result.issues[0].kind == "missing_required_input"
     assert "retail all-time CSV" in result.issues[0].message
 
@@ -35,10 +35,10 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: 
         raw_dir,
     )
 
-    event = result.canonical_events[0]
+    event = result.transactions[0]
 
-    assert len(result.canonical_events) == 1
-    assert event.event_kind == "Trade"
+    assert len(result.transactions) == 1
+    assert event.category == "trade"
     assert str(event.asset_in) == "BTC"
     assert str(event.asset_out) == "CAD"
     assert str(event.amount_in) == "0.01"
@@ -67,15 +67,15 @@ def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) 
         raw_dir,
     )
 
-    sell_event, send_event, receive_event = result.canonical_events
+    sell_event, send_event, receive_event = result.transactions
 
-    assert len(result.canonical_events) == 3
-    assert sell_event.event_kind == "Trade"
+    assert len(result.transactions) == 3
+    assert sell_event.category == "trade"
     assert str(sell_event.asset_in) == "CAD"
     assert str(sell_event.asset_out) == "BTC"
-    assert send_event.event_kind == "Withdrawal"
+    assert send_event.category == "withdrawal"
     assert str(send_event.asset_out) == "ETH"
-    assert receive_event.event_kind == "Deposit"
+    assert receive_event.category == "deposit"
     assert str(receive_event.asset_in) == "ETH"
     assert not result.issues
 
@@ -100,8 +100,8 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
         raw_dir,
     )
 
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].event_kind == "Trade"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].category == "trade"
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
 
@@ -126,12 +126,12 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_
         raw_dir,
     )
 
-    reward_event, migration_event = result.canonical_events
+    reward_event, migration_event = result.transactions
 
-    assert len(result.canonical_events) == 2
-    assert reward_event.event_kind == "Interest Income"
+    assert len(result.transactions) == 2
+    assert reward_event.category == "interest_income"
     assert str(reward_event.asset_in) == "ADA"
-    assert migration_event.event_kind == "Swap (non taxable)"
+    assert migration_event.category == "swap"
     assert migration_event.description == "Coinbase Asset Migration"
     assert str(migration_event.asset_in) == "POL"
     assert str(migration_event.asset_out) == "MATIC"

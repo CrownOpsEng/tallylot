@@ -2,30 +2,30 @@
 
 from __future__ import annotations
 
-from crypto_reconciliation.domain.models import CanonicalEvent, IssueRecord
+from crypto_reconciliation.domain.models import IssueRecord, NormalizedTransaction
 from crypto_reconciliation.domain.value_objects import parse_timestamp
 
 
-def filter_events_by_window(
-    events: tuple[CanonicalEvent, ...],
+def filter_transactions_by_window(
+    transactions: tuple[NormalizedTransaction, ...],
     *,
     window_start: str | None,
     window_end: str | None,
-) -> tuple[tuple[CanonicalEvent, ...], int]:
+) -> tuple[tuple[NormalizedTransaction, ...], int]:
     if not window_start and not window_end:
-        return events, 0
+        return transactions, 0
     start_dt = parse_timestamp(window_start) if window_start else None
     end_dt = parse_timestamp(window_end) if window_end else None
-    filtered: list[CanonicalEvent] = []
+    filtered: list[NormalizedTransaction] = []
     excluded_count = 0
-    for event in events:
-        if start_dt is not None and event.timestamp < start_dt:
+    for transaction in transactions:
+        if start_dt is not None and transaction.timestamp < start_dt:
             excluded_count += 1
             continue
-        if end_dt is not None and event.timestamp > end_dt:
+        if end_dt is not None and transaction.timestamp > end_dt:
             excluded_count += 1
             continue
-        filtered.append(event)
+        filtered.append(transaction)
     return tuple(filtered), excluded_count
 
 

@@ -40,7 +40,7 @@ def test_structured_csv_validator_reports_missing_required_fields() -> None:
     issue = validator.validate_row(
         {
             "timestamp": "",
-            "event_kind": "Trade",
+            "category": "trade",
             "asset_in": "BTC",
             "amount_in": "1.0",
             "asset_out": "CAD",
@@ -67,11 +67,11 @@ def test_structured_csv_validator_canonicalizes_negative_outbound_amounts() -> N
     )
     validator = StructuredCsvRowValidator(feedback=feedback)
 
-    amount, review = validator.canonicalize_outbound_amount(2, "amount_out", "-10.0")
+    amount, review = validator.normalize_outbound_amount(2, "amount_out", "-10.0")
 
     assert amount == Decimal("10")
     assert review is not None
-    assert review.kind == "outbound_amount_sign_canonicalized"
+    assert review.kind == "outbound_amount_sign_normalized"
     assert review.field_name == "amount_out"
     assert review.normalized_value == "10"
 
@@ -80,7 +80,7 @@ def test_normalize_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "transactions.csv").write_text(
-        "timestamp,event_kind,asset_in\n2023-08-06 10:00:00,Trade,BTC\n",
+        "timestamp,category,asset_in\n2023-08-06 10:00:00,trade,BTC\n",
         encoding="utf-8",
     )
 
@@ -90,7 +90,7 @@ def test_normalize_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
         adapter_id="structured_csv",
     )
 
-    assert not result.canonical_events
-    assert not result.canonical_balances
+    assert not result.transactions
+    assert not result.balances
     assert len(result.issues) == 1
     assert result.issues[0].kind == "invalid_schema"

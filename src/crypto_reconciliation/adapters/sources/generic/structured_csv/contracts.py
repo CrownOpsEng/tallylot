@@ -8,7 +8,7 @@ TRANSACTIONS_FILENAME = "transactions.csv"
 
 REQUIRED_HEADER = (
     "timestamp",
-    "event_kind",
+    "category",
     "asset_in",
     "amount_in",
     "asset_out",

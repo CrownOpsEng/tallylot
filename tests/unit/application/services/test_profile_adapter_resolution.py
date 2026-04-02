@@ -37,7 +37,7 @@ def test_profile_service_resolves_from_profile_inventory_before_source_label(tmp
     (raw_dir / "broker-export.csv").write_text(
         "transaction_date,settlement_date,account_id,account_type,activity_type,activity_sub_type,direction,"
         "symbol,name,currency,quantity,unit_price,commission,net_cash_amount\n"
-        "2023-09-21,,acct,Crypto,Trade,BUY,buy,BTC,Bitcoin,CAD,0.1,60000,0,6000\n",
+        "2023-09-21,,acct,Crypto,trade,BUY,buy,BTC,Bitcoin,CAD,0.1,60000,0,6000\n",
         encoding="utf-8",
     )
 

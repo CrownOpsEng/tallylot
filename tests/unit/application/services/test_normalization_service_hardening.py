@@ -36,13 +36,13 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
-        "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
         header
-        + "2023-08-06 10:00:00,Trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n"
-        + "2023-08-07 15:00:00,Income,ETH,not-a-decimal,,,,,tx-2,ETH reward,Fixture,Primary\n",
+        + "2023-08-06 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n"
+        + "2023-08-07 15:00:00,reward,ETH,not-a-decimal,,,,,tx-2,ETH reward,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -51,19 +51,16 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
 
     response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
 
-    assert response.event_count == 1
+    assert response.transaction_count == 1
     assert response.issue_count == 1
-    assert response.review_count == 2
+    assert response.review_count == 1
 
     exception_rows = artifacts.read_rows(output_dir / "exceptions.csv")
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
     wallet_rows = artifacts.read_rows(output_dir / "wallet_inventory.csv")
 
     assert exception_rows[0]["kind"] == "invalid_decimal"
-    assert [row["kind"] for row in review_rows] == [
-        "timestamp_timezone_assumed_utc",
-        "default_render_mapping",
-    ]
+    assert [row["kind"] for row in review_rows] == ["timestamp_timezone_assumed_utc"]
     assert wallet_rows[0]["evidence_path"] == "transactions.csv"
     assert (output_dir / "timezone_issues.csv").exists()
 
@@ -72,11 +69,11 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
-        "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,Trade,BTC,0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n",
+        header + "2023-08-06 10:00:00,trade,BTC,0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -85,7 +82,7 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
 
     response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
 
-    assert response.event_count == 0
+    assert response.transaction_count == 0
     assert response.issue_count == 2
     assert response.review_count == 0
 
@@ -96,15 +93,15 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
     assert not review_rows
 
 
-def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Path) -> None:
+def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
-        "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,Trade,BTC,1.5,CAD,-10.0,CAD,-0.1,tx-1,BTC buy,Fixture,Primary\n",
+        header + "2023-08-06 10:00:00,trade,BTC,1.5,CAD,-10.0,CAD,-0.1,tx-1,BTC buy,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -113,22 +110,21 @@ def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Pat
 
     response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
 
-    assert response.event_count == 1
+    assert response.transaction_count == 1
     assert response.issue_count == 0
-    assert response.review_count == 4
+    assert response.review_count == 3
 
-    canonical_rows = artifacts.read_rows(output_dir / "canonical_events.csv")
+    transaction_rows = artifacts.read_rows(output_dir / "transactions.csv")
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
     summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
 
-    assert canonical_rows[0]["amount_in"] == "1.5"
-    assert canonical_rows[0]["amount_out"] == "10"
-    assert canonical_rows[0]["fee_amount"] == "0.1"
+    assert transaction_rows[0]["amount_in"] == "1.5"
+    assert transaction_rows[0]["amount_out"] == "10"
+    assert transaction_rows[0]["fee_amount"] == "0.1"
     assert [row["kind"] for row in review_rows] == [
-        "outbound_amount_sign_canonicalized",
-        "outbound_amount_sign_canonicalized",
+        "outbound_amount_sign_normalized",
+        "outbound_amount_sign_normalized",
         "timestamp_timezone_assumed_utc",
-        "default_render_mapping",
     ]
     assert review_rows[0]["field_name"] == "amount_out"
     assert review_rows[0]["original_value"] == "-10.0"
@@ -136,21 +132,8 @@ def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Pat
     assert review_rows[1]["field_name"] == "fee_amount"
     assert review_rows[1]["original_value"] == "-0.1"
     assert review_rows[1]["normalized_value"] == "0.1"
-    assert summary["review_count"] == 4
+    assert summary["review_count"] == 3
     assert summary["review_summary"] == [
-        {
-            "scope": "dataset",
-            "kind": "default_render_mapping",
-            "count": 1,
-            "field_names": [],
-            "messages": [
-                (
-                    "Structured CSV output projection defaults CoinTracking rows to "
-                    "Type<-event_kind, Exchange<-account, and Comment<-description; "
-                    "validate those mappings before import."
-                )
-            ],
-        },
         {
             "scope": "dataset",
             "kind": "timestamp_timezone_assumed_utc",
@@ -165,12 +148,12 @@ def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Pat
         },
         {
             "scope": "row",
-            "kind": "outbound_amount_sign_canonicalized",
+            "kind": "outbound_amount_sign_normalized",
             "count": 2,
             "field_names": ["amount_out", "fee_amount"],
             "messages": [
-                "amount_out was negative and was canonicalized to a positive outbound value.",
-                "fee_amount was negative and was canonicalized to a positive outbound value.",
+                "amount_out was negative and was normalized to a positive outbound value.",
+                "fee_amount was negative and was normalized to a positive outbound value.",
             ],
         },
     ]
@@ -180,11 +163,11 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
-        "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,Trade,BTC,-1.5,,,,,tx-1,BTC transfer,Fixture,Primary\n",
+        header + "2023-08-06 10:00:00,trade,BTC,-1.5,,,,,tx-1,BTC transfer,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -193,7 +176,7 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
 
     response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
 
-    assert response.event_count == 0
+    assert response.transaction_count == 0
     assert response.issue_count == 2
     assert response.review_count == 0
 
@@ -212,9 +195,9 @@ def test_normalization_service_rejects_output_inside_raw_tree(tmp_path: Path) ->
     raw_dir.mkdir()
     (raw_dir / "transactions.csv").write_text(
         (
-            "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+            "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
             "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
-            "2023-08-06 10:00:00,Trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n"
+            "2023-08-06 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n"
         ),
         encoding="utf-8",
     )

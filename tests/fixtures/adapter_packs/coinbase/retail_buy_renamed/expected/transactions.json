@@ -6,10 +6,9 @@
     "amount_out": "610",
     "asset_in": "BTC",
     "asset_out": "CAD",
+    "category": "trade",
     "confidence": "high",
     "description": "Bought 0.01 BTC for $610 CAD",
-    "event_id": "coinbase-retail-tx-1",
-    "event_kind": "Trade",
     "fee_amount": "10",
     "fee_asset": "CAD",
     "raw_file": "retail-export.csv",
@@ -17,6 +16,7 @@
     "source": "Future Exchange",
     "status": "mapped",
     "timestamp": "2024-02-08 16:31:22",
+    "transaction_id": "coinbase-retail-tx-1",
     "tx_hash": "coinbase-retail-tx-1",
     "wallet": "Coinbase"
   }

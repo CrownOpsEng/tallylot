@@ -70,8 +70,8 @@ class StubPdfAdapter:
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         del profile, raw_dir
         return NormalizationResult(
-            canonical_events=(),
-            canonical_balances=(),
+            transactions=(),
+            balances=(),
             issues=(),
             reviews=(),
             wallet_inventory=(),

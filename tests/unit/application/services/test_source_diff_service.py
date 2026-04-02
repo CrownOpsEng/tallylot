@@ -17,16 +17,16 @@ def test_source_reconciliation_service_writes_candidate_and_reference_diffs(tmp_
         candidate_path,
         header,
         (
-            {"Type": "Trade", "Date": "2023-08-06 10:00:00", "Tx-ID": "tx-1"},
-            {"Type": "Trade", "Date": "2023-08-07 10:00:00", "Tx-ID": "tx-2"},
+            {"Type": "trade", "Date": "2023-08-06 10:00:00", "Tx-ID": "tx-1"},
+            {"Type": "trade", "Date": "2023-08-07 10:00:00", "Tx-ID": "tx-2"},
         ),
     )
     write_rows(
         reference_path,
         header,
         (
-            {"Type": "Trade", "Date": "2023-08-06 10:00:00", "Tx-ID": "tx-1"},
-            {"Type": "Trade", "Date": "2023-08-08 10:00:00", "Tx-ID": "tx-3"},
+            {"Type": "trade", "Date": "2023-08-06 10:00:00", "Tx-ID": "tx-1"},
+            {"Type": "trade", "Date": "2023-08-08 10:00:00", "Tx-ID": "tx-3"},
         ),
     )
     output_dir = tmp_path / "reconcile"
@@ -50,7 +50,7 @@ def test_source_reconciliation_service_preserves_duplicate_row_multiplicity(tmp_
     reference_path = tmp_path / "reference.csv"
     output_dir = tmp_path / "reconcile"
     header = ("Type", "Date", "Tx-ID")
-    duplicate_row = {"Type": "Trade", "Date": "2024-01-01 00:00:00", "Tx-ID": "dup"}
+    duplicate_row = {"Type": "trade", "Date": "2024-01-01 00:00:00", "Tx-ID": "dup"}
     write_rows(candidate_path, header, (duplicate_row, duplicate_row))
     write_rows(reference_path, header, (duplicate_row,))
 

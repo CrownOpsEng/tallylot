@@ -1,4 +1,4 @@
-"""Structured CSV row validation and amount canonicalization."""
+"""Structured CSV row validation and amount normalization."""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ class StructuredCsvRowValidator:
                 return issue
         return None
 
-    def canonicalize_outbound_amount(
+    def normalize_outbound_amount(
         self,
         index: int,
         field_name: str,
@@ -44,16 +44,16 @@ class StructuredCsvRowValidator:
         if value is None:
             return None, None
         if value < Decimal("0"):
-            canonical = value.copy_abs()
-            return canonical, self.feedback.review(
+            normalized_amount = value.copy_abs()
+            return normalized_amount, self.feedback.review(
                 index=index,
                 spec=ReviewSpec(
-                    kind="outbound_amount_sign_canonicalized",
-                    message=f"{field_name} was negative and was canonicalized to a positive outbound value.",
+                    kind="outbound_amount_sign_normalized",
+                    message=f"{field_name} was negative and was normalized to a positive outbound value.",
                     values=ReviewValues(
                         field_name=field_name,
                         original_value=(raw_value or "").strip(),
-                        normalized_value=format_decimal(canonical),
+                        normalized_value=format_decimal(normalized_amount),
                     ),
                 ),
             )
@@ -66,7 +66,7 @@ class StructuredCsvRowValidator:
     ) -> IssueRecord | None:
         missing_text_fields = [
             field_name
-            for field_name in ("timestamp", "event_kind", "account", "wallet")
+            for field_name in ("timestamp", "category", "account", "wallet")
             if not (row.get(field_name) or "").strip()
         ]
         if not missing_text_fields:

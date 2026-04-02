@@ -10,13 +10,13 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
     result = adapter.normalize(profile, raw_dir)
 
     assert str(profile.adapter_id) == "shakepay"
-    assert {event.event_kind for event in result.canonical_events} == {
-        "Deposit",
-        "Expense (non taxable)",
-        "Reward / Bonus",
-        "Trade",
-        "Withdrawal",
+    assert {event.category for event in result.transactions} == {
+        "deposit",
+        "expense",
+        "reward",
+        "trade",
+        "withdrawal",
     }
-    assert any(event.description == "shakingsats" for event in result.canonical_events)
-    assert result.canonical_balances == ()
+    assert any(event.description == "shakingsats" for event in result.transactions)
+    assert result.balances == ()
     assert result.issues == ()

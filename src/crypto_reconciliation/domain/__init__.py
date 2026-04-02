@@ -3,12 +3,13 @@
 from .models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalBalance,
-    CanonicalEvent,
+    BalanceSnapshot,
     FileInventoryEntry,
     IssueRecord,
     NormalizationReviewRecord,
+    NormalizedTransaction,
     SourceProfile,
+    TransactionCategory,
     VerificationExportSet,
     WalletInventoryRecord,
 )
@@ -16,12 +17,13 @@ from .models import (
 __all__ = [
     "AdapterCapability",
     "AdapterManifest",
-    "CanonicalBalance",
-    "CanonicalEvent",
+    "BalanceSnapshot",
     "FileInventoryEntry",
     "IssueRecord",
     "NormalizationReviewRecord",
+    "NormalizedTransaction",
     "SourceProfile",
+    "TransactionCategory",
     "VerificationExportSet",
     "WalletInventoryRecord",
 ]

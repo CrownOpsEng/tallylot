@@ -19,13 +19,13 @@ from crypto_reconciliation.adapters.sources.wallet_record_support import (
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, JsonValue, SourceId
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, JsonValue, SourceId, TransactionId
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
@@ -131,7 +131,7 @@ class LedgerLiveAdapter:
         return tuple(evidence), tuple(issues)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[CanonicalEvent] = []
+        events: list[NormalizedTransaction] = []
         operations_by_hash: dict[str, list[tuple[str, dict[str, str]]]] = defaultdict(list)
         for path in _csv_paths(raw_dir):
             for index, row in enumerate(_read_rows(path), start=2):
@@ -154,14 +154,14 @@ class LedgerLiveAdapter:
             fee_amount = Decimal((fee_row or {}).get("Operation Amount") or "0")
             fee_asset = (fee_row or outbound).get("Currency Ticker") or ""
             events.append(
-                CanonicalEvent(
-                    event_id=EventId(f"ledger_live:{raw_file}:{operation_hash}"),
+                NormalizedTransaction(
+                    transaction_id=TransactionId(f"ledger_live:{raw_file}:{operation_hash}"),
                     source=SourceId(str(profile.source)),
                     adapter_id=self.manifest.adapter_id,
                     account=account_label,
                     wallet=account_label,
                     timestamp=timestamp,
-                    event_kind="Trade",
+                    category="trade",
                     description=account_label,
                     asset_in=AssetSymbol((inbound.get("Currency Ticker") or "").strip().upper()),
                     amount_in=Decimal((inbound.get("Operation Amount") or "0").strip()),
@@ -176,8 +176,8 @@ class LedgerLiveAdapter:
             )
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(events),
+            balances=(),
             issues=(),
             reviews=(),
             wallet_inventory=wallet_inventory,

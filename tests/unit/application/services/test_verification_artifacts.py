@@ -17,17 +17,17 @@ def test_summary_rows_stringifies_scalar_values_and_ignores_non_dict_entries() -
     rows = _summary_rows(
         {
             "new_missing_transaction_rows": [
-                {"Type": "Trade", "Count": 1},
+                {"Type": "trade", "Count": 1},
                 "ignore-me",
-                {"Type": "Deposit", "Count": None},
+                {"Type": "deposit", "Count": None},
             ]
         },
         "new_missing_transaction_rows",
     )
 
     assert rows == [
-        {"Type": "Trade", "Count": "1"},
-        {"Type": "Deposit", "Count": ""},
+        {"Type": "trade", "Count": "1"},
+        {"Type": "deposit", "Count": ""},
     ]
 
 
@@ -35,7 +35,7 @@ def test_summary_headers_expand_dynamic_columns() -> None:
     headers = _summary_headers(
         {
             "current_duplicate_transaction_rows": [
-                {"Issue": "duplicate", "Trade ID": "tx-1"},
+                {"Issue": "duplicate", "trade ID": "tx-1"},
                 {"Issue": "duplicate", "Reason": "hash"},
             ]
         },
@@ -43,7 +43,7 @@ def test_summary_headers_expand_dynamic_columns() -> None:
         default=("Issue",),
     )
 
-    assert headers == ("Issue", "Reason", "Trade ID")
+    assert headers == ("Issue", "Reason", "trade ID")
 
 
 def test_verification_compare_service_writes_duplicate_rows_with_dynamic_headers(tmp_path: Path) -> None:
@@ -63,10 +63,10 @@ def test_verification_compare_service_writes_duplicate_rows_with_dynamic_headers
     write_verification_set(current_dir, empty_fixture)
     write_rows(
         current_dir / "Duplicate Transactions.csv",
-        ("Issue", "Trade ID", "Reason"),
+        ("Issue", "trade ID", "Reason"),
         (
-            {"Issue": "duplicate", "Trade ID": "tx-1", "Reason": ""},
-            {"Issue": "duplicate", "Trade ID": "", "Reason": "hash"},
+            {"Issue": "duplicate", "trade ID": "tx-1", "Reason": ""},
+            {"Issue": "duplicate", "trade ID": "", "Reason": "hash"},
         ),
     )
 
@@ -77,6 +77,6 @@ def test_verification_compare_service_writes_duplicate_rows_with_dynamic_headers
     rows = FilesystemArtifactStore().read_rows(output_dir / "current_duplicate_transaction_rows.csv")
 
     assert rows == [
-        {"Issue": "duplicate", "Reason": "", "Trade ID": "tx-1"},
-        {"Issue": "duplicate", "Reason": "hash", "Trade ID": ""},
+        {"Issue": "duplicate", "Reason": "", "trade ID": "tx-1"},
+        {"Issue": "duplicate", "Reason": "hash", "trade ID": ""},
     ]

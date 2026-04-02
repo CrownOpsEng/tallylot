@@ -16,8 +16,8 @@ automatically.
   names that reflect the real job being done.
 - Surface unsupported or ambiguous rows as issues rather than guessing.
 - Use typed domain models as the adapter output contract.
-- Normalize source-specific sign conventions at the adapter edge. Canonical
-  `CanonicalEvent` amounts stay positive; direction belongs in the mapped
+- Normalize source-specific sign conventions at the adapter edge. Normalized
+  transaction amounts stay positive; direction belongs in the mapped
   fields, not signed magnitudes.
 
 ## Discovery
@@ -49,7 +49,7 @@ automatically.
   service, or tooling coverage that is not owned by one adapter should live
   under the repo-level `tests/` tree instead.
 - When an adapter becomes materially more complex, add golden fixtures that
-  assert normalized events, balances, issues, and rendered outputs.
+  assert normalized transactions, balances, issues, and rendered outputs.
 - Adapters must continue to pass both strict type checkers. Do not rely on
   runtime tests as a substitute for `mypy` and `pyright`.
 

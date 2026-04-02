@@ -10,9 +10,9 @@ from crypto_reconciliation.adapters.sources.intake_support import match_intake_b
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -107,7 +107,7 @@ class BinanceAdapter:
         return _extract_pdf_balances(text, pdf_path.name)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[CanonicalEvent] = []
+        events: list[NormalizedTransaction] = []
         issues: list[IssueRecord] = []
         convert_match_times: set[datetime] = set()
         p2p_match_times: set[datetime] = set()
@@ -136,8 +136,8 @@ class BinanceAdapter:
                 events.extend(parsed_events)
                 issues.extend(parsed_issues)
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(events),
+            balances=(),
             issues=tuple(issues),
             reviews=(),
             wallet_inventory=(),

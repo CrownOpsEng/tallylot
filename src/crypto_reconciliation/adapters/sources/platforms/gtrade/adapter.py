@@ -17,13 +17,14 @@ from crypto_reconciliation.adapters.sources.wallet_record_support import (
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
+    TransactionCategory,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, JsonValue
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, JsonValue, TransactionId
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
@@ -107,7 +108,7 @@ class GTradeAdapter:
                             issue_kind="partial_identifier_only",
                             message=(
                                 "GTrade evidence exposes only a truncated address alias; keep companion explorer "
-                                "evidence linked in the canonical wallet inventory."
+                                "evidence linked in the wallet inventory."
                             ),
                             wallet_id=f"address_alias:{alias}",
                             raw_file=path.name,
@@ -129,7 +130,7 @@ class GTradeAdapter:
         return tuple(evidence), tuple(issues)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[CanonicalEvent] = []
+        transactions: list[NormalizedTransaction] = []
         issues: list[IssueRecord] = []
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         for path in sorted(raw_dir.rglob("*.csv")):
@@ -145,7 +146,7 @@ class GTradeAdapter:
                             kind="unsupported_row",
                             message=(
                                 "GTrade report row lacks realized PnL and cannot be deterministically converted "
-                                "into a CoinTracking transaction without supporting explorer evidence."
+                                "into a normalized transaction without supporting explorer evidence."
                             ),
                             raw_file=path.name,
                             raw_row_ref=f"row:{index}",
@@ -153,18 +154,18 @@ class GTradeAdapter:
                         )
                     )
                     continue
-                event_kind = "Derivatives / Futures Profit" if pnl > 0 else "Derivatives / Futures Loss"
+                category: TransactionCategory = "derivatives_profit" if pnl > 0 else "derivatives_loss"
                 description = (row.get("DESCRIPTION") or "").strip()
                 timestamp = _parse_report_date((row.get("DATE") or "").strip())
-                events.append(
-                    CanonicalEvent(
-                        event_id=EventId(f"gtrade:{path.name}:row:{index}"),
+                transactions.append(
+                    NormalizedTransaction(
+                        transaction_id=TransactionId(f"gtrade:{path.name}:row:{index}"),
                         source=profile.source,
                         adapter_id=self.manifest.adapter_id,
                         account=str(profile.source),
                         wallet=str(profile.source),
                         timestamp=timestamp,
-                        event_kind=event_kind,
+                        category=category,
                         description=description,
                         asset_in=AssetSymbol("DAI") if pnl > 0 else None,
                         amount_in=pnl if pnl > 0 else None,
@@ -176,8 +177,8 @@ class GTradeAdapter:
                     )
                 )
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(transactions),
+            balances=(),
             issues=tuple(issues),
             reviews=(),
             wallet_inventory=wallet_inventory,

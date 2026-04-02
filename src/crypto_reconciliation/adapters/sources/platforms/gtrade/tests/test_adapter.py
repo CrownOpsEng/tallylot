@@ -10,9 +10,9 @@ def test_gtrade_adapter_surfaces_report_limits_without_guessing() -> None:
     result = adapter.normalize(profile, raw_dir)
 
     assert str(profile.adapter_id) == "gtrade"
-    assert [event.event_kind for event in result.canonical_events] == [
-        "Derivatives / Futures Profit",
-        "Derivatives / Futures Loss",
+    assert [event.category for event in result.transactions] == [
+        "derivatives_profit",
+        "derivatives_loss",
     ]
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"

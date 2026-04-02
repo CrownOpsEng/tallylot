@@ -16,10 +16,10 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     raw_dir.mkdir()
     (raw_dir / "transactions.csv").write_text(
         (
-            "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+            "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
             "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
-            "2023-08-04 10:00:00,Trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-early,early,Fixture,Primary\n"
-            "2023-08-06 10:00:00,Trade,ETH,2.0,CAD,20.0,CAD,0.2,tx-keep,keep,Fixture,Primary\n"
+            "2023-08-04 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-early,early,Fixture,Primary\n"
+            "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,tx-keep,keep,Fixture,Primary\n"
         ),
         encoding="utf-8",
     )
@@ -37,15 +37,15 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
         )
     )
 
-    canonical_rows = read_rows(output_dir / "canonical_events.csv")
+    canonical_rows = read_rows(output_dir / "transactions.csv")
     summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
 
-    assert response.event_count == 1
+    assert response.transaction_count == 1
     assert len(canonical_rows) == 1
     assert canonical_rows[0]["tx_hash"] == "tx-keep"
-    assert summary["event_count"] == 1
-    assert summary["events_outside_normalization_window"] == 1
+    assert summary["transaction_count"] == 1
+    assert summary["transactions_outside_normalization_window"] == 1
     assert summary["normalization_window_start"] == "2023-08-05 08:34:05"
     assert summary["normalization_window_end"] == "2025-12-31 23:59:59"
     assert profile["normalization_hints"]["normalization_window_start"] == "2023-08-05 08:34:05"
@@ -89,7 +89,7 @@ def test_normalization_service_filters_row_scoped_issues_outside_explicit_window
     (raw_dir / "activity.csv").write_text(
         "transaction_date,settlement_date,account_id,account_type,activity_type,activity_sub_type,"
         "quantity,currency,symbol,commission,net_cash_amount\n"
-        "2023-09-22,2023-09-22,acct-1,Crypto,Staking,REWARD,0.05,CAD,BTC,0,0\n",
+        "2023-09-22,2023-09-22,acct-1,Crypto,staking_reward,REWARD,0.05,CAD,BTC,0,0\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()

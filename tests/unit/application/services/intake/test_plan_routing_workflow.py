@@ -38,7 +38,7 @@ def test_source_intake_service_routes_source_artifacts_to_source_aware_supportin
     tmp_path: Path,
 ) -> None:
     incoming_dir = tmp_path / "incoming"
-    image_path = incoming_dir / "2021" / "Binance" / "From Binance" / "Trade Analysis - ADA-USDT - Binance.png"
+    image_path = incoming_dir / "2021" / "Binance" / "From Binance" / "trade Analysis - ADA-USDT - Binance.png"
     scratch_csv = incoming_dir / "2021" / "Binance" / "2021 Isolated" / "test.csv"
     image_path.parent.mkdir(parents=True, exist_ok=True)
     scratch_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -59,9 +59,9 @@ def test_source_intake_service_routes_source_artifacts_to_source_aware_supportin
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
     by_name = {Path(row["path"]).name: row for row in plan_rows if not row["archive_member_path"]}
 
-    assert by_name["Trade Analysis - ADA-USDT - Binance.png"]["role"] == "working_derivative"
-    assert by_name["Trade Analysis - ADA-USDT - Binance.png"]["source_folder"] == "binance"
-    assert "/working/supporting_artifacts/binance/" in by_name["Trade Analysis - ADA-USDT - Binance.png"]["target_path"]
+    assert by_name["trade Analysis - ADA-USDT - Binance.png"]["role"] == "working_derivative"
+    assert by_name["trade Analysis - ADA-USDT - Binance.png"]["source_folder"] == "binance"
+    assert "/working/supporting_artifacts/binance/" in by_name["trade Analysis - ADA-USDT - Binance.png"]["target_path"]
     assert by_name["test.csv"]["role"] == "working_derivative"
     assert "/working/supporting_artifacts/binance/" in by_name["test.csv"]["target_path"]
 

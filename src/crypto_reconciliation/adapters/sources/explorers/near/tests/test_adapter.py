@@ -27,8 +27,8 @@ def test_near_adapter_extracts_wallet_inventory_and_staking_split_events(tmp_pat
     assert not wallet_issues
     assert wallet_inventory[0].identifier_kind == "near_account"
     assert wallet_inventory[0].identifier_value == "example.near"
-    assert len(result.canonical_events) == 3
-    assert any(str(event.source) == "near-main - Staking" for event in result.canonical_events)
+    assert len(result.transactions) == 3
+    assert any(str(event.source) == "near-main - Staking" for event in result.transactions)
 
 
 def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path) -> None:
@@ -45,9 +45,9 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
         raw_dir,
     )
 
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].event_kind == "Deposit"
-    assert str(result.canonical_events[0].timestamp) == "2023-08-06 10:00:00"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].category == "deposit"
+    assert str(result.transactions[0].timestamp) == "2023-08-06 10:00:00"
 
 
 def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
@@ -57,8 +57,8 @@ def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
     result = adapter.normalize(profile, raw_dir)
 
     assert str(profile.adapter_id) == "near"
-    assert [event.event_kind for event in result.canonical_events] == ["Deposit", "Withdrawal", "Deposit"]
-    assert any(str(event.source).endswith("Staking") for event in result.canonical_events)
+    assert [event.category for event in result.transactions] == ["deposit", "withdrawal", "deposit"]
+    assert any(str(event.source).endswith("Staking") for event in result.transactions)
     assert result.issues == ()
 
 

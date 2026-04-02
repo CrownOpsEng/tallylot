@@ -10,11 +10,11 @@ def test_ledger_live_adapter_normalizes_grouped_trade_rows() -> None:
     result = adapter.normalize(profile, raw_dir)
 
     assert str(profile.adapter_id) == "ledger_live"
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].event_kind == "Trade"
-    assert str(result.canonical_events[0].amount_in) == "0.01000000"
-    assert str(result.canonical_events[0].asset_out) == "ETH"
-    assert str(result.canonical_events[0].fee_amount) == "0.01000000"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].category == "trade"
+    assert str(result.transactions[0].amount_in) == "0.01000000"
+    assert str(result.transactions[0].asset_out) == "ETH"
+    assert str(result.transactions[0].fee_amount) == "0.01000000"
     assert result.issues == ()
 
 

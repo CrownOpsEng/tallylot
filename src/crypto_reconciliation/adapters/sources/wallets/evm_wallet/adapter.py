@@ -92,8 +92,8 @@ class EvmWalletAdapter:
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         wallet_inventory, issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         return NormalizationResult(
-            canonical_events=(),
-            canonical_balances=(),
+            transactions=(),
+            balances=(),
             issues=issues,
             reviews=(),
             wallet_inventory=wallet_inventory,

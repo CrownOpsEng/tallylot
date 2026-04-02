@@ -6,10 +6,9 @@
     "amount_out": "",
     "asset_in": "BNB",
     "asset_out": "",
+    "category": "deposit",
     "confidence": "high",
     "description": "Transfer - 0xabc",
-    "event_id": "evm_explorer:transactions.csv:0xabc",
-    "event_kind": "Deposit",
     "fee_amount": "",
     "fee_asset": "",
     "raw_file": "transactions.csv",
@@ -17,6 +16,7 @@
     "source": "bsc-wallet",
     "status": "mapped",
     "timestamp": "2023-11-14 12:00:00",
+    "transaction_id": "evm_explorer:transactions.csv:0xabc",
     "tx_hash": "0xabc",
     "wallet": "bsc-wallet"
   }

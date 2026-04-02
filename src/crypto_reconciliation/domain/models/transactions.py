@@ -1,24 +1,38 @@
-"""Canonical event and balance models."""
+"""Normalized transaction and balance models."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.domain.value_objects import format_decimal, format_timestamp
+
+TransactionCategory = Literal[
+    "trade",
+    "deposit",
+    "withdrawal",
+    "interest_income",
+    "reward",
+    "expense",
+    "swap",
+    "staking_reward",
+    "derivatives_profit",
+    "derivatives_loss",
+]
 
 
 @dataclass(frozen=True)
-class CanonicalEvent:
-    event_id: EventId
+class NormalizedTransaction:
+    transaction_id: TransactionId
     source: SourceId
     adapter_id: AdapterId
     account: str
     wallet: str
     timestamp: datetime
-    event_kind: str
+    category: TransactionCategory
     description: str = ""
     asset_in: AssetSymbol | None = None
     amount_in: Decimal | None = None
@@ -37,7 +51,7 @@ class CanonicalEvent:
         self._validate_amount_pair("asset_out", self.asset_out, "amount_out", self.amount_out)
         self._validate_amount_pair("fee_asset", self.fee_asset, "fee_amount", self.fee_amount)
         if self.amount_in is None and self.amount_out is None:
-            raise ValueError("canonical event must include an inbound or outbound amount")
+            raise ValueError("transaction must include an inbound or outbound amount")
 
     @staticmethod
     def _validate_amount_pair(
@@ -49,19 +63,19 @@ class CanonicalEvent:
         if asset is None and amount is None:
             return
         if asset is None or amount is None:
-            raise ValueError(f"canonical event {asset_label} and {amount_label} must both be present")
+            raise ValueError(f"transaction {asset_label} and {amount_label} must both be present")
         if amount <= Decimal("0"):
-            raise ValueError(f"canonical event {amount_label} must be greater than zero")
+            raise ValueError(f"transaction {amount_label} must be greater than zero")
 
     def to_row(self) -> dict[str, str]:
         return {
-            "event_id": str(self.event_id),
+            "transaction_id": str(self.transaction_id),
             "source": str(self.source),
             "adapter_id": str(self.adapter_id),
             "account": self.account,
             "wallet": self.wallet,
             "timestamp": format_timestamp(self.timestamp),
-            "event_kind": self.event_kind,
+            "category": self.category,
             "description": self.description,
             "asset_in": str(self.asset_in or ""),
             "amount_in": format_decimal(self.amount_in),
@@ -78,7 +92,7 @@ class CanonicalEvent:
 
 
 @dataclass(frozen=True)
-class CanonicalBalance:
+class BalanceSnapshot:
     source: SourceId
     account: str
     wallet: str

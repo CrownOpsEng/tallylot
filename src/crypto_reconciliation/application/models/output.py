@@ -9,7 +9,7 @@ from pathlib import Path
 @dataclass(frozen=True)
 class RenderOutputRequest:
     output_adapter: str
-    canonical_events_path: Path
+    transactions_path: Path
     output_path: Path
 
 

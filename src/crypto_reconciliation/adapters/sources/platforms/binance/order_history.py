@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.mapped_event_support import MappedEventSpec, mapped_event
-from crypto_reconciliation.domain.models import CanonicalEvent, SourceProfile
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import MappedTransactionSpec, mapped_transaction
+from crypto_reconciliation.domain.models import NormalizedTransaction, SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal
 
 from .csv_rows import read_rows
@@ -17,8 +17,8 @@ from .timestamps import parse_export_timestamp, parse_transaction_history_timest
 def normalize_convert_order_rows(
     profile: SourceProfile,
     path: Path,
-) -> tuple[list[CanonicalEvent], set[datetime]]:
-    events: list[CanonicalEvent] = []
+) -> tuple[list[NormalizedTransaction], set[datetime]]:
+    events: list[NormalizedTransaction] = []
     matched_times: set[datetime] = set()
     for index, row in enumerate(read_rows(path), start=2):
         if (row.get("Status") or "").strip().lower() != "successful":
@@ -30,15 +30,15 @@ def normalize_convert_order_rows(
         date_updated = (row.get("Date Updated") or row.get("Time") or "").strip()
         matched_times.add(parse_transaction_history_timestamp(date_updated))
         events.append(
-            mapped_event(
-                MappedEventSpec(
-                    event_id=f"binance:{path.name}:convert:{index}",
+            mapped_transaction(
+                MappedTransactionSpec(
+                    transaction_id=f"binance:{path.name}:convert:{index}",
                     source=str(profile.source),
                     adapter_id="binance",
                     account=(row.get("Wallet") or "").strip() or "Spot",
                     wallet=(row.get("Wallet") or "").strip() or "Spot",
                     timestamp=parse_export_timestamp(date_updated, path.name),
-                    event_kind="Trade",
+                    category="trade",
                     description=f"Binance convert {(row.get('Pair') or '').strip()}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
@@ -55,8 +55,8 @@ def normalize_convert_order_rows(
 def normalize_c2c_order_rows(
     profile: SourceProfile,
     path: Path,
-) -> tuple[list[CanonicalEvent], set[datetime]]:
-    events: list[CanonicalEvent] = []
+) -> tuple[list[NormalizedTransaction], set[datetime]]:
+    events: list[NormalizedTransaction] = []
     matched_times: set[datetime] = set()
     for index, row in enumerate(read_rows(path), start=2):
         if (row.get("Status") or "").strip().lower() != "completed":
@@ -81,15 +81,15 @@ def normalize_c2c_order_rows(
             asset_out = fiat
             amount_out = total_price
         events.append(
-            mapped_event(
-                MappedEventSpec(
-                    event_id=f"binance:{path.name}:c2c:{(row.get('Order Number') or '').strip() or index}",
+            mapped_transaction(
+                MappedTransactionSpec(
+                    transaction_id=f"binance:{path.name}:c2c:{(row.get('Order Number') or '').strip() or index}",
                     source=str(profile.source),
                     adapter_id="binance",
                     account="Funding",
                     wallet="Funding",
                     timestamp=parse_export_timestamp(created_time, path.name),
-                    event_kind="Trade",
+                    category="trade",
                     description=f"Binance C2C {(row.get('Order Type') or '').strip()} {asset}/{fiat}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",

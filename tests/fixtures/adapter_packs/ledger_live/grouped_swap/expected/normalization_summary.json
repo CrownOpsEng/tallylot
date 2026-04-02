@@ -1,8 +1,6 @@
 {
   "adapter_id": "ledger_live",
   "balance_count": 0,
-  "event_count": 1,
-  "events_outside_normalization_window": 0,
   "issue_count": 0,
   "issues_outside_normalization_window": 0,
   "normalization_window_end": "",
@@ -10,5 +8,7 @@
   "review_count": 0,
   "review_summary": [],
   "source": "ledger-live-main",
+  "transaction_count": 1,
+  "transactions_outside_normalization_window": 0,
   "wallet_count": 3
 }

@@ -1,4 +1,4 @@
-"""Shared mapped-event construction for source adapters."""
+"""Shared transaction construction for source adapters."""
 
 from __future__ import annotations
 
@@ -6,19 +6,23 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
-from crypto_reconciliation.domain.models import CanonicalEvent, IssueRecord
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
+from crypto_reconciliation.domain.models import (
+    IssueRecord,
+    NormalizedTransaction,
+    TransactionCategory,
+)
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 
 
 @dataclass(frozen=True)
-class MappedEventSpec:
-    event_id: str
+class MappedTransactionSpec:
+    transaction_id: str
     source: str
     adapter_id: str
     account: str
     wallet: str
     timestamp: datetime
-    event_kind: str
+    category: TransactionCategory
     description: str
     raw_file: str
     raw_row_ref: str
@@ -44,15 +48,15 @@ class NormalizationIssueSpec:
     status: str = "needs_review"
 
 
-def mapped_event(spec: MappedEventSpec) -> CanonicalEvent:
-    return CanonicalEvent(
-        event_id=EventId(spec.event_id),
+def mapped_transaction(spec: MappedTransactionSpec) -> NormalizedTransaction:
+    return NormalizedTransaction(
+        transaction_id=TransactionId(spec.transaction_id),
         source=SourceId(spec.source),
         adapter_id=AdapterId(spec.adapter_id),
         account=spec.account,
         wallet=spec.wallet,
         timestamp=spec.timestamp,
-        event_kind=spec.event_kind,
+        category=spec.category,
         description=spec.description,
         asset_in=AssetSymbol(spec.asset_in) if spec.asset_in else None,
         amount_in=spec.amount_in,

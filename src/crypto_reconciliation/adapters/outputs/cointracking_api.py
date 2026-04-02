@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, CanonicalEvent
+from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, NormalizedTransaction
 from crypto_reconciliation.domain.types import AdapterId
 from crypto_reconciliation.ports.adapters import RenderedArtifact
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
@@ -21,7 +21,7 @@ class CoinTrackingApiStubAdapter:
         description="Reserved API adapter entry point.",
     )
 
-    def render(self, events: tuple[CanonicalEvent, ...], output_path: Path) -> RenderedArtifact:
+    def render(self, events: tuple[NormalizedTransaction, ...], output_path: Path) -> RenderedArtifact:
         del events, output_path
         raise NotImplementedError(
             "CoinTracking API integration is intentionally stubbed in this phase.",

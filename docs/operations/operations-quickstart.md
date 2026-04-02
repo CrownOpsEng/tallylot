@@ -71,7 +71,7 @@ supporting detail.
    ```
 
 2. Review:
-   - `canonical_events.csv`
+   - `transactions.csv`
    - `exceptions.csv`
    - `normalization_reviews.csv`
    - `normalization_summary.json`
@@ -81,7 +81,7 @@ supporting detail.
    ```bash
    uv run crypto-reconciliation output render file \
      --output-adapter cointracking_csv \
-     --canonical-events <workspace>/working/normalized/<source>/canonical_events.csv \
+     --transactions <workspace>/working/normalized/<source>/transactions.csv \
      --output <workspace>/working/normalized/<source>/cointracking_candidate.csv
    ```
 

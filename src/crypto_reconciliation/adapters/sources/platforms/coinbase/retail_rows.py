@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from crypto_reconciliation.adapters.sources.mapped_event_support import MappedEventSpec, mapped_event
-from crypto_reconciliation.domain.models import CanonicalEvent, SourceProfile
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import MappedTransactionSpec, mapped_transaction
+from crypto_reconciliation.domain.models import NormalizedTransaction, SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal
 
 from .timestamps import parse_retail_timestamp
 
 
-def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, str]) -> CanonicalEvent:
+def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, str]) -> NormalizedTransaction:
     row_id = (row.get("ID") or "").strip()
     tx_type = (row.get("Transaction Type") or "").strip().lower()
     asset = (row.get("Asset") or "").strip().upper()
@@ -21,17 +21,17 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
     fee_amount = money_decimal(row.get("Fees and/or Spread", ""))
     description = coinbase_description(tx_type, row.get("Notes", ""), asset, quantity, total_amount)
     timestamp = parse_retail_timestamp((row.get("Timestamp") or "").strip())
-    event_id = f"coinbase-retail-{row_id}"
+    transaction_id = f"coinbase-retail-{row_id}"
     if tx_type == "buy":
-        return mapped_event(
-            MappedEventSpec(
-                event_id=event_id,
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=transaction_id,
                 source=str(profile.source),
                 adapter_id="coinbase",
                 account="Coinbase",
                 wallet="Coinbase",
                 timestamp=timestamp,
-                event_kind="Trade",
+                category="trade",
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
@@ -41,19 +41,19 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 amount_out=total_amount,
                 fee_asset=price_currency,
                 fee_amount=fee_amount,
-                tx_hash=event_id,
+                tx_hash=transaction_id,
             )
         )
     if tx_type == "sell":
-        return mapped_event(
-            MappedEventSpec(
-                event_id=event_id,
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=transaction_id,
                 source=str(profile.source),
                 adapter_id="coinbase",
                 account="Coinbase",
                 wallet="Coinbase",
                 timestamp=timestamp,
-                event_kind="Trade",
+                category="trade",
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
@@ -63,61 +63,61 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 amount_out=quantity,
                 fee_asset=price_currency,
                 fee_amount=fee_amount,
-                tx_hash=event_id,
+                tx_hash=transaction_id,
             )
         )
     if tx_type == "reward income":
-        return mapped_event(
-            MappedEventSpec(
-                event_id=event_id,
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=transaction_id,
                 source=str(profile.source),
                 adapter_id="coinbase",
                 account="Coinbase",
                 wallet="Coinbase",
                 timestamp=timestamp,
-                event_kind="Interest Income",
+                category="interest_income",
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
                 asset_in=asset,
                 amount_in=abs(quantity or Decimal("0")),
-                tx_hash=event_id,
+                tx_hash=transaction_id,
             )
         )
     if tx_type in {"receive", "deposit"}:
-        return mapped_event(
-            MappedEventSpec(
-                event_id=event_id,
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=transaction_id,
                 source=str(profile.source),
                 adapter_id="coinbase",
                 account="Coinbase",
                 wallet="Coinbase",
                 timestamp=timestamp,
-                event_kind="Deposit",
+                category="deposit",
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
                 asset_in=asset,
                 amount_in=quantity,
-                tx_hash=event_id,
+                tx_hash=transaction_id,
             )
         )
     if tx_type in {"send", "withdrawal", "withdraw"}:
-        return mapped_event(
-            MappedEventSpec(
-                event_id=event_id,
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=transaction_id,
                 source=str(profile.source),
                 adapter_id="coinbase",
                 account="Coinbase",
                 wallet="Coinbase",
                 timestamp=timestamp,
-                event_kind="Withdrawal",
+                category="withdrawal",
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
                 asset_out=asset,
                 amount_out=abs(quantity or Decimal("0")),
-                tx_hash=event_id,
+                tx_hash=transaction_id,
             )
         )
     raise ValueError(f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}")

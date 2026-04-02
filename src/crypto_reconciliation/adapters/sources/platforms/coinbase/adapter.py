@@ -5,13 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.mapped_event_support import NormalizationIssueSpec, normalization_issue
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
+    NormalizationIssueSpec,
+    normalization_issue,
+)
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -82,8 +85,8 @@ class CoinbaseAdapter:
         retail_path = _retail_path(raw_dir)
         if retail_path is None:
             return NormalizationResult(
-                canonical_events=(),
-                canonical_balances=(),
+                transactions=(),
+                balances=(),
                 issues=(
                     normalization_issue(
                         NormalizationIssueSpec(
@@ -100,7 +103,7 @@ class CoinbaseAdapter:
                 wallet_inventory=(),
             )
 
-        events: list[CanonicalEvent] = []
+        events: list[NormalizedTransaction] = []
         issues: list[IssueRecord] = []
         asset_migrations: dict[str, list[dict[str, str]]] = {}
         for index, row in enumerate(_read_retail_rows(retail_path), start=2):
@@ -146,8 +149,8 @@ class CoinbaseAdapter:
                     )
                 )
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(events),
+            balances=(),
             issues=tuple(issues),
             reviews=(),
             wallet_inventory=(),

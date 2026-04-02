@@ -8,7 +8,7 @@ from crypto_reconciliation.application.models.verification import (
     VerificationCompareRequest,
     VerificationCompareResponse,
 )
-from crypto_reconciliation.application.services.verification_summary import summarize_verification_exports
+from crypto_reconciliation.application.services.verification_compare import summarize_verification_exports
 from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 

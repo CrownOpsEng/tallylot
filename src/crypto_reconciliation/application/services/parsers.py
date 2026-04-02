@@ -4,26 +4,27 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import cast
 
-from crypto_reconciliation.domain.models import CanonicalEvent
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
+from crypto_reconciliation.domain.models import NormalizedTransaction, TransactionCategory
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.domain.value_objects import parse_decimal
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 
-def load_canonical_events(path: Path, artifacts: ArtifactStorePort) -> tuple[CanonicalEvent, ...]:
+def load_transactions(path: Path, artifacts: ArtifactStorePort) -> tuple[NormalizedTransaction, ...]:
     rows = artifacts.read_rows(path)
-    events: list[CanonicalEvent] = []
+    transactions: list[NormalizedTransaction] = []
     for row in rows:
-        events.append(
-            CanonicalEvent(
-                event_id=EventId(row["event_id"]),
+        transactions.append(
+            NormalizedTransaction(
+                transaction_id=TransactionId(row["transaction_id"]),
                 source=SourceId(row["source"]),
                 adapter_id=AdapterId(row["adapter_id"]),
                 account=row["account"],
                 wallet=row["wallet"],
                 timestamp=_parse_utc_timestamp(row["timestamp"]),
-                event_kind=row["event_kind"],
+                category=cast(TransactionCategory, row["category"]),
                 description=row["description"],
                 asset_in=AssetSymbol(row["asset_in"]) if row["asset_in"] else None,
                 amount_in=parse_decimal(row["amount_in"]),
@@ -38,7 +39,7 @@ def load_canonical_events(path: Path, artifacts: ArtifactStorePort) -> tuple[Can
                 status=row["status"],
             )
         )
-    return tuple(events)
+    return tuple(transactions)
 
 
 def _parse_utc_timestamp(value: str) -> datetime:

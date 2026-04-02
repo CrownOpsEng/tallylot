@@ -1,6 +1,6 @@
 # Baseline Validation
 
-## Canonical Baseline
+## Oracle Baseline
 
 - Baseline export folder: `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
 - Authoritative cutoff source: `Trade Table`

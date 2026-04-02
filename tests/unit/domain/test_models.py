@@ -6,42 +6,42 @@ from decimal import Decimal
 
 import pytest
 
-from crypto_reconciliation.domain.models import CanonicalEvent
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
+from crypto_reconciliation.domain.models import NormalizedTransaction
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 
 
-def _valid_canonical_event() -> CanonicalEvent:
-    return CanonicalEvent(
-        event_id=EventId("event-1"),
+def _valid_transaction() -> NormalizedTransaction:
+    return NormalizedTransaction(
+        transaction_id=TransactionId("transaction-1"),
         source=SourceId("fixture"),
         adapter_id=AdapterId("structured_csv"),
         account="Fixture",
         wallet="Primary",
         timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
-        event_kind="Trade",
+        category="trade",
         asset_in=AssetSymbol("BTC"),
         amount_in=Decimal("1"),
     )
 
 
-def test_canonical_event_rejects_incomplete_asset_amount_pairs() -> None:
+def test_transaction_rejects_incomplete_asset_amount_pairs() -> None:
     with pytest.raises(ValueError, match="asset_in and amount_in must both be present"):
-        replace(_valid_canonical_event(), amount_in=None)
+        replace(_valid_transaction(), amount_in=None)
 
     with pytest.raises(ValueError, match="asset_out and amount_out must both be present"):
-        replace(_valid_canonical_event(), asset_out=AssetSymbol("CAD"))
+        replace(_valid_transaction(), asset_out=AssetSymbol("CAD"))
 
     with pytest.raises(ValueError, match="fee_asset and fee_amount must both be present"):
-        replace(_valid_canonical_event(), fee_amount=Decimal("0.1"))
+        replace(_valid_transaction(), fee_amount=Decimal("0.1"))
 
 
-def test_canonical_event_rejects_non_positive_amounts() -> None:
+def test_transaction_rejects_non_positive_amounts() -> None:
     with pytest.raises(ValueError, match="amount_in must be greater than zero"):
-        replace(_valid_canonical_event(), amount_in=Decimal("0"))
+        replace(_valid_transaction(), amount_in=Decimal("0"))
 
     with pytest.raises(ValueError, match="amount_out must be greater than zero"):
         replace(
-            _valid_canonical_event(),
+            _valid_transaction(),
             asset_in=None,
             amount_in=None,
             asset_out=AssetSymbol("CAD"),
@@ -49,12 +49,12 @@ def test_canonical_event_rejects_non_positive_amounts() -> None:
         )
 
     with pytest.raises(ValueError, match="fee_amount must be greater than zero"):
-        replace(_valid_canonical_event(), fee_asset=AssetSymbol("CAD"), fee_amount=Decimal("0"))
+        replace(_valid_transaction(), fee_asset=AssetSymbol("CAD"), fee_amount=Decimal("0"))
 
 
-def test_canonical_event_to_row_formats_canonical_fields() -> None:
+def test_transaction_to_row_formats_fields() -> None:
     row = replace(
-        _valid_canonical_event(),
+        _valid_transaction(),
         fee_asset=AssetSymbol("CAD"),
         fee_amount=Decimal("0.10000000"),
     ).to_row()

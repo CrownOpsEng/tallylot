@@ -40,7 +40,7 @@ def test_verification_compare_service_detects_new_issues_and_balance_changes(tmp
             validate_rows=({"Issue": "AXS"},),
             missing_rows=(
                 {
-                    "Type": "Deposit",
+                    "Type": "deposit",
                     "Amount": "1.0",
                     "Cur.": "BTC",
                     "Fee": "",
@@ -83,7 +83,7 @@ def test_verification_compare_service_detects_new_issues_and_balance_changes(tmp
             validate_rows=({"Issue": "AXS"}, {"Issue": "NEW"}),
             missing_rows=(
                 {
-                    "Type": "Deposit",
+                    "Type": "deposit",
                     "Amount": "1.0",
                     "Cur.": "BTC",
                     "Fee": "",
@@ -102,7 +102,7 @@ def test_verification_compare_service_detects_new_issues_and_balance_changes(tmp
                 {
                     "": "",
                     "# of duplicates": "2",
-                    "Type": "Trade",
+                    "Type": "trade",
                     "Exchange": "Coinbase",
                     "Exchange ID": "id-1",
                     "Buy": "1 BTC",
@@ -175,7 +175,7 @@ def test_verification_compare_service_detects_resolved_rows_without_new_issues(t
             validate_rows=({"Issue": "AXS"},),
             missing_rows=(
                 {
-                    "Type": "Deposit",
+                    "Type": "deposit",
                     "Amount": "1.0",
                     "Cur.": "BTC",
                     "Fee": "",

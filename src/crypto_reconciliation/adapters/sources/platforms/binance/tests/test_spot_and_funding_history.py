@@ -21,7 +21,7 @@ def test_binance_spot_rows_normalize_buy_and_sell_trades(tmp_path: Path) -> None
 
     events = normalize_spot_rows(build_source_profile(adapter_id="binance"), path)
 
-    assert [event.event_kind for event in events] == ["Trade", "Trade"]
+    assert [event.category for event in events] == ["trade", "trade"]
     assert str(events[0].asset_in) == "BTC"
     assert str(events[0].asset_out) == "USDT"
     assert str(events[1].asset_in) == "USDT"
@@ -50,11 +50,11 @@ def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Pat
     withdrawals = normalize_withdraw_rows(build_source_profile(adapter_id="binance"), withdraw_path)
 
     assert len(deposits) == 1
-    assert deposits[0].event_kind == "Deposit"
+    assert deposits[0].category == "deposit"
     assert str(deposits[0].asset_in) == "USDT"
     assert deposits[0].tx_hash == "deposit-tx"
     assert len(withdrawals) == 1
-    assert withdrawals[0].event_kind == "Withdrawal"
+    assert withdrawals[0].category == "withdrawal"
     assert str(withdrawals[0].asset_out) == "ETH"
     assert str(withdrawals[0].fee_asset) == "ETH"
     assert withdrawals[0].tx_hash == "withdraw-tx"

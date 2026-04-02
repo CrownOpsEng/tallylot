@@ -86,9 +86,9 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(tmp_path: 
         raw_dir,
     )
 
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].event_kind == "Deposit"
-    assert str(result.canonical_events[0].amount_in) == "1.50000000"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].category == "deposit"
+    assert str(result.transactions[0].amount_in) == "1.50000000"
     assert not result.issues
 
 
@@ -110,7 +110,7 @@ def test_evm_explorer_adapter_surfaces_suspicious_nft_airdrops_for_review(tmp_pa
         raw_dir,
     )
 
-    assert not result.canonical_events
+    assert not result.transactions
     assert len(result.issues) == 1
     assert result.issues[0].kind == "review_required"
     assert "$SCAM AIRDROP" in result.issues[0].message
@@ -153,10 +153,10 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames() -> None:
     assert str(profile.adapter_id) == "evm_explorer"
     assert issues == ()
     assert [row.wallet_id for row in evidence] == ["evm_address:0x1111111111111111111111111111111111111111"]
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].event_kind == "Deposit"
-    assert str(result.canonical_events[0].asset_in) == "BNB"
-    assert str(result.canonical_events[0].amount_in) == "1.50000000"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].category == "deposit"
+    assert str(result.transactions[0].asset_in) == "BNB"
+    assert str(result.transactions[0].amount_in) == "1.50000000"
 
 
 def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_path: Path) -> None:
@@ -169,8 +169,8 @@ def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_pa
     result = adapter.normalize(profile, tmp_path / "raw")
 
     assert str(profile.adapter_id) == "evm_explorer"
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].event_kind == "Deposit"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].category == "deposit"
 
 
 def test_evm_explorer_suspicious_nft_fixture_surfaces_review_without_auto_import() -> None:
@@ -179,7 +179,7 @@ def test_evm_explorer_suspicious_nft_fixture_surfaces_review_without_auto_import
     profile, adapter = profile_and_adapter("bsc-wallet", raw_dir)
     result = adapter.normalize(profile, raw_dir)
 
-    assert result.canonical_events == ()
+    assert result.transactions == ()
     assert len(result.issues) == 1
     assert result.issues[0].kind == "review_required"
     assert "suspicious NFT airdrop" in result.issues[0].message

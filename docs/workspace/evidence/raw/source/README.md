@@ -6,7 +6,7 @@ Rules:
 
 - never overwrite raw files
 - keep original filenames when practical
-- keep each capture in its own canonical capture folder when routing new intake
+- keep each capture in its own capture folder when routing new intake
 - write `manifest.csv` inside the capture folder, not at the source root
 - do not place CoinTracking exports here; those belong under `evidence/raw/portfolio/`
 

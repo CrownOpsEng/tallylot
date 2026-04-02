@@ -12,13 +12,13 @@ from crypto_reconciliation.adapters.sources.wallet_record_support import WalletR
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, JsonValue, SourceId
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, JsonValue, SourceId, TransactionId
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
@@ -88,7 +88,7 @@ class NearAdapter:
         return tuple(evidence), ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[CanonicalEvent] = []
+        events: list[NormalizedTransaction] = []
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         for path in sorted(raw_dir.glob("*_transactions.csv")):
             for index, row in enumerate(_read_rows(path), start=2):
@@ -100,14 +100,14 @@ class NearAdapter:
                 raw_row_ref = f"row:{index}"
                 if method == "transfer":
                     events.append(
-                        CanonicalEvent(
-                            event_id=EventId(f"near:{path.name}:{raw_row_ref}"),
+                        NormalizedTransaction(
+                            transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}"),
                             source=profile.source,
                             adapter_id=self.manifest.adapter_id,
                             account=str(profile.source),
                             wallet=str(profile.source),
                             timestamp=timestamp,
-                            event_kind="Deposit",
+                            category="deposit",
                             description=f"Transfer into {profile.source} - {tx_hash}",
                             asset_in=AssetSymbol("NEAR"),
                             amount_in=amount - fee,
@@ -119,14 +119,14 @@ class NearAdapter:
                 elif method == "deposit_and_stake":
                     description = f"Stake NEAR - {tx_hash}"
                     events.append(
-                        CanonicalEvent(
-                            event_id=EventId(f"near:{path.name}:{raw_row_ref}:wallet"),
+                        NormalizedTransaction(
+                            transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}:wallet"),
                             source=profile.source,
                             adapter_id=self.manifest.adapter_id,
                             account=str(profile.source),
                             wallet=str(profile.source),
                             timestamp=timestamp,
-                            event_kind="Withdrawal",
+                            category="withdrawal",
                             description=description,
                             asset_out=AssetSymbol("NEAR"),
                             amount_out=amount,
@@ -139,14 +139,14 @@ class NearAdapter:
                     )
                     staking_source = f"{profile.source} - Staking"
                     events.append(
-                        CanonicalEvent(
-                            event_id=EventId(f"near:{path.name}:{raw_row_ref}:staking"),
+                        NormalizedTransaction(
+                            transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}:staking"),
                             source=SourceId(staking_source),
                             adapter_id=self.manifest.adapter_id,
                             account=staking_source,
                             wallet=staking_source,
                             timestamp=timestamp,
-                            event_kind="Deposit",
+                            category="deposit",
                             description=description,
                             asset_in=AssetSymbol("NEAR"),
                             amount_in=amount,
@@ -156,8 +156,8 @@ class NearAdapter:
                         )
                     )
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(events),
+            balances=(),
             issues=(),
             reviews=(),
             wallet_inventory=wallet_inventory,

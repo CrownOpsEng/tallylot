@@ -9,10 +9,10 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.mapped_event_support import (
-    MappedEventSpec,
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
+    MappedTransactionSpec,
     NormalizationIssueSpec,
-    mapped_event,
+    mapped_transaction,
     normalization_issue,
 )
 from crypto_reconciliation.adapters.sources.platforms.shakepay.pdf_balances import (
@@ -24,10 +24,11 @@ from crypto_reconciliation.adapters.sources.platforms.shakepay.pdf_balances impo
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
+    TransactionCategory,
     WalletInventoryRecord,
 )
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
@@ -93,7 +94,7 @@ class ShakepayAdapter:
         return _extract_pdf_balances(text, pdf_path.name)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[CanonicalEvent] = []
+        transactions: list[NormalizedTransaction] = []
         issues: list[IssueRecord] = []
         for path in sorted(raw_dir.rglob("*.csv")):
             for index, row in enumerate(_read_rows(path), start=2):
@@ -102,10 +103,10 @@ class ShakepayAdapter:
                     issues.append(parsed)
                     continue
                 if parsed is not None:
-                    events.append(parsed)
+                    transactions.append(parsed)
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(transactions),
+            balances=(),
             issues=tuple(issues),
             reviews=(),
             wallet_inventory=(),
@@ -122,7 +123,7 @@ def _normalize_row(
     raw_file: str,
     index: int,
     row: dict[str, str],
-) -> CanonicalEvent | IssueRecord | None:
+) -> NormalizedTransaction | IssueRecord | None:
     row_ref = f"row:{index}"
     timestamp = _parse_local_timestamp((row.get("Date") or "").strip())
     if raw_file == "cash_transactions_summary.csv":
@@ -130,30 +131,30 @@ def _normalize_row(
         credit = parse_decimal((row.get("Credit") or "").strip())
         description = (row.get("Description") or "").strip()
         row_type = (row.get("Type") or "").strip()
-        event_kind = ""
+        category: TransactionCategory | None = None
         asset_in = ""
         amount_in = None
         asset_out = ""
         amount_out = None
         if credit is not None and credit > Decimal("0"):
-            event_kind = "Deposit"
+            category = "deposit"
             asset_in = "CAD"
             amount_in = credit
         elif debit is not None and debit > Decimal("0"):
-            event_kind = "Expense (non taxable)" if row_type == "Card purchase" else "Withdrawal"
+            category = "expense" if row_type == "Card purchase" else "withdrawal"
             asset_out = "CAD"
             amount_out = debit
         else:
             return None
-        return mapped_event(
-            MappedEventSpec(
-                event_id=f"shakepay:{raw_file}:{row_ref}",
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=f"shakepay:{raw_file}:{row_ref}",
                 source=str(profile.source),
                 adapter_id="shakepay",
                 account="Shakepay",
                 wallet="Shakepay",
                 timestamp=timestamp,
-                event_kind=event_kind,
+                category=category,
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
@@ -170,33 +171,33 @@ def _normalize_row(
     credited_asset = (row.get("Asset Credited") or "").strip().upper()
     description = (row.get("Description") or "").strip().lower()
     row_type = (row.get("Type") or "").strip()
-    event_id = f"shakepay:{raw_file}:{row_ref}"
+    transaction_id = f"shakepay:{raw_file}:{row_ref}"
     if row_type == "Reward" and credited_amount is not None and credited_asset:
-        spec = MappedEventSpec(
-            event_id=event_id,
+        spec = MappedTransactionSpec(
+            transaction_id=transaction_id,
             source=str(profile.source),
             adapter_id="shakepay",
             account="Shakepay",
             wallet="Shakepay",
             timestamp=timestamp,
-            event_kind="Reward / Bonus",
+            category="reward",
             description=description,
             raw_file=raw_file,
             raw_row_ref=row_ref,
             asset_in=credited_asset,
             amount_in=credited_amount,
-            tx_hash=event_id,
+            tx_hash=transaction_id,
         )
-        return mapped_event(spec)
+        return mapped_transaction(spec)
     if row_type == "Buy" and debited_amount is not None and credited_amount is not None:
-        spec = MappedEventSpec(
-            event_id=event_id,
+        spec = MappedTransactionSpec(
+            transaction_id=transaction_id,
             source=str(profile.source),
             adapter_id="shakepay",
             account="Shakepay",
             wallet="Shakepay",
             timestamp=timestamp,
-            event_kind="Trade",
+            category="trade",
             description=(row.get("Description") or "").strip(),
             raw_file=raw_file,
             raw_row_ref=row_ref,
@@ -204,31 +205,31 @@ def _normalize_row(
             amount_in=credited_amount,
             asset_out=debited_asset,
             amount_out=debited_amount,
-            tx_hash=event_id,
+            tx_hash=transaction_id,
         )
-        return mapped_event(spec)
+        return mapped_transaction(spec)
     if row_type == "Send" and debited_amount is not None and debited_asset:
-        spec = MappedEventSpec(
-            event_id=event_id,
+        spec = MappedTransactionSpec(
+            transaction_id=transaction_id,
             source=str(profile.source),
             adapter_id="shakepay",
             account="Shakepay",
             wallet="Shakepay",
             timestamp=timestamp,
-            event_kind="Withdrawal",
+            category="withdrawal",
             description=(row.get("Description") or "").strip(),
             raw_file=raw_file,
             raw_row_ref=row_ref,
             asset_out=debited_asset,
             amount_out=debited_amount,
-            tx_hash=event_id,
+            tx_hash=transaction_id,
         )
-        return mapped_event(spec)
+        return mapped_transaction(spec)
     return normalization_issue(
         NormalizationIssueSpec(
             source=str(profile.source),
             adapter_id="shakepay",
-            issue_id=event_id,
+            issue_id=transaction_id,
             kind="unsupported_row",
             message=f"Unsupported Shakepay row type: {row_type}",
             raw_file=raw_file,

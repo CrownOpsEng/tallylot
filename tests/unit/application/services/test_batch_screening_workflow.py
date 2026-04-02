@@ -161,7 +161,7 @@ def test_batch_screening_surfaces_invalid_candidate_timestamps(
         ),
         (
             {
-                "Type": "Trade",
+                "Type": "trade",
                 "Buy": "1.0",
                 "Cur.": "BTC",
                 "Sell": "10.0",

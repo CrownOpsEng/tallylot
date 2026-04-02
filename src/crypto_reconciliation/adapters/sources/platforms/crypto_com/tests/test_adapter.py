@@ -10,6 +10,6 @@ def test_crypto_com_adapter_uses_transaction_kinds_without_filename_dependency()
     result = adapter.normalize(profile, raw_dir)
 
     assert str(profile.adapter_id) == "crypto_com"
-    assert [event.event_kind for event in result.canonical_events] == ["Deposit", "Trade", "Withdrawal"]
-    assert {event.raw_file for event in result.canonical_events} == {"records-a.csv", "records-b.csv"}
+    assert [event.category for event in result.transactions] == ["deposit", "trade", "withdrawal"]
+    assert {event.raw_file for event in result.transactions} == {"records-a.csv", "records-b.csv"}
     assert result.issues == ()

@@ -8,18 +8,18 @@ from decimal import Decimal
 from pathlib import Path
 
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.mapped_event_support import (
-    MappedEventSpec,
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
+    MappedTransactionSpec,
     NormalizationIssueSpec,
-    mapped_event,
+    mapped_transaction,
     normalization_issue,
 )
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -88,7 +88,7 @@ class CryptoComAdapter:
         return (), ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[CanonicalEvent] = []
+        events: list[NormalizedTransaction] = []
         issues: list[IssueRecord] = []
         for path in sorted(raw_dir.rglob("*.csv")):
             for index, row in enumerate(_read_rows(path), start=2):
@@ -98,8 +98,8 @@ class CryptoComAdapter:
                     continue
                 events.append(parsed)
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(events),
+            balances=(),
             issues=tuple(issues),
             reviews=(),
             wallet_inventory=(),
@@ -116,7 +116,7 @@ def _normalize_row(
     raw_file: str,
     index: int,
     row: dict[str, str],
-) -> CanonicalEvent | IssueRecord:
+) -> NormalizedTransaction | IssueRecord:
     timestamp = (
         datetime.strptime((row.get("Timestamp (UTC)") or "").strip(), "%Y-%m-%d %H:%M:%S")
         .replace(tzinfo=UTC)
@@ -131,15 +131,15 @@ def _normalize_row(
     to_currency = (row.get("To Currency") or "").strip().upper()
     to_amount = parse_decimal((row.get("To Amount") or "").strip())
     if kind == "viban_deposit" and amount is not None and amount > Decimal("0"):
-        return mapped_event(
-            MappedEventSpec(
-                event_id=f"crypto_com:{raw_file}:{row_ref}",
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=f"crypto_com:{raw_file}:{row_ref}",
                 source=str(profile.source),
                 adapter_id="crypto_com",
                 account=str(profile.source),
                 wallet=str(profile.source),
                 timestamp=timestamp,
-                event_kind="Deposit",
+                category="deposit",
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
@@ -149,15 +149,15 @@ def _normalize_row(
             )
         )
     if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
-        return mapped_event(
-            MappedEventSpec(
-                event_id=f"crypto_com:{raw_file}:{row_ref}",
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=f"crypto_com:{raw_file}:{row_ref}",
                 source=str(profile.source),
                 adapter_id="crypto_com",
                 account=str(profile.source),
                 wallet=str(profile.source),
                 timestamp=timestamp,
-                event_kind="Trade",
+                category="trade",
                 description=f"{currency} -> {to_currency}",
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
@@ -169,15 +169,15 @@ def _normalize_row(
             )
         )
     if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
-        return mapped_event(
-            MappedEventSpec(
-                event_id=f"crypto_com:{raw_file}:{row_ref}",
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=f"crypto_com:{raw_file}:{row_ref}",
                 source=str(profile.source),
                 adapter_id="crypto_com",
                 account=str(profile.source),
                 wallet=str(profile.source),
                 timestamp=timestamp,
-                event_kind="Withdrawal",
+                category="withdrawal",
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_ref,

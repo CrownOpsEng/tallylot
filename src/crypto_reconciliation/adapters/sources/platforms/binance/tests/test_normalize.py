@@ -38,13 +38,13 @@ def test_binance_adapter_handles_supported_and_review_required_rows(tmp_path: Pa
         raw_dir,
     )
 
-    assert len(result.canonical_events) == 5
+    assert len(result.transactions) == 5
     assert len(result.issues) == 3
-    kinds = [row.event_kind for row in result.canonical_events]
-    assert "Trade" in kinds
-    assert "Deposit" in kinds
-    assert "Withdrawal" in kinds
-    assert "Staking" in kinds
+    kinds = [row.category for row in result.transactions]
+    assert "trade" in kinds
+    assert "deposit" in kinds
+    assert "withdrawal" in kinds
+    assert "staking_reward" in kinds
     assert any("Transfer Between Spot Account and UM Futures Account" in row.message for row in result.issues)
 
 
@@ -65,7 +65,7 @@ def test_binance_convert_date_updated_covers_transaction_history_one_second_skew
         raw_dir,
     )
 
-    assert len(result.canonical_events) == 1
+    assert len(result.transactions) == 1
     assert len(result.issues) == 0
 
 
@@ -87,8 +87,8 @@ def test_binance_transaction_history_skips_p2p_rows_when_c2c_history_exists(tmp_
         raw_dir,
     )
 
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].event_kind == "Trade"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].category == "trade"
     assert len(result.issues) == 0
 
 
@@ -112,6 +112,6 @@ def test_binance_adapter_reads_nested_bundle_paths(tmp_path: Path) -> None:
         raw_dir,
     )
 
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].event_kind == "Trade"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].category == "trade"
     assert not result.issues

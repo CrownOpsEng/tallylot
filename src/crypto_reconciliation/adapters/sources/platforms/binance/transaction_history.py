@@ -7,13 +7,13 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.mapped_event_support import (
-    MappedEventSpec,
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
+    MappedTransactionSpec,
     NormalizationIssueSpec,
-    mapped_event,
+    mapped_transaction,
     normalization_issue,
 )
-from crypto_reconciliation.domain.models import CanonicalEvent, IssueRecord, SourceProfile
+from crypto_reconciliation.domain.models import IssueRecord, NormalizedTransaction, SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal, parse_timestamp
 
 from .csv_rows import is_no_data_row, read_rows
@@ -47,8 +47,8 @@ def normalize_transaction_rows(
     *,
     convert_match_times: frozenset[datetime] | None = None,
     p2p_match_times: frozenset[datetime] | None = None,
-) -> tuple[list[CanonicalEvent], list[IssueRecord]]:
-    events: list[CanonicalEvent] = []
+) -> tuple[list[NormalizedTransaction], list[IssueRecord]]:
+    events: list[NormalizedTransaction] = []
     issues: list[IssueRecord] = []
     resolved_convert_match_times = convert_match_times or frozenset()
     resolved_p2p_match_times = p2p_match_times or frozenset()
@@ -73,15 +73,15 @@ def normalize_transaction_rows(
             if change is None or change <= Decimal("0"):
                 continue
             events.append(
-                mapped_event(
-                    MappedEventSpec(
-                        event_id=f"binance:{path.name}:row:{index}",
+                mapped_transaction(
+                    MappedTransactionSpec(
+                        transaction_id=f"binance:{path.name}:row:{index}",
                         source=str(profile.source),
                         adapter_id="binance",
                         account=account,
                         wallet=account,
                         timestamp=parsed_time,
-                        event_kind="Staking",
+                        category="staking_reward",
                         description=operation,
                         raw_file=path.name,
                         raw_row_ref=f"row:{index}",
@@ -101,15 +101,15 @@ def normalize_transaction_rows(
             neg_change = row_change(neg)
             pos_change = row_change(pos)
             events.append(
-                mapped_event(
-                    MappedEventSpec(
-                        event_id=f"binance:{path.name}:small_assets:{(neg.get('Coin') or '').strip().upper()}",
+                mapped_transaction(
+                    MappedTransactionSpec(
+                        transaction_id=f"binance:{path.name}:small_assets:{(neg.get('Coin') or '').strip().upper()}",
                         source=str(profile.source),
                         adapter_id="binance",
                         account=account,
                         wallet=account,
                         timestamp=parsed_time,
-                        event_kind="Trade",
+                        category="trade",
                         description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",
                         raw_file=path.name,
                         raw_row_ref=f"row:{neg_index}",

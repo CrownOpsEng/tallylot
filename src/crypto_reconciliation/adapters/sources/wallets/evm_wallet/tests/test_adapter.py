@@ -123,7 +123,7 @@ def test_evm_wallet_adapter_normalize_returns_wallet_inventory_and_missing_ident
         raw_dir,
     )
 
-    assert not result.canonical_events
+    assert not result.transactions
     assert not result.wallet_inventory
     assert len(result.issues) == 1
     assert result.issues[0].kind == "missing_identifier"

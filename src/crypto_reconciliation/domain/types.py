@@ -9,6 +9,6 @@ type JsonValue = JsonScalar | list[JsonValue] | dict[str, JsonValue]
 
 AdapterId = NewType("AdapterId", str)
 AssetSymbol = NewType("AssetSymbol", str)
-EventId = NewType("EventId", str)
+TransactionId = NewType("TransactionId", str)
 SourceId = NewType("SourceId", str)
 WorkspacePath = NewType("WorkspacePath", str)

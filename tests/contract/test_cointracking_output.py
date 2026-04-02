@@ -30,7 +30,7 @@ def test_cointracking_output_matches_expected_schema(
     render.execute(
         RenderOutputRequest(
             output_adapter="cointracking_csv",
-            canonical_events_path=normalized_dir / "canonical_events.csv",
+            transactions_path=normalized_dir / "transactions.csv",
             output_path=output_path,
         )
     )

@@ -1,20 +1,21 @@
 """Core immutable domain models."""
 
 from .adapters import AdapterCapability, AdapterManifest
-from .canonical import CanonicalBalance, CanonicalEvent
 from .inventory import FileInventoryEntry, WalletInventoryRecord
 from .issues import IssueRecord, NormalizationReviewRecord
 from .profiles import SourceProfile, VerificationExportSet
+from .transactions import BalanceSnapshot, NormalizedTransaction, TransactionCategory
 
 __all__ = [
     "AdapterCapability",
     "AdapterManifest",
-    "CanonicalBalance",
-    "CanonicalEvent",
+    "BalanceSnapshot",
     "FileInventoryEntry",
     "IssueRecord",
     "NormalizationReviewRecord",
+    "NormalizedTransaction",
     "SourceProfile",
+    "TransactionCategory",
     "VerificationExportSet",
     "WalletInventoryRecord",
 ]

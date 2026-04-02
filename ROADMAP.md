@@ -11,8 +11,9 @@ decisions that should not be rediscovered from scratch.
 - CLI and library runtime only
 - Filesystem-backed operational storage
 - CoinTracking CSV as the only implemented output adapter
-- Normalization writes internal artifacts only; CoinTracking CSV exports run as
-  explicit compatibility projections
+- Normalization writes `transactions.csv` and `balances.csv` as the only active
+  normalized runtime artifacts; CoinTracking CSV exports run as explicit
+  adapter projections with no repo-level compatibility aliases
 - Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds
@@ -22,16 +23,16 @@ decisions that should not be rediscovered from scratch.
 - Build deterministic reconciliation and source-backed checkpoints before tax
   computation. The `2023-08-05` CoinTracking export remains a historical oracle
   boundary, not a hard checkpoint.
-- Treat CoinTracking as a compatibility and oracle layer, not as the central
-  business model.
+- Treat CoinTracking as an adapter-only oracle and projection layer, not as the
+  central business model.
 - Keep CoinTracking-specific rendering metadata out of core normalized models
   and behind projection adapters.
 - Keep the core runtime platform-agnostic: normal reconstruction, checkpoint,
   accounting, and tax workflows must run from source evidence and intentional
   checkpoints without requiring CoinTracking tax or accounting outputs.
 - Introduce a provider-neutral transaction fact model as the new system of
-  record. Keep the current canonical event model as a compatibility projection
-  during migration instead of expanding it into a multi-purpose ledger object.
+  record. Replace the current normalized transaction shape directly instead of
+  carrying forward compatibility wrappers or parallel legacy names.
 - Keep classification layered:
   - provider-neutral economic kind
   - CoinTracking compatibility type
@@ -51,10 +52,8 @@ decisions that should not be rediscovered from scratch.
   - discovery-time manifest validation
 - Keep the domain centered on frozen dataclasses, enums, and value objects so
   business invariants remain explicit and independent of framework behavior.
-- Support the full CoinTracking import taxonomy in the compatibility layer now
-  to avoid later enum churn, even though the next implementation phase only
-  gives first-class behavior to the subset needed for the current dataset and
-  Canadian tax MVP.
+- Support the required CoinTracking import taxonomy inside projection adapters
+  without leaking those labels into the core model.
 - Keep CoinTracking tax reports, roll-forward outputs, average purchase price,
   and double-entry reports in the oracle lane only. They may support
   comparison, regression, and one-time review, but they must not become normal
@@ -74,7 +73,8 @@ decisions that should not be rediscovered from scratch.
 
 ### Database Adoption
 
-- Replace filesystem-backed canonical record storage with a real SQLite-backed
+- Replace filesystem-backed normalized transaction storage with a real
+  SQLite-backed
   implementation behind `StoragePort`.
 - Keep raw evidence as files even after database adoption.
 - Add migrations only when the SQLite implementation becomes active.
@@ -139,7 +139,7 @@ decisions that should not be rediscovered from scratch.
   buildable from a clean checkout, and CI should continue verifying the build
   plus an installable CLI entry point.
 - Do not bypass `Decimal` with float-based financial calculations.
-- Keep canonical events structurally strict: asset/amount pairs must be
+- Keep normalized transactions structurally strict: asset/amount pairs must be
   complete, and amounts must remain positive because direction is modeled by
   the `in`/`out` fields rather than signed numbers.
 - Normalize raw sign conventions inside adapters when direction is otherwise
@@ -174,7 +174,7 @@ decisions that should not be rediscovered from scratch.
   `01_raw_exports/incoming -> evidence/raw/incoming`, `02_working -> working`,
   `03_analysis -> analysis`, `05_outputs -> outputs`.
 - Treat `evidence/raw/incoming/` as a historical quarantine area for migrated
-  catch-all evidence only. New intake should go directly to canonical capture
+  catch-all evidence only. New intake should go directly to standard capture
   paths under `evidence/raw/source/` or `evidence/raw/portfolio/`.
 - The separate `04_import_ready/` root is retired in the current architecture.
   Keep approved import candidates under `working/import_batches/`.
@@ -187,9 +187,9 @@ decisions that should not be rediscovered from scratch.
   `Average Purchase Price`.
 - Add explicit runtime-boundary, classification-matrix, and migration-sequence
   docs so future work does not drift back into CoinTracking-centric design.
-- Add a provider-neutral transaction fact model and migrate normalization to a
-  dual-write compatibility phase before retiring canonical-event-first
-  workflows.
+- Add a provider-neutral transaction fact model and replace the current
+  normalized-transaction workflow directly once the fact model is ready. Do not
+  keep parallel compatibility aliases or dual-write wrappers.
 - Add deterministic checkpoint assembly and continuity validation centered on
   the best-evidenced balance date around `2026-03-23`.
 - Add a journal renderer port and Ledger CLI implementation for hard-gate

@@ -21,7 +21,7 @@ from crypto_reconciliation.ports.output_workflows import OverlapResult, Screenin
 
 from .windows import count_candidate_rows_outside_window, resolve_normalization_window
 
-CANONICAL_TIMEZONE = "UTC"
+NORMALIZED_TIMEZONE = "UTC"
 OUTPUT_IMPORT_TIMEZONE = "UTC"
 ISSUE_HEADER = (
     "issue_id",
@@ -74,7 +74,7 @@ class BatchScreeningService:
                     if screening.overlap_result is None
                     else _summary_int(screening.overlap_result.summary, "rows_flagged")
                 ),
-                "canonical_timezone": CANONICAL_TIMEZONE,
+                "normalized_timezone": NORMALIZED_TIMEZONE,
                 "output_import_timezone": OUTPUT_IMPORT_TIMEZONE,
                 "blocked_reason_codes": list(screening.blocked_reason_codes),
             },
@@ -151,7 +151,7 @@ class BatchStagingService:
                     "normalization_window_start": window_start,
                     "normalization_window_end": window_end,
                     "normalization_summary": normalization_summary,
-                    "canonical_timezone": CANONICAL_TIMEZONE,
+                    "normalized_timezone": NORMALIZED_TIMEZONE,
                     "output_import_timezone": OUTPUT_IMPORT_TIMEZONE,
                     "staged_path": "" if staged_path is None else str(staged_path),
                     "import_ready_copy_path": "" if import_ready_copy_path is None else str(import_ready_copy_path),

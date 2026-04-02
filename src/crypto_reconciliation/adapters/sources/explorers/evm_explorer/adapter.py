@@ -18,13 +18,13 @@ from crypto_reconciliation.adapters.sources.wallet_record_support import (
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, JsonValue
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, JsonValue, TransactionId
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
@@ -126,7 +126,7 @@ class EvmExplorerAdapter:
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         issues: list[IssueRecord] = []
-        events: list[CanonicalEvent] = []
+        events: list[NormalizedTransaction] = []
         wallet_inventory, wallet_issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         owned_addresses = _owned_addresses(raw_dir)
         suspicious_hashes = _suspicious_nft_hashes(raw_dir, owned_addresses)
@@ -161,14 +161,14 @@ class EvmExplorerAdapter:
                     continue
                 timestamp = _parse_utc_timestamp((row.get("DateTime (UTC)") or "").strip())
                 events.append(
-                    CanonicalEvent(
-                        event_id=EventId(f"evm_explorer:{path.name}:{tx_hash}"),
+                    NormalizedTransaction(
+                        transaction_id=TransactionId(f"evm_explorer:{path.name}:{tx_hash}"),
                         source=profile.source,
                         adapter_id=self.manifest.adapter_id,
                         account=str(profile.source),
                         wallet=str(profile.source),
                         timestamp=timestamp,
-                        event_kind="Deposit",
+                        category="deposit",
                         description=f"Transfer - {tx_hash}",
                         asset_in=AssetSymbol("BNB"),
                         amount_in=amount_in,
@@ -178,8 +178,8 @@ class EvmExplorerAdapter:
                     )
                 )
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(events),
+            balances=(),
             issues=(*issues, *wallet_issues),
             reviews=(),
             wallet_inventory=wallet_inventory,

@@ -47,7 +47,7 @@ def test_coinbase_adapter_uses_retail_family_without_filename_dependency() -> No
     result = adapter.normalize(profile, raw_dir)
 
     assert str(profile.adapter_id) == "coinbase"
-    assert len(result.canonical_events) == 1
-    assert result.canonical_events[0].raw_file == "retail-export.csv"
-    assert result.canonical_events[0].event_kind == "Trade"
+    assert len(result.transactions) == 1
+    assert result.transactions[0].raw_file == "retail-export.csv"
+    assert result.transactions[0].category == "trade"
     assert result.issues == ()

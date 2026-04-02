@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from crypto_reconciliation.adapters.outputs.cointracking_csv.reconcile import (
+from crypto_reconciliation.adapters.outputs.cointracking_csv.compare import (
     compare_balances,
     compare_transactions,
 )
@@ -20,7 +20,7 @@ def _expected_row(**overrides: str) -> dict[str, str]:
         "Comment": "Bought 0.0017564 BTC for $25.00 CAD",
         "Date": "2019-09-11 01:06:35",
         "Tx-ID": "coinbase-retail-buy-1",
-        "canonical_event_id": "evt-1",
+        "transaction_id": "txn-1",
         "confidence": "high",
         "status": "mapped",
         "raw_file": "coinbase.csv",

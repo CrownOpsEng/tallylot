@@ -31,7 +31,7 @@ command, artifact, or agent route.
 | ---- | ------- |
 | `analysis/issues/issue_log.csv` | Master issue register |
 | `analysis/issues/source_inventory.csv` | Source queue and status tracker |
-| `analysis/inventory/wallet_inventory.csv` | Canonical wallet inventory |
+| `analysis/inventory/wallet_inventory.csv` | Normalized wallet inventory |
 | `analysis/inventory/wallet_inventory_evidence.csv` | Evidence rows for wallet identifiers |
 | `analysis/inventory/wallet_inventory_issues.csv` | Deterministic wallet review issues |
 | `analysis/inventory/wallet_inventory_summary.json` | Wallet inventory counts |
@@ -51,8 +51,8 @@ command, artifact, or agent route.
 | `source intake apply` | Copy loose evidence into workspace capture paths and write intake reports |
 | `source manifest` | Build a deterministic capture manifest |
 | `source profile` | Build file inventory plus timezone provenance |
-| `source normalize` | Produce canonical normalization outputs |
-| `output render file` | Render a compatibility artifact from canonical events |
+| `source normalize` | Produce normalized transaction artifacts |
+| `output render file` | Render an output-adapter artifact from normalized transactions |
 | `batch screen` | Validate and screen a candidate without copying it |
 | `batch stage` | Screen and copy a passing candidate |
 | `baseline validate` | Produce the full baseline reconciliation package |

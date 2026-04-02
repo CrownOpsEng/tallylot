@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from crypto_reconciliation.adapters.sources.mapped_event_support import MappedEventSpec, mapped_event
-from crypto_reconciliation.domain.models import CanonicalEvent, SourceProfile
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import MappedTransactionSpec, mapped_transaction
+from crypto_reconciliation.domain.models import NormalizedTransaction, SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal
 
 from .timestamps import parse_retail_timestamp
@@ -16,7 +16,7 @@ def normalize_asset_migration(
     raw_file: str,
     timestamp: str,
     rows: list[dict[str, str]],
-) -> CanonicalEvent:
+) -> NormalizedTransaction:
     if len(rows) != 2:
         raise ValueError(f"Expected 2 asset-migration rows at {timestamp}, found {len(rows)}")
     negatives = [
@@ -36,15 +36,15 @@ def normalize_asset_migration(
         raise ValueError(f"Asset-migration rows at {timestamp} are missing transacted quantities")
     sold_id = (sold_row.get("ID") or "").strip()
     bought_id = (bought_row.get("ID") or "").strip()
-    return mapped_event(
-        MappedEventSpec(
-            event_id=f"coinbase-asset-migration-{sold_id}-{bought_id}",
+    return mapped_transaction(
+        MappedTransactionSpec(
+            transaction_id=f"coinbase-asset-migration-{sold_id}-{bought_id}",
             source=str(profile.source),
             adapter_id="coinbase",
             account="Coinbase",
             wallet="Coinbase",
             timestamp=parse_retail_timestamp(timestamp),
-            event_kind="Swap (non taxable)",
+            category="swap",
             description="Coinbase Asset Migration",
             raw_file=raw_file,
             raw_row_ref=f"{sold_id}|{bought_id}",

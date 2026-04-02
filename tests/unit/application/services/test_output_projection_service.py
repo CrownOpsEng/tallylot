@@ -9,8 +9,8 @@ import pytest
 
 from crypto_reconciliation.application.models.output import RenderOutputRequest
 from crypto_reconciliation.application.services.projections import OutputProjectionService
-from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, CanonicalEvent
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
+from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, NormalizedTransaction
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.ports.adapters import OutputAdapter, RenderedArtifact
@@ -42,8 +42,8 @@ class FakeOutputAdapter:
             supported=supported,
         )
 
-    def render(self, events: tuple[CanonicalEvent, ...], output_path: Path) -> RenderedArtifact:
-        del events, output_path
+    def render(self, transactions: tuple[NormalizedTransaction, ...], output_path: Path) -> RenderedArtifact:
+        del transactions, output_path
         raise AssertionError("render should not be called when adapter validation fails")
 
     def candidate_artifact_name(self) -> str:
@@ -72,7 +72,7 @@ class FakeOutputAdapter:
 
 
 def test_output_projection_service_rejects_unsupported_output_adapters(tmp_path: Path) -> None:
-    canonical_events_path = _write_canonical_events(tmp_path)
+    transactions_path = _write_transactions(tmp_path)
     service = OutputProjectionService(
         FakeOutputRegistry(
             FakeOutputAdapter(
@@ -87,14 +87,14 @@ def test_output_projection_service_rejects_unsupported_output_adapters(tmp_path:
         service.execute(
             RenderOutputRequest(
                 output_adapter="cointracking_csv",
-                canonical_events_path=canonical_events_path,
+                transactions_path=transactions_path,
                 output_path=tmp_path / "cointracking.csv",
             )
         )
 
 
 def test_output_projection_service_rejects_adapters_without_render_capability(tmp_path: Path) -> None:
-    canonical_events_path = _write_canonical_events(tmp_path)
+    transactions_path = _write_transactions(tmp_path)
     service = OutputProjectionService(
         FakeOutputRegistry(
             FakeOutputAdapter(
@@ -109,22 +109,22 @@ def test_output_projection_service_rejects_adapters_without_render_capability(tm
         service.execute(
             RenderOutputRequest(
                 output_adapter="cointracking_csv",
-                canonical_events_path=canonical_events_path,
+                transactions_path=transactions_path,
                 output_path=tmp_path / "cointracking.csv",
             )
         )
 
 
-def _write_canonical_events(tmp_path: Path) -> Path:
-    path = tmp_path / "canonical_events.csv"
-    row = CanonicalEvent(
-        event_id=EventId("evt-1"),
+def _write_transactions(tmp_path: Path) -> Path:
+    path = tmp_path / "transactions.csv"
+    row = NormalizedTransaction(
+        transaction_id=TransactionId("txn-1"),
         source=SourceId("fixture"),
         adapter_id=AdapterId("structured_csv"),
         account="Fixture",
         wallet="Primary",
         timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
-        event_kind="Trade",
+        category="trade",
         asset_in=AssetSymbol("BTC"),
         amount_in=Decimal("1"),
         asset_out=AssetSymbol("CAD"),

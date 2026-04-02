@@ -10,8 +10,8 @@ from crypto_reconciliation.application.models.source import NormalizeRequest, No
 from crypto_reconciliation.application.services.common import ensure_directory
 from crypto_reconciliation.application.services.issue_context import enrich_issue_context_timestamps
 from crypto_reconciliation.application.services.normalization_window import (
-    filter_events_by_window,
     filter_issues_by_window,
+    filter_transactions_by_window,
 )
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
@@ -58,8 +58,8 @@ class NormalizationService:
         if not profile.supported:
             raise ValueError(f"source adapter {profile.adapter_id} is not supported for normalization in this phase")
         result = adapter.normalize(profile, request.raw_dir)
-        canonical_events, events_outside_window = filter_events_by_window(
-            result.canonical_events,
+        transactions, transactions_outside_window = filter_transactions_by_window(
+            result.transactions,
             window_start=request.window_start,
             window_end=request.window_end,
         )
@@ -73,13 +73,13 @@ class NormalizationService:
             window_start=request.window_start,
             window_end=request.window_end,
         )
-        self._storage.write_canonical_events(
-            request.output_dir / "canonical_events.csv",
-            canonical_events,
+        self._storage.write_transactions(
+            request.output_dir / "transactions.csv",
+            transactions,
         )
-        self._storage.write_canonical_balances(
-            request.output_dir / "canonical_balances.csv",
-            result.canonical_balances,
+        self._storage.write_balances(
+            request.output_dir / "balances.csv",
+            result.balances,
         )
         self._storage.write_issue_records(request.output_dir / "exceptions.csv", issue_records)
         self._storage.write_review_records(
@@ -115,13 +115,13 @@ class NormalizationService:
                 {
                     "source": request.source,
                     "adapter_id": str(profile.adapter_id),
-                    "event_count": len(canonical_events),
-                    "balance_count": len(result.canonical_balances),
+                    "transaction_count": len(transactions),
+                    "balance_count": len(result.balances),
                     "issue_count": len(issue_records),
                     "review_count": len(result.reviews),
                     "review_summary": self._review_summary(result.reviews),
                     "wallet_count": len(result.wallet_inventory),
-                    "events_outside_normalization_window": events_outside_window,
+                    "transactions_outside_normalization_window": transactions_outside_window,
                     "issues_outside_normalization_window": issues_outside_window,
                     "normalization_window_start": request.window_start or "",
                     "normalization_window_end": request.window_end or "",
@@ -131,8 +131,8 @@ class NormalizationService:
         return NormalizeResponse(
             output_dir=request.output_dir,
             adapter_id=str(profile.adapter_id),
-            event_count=len(canonical_events),
-            balance_count=len(result.canonical_balances),
+            transaction_count=len(transactions),
+            balance_count=len(result.balances),
             issue_count=len(issue_records),
             review_count=len(result.reviews),
         )

@@ -37,7 +37,7 @@ def test_route_intake_file_routes_archive_members_under_contents_tree(tmp_path: 
 
 def test_route_intake_file_routes_working_derivatives_to_supporting_artifacts(tmp_path: Path) -> None:
     incoming_dir = tmp_path / "incoming"
-    derivative_path = incoming_dir / "Trade Analysis - ADA-USDT - Binance.png"
+    derivative_path = incoming_dir / "trade Analysis - ADA-USDT - Binance.png"
     incoming_dir.mkdir()
     derivative_path.write_bytes(b"png")
     workspace_root = tmp_path / "workspace"
@@ -59,7 +59,7 @@ def test_route_intake_file_routes_working_derivatives_to_supporting_artifacts(tm
     assert route.role == "working_derivative"
     assert route.source_folder == "binance"
     assert route.target_path == (
-        workspace_root / "working/supporting_artifacts/binance/incoming/Trade Analysis - ADA-USDT - Binance.png"
+        workspace_root / "working/supporting_artifacts/binance/incoming/trade Analysis - ADA-USDT - Binance.png"
     )
 
 

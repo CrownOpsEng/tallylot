@@ -1,4 +1,4 @@
-"""CoinTracking-specific reconciliation helpers."""
+"""CoinTracking-specific comparison helpers."""
 
 from __future__ import annotations
 

@@ -17,8 +17,8 @@ from crypto_reconciliation.infrastructure.storage.filesystem import FilesystemSt
 from tools.adapter_packs import DEFAULT_PACK_ROOT, AdapterPack, select_adapter_packs
 
 EXPECTED_NORMALIZATION_ARTIFACTS = (
-    "canonical_events",
-    "canonical_balances",
+    "transactions",
+    "balances",
     "exceptions",
     "normalization_reviews",
     "normalization_summary",
@@ -101,8 +101,8 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
             )
             payloads.update(
                 {
-                    "canonical_events": artifacts.read_rows(output_dir / "canonical_events.csv"),
-                    "canonical_balances": artifacts.read_rows(output_dir / "canonical_balances.csv"),
+                    "transactions": artifacts.read_rows(output_dir / "transactions.csv"),
+                    "balances": artifacts.read_rows(output_dir / "balances.csv"),
                     "exceptions": artifacts.read_rows(output_dir / "exceptions.csv"),
                     "normalization_reviews": artifacts.read_rows(output_dir / "normalization_reviews.csv"),
                     "normalization_summary": json.loads(

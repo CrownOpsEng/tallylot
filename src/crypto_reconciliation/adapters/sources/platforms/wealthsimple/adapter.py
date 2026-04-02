@@ -8,18 +8,18 @@ from decimal import Decimal
 from pathlib import Path
 
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.mapped_event_support import (
-    MappedEventSpec,
+from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
+    MappedTransactionSpec,
     NormalizationIssueSpec,
-    mapped_event,
+    mapped_transaction,
     normalization_issue,
 )
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
-    CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -109,7 +109,7 @@ class WealthsimpleAdapter:
         return (), ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[CanonicalEvent] = []
+        events: list[NormalizedTransaction] = []
         issues: list[IssueRecord] = []
         for path in sorted(raw_dir.rglob("*.csv")):
             for index, row in enumerate(_read_rows(path), start=2):
@@ -121,8 +121,8 @@ class WealthsimpleAdapter:
                     continue
                 events.append(parsed)
         return NormalizationResult(
-            canonical_events=tuple(events),
-            canonical_balances=(),
+            transactions=tuple(events),
+            balances=(),
             issues=tuple(issues),
             reviews=(),
             wallet_inventory=(),
@@ -139,7 +139,7 @@ def _normalize_row(
     raw_file: str,
     index: int,
     row: dict[str, str],
-) -> CanonicalEvent | IssueRecord:
+) -> NormalizedTransaction | IssueRecord:
     activity_type = (row.get("activity_type") or "").strip()
     activity_sub_type = (row.get("activity_sub_type") or "").strip()
     row_ref = f"row:{index}"
@@ -151,15 +151,15 @@ def _normalize_row(
     commission = parse_decimal((row.get("commission") or "").strip())
     net_cash_amount = parse_decimal((row.get("net_cash_amount") or "").strip())
     if activity_type.lower() == "trade" and activity_sub_type.upper() == "BUY":
-        return mapped_event(
-            MappedEventSpec(
-                event_id=f"wealthsimple:{raw_file}:{row_ref}",
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=f"wealthsimple:{raw_file}:{row_ref}",
                 source=str(profile.source),
                 adapter_id="wealthsimple",
                 account=account_id,
                 wallet=account_id,
                 timestamp=timestamp,
-                event_kind="Trade",
+                category="trade",
                 description="Wealthsimple Crypto buy",
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
@@ -172,15 +172,15 @@ def _normalize_row(
             )
         )
     if activity_type.lower() == "trade" and activity_sub_type.upper() == "SELL":
-        return mapped_event(
-            MappedEventSpec(
-                event_id=f"wealthsimple:{raw_file}:{row_ref}",
+        return mapped_transaction(
+            MappedTransactionSpec(
+                transaction_id=f"wealthsimple:{raw_file}:{row_ref}",
                 source=str(profile.source),
                 adapter_id="wealthsimple",
                 account=account_id,
                 wallet=account_id,
                 timestamp=timestamp,
-                event_kind="Trade",
+                category="trade",
                 description="Wealthsimple Crypto sell",
                 raw_file=raw_file,
                 raw_row_ref=row_ref,

@@ -5,26 +5,26 @@ from __future__ import annotations
 from pathlib import Path
 
 from crypto_reconciliation.domain.models import (
-    CanonicalBalance,
-    CanonicalEvent,
+    BalanceSnapshot,
     IssueRecord,
     NormalizationReviewRecord,
+    NormalizedTransaction,
 )
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 
 
 class FilesystemStorage:
-    def write_canonical_events(self, path: Path, events: tuple[CanonicalEvent, ...]) -> None:
+    def write_transactions(self, path: Path, transactions: tuple[NormalizedTransaction, ...]) -> None:
         write_rows(
             path,
             (
-                "event_id",
+                "transaction_id",
                 "source",
                 "adapter_id",
                 "account",
                 "wallet",
                 "timestamp",
-                "event_kind",
+                "category",
                 "description",
                 "asset_in",
                 "amount_in",
@@ -38,10 +38,10 @@ class FilesystemStorage:
                 "confidence",
                 "status",
             ),
-            (event.to_row() for event in events),
+            (transaction.to_row() for transaction in transactions),
         )
 
-    def write_canonical_balances(self, path: Path, balances: tuple[CanonicalBalance, ...]) -> None:
+    def write_balances(self, path: Path, balances: tuple[BalanceSnapshot, ...]) -> None:
         write_rows(
             path,
             ("source", "account", "wallet", "asset", "quantity", "as_of", "balance_kind", "notes"),

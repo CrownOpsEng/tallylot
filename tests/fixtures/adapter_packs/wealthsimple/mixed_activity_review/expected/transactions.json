@@ -6,10 +6,9 @@
     "amount_out": "10000",
     "asset_in": "BTC",
     "asset_out": "CAD",
+    "category": "trade",
     "confidence": "high",
     "description": "Wealthsimple Crypto buy",
-    "event_id": "wealthsimple:activities-export-2026-03-23.csv:row:2",
-    "event_kind": "Trade",
     "fee_amount": "1.25",
     "fee_asset": "CAD",
     "raw_file": "activities-export-2026-03-23.csv",
@@ -17,6 +16,7 @@
     "source": "WealthSimple",
     "status": "mapped",
     "timestamp": "2023-09-22 00:00:00",
+    "transaction_id": "wealthsimple:activities-export-2026-03-23.csv:row:2",
     "tx_hash": "",
     "wallet": "acct-1"
   }

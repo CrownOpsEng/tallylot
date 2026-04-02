@@ -1,8 +1,6 @@
 {
   "adapter_id": "near",
   "balance_count": 0,
-  "event_count": 3,
-  "events_outside_normalization_window": 0,
   "issue_count": 0,
   "issues_outside_normalization_window": 0,
   "normalization_window_end": "",
@@ -10,5 +8,7 @@
   "review_count": 0,
   "review_summary": [],
   "source": "capture-near",
+  "transaction_count": 3,
+  "transactions_outside_normalization_window": 0,
   "wallet_count": 1
 }

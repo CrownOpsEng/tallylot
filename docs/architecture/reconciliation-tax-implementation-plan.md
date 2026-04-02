@@ -55,9 +55,9 @@ CoinTracking remains useful for:
 CoinTracking must not remain the core ledger model.
 CoinTracking tax outputs must not become required operational inputs.
 
-### 3. Replace The Canonical Event Center With A Richer Fact Model
+### 3. Replace The Current Transaction Center With A Richer Fact Model
 
-The current canonical event model is too narrow for:
+The current normalized transaction model is too narrow for:
 
 - multi-leg transactions
 - collateral, loan, and liquidity flows
@@ -66,12 +66,14 @@ The current canonical event model is too narrow for:
 - independent journaling
 - jurisdiction-neutral tax policy
 
-The repo should introduce a new provider-neutral fact model and keep the
-current canonical event model as a compatibility projection during migration.
+The repo should introduce a new provider-neutral fact model and replace the
+current normalized transaction model directly. Do not add compatibility
+wrappers, parallel legacy names, or dual-write shims just to preserve the old
+shape.
 
 ### 4. Use Layered Classification
 
-A single `event_kind` string is not a stable center for the next phase.
+A single `category` string is not a stable center for the next phase.
 
 Every normalized fact should support distinct classification layers:
 
@@ -152,6 +154,9 @@ rules remain explicit and tool-friendly.
   compatibility metadata stay in output adapters or projection services rather
   than in core normalized models
 - adapters do not own tax logic, checkpoint policy, or reconciliation rules
+- adapters should stay focused on source/output translation. Core data
+  manipulation, verification, and workflow policy belong in application and
+  domain code.
 
 ## Input And Oracle Boundaries
 
@@ -330,13 +335,13 @@ Outgoing types:
 - `Repay Loan`
 - `Liquidation`
 
-### Compatibility Notes
+### Oracle And Projection Notes
 
 - normalize label aliases such as `Gift / Tip` and `Gift/Tip`
 - treat Double-entry report labels such as `Deposit (IN)` as report-only labels,
-  not canonical type values
-- preserve optional CoinTracking valuation and `Tx-ID` fields in compatibility
-  projections
+  not core transaction labels
+- preserve optional CoinTracking valuation and `Tx-ID` fields inside
+  CoinTracking-only projection adapters
 
 ### Oracle Inputs To Support
 
@@ -365,7 +370,7 @@ Deliverables:
 
 - final schema and package decisions
 - roadmap updates
-- migration plan from canonical events to transaction facts
+- migration plan from normalized transactions to transaction facts
 - provenance policy for external ideas and direct code reuse
 
 ### Phase 1. Boundary Models And Oracle Readers
@@ -376,18 +381,18 @@ Deliverables:
 
 - Pydantic row models for CoinTracking report families
 - parser services for all oracle exports
-- compatibility enum and alias normalization
+- CoinTracking projection enum and alias normalization
 - comparison-ready artifact contracts
 
-### Phase 2. Core Fact Model And Dual-Write Normalization
+### Phase 2. Core Fact Model And Direct Normalization Replacement
 
 Estimated effort: `18` to `28` hours
 
 Deliverables:
 
 - transaction fact domain package
-- normalization result evolution to include fact artifacts
-- compatibility projection back to legacy canonical event artifacts
+- normalization result evolution to emit fact artifacts directly
+- downstream service updates to consume fact artifacts without wrappers
 - parity tests for current adapters
 
 ### Phase 3. Deterministic Reconciliation And Checkpointing
@@ -537,8 +542,9 @@ Perform only the refactors required to support the new architecture:
 - split new domain concepts into dedicated packages rather than expanding
   `domain/models/`
 - introduce transaction facts before expanding tax services
-- dual-write legacy compatibility artifacts while migrating downstream services
-- retire legacy canonical-first workflows only after parity coverage exists
+- replace normalized transaction artifacts directly while migrating downstream
+  services
+- remove normalized-transaction-first workflows once fact consumers land
 
 Do not:
 
@@ -546,7 +552,7 @@ Do not:
 - add a web UI
 - add generic workflow engines
 - re-centralize business rules in adapters
-- keep pushing new semantics into one `event_kind` string
+- keep pushing new semantics into one `category` string
 
 ## Time Summary
 
