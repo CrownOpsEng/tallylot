@@ -1,10 +1,14 @@
 # Method Of Procedure
 
+Use `docs/OPERATIONS_QUICKSTART.md` when you want the short operational path.
+Use this file when you need the full procedure and supporting detail.
+
 ## Objective
 
-Use CoinTracking.info as the live ledger while this package manages evidence,
-normalization, staging, verification, and review artifacts in the external
-workspace.
+Use this runbook for the current operator workflow, where the typed package
+manages evidence, normalization, staging, verification, and review artifacts
+in the external workspace and manual CoinTracking work is still part of the
+round-close process.
 
 ## Working Principles
 

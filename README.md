@@ -112,7 +112,8 @@ uv run python -m tools.run_quality_gates --full-tests
 ## Docs
 
 Start with [AGENTS.md](AGENTS.md) for task routing, then use the repo-owned
-docs under [docs/](docs/README.md).
+docs under [docs/](docs/README.md). For the narrowest doc or command route,
+use [docs/FILE_MAP.md](docs/FILE_MAP.md).
 
 ## License
 
