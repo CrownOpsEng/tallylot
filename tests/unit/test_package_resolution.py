@@ -350,3 +350,80 @@ def test_resolve_bundle_packages_requires_strictly_newer_marker_to_supersede_con
     second_key = ("source_raw", "binance", "2021-05", "202203291830-export-b")
     assert resolution.package_decisions[first_key]["package_status"] == "overlap_partial_review"
     assert resolution.package_decisions[second_key]["package_status"] == "overlap_partial_review"
+
+
+def test_resolve_bundle_packages_keeps_same_end_day_range_files_in_single_cycle_bundle() -> None:
+    rows = [
+        make_row(
+            bundle_id="range-bundle",
+            bundle_relative_path="Binance Transaction History 2021-05-01 to 2021-08-01.csv",
+            sha256="hash-a",
+            source_path="/incoming/Binance Transaction History 2021-05-01 to 2021-08-01.csv",
+        ),
+        make_row(
+            bundle_id="range-bundle",
+            bundle_relative_path="Borrow History 2021-07-01 to 2021-08-01.csv",
+            sha256="hash-b",
+            source_path="/incoming/Borrow History 2021-07-01 to 2021-08-01.csv",
+        ),
+    ]
+
+    resolution = package_resolution.resolve_bundle_packages(rows)
+
+    bundle_key = ("source_raw", "binance", "2021-05", "range-bundle")
+    assert resolution.package_decisions[bundle_key]["package_status"] == "primary"
+    assert resolution.package_decisions[bundle_key]["package_cycle_status"] == "single_cycle"
+
+
+def test_resolve_bundle_packages_flags_bundle_when_range_end_days_disagree() -> None:
+    rows = [
+        make_row(
+            bundle_id="range-bundle",
+            bundle_relative_path="Binance Transaction History 2021-05-01 to 2021-08-01.csv",
+            sha256="hash-a",
+            source_path="/incoming/Binance Transaction History 2021-05-01 to 2021-08-01.csv",
+        ),
+        make_row(
+            bundle_id="range-bundle",
+            bundle_relative_path="Borrow History 2021-07-01 to 2021-08-20.csv",
+            sha256="hash-b",
+            source_path="/incoming/Borrow History 2021-07-01 to 2021-08-20.csv",
+        ),
+    ]
+
+    resolution = package_resolution.resolve_bundle_packages(rows)
+
+    bundle_key = ("source_raw", "binance", "2021-05", "range-bundle")
+    assert resolution.package_decisions[bundle_key]["package_status"] == "mixed_cycle_review"
+
+
+def test_resolve_bundle_packages_does_not_merge_packages_for_different_wallet_addresses() -> None:
+    rows = [
+        make_row(bundle_id="202203291830-export", bundle_relative_path="borrow.csv", sha256="shared", source_path="/incoming/0x1111111111111111111111111111111111111111/202203291830-export/borrow.csv"),
+        make_row(bundle_id="202203291830-export", bundle_relative_path="repay.csv", sha256="repay", source_path="/incoming/0x1111111111111111111111111111111111111111/202203291830-export/repay.csv"),
+        make_row(bundle_id="202203291730-export", bundle_relative_path="borrow.csv", sha256="shared", source_path="/incoming/0x2222222222222222222222222222222222222222/202203291730-export/borrow.csv"),
+        make_row(bundle_id="202203291730-export", bundle_relative_path="interest.csv", sha256="interest", source_path="/incoming/0x2222222222222222222222222222222222222222/202203291730-export/interest.csv"),
+    ]
+
+    resolution = package_resolution.resolve_bundle_packages(rows)
+
+    newer_key = ("source_raw", "binance", "2021-05", "202203291830-export")
+    older_key = ("source_raw", "binance", "2021-05", "202203291730-export")
+    assert resolution.package_decisions[newer_key]["package_status"] == "overlap_partial_review"
+    assert resolution.package_decisions[older_key]["package_status"] == "overlap_partial_review"
+
+
+def test_resolve_bundle_packages_does_not_merge_packages_for_different_account_labels() -> None:
+    rows = [
+        make_row(bundle_id="202203291830-export", bundle_relative_path="borrow.csv", sha256="shared", source_path="/incoming/account-main/202203291830-export/borrow.csv"),
+        make_row(bundle_id="202203291830-export", bundle_relative_path="repay.csv", sha256="repay", source_path="/incoming/account-main/202203291830-export/repay.csv"),
+        make_row(bundle_id="202203291730-export", bundle_relative_path="borrow.csv", sha256="shared", source_path="/incoming/account-margin/202203291730-export/borrow.csv"),
+        make_row(bundle_id="202203291730-export", bundle_relative_path="interest.csv", sha256="interest", source_path="/incoming/account-margin/202203291730-export/interest.csv"),
+    ]
+
+    resolution = package_resolution.resolve_bundle_packages(rows)
+
+    newer_key = ("source_raw", "binance", "2021-05", "202203291830-export")
+    older_key = ("source_raw", "binance", "2021-05", "202203291730-export")
+    assert resolution.package_decisions[newer_key]["package_status"] == "overlap_partial_review"
+    assert resolution.package_decisions[older_key]["package_status"] == "overlap_partial_review"

@@ -17,6 +17,9 @@ PACKAGE_KEY = tuple[str, str, str, str]
 COMPACT_TIMESTAMP_14 = re.compile(r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)")
 COMPACT_TIMESTAMP_12 = re.compile(r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)")
 DASHED_DATE = re.compile(r"(?<!\d)(20\d{2})[-_](\d{2})[-_](\d{2})(?!\d)")
+EVM_ADDRESS = re.compile(r"0x[a-fA-F0-9]{8,40}")
+NAMED_SCOPE = re.compile(r"(?:^|[/_. -])(account|wallet|address)[_ -]*([a-zA-Z0-9]{3,})(?=$|[/_. -])", re.IGNORECASE)
+GENERIC_SCOPE_IDENTIFIERS = {"capture", "export", "history", "incoming", "raw", "files", "report", "reports", "data"}
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,7 @@ class BundlePackage:
     latest_marker: datetime | None
     cycle_day: date | None
     mixed_cycle: bool
+    scope_tokens: frozenset[str]
 
 
 @dataclass(frozen=True)
@@ -90,6 +94,18 @@ def _extract_datetimes(text: str) -> list[datetime]:
     return values
 
 
+def _extract_scope_tokens(text: str) -> set[str]:
+    tokens: set[str] = set()
+    for match in EVM_ADDRESS.finditer(text):
+        tokens.add(f"evm:{match.group(0).lower()}")
+    for scope_kind, identifier in NAMED_SCOPE.findall(text):
+        normalized_identifier = identifier.lower()
+        if normalized_identifier in GENERIC_SCOPE_IDENTIFIERS:
+            continue
+        tokens.add(f"{scope_kind.lower()}:{normalized_identifier}")
+    return tokens
+
+
 def _row_marker(row: dict[str, str]) -> datetime | None:
     markers: list[datetime] = []
     for field in ("source_path", "archive_source_path", "path", "bundle_id"):
@@ -99,15 +115,26 @@ def _row_marker(row: dict[str, str]) -> datetime | None:
     return max(markers) if markers else None
 
 
+def _row_scope_tokens(row: dict[str, str]) -> set[str]:
+    tokens: set[str] = set()
+    for field in ("source_path", "archive_source_path", "bundle_id"):
+        value = row.get(field, "")
+        if value:
+            tokens.update(_extract_scope_tokens(value))
+    return tokens
+
+
 def _build_package(rows: Sequence[dict[str, str]], group_key: tuple[str, str, str], bundle_id: str, indexes: Sequence[int]) -> BundlePackage:
     material_indexes = _material_indexes(rows, indexes)
     logical_hashes: dict[str, Counter[str]] = defaultdict(Counter)
     logical_indexes: dict[str, list[int]] = defaultdict(list)
     markers: list[datetime] = []
+    scope_tokens: set[str] = set()
     for index in indexes:
         marker = _row_marker(rows[index])
         if marker is not None:
             markers.append(marker)
+        scope_tokens.update(_row_scope_tokens(rows[index]))
     for index in material_indexes:
         key = _logical_key(rows[index])
         logical_hashes[key][rows[index]["sha256"]] += 1
@@ -125,6 +152,7 @@ def _build_package(rows: Sequence[dict[str, str]], group_key: tuple[str, str, st
         latest_marker=max(markers) if markers else None,
         cycle_day=marker_days[0] if len(marker_days) == 1 else None,
         mixed_cycle=len(marker_days) > 1,
+        scope_tokens=frozenset(scope_tokens),
     )
 
 
@@ -142,6 +170,12 @@ def _same_export_cycle(primary: BundlePackage, candidate: BundlePackage) -> bool
     return True
 
 
+def _compatible_scope(primary: BundlePackage, candidate: BundlePackage) -> bool:
+    if primary.scope_tokens and candidate.scope_tokens:
+        return bool(primary.scope_tokens & candidate.scope_tokens)
+    return True
+
+
 def _can_supersede(primary: BundlePackage, candidate: BundlePackage) -> bool:
     if primary.latest_marker is None or candidate.latest_marker is None:
         return False
@@ -152,6 +186,8 @@ def _can_supersede(primary: BundlePackage, candidate: BundlePackage) -> bool:
 
 def _evaluate_merge(primary: BundlePackage, candidate: BundlePackage, component_hashes: Counter[str], component_logical_hashes: dict[str, Counter[str]], rows: Sequence[dict[str, str]]) -> tuple[bool, set[int], Counter[str], dict[str, Counter[str]]]:
     if not _same_export_cycle(primary, candidate):
+        return False, set(), Counter(), {}
+    if not _compatible_scope(primary, candidate):
         return False, set(), Counter(), {}
     shared_hashes = candidate.material_hashes & component_hashes
     if not shared_hashes:
