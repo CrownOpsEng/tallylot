@@ -98,8 +98,8 @@ Working source adapters should follow four steps:
 The default source adapter package should keep:
 
 - `adapter.py` for the thin port implementation and manifest
-- a docstring-only package `__init__.py`; do not re-export `ADAPTER` from the
-  package root
+- a docstring-only package `__init__.py`; do not re-export `ADAPTER`, schema
+  constants, or helper symbols from the package root
 - `translation.py` for provider-local file-family or row translation registries
 - optional provider-local parser modules and wallet-evidence modules
 
@@ -149,6 +149,9 @@ Known current adapter workaround:
 - Discovery loads `ADAPTER` objects and validates their manifests.
 - `pytest` should collect adapter-local tests from package-local `tests/`
   directories under `src/tallylot/adapters/...`.
+- Package-style adapter roots stay docstring-only. Import schema constants,
+  helper functions, or private test targets from the module that owns them,
+  not through package-root aliases.
 
 ## Testing
 
