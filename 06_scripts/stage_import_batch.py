@@ -22,6 +22,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--out-dir", required=True, type=Path)
     parser.add_argument("--staged-name")
     parser.add_argument("--import-ready-dir", type=Path)
+    parser.add_argument("--normalization-summary", type=Path)
     parser.add_argument("--window-start")
     parser.add_argument("--window-end")
     return parser.parse_args(argv)
@@ -42,6 +43,45 @@ def count_candidate_rows_outside_window(candidate: Path, *, window_start: str, w
     return rows_outside_window
 
 
+def read_normalization_summary(path: Path) -> dict[str, object]:
+    summary_path = require_file(path.resolve(), "Normalization summary")
+    with summary_path.open(encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise ValueError(f"Normalization summary must be a JSON object: {summary_path}")
+    return payload
+
+
+def resolve_normalization_window(
+    *,
+    candidate: Path,
+    normalization_summary: Path | None,
+    window_start: str | None,
+    window_end: str | None,
+) -> tuple[str, str, str]:
+    effective_window_start = repo_project_window_start() if window_start is None else window_start
+    effective_window_end = REPO_PROJECT_WINDOW_END if window_end is None else window_end
+    summary_path = normalization_summary
+    if summary_path is None:
+        sibling_path = candidate.parent / "normalization_summary.json"
+        if sibling_path.exists():
+            summary_path = sibling_path
+
+    if summary_path is not None:
+        payload = read_normalization_summary(summary_path)
+        if window_start is None:
+            summary_start = payload.get("normalization_window_start", "")
+            if isinstance(summary_start, str) and summary_start:
+                effective_window_start = summary_start
+        if window_end is None:
+            summary_end = payload.get("normalization_window_end", "")
+            if isinstance(summary_end, str) and summary_end:
+                effective_window_end = summary_end
+        return effective_window_start, effective_window_end, str(summary_path.resolve())
+
+    return effective_window_start, effective_window_end, ""
+
+
 def stage_import_batch(
     candidate: Path,
     baseline_export_dir: Path,
@@ -49,14 +89,19 @@ def stage_import_batch(
     *,
     staged_name: str | None = None,
     import_ready_dir: Path | None = None,
+    normalization_summary: Path | None = None,
     window_start: str | None = None,
     window_end: str | None = None,
 ) -> dict[str, object]:
     candidate = require_file(candidate.resolve(), "CoinTracking candidate")
     out_dir = out_dir.resolve()
     overlap_dir = out_dir / "overlap_check"
-    effective_window_start = repo_project_window_start() if window_start is None else window_start
-    effective_window_end = REPO_PROJECT_WINDOW_END if window_end is None else window_end
+    effective_window_start, effective_window_end, normalization_summary_path = resolve_normalization_window(
+        candidate=candidate,
+        normalization_summary=normalization_summary,
+        window_start=window_start,
+        window_end=window_end,
+    )
     summary, flagged_rows = summarize_overlap(baseline_export_dir, candidate)
     write_overlap_artifacts(overlap_dir, summary, flagged_rows)
 
@@ -66,6 +111,7 @@ def stage_import_batch(
             "candidate": str(candidate),
             "canonical_timezone": CANONICAL_TIMEZONE,
             "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+            "normalization_summary": normalization_summary_path,
             "normalization_window_start": effective_window_start,
             "normalization_window_end": effective_window_end,
             "overlap_summary": str(overlap_dir / "overlap_summary.json"),
@@ -87,6 +133,7 @@ def stage_import_batch(
             "candidate": str(candidate),
             "canonical_timezone": CANONICAL_TIMEZONE,
             "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+            "normalization_summary": normalization_summary_path,
             "normalization_window_start": effective_window_start,
             "normalization_window_end": effective_window_end,
             "overlap_summary": str(overlap_dir / "overlap_summary.json"),
@@ -114,6 +161,7 @@ def stage_import_batch(
         "candidate": str(candidate),
         "canonical_timezone": CANONICAL_TIMEZONE,
         "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+        "normalization_summary": normalization_summary_path,
         "normalization_window_start": effective_window_start,
         "normalization_window_end": effective_window_end,
         "staged_path": str(staged_path),
@@ -134,6 +182,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.out_dir,
         staged_name=args.staged_name,
         import_ready_dir=args.import_ready_dir,
+        normalization_summary=args.normalization_summary,
         window_start=args.window_start,
         window_end=args.window_end,
     )

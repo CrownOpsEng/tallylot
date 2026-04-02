@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -648,3 +649,43 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertEqual("2025-12-31 23:59:59", events["normalization_window_end"])
         self.assertIn("2023-08-05 14:34:05", canonical_rows)
         self.assertNotIn("2026-01-01", canonical_rows)
+
+    def test_normalize_source_cache_invalidates_when_profile_hints_change_adapter_behavior(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            raw_dir = root / "binance" / "raw"
+            raw_dir.mkdir(parents=True)
+            (raw_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
+                (
+                    "User ID,Time,Account,Operation,Coin,Change,Remark\n"
+                    "1,23-08-05 08:34:04,Funding,Transfer Between Main and Funding Wallet,USDT,-10,\n"
+                    "1,23-08-05 08:34:04,Spot,Transfer Between Main and Funding Wallet,USDT,10,\n"
+                ),
+                encoding="utf-8",
+            )
+            out_dir = root / "normalized"
+            profile_without_cutoff = root / "profile_without_cutoff.json"
+            profile_with_cutoff = root / "profile_with_cutoff.json"
+            profile_without_cutoff.write_text(json.dumps({"normalization_hints": {}}), encoding="utf-8")
+            profile_with_cutoff.write_text(
+                json.dumps({"normalization_hints": {"project_baseline_cutoff_timestamp": "2023-08-05 08:34:04"}}),
+                encoding="utf-8",
+            )
+
+            first = normalize_source.normalize_source(
+                "Binance",
+                raw_dir,
+                out_dir,
+                profile_json=profile_without_cutoff,
+            )
+            second = normalize_source.normalize_source(
+                "Binance",
+                raw_dir,
+                out_dir,
+                profile_json=profile_with_cutoff,
+            )
+
+        self.assertEqual("needs_review", first["status"])
+        self.assertEqual(2, first["exceptions"])
+        self.assertEqual("ready", second["status"])
+        self.assertEqual(0, second["exceptions"])

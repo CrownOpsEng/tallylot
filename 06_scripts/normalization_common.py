@@ -50,6 +50,28 @@ def attach_fee_to_event(
     return updated
 
 
+def validate_standalone_fee_event(
+    event: dict[str, str],
+    *,
+    fee_amount: str | Decimal,
+    fee_asset: str,
+) -> dict[str, str]:
+    fee_decimal = fee_amount if isinstance(fee_amount, Decimal) else decimal_or_zero(fee_amount)
+    fee_asset_text = fee_asset.strip().upper()
+    if fee_decimal <= 0 or not fee_asset_text:
+        raise ValueError("Standalone fee events require a positive fee_amount and a non-blank fee_asset")
+
+    amount_out = decimal_or_zero(event.get("amount_out", "0"))
+    asset_out = (event.get("asset_out") or "").strip().upper()
+    if amount_out != fee_decimal or asset_out != fee_asset_text:
+        raise ValueError(
+            "Standalone fee event must match the requested fee amount and asset."
+        )
+    if (event.get("event_kind") or "").strip() != "Other Fee":
+        raise ValueError("Standalone fee event must use event_kind 'Other Fee'.")
+    return event
+
+
 def attach_fee_to_event_list(
     events: list[dict[str, str]],
     *,
@@ -70,7 +92,7 @@ def attach_fee_to_event_list(
 
     if not events:
         if standalone_event is not None:
-            return [standalone_event]
+            return [validate_standalone_fee_event(standalone_event, fee_amount=fee_decimal, fee_asset=fee_asset_text)]
         raise ValueError(
             "Attached fees require a single unambiguous target event; emit a standalone fee event instead."
         )
@@ -94,7 +116,10 @@ def attach_fee_to_event_list(
 
     if len(matches) != 1:
         if standalone_event is not None:
-            return [*events, standalone_event]
+            return [
+                *events,
+                validate_standalone_fee_event(standalone_event, fee_amount=fee_decimal, fee_asset=fee_asset_text),
+            ]
         raise ValueError(
             "Attached fees require a single unambiguous target event; emit a standalone fee event instead."
         )

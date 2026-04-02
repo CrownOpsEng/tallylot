@@ -79,3 +79,78 @@ class StageImportBatchTests(unittest.TestCase):
 
             self.assertEqual("blocked", summary["status"])
             self.assertEqual(1, summary["rows_outside_normalization_window"])
+
+    def test_stage_import_batch_uses_normalization_summary_window_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            baseline = root / "baseline"
+            baseline.mkdir()
+            write_csv(
+                baseline / "Trade Table.csv",
+                ["Type", "Buy", "Cur.", "Sell", "Cur.", "Fee", "Cur.", "Exchange", "Group", "Comment", "Date", "Tx-ID"],
+                [["Trade", "1.00000000", "BTC", "10.00000000", "CAD", "0.10000000", "CAD", "Coinbase", "", "", "2023-08-05 08:34:04", "tx-1"]],
+            )
+            normalized_dir = root / "normalized"
+            normalized_dir.mkdir()
+            candidate = normalized_dir / "candidate.csv"
+            write_csv(
+                candidate,
+                ["Type", "Buy", "Cur.", "Sell", "Cur.", "Fee", "Cur.", "Exchange", "Group", "Comment", "Date", "Tx-ID"],
+                [["Trade", "1.00000000", "BTC", "10.00000000", "CAD", "0.10000000", "CAD", "Coinbase", "", "", "2026-01-01 00:00:00", "tx-2"]],
+            )
+            (normalized_dir / "normalization_summary.json").write_text(
+                (
+                    "{\n"
+                    '  "normalization_window_start": "2023-08-05 08:34:05",\n'
+                    '  "normalization_window_end": "2025-12-31 23:59:59"\n'
+                    "}\n"
+                ),
+                encoding="utf-8",
+            )
+
+            summary = stage_import_batch.stage_import_batch(candidate, baseline, root / "batch")
+
+            self.assertEqual("blocked", summary["status"])
+            self.assertEqual("2025-12-31 23:59:59", summary["normalization_window_end"])
+            self.assertEqual(str((normalized_dir / "normalization_summary.json").resolve()), summary["normalization_summary"])
+            self.assertEqual(1, summary["rows_outside_normalization_window"])
+
+    def test_stage_import_batch_explicit_window_overrides_normalization_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            baseline = root / "baseline"
+            baseline.mkdir()
+            write_csv(
+                baseline / "Trade Table.csv",
+                ["Type", "Buy", "Cur.", "Sell", "Cur.", "Fee", "Cur.", "Exchange", "Group", "Comment", "Date", "Tx-ID"],
+                [["Trade", "1.00000000", "BTC", "10.00000000", "CAD", "0.10000000", "CAD", "Coinbase", "", "", "2023-08-05 08:34:04", "tx-1"]],
+            )
+            normalized_dir = root / "normalized"
+            normalized_dir.mkdir()
+            candidate = normalized_dir / "candidate.csv"
+            write_csv(
+                candidate,
+                ["Type", "Buy", "Cur.", "Sell", "Cur.", "Fee", "Cur.", "Exchange", "Group", "Comment", "Date", "Tx-ID"],
+                [["Trade", "1.00000000", "BTC", "10.00000000", "CAD", "0.10000000", "CAD", "Coinbase", "", "", "2024-01-01 00:00:00", "tx-2"]],
+            )
+            summary_path = normalized_dir / "normalization_summary.json"
+            summary_path.write_text(
+                (
+                    "{\n"
+                    '  "normalization_window_start": "2023-08-05 08:34:05",\n'
+                    '  "normalization_window_end": "2023-12-31 23:59:59"\n'
+                    "}\n"
+                ),
+                encoding="utf-8",
+            )
+
+            summary = stage_import_batch.stage_import_batch(
+                candidate,
+                baseline,
+                root / "batch",
+                normalization_summary=summary_path,
+                window_end="2024-12-31 23:59:59",
+            )
+
+            self.assertEqual("staged", summary["status"])
+            self.assertEqual("2024-12-31 23:59:59", summary["normalization_window_end"])

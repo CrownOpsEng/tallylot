@@ -610,6 +610,53 @@ class ScriptEndToEndTests(unittest.TestCase):
             self.assertTrue((out_dir / "candidate.csv").exists())
             self.assertTrue((ready_dir / "candidate.csv").exists())
 
+    def test_stage_import_batch_cli_uses_normalization_summary_window(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            baseline = root / "baseline"
+            baseline.mkdir()
+            baseline_trade = baseline / "Trade Table.csv"
+            baseline_trade.write_text(
+                "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
+                "Trade,1.00000000,BTC,10.00000000,CAD,0.10000000,CAD,Coinbase,,,2023-08-05 08:34:04,tx-1\n",
+                encoding="utf-8",
+            )
+            normalized_dir = root / "normalized"
+            normalized_dir.mkdir()
+            candidate = normalized_dir / "candidate.csv"
+            candidate.write_text(
+                "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
+                "Trade,1.00000000,BTC,10.00000000,CAD,0.10000000,CAD,Coinbase,,,2026-01-01 00:00:00,tx-2\n",
+                encoding="utf-8",
+            )
+            (normalized_dir / "normalization_summary.json").write_text(
+                (
+                    "{\n"
+                    '  "normalization_window_start": "2023-08-05 08:34:05",\n'
+                    '  "normalization_window_end": "2025-12-31 23:59:59"\n'
+                    "}\n"
+                ),
+                encoding="utf-8",
+            )
+            out_dir = root / "batch"
+
+            result = run_script(
+                "stage_import_batch.py",
+                "--candidate",
+                str(candidate),
+                "--baseline-export-dir",
+                str(baseline),
+                "--out-dir",
+                str(out_dir),
+                check=False,
+            )
+            self.assertEqual(1, result.returncode)
+            summary = json.loads(result.stdout)
+
+        self.assertEqual("blocked", summary["status"])
+        self.assertEqual("2025-12-31 23:59:59", summary["normalization_window_end"])
+        self.assertEqual(1, summary["rows_outside_normalization_window"])
+
     def test_dry_run_pipeline_coinbase_profile_normalize_render_overlap_reconcile(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"
         baseline_dir = REPO_ROOT / "01_raw_exports" / "cointracking" / "2023-08-05_full_export"

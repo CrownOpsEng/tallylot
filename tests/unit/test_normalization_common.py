@@ -83,8 +83,9 @@ class NormalizationCommonTests(unittest.TestCase):
         standalone = {
             "event_id": "fee-1",
             "timestamp": "2024-01-01 00:00:00",
-            "fee_amount": "",
-            "fee_asset": "",
+            "event_kind": "Other Fee",
+            "amount_out": "0.50000000",
+            "asset_out": "BNB",
         }
 
         updated = normalization_common.attach_fee_to_event_list(
@@ -97,3 +98,25 @@ class NormalizationCommonTests(unittest.TestCase):
 
         self.assertEqual(3, len(updated))
         self.assertEqual("fee-1", updated[-1]["event_id"])
+
+    def test_attach_fee_to_event_list_rejects_mismatched_standalone_fee_event(self) -> None:
+        events = [
+            {"event_id": "evt-1", "timestamp": "2024-01-01 00:00:00", "fee_amount": "", "fee_asset": ""},
+            {"event_id": "evt-2", "timestamp": "2024-01-01 00:00:00", "fee_amount": "", "fee_asset": ""},
+        ]
+        standalone = {
+            "event_id": "fee-1",
+            "timestamp": "2024-01-01 00:00:00",
+            "event_kind": "Other Fee",
+            "amount_out": "999.00000000",
+            "asset_out": "WRONG",
+        }
+
+        with self.assertRaisesRegex(ValueError, "Standalone fee event must match"):
+            normalization_common.attach_fee_to_event_list(
+                events,
+                fee_amount="0.5",
+                fee_asset="bnb",
+                timestamp="2024-01-01 00:00:00",
+                standalone_event=standalone,
+            )

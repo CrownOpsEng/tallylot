@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import replace
+import hashlib
 import json
 from pathlib import Path
 from typing import Sequence
@@ -38,6 +39,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--window-end")
     parser.add_argument("--force", action="store_true")
     return parser.parse_args(argv)
+
+
+def normalization_context_fingerprint(hints: dict[str, object] | None) -> str:
+    payload = json.dumps(hints or {}, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def normalize_source(
@@ -81,6 +87,7 @@ def normalize_source(
     manifest_fingerprint = profile.manifest_fingerprint
     adapter_name = adapter.name
     effective_window_start, effective_window_end = normalization_window_from_hints(profile.normalization_hints)
+    context_fingerprint = normalization_context_fingerprint(profile.normalization_hints)
     timezone_summary, timezone_issues = adapter.validate_profile_timezones(profile)
     profile = replace(profile, timezone_summary=timezone_summary, timezone_issues=timezone_issues)
     if timezone_issues:
@@ -105,6 +112,7 @@ def normalize_source(
             existing.get("manifest_fingerprint") == manifest_fingerprint
             and existing.get("adapter") == adapter_name
             and existing.get("exception_decisions_fingerprint") == decisions_digest
+            and existing.get("normalization_context_fingerprint", "") == context_fingerprint
             and existing.get("normalization_window_start", "") == effective_window_start
             and existing.get("normalization_window_end", "") == effective_window_end
             and events_path.exists()
@@ -118,6 +126,7 @@ def normalize_source(
                 "manifest_fingerprint": manifest_fingerprint,
                 "canonical_timezone": CANONICAL_TIMEZONE,
                 "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+                "normalization_context_fingerprint": context_fingerprint,
                 "normalization_window_start": effective_window_start,
                 "normalization_window_end": effective_window_end,
                 "timezone_status": str(existing.get("timezone_status", "not_checked")),
@@ -154,6 +163,7 @@ def normalize_source(
         "manifest_fingerprint": profile.manifest_fingerprint,
         "canonical_timezone": CANONICAL_TIMEZONE,
         "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+        "normalization_context_fingerprint": context_fingerprint,
         "normalization_window_start": effective_window_start,
         "normalization_window_end": effective_window_end,
         "timezone_status": timezone_summary["status"],
