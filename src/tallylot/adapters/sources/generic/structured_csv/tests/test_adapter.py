@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.generic.structured_csv import ADAPTER
+from tallylot.adapters.sources.generic.structured_csv.adapter import _StructuredCsvSourceAdapter
 from tallylot.adapters.sources.generic.structured_csv.contracts import REQUIRED_HEADER
 from tallylot.adapters.sources.generic.structured_csv.feedback import StructuredCsvFeedbackFactory
 from tallylot.adapters.sources.generic.structured_csv.normalization import translate_structured_csv
@@ -15,7 +15,7 @@ from tests.support.services import build_source_profile
 
 
 def test_structured_csv_adapter_matches_transactions_header(tmp_path: Path) -> None:
-    score = ADAPTER.match(
+    score = _StructuredCsvSourceAdapter().match(
         "fixture",
         tmp_path,
         (
