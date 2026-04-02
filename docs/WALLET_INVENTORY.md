@@ -2,7 +2,7 @@
 
 This repo now maintains a canonical wallet inventory under:
 
-`03_analysis/inventory/`
+`analysis/inventory/`
 
 Use it as the compact machine-readable answer to "what wallet identifiers do we know about, where did they come from, and do any need review?"
 
@@ -10,10 +10,10 @@ Use it as the compact machine-readable answer to "what wallet identifiers do we 
 
 | File | Purpose |
 | ---- | ------- |
-| `03_analysis/inventory/wallet_inventory.csv` | One row per known wallet identifier or public account key |
-| `03_analysis/inventory/wallet_inventory_evidence.csv` | Source-level evidence rows showing exactly where each identifier came from |
-| `03_analysis/inventory/wallet_inventory_issues.csv` | Deterministic review items such as partial aliases or missing identifiers |
-| `03_analysis/inventory/wallet_inventory_summary.json` | Small summary for scripts and AI agents |
+| `analysis/inventory/wallet_inventory.csv` | One row per known wallet identifier or public account key |
+| `analysis/inventory/wallet_inventory_evidence.csv` | Source-level evidence rows showing exactly where each identifier came from |
+| `analysis/inventory/wallet_inventory_issues.csv` | Deterministic review items such as partial aliases or missing identifiers |
+| `analysis/inventory/wallet_inventory_summary.json` | Small summary for scripts and AI agents |
 
 ## Current scope
 
@@ -44,7 +44,7 @@ Refresh the repo inventory with:
 python3 06_scripts/wallet_inventory.py --repo-root .
 ```
 
-`profile_source.py` also writes per-source wallet artifacts into `02_working/normalized/<source>/` and automatically refreshes the repo-wide inventory when the profile output lives inside this repo.
+`profile_source.py` also writes per-source wallet artifacts into `working/normalized/<source>/` and automatically refreshes the repo-wide inventory when the profile output lives inside this repo.
 
 ## Review rules
 

@@ -16,7 +16,7 @@ The project still follows the canonical cutoff:
 ## Execution Rules
 
 1. Import one source at a time.
-2. Do not import any source until its round is seeded in `05_outputs/logs/round_log.csv`.
+2. Do not import any source until its round is seeded in `outputs/logs/round_log.csv`.
 3. For every import round, export only the default verification set unless drift forces heavier reports.
 4. Do not move to the next source until the current round has a comparison package and a recorded gate result.
 5. Reopen fiat review only if a source changes CAD or another fiat layer in a way that conflicts with the current documented treatment.
@@ -45,17 +45,17 @@ These items stay in view while imports proceed:
 
 Use this checklist for every source in the queue:
 
-1. Confirm the source row in `03_analysis/issues/source_inventory.csv` is current.
+1. Confirm the source row in `analysis/issues/source_inventory.csv` is current.
 2. Confirm the candidate window starts strictly after `2023-08-05 08:34:04`.
-3. Capture raw files in `01_raw_exports/source/<source>/<capture_id>/` and keep `manifest.csv` inside that capture folder.
+3. Capture raw files in `evidence/raw/source/<source>/<capture_id>/` and keep `manifest.csv` inside that capture folder.
 4. Run `06_scripts/source_manifest.py` against the capture folder.
-5. Prepare the working import file in `02_working/import_batches/<source>/`.
+5. Prepare the working import file in `working/import_batches/<source>/`.
 6. Run `06_scripts/overlap_check.py` against the CoinTracking-ready candidate.
 7. Hold the batch if overlap screening does not pass.
-8. Copy the approved candidate to `04_import_ready/`.
+8. Copy the approved candidate to `working/import_batches/`.
 9. Seed the round with `06_scripts/round_scaffold.py`.
 10. Import exactly one source into CoinTracking.
-11. Export the default verification set into `02_working/verification/<round_id>/`:
+11. Export the default verification set into `working/verification/<round_id>/`:
     - `Validate Transactions`
     - `Missing Transactions` with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
     - `Duplicate Transactions`
@@ -63,9 +63,9 @@ Use this checklist for every source in the queue:
     - `Balance by Exchange`
 12. Run `06_scripts/verification_compare.py` against the prior verified state.
 13. Review the comparison package and classify any new issues before touching the next source.
-14. Update `03_analysis/issues/source_inventory.csv`.
-15. Update `03_analysis/issues/issue_log.csv` if any new issue or accepted exception appears.
-16. Update `05_outputs/logs/round_log.csv`.
+14. Update `analysis/issues/source_inventory.csv`.
+15. Update `analysis/issues/issue_log.csv` if any new issue or accepted exception appears.
+16. Update `outputs/logs/round_log.csv`.
 
 ## Stop Conditions
 
@@ -80,8 +80,8 @@ If that happens:
 
 1. Do not import the next source.
 2. Capture the fresh exports and comparison artifacts.
-3. Log the issue in `03_analysis/issues/issue_log.csv`.
-4. Record the failed gate in `05_outputs/logs/round_log.csv`.
+3. Log the issue in `analysis/issues/issue_log.csv`.
+4. Record the failed gate in `outputs/logs/round_log.csv`.
 5. Resolve the drift before resuming the queue.
 
 ## Closeout Target
@@ -90,6 +90,6 @@ The queue is complete when:
 
 1. Every in-scope source is either `complete` or intentionally excluded with evidence.
 2. Every import round has a verification package and comparison folder.
-3. Any unresolved item is explicitly documented in `03_analysis/issues/issue_log.csv`.
-4. The final `2025-12-31` checkpoint package is frozen under `05_outputs/checkpoints/2025-12-31_final/`.
+3. Any unresolved item is explicitly documented in `analysis/issues/issue_log.csv`.
+4. The final `2025-12-31` checkpoint package is frozen under `outputs/checkpoints/2025-12-31_final/`.
 5. No `2026` activity is included in the closeout import set.

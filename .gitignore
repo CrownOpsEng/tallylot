@@ -58,3 +58,11 @@ tmp/
 .tmp_golden_refresh/
 01_raw_exports/incoming/
 02_working/intake_reports/
+
+# Retired repo-local workspace roots
+/00_docs/
+/01_raw_exports/
+/02_working/
+/03_analysis/
+/04_import_ready/
+/05_outputs/

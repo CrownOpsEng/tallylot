@@ -16,7 +16,7 @@ Scope:
 
 This is not legal advice. When this guide conflicts with primary CRA guidance, follow the CRA source.
 
-This guide is intentionally not exhaustive. Use it for the default working position, then escalate to `00_docs/TAX_REFERENCE_MAP.md` when a fact pattern falls outside the ordinary path.
+This guide is intentionally not exhaustive. Use it for the default working position, then escalate to `docs/TAX_REFERENCE_MAP.md` when a fact pattern falls outside the ordinary path.
 
 ## Current status
 
@@ -234,9 +234,9 @@ Do not treat this guide as final authority for these situations:
 
 When one of those appears:
 
-1. log the issue in `03_analysis/issues/issue_log.csv`
+1. log the issue in `analysis/issues/issue_log.csv`
 2. collect the raw records first
-3. use `00_docs/TAX_REFERENCE_MAP.md` to jump to the relevant CRA source
+3. use `docs/TAX_REFERENCE_MAP.md` to jump to the relevant CRA source
 4. keep the issue open until the treatment is supportable
 
 ## Repo execution rules derived from tax compliance

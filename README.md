@@ -52,6 +52,11 @@ Initialize a workspace with:
 uv run crypto-reconciliation workspace init
 ```
 
+Repo-owned documentation stays under [`docs/`](docs/).
+Versioned runbooks and templates live in the repo. The external workspace holds
+live evidence, analysis artifacts, logs, and any working-copy docs under
+`<workspace>/docs/`.
+
 ## Commands
 
 ```bash
@@ -80,10 +85,10 @@ uv run pylint src tests tools
 uv run pytest
 ```
 
-`ruff`, `mypy`, `pyright`, and `pytest` are all required quality gates. The
-repo already ships a `.pre-commit-config.yaml`; install both the `pre-commit`
-and `commit-msg` hooks and treat a passing hook run as the minimum commit
-baseline.
+`ruff`, `mypy`, `pyright`, `pylint`, and `pytest` are all required quality
+gates. The repo already ships a `.pre-commit-config.yaml`; install both the
+`pre-commit` and `commit-msg` hooks and treat a passing hook run as the minimum
+commit baseline.
 
 This repo uses a `src/` layout and expects editor diagnostics to run against the
 project `.venv`. The checked-in VS Code workspace settings point Python,
@@ -96,6 +101,7 @@ only the narrow doc needed for the task.
 
 ## Docs
 
+- [docs/README.md](docs/README.md)
 - [ROADMAP.md](ROADMAP.md)
 - [docs/commit-standards.md](docs/commit-standards.md)
 - [docs/engineering-standards.md](docs/engineering-standards.md)

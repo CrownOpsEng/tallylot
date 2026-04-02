@@ -2,7 +2,7 @@
 
 ## Baseline checkpoint
 
-- Canonical baseline export: `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
+- Canonical baseline export: `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
 - Authoritative cutoff timestamp: **2023-08-05 08:34:04**
 - Delta window start: **strictly after 2023-08-05 08:34:04**
 - Baseline full-export transaction count: **31,021**
@@ -16,7 +16,7 @@
 
 - After `baseline_repair_round_01`, the current `Validate Transactions` export is clean at **0** rows.
 - After `baseline_repair_round_02`, the current strict `Missing Transactions` export shows **2** rows.
-- Those 2 rows are the already-documented Binance returned failed-transfer exception pair `MISS-013` and `MISS-015`; there are now **0** active missing-transaction issues left in `03_analysis/issues/issue_log.csv`.
+- Those 2 rows are the already-documented Binance returned failed-transfer exception pair `MISS-013` and `MISS-015`; there are now **0** active missing-transaction issues left in `analysis/issues/issue_log.csv`.
 - For ongoing repair and import review, `Missing Transactions` should be exported and reviewed with strict settings: **100% amount accuracy**, **only 100% matches hidden**, and **time accuracy `-24h | +48h`**.
 - `MISS-013` and `MISS-015` are now closed as a documented returned failed Binance USDT transfer event that CoinTracking's missing checker cannot pair cleanly without risking a valid transfer match.
 - `MISS-016` and `MISS-017` are now closed after the AXS Ronin to Binance fee-side correction cleared under strict review.
@@ -26,11 +26,11 @@
 
 - `Current Balance` and `Balance by Exchange` reconcile exactly at the asset-quantity level across **78** assets.
 - That reconciliation is internal to CoinTracking and does not prove external wallets and exchanges were all synced to the same practical boundary.
-- `03_analysis/reconciliation/baseline_source_activity.csv` now records the first and last baseline transaction timestamp seen for each source.
+- `analysis/reconciliation/baseline_source_activity.csv` now records the first and last baseline transaction timestamp seen for each source.
 - The only negative balance in `Current Balance` is **CAD -15,654.23**.
 - `baseline_cad_flow_by_type.csv` shows CAD bought **34,215.69**, CAD sold **49,869.92**, and CAD fees **156.26**.
 - CAD deposits and withdrawals recorded in the ledger net to zero; the user manually verified that this is an intentional general CAD tracking account inside CoinTracking rather than an omitted exchange-side fiat ledger leg.
-- The durable validation summary is in `00_docs/BASELINE_VALIDATION.md`.
+- The durable validation summary is in `docs/BASELINE_VALIDATION.md`.
 
 ## Universal intake capability status
 
@@ -47,7 +47,7 @@
 - `FIAT-001` is closed as a manually verified intentional general CAD tracking account unless conflicting data appears later
 - `SYNC-001` is closed based on the confirmed post-baseline source list
 - `VAL-001` and `VAL-002` are closed after `baseline_repair_round_01`; the current `Validate Transactions` export is clean
-- All baseline missing-transaction issues are now closed in `03_analysis/issues/issue_log.csv`; the current strict report only shows the already-accepted Binance returned-transfer exception pair
+- All baseline missing-transaction issues are now closed in `analysis/issues/issue_log.csv`; the current strict report only shows the already-accepted Binance returned-transfer exception pair
 - The initial post-baseline source list now starts from baseline balances above the **0.10 CAD** dust threshold; dust-only sources stay documented in the source inventory but are excluded from the initial pull queue
 - Remaining open items are source-evidence and scope follow-ups rather than active baseline missing-transaction blockers
 
@@ -57,4 +57,4 @@ Do **not** import any transaction after `2023-08-05 08:34:04` until:
 
 - the issue log is updated with source proof for any newly discovered active P1 items
 - the source inventory is populated for post-cutoff activity
-- the next round is logged in `05_outputs/logs/round_log.csv`
+- the next round is logged in `outputs/logs/round_log.csv`

@@ -16,7 +16,7 @@ This repo is the evidence, staging, and verification workspace for that process.
 
 - **CoinTracking remains the system of record for imports and corrections.**
 - **CRA primary guidance is the tax-law anchor for Canadian treatment questions.**
-- **The canonical baseline is the full export in `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`.**
+- **The canonical baseline is the full export in `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`.**
 - **The authoritative cutoff is the latest Trade Table timestamp: `2023-08-05 08:34:04`.**
 - **The delta window starts strictly after that cutoff.**
 - **Raw exports are immutable.**
@@ -32,34 +32,34 @@ This repo is the evidence, staging, and verification workspace for that process.
 
 ### Raw data
 
-- `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/` → canonical CoinTracking baseline export
-- `01_raw_exports/portfolio/cointracking/history/<capture_id>/` → later CoinTracking portfolio-system exports and saved report bundles
-- `01_raw_exports/source/<source>/<capture_id>/` → untouched external source capture
-- `01_raw_exports/source/<source>/<capture_id>/manifest.csv` → file manifest for that source capture
+- `evidence/raw/portfolio/cointracking/2023-08-05_full_export/` → canonical CoinTracking baseline export
+- `evidence/raw/portfolio/cointracking/history/<capture_id>/` → later CoinTracking portfolio-system exports and saved report bundles
+- `evidence/raw/source/<source>/<capture_id>/` → untouched external source capture
+- `evidence/raw/source/<source>/<capture_id>/manifest.csv` → file manifest for that source capture
 
 The `source` and `portfolio` branches are sibling roots by design. Portfolio-system outputs are verification and reconciliation evidence, not import-source truth.
 
 ### Working area
 
-- `02_working/normalized/` → profiled raw sources, canonical outputs, exception sets, and rendered working candidates
-- `02_working/import_batches/` → reviewed import candidates for the next CoinTracking step
-- `02_working/verification/<round_id>/` → fresh CoinTracking exports captured after a repair or import round
+- `working/normalized/` → profiled raw sources, canonical outputs, exception sets, and rendered working candidates
+- `working/import_batches/` → reviewed import candidates for the next CoinTracking step
+- `working/verification/<round_id>/` → fresh CoinTracking exports captured after a repair or import round
 
 ### Analysis and control files
 
-- `00_docs/BASELINE_VALIDATION.md` → durable baseline integrity summary
-- `00_docs/TAX_REFERENCE_MAP.md` → targeted CRA source routing for edge cases and tax-position validation
-- `03_analysis/issues/issue_log.csv` → master issue register with proof and action fields
-- `03_analysis/issues/source_inventory.csv` → live source inventory for post-cutoff activity
-- `03_analysis/inventory/wallet_inventory.csv` → compact canonical wallet and public-account identifier inventory
-- `03_analysis/reconciliation/` → asset snapshot and exchange reconciliation artifacts
-- `05_outputs/logs/round_log.csv` → structured round-by-round execution log
+- `docs/BASELINE_VALIDATION.md` → durable baseline integrity summary
+- `docs/TAX_REFERENCE_MAP.md` → targeted CRA source routing for edge cases and tax-position validation
+- `analysis/issues/issue_log.csv` → master issue register with proof and action fields
+- `analysis/issues/source_inventory.csv` → live source inventory for post-cutoff activity
+- `analysis/inventory/wallet_inventory.csv` → compact canonical wallet and public-account identifier inventory
+- `analysis/reconciliation/` → asset snapshot and exchange reconciliation artifacts
+- `outputs/logs/round_log.csv` → structured round-by-round execution log
 
 ### Final outputs
 
-- `04_import_ready/` → final accepted import files
-- `05_outputs/checkpoints/` → frozen checkpoint export packages
-- `05_outputs/reports/` → final closeout summaries and supporting reports
+- `working/import_batches/` → final accepted import files
+- `outputs/checkpoints/` → frozen checkpoint export packages
+- `outputs/reports/` → final closeout summaries and supporting reports
 
 ## Naming standard
 
@@ -77,14 +77,14 @@ Purpose: make the baseline explicit and durable before any repair or extension w
 
 Use:
 
-- `00_docs/BASELINE_VALIDATION.md`
-- `00_docs/PROJECT_STATE.md`
-- `03_analysis/reconciliation/baseline_asset_snapshot.csv`
-- `03_analysis/reconciliation/baseline_exchange_reconciliation.csv`
-- `03_analysis/reconciliation/baseline_source_activity.csv`
-- `03_analysis/reconciliation/baseline_cad_flow_by_type.csv`
-- `03_analysis/reconciliation/baseline_cad_balance_by_exchange.csv`
-- the canonical exports in `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
+- `docs/BASELINE_VALIDATION.md`
+- `docs/PROJECT_STATE.md`
+- `analysis/reconciliation/baseline_asset_snapshot.csv`
+- `analysis/reconciliation/baseline_exchange_reconciliation.csv`
+- `analysis/reconciliation/baseline_source_activity.csv`
+- `analysis/reconciliation/baseline_cad_flow_by_type.csv`
+- `analysis/reconciliation/baseline_cad_balance_by_exchange.csv`
+- the canonical exports in `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
 
 Do:
 
@@ -93,7 +93,7 @@ Do:
 3. Confirm Current Balance and Balance by Exchange reconcile at the asset-quantity level.
 4. Confirm source-level boundary evidence is captured separately from the global cutoff and do not treat the package-wide `last sync` label as proof that every source was current to the same timestamp.
 5. Confirm the CAD / fiat layer is reviewed and tracked as **FIAT-001** until resolved.
-6. Confirm the current known exception set is captured in `03_analysis/issues/issue_log.csv`.
+6. Confirm the current known exception set is captured in `analysis/issues/issue_log.csv`.
 
 Gate:
 
@@ -109,9 +109,9 @@ Purpose: clear or classify baseline exceptions before delta imports.
 
 Use:
 
-- `03_analysis/issues/issue_log.csv`
-- `01_raw_exports/source/<source>/<capture_id>/`
-- `01_raw_exports/source/<source>/<capture_id>/manifest.csv`
+- `analysis/issues/issue_log.csv`
+- `evidence/raw/source/<source>/<capture_id>/`
+- `evidence/raw/source/<source>/<capture_id>/manifest.csv`
 - `Validate Transactions`
 - `Missing Transactions` reviewed with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
 - `Trade Table`
@@ -120,7 +120,7 @@ Do:
 
 1. Review all open P1 issues first.
 2. Pull the exact external evidence needed for each item, including fiat deposit, withdrawal, bank, or e-transfer evidence for **FIAT-001**.
-3. Save raw files into `01_raw_exports/source/<source>/<capture_id>/`.
+3. Save raw files into `evidence/raw/source/<source>/<capture_id>/`.
 4. Run `06_scripts/source_manifest.py` to capture a manifest for each new raw source folder.
 5. Update `proof_path` and `proof_summary` in the issue log before changing CoinTracking.
 
@@ -138,7 +138,7 @@ Use on platform:
 
 Log first:
 
-1. create a round folder in `02_working/verification/<round_id>/`
+1. create a round folder in `working/verification/<round_id>/`
 2. seed the round log with `06_scripts/round_scaffold.py`
 
 After each repair cluster, export these fresh to the round folder:
@@ -160,7 +160,7 @@ Do:
 2. Capture fresh exports into the round folder.
 3. Review the fresh exports.
 4. Update `verification_path`, `gate_result`, and `closed_at` where applicable in the issue log.
-5. Update `05_outputs/logs/round_log.csv`.
+5. Update `outputs/logs/round_log.csv`.
 
 Gate:
 
@@ -175,7 +175,7 @@ Purpose: list every source with post-cutoff activity before pulling exports.
 
 Use:
 
-- `03_analysis/issues/source_inventory.csv`
+- `analysis/issues/source_inventory.csv`
 - your real-world account list
 - baseline `Trade Table`
 - `Balance by Exchange`
@@ -203,7 +203,7 @@ Target window:
 Do:
 
 1. Export raw activity for one source at a time.
-2. Save untouched files into `01_raw_exports/source/<source>/<capture_id>/`.
+2. Save untouched files into `evidence/raw/source/<source>/<capture_id>/`.
 3. Run `06_scripts/source_manifest.py`.
 4. Update `source_inventory.csv` with the export window and capture path.
 5. Do not import yet.
@@ -220,8 +220,8 @@ Use:
 
 - baseline `Trade Table`
 - source raw exports
-- `02_working/normalized/`
-- `02_working/import_batches/`
+- `working/normalized/`
+- `working/import_batches/`
 
 AI tasks allowed:
 
@@ -241,10 +241,10 @@ Do:
 
 1. Run `06_scripts/profile_source.py` to fingerprint the raw source and classify file families.
 2. Review the generated wallet inventory artifacts for wallet-scoped sources and refresh the repo-wide inventory if the profile output lives outside the repo.
-3. Run `06_scripts/normalize_source.py` to produce canonical events, canonical balances, exceptions, and a rendered working candidate under `02_working/normalized/<source>/`.
+3. Run `06_scripts/normalize_source.py` to produce canonical events, canonical balances, exceptions, and a rendered working candidate under `working/normalized/<source>/`.
 4. Review `exceptions.csv`; unresolved exceptions stay out of the import path unless they are explicitly accepted and persisted.
-5. Run `06_scripts/stage_import_batch.py` to enforce overlap screening before a candidate enters `02_working/import_batches/<source>/`.
-6. Copy the approved staged file to `04_import_ready/`.
+5. Run `06_scripts/stage_import_batch.py` to enforce overlap screening before a candidate enters `working/import_batches/<source>/`.
+6. Copy the approved staged file to `working/import_batches/`.
 
 Gate:
 
@@ -269,7 +269,7 @@ For each source:
 
 1. seed a round with `06_scripts/round_scaffold.py`
 2. import only that source into CoinTracking
-3. immediately export the default verification set into `02_working/verification/<round_id>/`
+3. immediately export the default verification set into `working/verification/<round_id>/`
 4. run `06_scripts/verification_compare.py` against the prior state and write the comparison package into the round folder
 5. review the results before touching the next source
 
@@ -300,7 +300,7 @@ Purpose: freeze the historical ledger at `2025-12-31`.
 
 Final export path:
 
-- `05_outputs/checkpoints/2025-12-31_final/`
+- `outputs/checkpoints/2025-12-31_final/`
 
 Final export set:
 
@@ -335,8 +335,8 @@ When that happens:
 
 1. do not touch the next source
 2. capture fresh verification exports
-3. log the issue in `03_analysis/issues/issue_log.csv`
-4. update `05_outputs/logs/round_log.csv`
+3. log the issue in `analysis/issues/issue_log.csv`
+4. update `outputs/logs/round_log.csv`
 5. resolve before continuing
 
 ## Definition of done
@@ -346,5 +346,5 @@ This project is done when:
 - baseline issues are repaired or intentionally documented with evidence
 - all post-cutoff activity through `2025-12-31` is handled
 - each source import has a verification package in this repo
-- final 2025 checkpoint exports are frozen in `05_outputs/checkpoints/2025-12-31_final/`
+- final 2025 checkpoint exports are frozen in `outputs/checkpoints/2025-12-31_final/`
 - 2026 onward is intentionally outside this historical closeout workflow

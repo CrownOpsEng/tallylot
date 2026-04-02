@@ -47,6 +47,16 @@ decisions that should not be rediscovered from scratch.
 ## Rules For Future Work
 
 - Do not reintroduce repo-local live workspace assumptions.
+- Keep the retired legacy workspace roots out of git:
+  `00_docs/`, `01_raw_exports/`, `02_working/`, `03_analysis/`,
+  `04_import_ready/`, and `05_outputs/`.
+- Keep repo-owned runbooks and agent-facing guides under `docs/`, and keep
+  repo-owned workspace subtree guidance and templates under `docs/workspace/`.
+- Treat workspace docs under the external root as live working copies or
+  operator artifacts, not as the version-controlled source of truth.
+- If workspace docs are ever refreshed or seeded beyond the minimal README,
+  derive them from the repo-owned docs instead of maintaining a second manual
+  documentation branch.
 - Do not add compatibility wrappers for removed legacy scripts.
 - Do not let adapters reach across layers into CLI or config code.
 - Keep the agent guidance router-first: `AGENTS.md` should stay short and direct
@@ -83,6 +93,17 @@ decisions that should not be rediscovered from scratch.
   refactor-first hotspots are `adapters/sources/structured_csv.py`,
   `domain/models.py`, `interfaces/cli.py`, and
   `infrastructure/discovery/adapters.py`.
+- The repo-local operational dataset was migrated to the external workspace on
+  2026-03-26. Use this mapping for any future manual recovery or audit work:
+  `00_docs -> docs`, `01_raw_exports/source -> evidence/raw/source`,
+  `01_raw_exports/portfolio -> evidence/raw/portfolio`,
+  `01_raw_exports/incoming -> evidence/raw/incoming`, `02_working -> working`,
+  `03_analysis -> analysis`, `05_outputs -> outputs`.
+- Treat `evidence/raw/incoming/` as a historical quarantine area for migrated
+  catch-all evidence only. New intake should go directly to canonical capture
+  paths under `evidence/raw/source/` or `evidence/raw/portfolio/`.
+- The separate `04_import_ready/` root is retired in the current architecture.
+  Keep approved import candidates under `working/import_batches/`.
 
 ## Near-Term Enhancements
 

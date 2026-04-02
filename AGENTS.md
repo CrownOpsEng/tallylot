@@ -30,12 +30,14 @@ Do not pre-load every repo doc by default.
 | Code placement, typing, modularization, naming | `docs/engineering-standards.md` |
 | Source or output adapter work | `docs/adapter-authoring.md` |
 | External workspace layout and seeded files | `docs/workspace-layout.md` |
+| Operational state, manual workflow, or agent runbooks | `docs/README.md`, then the specific doc it routes you to |
+| Workspace subtree conventions, checklists, or templates | `docs/workspace/README.md` |
 | Commit messages, templates, and checkpoint behavior | `docs/commit-standards.md` |
 
 ## Execution Rules
 
-- Do not consider work ready until `ruff`, `mypy`, `pyright`, and `pytest`
-  pass.
+- Do not consider work ready until `ruff`, `mypy`, `pyright`, `pylint`, and
+  `pytest` pass.
 - Prefer the checked-in hooks:
   - `uv run pre-commit install --hook-type pre-commit --hook-type commit-msg`
   - `uv run pre-commit run --all-files`
