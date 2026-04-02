@@ -21,6 +21,7 @@ class BaselineRowModel(BaseModel):
     _required_text_fields: ClassVar[tuple[str, ...]] = ()
     _required_decimal_fields: ClassVar[tuple[str, ...]] = ()
     _required_positive_integer_fields: ClassVar[tuple[str, ...]] = ()
+    _required_timestamp_fields: ClassVar[tuple[str, ...]] = ()
 
     @field_validator("*", mode="before")
     @classmethod
@@ -28,6 +29,8 @@ class BaselineRowModel(BaseModel):
         field_name = info.field_name or ""
         if field_name in cls._timestamp_fields:
             text = "" if value is None else str(value).strip()
+            if field_name in cls._required_timestamp_fields and not text:
+                raise ValueError(f"{field_name} must not be blank")
             if text:
                 parse_timestamp(text)
             return text
@@ -82,6 +85,7 @@ class TradeTableRowModel(BaselineRowModel):
     _decimal_fields = ("buy_amount", "sell_amount", "fee_amount")
     _timestamp_fields = ("date",)
     _required_text_fields = ("trade_type", "exchange")
+    _required_timestamp_fields = ("date",)
 
     trade_type: str = Field(alias="Type")
     buy_amount: Decimal = Field(alias="Buy")
@@ -125,6 +129,7 @@ class BalanceByExchangeRowModel(BaselineRowModel):
 
 class ValidateTransactionsRowModel(BaselineRowModel):
     _text_fields = ("issue",)
+    _required_text_fields = ("issue",)
 
     issue: str = Field(alias="Issue")
 
@@ -175,6 +180,7 @@ class DuplicateTransactionsRowModel(BaselineRowModel):
     _timestamp_fields = ("transaction_date",)
     _required_text_fields = ("duplicate_type", "exchange")
     _required_positive_integer_fields = ("duplicate_count",)
+    _required_timestamp_fields = ("transaction_date",)
 
     duplicate_count: int = Field(alias="# of duplicates")
     duplicate_type: str = Field(alias="Type")

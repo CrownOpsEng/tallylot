@@ -179,6 +179,34 @@ def test_parse_baseline_export_rows_rejects_blank_required_amounts() -> None:
         )
 
 
+def test_parse_baseline_export_rows_rejects_blank_trade_dates() -> None:
+    with pytest.raises(ValidationError, match="date must not be blank"):
+        parse_baseline_export_rows(
+            "Trade Table",
+            [
+                {
+                    "Type": "Trade",
+                    "Buy": "1",
+                    "Cur.": "BTC",
+                    "Sell": "10",
+                    "Cur..1": "CAD",
+                    "Fee": "0.1",
+                    "Cur..2": "CAD",
+                    "Exchange": "Fixture",
+                    "Group": "",
+                    "Comment": "missing date",
+                    "Date": "",
+                    "Tx-ID": "tx-1",
+                }
+            ],
+        )
+
+
+def test_parse_baseline_export_rows_rejects_blank_validate_issues() -> None:
+    with pytest.raises(ValidationError, match="issue must not be blank"):
+        parse_baseline_export_rows("Validate Transactions", [{"Issue": ""}])
+
+
 def test_parse_baseline_export_rows_rejects_non_positive_duplicate_counts() -> None:
     with pytest.raises(ValidationError, match="duplicate_count must be positive"):
         parse_baseline_export_rows(
@@ -194,6 +222,26 @@ def test_parse_baseline_export_rows_rejects_non_positive_duplicate_counts() -> N
                     "Trade Group": "",
                     "Tx ID": "tx-1",
                     "Tx Date": "2023-08-05 08:34:04",
+                }
+            ],
+        )
+
+
+def test_parse_baseline_export_rows_rejects_blank_duplicate_dates() -> None:
+    with pytest.raises(ValidationError, match="transaction_date must not be blank"):
+        parse_baseline_export_rows(
+            "Duplicate Transactions",
+            [
+                {
+                    "# of duplicates": "2",
+                    "Type": "Trade",
+                    "Exchange": "Fixture",
+                    "Exchange ID": "fixture",
+                    "Buy": "1 BTC",
+                    "Sell": "10 CAD",
+                    "Trade Group": "",
+                    "Tx ID": "tx-1",
+                    "Tx Date": "",
                 }
             ],
         )
