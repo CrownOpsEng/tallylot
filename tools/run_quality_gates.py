@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
+from repo_support.pyright_config import sync_pyright_config
 from tools.uv_environment import repo_uv_environment
 
 
@@ -62,6 +63,7 @@ def _run_gate(gate: QualityGate) -> tuple[QualityGate, subprocess.CompletedProce
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     failures = 0
+    sync_pyright_config()
     quality_gates = _quality_gates(full_tests=args.full_tests)
 
     with ThreadPoolExecutor(max_workers=len(quality_gates)) as executor:

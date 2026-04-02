@@ -7,7 +7,12 @@ import pytest
 
 import tools.run_quality_gates
 from repo_support.paths import repo_root
-from tools.run_quality_gates import _DEFAULT_TEST_COMMAND, _FULL_TEST_COMMAND, _quality_gates
+from tools.run_quality_gates import (
+    QualityGate,
+    _DEFAULT_TEST_COMMAND,
+    _FULL_TEST_COMMAND,
+    _quality_gates,
+)
 
 
 def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
@@ -65,3 +70,33 @@ def test_pre_commit_config_excludes_pylint_hook() -> None:
 
     assert "id: pylint" not in config_text
     assert "name: pytest-fast" in config_text
+
+
+def test_quality_gates_refresh_generated_pyright_config_before_running(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    monkeypatch.setattr(
+        tools.run_quality_gates,
+        "sync_pyright_config",
+        lambda: calls.append("sync"),
+    )
+    monkeypatch.setattr(
+        tools.run_quality_gates,
+        "_quality_gates",
+        lambda *, full_tests: (QualityGate(name="noop", command=("uv",)),),
+    )
+    monkeypatch.setattr(
+        tools.run_quality_gates,
+        "_run_gate",
+        lambda gate: (
+            gate,
+            subprocess.CompletedProcess(gate.command, 0, stdout="", stderr=""),
+            0.0,
+        ),
+    )
+
+    assert tools.run_quality_gates.main(()) == 0
+
+    assert calls == ["sync"]
