@@ -10,7 +10,7 @@ from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.output_adapters import OutputRenderPolicy, RenderedArtifact
 
 
-class CoinTrackingApiStubAdapter:
+class _CoinTrackingApiStubAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("cointracking_api"),
         display_name="CoinTracking API",
@@ -33,4 +33,4 @@ class CoinTrackingApiStubAdapter:
         )
 
 
-ADAPTER = CoinTrackingApiStubAdapter()
+ADAPTER = _CoinTrackingApiStubAdapter()

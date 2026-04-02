@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.adapters.sources.platforms.binance.adapter import BinanceAdapter
+from tallylot.adapters.sources.platforms.binance import ADAPTER
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.services import build_source_profile
@@ -35,7 +35,7 @@ def test_binance_adapter_handles_supported_and_review_required_rows(tmp_path: Pa
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().translate(
+    result = ADAPTER.translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
@@ -67,7 +67,7 @@ def test_binance_convert_date_updated_covers_transaction_history_one_second_skew
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().translate(
+    result = ADAPTER.translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
@@ -89,7 +89,7 @@ def test_binance_transaction_history_skips_p2p_rows_when_c2c_history_exists(tmp_
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().translate(
+    result = ADAPTER.translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
@@ -118,7 +118,7 @@ def test_binance_adapter_reads_nested_bundle_paths(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().translate(
+    result = ADAPTER.translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
@@ -148,7 +148,7 @@ def test_binance_translation_priority_is_not_path_order_dependent(tmp_path: Path
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().translate(
+    result = ADAPTER.translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
@@ -164,7 +164,7 @@ def test_binance_adapter_surfaces_unmatched_export_files(tmp_path: Path) -> None
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().translate(
+    result = ADAPTER.translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )

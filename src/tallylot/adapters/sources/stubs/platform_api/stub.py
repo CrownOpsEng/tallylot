@@ -14,7 +14,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class PlatformApiSourceStubAdapter:
+class _PlatformApiSourceStubAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("platform_api_stub"),
         display_name="Platform API Stub",
@@ -68,4 +68,4 @@ class PlatformApiSourceStubAdapter:
         )
 
 
-ADAPTER = PlatformApiSourceStubAdapter()
+ADAPTER = _PlatformApiSourceStubAdapter()

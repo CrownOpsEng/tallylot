@@ -6,7 +6,7 @@ from tallylot.adapters.support import is_onchain_canonical_location_id
 from tallylot.domain.transactions import EconomicLeg, LegKind, ProjectionHint, TransactionFact
 from tallylot.domain.value_objects import format_decimal, format_timestamp
 
-COINTRACKING_TYPE_LABELS = {
+_COINTRACKING_TYPE_LABELS = {
     ProjectionHint.DEPOSIT: "Deposit",
     ProjectionHint.DERIVATIVES_FUTURES_LOSS: "Derivatives / Futures Loss",
     ProjectionHint.DERIVATIVES_FUTURES_PROFIT: "Derivatives / Futures Profit",
@@ -33,7 +33,7 @@ def cointracking_row(transaction: TransactionFact) -> dict[str, str]:
     charge_leg = _single_charge_leg(transaction)
     _reject_other_non_primary_legs(transaction)
     return {
-        "Type": COINTRACKING_TYPE_LABELS[transaction.projection_hint],
+        "Type": _COINTRACKING_TYPE_LABELS[transaction.projection_hint],
         "Buy": format_decimal(None if inbound_leg is None else inbound_leg.quantity),
         "Cur.": "" if inbound_leg is None else str(inbound_leg.instrument_id),
         "Sell": format_decimal(None if outbound_leg is None else abs(outbound_leg.quantity)),

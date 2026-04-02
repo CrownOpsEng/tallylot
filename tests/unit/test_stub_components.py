@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from tallylot.adapters.outputs.cointracking_api import CoinTrackingApiStubAdapter
-from tallylot.adapters.outputs.generic_http import GenericHttpOutputStubAdapter
-from tallylot.adapters.sources.stubs.blockchain.stub import BlockchainSourceStubAdapter
-from tallylot.adapters.sources.stubs.platform_api.stub import PlatformApiSourceStubAdapter
+from tallylot.adapters.outputs.cointracking_api import ADAPTER as COINTRACKING_API_ADAPTER
+from tallylot.adapters.outputs.generic_http import ADAPTER as GENERIC_HTTP_ADAPTER
+from tallylot.adapters.sources.stubs.blockchain import ADAPTER as BLOCKCHAIN_STUB_ADAPTER
+from tallylot.adapters.sources.stubs.platform_api import ADAPTER as PLATFORM_API_STUB_ADAPTER
 from tallylot.domain.types import AdapterId, SourceId
 from tallylot.infrastructure.ai import LocalStubModelGateway, NullModelGateway
 from tallylot.infrastructure.storage.sqlite_stub import SqliteStorageStub
@@ -44,13 +44,13 @@ def test_sqlite_storage_stub_describes_placeholder(tmp_path: Path) -> None:
 
 def test_output_stub_adapters_raise_not_implemented(tmp_path: Path) -> None:
     with pytest.raises(NotImplementedError):
-        CoinTrackingApiStubAdapter().render((), tmp_path / "out.csv")
+        COINTRACKING_API_ADAPTER.render((), tmp_path / "out.csv")
     with pytest.raises(NotImplementedError):
-        GenericHttpOutputStubAdapter().render((), tmp_path / "out.csv")
+        GENERIC_HTTP_ADAPTER.render((), tmp_path / "out.csv")
 
 
 def test_source_stub_adapters_raise_not_implemented() -> None:
     with pytest.raises(NotImplementedError):
-        BlockchainSourceStubAdapter().translate(_stub_profile(), Path())
+        BLOCKCHAIN_STUB_ADAPTER.translate(_stub_profile(), Path())
     with pytest.raises(NotImplementedError):
-        PlatformApiSourceStubAdapter().translate(_stub_profile(), Path())
+        PLATFORM_API_STUB_ADAPTER.translate(_stub_profile(), Path())

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.adapters.sources.platforms.binance.adapter import BinanceAdapter
+from tallylot.adapters.sources.platforms.binance import ADAPTER
 from tallylot.adapters.sources.platforms.binance.csv_rows import is_no_data_row
 from tallylot.adapters.sources.platforms.binance.matching import SPOT_HEADER
 from tallylot.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
@@ -28,7 +28,6 @@ def test_parse_export_timestamp_handles_inline_utc_date_without_separator() -> N
 
 
 def test_binance_adapter_matches_known_headers_without_source_label(tmp_path: Path) -> None:
-    adapter = BinanceAdapter()
     inventory = (
         FileInventoryEntry(
             relative_path="nested/export.csv",
@@ -39,11 +38,11 @@ def test_binance_adapter_matches_known_headers_without_source_label(tmp_path: Pa
         ),
     )
 
-    assert adapter.match("unknown_source", tmp_path, inventory) == 100
+    assert ADAPTER.match("unknown_source", tmp_path, inventory) == 100
 
 
 def test_binance_adapter_returns_zero_for_unknown_source_without_matching_headers(tmp_path: Path) -> None:
-    score = BinanceAdapter().match(
+    score = ADAPTER.match(
         "unknown_source",
         tmp_path,
         (
@@ -60,7 +59,6 @@ def test_binance_adapter_returns_zero_for_unknown_source_without_matching_header
 
 
 def test_binance_adapter_reports_timezone_validation_summary_from_inventory() -> None:
-    adapter = BinanceAdapter()
     profile = build_source_profile(adapter_id="binance")
     object.__setattr__(
         profile,
@@ -83,7 +81,7 @@ def test_binance_adapter_reports_timezone_validation_summary_from_inventory() ->
         ),
     )
 
-    summary, issues = adapter.validate_profile_timezones(profile)
+    summary, issues = ADAPTER.validate_profile_timezones(profile)
 
     assert summary == {
         "status": "passed",
@@ -95,7 +93,7 @@ def test_binance_adapter_reports_timezone_validation_summary_from_inventory() ->
 
 
 def test_binance_adapter_extract_location_inventory_is_empty() -> None:
-    records, issues = BinanceAdapter().extract_location_inventory(
+    records, issues = ADAPTER.extract_location_inventory(
         "binance",
         Path("/tmp/raw"),
         build_source_profile(adapter_id="binance"),

@@ -31,7 +31,7 @@ from tallylot.ports.source_translation import SourceTranslationBatch
 TRANSACTION_HEADER_FIELDS = {"Transaction Hash", "DateTime (UTC)"}
 
 
-class EvmExplorerAdapter:
+class _EvmExplorerAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("evm_explorer"),
         display_name="EVM Explorer",
@@ -187,4 +187,4 @@ def _evidence_filename(raw_dir: Path, address: str) -> str:
     return first[0].name if first else ""
 
 
-ADAPTER = EvmExplorerAdapter()
+ADAPTER = _EvmExplorerAdapter()

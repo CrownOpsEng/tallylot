@@ -4,7 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.coinbase.retail_csv import read_retail_rows
-from tallylot.adapters.sources.platforms.coinbase.retail_rows import money_decimal
+from tallylot.adapters.sources.platforms.coinbase.retail_rows import _money_decimal
 
 
 def test_coinbase_retail_row_reader_skips_preface_lines(tmp_path: Path) -> None:
@@ -24,4 +24,4 @@ def test_coinbase_retail_row_reader_skips_preface_lines(tmp_path: Path) -> None:
 
 
 def test_coinbase_money_decimal_parses_currency_text() -> None:
-    assert money_decimal("$1,234.56") == Decimal("1234.56")
+    assert _money_decimal("$1,234.56") == Decimal("1234.56")

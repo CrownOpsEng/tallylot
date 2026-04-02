@@ -14,7 +14,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class BlockchainSourceStubAdapter:
+class _BlockchainSourceStubAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("blockchain_stub"),
         display_name="Blockchain Stub",
@@ -68,4 +68,4 @@ class BlockchainSourceStubAdapter:
         )
 
 
-ADAPTER = BlockchainSourceStubAdapter()
+ADAPTER = _BlockchainSourceStubAdapter()

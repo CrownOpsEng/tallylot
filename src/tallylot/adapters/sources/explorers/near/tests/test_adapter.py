@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.explorers.near.adapter import NearAdapter
+from tallylot.adapters.sources.explorers.near import ADAPTER
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
@@ -22,11 +22,10 @@ def test_near_adapter_extracts_location_inventory_and_staking_split_events(tmp_p
         encoding="utf-8",
     )
 
-    adapter = NearAdapter()
     profile = build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir))
 
-    location_inventory, location_issues = adapter.extract_location_inventory("wallet-a", raw_dir, profile)
-    result = adapter.translate(profile, raw_dir)
+    location_inventory, location_issues = ADAPTER.extract_location_inventory("wallet-a", raw_dir, profile)
+    result = ADAPTER.translate(profile, raw_dir)
     facts = compile_activity_drafts(result.drafts)
 
     assert not location_issues
@@ -46,7 +45,7 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
         encoding="utf-8",
     )
 
-    result = NearAdapter().translate(
+    result = ADAPTER.translate(
         build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)),
         raw_dir,
     )
@@ -119,7 +118,7 @@ def test_near_adapter_surfaces_unsupported_methods_without_crashing(tmp_path: Pa
         encoding="utf-8",
     )
 
-    result = NearAdapter().translate(
+    result = ADAPTER.translate(
         build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)),
         raw_dir,
     )

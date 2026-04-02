@@ -73,7 +73,7 @@ def _scaffold_adapter(
     (adapter_root / "tests").mkdir(exist_ok=True)
 
     adapter_name = module_parts[-1]
-    adapter_class_name = f"{_camel_case(adapter_name)}{spec.kind.title()}Adapter"
+    adapter_class_name = f"_{_camel_case(adapter_name)}{spec.kind.title()}Adapter"
     created = (
         _write_file(
             adapter_root / "__init__.py",

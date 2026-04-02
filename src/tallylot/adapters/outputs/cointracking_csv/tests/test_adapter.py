@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from tallylot.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
-from tallylot.adapters.outputs.cointracking_csv.projection import COINTRACKING_TYPE_LABELS, cointracking_row
+from tallylot.adapters.outputs.cointracking_csv.projection import _COINTRACKING_TYPE_LABELS, cointracking_row
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.outputs import RenderOutputRequest
 from tallylot.application.resource_refs import to_resource_ref
@@ -32,7 +32,7 @@ from tests.support.services import build_normalization_service, build_render_ser
 
 
 def test_cointracking_projection_mapping_covers_every_runtime_projection_hint() -> None:
-    assert set(COINTRACKING_TYPE_LABELS) == set(ProjectionHint)
+    assert set(_COINTRACKING_TYPE_LABELS) == set(ProjectionHint)
 
 
 def test_cointracking_output_matches_expected_schema_and_projection_mapping(
