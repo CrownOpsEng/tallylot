@@ -6,7 +6,7 @@ from pathlib import Path
 
 from .archive import ScannedFile
 from .packages import PlannedPackageItem
-from .plan_models import PlannedItem
+from .plan.models import PlannedItem
 
 
 def package_key(entry: ScannedFile) -> str:

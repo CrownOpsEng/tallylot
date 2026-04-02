@@ -62,7 +62,7 @@ Do not pre-load every repo doc by default.
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value
   - end the task on a clean, meaningful checkpoint commit
-- If a flat directory would exceed 3 same-prefix files for one capability,
+- If a flat directory would exceed 2 same-prefix files for one capability,
   regroup that capability into a package in the same task.
 - If a feature already has a package, keep new helpers inside that package
   instead of beside it as flat sibling modules.

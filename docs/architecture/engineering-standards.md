@@ -66,7 +66,7 @@ When a capability grows, split by stable seams:
 - `domain/`: separate models, value objects, and typed aliases by concept.
 - `application/services/`: keep one workflow per service module; extract shared
   parsing, validation, or assembly logic into specifically named siblings.
-  Once a workflow area grows beyond a few related siblings or starts building a
+  Once a workflow area grows beyond two related siblings or starts building a
   flat pile of same-prefix modules such as `intake_*`, move it into a feature
   package such as `application/services/intake/`.
 - `interfaces/`: keep command parsing and command execution thin; move real work
@@ -87,18 +87,18 @@ Mirror that structure in tests:
 Do not keep flattening files forever once a feature package exists.
 
 - Use a feature package when a flat layer directory would otherwise collect
-  more than 3 same-prefix files for one capability.
-- Treat this as a hard refactor trigger, not a style preference. If a fourth
-  same-prefix sibling would be added, regroup the capability into a package in
-  the same task instead of leaving a flat prefix cluster behind.
+  more than 2 same-prefix files for one capability.
+- Treat this as a hard refactor trigger, not a style preference. The third
+  same-prefix sibling is the trigger. Regroup the capability in the same task
+  instead of leaving a flat prefix cluster behind.
 - Inside an existing feature package, create a nested subpackage when one
   bounded sub-capability meets any of these conditions:
-  - 4 or more files share the same concept or repeated prefix
+  - 3 or more files share the same concept or repeated prefix
   - the cluster has its own models, decision rules, and entry point
   - the tests naturally group under that sub-capability rather than under the
     parent feature as a whole
-- Do not create a nested package on the first split. Keep 2 or 3 tightly
-  related files flat unless they already represent a stable subdomain.
+- Do not create a nested package on the first split. Keep 2 tightly related
+  files flat unless they already represent a stable subdomain.
 - Prefer one clear level of nesting over long flat prefixes. `intake/packages/`
   is better than `intake/package_*.py` once the package-rule cluster becomes a
   subsystem.
@@ -109,11 +109,13 @@ Current application of this rule:
 
 - `application/services/intake/` is the correct top-level feature package for
   intake.
+- `application/services/profile/` is the correct top-level feature package for
+  source profiling workflows and profile artifact helpers.
 - `intake/packages/`, `intake/archive/`, `intake/file_facts/`, and
   `intake/routing/` are the correct nested packages for the intake subdomains
   that now own their own models, rules, and entry points.
-- The plan-building support files should stay flat until they form a clearer
-  subdomain than “helpers used by the intake service”.
+- `intake/plan/` is the correct nested package for intake planning workflows,
+  planned-item models, review assembly, and report rendering.
 - Verification comparison belongs under `application/services/verification/`
   so the service and compare helpers share one capability package.
 - Normalization window and derived-balance helpers belong under

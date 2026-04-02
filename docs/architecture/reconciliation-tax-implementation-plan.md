@@ -581,6 +581,9 @@ Perform only the refactors required to support the new architecture:
 
 - split new domain concepts into dedicated packages rather than expanding
   `domain/models/`
+- promote workflow helper clusters into a package once a third related sibling
+  would otherwise be added; do not let facts, checkpoints, or tax policy land
+  in new flat prefix piles
 - introduce transaction facts before expanding tax services
 - replace normalized transaction artifacts directly while migrating downstream
   services

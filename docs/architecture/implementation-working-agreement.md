@@ -224,7 +224,7 @@ Pause feature work and fix the structure first when:
 - a module is becoming a new catch-all
 - a hotspot module called out in `docs/architecture/engineering-standards.md` is about to
   absorb materially new behavior without first being split
-- a flat directory would end up with more than 3 same-prefix files for one
+- a flat directory would end up with more than 2 same-prefix files for one
   capability
 - a feature already owns a package but new helpers are being left beside it as
   flat sibling modules

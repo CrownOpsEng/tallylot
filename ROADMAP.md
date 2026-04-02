@@ -185,10 +185,17 @@ decisions that should not be rediscovered from scratch.
 - Keep adapter discovery narrow: discover only source-category namespaces and
   adapter package entry points so adapter-local tests and helpers can live
   beside the adapter without affecting runtime registration.
+- Escalate flat capability clusters into packages once a third related module
+  would otherwise be added. Keep at most two tightly related flat siblings for
+  one capability before regrouping.
 - Keep the shared-surface package seams intact now that they have been split:
   `domain/models/`, `interfaces/cli/`, and
   `infrastructure/discovery/adapters/` should keep bounded submodules instead
   of growing back into single-file hubs.
+- Preserve the newer workflow seams as packages as they grow:
+  `application/services/profile/` and
+  `application/services/intake/plan/` should absorb future helpers instead of
+  pushing flat `profile_*` or `plan_*` modules back into sibling directories.
 - The repo-local operational dataset was migrated to the external workspace on
   2026-03-26. Use this mapping for any future manual recovery or audit work:
   `00_docs -> docs`, `01_raw_exports/source -> evidence/raw/source`,

@@ -6,13 +6,14 @@ from pathlib import Path
 
 from crypto_reconciliation.application.models.source import ProfileRequest, ProfileResponse
 from crypto_reconciliation.application.services.common import ensure_directory
-from crypto_reconciliation.application.services.profile_artifacts import write_profile_artifacts
-from crypto_reconciliation.application.services.profile_inventory import build_inventory, manifest_fingerprint
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
 from crypto_reconciliation.domain.models import FileInventoryEntry, IssueRecord, SourceProfile
 from crypto_reconciliation.domain.types import AdapterId, JsonValue, SourceId
 from crypto_reconciliation.ports.adapters import SourceAdapter, SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+
+from .artifacts import write_profile_artifacts
+from .inventory import build_inventory, manifest_fingerprint
 
 
 class ProfileService:

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .packages import PlannedPackageItem
-from .plan_models import PlannedItem
+from ..packages import PlannedPackageItem
+from .models import PlannedItem
 
 
 def merge_review_required(*values: str) -> str:
