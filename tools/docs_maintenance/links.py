@@ -16,6 +16,7 @@ HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 BARE_UV_LINE_PATTERN = re.compile(r"^uv (run|sync)\b")
 BARE_UV_INLINE_PATTERN = re.compile(r"`(uv (?:run|sync)\b[^`]*)`")
 FENCE_PATTERN = re.compile(r"^\s{0,3}([`~]{3,})(.*)$")
+BLOCKQUOTE_PREFIX_PATTERN = re.compile(r"^(?:\s{0,3}>\s?)+")
 
 
 def repo_markdown_paths() -> tuple[Path, ...]:
@@ -36,7 +37,8 @@ def text_without_fenced_code(text: str) -> str:
     in_indented_code = False
     previous_non_fence_blank = True
     for line in text.splitlines():
-        fence_match = FENCE_PATTERN.match(line)
+        candidate_line = BLOCKQUOTE_PREFIX_PATTERN.sub("", line)
+        fence_match = FENCE_PATTERN.match(candidate_line)
         if fence_match is not None:
             fence = fence_match.group(1)
             fence_char = fence[0]
