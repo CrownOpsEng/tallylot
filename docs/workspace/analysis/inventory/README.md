@@ -1,13 +1,11 @@
 # Wallet Inventory Artifacts
 
-This folder holds generated wallet inventory artifacts.
+This folder holds the aggregate wallet inventory rebuilt from normalized source
+artifacts.
 
-Primary file:
+Files:
 
 - `wallet_inventory.csv`
-
-Supporting evidence:
-
 - `wallet_inventory_evidence.csv`
 - `wallet_inventory_issues.csv`
 - `wallet_inventory_summary.json`
@@ -15,7 +13,10 @@ Supporting evidence:
 Refresh with:
 
 ```bash
-python3 06_scripts/wallet_inventory.py --repo-root .
+uv run crypto-reconciliation wallet inventory rebuild \
+  --normalized-root <workspace>/working/normalized \
+  --output <workspace>/analysis/inventory/wallet_inventory.csv
 ```
 
-Do not hand-edit the generated CSV or JSON files. Fix the raw capture, extraction logic, or source inventory instead, then regenerate.
+Do not hand-edit the generated outputs. Fix the upstream normalized inputs and
+rebuild.

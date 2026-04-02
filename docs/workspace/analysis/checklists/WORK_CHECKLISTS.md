@@ -2,7 +2,7 @@
 
 ## Baseline repair round checklist
 
-- [ ] Create `working/verification/<round_id>/` and seed `outputs/logs/round_log.csv`
+- [ ] Run `round scaffold` for the round
 - [ ] Review `analysis/reconciliation/baseline_cad_flow_by_type.csv` and current status of `FIAT-001`
 - [ ] Review open P1 items in `analysis/issues/issue_log.csv`
 - [ ] Pull external evidence for each targeted issue
@@ -28,10 +28,11 @@
 - [ ] Confirm the export window starts strictly after `2023-08-05 08:34:04`
 - [ ] Save raw source files to `evidence/raw/source/<source>/<capture_id>/`
 - [ ] Generate or refresh `evidence/raw/source/<source>/<capture_id>/manifest.csv`
-- [ ] Stage the cleaned working file in `working/import_batches/<source>/`
-- [ ] Run `06_scripts/overlap_check.py` on the CoinTracking-ready candidate and review the output
-- [ ] Copy the approved import file to `working/import_batches/`
-- [ ] Create `working/verification/<round_id>/` and seed `outputs/logs/round_log.csv`
+- [ ] Run `source profile` and review timezone artifacts
+- [ ] Run `source normalize` and review exception and review artifacts
+- [ ] Run `batch screen` on the CoinTracking-ready candidate and review the output
+- [ ] Run `batch stage` only after the screen passes
+- [ ] Run `round scaffold`
 - [ ] Import exactly one source into CoinTracking
 - [ ] Export Validate Transactions
 - [ ] Export Missing Transactions with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
@@ -40,7 +41,7 @@
 - [ ] Export Balance by Exchange
 - [ ] Export Trade Table, Roll Forward, or Double-entry only if needed
 - [ ] Store exports under `working/verification/<round_id>/`
-- [ ] Run `06_scripts/verification_compare.py` against the prior state and save the comparison artifacts
+- [ ] Run `verification compare` against the prior state and save the comparison artifacts
 - [ ] Run AI verification
 - [ ] Review CAD rows in `Current Balance` and `Balance by Exchange` if the source touches fiat rails
 - [ ] Update `analysis/issues/source_inventory.csv`

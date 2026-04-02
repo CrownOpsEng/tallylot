@@ -1,8 +1,8 @@
 # Docs
 
 The repo keeps versioned guidance for both agents and manual operators. Treat
-these files as the source of truth; the external workspace may hold live copies
-or operator notes, but not the canonical docs interface.
+these files as the source of truth for the typed package and the supported
+workflow around it.
 
 ## Core
 
@@ -17,33 +17,33 @@ or operator notes, but not the canonical docs interface.
 
 ## Operations
 
-- [`PROJECT_STATE.md`](PROJECT_STATE.md): current ledger and migration state
-- [`OPERATIONS_QUICKSTART.md`](OPERATIONS_QUICKSTART.md): shortest operator path
-  into the workflow
-- [`MOP.md`](MOP.md): full manual of operations
-- [`FILE_MAP.md`](FILE_MAP.md): route to the smallest relevant operational
-  artifact
-- [`EXPORT_CHECKLIST.md`](EXPORT_CHECKLIST.md): export and verification
-  checklists
-- [`NEXT_PHASE_EXECUTION_PLAN.md`](NEXT_PHASE_EXECUTION_PLAN.md): queued
-  execution order and decision record
-- [`AI_SESSION_PROMPT.md`](AI_SESSION_PROMPT.md): agent prompt context for
-  guided sessions
+- [`PROJECT_STATE.md`](PROJECT_STATE.md): current runtime and project-surface
+  status
+- [`OPERATIONS_QUICKSTART.md`](OPERATIONS_QUICKSTART.md): shortest safe path
+  through the current workflow
+- [`MOP.md`](MOP.md): full manual of procedure for the current typed package
+- [`FILE_MAP.md`](FILE_MAP.md): route to the smallest relevant artifact, command,
+  or agent entrypoint
+- [`EXPORT_CHECKLIST.md`](EXPORT_CHECKLIST.md): verification export and staging
+  checklist
+- [`NEXT_PHASE_EXECUTION_PLAN.md`](NEXT_PHASE_EXECUTION_PLAN.md): generic next
+  round template using the typed commands
+- [`AI_SESSION_PROMPT.md`](AI_SESSION_PROMPT.md): compact agent context
 
 ## Reference
 
-- [`BASELINE_VALIDATION.md`](BASELINE_VALIDATION.md): baseline lock and
-  validation summary
+- [`BASELINE_VALIDATION.md`](BASELINE_VALIDATION.md): baseline artifact package
+  and validation contract
 - [`WALLET_INVENTORY.md`](WALLET_INVENTORY.md): wallet inventory artifact
   semantics
-- [`TIMEZONE_VALIDATION.md`](TIMEZONE_VALIDATION.md): timezone handling and
-  review expectations
+- [`TIMEZONE_VALIDATION.md`](TIMEZONE_VALIDATION.md): timezone provenance and
+  profile artifact contract
 - [`TEST_SUITE_FOLLOWUPS.md`](TEST_SUITE_FOLLOWUPS.md): deferred test work
 - [`CANADIAN_CRYPTOCURRENCY_TAXATION_GUIDE.md`](CANADIAN_CRYPTOCURRENCY_TAXATION_GUIDE.md):
-  default CRA-aligned tax stance
+  CRA-aligned working tax reference
 - [`TAX_REFERENCE_MAP.md`](TAX_REFERENCE_MAP.md): targeted tax source routing
 - [`cointracking_full_export_manifest.csv`](cointracking_full_export_manifest.csv):
-  canonical baseline export manifest
+  baseline export manifest reference
 
 ## Workspace Guides
 

@@ -7,6 +7,7 @@ import json
 
 from crypto_reconciliation.application.dtos import ManifestRequest, ManifestResponse
 from crypto_reconciliation.application.services.common import sha256sum
+from crypto_reconciliation.application.services.scan import iter_tree_files
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 
@@ -16,7 +17,7 @@ class ManifestService:
 
     def execute(self, request: ManifestRequest) -> ManifestResponse:
         rows: list[dict[str, str]] = []
-        for path in sorted(candidate for candidate in request.source_dir.rglob("*") if candidate.is_file()):
+        for path in iter_tree_files(request.source_dir, exclude_paths=(request.output_path,)):
             rows.append(
                 {
                     "filename": str(path.relative_to(request.source_dir)),

@@ -1,38 +1,31 @@
 # AI Session Working Prompt
 
-Use CoinTracking.info as the live ledger and this repo as the evidence and verification workspace.
+Use CoinTracking.info as the live ledger and this repo as the typed evidence,
+normalization, staging, and verification toolchain.
 
-Always anchor to these facts first:
+Anchor to these facts first:
 
-1. canonical baseline folder: `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
-2. authoritative cutoff timestamp: `2023-08-05 08:34:04`
-3. delta work begins strictly after that timestamp unless a newer baseline is intentionally adopted
+1. Canonical baseline folder:
+   `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
+2. Authoritative cutoff timestamp: `2023-08-05 08:34:04`
+3. Delta work begins strictly after that timestamp unless a new baseline is
+   intentionally adopted
 
-Source order for analysis:
+Priority artifacts:
 
-1. canonical baseline exports in `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
-2. CRA-aligned tax guidance in `docs/CANADIAN_CRYPTOCURRENCY_TAXATION_GUIDE.md`
-3. targeted CRA source lookup via `docs/TAX_REFERENCE_MAP.md` when the guide is not enough
-4. durable baseline validation in `docs/BASELINE_VALIDATION.md`
-5. fresh verification exports in `working/verification/`
-6. raw external source exports in `evidence/raw/source/`
-7. working derivatives in `working/`
+1. baseline validation package under `analysis/reconciliation/`
+2. `analysis/issues/issue_log.csv`
+3. `analysis/issues/source_inventory.csv`
+4. `working/verification/`
+5. `working/normalized/`
+6. `working/import_batches/`
+7. raw captures under `evidence/raw/source/`
 
 Operational rules:
 
-1. consult `analysis/issues/issue_log.csv` for unresolved items
-2. consult `analysis/issues/source_inventory.csv` before any new source planning
-3. follow CRA primary guidance when tax treatment questions arise; use `docs/TAX_REFERENCE_MAP.md` to jump to the smallest relevant source
-4. treat `FIAT-001` as closed unless conflicting evidence appears later; the current documented position is that it is an intentional general CAD tracking account
-5. update `analysis/issues/issue_log.csv` when new evidence, actions, or outcomes appear
-6. update `outputs/logs/round_log.csv` after each repair or import round
-7. request only the default verification export set unless a mismatch requires a heavier report
-8. never recommend importing the next source until the current one passes verification
-
-Default verification exports to request after any repair or import:
-
-- Validate Transactions
-- Missing Transactions using strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
-- Duplicate Transactions
-- Current Balance
-- Balance by Exchange
+1. prefer the typed CLI commands over manual file shaping
+2. do not stage or import a source while `timezone_issues.csv`, `exceptions.csv`,
+   or `stage_summary.json` show unresolved blockers
+3. update the round log after each seeded round and verification cycle
+4. use `source reconcile` when a candidate or reference slice needs a
+   deterministic row comparison

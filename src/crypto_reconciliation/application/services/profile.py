@@ -2,20 +2,33 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 from pathlib import Path
 
 from crypto_reconciliation.application.dtos import ProfileRequest, ProfileResponse
-from crypto_reconciliation.application.services.common import (
-    csv_header_and_count,
-    ensure_directory,
-    sha256sum,
+from crypto_reconciliation.application.services.common import ensure_directory, sha256sum
+from crypto_reconciliation.application.services.scan import (
+    ensure_output_not_within_input_tree,
+    iter_tree_files,
 )
-from crypto_reconciliation.domain.models import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.domain.models import FileInventoryEntry, IssueRecord, SourceProfile
 from crypto_reconciliation.domain.types import AdapterId, SourceId
 from crypto_reconciliation.ports.adapters import SourceAdapter, SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+
+ISSUE_HEADER = (
+    "issue_id",
+    "source",
+    "adapter_id",
+    "severity",
+    "kind",
+    "message",
+    "raw_file",
+    "raw_row_ref",
+    "status",
+)
 
 
 class ProfileService:
@@ -24,6 +37,12 @@ class ProfileService:
         self._artifacts = artifacts
 
     def execute(self, request: ProfileRequest) -> ProfileResponse:
+        ensure_output_not_within_input_tree(
+            request.raw_dir,
+            request.output_dir,
+            input_label="raw source directory",
+            output_label="profile output directory",
+        )
         ensure_directory(request.output_dir)
         profile = self.create_profile(request.source, request.raw_dir)
         self.write_profile_artifacts(profile, request.output_dir)
@@ -38,6 +57,7 @@ class ProfileService:
         inventory = self._build_inventory(raw_dir)
         adapter = self._select_adapter(source, raw_dir, tuple(inventory))
         fingerprint = self._manifest_fingerprint(inventory)
+        timezone_issues = tuple(_timezone_issues(source, adapter.manifest.adapter_id, inventory))
         return SourceProfile(
             source=SourceId(source),
             raw_dir=str(raw_dir),
@@ -45,14 +65,30 @@ class ProfileService:
             manifest_fingerprint=fingerprint,
             file_inventory=tuple(inventory),
             supported=adapter.manifest.supported,
-            metadata={"display_name": adapter.manifest.display_name},
+            metadata={
+                "display_name": adapter.manifest.display_name,
+                "timezone_issue_count": str(len(timezone_issues)),
+            },
+            timezone_summary=_timezone_summary(inventory, timezone_issues),
+            timezone_issues=timezone_issues,
         )
 
     def write_profile_artifacts(self, profile: SourceProfile, output_dir: Path) -> None:
         self._artifacts.write_json(output_dir / "profile.json", profile.to_dict())
         self._artifacts.write_rows(
             output_dir / "profile_inventory.csv",
-            ("relative_path", "suffix", "size_bytes", "sha256", "row_count", "header"),
+            (
+                "relative_path",
+                "suffix",
+                "size_bytes",
+                "sha256",
+                "row_count",
+                "header",
+                "timestamp_resolution",
+                "timezone_mode",
+                "timezone_value",
+                "timezone_conflict",
+            ),
             (
                 {
                     "relative_path": entry.relative_path,
@@ -61,9 +97,18 @@ class ProfileService:
                     "sha256": entry.sha256,
                     "row_count": "" if entry.row_count is None else str(entry.row_count),
                     "header": "|".join(entry.header),
+                    "timestamp_resolution": entry.timestamp_resolution,
+                    "timezone_mode": entry.timezone_mode,
+                    "timezone_value": entry.timezone_value,
+                    "timezone_conflict": entry.timezone_conflict,
                 }
                 for entry in profile.file_inventory
             ),
+        )
+        self._artifacts.write_rows(
+            output_dir / "timezone_issues.csv",
+            ISSUE_HEADER,
+            (issue.to_row() for issue in profile.timezone_issues),
         )
 
     def _build_inventory(self, raw_dir: Path) -> list[FileInventoryEntry]:
@@ -72,8 +117,8 @@ class ProfileService:
         if not raw_dir.is_dir():
             raise NotADirectoryError(f"raw source path is not a directory: {raw_dir}")
         inventory: list[FileInventoryEntry] = []
-        for path in sorted(candidate for candidate in raw_dir.rglob("*") if candidate.is_file()):
-            header, row_count = csv_header_and_count(path)
+        for path in iter_tree_files(raw_dir):
+            header, row_count, timezone_details = _inventory_file_details(path)
             inventory.append(
                 FileInventoryEntry(
                     relative_path=str(path.relative_to(raw_dir)),
@@ -82,6 +127,10 @@ class ProfileService:
                     sha256=sha256sum(path),
                     row_count=row_count,
                     header=header,
+                    timestamp_resolution=timezone_details.timestamp_resolution,
+                    timezone_mode=timezone_details.timezone_mode,
+                    timezone_value=timezone_details.timezone_value,
+                    timezone_conflict=timezone_details.timezone_conflict,
                 )
             )
         return inventory
@@ -122,3 +171,131 @@ class ProfileService:
 
 def sha256sum_from_text(payload: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+class _TimezoneDetails:
+    def __init__(
+        self,
+        *,
+        timestamp_resolution: str = "",
+        timezone_mode: str = "",
+        timezone_value: str = "",
+        timezone_conflict: str = "",
+    ) -> None:
+        self.timestamp_resolution = timestamp_resolution
+        self.timezone_mode = timezone_mode
+        self.timezone_value = timezone_value
+        self.timezone_conflict = timezone_conflict
+
+
+def _inventory_file_details(path: Path) -> tuple[tuple[str, ...], int | None, _TimezoneDetails]:
+    if path.suffix.lower() != ".csv":
+        return (), None, _TimezoneDetails()
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        header = tuple(reader.fieldnames or ())
+        rows = list(reader)
+    row_count = len(rows)
+    if not header:
+        return header, row_count, _TimezoneDetails()
+    timezone_details = _csv_timezone_details(header, rows)
+    return header, row_count, timezone_details
+
+
+def _csv_timezone_details(
+    header: tuple[str, ...],
+    rows: list[dict[str, str]],
+) -> _TimezoneDetails:
+    timestamp_field = next((name for name in header if name.lower() in {"timestamp", "date", "datetime", "time"}), "")
+    if not timestamp_field:
+        return _TimezoneDetails()
+    sample_value = next(
+        (row.get(timestamp_field, "").strip() for row in rows if row.get(timestamp_field, "").strip()),
+        "",
+    )
+    header_utc = "utc" in timestamp_field.lower()
+    resolution = _timestamp_resolution(sample_value)
+    timezone_mode = ""
+    timezone_value = ""
+    timezone_conflict = ""
+
+    if header_utc and _value_has_non_utc_offset(sample_value):
+        timezone_mode = "conflict"
+        timezone_conflict = f"header:{timestamp_field}|value:{sample_value}"
+    elif header_utc:
+        timezone_mode = "header_utc"
+        timezone_value = "UTC"
+    elif sample_value.endswith(("Z", " UTC")):
+        timezone_mode = "value_utc"
+        timezone_value = "UTC"
+    elif _value_has_non_utc_offset(sample_value):
+        timezone_mode = "value_utc"
+        timezone_value = sample_value[-6:]
+    elif resolution == "date":
+        timezone_mode = "date_only"
+    elif sample_value:
+        timezone_mode = "naive"
+
+    return _TimezoneDetails(
+        timestamp_resolution=resolution,
+        timezone_mode=timezone_mode,
+        timezone_value=timezone_value,
+        timezone_conflict=timezone_conflict,
+    )
+
+
+def _timestamp_resolution(value: str) -> str:
+    if not value:
+        return ""
+    if len(value.strip()) == 10 and value.count("-") == 2:
+        return "date"
+    if ":" in value:
+        return "second"
+    return "unknown"
+
+
+def _value_has_non_utc_offset(value: str) -> bool:
+    stripped = value.strip()
+    return len(stripped) >= 6 and stripped[-6] in {"+", "-"} and stripped[-3] == ":"
+
+
+def _timezone_issues(
+    source: str,
+    adapter_id: AdapterId,
+    inventory: list[FileInventoryEntry],
+) -> list[IssueRecord]:
+    issues: list[IssueRecord] = []
+    for item in inventory:
+        if item.timezone_conflict:
+            issues.append(
+                IssueRecord(
+                    issue_id=f"{source}:{item.relative_path}:timezone_conflict",
+                    source=source,
+                    adapter_id=str(adapter_id),
+                    severity="high",
+                    kind="timezone_conflict",
+                    message=(
+                        "The file exposes conflicting timezone provenance and must be reviewed before normalization."
+                    ),
+                    raw_file=item.relative_path,
+                )
+            )
+    return issues
+
+
+def _timezone_summary(
+    inventory: list[FileInventoryEntry],
+    timezone_issues: tuple[IssueRecord, ...],
+) -> dict[str, object]:
+    modes: dict[str, int] = {}
+    timestamped_files = 0
+    for item in inventory:
+        if not item.timezone_mode:
+            continue
+        timestamped_files += 1
+        modes[item.timezone_mode] = modes.get(item.timezone_mode, 0) + 1
+    return {
+        "timestamped_file_count": timestamped_files,
+        "timezone_issue_count": len(timezone_issues),
+        "modes": modes,
+    }

@@ -9,4 +9,5 @@ Suggested folder names:
 
 Each folder should contain the fresh CoinTracking exports captured immediately after the related action.
 
-For import rounds, also keep the `06_scripts/verification_compare.py` output under a subfolder such as `comparison/`.
+For import rounds, also keep the `verification compare` output under a subfolder
+such as `comparison/`.

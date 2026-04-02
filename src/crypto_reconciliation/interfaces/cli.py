@@ -12,8 +12,12 @@ from crypto_reconciliation.application.dtos import (
     BaselineValidateRequest,
     ManifestRequest,
     NormalizeRequest,
+    PdfBalanceExtractRequest,
     ProfileRequest,
     RenderCoinTrackingRequest,
+    RoundScaffoldRequest,
+    ScreenBatchRequest,
+    SourceReconcileRequest,
     StageBatchRequest,
     VerificationCompareRequest,
     WalletInventoryRequest,
@@ -21,17 +25,22 @@ from crypto_reconciliation.application.dtos import (
 )
 from crypto_reconciliation.application.services import (
     BaselineValidationService,
+    BatchScreeningService,
     BatchStagingService,
     CoinTrackingRenderService,
     ManifestService,
     NormalizationService,
+    PdfBalanceExtractionService,
     ProfileService,
+    RoundScaffoldingService,
+    SourceReconciliationService,
     VerificationCompareService,
     WalletInventoryService,
     WorkspaceInitializationService,
 )
+from crypto_reconciliation.application.services.normalize import NormalizationDependencies
 from crypto_reconciliation.infrastructure.config import load_app_config
-from crypto_reconciliation.infrastructure.discovery import build_registry
+from crypto_reconciliation.infrastructure.discovery import AdapterRegistry, build_registry
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
 from crypto_reconciliation.infrastructure.storage import FilesystemStorage
 from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
@@ -46,6 +55,8 @@ output_app = typer.Typer(help="Output operations.")
 output_render_app = typer.Typer(help="Output rendering commands.")
 verification_app = typer.Typer(help="Verification operations.")
 batch_app = typer.Typer(help="Import batch operations.")
+round_app = typer.Typer(help="Round operations.")
+supporting_app = typer.Typer(help="Supporting artifact operations.")
 
 app.add_typer(workspace_app, name="workspace")
 app.add_typer(baseline_app, name="baseline")
@@ -54,22 +65,41 @@ app.add_typer(wallet_app, name="wallet")
 app.add_typer(output_app, name="output")
 app.add_typer(verification_app, name="verification")
 app.add_typer(batch_app, name="batch")
+app.add_typer(round_app, name="round")
+app.add_typer(supporting_app, name="supporting")
 wallet_app.add_typer(wallet_inventory_app, name="inventory")
 output_app.add_typer(output_render_app, name="render")
 
 
-def _services() -> tuple[
-    ProfileService,
-    NormalizationService,
-    CoinTrackingRenderService,
-]:
-    registry = build_registry()
-    artifacts = FilesystemArtifactStore()
-    profile_service = ProfileService(registry, artifacts)
-    storage = FilesystemStorage()
-    normalization_service = NormalizationService(registry, profile_service, storage, artifacts)
-    render_service = CoinTrackingRenderService(registry, artifacts)
-    return profile_service, normalization_service, render_service
+def _runtime_dependencies() -> tuple[AdapterRegistry, FilesystemArtifactStore, FilesystemStorage]:
+    return build_registry(), FilesystemArtifactStore(), FilesystemStorage()
+
+
+def _profile_service() -> ProfileService:
+    registry, artifacts, _ = _runtime_dependencies()
+    return ProfileService(registry, artifacts)
+
+
+def _normalization_service() -> NormalizationService:
+    registry, artifacts, storage = _runtime_dependencies()
+    return NormalizationService(
+        NormalizationDependencies(
+            source_registry=registry,
+            output_registry=registry,
+            profile_service=ProfileService(registry, artifacts),
+            storage=storage,
+            artifacts=artifacts,
+        )
+    )
+
+
+def _render_service() -> CoinTrackingRenderService:
+    registry, artifacts, _ = _runtime_dependencies()
+    return CoinTrackingRenderService(registry, artifacts)
+
+
+def _emit_response(payload: object) -> None:
+    typer.echo(json.dumps(payload, default=str))
 
 
 @workspace_app.command("init")
@@ -84,13 +114,11 @@ def workspace_init(
     response = WorkspaceInitializationService(FilesystemWorkspaceRepository()).execute(
         WorkspaceInitRequest(workspace_root=resolved_root)
     )
-    typer.echo(
-        json.dumps(
-            {
-                "workspace_root": str(response.workspace_root),
-                "created_paths": len(response.created_paths),
-            },
-        ),
+    _emit_response(
+        {
+            "workspace_root": str(response.workspace_root),
+            "created_paths": len(response.created_paths),
+        }
     )
 
 
@@ -102,7 +130,7 @@ def baseline_validate(
     response = BaselineValidationService(FilesystemArtifactStore()).execute(
         BaselineValidateRequest(export_dir=export_dir, output_dir=output_dir)
     )
-    typer.echo(json.dumps(response.__dict__, default=str))
+    _emit_response(response.__dict__)
 
 
 @source_app.command("manifest")
@@ -113,7 +141,7 @@ def source_manifest(
     response = ManifestService(FilesystemArtifactStore()).execute(
         ManifestRequest(source_dir=source_dir, output_path=output)
     )
-    typer.echo(json.dumps(response.__dict__, default=str))
+    _emit_response(response.__dict__)
 
 
 @source_app.command("profile")
@@ -122,11 +150,10 @@ def source_profile(
     raw_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    profile_service, _, _ = _services()
-    response = profile_service.execute(
+    response = _profile_service().execute(
         ProfileRequest(source=source, raw_dir=raw_dir, output_dir=output_dir),
     )
-    typer.echo(json.dumps(response.__dict__, default=str))
+    _emit_response(response.__dict__)
 
 
 @source_app.command("normalize")
@@ -135,9 +162,20 @@ def source_normalize(
     raw_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    _, normalization_service, _ = _services()
-    response = normalization_service.execute(NormalizeRequest(source=source, raw_dir=raw_dir, output_dir=output_dir))
-    typer.echo(json.dumps(response.__dict__, default=str))
+    response = _normalization_service().execute(NormalizeRequest(source=source, raw_dir=raw_dir, output_dir=output_dir))
+    _emit_response(response.__dict__)
+
+
+@source_app.command("reconcile")
+def source_reconcile(
+    candidate: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    reference: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+) -> None:
+    response = SourceReconciliationService(FilesystemArtifactStore()).execute(
+        SourceReconcileRequest(candidate_path=candidate, reference_path=reference, output_dir=output_dir)
+    )
+    _emit_response(response.__dict__)
 
 
 @wallet_inventory_app.command("rebuild")
@@ -148,7 +186,7 @@ def wallet_inventory_rebuild(
     response = WalletInventoryService(FilesystemArtifactStore()).execute(
         WalletInventoryRequest(normalized_root=normalized_root, output_path=output)
     )
-    typer.echo(json.dumps(response.__dict__, default=str))
+    _emit_response(response.__dict__)
 
 
 @output_render_app.command("cointracking")
@@ -156,11 +194,10 @@ def render_cointracking(
     canonical_events: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
-    _, _, render_service = _services()
-    response = render_service.execute(
+    response = _render_service().execute(
         RenderCoinTrackingRequest(canonical_events_path=canonical_events, output_path=output)
     )
-    typer.echo(json.dumps(response.__dict__, default=str))
+    _emit_response(response.__dict__)
 
 
 @verification_app.command("compare")
@@ -176,7 +213,25 @@ def verification_compare(
             output_dir=output_dir,
         )
     )
-    typer.echo(json.dumps(response.__dict__, default=str))
+    _emit_response(response.__dict__)
+
+
+@batch_app.command("screen")
+def batch_screen(
+    candidate: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    baseline_export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+) -> None:
+    response = BatchScreeningService(FilesystemArtifactStore()).execute(
+        ScreenBatchRequest(
+            candidate_path=candidate,
+            baseline_export_dir=baseline_export_dir,
+            output_dir=output_dir,
+        )
+    )
+    _emit_response(response.__dict__)
+    if not response.passed:
+        raise typer.Exit(code=1)
 
 
 @batch_app.command("stage")
@@ -185,14 +240,50 @@ def batch_stage(
     baseline_export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = BatchStagingService(FilesystemArtifactStore()).execute(
+    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
         StageBatchRequest(
             candidate_path=candidate,
             baseline_export_dir=baseline_export_dir,
             output_dir=output_dir,
         )
     )
-    typer.echo(json.dumps(response.__dict__, default=str))
+    _emit_response(response.__dict__)
+    if not response.staged:
+        raise typer.Exit(code=1)
+
+
+@round_app.command("scaffold")
+def round_scaffold(
+    round_id: Annotated[str, typer.Option()],
+    phase: Annotated[str, typer.Option()],
+    source: Annotated[str, typer.Option()],
+    workspace_root: Annotated[
+        Path | None,
+        typer.Option(dir_okay=True, file_okay=False),
+    ] = None,
+) -> None:
+    config = load_app_config()
+    response = RoundScaffoldingService(FilesystemArtifactStore()).execute(
+        RoundScaffoldRequest(
+            workspace_root=workspace_root or config.workspace_root,
+            round_id=round_id,
+            phase=phase,
+            source=source,
+        )
+    )
+    _emit_response(response.__dict__)
+
+
+@supporting_app.command("extract-pdf-balances")
+def extract_pdf_balances(
+    pdf: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    statement_kind: Annotated[str | None, typer.Option()] = None,
+) -> None:
+    response = PdfBalanceExtractionService(FilesystemArtifactStore()).execute(
+        PdfBalanceExtractRequest(pdf_path=pdf, output_path=output, statement_kind=statement_kind)
+    )
+    _emit_response(response.__dict__)
 
 
 if __name__ == "__main__":

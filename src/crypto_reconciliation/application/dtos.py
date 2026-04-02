@@ -72,6 +72,8 @@ class WalletInventoryRequest:
 class WalletInventoryResponse:
     output_path: Path
     wallet_count: int
+    evidence_count: int
+    issue_count: int
 
 
 @dataclass(frozen=True)
@@ -120,7 +122,72 @@ class StageBatchRequest:
 
 
 @dataclass(frozen=True)
+class ScreenBatchRequest:
+    candidate_path: Path
+    baseline_export_dir: Path
+    output_dir: Path
+
+
+@dataclass(frozen=True)
+class ScreenBatchResponse:
+    output_dir: Path
+    passed: bool
+    duplicate_count: int
+    has_time_overlap: bool
+    candidate_rows: int
+    issue_count: int
+    blocked_reason_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class StageBatchResponse:
     output_dir: Path
     staged: bool
     duplicate_count: int
+    issue_count: int
+    blocked_reason_codes: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class RoundScaffoldRequest:
+    workspace_root: Path
+    round_id: str
+    phase: str
+    source: str
+
+
+@dataclass(frozen=True)
+class RoundScaffoldResponse:
+    workspace_root: Path
+    round_dir: Path
+    round_log_path: Path
+    seeded: bool
+
+
+@dataclass(frozen=True)
+class SourceReconcileRequest:
+    candidate_path: Path
+    reference_path: Path
+    output_dir: Path
+
+
+@dataclass(frozen=True)
+class SourceReconcileResponse:
+    output_dir: Path
+    candidate_only_count: int
+    reference_only_count: int
+    matched_count: int
+
+
+@dataclass(frozen=True)
+class PdfBalanceExtractRequest:
+    pdf_path: Path
+    output_path: Path
+    statement_kind: str | None = None
+
+
+@dataclass(frozen=True)
+class PdfBalanceExtractResponse:
+    output_path: Path
+    row_count: int
+    statement_kind: str

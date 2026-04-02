@@ -48,6 +48,9 @@ decisions that should not be rediscovered from scratch.
 ## Rules For Future Work
 
 - Do not reintroduce repo-local live workspace assumptions.
+- Keep docs-to-runtime capability parity as an explicit invariant. If a command,
+  artifact, or agent entrypoint is documented as active, it must exist and be
+  tested.
 - Keep the retired legacy workspace roots out of git:
   `00_docs/`, `01_raw_exports/`, `02_working/`, `03_analysis/`,
   `04_import_ready/`, and `05_outputs/`.
@@ -70,6 +73,11 @@ decisions that should not be rediscovered from scratch.
   commits without forcing micro-commit overhead.
 - Keep application services on port contracts for adapter resolution and artifact
   persistence; do not import infrastructure modules from `application/`.
+- Keep filesystem scans deterministic. Services that enumerate trees must use a
+  stable scan contract with explicit output exclusions rather than ad hoc
+  `rglob()` behavior.
+- Keep raw-evidence protections strict. Profiling and normalization outputs must
+  not be written inside raw evidence trees.
 - Keep packaging release-safe: wheels should ship only the
   `src/crypto_reconciliation/` package, source distributions must remain
   buildable from a clean checkout, and CI should continue verifying the build
@@ -91,6 +99,8 @@ decisions that should not be rediscovered from scratch.
   instead of machine-local absolute paths.
 - Fail fast on ambiguous adapter matches and malformed adapter discovery
   contracts instead of silently picking a candidate.
+- Keep repo-local agent entrypoints real. If `.claude/commands/` is referenced
+  in the docs, those files must exist and describe the current typed workflow.
 - Keep adapter discovery narrow: discover only top-level adapter modules and
   package entry points so adapter-local tests and helpers can live beside the
   adapter without affecting runtime registration.

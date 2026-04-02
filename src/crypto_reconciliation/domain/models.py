@@ -22,6 +22,10 @@ def _empty_metadata() -> dict[str, str]:
     return {}
 
 
+def _empty_object_map() -> dict[str, object]:
+    return {}
+
+
 @dataclass(frozen=True)
 class AdapterManifest:
     adapter_id: AdapterId
@@ -40,6 +44,10 @@ class FileInventoryEntry:
     sha256: str
     row_count: int | None = None
     header: tuple[str, ...] = ()
+    timestamp_resolution: str = ""
+    timezone_mode: str = ""
+    timezone_value: str = ""
+    timezone_conflict: str = ""
 
 
 @dataclass(frozen=True)
@@ -232,6 +240,8 @@ class SourceProfile:
     file_inventory: tuple[FileInventoryEntry, ...]
     supported: bool
     metadata: dict[str, str] = field(default_factory=_empty_metadata)
+    timezone_summary: dict[str, object] = field(default_factory=_empty_object_map)
+    timezone_issues: tuple[IssueRecord, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -241,6 +251,7 @@ class SourceProfile:
             "manifest_fingerprint": self.manifest_fingerprint,
             "supported": self.supported,
             "metadata": dict(self.metadata),
+            "timezone_summary": dict(self.timezone_summary),
             "file_inventory": [
                 {
                     "relative_path": item.relative_path,
@@ -249,6 +260,10 @@ class SourceProfile:
                     "sha256": item.sha256,
                     "row_count": item.row_count,
                     "header": list(item.header),
+                    "timestamp_resolution": item.timestamp_resolution,
+                    "timezone_mode": item.timezone_mode,
+                    "timezone_value": item.timezone_value,
+                    "timezone_conflict": item.timezone_conflict,
                 }
                 for item in self.file_inventory
             ],

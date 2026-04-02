@@ -43,7 +43,7 @@ SEED_FILES = (
     ),
     SeedFile(
         "outputs/logs/round_log.csv",
-        "round_id,phase,source,status,notes\n",
+        "round_id,phase,source,status,verification_dir,notes\n",
     ),
     SeedFile(
         "config/workspace.json",
