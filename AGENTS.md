@@ -49,6 +49,9 @@ Do not pre-load every repo doc by default.
   - `unit and not slow`
   - no coverage
   - run full `uv run pytest` before closing substantial work
+- For explicit local verification, prefer the repo-managed parallel gate runner:
+  - `uv run python -m tools.run_quality_gates`
+  - `uv run python -m tools.run_quality_gates --full-tests`
 - Treat commits as stable checkpoints by default:
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value

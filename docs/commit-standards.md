@@ -136,3 +136,11 @@ Re-benchmark suite segments before broadening or shrinking the fast test slice:
 uv run python -m tools.benchmark_tests
 uv run python -m tools.benchmark_tests --parallel
 ```
+
+For explicit local verification outside the hook path, the repo also ships a
+parallel quality-gate runner:
+
+```bash
+uv run python -m tools.run_quality_gates
+uv run python -m tools.run_quality_gates --full-tests
+```

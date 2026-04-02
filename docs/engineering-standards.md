@@ -37,6 +37,13 @@ importing through it.
   than widening types until everything fits.
 - Tests inherit a narrower exception in `mypy` config, but test helpers should
   still stay typed unless doing so adds no value.
+- Tests may exercise private helpers when the internal behavior is the thing
+  under test. Do not widen production visibility for tests; use narrow,
+  tool-supported test-side exclusions instead.
+- Prefer the smallest available exclusion scope:
+  - repo config for broad test-only policy
+  - per-file config when an entire test module needs an exception
+  - line-level suppression when only one access or one diagnostic needs relief
 
 ## Modularization Rules
 

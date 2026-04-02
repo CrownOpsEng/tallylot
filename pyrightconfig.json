@@ -50,6 +50,13 @@
   "reportCallInDefaultInitializer": true,
   "reportUnnecessaryTypeIgnoreComment": true,
   "reportImplicitOverride": true,
+  "executionEnvironments": [
+    {
+      "root": "tests",
+      "extraPaths": ["src", "."],
+      "reportPrivateUsage": false
+    }
+  ],
   "venvPath": ".",
   "venv": ".venv"
 }

@@ -92,6 +92,13 @@ uv run python -m tools.benchmark_tests
 uv run python -m tools.benchmark_tests --parallel
 ```
 
+Run local quality gates in parallel with:
+
+```bash
+uv run python -m tools.run_quality_gates
+uv run python -m tools.run_quality_gates --full-tests
+```
+
 ## Docs
 
 Start with [AGENTS.md](AGENTS.md) for task routing, then use the repo-owned
