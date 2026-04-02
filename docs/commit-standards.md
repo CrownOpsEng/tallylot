@@ -96,12 +96,12 @@ Install the repo hooks and commit template in each clone before doing stable
 work:
 
 ```bash
-git config --local commit.template .gitmessage.txt
-uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
+uv run python -m tools.install_git_hooks
 ```
 
-Do not replace this with ad hoc wrappers unless the docs are updated in the
-same change and the wrapper exactly preserves the documented behavior.
+The installed `pre-commit` hook formats safe staged Python files with Ruff
+before running the remaining hooks once. It skips auto-restaging for partially
+staged Python files so unrelated unstaged hunks are not accidentally committed.
 
 Validate messages directly when needed:
 

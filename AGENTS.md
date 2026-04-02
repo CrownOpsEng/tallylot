@@ -37,13 +37,11 @@ Do not pre-load every repo doc by default.
 ## Execution Rules
 
 - Bootstrap each clone before doing stable work:
-  - `git config --local commit.template .gitmessage.txt`
-  - `uv run pre-commit install --hook-type pre-commit --hook-type commit-msg`
+  - `uv run python -m tools.install_git_hooks`
 - Do not consider work ready until `markdownlint`, `ruff`, `mypy`, `pyright`,
   `pylint`, and `pytest` pass.
 - Bootstrap the checked-in hooks:
-  - `git config --local commit.template .gitmessage.txt`
-  - `uv run pre-commit install --hook-type pre-commit --hook-type commit-msg`
+  - `uv run python -m tools.install_git_hooks`
 - For explicit local verification, prefer:
   - `uv run pre-commit run markdownlint --all-files`
   - `uv run python -m tools.run_quality_gates`

@@ -8,4 +8,4 @@ Use this route after a manual CoinTracking repair or import:
 4. review the comparison package
 5. update issue, source, and round-log records
 
-Use `docs/operations/export-checklist.md` for the required export set.
+Use `docs/EXPORT_CHECKLIST.md` for the required export set.
