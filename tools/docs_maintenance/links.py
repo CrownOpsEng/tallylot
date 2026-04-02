@@ -132,6 +132,24 @@ def markdown_targets(text: str) -> list[str]:
     return [*inline_targets(text), *reference_targets(text)]
 
 
+def markdown_target_paths(path: Path) -> list[str]:
+    targets: list[str] = []
+    text = text_without_fenced_code(path.read_text(encoding="utf-8"))
+    for target in markdown_targets(text):
+        parsed = urlparse(target)
+        if parsed.scheme in {"http", "https", "mailto"}:
+            continue
+        target_path_text = target.split("#", 1)[0]
+        if not target_path_text:
+            continue
+        resolved = (path.parent / target_path_text).resolve()
+        try:
+            targets.append(display_path(resolved))
+        except ValueError:
+            continue
+    return targets
+
+
 def validate_markdown_links(paths: Iterable[Path]) -> None:
     anchor_cache: dict[Path, set[str]] = {}
     for path in paths:

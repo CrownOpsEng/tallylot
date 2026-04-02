@@ -31,7 +31,7 @@ def override_active_roots(
 
 
 def test_docs_maintenance_sync_check_passes() -> None:
-    assert docs_maintenance.main(["sync", "--check"]) == 0
+    docs_maintenance.cli.check_retired_references()
 
 
 def test_parse_frontmatter_supports_optional_fields() -> None:
@@ -273,6 +273,82 @@ def test_entrypoints_do_not_reference_retired_docs_paths() -> None:
             )
 
 
+def test_sync_check_ignores_plain_text_mentions_of_retired_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    concepts_root = docs_root / "concepts"
+    concepts_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    (tmp_path / ".claude" / "commands").mkdir(parents=True)
+
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+            """
+        ),
+        encoding="utf-8",
+    )
+    (concepts_root / "example.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Example concept."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            nav_order: 10
+            ---
+
+            Historical note: `docs/file-map.md` was removed.
+            """
+        ),
+        encoding="utf-8",
+    )
+    for path in ("README.md", "AGENTS.md", "ROADMAP.md", "CHANGELOG.md"):
+        (tmp_path / path).write_text("# Root\n", encoding="utf-8")
+
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
+
+    docs_maintenance.cli.check_retired_references()
+
+
 def test_validate_markdown_links_accepts_repo_local_links(tmp_path: Path) -> None:
     readme = tmp_path / "README.md"
     agents = tmp_path / "agents"
@@ -333,6 +409,162 @@ def test_validate_markdown_links_accepts_repo_local_links(tmp_path: Path) -> Non
             docs / "sample.md",
         ]
     )
+
+
+def test_sync_check_rejects_retired_markdown_link_targets(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    concepts_root = docs_root / "concepts"
+    concepts_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    (tmp_path / ".claude" / "commands").mkdir(parents=True)
+
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+            """
+        ),
+        encoding="utf-8",
+    )
+    (concepts_root / "example.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Example concept."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            nav_order: 10
+            ---
+
+            See [old map](../file-map.md).
+            """
+        ),
+        encoding="utf-8",
+    )
+    for path in ("README.md", "AGENTS.md", "ROADMAP.md", "CHANGELOG.md"):
+        (tmp_path / path).write_text("# Root\n", encoding="utf-8")
+
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
+
+    with pytest.raises(ValueError, match="still references retired path docs/file-map.md"):
+        docs_maintenance.cli.check_retired_references()
+
+
+def test_sync_check_rejects_retired_related_targets(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    concepts_root = docs_root / "concepts"
+    concepts_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    (tmp_path / ".claude" / "commands").mkdir(parents=True)
+
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+            """
+        ),
+        encoding="utf-8",
+    )
+    (concepts_root / "example.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Example concept."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            nav_order: 10
+            related:
+              - docs/file-map.md
+            ---
+
+            Example.
+            """
+        ),
+        encoding="utf-8",
+    )
+    for path in ("README.md", "AGENTS.md", "ROADMAP.md", "CHANGELOG.md"):
+        (tmp_path / path).write_text("# Root\n", encoding="utf-8")
+
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
+
+    with pytest.raises(ValueError, match="still references retired path docs/file-map.md"):
+        docs_maintenance.cli.check_retired_references()
 
 
 def test_validate_markdown_links_accepts_reference_style_links(tmp_path: Path) -> None:

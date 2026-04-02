@@ -4,10 +4,11 @@ import argparse
 import re
 import sys
 from pathlib import Path
+from typing import cast
 
 import yaml
 
-from .links import repo_markdown_paths, validate_markdown_links, validate_uv_examples
+from .links import markdown_target_paths, repo_markdown_paths, validate_markdown_links, validate_uv_examples
 from .metadata import (
     ALLOWED_AUDIENCES,
     ALLOWED_DOC_TYPES,
@@ -149,9 +150,17 @@ def replace_marker_block(text: str, marker: str, replacement: str) -> str:
 
 def check_retired_references() -> None:
     for path in repo_markdown_paths():
-        text = path.read_text(encoding="utf-8")
+        referenced_paths = set(markdown_target_paths(path))
+        if path.suffix == ".md" and path.exists() and relative_path(path).startswith(("docs/", "agents/")):
+            frontmatter = parse_frontmatter(path.read_text(encoding="utf-8"), path)
+            related = frontmatter.get("related")
+            if isinstance(related, list):
+                for target in cast(list[object], related):
+                    if not isinstance(target, str):
+                        continue
+                    referenced_paths.add(target.split("#", 1)[0])
         for reference in RETIRED_REFERENCES:
-            if reference in text:
+            if reference in referenced_paths:
                 raise ValueError(f"{path} still references retired path {reference}")
 
 
