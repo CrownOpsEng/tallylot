@@ -15,7 +15,7 @@ This document complements:
 
 - `docs/standards/engineering.md` for placement and modularity rules
 - `docs/standards/commits.md` for commit format and checkpoint policy
-- `docs/architecture/reconciliation-tax-implementation-plan.md` for architecture direction
+- `docs/concepts/reconciliation-tax-architecture.md` for architecture direction
 - `docs/status/migration-sequence.md` for no-big-bang migration order
 
 ## Repo-Native Tooling To Use

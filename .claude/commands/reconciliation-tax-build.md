@@ -3,10 +3,10 @@
 Use this route for architecture, implementation, or repair work tied to the
 reconciliation, checkpoint, accounting, and tax buildout.
 
-1. Read `docs/architecture/reconciliation-tax-implementation-plan.md` first.
+1. Read `docs/concepts/reconciliation-tax-architecture.md` first.
 2. Read these when the task touches boundaries or sequencing:
-   - `docs/architecture/oracle-and-input-boundaries.md`
-   - `docs/architecture/transaction-classification-matrix.md`
+   - `docs/concepts/oracle-boundaries.md`
+   - `docs/concepts/transaction-classification.md`
    - `docs/status/migration-sequence.md`
    - `docs/standards/implementation.md`
 3. Confirm whether the task changes:

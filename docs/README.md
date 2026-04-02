@@ -53,15 +53,15 @@ Naming convention:
   code placement, typing, modularization, and naming
 - [`standards/implementation.md`](standards/implementation.md):
   coding-time execution contract for structure, tests, refactors, and commits
-- [`architecture/reconciliation-tax-implementation-plan.md`](architecture/reconciliation-tax-implementation-plan.md):
+- [`concepts/reconciliation-tax-architecture.md`](concepts/reconciliation-tax-architecture.md):
   implementation anchor for reconciliation, checkpointing, accounting, and tax
-- [`architecture/oracle-and-input-boundaries.md`](architecture/oracle-and-input-boundaries.md):
+- [`concepts/oracle-boundaries.md`](concepts/oracle-boundaries.md):
   platform-agnostic runtime-versus-oracle boundary rules
-- [`architecture/transaction-classification-matrix.md`](architecture/transaction-classification-matrix.md):
+- [`concepts/transaction-classification.md`](concepts/transaction-classification.md):
   layered classification mapping and support tiers
 - [`status/migration-sequence.md`](status/migration-sequence.md):
   migration order, dual-write strategy, and retirement gates
-- [`architecture/adapter-authoring.md`](architecture/adapter-authoring.md):
+- [`guides/write-an-adapter.md`](guides/write-an-adapter.md):
   source and output adapter contracts and conventions
 - [`standards/commits.md`](standards/commits.md):
   commit message format and checkpoint rules
@@ -72,13 +72,13 @@ Naming convention:
   runbook, and artifact-contract docs
 - [`status/current-state.md`](status/current-state.md): current runtime
   and implemented surface
-- [`operations/operations-quickstart.md`](operations/operations-quickstart.md):
+- [`guides/operator-quickstart.md`](guides/operator-quickstart.md):
   shortest safe path through a normal working session
-- [`operations/mop.md`](operations/mop.md): detailed procedure and round
+- [`guides/full-operator-workflow.md`](guides/full-operator-workflow.md): detailed procedure and round
   workflow
 - [`file-map.md`](file-map.md): task-oriented route to docs, commands, and
   artifacts
-- [`operations/export-checklist.md`](operations/export-checklist.md):
+- [`reference/export-checklist.md`](reference/export-checklist.md):
   verification export and staging checklist
 - [`operations/ai-session-prompt.md`](operations/ai-session-prompt.md):
   compact repo-specific agent context
@@ -87,18 +87,16 @@ Naming convention:
 
 - [`reference/README.md`](reference/README.md): route through tax references,
   repo-safe oracle guidance, and deferred follow-ups
-- [`operations/baseline-validation.md`](operations/baseline-validation.md):
+- [`reference/baseline-validation-contract.md`](reference/baseline-validation-contract.md):
   baseline artifact package and validation contract
-- [`operations/wallet-inventory.md`](operations/wallet-inventory.md): wallet
+- [`reference/wallet-inventory-artifacts.md`](reference/wallet-inventory-artifacts.md): wallet
   inventory artifact semantics
-- [`operations/timezone-validation.md`](operations/timezone-validation.md):
+- [`reference/timezone-validation-artifacts.md`](reference/timezone-validation-artifacts.md):
   timezone provenance and profile artifact contract
-- [`reference/canadian-cryptocurrency-taxation-guide.md`](reference/canadian-cryptocurrency-taxation-guide.md):
+- [`reference/canadian-crypto-tax-guide.md`](reference/canadian-crypto-tax-guide.md):
   CRA-aligned working tax reference
-- [`reference/tax-reference-map.md`](reference/tax-reference-map.md): targeted
+- [`reference/tax-source-map.md`](reference/tax-source-map.md): targeted
   tax source routing
-- [`reference/test-suite-followups.md`](reference/test-suite-followups.md):
-  deferred test work
 - [`reference/cointracking-oracle-artifacts.md`](reference/cointracking-oracle-artifacts.md):
   generic guide to supported oracle artifact families for the historical
   portfolio-tracker baseline
@@ -107,7 +105,7 @@ Naming convention:
 
 - [`workspace/README.md`](workspace/README.md): repo-owned guidance and
   templates for workspace subtrees
-- [`operations/workspace-layout.md`](operations/workspace-layout.md): external
+- [`concepts/workspace-model.md`](concepts/workspace-model.md): external
   workspace shape, seeded files, and migration mapping
 
 ## Agent Routes

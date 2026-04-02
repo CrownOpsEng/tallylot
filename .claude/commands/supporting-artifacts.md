@@ -9,6 +9,6 @@ path.
 3. keep the PDF-derived artifacts in supporting or reconciliation review paths;
    do not treat them as canonical transaction imports
 
-Use `docs/operations/operations-quickstart.md` for the short surrounding workflow,
-`docs/operations/mop.md` for the detailed procedure, and `docs/file-map.md` when you need
+Use `docs/guides/operator-quickstart.md` for the short surrounding workflow,
+`docs/guides/full-operator-workflow.md` for the detailed procedure, and `docs/file-map.md` when you need
 the narrowest related artifact or command.

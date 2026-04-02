@@ -29,7 +29,7 @@ Use this route before closing any non-trivial coding task.
      packaging, release, or other workflow surfaces
 6. If architecture, schema, or sequencing changed, update:
    - `ROADMAP.md`
-   - `docs/architecture/reconciliation-tax-implementation-plan.md`
+   - `docs/concepts/reconciliation-tax-architecture.md`
    - any boundary, matrix, or migration docs affected
 7. Create the stable checkpoint commit when the slice is coherent and verified.
    Do not close the task first and plan to commit afterward.

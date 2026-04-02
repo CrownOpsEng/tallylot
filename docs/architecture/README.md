@@ -12,7 +12,7 @@ forward roadmap, current runtime inventory, or completed history.
 
 1. [`../standards/engineering.md`](../standards/engineering.md)
 2. [`../standards/implementation.md`](../standards/implementation.md)
-3. [`reconciliation-tax-implementation-plan.md`](reconciliation-tax-implementation-plan.md)
+3. [`../concepts/reconciliation-tax-architecture.md`](../concepts/reconciliation-tax-architecture.md)
 
 ## Routing By Concern
 
@@ -23,22 +23,22 @@ forward roadmap, current runtime inventory, or completed history.
   [`../standards/implementation.md`](../standards/implementation.md)
 - Reconciliation, checkpoints, accounting, tax design, and fact-model
   direction:
-  [`reconciliation-tax-implementation-plan.md`](reconciliation-tax-implementation-plan.md)
+  [`../concepts/reconciliation-tax-architecture.md`](../concepts/reconciliation-tax-architecture.md)
 - Migration order, parity gates, and path retirement:
   [`../status/migration-sequence.md`](../status/migration-sequence.md)
 - Runtime-versus-oracle boundaries:
-  [`oracle-and-input-boundaries.md`](oracle-and-input-boundaries.md)
+  [`../concepts/oracle-boundaries.md`](../concepts/oracle-boundaries.md)
 - Classification vocabulary and support tiers:
-  [`transaction-classification-matrix.md`](transaction-classification-matrix.md)
+  [`../concepts/transaction-classification.md`](../concepts/transaction-classification.md)
 - Source and output adapter rules:
-  [`adapter-authoring.md`](adapter-authoring.md)
+  [`../guides/write-an-adapter.md`](../guides/write-an-adapter.md)
 - Commit, PR, and checkpoint message policy:
   [`../standards/commits.md`](../standards/commits.md)
 
 ## Read Only When Needed
 
-- [`oracle-and-input-boundaries.md`](oracle-and-input-boundaries.md)
-- [`transaction-classification-matrix.md`](transaction-classification-matrix.md)
+- [`../concepts/oracle-boundaries.md`](../concepts/oracle-boundaries.md)
+- [`../concepts/transaction-classification.md`](../concepts/transaction-classification.md)
 - [`../status/migration-sequence.md`](../status/migration-sequence.md)
-- [`adapter-authoring.md`](adapter-authoring.md)
+- [`../guides/write-an-adapter.md`](../guides/write-an-adapter.md)
 - [`../standards/commits.md`](../standards/commits.md)

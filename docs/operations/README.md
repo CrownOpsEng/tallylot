@@ -11,26 +11,26 @@ decisions.
 ## Start Here
 
 1. [`../status/current-state.md`](../status/current-state.md)
-2. [`operations-quickstart.md`](operations-quickstart.md)
-3. [`mop.md`](mop.md) when the short path is not enough
+2. [`../guides/operator-quickstart.md`](../guides/operator-quickstart.md)
+3. [`../guides/full-operator-workflow.md`](../guides/full-operator-workflow.md) when the short path is not enough
 
 ## Routing By Concern
 
 - Current implemented runtime surface:
   [`../status/current-state.md`](../status/current-state.md)
 - Shortest operator session path:
-  [`operations-quickstart.md`](operations-quickstart.md)
+  [`../guides/operator-quickstart.md`](../guides/operator-quickstart.md)
 - Longer-form operator procedure:
-  [`mop.md`](mop.md)
+  [`../guides/full-operator-workflow.md`](../guides/full-operator-workflow.md)
 - Baseline verification artifact contract:
-  [`baseline-validation.md`](baseline-validation.md)
+  [`../reference/baseline-validation-contract.md`](../reference/baseline-validation-contract.md)
 - Location inventory artifacts:
-  [`wallet-inventory.md`](wallet-inventory.md)
+  [`../reference/wallet-inventory-artifacts.md`](../reference/wallet-inventory-artifacts.md)
 - Timezone provenance artifacts:
-  [`timezone-validation.md`](timezone-validation.md)
+  [`../reference/timezone-validation-artifacts.md`](../reference/timezone-validation-artifacts.md)
 - Verification export checklist:
-  [`export-checklist.md`](export-checklist.md)
+  [`../reference/export-checklist.md`](../reference/export-checklist.md)
 - External workspace layout and seeded files:
-  [`workspace-layout.md`](workspace-layout.md)
+  [`../concepts/workspace-model.md`](../concepts/workspace-model.md)
 - Compact repo-specific agent prompt:
   [`ai-session-prompt.md`](ai-session-prompt.md)

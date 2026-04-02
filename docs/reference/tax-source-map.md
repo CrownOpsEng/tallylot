@@ -1,10 +1,17 @@
-# Tax Reference Map
+---
+title: "Tax Source Map"
+summary: "Targeted routing from repo tax questions to CRA-aligned reference sources."
+doc_type: reference
+audience: human
+owner: repo
+status: active
+---
 
 Use this file only when the working guide is not enough or when a tax position needs direct source support.
 
 ## Default rule
 
-1. Start with `docs/reference/canadian-cryptocurrency-taxation-guide.md`.
+1. Start with `docs/reference/canadian-crypto-tax-guide.md`.
 2. If the treatment is still unclear or material, jump to the relevant CRA source below.
 3. If the CRA source still does not clearly settle the issue, log the uncertainty and avoid guessing.
 

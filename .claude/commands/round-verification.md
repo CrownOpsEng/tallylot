@@ -8,4 +8,4 @@ Use this route after a manual repair or import in the external verification tool
 4. review the comparison package
 5. update issue, source, and round-log records
 
-Use `docs/operations/export-checklist.md` for the verification export set.
+Use `docs/reference/export-checklist.md` for the verification export set.

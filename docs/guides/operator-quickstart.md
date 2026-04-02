@@ -1,14 +1,21 @@
-# Operations Quickstart
+---
+title: "Operator Quickstart"
+summary: "Shortest safe path through intake, normalization, staging, and verification."
+doc_type: guide
+audience: human
+owner: repo
+status: active
+---
 
 Use this file for the shortest safe path through a normal operator session.
-Use `docs/operations/mop.md` when you need the long-form procedure or
+Use `docs/guides/full-operator-workflow.md` when you need the long-form procedure or
 supporting detail.
 
 ## Start Of Session
 
 1. Confirm the current runtime surface in `docs/status/current-state.md`
    if the repo has changed since the last session.
-2. Confirm the baseline contract in `docs/operations/baseline-validation.md`.
+2. Confirm the baseline contract in `docs/reference/baseline-validation-contract.md`.
 3. Review `analysis/issues/issue_log.csv` and
    `analysis/issues/source_inventory.csv`.
 4. Review the latest baseline reconciliation package under
@@ -117,7 +124,7 @@ supporting detail.
 
 2. Make the manual change or import in the external verification tool.
 3. Save the fresh verification export set under `working/verification/<round_id>/`.
-   Use the report set in `docs/operations/export-checklist.md`.
+   Use the report set in `docs/reference/export-checklist.md`.
 4. Compare against the prior verified state:
 
    ```bash

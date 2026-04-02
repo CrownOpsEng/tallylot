@@ -1,4 +1,11 @@
-# Export Checklist
+---
+title: "Export Checklist"
+summary: "Verification export set and staging checklist for round-close work."
+doc_type: reference
+audience: human
+owner: repo
+status: active
+---
 
 ## Baseline Validation
 

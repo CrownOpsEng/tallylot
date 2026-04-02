@@ -1,4 +1,11 @@
-# Oracle And Input Boundaries
+---
+title: "Oracle Boundaries"
+summary: "Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts."
+doc_type: concept
+audience: human
+owner: repo
+status: active
+---
 
 Use this document to keep the next architecture phase platform-agnostic. It
 defines which artifacts are normal runtime inputs, which ones are optional

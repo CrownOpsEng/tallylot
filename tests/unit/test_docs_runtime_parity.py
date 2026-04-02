@@ -16,18 +16,18 @@ from tools.oracles.cli import app as oracle_app
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_ROUTE_DOC_PATHS = [
     REPO_ROOT / "README.md",
-    REPO_ROOT / "docs" / "operations" / "operations-quickstart.md",
-    REPO_ROOT / "docs" / "operations" / "wallet-inventory.md",
+    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
+    REPO_ROOT / "docs" / "reference" / "wallet-inventory-artifacts.md",
     REPO_ROOT / "docs" / "workspace" / "analysis" / "inventory" / "README.md",
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
     REPO_ROOT / ".claude" / "commands" / "wallet-inventory.md",
     REPO_ROOT / ".claude" / "commands" / "supporting-artifacts.md",
 ]
 ORACLE_ROUTE_DOC_PATHS = [
-    REPO_ROOT / "docs" / "operations" / "baseline-validation.md",
-    REPO_ROOT / "docs" / "operations" / "export-checklist.md",
-    REPO_ROOT / "docs" / "operations" / "operations-quickstart.md",
-    REPO_ROOT / "docs" / "operations" / "mop.md",
+    REPO_ROOT / "docs" / "reference" / "baseline-validation-contract.md",
+    REPO_ROOT / "docs" / "reference" / "export-checklist.md",
+    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
+    REPO_ROOT / "docs" / "guides" / "full-operator-workflow.md",
     REPO_ROOT / ".claude" / "commands" / "round-verification.md",
     REPO_ROOT / ".claude" / "commands" / "source-diff.md",
 ]
@@ -35,16 +35,16 @@ ARCHITECTURE_DOC_PATHS = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "ROADMAP.md",
     REPO_ROOT / "docs" / "standards" / "engineering.md",
-    REPO_ROOT / "docs" / "architecture" / "reconciliation-tax-implementation-plan.md",
+    REPO_ROOT / "docs" / "concepts" / "reconciliation-tax-architecture.md",
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
 ]
 ENV_PREFIX_REQUIRED_DOC_PATHS = (
     REPO_ROOT / "README.md",
-    REPO_ROOT / "docs" / "operations" / "operations-quickstart.md",
-    REPO_ROOT / "docs" / "operations" / "mop.md",
-    REPO_ROOT / "docs" / "operations" / "baseline-validation.md",
-    REPO_ROOT / "docs" / "operations" / "export-checklist.md",
-    REPO_ROOT / "docs" / "operations" / "wallet-inventory.md",
+    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
+    REPO_ROOT / "docs" / "guides" / "full-operator-workflow.md",
+    REPO_ROOT / "docs" / "reference" / "baseline-validation-contract.md",
+    REPO_ROOT / "docs" / "reference" / "export-checklist.md",
+    REPO_ROOT / "docs" / "reference" / "wallet-inventory-artifacts.md",
     REPO_ROOT / "docs" / "workspace" / "analysis" / "inventory" / "README.md",
     REPO_ROOT / ".claude" / "commands" / "adapter-authoring.md",
     REPO_ROOT / ".claude" / "commands" / "implementation-checkpoint.md",

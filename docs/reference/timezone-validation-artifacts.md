@@ -1,4 +1,11 @@
-# Timezone Validation
+---
+title: "Timezone Validation Artifacts"
+summary: "Artifact contract for timezone provenance outputs and validation issues."
+doc_type: reference
+audience: human
+owner: repo
+status: active
+---
 
 The typed profile stage records timezone provenance before normalization.
 

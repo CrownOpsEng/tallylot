@@ -61,7 +61,7 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot workspace i
 ```
 
 Use [docs/file-map.md](docs/file-map.md) for task-to-command routing and
-[docs/operations/operations-quickstart.md](docs/operations/operations-quickstart.md)
+[docs/guides/operator-quickstart.md](docs/guides/operator-quickstart.md)
 for the shortest operator path.
 
 ## Development

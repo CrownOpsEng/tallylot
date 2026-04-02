@@ -13,5 +13,5 @@ Use this route for a full typed intake pass:
 9. `checkpoint rebuild-location-inventory` when normalization emitted wallet evidence
 10. `output render file` when the round needs an external output artifact such as `cointracking_candidate.csv`
 
-Use `docs/operations/operations-quickstart.md` for the short operator route and
-`docs/operations/mop.md` for the full workflow.
+Use `docs/guides/operator-quickstart.md` for the short operator route and
+`docs/guides/full-operator-workflow.md` for the full workflow.

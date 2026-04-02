@@ -29,10 +29,10 @@ Do not pre-load every repo doc by default.
 | ---- | ---- |
 | Code placement, typing, modularization, naming | `docs/standards/engineering.md` |
 | Active implementation execution discipline | `docs/standards/implementation.md`, `docs/standards/commits.md` |
-| Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/architecture/reconciliation-tax-implementation-plan.md` |
-| Platform-agnostic boundaries, classification mapping, or migration order | `docs/architecture/oracle-and-input-boundaries.md`, `docs/architecture/transaction-classification-matrix.md`, `docs/status/migration-sequence.md` |
-| Source or output adapter work | `docs/architecture/adapter-authoring.md` |
-| External workspace layout and seeded files | `docs/operations/workspace-layout.md` |
+| Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
+| Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
+| Source or output adapter work | `docs/guides/write-an-adapter.md` |
+| External workspace layout and seeded files | `docs/concepts/workspace-model.md`, `docs/workspace/README.md` |
 | Operational state, manual workflow, or agent runbooks | `docs/README.md`, then the specific doc it routes you to |
 | Workspace subtree conventions, checklists, or templates | `docs/workspace/README.md` |
 | Commit messages, templates, and checkpoint behavior | `docs/standards/commits.md` |
@@ -100,7 +100,7 @@ Workspace resolution order:
 
 ## Current Build Direction
 
-- Treat `docs/architecture/reconciliation-tax-implementation-plan.md` as the implementation
+- Treat `docs/concepts/reconciliation-tax-architecture.md` as the implementation
   anchor for reconciliation, checkpointing, journaling, and tax computation.
 - Do not treat CoinTracking as the live ledger for new architecture work.
   CoinTracking is now a compatibility and oracle layer.

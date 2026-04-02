@@ -15,10 +15,8 @@ contain personal export inventories or captured report bundles.
 ## Routing By Concern
 
 - Tax reference material:
-  [`canadian-cryptocurrency-taxation-guide.md`](canadian-cryptocurrency-taxation-guide.md)
+  [`canadian-crypto-tax-guide.md`](canadian-crypto-tax-guide.md)
 - Historical oracle artifact families:
   [`cointracking-oracle-artifacts.md`](cointracking-oracle-artifacts.md)
 - Tax-source map:
-  [`tax-reference-map.md`](tax-reference-map.md)
-- Deferred test follow-up inventory:
-  [`test-suite-followups.md`](test-suite-followups.md)
+  [`tax-source-map.md`](tax-source-map.md)

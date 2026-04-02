@@ -15,7 +15,7 @@ Start with these facts:
 5. The first hard checkpoint target is the best-evidenced balance date around
    `2026-03-23`
 6. The implementation anchor is
-   `docs/architecture/reconciliation-tax-implementation-plan.md`
+   `docs/concepts/reconciliation-tax-architecture.md`
 7. The only implemented file output adapter today is `cointracking_csv`
 8. CoinTracking tax and accounting reports stay in comparison tooling; they are
    not runtime inputs

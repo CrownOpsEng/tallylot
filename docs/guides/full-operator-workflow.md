@@ -1,6 +1,13 @@
-# Method Of Procedure
+---
+title: "Full Operator Workflow"
+summary: "Long-form runbook for the current operator workflow and round-close process."
+doc_type: guide
+audience: human
+owner: repo
+status: active
+---
 
-Use `docs/operations/operations-quickstart.md` when you want the short
+Use `docs/guides/operator-quickstart.md` when you want the short
 operational path. Use this file when you need the full procedure and
 supporting detail.
 

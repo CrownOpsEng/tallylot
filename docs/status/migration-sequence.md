@@ -210,6 +210,6 @@ Do not remove an older path until all relevant gates pass:
 
 When a task changes architecture, schema, or migration order:
 
-- update `docs/architecture/reconciliation-tax-implementation-plan.md`
+- update `docs/concepts/reconciliation-tax-architecture.md`
 - update `ROADMAP.md`
 - update this migration sequence if the checkpoint order changed

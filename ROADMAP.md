@@ -7,10 +7,10 @@ This file is the forward planning document for the repo.
   [`docs/status/current-state.md`](docs/status/current-state.md).
 - Architectural decisions, schema contracts, and migration rules belong in the
   architecture docs, especially:
-  - [`docs/architecture/reconciliation-tax-implementation-plan.md`](docs/architecture/reconciliation-tax-implementation-plan.md)
+  - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
   - [`docs/status/migration-sequence.md`](docs/status/migration-sequence.md)
-  - [`docs/architecture/oracle-and-input-boundaries.md`](docs/architecture/oracle-and-input-boundaries.md)
-  - [`docs/architecture/transaction-classification-matrix.md`](docs/architecture/transaction-classification-matrix.md)
+  - [`docs/concepts/oracle-boundaries.md`](docs/concepts/oracle-boundaries.md)
+  - [`docs/concepts/transaction-classification.md`](docs/concepts/transaction-classification.md)
 
 This roadmap assumes the repo stays on the current fact-based architecture. It
 tracks remaining phases, sequencing, and delivery gates. It does not restate
@@ -315,11 +315,20 @@ The system is filing-ready only when all of these are true:
 - keep reserved entry points stubbed rather than half-implemented
 - keep adapters self-contained with tests and metadata colocated
 
+### Test Follow-Through
+
+- keep scaffold and golden-refresh commands aligned with any future pack-layout
+  move so fixture authors still have one stable toolchain
+- continue moving adapter packs toward adapter-owned layout so plugin
+  extraction does not require another test-tree rewrite
+- expand the current split test profiles only when additional CI
+  infrastructure is introduced
+
 ## Change Control
 
 When roadmap order, architecture, schema, or rollout gates change, update all
 of the following together:
 
 - `ROADMAP.md`
-- `docs/architecture/reconciliation-tax-implementation-plan.md`
+- `docs/concepts/reconciliation-tax-architecture.md`
 - `docs/status/migration-sequence.md`
