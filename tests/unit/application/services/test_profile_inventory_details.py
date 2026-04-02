@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.services.profile import _inventory_file_details
+from crypto_reconciliation.application.services.profile_inventory import inventory_file_details
 
 
 def test_inventory_file_details_applies_binance_filename_offset_to_min_and_max(tmp_path: Path) -> None:
@@ -14,7 +14,7 @@ def test_inventory_file_details_applies_binance_filename_offset_to_min_and_max(t
         encoding="utf-8",
     )
 
-    _, row_count, details = _inventory_file_details(path)
+    _, row_count, details = inventory_file_details(path)
 
     assert row_count == 2
     assert details.min_timestamp == "2023-09-21 00:20:55"
@@ -35,8 +35,8 @@ def test_inventory_file_details_detects_header_utc_and_date_only_modes(tmp_path:
         encoding="utf-8",
     )
 
-    _, _, utc_details = _inventory_file_details(utc_path)
-    _, _, date_only_details = _inventory_file_details(date_only_path)
+    _, _, utc_details = inventory_file_details(utc_path)
+    _, _, date_only_details = inventory_file_details(date_only_path)
 
     assert utc_details.timezone_mode == "header_utc"
     assert utc_details.timezone_value == "UTC"
@@ -53,7 +53,7 @@ def test_inventory_file_details_ignores_placeholder_no_data_rows(tmp_path: Path)
         encoding="utf-8",
     )
 
-    _, row_count, details = _inventory_file_details(path)
+    _, row_count, details = inventory_file_details(path)
 
     assert row_count == 0
     assert details.date_field == "Time"
@@ -75,7 +75,7 @@ def test_inventory_file_details_skips_coinbase_retail_preamble_rows(tmp_path: Pa
         encoding="utf-8",
     )
 
-    header, row_count, details = _inventory_file_details(path)
+    header, row_count, details = inventory_file_details(path)
 
     assert header[0] == "ID"
     assert "Timestamp" in header

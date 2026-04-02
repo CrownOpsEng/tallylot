@@ -3,12 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import (
-    BaselineValidateRequest,
-    NormalizeRequest,
-    ProfileRequest,
-    WalletInventoryRequest,
-)
+from crypto_reconciliation.application.models.baseline import BaselineValidateRequest
+from crypto_reconciliation.application.models.source import NormalizeRequest, ProfileRequest
+from crypto_reconciliation.application.models.wallet import WalletInventoryRequest
 from crypto_reconciliation.application.services.baseline import BaselineValidationService
 from crypto_reconciliation.application.services.normalize import (
     NormalizationDependencies,
@@ -76,7 +73,6 @@ def test_wallet_inventory_rebuild_emits_documented_outputs(
     NormalizationService(
         NormalizationDependencies(
             source_registry=registry,
-            output_registry=registry,
             profile_service=ProfileService(registry, artifacts),
             storage=FilesystemStorage(),
             artifacts=artifacts,

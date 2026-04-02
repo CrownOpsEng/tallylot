@@ -72,7 +72,6 @@ def test_profile_normalize_and_render_cli(structured_source_dir: Path, tmp_path:
     assert rendered_path.exists()
     assert (normalized_dir / "normalization_reviews.csv").exists()
     assert (normalized_dir / "timezone_issues.csv").exists()
-    assert (normalized_dir / "cointracking_candidate.csv").exists()
 
 
 def test_baseline_validate_cli(baseline_export_dir: Path, tmp_path: Path) -> None:
@@ -318,18 +317,18 @@ def test_source_intake_apply_cli(tmp_path: Path) -> None:
     assert (workspace_root / "evidence/raw/source/unclassified/incoming/transactions.csv").exists()
 
 
-def test_source_reconcile_cli(tmp_path: Path) -> None:
+def test_source_diff_cli(tmp_path: Path) -> None:
     candidate_path = tmp_path / "candidate.csv"
     reference_path = tmp_path / "reference.csv"
     candidate_path.write_text("Type,Date,Tx-ID\nTrade,2023-08-06 10:00:00,tx-1\n", encoding="utf-8")
     reference_path.write_text("Type,Date,Tx-ID\nTrade,2023-08-07 10:00:00,tx-2\n", encoding="utf-8")
-    output_dir = tmp_path / "reconcile"
+    output_dir = tmp_path / "diff"
 
     result = runner.invoke(
         app,
         [
             "source",
-            "reconcile",
+            "diff",
             "--candidate",
             str(candidate_path),
             "--reference",

@@ -74,9 +74,18 @@ supporting detail.
    - `canonical_events.csv`
    - `exceptions.csv`
    - `normalization_reviews.csv`
-   - `cointracking_candidate.csv`
+   - `normalization_summary.json`
 
-3. Screen the candidate:
+3. Render a CoinTracking candidate when needed:
+
+   ```bash
+   uv run crypto-reconciliation output render file \
+     --output-adapter cointracking_csv \
+     --canonical-events <workspace>/working/normalized/<source>/canonical_events.csv \
+     --output <workspace>/working/normalized/<source>/cointracking_candidate.csv
+   ```
+
+4. Screen the candidate:
 
    ```bash
    uv run crypto-reconciliation batch screen \
@@ -85,10 +94,10 @@ supporting detail.
      --output-dir <workspace>/working/import_batches/<source>
    ```
 
-4. If the screen passes, stage the same candidate with `batch stage`.
-5. If it blocks, review `stage_issues.csv` and `stage_summary.json` before
+5. If the screen passes, stage the same candidate with `batch stage`.
+6. If it blocks, review `stage_issues.csv` and `stage_summary.json` before
    changing anything manually.
-6. Use `source reconcile` when the candidate needs a direct row diff against a
+7. Use `source diff` when the candidate needs a direct row diff against a
    reference export before import.
 
 ## Seed And Verify A Round

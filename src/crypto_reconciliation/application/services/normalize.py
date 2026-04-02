@@ -6,7 +6,7 @@ from collections import Counter
 from dataclasses import dataclass, replace
 from typing import cast
 
-from crypto_reconciliation.application.dtos import NormalizeRequest, NormalizeResponse
+from crypto_reconciliation.application.models.source import NormalizeRequest, NormalizeResponse
 from crypto_reconciliation.application.services.common import ensure_directory
 from crypto_reconciliation.application.services.issue_context import enrich_issue_context_timestamps
 from crypto_reconciliation.application.services.normalization_window import (
@@ -15,9 +15,9 @@ from crypto_reconciliation.application.services.normalization_window import (
 )
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
-from crypto_reconciliation.domain.models import AdapterCapability, NormalizationReviewRecord, SourceProfile
+from crypto_reconciliation.domain.models import NormalizationReviewRecord, SourceProfile
 from crypto_reconciliation.domain.types import JsonValue
-from crypto_reconciliation.ports.adapters import OutputAdapter, OutputAdapterRegistryPort, SourceAdapterRegistryPort
+from crypto_reconciliation.ports.adapters import SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 from crypto_reconciliation.ports.storage import StoragePort
 
@@ -25,7 +25,6 @@ from crypto_reconciliation.ports.storage import StoragePort
 @dataclass(frozen=True)
 class NormalizationDependencies:
     source_registry: SourceAdapterRegistryPort
-    output_registry: OutputAdapterRegistryPort
     profile_service: ProfileService
     storage: StoragePort
     artifacts: ArtifactStorePort
@@ -34,7 +33,6 @@ class NormalizationDependencies:
 class NormalizationService:
     def __init__(self, dependencies: NormalizationDependencies) -> None:
         self._source_registry = dependencies.source_registry
-        self._output_registry = dependencies.output_registry
         self._profile_service = dependencies.profile_service
         self._storage = dependencies.storage
         self._artifacts = dependencies.artifacts
@@ -110,8 +108,6 @@ class NormalizationService:
             ),
             (record.to_row() for record in result.wallet_inventory),
         )
-        output_adapter = _default_output_adapter(self._output_registry)
-        output_adapter.render(canonical_events, request.output_dir / output_adapter.candidate_artifact_name())
         self._artifacts.write_json(
             request.output_dir / "normalization_summary.json",
             cast(
@@ -181,17 +177,3 @@ def _profile_with_window_hints(profile: SourceProfile, request: NormalizeRequest
             **({"normalization_window_end": request.window_end} if request.window_end is not None else {}),
         },
     )
-
-
-def _default_output_adapter(registry: OutputAdapterRegistryPort) -> OutputAdapter:
-    supported = [
-        adapter
-        for adapter in registry.output_adapters
-        if adapter.manifest.supported and AdapterCapability.OUTPUT_RENDER in adapter.manifest.capabilities
-    ]
-    if not supported:
-        raise ValueError("no supported output adapters are available for rendering")
-    if len(supported) > 1:
-        adapter_ids = ", ".join(sorted(str(adapter.manifest.adapter_id) for adapter in supported))
-        raise ValueError(f"multiple supported output adapters require explicit selection: {adapter_ids}")
-    return supported[0]

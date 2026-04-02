@@ -37,6 +37,8 @@ Rules:
 - use `pydantic` here
 - keep these models out of the core domain
 - do not let oracle readers create production facts automatically
+- keep CoinTracking compatibility metadata out of the legacy canonical-event
+  core while this phase lands
 
 Exit criteria:
 
@@ -53,6 +55,8 @@ Implementation rule:
 - normalization writes transaction facts first
 - compatibility projections may still emit legacy canonical artifacts
 - the old canonical shape becomes a downstream projection target
+- until fact services land, keep CoinTracking candidate rendering as an
+  explicit projection step rather than a normalization side effect
 
 Exit criteria:
 
@@ -75,6 +79,8 @@ Rules:
 - CoinTracking tax outputs stay in oracle comparison services
 - deterministic corrections such as redistributions must live in typed rules or
   fact metadata, not operator notes
+- row-level candidate-versus-reference CSV comparison is a `source diff`
+  utility, not the reconciliation service surface
 
 Exit criteria:
 

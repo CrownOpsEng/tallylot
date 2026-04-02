@@ -9,10 +9,11 @@ Use this route for a full typed intake pass:
 5. `source profile`
 6. review `profile.json`, `profile_inventory.csv`, `timezone_issues.csv`
 7. `source normalize`
-8. review `exceptions.csv`, `normalization_reviews.csv`, `cointracking_candidate.csv`
-9. `batch screen`
-10. `batch stage` only if the screen passes
-11. `source reconcile` when the candidate or a support slice needs a direct ledger comparison
+8. review `exceptions.csv` and `normalization_reviews.csv`
+9. `output render file` to create `cointracking_candidate.csv` when you need a compatibility candidate
+10. `batch screen`
+11. `batch stage` only if the screen passes
+12. `source diff` when the candidate or a support slice needs a direct ledger comparison
 
 Use `docs/operations/operations-quickstart.md` for the short operator route and
 `docs/operations/mop.md` for the full workflow.

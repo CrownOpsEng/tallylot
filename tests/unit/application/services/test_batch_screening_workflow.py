@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import ScreenBatchRequest
+from crypto_reconciliation.application.models.batch import ScreenBatchRequest
 from crypto_reconciliation.application.services.staging import BatchScreeningService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows

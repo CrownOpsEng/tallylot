@@ -22,7 +22,6 @@ class MappedEventSpec:
     description: str
     raw_file: str
     raw_row_ref: str
-    render_exchange: str
     asset_in: str = ""
     amount_in: Decimal | None = None
     asset_out: str = ""
@@ -30,15 +29,6 @@ class MappedEventSpec:
     fee_asset: str = ""
     fee_amount: Decimal | None = None
     tx_hash: str = ""
-    render_group: str = ""
-    render_comment: str = ""
-    render_comment_mode: str = "exact"
-    render_tx_id: str = ""
-    render_tx_id_mode: str = "ignore"
-    render_allowed_types: str = ""
-    render_match_window_seconds: str = "0"
-    render_fee_tolerance: str = "0.00000000"
-    render_notes: str = ""
 
 
 @dataclass(frozen=True)
@@ -73,17 +63,6 @@ def mapped_event(spec: MappedEventSpec) -> CanonicalEvent:
         tx_hash=spec.tx_hash or None,
         raw_file=spec.raw_file,
         raw_row_ref=spec.raw_row_ref,
-        render_type=spec.event_kind,
-        render_exchange=spec.render_exchange,
-        render_group=spec.render_group,
-        render_comment=spec.render_comment or spec.description,
-        render_comment_mode=spec.render_comment_mode,
-        render_tx_id=spec.render_tx_id,
-        render_tx_id_mode=spec.render_tx_id_mode,
-        render_allowed_types=spec.render_allowed_types or spec.event_kind,
-        render_match_window_seconds=spec.render_match_window_seconds,
-        render_fee_tolerance=spec.render_fee_tolerance,
-        render_notes=spec.render_notes,
     )
 
 

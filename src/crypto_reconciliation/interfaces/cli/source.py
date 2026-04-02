@@ -7,15 +7,15 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import (
+from crypto_reconciliation.application.models.source import (
     IntakeApplyRequest,
     IntakePlanRequest,
     ManifestRequest,
     NormalizeRequest,
     ProfileRequest,
-    SourceReconcileRequest,
+    SourceDiffRequest,
 )
-from crypto_reconciliation.application.services import ManifestService, SourceIntakeService, SourceReconciliationService
+from crypto_reconciliation.application.services import ManifestService, SourceDiffService, SourceIntakeService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
 
@@ -108,13 +108,13 @@ def source_intake_apply(
     emit_response(response.__dict__)
 
 
-@source_app.command("reconcile")
-def source_reconcile(
+@source_app.command("diff")
+def source_diff(
     candidate: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     reference: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = SourceReconciliationService(FilesystemArtifactStore()).execute(
-        SourceReconcileRequest(candidate_path=candidate, reference_path=reference, output_dir=output_dir)
+    response = SourceDiffService(FilesystemArtifactStore()).execute(
+        SourceDiffRequest(candidate_path=candidate, reference_path=reference, output_dir=output_dir)
     )
     emit_response(response.__dict__)

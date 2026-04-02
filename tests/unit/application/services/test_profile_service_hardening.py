@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.dtos import ProfileRequest
+from crypto_reconciliation.application.models.source import ProfileRequest
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore

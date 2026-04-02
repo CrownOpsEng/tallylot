@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import ManifestRequest
+from crypto_reconciliation.application.models.source import ManifestRequest
 from crypto_reconciliation.application.services.manifest import ManifestService
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 

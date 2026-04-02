@@ -172,16 +172,6 @@ class LedgerLiveAdapter:
                     tx_hash=operation_hash,
                     raw_file=raw_file,
                     raw_row_ref=raw_row_ref,
-                    render_type="Trade",
-                    render_exchange=str(profile.source),
-                    render_comment=account_label,
-                    render_comment_mode="exact",
-                    render_tx_id=operation_hash,
-                    render_tx_id_mode="exact",
-                    render_allowed_types="Trade",
-                    render_match_window_seconds="0",
-                    render_fee_tolerance="0.00000000",
-                    render_notes="ledger_live_grouped_trade",
                 )
             )
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)

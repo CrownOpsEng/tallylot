@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.dtos import NormalizeRequest
+from crypto_reconciliation.application.models.source import NormalizeRequest
 from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service
@@ -38,15 +38,12 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     )
 
     canonical_rows = read_rows(output_dir / "canonical_events.csv")
-    candidate_rows = read_rows(output_dir / "cointracking_candidate.csv")
     summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
 
     assert response.event_count == 1
     assert len(canonical_rows) == 1
     assert canonical_rows[0]["tx_hash"] == "tx-keep"
-    assert len(candidate_rows) == 1
-    assert candidate_rows[0]["Tx-ID"] == "tx-keep"
     assert summary["event_count"] == 1
     assert summary["events_outside_normalization_window"] == 1
     assert summary["normalization_window_start"] == "2023-08-05 08:34:05"

@@ -6,9 +6,9 @@ from .manifest import ManifestService
 from .normalize import NormalizationService
 from .pdf_extract import PdfBalanceExtractionService
 from .profile import ProfileService
-from .reconcile import SourceReconciliationService
-from .render import OutputRenderService
+from .projections import OutputProjectionService
 from .rounds import RoundScaffoldingService
+from .source_diff import SourceDiffService
 from .staging import BatchScreeningService, BatchStagingService
 from .verification import VerificationCompareService
 from .wallet_inventory import WalletInventoryService
@@ -20,12 +20,12 @@ __all__ = [
     "BatchStagingService",
     "ManifestService",
     "NormalizationService",
-    "OutputRenderService",
+    "OutputProjectionService",
     "PdfBalanceExtractionService",
     "ProfileService",
     "RoundScaffoldingService",
+    "SourceDiffService",
     "SourceIntakeService",
-    "SourceReconciliationService",
     "VerificationCompareService",
     "WalletInventoryService",
     "WorkspaceInitializationService",

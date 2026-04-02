@@ -7,7 +7,10 @@ from typing import Protocol, cast
 
 from pypdf import PdfReader
 
-from crypto_reconciliation.application.dtos import PdfBalanceExtractRequest, PdfBalanceExtractResponse
+from crypto_reconciliation.application.models.source import (
+    PdfBalanceExtractRequest,
+    PdfBalanceExtractResponse,
+)
 from crypto_reconciliation.domain.models import AdapterManifest
 from crypto_reconciliation.ports.adapters import SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort

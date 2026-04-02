@@ -7,7 +7,7 @@ from crypto_reconciliation.adapters.sources.mapped_event_support import MappedEv
 from crypto_reconciliation.adapters.sources.wallet_record_support import normalized_identifier, wallet_identifier_kind
 
 
-def test_mapped_event_defaults_render_fields_from_event_shape() -> None:
+def test_mapped_event_preserves_internal_canonical_fields() -> None:
     event = mapped_event(
         MappedEventSpec(
             event_id="evt-1",
@@ -20,15 +20,14 @@ def test_mapped_event_defaults_render_fields_from_event_shape() -> None:
             description="Fixture deposit",
             raw_file="fixture.csv",
             raw_row_ref="row:2",
-            render_exchange="Fixture",
             asset_in="BTC",
             amount_in=Decimal("1.5"),
         )
     )
 
-    assert event.render_type == "Deposit"
-    assert event.render_comment == "Fixture deposit"
-    assert event.render_allowed_types == "Deposit"
+    assert event.event_kind == "Deposit"
+    assert event.description == "Fixture deposit"
+    assert str(event.asset_in) == "BTC"
 
 
 def test_wallet_identifier_helpers_normalize_evm_and_classify_near_accounts() -> None:

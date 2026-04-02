@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.dtos import NormalizeRequest
+from crypto_reconciliation.application.models.source import NormalizeRequest
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import (
     FakeSourceRegistry,
@@ -65,7 +65,6 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
         "default_render_mapping",
     ]
     assert wallet_rows[0]["evidence_path"] == "transactions.csv"
-    assert (output_dir / "cointracking_candidate.csv").exists()
     assert (output_dir / "timezone_issues.csv").exists()
 
 
@@ -146,9 +145,9 @@ def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Pat
             "field_names": [],
             "messages": [
                 (
-                    "Structured CSV normalization defaults CoinTracking render fields to "
-                    "render_type<-event_kind, render_exchange<-account, and "
-                    "render_comment<-description; validate those mappings before import."
+                    "Structured CSV output projection defaults CoinTracking rows to "
+                    "Type<-event_kind, Exchange<-account, and Comment<-description; "
+                    "validate those mappings before import."
                 )
             ],
         },

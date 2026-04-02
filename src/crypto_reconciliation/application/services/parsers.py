@@ -36,10 +36,6 @@ def load_canonical_events(path: Path, artifacts: ArtifactStorePort) -> tuple[Can
                 raw_row_ref=row["raw_row_ref"],
                 confidence=row["confidence"],
                 status=row["status"],
-                render_type=row["render_type"] or None,
-                render_exchange=row["render_exchange"] or None,
-                render_group=row["render_group"] or None,
-                render_comment=row["render_comment"] or None,
             )
         )
     return tuple(events)

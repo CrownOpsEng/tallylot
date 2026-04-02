@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import WalletInventoryRequest
+from crypto_reconciliation.application.models.wallet import WalletInventoryRequest
 from crypto_reconciliation.application.services.wallet_inventory import WalletInventoryService
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore

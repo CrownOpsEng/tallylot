@@ -42,7 +42,7 @@ def test_documented_claude_command_routes_exist() -> None:
         ".claude/commands/round-verification.md",
         ".claude/commands/wallet-inventory.md",
         ".claude/commands/normalization-exceptions.md",
-        ".claude/commands/source-reconcile.md",
+        ".claude/commands/source-diff.md",
         ".claude/commands/supporting-artifacts.md",
         ".claude/commands/adapter-authoring.md",
     )
@@ -57,7 +57,7 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
         ".claude/commands/round-verification.md",
         ".claude/commands/wallet-inventory.md",
         ".claude/commands/normalization-exceptions.md",
-        ".claude/commands/source-reconcile.md",
+        ".claude/commands/source-diff.md",
         ".claude/commands/supporting-artifacts.md",
         ".claude/commands/adapter-authoring.md",
     )
@@ -73,10 +73,10 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
         assert result.returncode == 1, f"ignored command route: {relative_path}"
 
 
-def test_source_intake_route_mentions_typed_intake_and_reconcile_commands() -> None:
+def test_source_intake_route_mentions_typed_intake_and_diff_commands() -> None:
     text = (REPO_ROOT / ".claude/commands/source-intake.md").read_text(encoding="utf-8")
 
-    for command in ("source intake plan", "source intake apply", "source manifest", "source reconcile"):
+    for command in ("source intake plan", "source intake apply", "source manifest", "source diff"):
         assert command in text
 
 

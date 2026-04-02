@@ -35,7 +35,6 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
-                render_exchange="Coinbase",
                 asset_in=asset,
                 amount_in=quantity,
                 asset_out=price_currency,
@@ -43,11 +42,6 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 fee_asset=price_currency,
                 fee_amount=fee_amount,
                 tx_hash=event_id,
-                render_tx_id=event_id,
-                render_tx_id_mode="ignore",
-                render_match_window_seconds="20",
-                render_fee_tolerance="0.03000000",
-                render_notes="Retail Buy row normalized from Coinbase raw export",
             )
         )
     if tx_type == "sell":
@@ -63,7 +57,6 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
-                render_exchange="Coinbase",
                 asset_in=price_currency,
                 amount_in=total_amount,
                 asset_out=asset,
@@ -71,11 +64,6 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 fee_asset=price_currency,
                 fee_amount=fee_amount,
                 tx_hash=event_id,
-                render_tx_id=event_id,
-                render_tx_id_mode="ignore",
-                render_match_window_seconds="20",
-                render_fee_tolerance="0.03000000",
-                render_notes="Retail Sell row normalized from Coinbase raw export",
             )
         )
     if tx_type == "reward income":
@@ -91,16 +79,9 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
-                render_exchange="Coinbase",
                 asset_in=asset,
                 amount_in=abs(quantity or Decimal("0")),
                 tx_hash=event_id,
-                render_group="Reward Income",
-                render_tx_id=event_id,
-                render_tx_id_mode="ignore",
-                render_match_window_seconds="2",
-                render_fee_tolerance="0.00000000",
-                render_notes="Coinbase Reward Income normalized to Interest Income",
             )
         )
     if tx_type in {"receive", "deposit"}:
@@ -116,15 +97,9 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
-                render_exchange="Coinbase",
                 asset_in=asset,
                 amount_in=quantity,
                 tx_hash=event_id,
-                render_tx_id=event_id,
-                render_tx_id_mode="ignore",
-                render_match_window_seconds="20",
-                render_fee_tolerance="0.03000000",
-                render_notes="Retail receive row normalized from Coinbase raw export",
             )
         )
     if tx_type in {"send", "withdrawal", "withdraw"}:
@@ -140,15 +115,9 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
-                render_exchange="Coinbase",
                 asset_out=asset,
                 amount_out=abs(quantity or Decimal("0")),
                 tx_hash=event_id,
-                render_tx_id=event_id,
-                render_tx_id_mode="ignore",
-                render_match_window_seconds="20",
-                render_fee_tolerance="0.03000000",
-                render_notes="Retail send row normalized from Coinbase raw export",
             )
         )
     raise ValueError(f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}")

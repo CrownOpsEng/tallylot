@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.services import NormalizationService, OutputRenderService, ProfileService
+from crypto_reconciliation.application.services import NormalizationService, OutputProjectionService, ProfileService
 from crypto_reconciliation.application.services.normalize import NormalizationDependencies
 from crypto_reconciliation.infrastructure.config import load_app_config
 from crypto_reconciliation.infrastructure.discovery import AdapterRegistry, build_registry
@@ -26,7 +26,6 @@ def normalization_service() -> NormalizationService:
     return NormalizationService(
         NormalizationDependencies(
             source_registry=registry,
-            output_registry=registry,
             profile_service=ProfileService(registry, artifacts),
             storage=storage,
             artifacts=artifacts,
@@ -34,9 +33,9 @@ def normalization_service() -> NormalizationService:
     )
 
 
-def render_service() -> OutputRenderService:
+def render_service() -> OutputProjectionService:
     registry, artifacts, _ = runtime_dependencies()
-    return OutputRenderService(registry, artifacts)
+    return OutputProjectionService(registry, artifacts)
 
 
 def configured_workspace_root() -> Path:

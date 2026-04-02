@@ -128,9 +128,6 @@ def _normalize_valid_row(
         tx_hash=row["tx_hash"] or None,
         raw_file=TRANSACTIONS_FILENAME,
         raw_row_ref=str(index),
-        render_type=row["event_kind"],
-        render_exchange=account,
-        render_comment=row["description"],
     ), reviews
 
 
@@ -196,9 +193,9 @@ def _dataset_reviews(
         feedback.dataset_review(
             "default_render_mapping",
             (
-                "Structured CSV normalization defaults CoinTracking render fields to "
-                "render_type<-event_kind, render_exchange<-account, and "
-                "render_comment<-description; validate those mappings before import."
+                "Structured CSV output projection defaults CoinTracking rows to "
+                "Type<-event_kind, Exchange<-account, and Comment<-description; "
+                "validate those mappings before import."
             ),
         ),
     )

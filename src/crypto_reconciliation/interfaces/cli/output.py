@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import RenderOutputRequest
+from crypto_reconciliation.application.models.output import RenderOutputRequest
 
 from .apps import output_render_app
 from .runtime import render_service

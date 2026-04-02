@@ -85,11 +85,8 @@ def normalize_transaction_rows(
                         description=operation,
                         raw_file=path.name,
                         raw_row_ref=f"row:{index}",
-                        render_exchange=str(profile.source),
                         asset_in=coin,
                         amount_in=change,
-                        render_group=account,
-                        render_notes=operation,
                     )
                 )
             )
@@ -116,13 +113,10 @@ def normalize_transaction_rows(
                         description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",
                         raw_file=path.name,
                         raw_row_ref=f"row:{neg_index}",
-                        render_exchange=str(profile.source),
                         asset_in=(pos.get("Coin") or "").strip().upper(),
                         amount_in=pos_change,
                         asset_out=(neg.get("Coin") or "").strip().upper(),
                         amount_out=abs(neg_change),
-                        render_group=account,
-                        render_notes=operation,
                     )
                 )
             )

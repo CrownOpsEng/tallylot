@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from crypto_reconciliation.application.dtos import ManifestRequest
+from crypto_reconciliation.application.models.source import ManifestRequest
 from crypto_reconciliation.application.services.manifest import ManifestService, _sha256sum_from_text
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 

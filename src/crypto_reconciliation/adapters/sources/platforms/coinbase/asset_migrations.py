@@ -48,18 +48,9 @@ def normalize_asset_migration(
             description="Coinbase Asset Migration",
             raw_file=raw_file,
             raw_row_ref=f"{sold_id}|{bought_id}",
-            render_exchange="Coinbase",
             asset_in=(bought_row.get("Asset") or "").strip().upper(),
             amount_in=bought_quantity,
             asset_out=(sold_row.get("Asset") or "").strip().upper(),
             amount_out=sold_quantity,
-            render_group="Asset Migration",
-            render_comment="Coinbase Asset Migration",
-            render_comment_mode="ignore",
-            render_tx_id=f"coinbase-asset-migration-{sold_id}-{bought_id}",
-            render_tx_id_mode="ignore",
-            render_match_window_seconds="2",
-            render_fee_tolerance="0.00000000",
-            render_notes="Paired Coinbase Asset Migration rows normalized into one CoinTracking swap",
         )
     )

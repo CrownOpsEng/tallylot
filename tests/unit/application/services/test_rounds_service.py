@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.dtos import RoundScaffoldRequest
+from crypto_reconciliation.application.models.rounds import RoundScaffoldRequest
 from crypto_reconciliation.application.services.rounds import (
     DEFAULT_VERIFICATION_EXPORTS,
     RoundScaffoldingService,

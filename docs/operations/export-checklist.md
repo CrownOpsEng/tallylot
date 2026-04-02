@@ -16,8 +16,8 @@ uv run crypto-reconciliation baseline validate \
 - run `source manifest`
 - run `source profile`
 - run `source normalize`
-- review `timezone_issues.csv`, `exceptions.csv`, `normalization_reviews.csv`,
-  and `cointracking_candidate.csv`
+- review `timezone_issues.csv`, `exceptions.csv`, and `normalization_reviews.csv`
+- run `output render file` if you need a CoinTracking compatibility candidate
 
 ## Batch Gate
 

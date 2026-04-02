@@ -1,8 +1,8 @@
-"""Output render service."""
+"""Explicit output projection service."""
 
 from __future__ import annotations
 
-from crypto_reconciliation.application.dtos import (
+from crypto_reconciliation.application.models.output import (
     RenderOutputRequest,
     RenderOutputResponse,
 )
@@ -12,7 +12,7 @@ from crypto_reconciliation.ports.adapters import OutputAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 
-class OutputRenderService:
+class OutputProjectionService:
     def __init__(self, registry: OutputAdapterRegistryPort, artifacts: ArtifactStorePort) -> None:
         self._registry = registry
         self._artifacts = artifacts

@@ -163,16 +163,12 @@ def _normalize_row(
                 description="Wealthsimple Crypto buy",
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
-                render_exchange=str(profile.source),
                 asset_in=symbol,
                 amount_in=quantity,
                 asset_out=currency,
                 amount_out=abs(net_cash_amount) if net_cash_amount is not None else None,
                 fee_asset=currency if commission is not None and commission > Decimal("0") else "",
                 fee_amount=commission if commission is not None and commission > Decimal("0") else None,
-                render_tx_id_mode="ignore",
-                render_match_window_seconds="86399",
-                render_notes="Trade:BUY",
             )
         )
     if activity_type.lower() == "trade" and activity_sub_type.upper() == "SELL":
@@ -188,16 +184,12 @@ def _normalize_row(
                 description="Wealthsimple Crypto sell",
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
-                render_exchange=str(profile.source),
                 asset_in=currency,
                 amount_in=abs(net_cash_amount) if net_cash_amount is not None else None,
                 asset_out=symbol,
                 amount_out=quantity,
                 fee_asset=currency if commission is not None and commission > Decimal("0") else "",
                 fee_amount=commission if commission is not None and commission > Decimal("0") else None,
-                render_tx_id_mode="ignore",
-                render_match_window_seconds="86399",
-                render_notes="Trade:SELL",
             )
         )
     return normalization_issue(

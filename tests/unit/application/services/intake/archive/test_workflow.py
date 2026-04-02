@@ -4,7 +4,7 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
-from crypto_reconciliation.application.dtos import ManifestRequest
+from crypto_reconciliation.application.models.source import ManifestRequest
 from crypto_reconciliation.application.services.intake.archive import scanned_tree_files
 from crypto_reconciliation.application.services.manifest import ManifestService
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from crypto_reconciliation.application.dtos import IntakeApplyRequest
+from crypto_reconciliation.application.models.source import IntakeApplyRequest
 from crypto_reconciliation.application.services.intake import SourceIntakeService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore

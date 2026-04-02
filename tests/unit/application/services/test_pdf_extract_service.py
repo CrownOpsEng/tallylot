@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from reportlab.pdfgen import canvas
 
-from crypto_reconciliation.application.dtos import PdfBalanceExtractRequest
+from crypto_reconciliation.application.models.source import PdfBalanceExtractRequest
 from crypto_reconciliation.application.services.pdf_extract import PdfBalanceExtractionService
 from crypto_reconciliation.domain.models import (
     AdapterManifest,

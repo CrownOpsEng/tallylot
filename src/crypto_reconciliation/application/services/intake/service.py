@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import shutil
 
-from crypto_reconciliation.application.dtos import (
+from crypto_reconciliation.application.models.source import (
     IntakeApplyRequest,
     IntakeApplyResponse,
     IntakePlanRequest,

@@ -114,16 +114,6 @@ class NearAdapter:
                             tx_hash=tx_hash,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
-                            render_type="Deposit",
-                            render_exchange=str(profile.source),
-                            render_comment=f"Transfer into {profile.source} - {tx_hash}",
-                            render_comment_mode="exact",
-                            render_tx_id=tx_hash,
-                            render_tx_id_mode="exact",
-                            render_allowed_types="Deposit",
-                            render_match_window_seconds="0",
-                            render_fee_tolerance="0.00000000",
-                            render_notes="near_transfer_in",
                         )
                     )
                 elif method == "deposit_and_stake":
@@ -145,16 +135,6 @@ class NearAdapter:
                             tx_hash=tx_hash,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
-                            render_type="Withdrawal",
-                            render_exchange=str(profile.source),
-                            render_comment=description,
-                            render_comment_mode="exact",
-                            render_tx_id=tx_hash,
-                            render_tx_id_mode="exact",
-                            render_allowed_types="Withdrawal",
-                            render_match_window_seconds="0",
-                            render_fee_tolerance="0.00000000",
-                            render_notes="near_stake_out",
                         )
                     )
                     staking_source = f"{profile.source} - Staking"
@@ -173,16 +153,6 @@ class NearAdapter:
                             tx_hash=tx_hash,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
-                            render_type="Deposit",
-                            render_exchange=staking_source,
-                            render_comment=description,
-                            render_comment_mode="exact",
-                            render_tx_id=tx_hash,
-                            render_tx_id_mode="exact",
-                            render_allowed_types="Deposit",
-                            render_match_window_seconds="0",
-                            render_fee_tolerance="0.00000000",
-                            render_notes="near_stake_in",
                         )
                     )
         return NormalizationResult(

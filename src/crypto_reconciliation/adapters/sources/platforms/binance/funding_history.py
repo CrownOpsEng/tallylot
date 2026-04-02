@@ -34,14 +34,9 @@ def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[Canonical
                     description=f"Binance deposit via {(row.get('Network') or '').strip()}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
-                    render_exchange=str(profile.source),
                     asset_in=(row.get("Coin") or "").strip().upper(),
                     amount_in=amount,
                     tx_hash=(row.get("TXID") or "").strip(),
-                    render_group="Funding",
-                    render_tx_id=(row.get("TXID") or "").strip(),
-                    render_tx_id_mode="exact",
-                    render_notes=(row.get("Address") or "").strip(),
                 )
             )
         )
@@ -71,16 +66,11 @@ def normalize_withdraw_rows(profile: SourceProfile, path: Path) -> list[Canonica
                     description=f"Binance withdrawal via {(row.get('Network') or '').strip()}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
-                    render_exchange=str(profile.source),
                     asset_out=coin,
                     amount_out=amount,
                     fee_asset=coin if fee is not None and fee > Decimal("0") else "",
                     fee_amount=fee if fee is not None and fee > Decimal("0") else None,
                     tx_hash=(row.get("TXID") or "").strip(),
-                    render_group="Funding",
-                    render_tx_id=(row.get("TXID") or "").strip(),
-                    render_tx_id_mode="exact",
-                    render_notes=(row.get("Address") or "").strip(),
                 )
             )
         )

@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import WalletInventoryRequest
+from crypto_reconciliation.application.models.wallet import WalletInventoryRequest
 from crypto_reconciliation.application.services import WalletInventoryService
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
 

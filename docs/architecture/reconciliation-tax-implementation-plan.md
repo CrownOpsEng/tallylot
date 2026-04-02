@@ -121,8 +121,12 @@ rules remain explicit and tool-friendly.
 
 - `application/services/normalize/`
   - orchestrate source normalization into fact artifacts
+- transitional rule: normalization must not auto-render CoinTracking
+  compatibility outputs
 - `application/services/reconciliation/`
   - transfer linking, oracle comparison, drift detection, issue assembly
+- reserve this package for fact and checkpoint workflows, not candidate versus
+  reference CSV diffs
 - `application/services/checkpoints/`
   - build and validate source-backed checkpoints
 - `application/services/accounting/`
@@ -144,6 +148,9 @@ rules remain explicit and tool-friendly.
 - source adapters normalize raw exports into transaction facts and issues
 - output adapters render facts into CoinTracking, Ledger CLI, and report
   artifacts
+- CoinTracking-specific column defaults, `Tx-ID` behavior, and row-shape
+  compatibility metadata stay in output adapters or projection services rather
+  than in core normalized models
 - adapters do not own tax logic, checkpoint policy, or reconciliation rules
 
 ## Input And Oracle Boundaries

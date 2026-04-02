@@ -36,15 +36,12 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[CanonicalEve
                         description=f"Binance spot sell {pair}",
                         raw_file=path.name,
                         raw_row_ref=f"row:{index}",
-                        render_exchange=str(profile.source),
                         asset_in=quote_asset,
                         amount_in=quote_amount,
                         asset_out=base_asset or executed_asset,
                         amount_out=executed_amount,
                         fee_asset=fee_asset,
                         fee_amount=fee_amount,
-                        render_group="Spot",
-                        render_notes=pair,
                     )
                 )
             )
@@ -62,15 +59,12 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[CanonicalEve
                         description=f"Binance spot buy {pair}",
                         raw_file=path.name,
                         raw_row_ref=f"row:{index}",
-                        render_exchange=str(profile.source),
                         asset_in=base_asset or executed_asset,
                         amount_in=executed_amount,
                         asset_out=quote_asset,
                         amount_out=quote_amount,
                         fee_asset=fee_asset,
                         fee_amount=fee_amount,
-                        render_group="Spot",
-                        render_notes=pair,
                     )
                 )
             )

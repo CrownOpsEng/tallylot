@@ -26,8 +26,8 @@ def test_binance_spot_rows_normalize_buy_and_sell_trades(tmp_path: Path) -> None
     assert str(events[0].asset_out) == "USDT"
     assert str(events[1].asset_in) == "USDT"
     assert str(events[1].asset_out) == "ETH"
-    assert events[0].render_group == "Spot"
-    assert events[1].render_group == "Spot"
+    assert events[0].account == "Spot"
+    assert events[1].account == "Spot"
 
 
 def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Path) -> None:

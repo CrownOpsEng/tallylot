@@ -11,6 +11,8 @@ decisions that should not be rediscovered from scratch.
 - CLI and library runtime only
 - Filesystem-backed operational storage
 - CoinTracking CSV as the only implemented output adapter
+- Normalization writes internal artifacts only; CoinTracking CSV exports run as
+  explicit compatibility projections
 - Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds
@@ -22,6 +24,8 @@ decisions that should not be rediscovered from scratch.
   boundary, not a hard checkpoint.
 - Treat CoinTracking as a compatibility and oracle layer, not as the central
   business model.
+- Keep CoinTracking-specific rendering metadata out of core normalized models
+  and behind projection adapters.
 - Keep the core runtime platform-agnostic: normal reconstruction, checkpoint,
   accounting, and tax workflows must run from source evidence and intentional
   checkpoints without requiring CoinTracking tax or accounting outputs.
@@ -146,6 +150,9 @@ decisions that should not be rediscovered from scratch.
 - Keep normalization review artifacts separate from hard issues: invalid or
   unsupported data stays in exceptions, while assumption-driven transforms and
   defaults go to normalization review reporting with concise grouped summaries.
+- Reserve reconciliation naming for fact, checkpoint, and oracle-comparison
+  workflows. Candidate-versus-reference CSV comparison stays under `source
+  diff` until fact-based reconciliation exists.
 - Do not allow AI providers to mutate ledger records directly.
 - Keep normalized evidence references portable by storing source-relative paths
   instead of machine-local absolute paths.
@@ -192,5 +199,5 @@ decisions that should not be rediscovered from scratch.
   unimplemented cases.
 - Add more conservative overlap heuristics and duplicate signatures.
 - Expand source profiling to include richer file-family inspection.
-- Decompose the current hotspot modules into smaller, bounded packages or
-  modules before they accumulate more responsibilities.
+- Continue splitting hotspot services and DTO hubs into bounded feature modules
+  before facts, checkpoints, and tax policy add more responsibilities.

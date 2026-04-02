@@ -5,8 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 
-from crypto_reconciliation.application.dtos import ManifestRequest, ManifestResponse
-from crypto_reconciliation.application.services.intake import scanned_tree_files
+from crypto_reconciliation.application.models.source import ManifestRequest, ManifestResponse
+from crypto_reconciliation.application.services.intake.archive import scanned_tree_files
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 ISSUE_HEADER = ("relative_path", "severity", "kind", "message")

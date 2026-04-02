@@ -154,10 +154,6 @@ class GTradeAdapter:
                     )
                     continue
                 event_kind = "Derivatives / Futures Profit" if pnl > 0 else "Derivatives / Futures Loss"
-                pair = (row.get("PAIR") or "").strip()
-                trade_type = (row.get("TYPE") or "").strip().lower()
-                direction = (row.get("DIR") or "").strip().lower()
-                notes = f"{pair}:{trade_type}:{direction}"
                 description = (row.get("DESCRIPTION") or "").strip()
                 timestamp = _parse_report_date((row.get("DATE") or "").strip())
                 events.append(
@@ -177,16 +173,6 @@ class GTradeAdapter:
                         tx_hash=f"gtrade:{path.name}:row:{index}",
                         raw_file=path.name,
                         raw_row_ref=f"row:{index}",
-                        render_type=event_kind,
-                        render_exchange=str(profile.source),
-                        render_comment=description,
-                        render_comment_mode="exact",
-                        render_tx_id=f"gtrade:{path.name}:row:{index}",
-                        render_tx_id_mode="exact",
-                        render_allowed_types=event_kind,
-                        render_match_window_seconds="86399",
-                        render_fee_tolerance="0.00000000",
-                        render_notes=notes,
                     )
                 )
         return NormalizationResult(

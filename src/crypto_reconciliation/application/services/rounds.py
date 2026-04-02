@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import RoundScaffoldRequest, RoundScaffoldResponse
+from crypto_reconciliation.application.models.rounds import RoundScaffoldRequest, RoundScaffoldResponse
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 ROUND_LOG_HEADER = (

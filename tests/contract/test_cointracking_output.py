@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from crypto_reconciliation.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
-from crypto_reconciliation.application.dtos import NormalizeRequest, RenderOutputRequest
+from crypto_reconciliation.application.models.output import RenderOutputRequest
+from crypto_reconciliation.application.models.source import NormalizeRequest
 from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service, build_render_service
@@ -38,4 +39,4 @@ def test_cointracking_output_matches_expected_schema(
 
     assert tuple(rows[0]) == COINTRACKING_HEADER
     assert len(rows) == 2
-    assert (normalized_dir / "cointracking_candidate.csv").exists()
+    assert not (normalized_dir / "cointracking_candidate.csv").exists()

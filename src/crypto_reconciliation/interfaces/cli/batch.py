@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import ScreenBatchRequest, StageBatchRequest
+from crypto_reconciliation.application.models.batch import ScreenBatchRequest, StageBatchRequest
 from crypto_reconciliation.application.services import BatchScreeningService, BatchStagingService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore

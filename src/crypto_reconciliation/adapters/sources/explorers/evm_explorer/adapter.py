@@ -175,16 +175,6 @@ class EvmExplorerAdapter:
                         tx_hash=tx_hash,
                         raw_file=path.name,
                         raw_row_ref=f"{path.name}:row:{index}",
-                        render_type="Deposit",
-                        render_exchange=str(profile.source),
-                        render_comment=f"Transfer - {tx_hash}",
-                        render_comment_mode="exact",
-                        render_tx_id=tx_hash,
-                        render_tx_id_mode="exact",
-                        render_allowed_types="Deposit",
-                        render_match_window_seconds="0",
-                        render_fee_tolerance="0.00000000",
-                        render_notes="evm_native_in",
                     )
                 )
         return NormalizationResult(

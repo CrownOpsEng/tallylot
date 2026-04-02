@@ -143,13 +143,9 @@ def _normalize_row(
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
-                render_exchange=str(profile.source),
                 asset_in=currency,
                 amount_in=amount,
                 tx_hash=tx_hash,
-                render_tx_id=tx_hash,
-                render_tx_id_mode="exact",
-                render_notes=kind,
             )
         )
     if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
@@ -165,15 +161,11 @@ def _normalize_row(
                 description=f"{currency} -> {to_currency}",
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
-                render_exchange=str(profile.source),
                 asset_in=to_currency,
                 amount_in=to_amount,
                 asset_out=currency,
                 amount_out=abs(amount),
                 tx_hash=tx_hash,
-                render_tx_id=tx_hash,
-                render_tx_id_mode="exact",
-                render_notes=kind,
             )
         )
     if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
@@ -189,13 +181,9 @@ def _normalize_row(
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
-                render_exchange=str(profile.source),
                 asset_out=currency,
                 amount_out=abs(amount),
                 tx_hash=tx_hash,
-                render_tx_id=tx_hash,
-                render_tx_id_mode="exact",
-                render_notes=kind,
             )
         )
     return normalization_issue(

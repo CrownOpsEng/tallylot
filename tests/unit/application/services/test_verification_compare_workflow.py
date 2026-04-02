@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import VerificationCompareRequest
+from crypto_reconciliation.application.models.verification import VerificationCompareRequest
 from crypto_reconciliation.application.services.verification import VerificationCompareService
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.verification import VerificationFixtureSet, write_verification_set

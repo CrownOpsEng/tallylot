@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.dtos import RenderOutputRequest
-from crypto_reconciliation.application.services.render import OutputRenderService
+from crypto_reconciliation.application.models.output import RenderOutputRequest
+from crypto_reconciliation.application.services.projections import OutputProjectionService
 from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, CanonicalEvent
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
@@ -71,9 +71,9 @@ class FakeOutputAdapter:
         raise AssertionError("build_baseline_artifacts should not be called in render tests")
 
 
-def test_render_service_rejects_unsupported_output_adapters(tmp_path: Path) -> None:
+def test_output_projection_service_rejects_unsupported_output_adapters(tmp_path: Path) -> None:
     canonical_events_path = _write_canonical_events(tmp_path)
-    service = OutputRenderService(
+    service = OutputProjectionService(
         FakeOutputRegistry(
             FakeOutputAdapter(
                 supported=False,
@@ -93,9 +93,9 @@ def test_render_service_rejects_unsupported_output_adapters(tmp_path: Path) -> N
         )
 
 
-def test_render_service_rejects_adapters_without_render_capability(tmp_path: Path) -> None:
+def test_output_projection_service_rejects_adapters_without_render_capability(tmp_path: Path) -> None:
     canonical_events_path = _write_canonical_events(tmp_path)
-    service = OutputRenderService(
+    service = OutputProjectionService(
         FakeOutputRegistry(
             FakeOutputAdapter(
                 supported=True,

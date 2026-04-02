@@ -42,13 +42,10 @@ def normalize_convert_order_rows(
                     description=f"Binance convert {(row.get('Pair') or '').strip()}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
-                    render_exchange=str(profile.source),
                     asset_in=buy_asset,
                     amount_in=buy_amount,
                     asset_out=sell_asset,
                     amount_out=sell_amount,
-                    render_group=(row.get("Wallet") or "").strip() or "Spot",
-                    render_notes=(row.get("Pair") or "").strip(),
                 )
             )
         )
@@ -96,13 +93,10 @@ def normalize_c2c_order_rows(
                     description=f"Binance C2C {(row.get('Order Type') or '').strip()} {asset}/{fiat}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
-                    render_exchange=str(profile.source),
                     asset_in=asset_in,
                     amount_in=amount_in,
                     asset_out=asset_out,
                     amount_out=amount_out,
-                    render_group="Funding",
-                    render_notes=(row.get("Counterparty") or "").strip(),
                 )
             )
         )

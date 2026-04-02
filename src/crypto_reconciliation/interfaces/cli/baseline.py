@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import BaselineValidateRequest
+from crypto_reconciliation.application.models.baseline import BaselineValidateRequest
 from crypto_reconciliation.application.services import BaselineValidationService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore

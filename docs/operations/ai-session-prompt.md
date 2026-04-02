@@ -38,7 +38,7 @@ Operational rules:
 2. do not stage or import a source while `timezone_issues.csv`, `exceptions.csv`,
    or `stage_summary.json` show unresolved blockers
 3. update the round log after each seeded round and verification cycle
-4. use `source reconcile` when a candidate or reference slice needs a
+4. use `source diff` when a candidate or reference slice needs a
    deterministic row comparison
 5. for new architecture work, build reconciliation before tax computation
 6. keep the system centered on provider-neutral transaction facts, not the

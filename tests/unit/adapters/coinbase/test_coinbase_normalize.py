@@ -132,7 +132,7 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_
     assert reward_event.event_kind == "Interest Income"
     assert str(reward_event.asset_in) == "ADA"
     assert migration_event.event_kind == "Swap (non taxable)"
-    assert migration_event.render_group == "Asset Migration"
+    assert migration_event.description == "Coinbase Asset Migration"
     assert str(migration_event.asset_in) == "POL"
     assert str(migration_event.asset_out) == "MATIC"
     assert not result.issues

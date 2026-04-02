@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from crypto_reconciliation.application.dtos import WorkspaceInitRequest, WorkspaceInitResponse
+from crypto_reconciliation.application.models.workspace import WorkspaceInitRequest, WorkspaceInitResponse
 from crypto_reconciliation.ports.workspace import WorkspaceRepository
 
 

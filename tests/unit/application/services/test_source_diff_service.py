@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import SourceReconcileRequest
-from crypto_reconciliation.application.services.reconcile import SourceReconciliationService
+from crypto_reconciliation.application.models.source import SourceDiffRequest
+from crypto_reconciliation.application.services.source_diff import SourceDiffService
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -31,11 +31,11 @@ def test_source_reconciliation_service_writes_candidate_and_reference_diffs(tmp_
     )
     output_dir = tmp_path / "reconcile"
 
-    response = SourceReconciliationService(FilesystemArtifactStore()).execute(
-        SourceReconcileRequest(candidate_path=candidate_path, reference_path=reference_path, output_dir=output_dir)
+    response = SourceDiffService(FilesystemArtifactStore()).execute(
+        SourceDiffRequest(candidate_path=candidate_path, reference_path=reference_path, output_dir=output_dir)
     )
 
-    summary = json.loads((output_dir / "reconciliation_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads((output_dir / "diff_summary.json").read_text(encoding="utf-8"))
 
     assert response.candidate_only_count == 1
     assert response.reference_only_count == 1
@@ -54,8 +54,8 @@ def test_source_reconciliation_service_preserves_duplicate_row_multiplicity(tmp_
     write_rows(candidate_path, header, (duplicate_row, duplicate_row))
     write_rows(reference_path, header, (duplicate_row,))
 
-    response = SourceReconciliationService(FilesystemArtifactStore()).execute(
-        SourceReconcileRequest(candidate_path=candidate_path, reference_path=reference_path, output_dir=output_dir)
+    response = SourceDiffService(FilesystemArtifactStore()).execute(
+        SourceDiffRequest(candidate_path=candidate_path, reference_path=reference_path, output_dir=output_dir)
     )
 
     candidate_only_rows = FilesystemArtifactStore().read_rows(output_dir / "candidate_only.csv")

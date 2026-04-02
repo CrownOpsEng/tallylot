@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import BaselineValidateRequest, BaselineValidateResponse
+from crypto_reconciliation.application.models.baseline import (
+    BaselineValidateRequest,
+    BaselineValidateResponse,
+)
 from crypto_reconciliation.domain.models import AdapterCapability
 from crypto_reconciliation.ports.adapters import OutputAdapter, OutputAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort

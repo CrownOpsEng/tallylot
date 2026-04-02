@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import WorkspaceInitRequest
+from crypto_reconciliation.application.models.workspace import WorkspaceInitRequest
 from crypto_reconciliation.application.services import WorkspaceInitializationService
 from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
 

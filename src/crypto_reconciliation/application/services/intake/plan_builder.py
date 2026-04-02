@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from crypto_reconciliation.application.dtos import IntakePlanRequest
+from crypto_reconciliation.application.models.source import IntakePlanRequest
 from crypto_reconciliation.ports.adapters import SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 

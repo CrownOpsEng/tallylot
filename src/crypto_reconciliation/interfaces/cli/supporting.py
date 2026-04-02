@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import PdfBalanceExtractRequest
+from crypto_reconciliation.application.models.source import PdfBalanceExtractRequest
 from crypto_reconciliation.application.services import PdfBalanceExtractionService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore

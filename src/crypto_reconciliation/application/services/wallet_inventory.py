@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from crypto_reconciliation.application.dtos import WalletInventoryRequest, WalletInventoryResponse
+from crypto_reconciliation.application.models.wallet import WalletInventoryRequest, WalletInventoryResponse
 from crypto_reconciliation.application.services.scan import (
     ensure_output_not_within_input_tree,
     iter_tree_files,

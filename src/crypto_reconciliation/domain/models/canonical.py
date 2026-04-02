@@ -31,17 +31,6 @@ class CanonicalEvent:
     raw_row_ref: str = ""
     confidence: str = "high"
     status: str = "mapped"
-    render_type: str | None = None
-    render_exchange: str | None = None
-    render_group: str | None = None
-    render_comment: str | None = None
-    render_comment_mode: str | None = None
-    render_tx_id: str | None = None
-    render_tx_id_mode: str | None = None
-    render_allowed_types: str | None = None
-    render_match_window_seconds: str | None = None
-    render_fee_tolerance: str | None = None
-    render_notes: str | None = None
 
     def __post_init__(self) -> None:
         self._validate_amount_pair("asset_in", self.asset_in, "amount_in", self.amount_in)
@@ -85,17 +74,6 @@ class CanonicalEvent:
             "raw_row_ref": self.raw_row_ref,
             "confidence": self.confidence,
             "status": self.status,
-            "render_type": self.render_type or "",
-            "render_exchange": self.render_exchange or "",
-            "render_group": self.render_group or "",
-            "render_comment": self.render_comment or "",
-            "render_comment_mode": self.render_comment_mode or "",
-            "render_tx_id": self.render_tx_id or "",
-            "render_tx_id_mode": self.render_tx_id_mode or "",
-            "render_allowed_types": self.render_allowed_types or "",
-            "render_match_window_seconds": self.render_match_window_seconds or "",
-            "render_fee_tolerance": self.render_fee_tolerance or "",
-            "render_notes": self.render_notes or "",
         }
 
 

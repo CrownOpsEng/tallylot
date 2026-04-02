@@ -20,16 +20,16 @@ def render(events: tuple[CanonicalEvent, ...], output_path: Path) -> RenderedArt
         for event in events:
             writer.writerow(
                 {
-                    "Type": event.render_type or event.event_kind,
+                    "Type": event.event_kind,
                     "Buy": format_decimal(event.amount_in),
                     "Cur.": str(event.asset_in or ""),
                     "Sell": format_decimal(event.amount_out),
                     "Cur..1": str(event.asset_out or ""),
                     "Fee": format_decimal(event.fee_amount),
                     "Cur..2": str(event.fee_asset or ""),
-                    "Exchange": event.render_exchange or event.account,
-                    "Group": event.render_group or "",
-                    "Comment": event.render_comment or event.description,
+                    "Exchange": event.account,
+                    "Group": "",
+                    "Comment": event.description,
                     "Date": format_timestamp(event.timestamp),
                     "Tx-ID": event.tx_hash or str(event.event_id),
                 }

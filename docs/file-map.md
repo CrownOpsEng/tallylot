@@ -51,13 +51,14 @@ command, artifact, or agent route.
 | `source intake apply` | Copy loose evidence into workspace capture paths and write intake reports |
 | `source manifest` | Build a deterministic capture manifest |
 | `source profile` | Build file inventory plus timezone provenance |
-| `source normalize` | Produce canonical outputs and a CoinTracking candidate |
+| `source normalize` | Produce canonical normalization outputs |
+| `output render file` | Render a compatibility artifact from canonical events |
 | `batch screen` | Validate and screen a candidate without copying it |
 | `batch stage` | Screen and copy a passing candidate |
 | `baseline validate` | Produce the full baseline reconciliation package |
 | `verification compare` | Compare two verification export sets |
 | `round scaffold` | Create a round folder and seed the round log |
-| `source reconcile` | Compare candidate and reference ledger slices |
+| `source diff` | Compare candidate and reference ledger slices |
 | `wallet inventory rebuild` | Aggregate wallet inventory artifacts |
 | `supporting extract-pdf-balances` | Extract balances from supported PDF statements |
 
@@ -72,11 +73,11 @@ command, artifact, or agent route.
 
 | Path | Purpose |
 | ---- | ------- |
-| `.claude/commands/source-intake.md` | Profile, normalize, screen, stage, and reconcile a source |
+| `.claude/commands/source-intake.md` | Profile, normalize, render, screen, stage, and diff a source |
 | `.claude/commands/round-verification.md` | Verification compare and round-close workflow |
 | `.claude/commands/wallet-inventory.md` | Wallet inventory rebuild workflow |
 | `.claude/commands/normalization-exceptions.md` | Review normalization exceptions and reviews |
-| `.claude/commands/source-reconcile.md` | Candidate-versus-reference reconciliation workflow |
+| `.claude/commands/source-diff.md` | Candidate-versus-reference diff workflow |
 | `.claude/commands/reconciliation-tax-build.md` | Architecture and implementation route for reconciliation, checkpointing, accounting, and tax |
 | `.claude/commands/implementation-checkpoint.md` | Final implementation review, verification, and commit route |
 | `.claude/commands/supporting-artifacts.md` | PDF balance extraction and supporting evidence workflow |

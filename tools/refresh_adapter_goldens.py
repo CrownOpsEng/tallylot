@@ -4,9 +4,8 @@ import argparse
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import cast
 
-from crypto_reconciliation.application.dtos import NormalizeRequest
+from crypto_reconciliation.application.models.source import NormalizeRequest
 from crypto_reconciliation.application.services.normalize import (
     NormalizationDependencies,
     NormalizationService,
@@ -35,14 +34,9 @@ def _sanitize_public_fixture_payload(payload: object, *, raw_dir: Path) -> objec
     raw_dir_text = str(raw_dir)
 
     if isinstance(payload, dict):
-        payload_dict = cast(dict[object, object], payload)
-        return {
-            key: _sanitize_public_fixture_payload(value, raw_dir=raw_dir)
-            for key, value in payload_dict.items()
-        }
+        return {key: _sanitize_public_fixture_payload(value, raw_dir=raw_dir) for key, value in payload.items()}
     if isinstance(payload, list):
-        payload_list = cast(list[object], payload)
-        return [_sanitize_public_fixture_payload(item, raw_dir=raw_dir) for item in payload_list]
+        return [_sanitize_public_fixture_payload(item, raw_dir=raw_dir) for item in payload]
     if isinstance(payload, str):
         if payload == raw_dir_text:
             return "<fixture-raw-dir>"
@@ -83,7 +77,6 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
     normalization_service = NormalizationService(
         NormalizationDependencies(
             source_registry=registry,
-            output_registry=registry,
             profile_service=profile_service,
             storage=FilesystemStorage(),
             artifacts=artifacts,

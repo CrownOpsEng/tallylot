@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import RoundScaffoldRequest
+from crypto_reconciliation.application.models.rounds import RoundScaffoldRequest
 from crypto_reconciliation.application.services import RoundScaffoldingService
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
 

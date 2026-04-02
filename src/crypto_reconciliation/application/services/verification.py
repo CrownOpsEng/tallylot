@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.dtos import (
+from crypto_reconciliation.application.models.verification import (
     VerificationCompareRequest,
     VerificationCompareResponse,
 )

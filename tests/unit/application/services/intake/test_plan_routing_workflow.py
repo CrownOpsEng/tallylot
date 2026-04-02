@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from crypto_reconciliation.application.dtos import IntakePlanRequest
+from crypto_reconciliation.application.models.source import IntakePlanRequest
 from crypto_reconciliation.application.services.intake import SourceIntakeService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore

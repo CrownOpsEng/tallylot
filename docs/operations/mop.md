@@ -41,7 +41,8 @@ review the generated reconciliation package.
 - run `source profile`
 - review `profile.json`, `profile_inventory.csv`, and `timezone_issues.csv`
 - run `source normalize`
-- review `exceptions.csv`, `normalization_reviews.csv`, and `cointracking_candidate.csv`
+- review `exceptions.csv` and `normalization_reviews.csv`
+- run `output render file` when you need `cointracking_candidate.csv`
 
 ### 4. Screen And Stage
 
@@ -64,7 +65,7 @@ review the generated reconciliation package.
 
 ### 7. Reconcile When Needed
 
-Use `source reconcile` when you need a deterministic comparison between the
+Use `source diff` when you need a deterministic comparison between the
 candidate or canonical source slice and a reference ledger slice.
 
 ## Supporting Artifacts

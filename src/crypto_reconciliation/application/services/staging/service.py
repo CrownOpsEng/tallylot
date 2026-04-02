@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import cast
 
-from crypto_reconciliation.application.dtos import (
+from crypto_reconciliation.application.models.batch import (
     ScreenBatchRequest,
     ScreenBatchResponse,
     StageBatchRequest,

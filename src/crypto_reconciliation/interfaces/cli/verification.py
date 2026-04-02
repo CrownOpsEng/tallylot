@@ -7,7 +7,7 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.dtos import VerificationCompareRequest
+from crypto_reconciliation.application.models.verification import VerificationCompareRequest
 from crypto_reconciliation.application.services import VerificationCompareService
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
 

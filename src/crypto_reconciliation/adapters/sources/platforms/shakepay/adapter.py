@@ -157,15 +157,11 @@ def _normalize_row(
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_ref,
-                render_exchange=str(profile.source),
                 asset_in=asset_in,
                 amount_in=amount_in,
                 asset_out=asset_out,
                 amount_out=amount_out,
                 tx_hash=f"shakepay:{raw_file}:{row_ref}",
-                render_tx_id=f"shakepay:{raw_file}:{row_ref}",
-                render_tx_id_mode="exact",
-                render_notes=row_type,
             )
         )
     debited_amount = parse_decimal((row.get("Amount Debited") or "").strip())
@@ -187,13 +183,9 @@ def _normalize_row(
             description=description,
             raw_file=raw_file,
             raw_row_ref=row_ref,
-            render_exchange=str(profile.source),
             asset_in=credited_asset,
             amount_in=credited_amount,
             tx_hash=event_id,
-            render_tx_id=event_id,
-            render_tx_id_mode="exact",
-            render_notes=row_type,
         )
         return mapped_event(spec)
     if row_type == "Buy" and debited_amount is not None and credited_amount is not None:
@@ -208,15 +200,11 @@ def _normalize_row(
             description=(row.get("Description") or "").strip(),
             raw_file=raw_file,
             raw_row_ref=row_ref,
-            render_exchange=str(profile.source),
             asset_in=credited_asset,
             amount_in=credited_amount,
             asset_out=debited_asset,
             amount_out=debited_amount,
             tx_hash=event_id,
-            render_tx_id=event_id,
-            render_tx_id_mode="exact",
-            render_notes=row_type,
         )
         return mapped_event(spec)
     if row_type == "Send" and debited_amount is not None and debited_asset:
@@ -231,13 +219,9 @@ def _normalize_row(
             description=(row.get("Description") or "").strip(),
             raw_file=raw_file,
             raw_row_ref=row_ref,
-            render_exchange=str(profile.source),
             asset_out=debited_asset,
             amount_out=debited_amount,
             tx_hash=event_id,
-            render_tx_id=event_id,
-            render_tx_id_mode="exact",
-            render_notes=row_type,
         )
         return mapped_event(spec)
     return normalization_issue(

@@ -9,7 +9,7 @@ from crypto_reconciliation.application.services.normalize import (
     NormalizationService,
 )
 from crypto_reconciliation.application.services.profile import ProfileService
-from crypto_reconciliation.application.services.render import OutputRenderService
+from crypto_reconciliation.application.services.projections import OutputProjectionService
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
@@ -61,7 +61,6 @@ def build_normalization_service(
     return NormalizationService(
         NormalizationDependencies(
             source_registry=runtime_registry,
-            output_registry=runtime_registry,
             profile_service=ProfileService(runtime_registry, resolved_artifacts),
             storage=FilesystemStorage(),
             artifacts=resolved_artifacts,
@@ -72,9 +71,9 @@ def build_normalization_service(
 def build_render_service(
     *,
     artifacts: FilesystemArtifactStore | None = None,
-) -> OutputRenderService:
+) -> OutputProjectionService:
     runtime_registry = build_registry()
-    return OutputRenderService(runtime_registry, artifacts or FilesystemArtifactStore())
+    return OutputProjectionService(runtime_registry, artifacts or FilesystemArtifactStore())
 
 
 @dataclass(frozen=True)
@@ -136,11 +135,9 @@ def build_registry_backed_normalization_service(
     registry: SourceAdapterRegistryPort,
     artifacts: FilesystemArtifactStore,
 ) -> NormalizationService:
-    runtime_registry = build_registry()
     return NormalizationService(
         NormalizationDependencies(
             source_registry=registry,
-            output_registry=runtime_registry,
             profile_service=ProfileService(registry, artifacts),
             storage=FilesystemStorage(),
             artifacts=artifacts,
