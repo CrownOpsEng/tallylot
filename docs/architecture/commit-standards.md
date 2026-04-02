@@ -213,8 +213,8 @@ quality gate pass.
 Example:
 
 ```bash
-gh pr view 12 --json title,body --jq '.title' > /tmp/pr-title.txt
-gh pr view 12 --json title,body --jq '.body' > /tmp/pr-body.md
+gh pr view <pr-number> --json title,body --jq '.title' > /tmp/pr-title.txt
+gh pr view <pr-number> --json title,body --jq '.body' > /tmp/pr-body.md
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks \
   --include-commit-messages \
   --pr-title "$(cat /tmp/pr-title.txt)" \
