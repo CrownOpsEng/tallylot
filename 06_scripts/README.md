@@ -74,11 +74,18 @@ Coverage is split into:
 - `tests/unit/` for individual helper and script-function behavior
 - `tests/e2e/` for CLI-level script execution
 - `tests/support/` for shared test helpers
+- `tests/fixtures/adapter_packs/<adapter>/<scenario>/` for adapter-owned raw inputs plus golden normalize and wallet expectations
 
-The suite now uses `pytest` as the primary runner, even though some legacy modules still use `unittest.TestCase`. Use markers when you want faster feedback:
+The suite is fully `pytest` now. The adapter-pack harness enforces that:
 
-- `python3 -m pytest -m "not slow"` for the fast local loop
-- `python3 -m pytest -m e2e` for the repo-backed CLI coverage
+- every supported normalization adapter ships at least one normalization pack
+- every adapter with custom wallet extraction ships at least one wallet pack
+- CLI normalization tests assert full golden outputs, not just file creation
+
+Useful focused commands:
+
+- `python3 -m pytest tests/unit/test_source_fixture_packs.py`
+- `python3 -m pytest tests/e2e/test_scripts.py -m e2e`
 
 Open follow-up items that are intentionally out of scope for the current test-strengthening branch are tracked in [00_docs/TEST_SUITE_FOLLOWUPS.md](../00_docs/TEST_SUITE_FOLLOWUPS.md).
 

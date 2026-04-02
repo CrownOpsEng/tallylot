@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 
 from tests.support.helpers import copy_script_to_repo, read_dict_rows, read_json, run_script, write_csv
-from tests.support.source_packs import load_source_packs, stage_source_pack
+from tests.support.adapter_packs import load_adapter_packs, stage_adapter_pack
 
 
-NORMALIZATION_PACKS = load_source_packs("normalize")
+NORMALIZATION_PACKS = load_adapter_packs("normalize")
 
 
 def write_verification_set(
@@ -131,9 +131,9 @@ def test_binance_unwrap_cli_extracts_and_combines(tmp_path: Path) -> None:
     assert (source_dir / "Binance-Futures-Transaction-History-202603230525(UTC--6)_abcd1234.csv").exists()
 
 
-@pytest.mark.parametrize("pack", NORMALIZATION_PACKS, ids=lambda pack: pack.name)
+@pytest.mark.parametrize("pack", NORMALIZATION_PACKS, ids=lambda pack: pack.id)
 def test_profile_source_cli_processes_source_pack(pack, tmp_path: Path) -> None:
-    raw_dir = stage_source_pack(pack, tmp_path)
+    raw_dir = stage_adapter_pack(pack, tmp_path)
     out_dir = tmp_path / "normalized" / pack.name
 
     result = run_script(
@@ -153,9 +153,9 @@ def test_profile_source_cli_processes_source_pack(pack, tmp_path: Path) -> None:
     assert profile["timezone_summary"]["status"] == pack.expected_timezone_status
 
 
-@pytest.mark.parametrize("pack", NORMALIZATION_PACKS, ids=lambda pack: pack.name)
+@pytest.mark.parametrize("pack", NORMALIZATION_PACKS, ids=lambda pack: pack.id)
 def test_normalize_source_cli_processes_source_pack(pack, tmp_path: Path) -> None:
-    raw_dir = stage_source_pack(pack, tmp_path)
+    raw_dir = stage_adapter_pack(pack, tmp_path)
     out_dir = tmp_path / "normalized" / pack.name
 
     result = run_script(
@@ -169,9 +169,11 @@ def test_normalize_source_cli_processes_source_pack(pack, tmp_path: Path) -> Non
     )
     summary = json.loads(result.stdout)
 
-    assert summary["status"] == "ready"
-    assert (out_dir / "canonical_events.csv").exists()
+    assert summary["status"] == pack.expected_normalization_status
     assert read_json(out_dir / "normalization_summary.json")["adapter"] == pack.expected_adapter
+    assert read_dict_rows(out_dir / "canonical_events.csv") == pack.expected_json("canonical_events")
+    assert read_dict_rows(out_dir / "canonical_balances.csv") == pack.expected_json("canonical_balances")
+    assert read_dict_rows(out_dir / "exceptions.csv") == pack.expected_json("exceptions")
 
 
 def test_wallet_inventory_cli_builds_fixture_repo_inventory(copy_fixture_tree, tmp_path: Path) -> None:

@@ -1,0 +1,8 @@
+[
+  {
+    "issue_kind": "multiple_primary_identifiers",
+    "message": "The profiled explorer capture exposed more than one owned EVM address.",
+    "source": "bsc-metamask1",
+    "wallet_id": ""
+  }
+]

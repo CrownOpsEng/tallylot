@@ -1,0 +1,41 @@
+[
+  {
+    "account_label": "Bitcoin 1",
+    "confidence": "high",
+    "controller": "Ledger Live",
+    "display_identifier": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "evidence_kind": "csv_row",
+    "identifier_kind": "btc_xpub",
+    "network_scope": "bitcoin",
+    "normalized_identifier": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "note": "",
+    "source": "ledger-live-main",
+    "wallet_id": "btc_xpub:xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+  },
+  {
+    "account_label": "Ethereum 1",
+    "confidence": "high",
+    "controller": "Ledger Live",
+    "display_identifier": "0x2222222222222222222222222222222222222222",
+    "evidence_kind": "csv_row",
+    "identifier_kind": "evm_address",
+    "network_scope": "ethereum",
+    "normalized_identifier": "0x2222222222222222222222222222222222222222",
+    "note": "",
+    "source": "ledger-live-main",
+    "wallet_id": "evm_address:0x2222222222222222222222222222222222222222"
+  },
+  {
+    "account_label": "Cardano 1",
+    "confidence": "high",
+    "controller": "Ledger Live",
+    "display_identifier": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "evidence_kind": "csv_row",
+    "identifier_kind": "cardano_account_key",
+    "network_scope": "cardano",
+    "normalized_identifier": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "note": "",
+    "source": "ledger-live-main",
+    "wallet_id": "cardano_account_key:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+]

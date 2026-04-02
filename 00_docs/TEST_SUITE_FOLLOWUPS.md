@@ -1,19 +1,17 @@
 # Test Suite Follow-Ups
 
-Track these for a separate branch so the current test-strengthening work stays scoped.
+Track only the remaining work that was intentionally left out of the current adapter-pack consolidation.
 
-## Filename Decoupling
+## Pack Tooling
 
-- Replace remaining exact-filename adapter assumptions where they are not part of the real export contract.
-- Review `MetaMask state logs.json` handling and support profile-based discovery instead of one hard-coded filename.
-- Review `activities-export` and Coinbase statement-name matching so adapters can prefer header/family detection over filename substrings when that is safe.
-- Review non-chain-scoped EVM explorer captures, where scope and owned-address detection still rely on filename hints when the folder itself is not chain-scoped.
+- Add a small scaffold helper that creates `tests/fixtures/adapter_packs/<adapter>/<scenario>/` with the right metadata and expected-file layout.
+- Add an explicit golden-refresh command so fixture authors do not need ad-hoc local scripts to regenerate expected JSON after adapter changes.
 
-## Fixture Migration
+## Refactor Alignment
 
-- Continue moving repo-backed "unit" coverage onto purpose-built fixtures until only true integration and e2e tests depend on checked-in exports.
-- Split the largest repo-data adapter tests into smaller fixture-backed cases that isolate one rule or exception at a time.
+- When the repo refactor begins, colocate adapter packs with the adapter modules or a first-class plugin package instead of keeping them under the current monorepo test tree.
+- Split adapter-pure tests from pipeline-orchestration tests so future plugin extraction can happen without reworking the golden fixtures again.
 
-## Execution Profiles
+## CI Profiles
 
-- Add a documented CI-oriented command set for `pytest -m "not slow"` and full repo-data coverage so the fast loop and full verification loop stay explicit.
+- Add a CI matrix that runs adapter-pack unit coverage separately from broader CLI/e2e coverage so failures localize faster.

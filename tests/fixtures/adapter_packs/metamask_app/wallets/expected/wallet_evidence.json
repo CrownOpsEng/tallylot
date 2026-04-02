@@ -1,0 +1,67 @@
+[
+  {
+    "account_label": "Account 1",
+    "confidence": "high",
+    "controller": "MetaMask HD Key Tree",
+    "display_identifier": "0x1111111111111111111111111111111111111111",
+    "evidence_kind": "app_state",
+    "identifier_kind": "evm_address",
+    "network_scope": "ethereum",
+    "normalized_identifier": "0x1111111111111111111111111111111111111111",
+    "note": "",
+    "source": "MetaMask app",
+    "wallet_id": "evm_address:0x1111111111111111111111111111111111111111"
+  },
+  {
+    "account_label": "Ledger 1",
+    "confidence": "high",
+    "controller": "MetaMask Ledger Hardware",
+    "display_identifier": "0x2222222222222222222222222222222222222222",
+    "evidence_kind": "app_state",
+    "identifier_kind": "evm_address",
+    "network_scope": "ethereum",
+    "normalized_identifier": "0x2222222222222222222222222222222222222222",
+    "note": "",
+    "source": "MetaMask app",
+    "wallet_id": "evm_address:0x2222222222222222222222222222222222222222"
+  },
+  {
+    "account_label": "",
+    "confidence": "medium",
+    "controller": "MetaMask app",
+    "display_identifier": "TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "evidence_kind": "app_state",
+    "identifier_kind": "tron_address",
+    "network_scope": "tron",
+    "normalized_identifier": "TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "note": "Discovered from the MetaMask identity map rather than a chain-scoped export.",
+    "source": "MetaMask app",
+    "wallet_id": "tron_address:TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+  },
+  {
+    "account_label": "",
+    "confidence": "medium",
+    "controller": "MetaMask app",
+    "display_identifier": "bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "evidence_kind": "app_state",
+    "identifier_kind": "btc_address",
+    "network_scope": "bitcoin",
+    "normalized_identifier": "bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "note": "Discovered from the MetaMask identity map rather than a chain-scoped export.",
+    "source": "MetaMask app",
+    "wallet_id": "btc_address:bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  {
+    "account_label": "",
+    "confidence": "medium",
+    "controller": "MetaMask app",
+    "display_identifier": "F11111111111111111111111111111111111111111",
+    "evidence_kind": "app_state",
+    "identifier_kind": "solana_address",
+    "network_scope": "solana",
+    "normalized_identifier": "F11111111111111111111111111111111111111111",
+    "note": "Discovered from the MetaMask identity map rather than a chain-scoped export.",
+    "source": "MetaMask app",
+    "wallet_id": "solana_address:F11111111111111111111111111111111111111111"
+  }
+]
