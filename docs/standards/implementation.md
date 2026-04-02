@@ -170,6 +170,9 @@ Expected behavior:
   becomes the squash commit on `main`
 - before closing a non-trivial task, ensure the commit already exists rather
   than leaving commit creation as follow-up work
+- keep repo cleanup forward-only by default: do not use destructive rollback
+  commands such as `rm -rf`, `git restore`, `git reset`, or `git checkout --`
+  unless the user explicitly requests that cleanup in the current thread
 
 When not to commit:
 

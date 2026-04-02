@@ -95,6 +95,12 @@ Do not pre-load every repo doc by default.
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value
   - end the task on a clean, meaningful checkpoint commit
+- Treat repo cleanup as forward-only by default:
+  - do not run `rm -rf`, `git restore`, `git reset`, `git checkout --`, or
+    other destructive rollback commands unless the user explicitly asks for
+    that cleanup in the current thread
+  - prefer additive fixes, follow-up commits, or leaving cleanup for the user
+    over destructive local undo
 - If a flat directory would exceed 2 same-prefix files for one capability,
   regroup that capability into a package in the same task.
 - If a feature already has a package, keep new helpers inside that package
