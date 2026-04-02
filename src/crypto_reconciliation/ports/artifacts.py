@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Protocol
+
+from crypto_reconciliation.domain.types import JsonValue
 
 
 class ArtifactStorePort(Protocol):
@@ -17,4 +19,4 @@ class ArtifactStorePort(Protocol):
         rows: Iterable[dict[str, str]],
     ) -> None: ...
 
-    def write_json(self, path: Path, payload: Any) -> None: ...
+    def write_json(self, path: Path, payload: JsonValue) -> None: ...

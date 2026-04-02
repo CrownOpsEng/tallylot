@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import hashlib
+from typing import cast
 
 from crypto_reconciliation.application.dtos import (
     VerificationCompareRequest,
     VerificationCompareResponse,
 )
+from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 DEFAULT_REPORTS = (
@@ -51,7 +53,7 @@ class VerificationCompareService:
         )
         self._artifacts.write_json(
             request.output_dir / "verification_summary.json",
-            {"changed_reports": changed_reports, "reports": summary},
+            cast(JsonValue, {"changed_reports": changed_reports, "reports": summary}),
         )
         return VerificationCompareResponse(
             output_dir=request.output_dir,

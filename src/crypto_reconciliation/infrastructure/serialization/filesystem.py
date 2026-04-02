@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, override
+from typing import override
 
+from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows, write_rows
 from crypto_reconciliation.infrastructure.serialization.json_io import write_json
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
@@ -26,5 +27,5 @@ class FilesystemArtifactStore(ArtifactStorePort):
         write_rows(path, header, rows)
 
     @override
-    def write_json(self, path: Path, payload: Any) -> None:
+    def write_json(self, path: Path, payload: JsonValue) -> None:
         write_json(path, payload)

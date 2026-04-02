@@ -22,8 +22,10 @@ in the external workspace.
 - CLI and library interfaces only in this phase
 - filesystem-backed operational storage
 - CoinTracking CSV as the implemented output target
-- structured CSV as the working source adapter in this package
+- archive-aware source scanning and intake planning/apply
+- structured CSV as the implemented source adapter in this package
 - blockchain, platform API, SQLite, and provider-backed AI remain stubbed
+- broader `master` source-adapter parity is tracked in `docs/MASTER_PARITY_LEDGER.md`
 
 ## Workspace Model
 
@@ -51,6 +53,8 @@ uv run crypto-reconciliation workspace init
 uv run crypto-reconciliation workspace init
 uv run crypto-reconciliation baseline validate --export-dir <path> --output-dir <path>
 uv run crypto-reconciliation source manifest --source-dir <path> --output <path>
+uv run crypto-reconciliation source intake plan --incoming-dir <path> --report-dir <path>
+uv run crypto-reconciliation source intake apply --incoming-dir <path> --report-dir <path>
 uv run crypto-reconciliation source profile --source <name> --raw-dir <path> --output-dir <path>
 uv run crypto-reconciliation source normalize --source <name> --raw-dir <path> --output-dir <path>
 uv run crypto-reconciliation source reconcile --candidate <path> --reference <path> --output-dir <path>
@@ -90,6 +94,8 @@ Benchmark test segments with:
 ```bash
 uv run python -m tools.benchmark_tests
 uv run python -m tools.benchmark_tests --parallel
+uv run python -m tools.scaffold_adapter source example_exchange "Example Exchange"
+uv run python -m tools.refresh_adapter_goldens --pack structured_csv/basic
 ```
 
 Run local quality gates in parallel with:

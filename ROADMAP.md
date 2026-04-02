@@ -11,6 +11,7 @@ decisions that should not be rediscovered from scratch.
 - CLI and library runtime only
 - Filesystem-backed operational storage
 - CoinTracking CSV as the only implemented output adapter
+- Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds
 
@@ -76,6 +77,9 @@ decisions that should not be rediscovered from scratch.
 - Keep filesystem scans deterministic. Services that enumerate trees must use a
   stable scan contract with explicit output exclusions rather than ad hoc
   `rglob()` behavior.
+- Keep archive inspection centralized. ZIP handling, archive safety limits, and
+  archive-member issue reporting belong in the shared scan layer rather than in
+  source-specific adapters or CLI commands.
 - Keep raw-evidence protections strict. Profiling and normalization outputs must
   not be written inside raw evidence trees.
 - Keep packaging release-safe: wheels should ship only the
@@ -125,6 +129,9 @@ decisions that should not be rediscovered from scratch.
 - Add richer baseline reconciliation artifacts.
 - Add more conservative overlap heuristics and duplicate signatures.
 - Expand source profiling to include richer file-family inspection.
-- Add golden refresh tooling once more than one working source adapter exists.
+- Expand adapter-pack goldens from `structured_csv` to every restored real
+  source adapter.
+- Recover the typed source-adapter parity listed in
+  `docs/MASTER_PARITY_LEDGER.md`.
 - Decompose the current hotspot modules into smaller, bounded packages or
   modules before they accumulate more responsibilities.

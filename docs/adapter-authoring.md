@@ -39,3 +39,14 @@ automatically.
   assert normalized events, balances, issues, and rendered outputs.
 - Adapters must continue to pass both strict type checkers. Do not rely on
   runtime tests as a substitute for `mypy` and `pyright`.
+
+## Tooling
+
+- Scaffold package-style adapters with
+  `uv run python -m tools.scaffold_adapter source <module_name> "<Display Name>"`
+  or `uv run python -m tools.scaffold_adapter output <module_name> "<Display Name>"`.
+- Refresh JSON golden fixtures with
+  `uv run python -m tools.refresh_adapter_goldens --pack <adapter>/<pack>`.
+- Keep pack manifests under `tests/fixtures/adapter_packs/<adapter>/<pack>/`.
+- Treat the golden refresh tool as a typed-service workflow. Do not route new
+  adapter goldens through removed legacy scripts.

@@ -10,6 +10,8 @@ import typer
 
 from crypto_reconciliation.application.dtos import (
     BaselineValidateRequest,
+    IntakeApplyRequest,
+    IntakePlanRequest,
     ManifestRequest,
     NormalizeRequest,
     PdfBalanceExtractRequest,
@@ -33,6 +35,7 @@ from crypto_reconciliation.application.services import (
     PdfBalanceExtractionService,
     ProfileService,
     RoundScaffoldingService,
+    SourceIntakeService,
     SourceReconciliationService,
     VerificationCompareService,
     WalletInventoryService,
@@ -49,6 +52,7 @@ app = typer.Typer(help="Crypto reconciliation CLI.")
 workspace_app = typer.Typer(help="Workspace operations.")
 baseline_app = typer.Typer(help="Baseline operations.")
 source_app = typer.Typer(help="Source operations.")
+source_intake_app = typer.Typer(help="Source intake commands.")
 wallet_app = typer.Typer(help="Wallet inventory operations.")
 wallet_inventory_app = typer.Typer(help="Wallet inventory commands.")
 output_app = typer.Typer(help="Output operations.")
@@ -69,6 +73,7 @@ app.add_typer(round_app, name="round")
 app.add_typer(supporting_app, name="supporting")
 wallet_app.add_typer(wallet_inventory_app, name="inventory")
 output_app.add_typer(output_render_app, name="render")
+source_app.add_typer(source_intake_app, name="intake")
 
 
 def _runtime_dependencies() -> tuple[AdapterRegistry, FilesystemArtifactStore, FilesystemStorage]:
@@ -137,9 +142,10 @@ def baseline_validate(
 def source_manifest(
     source_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
     response = ManifestService(FilesystemArtifactStore()).execute(
-        ManifestRequest(source_dir=source_dir, output_path=output)
+        ManifestRequest(source_dir=source_dir, output_path=output, inspect_archives=inspect_archives)
     )
     _emit_response(response.__dict__)
 
@@ -149,9 +155,10 @@ def source_profile(
     source: Annotated[str, typer.Option()],
     raw_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
     response = _profile_service().execute(
-        ProfileRequest(source=source, raw_dir=raw_dir, output_dir=output_dir),
+        ProfileRequest(source=source, raw_dir=raw_dir, output_dir=output_dir, inspect_archives=inspect_archives),
     )
     _emit_response(response.__dict__)
 
@@ -161,8 +168,52 @@ def source_normalize(
     source: Annotated[str, typer.Option()],
     raw_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
-    response = _normalization_service().execute(NormalizeRequest(source=source, raw_dir=raw_dir, output_dir=output_dir))
+    response = _normalization_service().execute(
+        NormalizeRequest(
+            source=source,
+            raw_dir=raw_dir,
+            output_dir=output_dir,
+            inspect_archives=inspect_archives,
+        )
+    )
+    _emit_response(response.__dict__)
+
+
+@source_intake_app.command("plan")
+def source_intake_plan(
+    incoming_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    workspace_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    report_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
+) -> None:
+    response = SourceIntakeService(FilesystemArtifactStore()).plan(
+        IntakePlanRequest(
+            incoming_dir=incoming_dir,
+            workspace_root=workspace_root,
+            report_dir=report_dir,
+            inspect_archives=inspect_archives,
+        )
+    )
+    _emit_response(response.__dict__)
+
+
+@source_intake_app.command("apply")
+def source_intake_apply(
+    incoming_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    workspace_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    report_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
+) -> None:
+    response = SourceIntakeService(FilesystemArtifactStore()).apply(
+        IntakeApplyRequest(
+            incoming_dir=incoming_dir,
+            workspace_root=workspace_root,
+            report_dir=report_dir,
+            inspect_archives=inspect_archives,
+        )
+    )
     _emit_response(response.__dict__)
 
 
@@ -239,12 +290,29 @@ def batch_stage(
     candidate: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     baseline_export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    *,  # pylint: disable=too-many-arguments
+    staged_name: Annotated[str | None, typer.Option()] = None,
+    import_ready_dir: Annotated[
+        Path | None,
+        typer.Option(dir_okay=True, file_okay=False),
+    ] = None,
+    normalization_summary_path: Annotated[
+        Path | None,
+        typer.Option(dir_okay=False, file_okay=True),
+    ] = None,
+    window_start: Annotated[str | None, typer.Option()] = None,
+    window_end: Annotated[str | None, typer.Option()] = None,
 ) -> None:
     response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
         StageBatchRequest(
             candidate_path=candidate,
             baseline_export_dir=baseline_export_dir,
             output_dir=output_dir,
+            staged_name=staged_name,
+            import_ready_dir=import_ready_dir,
+            normalization_summary_path=normalization_summary_path,
+            window_start=window_start,
+            window_end=window_end,
         )
     )
     _emit_response(response.__dict__)

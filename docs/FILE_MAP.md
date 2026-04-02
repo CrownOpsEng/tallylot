@@ -14,6 +14,7 @@ repo-local agent entrypoint.
 | `docs/TIMEZONE_VALIDATION.md` | Timezone provenance and review contract |
 | `docs/EXPORT_CHECKLIST.md` | Verification export and staging checklist |
 | `docs/PROJECT_STATE.md` | Current implemented runtime surface |
+| `docs/MASTER_PARITY_LEDGER.md` | `master` parity ledger and remaining recovery gaps |
 | `docs/AI_SESSION_PROMPT.md` | Compact agent context |
 
 ## Active Workspace Artifacts
@@ -30,6 +31,7 @@ repo-local agent entrypoint.
 | `outputs/logs/round_log.csv` | Round log seeded by `round scaffold` |
 | `working/normalized/<source>/` | Profile, normalization, timezone, and candidate artifacts |
 | `working/import_batches/<source>/` | Batch screening and staged import artifacts |
+| `working/supporting_artifacts/intake/<capture>/` | Intake-copied supporting artifacts for a capture |
 | `working/verification/<round_id>/` | Fresh post-action CoinTracking exports |
 
 ## Typed Commands
@@ -38,6 +40,8 @@ repo-local agent entrypoint.
 | ---- | ------- |
 | `workspace init` | Seed the external workspace |
 | `source manifest` | Build a deterministic capture manifest |
+| `source intake plan` | Build an archive-aware intake plan and issue report |
+| `source intake apply` | Copy loose evidence into workspace capture paths and write intake reports |
 | `source profile` | Build file inventory plus timezone provenance |
 | `source normalize` | Produce canonical outputs and a CoinTracking candidate |
 | `wallet inventory rebuild` | Aggregate wallet inventory artifacts |
@@ -48,6 +52,13 @@ repo-local agent entrypoint.
 | `round scaffold` | Create a round folder and seed the round log |
 | `source reconcile` | Compare candidate and reference ledger slices |
 | `supporting extract-pdf-balances` | Extract balances from supported PDF statements |
+
+## Repo Tools
+
+| Command | Purpose |
+| ---- | ------- |
+| `uv run python -m tools.scaffold_adapter ...` | Seed a package-style adapter with colocated tests and fixtures |
+| `uv run python -m tools.refresh_adapter_goldens ...` | Refresh adapter-pack JSON goldens through the typed services |
 
 ## Repo-Local Agent Entry Points
 

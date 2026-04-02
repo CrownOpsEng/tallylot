@@ -15,7 +15,7 @@ from crypto_reconciliation.infrastructure.discovery import build_registry
 
 
 class AdapterModule(ModuleType):
-    ADAPTER: object  # pylint: disable=invalid-name
+    ADAPTER: object | None = None  # pylint: disable=invalid-name
 
 
 def test_adapter_registry_discovers_expected_adapters() -> None:

@@ -1,6 +1,7 @@
 """Application service exports."""
 
 from .baseline import BaselineValidationService
+from .intake import SourceIntakeService
 from .manifest import ManifestService
 from .normalize import NormalizationService
 from .pdf_extract import PdfBalanceExtractionService
@@ -23,6 +24,7 @@ __all__ = [
     "PdfBalanceExtractionService",
     "ProfileService",
     "RoundScaffoldingService",
+    "SourceIntakeService",
     "SourceReconciliationService",
     "VerificationCompareService",
     "WalletInventoryService",

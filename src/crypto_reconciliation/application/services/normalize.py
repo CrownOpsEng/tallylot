@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
+from typing import cast
 
 from crypto_reconciliation.application.dtos import NormalizeRequest, NormalizeResponse
 from crypto_reconciliation.application.services.common import ensure_directory
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
 from crypto_reconciliation.domain.models import NormalizationReviewRecord
+from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.ports.adapters import OutputAdapterRegistryPort, SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 from crypto_reconciliation.ports.storage import StoragePort
@@ -40,7 +42,11 @@ class NormalizationService:
             output_label="normalization output directory",
         )
         ensure_directory(request.output_dir)
-        profile = self._profile_service.create_profile(request.source, request.raw_dir)
+        profile = self._profile_service.create_profile(
+            request.source,
+            request.raw_dir,
+            inspect_archives=request.inspect_archives,
+        )
         if profile.timezone_issues:
             raise ValueError("source profile contains timezone issues that must be reviewed before normalization")
         self._profile_service.write_profile_artifacts(profile, request.output_dir)
@@ -79,16 +85,19 @@ class NormalizationService:
         output_adapter.render(result.canonical_events, request.output_dir / "cointracking_candidate.csv")
         self._artifacts.write_json(
             request.output_dir / "normalization_summary.json",
-            {
-                "source": request.source,
-                "adapter_id": str(profile.adapter_id),
-                "event_count": len(result.canonical_events),
-                "balance_count": len(result.canonical_balances),
-                "issue_count": len(result.issues),
-                "review_count": len(result.reviews),
-                "review_summary": self._review_summary(result.reviews),
-                "wallet_count": len(result.wallet_inventory),
-            },
+            cast(
+                JsonValue,
+                {
+                    "source": request.source,
+                    "adapter_id": str(profile.adapter_id),
+                    "event_count": len(result.canonical_events),
+                    "balance_count": len(result.canonical_balances),
+                    "issue_count": len(result.issues),
+                    "review_count": len(result.reviews),
+                    "review_summary": self._review_summary(result.reviews),
+                    "wallet_count": len(result.wallet_inventory),
+                },
+            ),
         )
         return NormalizeResponse(
             output_dir=request.output_dir,
@@ -109,15 +118,19 @@ class NormalizationService:
                 "scope": scope,
                 "kind": kind,
                 "count": count,
-                "field_names": sorted(
-                    {
-                        review.field_name
-                        for review in reviews
-                        if review.scope == scope and review.kind == kind and review.field_name
-                    }
+                "field_names": cast(
+                    list[object],
+                    sorted(
+                        {
+                            review.field_name
+                            for review in reviews
+                            if review.scope == scope and review.kind == kind and review.field_name
+                        }
+                    ),
                 ),
-                "messages": sorted(
-                    {review.message for review in reviews if review.scope == scope and review.kind == kind}
+                "messages": cast(
+                    list[object],
+                    sorted({review.message for review in reviews if review.scope == scope and review.kind == kind}),
                 ),
             }
             for (scope, kind), count in sorted(counts.items())

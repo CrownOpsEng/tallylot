@@ -21,6 +21,7 @@ class WorkspaceInitResponse:
 class ManifestRequest:
     source_dir: Path
     output_path: Path
+    inspect_archives: bool = True
 
 
 @dataclass(frozen=True)
@@ -28,6 +29,7 @@ class ManifestResponse:
     output_path: Path
     file_count: int
     manifest_fingerprint: str
+    issue_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,7 @@ class ProfileRequest:
     source: str
     raw_dir: Path
     output_dir: Path
+    inspect_archives: bool = True
 
 
 @dataclass(frozen=True)
@@ -43,6 +46,39 @@ class ProfileResponse:
     adapter_id: str
     file_count: int
     supported: bool
+    issue_count: int = 0
+
+
+@dataclass(frozen=True)
+class IntakePlanRequest:
+    incoming_dir: Path
+    workspace_root: Path
+    report_dir: Path
+    inspect_archives: bool = True
+
+
+@dataclass(frozen=True)
+class IntakePlanResponse:
+    report_dir: Path
+    file_count: int
+    issue_count: int
+    planned_copy_count: int
+
+
+@dataclass(frozen=True)
+class IntakeApplyRequest:
+    incoming_dir: Path
+    workspace_root: Path
+    report_dir: Path
+    inspect_archives: bool = True
+
+
+@dataclass(frozen=True)
+class IntakeApplyResponse:
+    report_dir: Path
+    file_count: int
+    issue_count: int
+    copied_count: int
 
 
 @dataclass(frozen=True)
@@ -50,6 +86,7 @@ class NormalizeRequest:
     source: str
     raw_dir: Path
     output_dir: Path
+    inspect_archives: bool = True
 
 
 @dataclass(frozen=True)
@@ -119,6 +156,11 @@ class StageBatchRequest:
     candidate_path: Path
     baseline_export_dir: Path
     output_dir: Path
+    staged_name: str | None = None
+    import_ready_dir: Path | None = None
+    normalization_summary_path: Path | None = None
+    window_start: str | None = None
+    window_end: str | None = None
 
 
 @dataclass(frozen=True)
@@ -137,6 +179,7 @@ class ScreenBatchResponse:
     candidate_rows: int
     issue_count: int
     blocked_reason_codes: tuple[str, ...]
+    overlap_rows_flagged: int = 0
 
 
 @dataclass(frozen=True)
@@ -146,6 +189,9 @@ class StageBatchResponse:
     duplicate_count: int
     issue_count: int
     blocked_reason_codes: tuple[str, ...]
+    staged_path: Path | None = None
+    import_ready_copy_path: Path | None = None
+    overlap_rows_flagged: int = 0
 
 
 @dataclass(frozen=True)

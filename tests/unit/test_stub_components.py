@@ -8,9 +8,22 @@ from crypto_reconciliation.adapters.outputs.cointracking_api import CoinTracking
 from crypto_reconciliation.adapters.outputs.generic_http import GenericHttpOutputStubAdapter
 from crypto_reconciliation.adapters.sources.blockchain.stub import BlockchainSourceStubAdapter
 from crypto_reconciliation.adapters.sources.platform_api.stub import PlatformApiSourceStubAdapter
+from crypto_reconciliation.domain.models import SourceProfile
+from crypto_reconciliation.domain.types import AdapterId, SourceId
 from crypto_reconciliation.infrastructure.ai import LocalStubModelGateway, NullModelGateway
 from crypto_reconciliation.infrastructure.storage.sqlite_stub import SqliteStorageStub
 from crypto_reconciliation.ports.ai import ReviewRequest
+
+
+def _stub_profile() -> SourceProfile:
+    return SourceProfile(
+        source=SourceId("stub"),
+        raw_dir="/tmp/raw",
+        adapter_id=AdapterId("stub"),
+        manifest_fingerprint="fixture",
+        file_inventory=(),
+        supported=False,
+    )
 
 
 def test_ai_stubs_return_deterministic_reviews() -> None:
@@ -38,6 +51,6 @@ def test_output_stub_adapters_raise_not_implemented(tmp_path: Path) -> None:
 
 def test_source_stub_adapters_raise_not_implemented() -> None:
     with pytest.raises(NotImplementedError):
-        BlockchainSourceStubAdapter().normalize(None, Path())  # type: ignore[arg-type]
+        BlockchainSourceStubAdapter().normalize(_stub_profile(), Path())
     with pytest.raises(NotImplementedError):
-        PlatformApiSourceStubAdapter().normalize(None, Path())  # type: ignore[arg-type]
+        PlatformApiSourceStubAdapter().normalize(_stub_profile(), Path())

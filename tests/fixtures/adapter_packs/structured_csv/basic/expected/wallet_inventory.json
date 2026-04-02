@@ -1,0 +1,12 @@
+[
+  {
+    "account": "Fixture Exchange",
+    "evidence_path": "transactions.csv",
+    "identifier_kind": "account_wallet",
+    "identifier_value": "Fixture Exchange:Primary",
+    "notes": "",
+    "source": "Structured Example",
+    "wallet": "Primary",
+    "wallet_id": "Structured Example:Fixture Exchange:Primary"
+  }
+]

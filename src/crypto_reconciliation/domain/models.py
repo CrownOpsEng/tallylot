@@ -42,6 +42,8 @@ class FileInventoryEntry:
     suffix: str
     size_bytes: int
     sha256: str
+    archive_source_path: str = ""
+    archive_member_path: str = ""
     row_count: int | None = None
     header: tuple[str, ...] = ()
     timestamp_resolution: str = ""
@@ -241,6 +243,7 @@ class SourceProfile:
     supported: bool
     metadata: dict[str, str] = field(default_factory=_empty_metadata)
     timezone_summary: dict[str, object] = field(default_factory=_empty_object_map)
+    scan_issues: tuple[IssueRecord, ...] = ()
     timezone_issues: tuple[IssueRecord, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
@@ -252,12 +255,15 @@ class SourceProfile:
             "supported": self.supported,
             "metadata": dict(self.metadata),
             "timezone_summary": dict(self.timezone_summary),
+            "scan_issues": [issue.to_row() for issue in self.scan_issues],
             "file_inventory": [
                 {
                     "relative_path": item.relative_path,
                     "suffix": item.suffix,
                     "size_bytes": item.size_bytes,
                     "sha256": item.sha256,
+                    "archive_source_path": item.archive_source_path,
+                    "archive_member_path": item.archive_member_path,
                     "row_count": item.row_count,
                     "header": list(item.header),
                     "timestamp_resolution": item.timestamp_resolution,

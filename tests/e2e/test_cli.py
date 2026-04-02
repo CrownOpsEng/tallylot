@@ -230,3 +230,29 @@ def test_round_scaffold_cli(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert (workspace_root / "working/verification/post_import_fixture_01").exists()
+
+
+def test_source_intake_plan_cli(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "plan",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(report_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert (report_dir / "intake_plan.csv").exists()
