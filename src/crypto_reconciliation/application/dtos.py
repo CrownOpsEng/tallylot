@@ -86,6 +86,8 @@ class NormalizeRequest:
     source: str
     raw_dir: Path
     output_dir: Path
+    window_start: str | None = None
+    window_end: str | None = None
     inspect_archives: bool = True
 
 

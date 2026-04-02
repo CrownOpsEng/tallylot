@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -88,6 +89,31 @@ def test_baseline_validate_cli(baseline_export_dir: Path, tmp_path: Path) -> Non
     assert result.exit_code == 0
     assert (output_dir / "baseline_summary.json").exists()
     assert (output_dir / "baseline_exchange_reconciliation.csv").exists()
+
+
+def test_source_manifest_cli(tmp_path: Path) -> None:
+    source_dir = tmp_path / "capture"
+    source_dir.mkdir()
+    (source_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    output_path = tmp_path / "manifest.csv"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "manifest",
+            "--source-dir",
+            str(source_dir),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["file_count"] == 1
+    assert output_path.exists()
 
 
 def test_verification_compare_cli(
@@ -256,3 +282,33 @@ def test_source_intake_plan_cli(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert (report_dir / "intake_plan.csv").exists()
+
+
+def test_source_intake_apply_cli(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(report_dir),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["copied_count"] == 1
+    assert (report_dir / "intake_summary.json").exists()
+    assert (workspace_root / "evidence/raw/source/unclassified/incoming/transactions.csv").exists()
