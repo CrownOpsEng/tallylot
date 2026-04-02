@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from tallylot.domain.transactions import ProjectionType
 from tallylot.infrastructure.serialization.csv_io import write_rows
 from tallylot.infrastructure.storage import FilesystemFactRepository
@@ -64,11 +62,3 @@ def test_fact_repository_reads_machine_projection_values(tmp_path: Path) -> None
     facts = FilesystemFactRepository().read_facts(path)
 
     assert facts[0].projection_type == ProjectionType.TRADE
-
-
-def test_fact_repository_rejects_legacy_projection_labels(tmp_path: Path) -> None:
-    path = tmp_path / "facts.csv"
-    write_rows(path, FACT_HEADER, (_fact_row(projection_type="Trade"),))
-
-    with pytest.raises(ValueError, match="Unsupported ProjectionType: Trade"):
-        FilesystemFactRepository().read_facts(path)

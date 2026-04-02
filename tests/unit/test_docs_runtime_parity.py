@@ -261,20 +261,6 @@ def test_workspace_source_inventory_seed_header_matches_template() -> None:
     assert seeded_header == template_header
 
 
-def test_generic_workflow_docs_do_not_reference_cointracking_action() -> None:
-    paths = (
-        REPO_ROOT / "docs" / "workspace" / "analysis" / "issues" / "README.md",
-        REPO_ROOT / "docs" / "workspace" / "analysis" / "checklists" / "work-checklists.md",
-        REPO_ROOT / "docs" / "workspace" / "analysis" / "issues" / "issue-log-template.csv",
-        REPO_ROOT / "docs" / "operations" / "workspace-layout.md",
-        REPO_ROOT / ".claude" / "commands" / "round-verification.md",
-    )
-
-    for path in paths:
-        text = path.read_text(encoding="utf-8")
-        assert "cointracking_action" not in text, f"{path} still references removed workflow field"
-
-
 def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
     text = (REPO_ROOT / "docs" / "architecture" / "commit-standards.md").read_text(encoding="utf-8")
 

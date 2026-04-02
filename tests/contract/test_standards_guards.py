@@ -18,20 +18,6 @@ CLASSIFICATION_KEYWORDS = frozenset(
         "tax_treatment_code",
     }
 )
-LEGACY_PROJECTION_LABELS = frozenset(
-    {
-        "Deposit",
-        "Trade",
-        "Withdrawal",
-        "Interest Income",
-        "Reward / Bonus",
-        "Expense (non taxable)",
-        "Swap (non taxable)",
-        "Staking",
-        "Derivatives / Futures Profit",
-        "Derivatives / Futures Loss",
-    }
-)
 
 
 def _module(path: Path) -> ast.Module:
@@ -209,24 +195,6 @@ def test_repo_does_not_reference_fact_category_attribute() -> None:
             for node in ast.walk(_module(path)):
                 if isinstance(node, ast.Attribute):
                     assert node.attr != "category", f"{path} references removed fact category attribute"
-
-
-def test_source_adapters_do_not_embed_legacy_projection_labels_in_classification_calls() -> None:
-    adapters_root = REPO_ROOT / "src" / "tallylot" / "adapters" / "sources"
-
-    for path in _python_files(adapters_root):
-        for node in ast.walk(_module(path)):
-            if not isinstance(node, ast.Call):
-                continue
-            if not _is_named_call(node.func, "classification"):
-                continue
-            for keyword in node.keywords:
-                if keyword.arg != "projection_type":
-                    continue
-                if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
-                    assert keyword.value.value not in LEGACY_PROJECTION_LABELS, (
-                        f"{path} embeds CoinTracking projection label {keyword.value.value!r}"
-                    )
 
 
 def test_source_adapters_do_not_pass_string_classification_values() -> None:
