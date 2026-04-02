@@ -5,6 +5,7 @@ doc_type: guide
 audience: human
 owner: repo
 status: active
+nav_order: 20
 ---
 
 Use this guide when you need the detailed typed intake procedure for one source

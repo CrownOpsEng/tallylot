@@ -5,6 +5,7 @@ doc_type: guide
 audience: human
 owner: repo
 status: active
+nav_order: 40
 ---
 
 Use this guide after a candidate is ready for a manual repair or import round

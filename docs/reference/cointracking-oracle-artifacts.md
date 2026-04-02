@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+nav_order: 70
 ---
 
 Use this document as the repo-safe reference for CoinTracking oracle support.

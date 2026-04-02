@@ -5,6 +5,7 @@ doc_type: guide
 audience: human
 owner: repo
 status: active
+nav_order: 10
 ---
 
 Use this file for the shortest safe path through a normal operator session.

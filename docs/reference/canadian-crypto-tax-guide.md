@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+nav_order: 50
 ---
 
 This document replaces the imported 2022 article as the repo's working tax reference.

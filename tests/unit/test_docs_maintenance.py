@@ -50,6 +50,54 @@ def test_parse_frontmatter_supports_optional_fields() -> None:
     ]
 
 
+def test_parse_frontmatter_supports_nav_order() -> None:
+    path = REPO_ROOT / "docs" / "guides" / "example.md"
+    text = dedent(
+        """\
+        ---
+        title: "Example"
+        summary: "Example summary."
+        doc_type: guide
+        audience: human
+        owner: repo
+        status: active
+        nav_order: 20
+        ---
+
+        Example body.
+        """
+    )
+
+    frontmatter = docs_maintenance.parse_frontmatter(text, path)
+    docs_maintenance.validate_frontmatter(path, frontmatter)
+
+    assert frontmatter["nav_order"] == 20
+
+
+def test_parse_frontmatter_rejects_invalid_nav_order() -> None:
+    path = REPO_ROOT / "docs" / "guides" / "example.md"
+    text = dedent(
+        """\
+        ---
+        title: "Example"
+        summary: "Example summary."
+        doc_type: guide
+        audience: human
+        owner: repo
+        status: active
+        nav_order: "first"
+        ---
+
+        Example body.
+        """
+    )
+
+    frontmatter = docs_maintenance.parse_frontmatter(text, path)
+
+    with pytest.raises(ValueError, match="must use an integer for nav_order"):
+        docs_maintenance.validate_frontmatter(path, frontmatter)
+
+
 def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
     paths = (
         *sorted((REPO_ROOT / "docs").rglob("*.md")),
@@ -131,6 +179,29 @@ def test_validate_markdown_links_accepts_repo_local_links(tmp_path: Path) -> Non
     )
 
 
+def test_validate_markdown_links_accepts_reference_style_links(tmp_path: Path) -> None:
+    guide = tmp_path / "docs" / "guides" / "sample.md"
+    guide.parent.mkdir(parents=True)
+    guide.write_text("## Step One\n", encoding="utf-8")
+    readme = tmp_path / "README.md"
+    readme.write_text(
+        dedent(
+            """\
+            [Guide][guide]
+            [Same File]
+
+            ## Same File
+
+            [guide]: docs/guides/sample.md#step-one
+            [same file]: #same-file
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    docs_maintenance.validate_markdown_links([readme, guide])
+
+
 def test_validate_markdown_links_rejects_missing_relative_target(tmp_path: Path) -> None:
     path = tmp_path / "README.md"
     path.write_text("# Repo\n\n[Missing](docs/does-not-exist.md)\n", encoding="utf-8")
@@ -148,6 +219,43 @@ def test_validate_markdown_links_rejects_missing_anchor(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="links to missing anchor #missing-anchor"):
         docs_maintenance.validate_markdown_links([readme, guide])
+
+
+def test_validate_markdown_links_rejects_broken_reference_style_link(tmp_path: Path) -> None:
+    readme = tmp_path / "README.md"
+    readme.write_text(
+        dedent(
+            """\
+            [Guide][guide]
+
+            [guide]: docs/guides/missing.md
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="links to missing path docs/guides/missing.md"):
+        docs_maintenance.validate_markdown_links([readme])
+
+
+def test_validate_markdown_links_accepts_duplicate_github_style_heading_anchor(tmp_path: Path) -> None:
+    page = tmp_path / "README.md"
+    page.write_text(
+        dedent(
+            """\
+            # Overview
+
+            ## Step
+
+            ## Step
+
+            [Later](#step-1)
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    docs_maintenance.validate_markdown_links([page])
 
 
 def test_scaffold_workspace_doc_infers_reference_and_both(
@@ -180,3 +288,161 @@ def test_scaffold_workspace_doc_infers_reference_and_both(
 
     assert frontmatter["doc_type"] == "reference"
     assert frontmatter["audience"] == "both"
+
+
+def test_scaffold_agents_doc_requires_explicit_doc_type(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
+    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
+    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--section",
+            "agents",
+            "--slug",
+            "example-agent",
+            "--title",
+            "Example Agent",
+            "--summary",
+            "Example agent guidance.",
+        ]
+    )
+
+    assert exit_code == 1
+
+
+def test_scaffold_agents_doc_accepts_explicit_doc_type(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
+    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
+    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--section",
+            "agents",
+            "--slug",
+            "example-agent",
+            "--title",
+            "Example Agent",
+            "--summary",
+            "Example agent guidance.",
+            "--doc-type",
+            "standard",
+        ]
+    )
+
+    assert exit_code == 0
+
+    created = tmp_path / "agents" / "example-agent.md"
+    frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
+
+    assert frontmatter["doc_type"] == "standard"
+    assert frontmatter["audience"] == "agent"
+
+
+def test_validate_uv_examples_rejects_bare_uv_examples(tmp_path: Path) -> None:
+    page = tmp_path / "README.md"
+    page.write_text("Run `uv run python -m tools.docs_maintenance sync --check`.\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="markdown surfaces contain bare uv examples"):
+        docs_maintenance.validate_uv_examples([page])
+
+
+def test_sync_check_rejects_bare_uv_examples(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    concepts_root = docs_root / "concepts"
+    concepts_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    (tmp_path / ".claude" / "commands").mkdir(parents=True)
+
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+
+            Run `uv run python -m tools.docs_maintenance sync --check`.
+            """
+        ),
+        encoding="utf-8",
+    )
+    (concepts_root / "example.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Example concept."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            nav_order: 10
+            ---
+
+            ## Example
+            """
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "README.md").write_text("# Repo\n", encoding="utf-8")
+    (tmp_path / "AGENTS.md").write_text("# AGENTS.md\n", encoding="utf-8")
+
+    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", docs_root)
+    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", docs_root)
+    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(docs_maintenance.links, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.links, "DOCS_ROOT", docs_root)
+    monkeypatch.setattr(docs_maintenance.links, "AGENTS_ROOT", tmp_path / "agents")
+
+    assert docs_maintenance.main(["sync", "--check"]) == 1

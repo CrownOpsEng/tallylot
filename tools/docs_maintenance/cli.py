@@ -5,7 +5,7 @@ import re
 import sys
 from pathlib import Path
 
-from .links import repo_markdown_paths, validate_markdown_links
+from .links import repo_markdown_paths, validate_markdown_links, validate_uv_examples
 from .metadata import (
     ALLOWED_AUDIENCES,
     ALLOWED_DOC_TYPES,
@@ -26,41 +26,6 @@ RETIRED_REFERENCES = (
     "docs/reference/README.md",
     "docs/operations/ai-session-prompt.md",
 )
-PREFERRED_SECTION_ORDER: dict[str, tuple[str, ...]] = {
-    "concepts": (
-        "concepts/architecture-overview.md",
-        "concepts/reconciliation-tax-architecture.md",
-        "concepts/oracle-boundaries.md",
-        "concepts/transaction-classification.md",
-        "concepts/workspace-model.md",
-    ),
-    "guides": (
-        "guides/operator-quickstart.md",
-        "guides/source-intake.md",
-        "guides/normalize-screen-stage.md",
-        "guides/verify-a-round.md",
-        "guides/full-operator-workflow.md",
-        "guides/write-an-adapter.md",
-    ),
-    "reference": (
-        "reference/baseline-validation-contract.md",
-        "reference/export-checklist.md",
-        "reference/wallet-inventory-artifacts.md",
-        "reference/timezone-validation-artifacts.md",
-        "reference/canadian-crypto-tax-guide.md",
-        "reference/tax-source-map.md",
-        "reference/cointracking-oracle-artifacts.md",
-    ),
-    "status": (
-        "status/current-state.md",
-        "status/migration-sequence.md",
-    ),
-    "standards": (
-        "standards/engineering.md",
-        "standards/implementation.md",
-        "standards/commits.md",
-    ),
-}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -120,12 +85,12 @@ def validate_documents() -> list[Document]:
 def section_documents(documents: list[Document], section: str) -> list[Document]:
     prefix = f"docs/{section}/"
     matches = [document for document in documents if document.relative_path.startswith(prefix)]
-    preferred = PREFERRED_SECTION_ORDER.get(section, ())
-    preferred_index = {path: index for index, path in enumerate(preferred)}
     return sorted(
         matches,
         key=lambda document: (
-            preferred_index.get(document.relative_path.removeprefix("docs/"), len(preferred)),
+            document.frontmatter.get("nav_order")
+            if isinstance(document.frontmatter.get("nav_order"), int)
+            else float("inf"),
             frontmatter_text(document.frontmatter, "title", document.path).lower(),
         ),
     )
@@ -183,8 +148,8 @@ def default_doc_type(path: Path, section: str | None) -> str:
     expected = expected_doc_type(path)
     if expected is not None:
         return expected
-    if section == "agents":
-        return "reference"
+    if section == "agents" or relative_path(path).startswith("agents/"):
+        raise ValueError("Provide --doc-type when scaffolding agent docs")
     raise ValueError("Provide --doc-type when the path does not map to a known docs section")
 
 
@@ -259,6 +224,7 @@ def write_scaffold(args: argparse.Namespace) -> int:
 def run_sync(*, check: bool) -> int:
     documents = collect_documents()
     validate_markdown_links(repo_markdown_paths())
+    validate_uv_examples(repo_markdown_paths())
     check_retired_references()
     sync_docs_homepage(documents, check=check)
     print("docs maintenance sync passed")

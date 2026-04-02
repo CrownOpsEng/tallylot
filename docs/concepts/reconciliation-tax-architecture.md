@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+nav_order: 20
 ---
 
 This document is the implementation anchor for evolving the repo away from

@@ -5,6 +5,7 @@ doc_type: standard
 audience: human
 owner: repo
 status: active
+nav_order: 30
 ---
 
 Use Conventional Commits for all authored commits. Keep commit history small,

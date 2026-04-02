@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+nav_order: 50
 ---
 
 The application operates against an external workspace rooted outside the repo.

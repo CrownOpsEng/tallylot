@@ -20,6 +20,13 @@ REQUIRED_FRONTMATTER_FIELDS = (
 )
 ALLOWED_DOC_TYPES = {"concept", "guide", "reference", "standard", "status"}
 ALLOWED_AUDIENCES = {"human", "agent", "both"}
+NAV_ORDER_ALLOWED_PREFIXES = (
+    "docs/concepts/",
+    "docs/guides/",
+    "docs/reference/",
+    "docs/status/",
+    "docs/standards/",
+)
 FRONTMATTER_PATTERN = re.compile(r"\A---\n(.*?)\n---(?:\n|\Z)", re.DOTALL)
 
 
@@ -117,6 +124,17 @@ def validate_frontmatter(path: Path, frontmatter: dict[str, object]) -> None:
     last_reviewed = frontmatter.get("last_reviewed")
     if last_reviewed is not None and (not isinstance(last_reviewed, str) or not last_reviewed.strip()):
         raise ValueError(f"{path} must use a non-empty string for last_reviewed")
+
+    nav_order = frontmatter.get("nav_order")
+    relative = relative_path(path)
+    allows_nav_order = any(relative.startswith(prefix) for prefix in NAV_ORDER_ALLOWED_PREFIXES)
+    invalid_nav_order = nav_order is not None and (
+        not allows_nav_order or isinstance(nav_order, bool) or not isinstance(nav_order, int)
+    )
+    if invalid_nav_order:
+        if not allows_nav_order:
+            raise ValueError(f"{path} must not use nav_order outside sync-managed human docs")
+        raise ValueError(f"{path} must use an integer for nav_order")
 
     related = frontmatter.get("related")
     related_items = cast(list[object] | None, related) if isinstance(related, list) else None

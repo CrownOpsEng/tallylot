@@ -5,6 +5,7 @@ doc_type: guide
 audience: human
 owner: repo
 status: active
+nav_order: 50
 ---
 
 Use `docs/guides/operator-quickstart.md` when you want the short operational

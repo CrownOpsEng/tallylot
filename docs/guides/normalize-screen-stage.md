@@ -5,6 +5,7 @@ doc_type: guide
 audience: human
 owner: repo
 status: active
+nav_order: 30
 ---
 
 Use this guide when a settled source capture is ready for normalization and

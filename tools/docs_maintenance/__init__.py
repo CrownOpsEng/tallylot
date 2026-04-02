@@ -1,6 +1,5 @@
 from . import state
 from .cli import (
-    PREFERRED_SECTION_ORDER,
     RETIRED_REFERENCES,
     build_parser,
     collect_documents,
@@ -14,7 +13,7 @@ from .cli import (
     validate_documents,
     write_scaffold,
 )
-from .links import repo_markdown_paths, validate_markdown_links
+from .links import bare_uv_examples, repo_markdown_paths, validate_markdown_links, validate_uv_examples
 from .metadata import (
     Document,
     parse_frontmatter,
@@ -28,10 +27,10 @@ AGENTS_ROOT = state.AGENTS_ROOT
 __all__ = [
     "AGENTS_ROOT",
     "DOCS_ROOT",
-    "PREFERRED_SECTION_ORDER",
     "REPO_ROOT",
     "RETIRED_REFERENCES",
     "Document",
+    "bare_uv_examples",
     "build_parser",
     "collect_documents",
     "default_audience",
@@ -46,5 +45,6 @@ __all__ = [
     "validate_documents",
     "validate_frontmatter",
     "validate_markdown_links",
+    "validate_uv_examples",
     "write_scaffold",
 ]

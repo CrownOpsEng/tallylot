@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+nav_order: 40
 ---
 
 The typed profile stage records timezone provenance before normalization.

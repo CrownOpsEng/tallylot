@@ -11,7 +11,6 @@ from typer.models import CommandInfo
 
 from tallylot.infrastructure.workspace.layout import SEED_FILES
 from tallylot.interfaces.cli import app
-from tools import docs_maintenance
 from tools.oracles.cli import app as oracle_app
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -101,22 +100,6 @@ def _registered_routes(typer_app: Typer) -> set[str]:
 
     walk(typer_app)
     return routes
-
-
-def _bare_uv_command_examples(path: Path) -> tuple[str, ...]:
-    offenders: list[str] = []
-
-    for line in path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if stripped.startswith("UV_PROJECT_ENVIRONMENT="):
-            continue
-        if re.match(r"^uv (run|sync)\b", stripped):
-            offenders.append(stripped)
-            continue
-        for match in re.finditer(r"`(uv (?:run|sync)\b[^`]*)`", line):
-            offenders.append(match.group(1))
-
-    return tuple(offenders)
 
 
 def test_documented_cli_routes_exist() -> None:
@@ -219,17 +202,6 @@ def test_location_inventory_route_mentions_checkpoint_command() -> None:
     assert "checkpoint rebuild-location-inventory" in text
 
 
-def test_known_command_docs_use_env_prefixed_uv_examples() -> None:
-    offenders: dict[str, tuple[str, ...]] = {}
-
-    for path in ENV_PREFIX_REQUIRED_DOC_PATHS:
-        examples = _bare_uv_command_examples(path)
-        if examples:
-            offenders[str(path.relative_to(REPO_ROOT))] = examples
-
-    assert not offenders, f"command docs contain bare uv examples: {offenders}"
-
-
 def test_docs_do_not_reference_retired_service_or_model_buckets() -> None:
     forbidden = (
         "application/services",
@@ -317,21 +289,6 @@ def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
     assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>' in text
     assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>' in text
     assert "git show HEAD:<path>" in text
-
-
-def test_repo_markdown_surfaces_do_not_reference_retired_docs_paths() -> None:
-    paths = (
-        REPO_ROOT / "README.md",
-        REPO_ROOT / "AGENTS.md",
-        *sorted((REPO_ROOT / "docs").rglob("*.md")),
-        *sorted((REPO_ROOT / "agents").rglob("*.md")),
-        *sorted((REPO_ROOT / ".claude" / "commands").glob("*.md")),
-    )
-
-    for path in paths:
-        text = path.read_text(encoding="utf-8")
-        for retired_reference in docs_maintenance.RETIRED_REFERENCES:
-            assert retired_reference not in text, f"{path} still references retired path {retired_reference}"
 
 
 def test_implementation_anchor_references_use_explicit_doc_paths() -> None:

@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+nav_order: 30
 ---
 
 The aggregate location inventory is rebuilt from the normalized per-source wallet

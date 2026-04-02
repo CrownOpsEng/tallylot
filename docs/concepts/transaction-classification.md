@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+nav_order: 40
 ---
 
 Use this document to lock the current canonical classification vocabulary

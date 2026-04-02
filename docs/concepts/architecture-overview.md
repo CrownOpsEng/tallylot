@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+nav_order: 10
 ---
 
 TallyLot ships a typed Python package and CLI for source-backed transaction
