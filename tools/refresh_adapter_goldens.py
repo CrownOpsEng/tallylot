@@ -26,6 +26,21 @@ EXPECTED_ARTIFACTS = (
 )
 
 
+def _sanitize_public_fixture_payload(payload: object, *, raw_dir: Path) -> object:
+    raw_dir_text = str(raw_dir)
+
+    if isinstance(payload, dict):
+        return {key: _sanitize_public_fixture_payload(value, raw_dir=raw_dir) for key, value in payload.items()}
+    if isinstance(payload, list):
+        return [_sanitize_public_fixture_payload(item, raw_dir=raw_dir) for item in payload]
+    if isinstance(payload, str):
+        if payload == raw_dir_text:
+            return "<fixture-raw-dir>"
+        if payload.startswith(raw_dir_text + "/"):
+            return payload.replace(raw_dir_text, "<fixture-raw-dir>", 1)
+    return payload
+
+
 def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Refresh adapter-pack golden outputs through the typed services.",
@@ -72,7 +87,7 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
                 output_dir=output_dir,
             )
         )
-        return {
+        payloads = {
             "canonical_events": artifacts.read_rows(output_dir / "canonical_events.csv"),
             "canonical_balances": artifacts.read_rows(output_dir / "canonical_balances.csv"),
             "exceptions": artifacts.read_rows(output_dir / "exceptions.csv"),
@@ -81,6 +96,10 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
             "normalization_summary": json.loads(
                 (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
             ),
+        }
+        return {
+            artifact_name: _sanitize_public_fixture_payload(payload, raw_dir=pack.raw_dir)
+            for artifact_name, payload in payloads.items()
         }
 
 

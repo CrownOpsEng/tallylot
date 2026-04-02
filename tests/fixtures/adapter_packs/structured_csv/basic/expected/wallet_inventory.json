@@ -2,7 +2,7 @@
   {
     "account": "Fixture Exchange",
     "account_label": "Primary",
-    "capture_path": "/home/user/Documents/Personal/Finance/Crypto/CoinTracking.info/crypto-reconciliation-2025/tests/fixtures/adapter_packs/structured_csv/basic/raw",
+    "capture_path": "<fixture-raw-dir>",
     "confidence": "high",
     "controller": "Fixture Exchange",
     "display_identifier": "Fixture Exchange:Primary",
