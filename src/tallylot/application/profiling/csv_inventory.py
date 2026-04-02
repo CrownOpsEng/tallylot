@@ -123,14 +123,33 @@ def _row_values(row: Mapping[str, str | list[str]]) -> list[str]:
 
 def _exact_inventory_timestamp(text: str) -> datetime | None:
     if text.endswith(" UTC"):
-        return datetime.strptime(text, "%Y-%m-%d %H:%M:%S UTC").replace(tzinfo=UTC)
+        return _try_datetime(text, "%Y-%m-%d %H:%M:%S UTC", tzinfo=UTC)
     if text.endswith("Z"):
-        return datetime.strptime(text, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+        for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
+            parsed = _try_datetime(text, fmt, tzinfo=UTC)
+            if parsed is not None:
+                return parsed
     if value_has_non_utc_offset(text):
-        return datetime.strptime(text, "%Y-%m-%d %H:%M:%S%z").astimezone(UTC)
+        try:
+            return datetime.strptime(text, "%Y-%m-%d %H:%M:%S%z").astimezone(UTC)
+        except ValueError:
+            return None
     if len(text) == 10 and text.count("-") == 2:
-        return datetime.strptime(text, "%Y-%m-%d").replace(tzinfo=UTC)
+        return _try_datetime(text, "%Y-%m-%d", tzinfo=UTC)
     return None
+
+
+def _try_datetime(
+    text: str,
+    fmt: str,
+    *,
+    tzinfo: timezone | None = None,
+) -> datetime | None:
+    try:
+        parsed = datetime.strptime(text, fmt).replace(tzinfo=tzinfo or UTC)
+    except ValueError:
+        return None
+    return parsed
 
 
 def _timestamp_from_format(

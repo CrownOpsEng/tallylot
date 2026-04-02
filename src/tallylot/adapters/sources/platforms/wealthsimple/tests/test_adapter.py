@@ -104,3 +104,45 @@ def test_wealthsimple_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> 
     assert len(facts) == 1
     assert facts[0].projection_hint == ProjectionHint.TRADE
     assert not result.issues
+
+
+def test_wealthsimple_adapter_normalizes_sell_rows_with_negative_source_quantity(tmp_path: Path) -> None:
+    raw_dir = tmp_path
+    (raw_dir / "activities-export.csv").write_text(
+        ",".join(
+            (
+                "transaction_date",
+                "settlement_date",
+                "account_id",
+                "account_type",
+                "activity_type",
+                "activity_sub_type",
+                "direction",
+                "symbol",
+                "name",
+                "currency",
+                "quantity",
+                "unit_price",
+                "commission",
+                "net_cash_amount",
+            )
+        )
+        + "\n2023-02-07,2023-02-07,acct-1,Crypto,Trade,SELL,LONG,ETH,Ethereum,CAD,-0.119324,2185.8299518,2.91,256.9\n",
+        encoding="utf-8",
+    )
+
+    result = WealthsimpleAdapter().translate(
+        build_source_profile(adapter_id="wealthsimple", raw_dir=str(raw_dir), source="Wealthsimple"),
+        raw_dir,
+    )
+
+    facts = compile_activity_drafts(result.drafts)
+
+    assert len(facts) == 1
+    primary_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.PRIMARY)
+    charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert primary_legs[0].leg_id == "primary_out"
+    assert primary_legs[0].quantity == Decimal("-0.119324")
+    assert primary_legs[1].leg_id == "primary_in"
+    assert primary_legs[1].quantity == Decimal("259.81")
+    assert charge_legs[0].quantity == Decimal("-2.91")

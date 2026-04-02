@@ -22,6 +22,8 @@ type CsvCell = str | list[str]
 TIMESTAMP_FORMATS = (
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%d %H:%M:%S UTC",
+    "%Y-%m-%dT%H:%M:%S.%fZ",
+    "%Y-%m-%dT%H:%M:%SZ",
     "%Y-%m-%d",
 )
 TIMESTAMP_FIELD_NAMES = (
