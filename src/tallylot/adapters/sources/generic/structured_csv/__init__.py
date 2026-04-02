@@ -1,5 +1,5 @@
 """Structured CSV source adapter package."""
 
-from .adapter import ADAPTER, StructuredCsvSourceAdapter
+from .adapter import ADAPTER
 
-__all__ = ("ADAPTER", "StructuredCsvSourceAdapter")
+__all__ = ("ADAPTER",)

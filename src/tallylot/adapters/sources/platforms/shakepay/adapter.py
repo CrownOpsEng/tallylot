@@ -28,7 +28,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class ShakepayAdapter:
+class _ShakepayAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("shakepay"),
         display_name="Shakepay",
@@ -120,4 +120,4 @@ class ShakepayAdapter:
         )
 
 
-ADAPTER = ShakepayAdapter()
+ADAPTER = _ShakepayAdapter()

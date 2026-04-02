@@ -16,7 +16,7 @@ from .routing import match_intake as match_portfolio_intake
 from .routing import route_intake as route_portfolio_intake
 
 
-class CoinTrackingPortfolioAdapter:
+class _CoinTrackingPortfolioAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("cointracking_portfolio"),
         display_name="CoinTracking Portfolio",
@@ -66,4 +66,4 @@ class CoinTrackingPortfolioAdapter:
         raise NotImplementedError("CoinTracking portfolio intake is intentionally intake-only in this phase.")
 
 
-ADAPTER = CoinTrackingPortfolioAdapter()
+ADAPTER = _CoinTrackingPortfolioAdapter()

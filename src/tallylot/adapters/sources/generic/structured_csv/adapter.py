@@ -17,7 +17,7 @@ from .contracts import REQUIRED_HEADER
 from .normalization import translate_structured_csv
 
 
-class StructuredCsvSourceAdapter:
+class _StructuredCsvSourceAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("structured_csv"),
         display_name="Structured CSV",
@@ -89,4 +89,4 @@ class StructuredCsvSourceAdapter:
         )
 
 
-ADAPTER = StructuredCsvSourceAdapter()
+ADAPTER = _StructuredCsvSourceAdapter()

@@ -17,7 +17,7 @@ from tallylot.ports.output_adapters import OutputRenderPolicy, RenderedArtifact
 from .rendering import render as render_output
 
 
-class CoinTrackingCsvAdapter:
+class _CoinTrackingCsvAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("cointracking_csv"),
         display_name="CoinTracking CSV",
@@ -45,4 +45,4 @@ class CoinTrackingCsvAdapter:
         return render_output(facts, output_path)
 
 
-ADAPTER = CoinTrackingCsvAdapter()
+ADAPTER = _CoinTrackingCsvAdapter()
