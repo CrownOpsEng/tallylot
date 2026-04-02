@@ -8,6 +8,13 @@ import coinbase_common
 
 
 class CoinbaseCommonTests(unittest.TestCase):
+    def test_coinbase_timestamp_parsers_preserve_utc_clock_time(self) -> None:
+        retail = coinbase_common.parse_coinbase_retail_timestamp("2025-10-17 13:38:17 UTC")
+        pro = coinbase_common.parse_coinbase_pro_timestamp("2021-05-10T02:37:18.000Z")
+
+        self.assertEqual("2025-10-17 13:38:17", retail.strftime("%Y-%m-%d %H:%M:%S"))
+        self.assertEqual("2021-05-10 02:37:18", pro.strftime("%Y-%m-%d %H:%M:%S"))
+
     def test_retail_csv_rows_skips_preface_and_reads_transactions(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "coinbase.csv"

@@ -28,6 +28,8 @@ class StageImportBatchTests(unittest.TestCase):
 
             summary = stage_import_batch.stage_import_batch(candidate, baseline, root / "batch")
             self.assertEqual("blocked", summary["status"])
+            self.assertEqual("UTC", summary["canonical_timezone"])
+            self.assertEqual("UTC", summary["cointracking_import_timezone"])
             self.assertTrue((root / "batch" / "overlap_check" / "overlap_summary.json").exists())
 
     def test_stage_import_batch_stages_passing_candidate(self) -> None:
@@ -50,6 +52,8 @@ class StageImportBatchTests(unittest.TestCase):
             summary = stage_import_batch.stage_import_batch(candidate, baseline, root / "batch", import_ready_dir=root / "ready")
             written = read_json(root / "batch" / "stage_summary.json")
             self.assertEqual("staged", summary["status"])
+            self.assertEqual("UTC", summary["canonical_timezone"])
+            self.assertEqual("UTC", summary["cointracking_import_timezone"])
             self.assertEqual(summary["staged_path"], written["staged_path"])
             self.assertTrue((root / "batch" / "candidate.csv").exists())
             self.assertTrue((root / "ready" / "candidate.csv").exists())

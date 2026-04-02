@@ -6,12 +6,14 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import timezone, tzinfo
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable, Sequence
 import csv
 import json
 import re
+from zoneinfo import ZoneInfo
 
 from coinbase_common import (
     coinbase_balance_rows_from_text,
@@ -25,9 +27,10 @@ from script_common import (
     decimal_or_zero,
     decimal_text,
     extract_pdf_text,
-    parse_datetime,
+    parse_datetime_to_utc_naive,
     read_cointracking_rows,
     read_csv_rows,
+    source_timezone_from_filename,
 )
 
 
@@ -47,6 +50,7 @@ LEDGER_LIVE_TIME_FORMATS = ("%Y-%m-%dT%H:%M:%S.%fZ",)
 CRYPTO_COM_TIME_FORMATS = ("%Y-%m-%d %H:%M:%S",)
 SHAKEPAY_TIME_FORMATS = ("%Y-%m-%d %H:%M:%S",)
 NEAR_TIME_FORMATS = ("%Y-%m-%d %H:%M:%S",)
+SHAKEPAY_SOURCE_TIMEZONE = ZoneInfo("America/Toronto")
 
 
 @dataclass(frozen=True)
@@ -154,8 +158,8 @@ def decisions_fingerprint(decisions: dict[str, dict[str, str]]) -> str:
     return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
-def normalized_timestamp(value: str, formats: Sequence[str]) -> str:
-    return parse_datetime(value.strip(), formats).strftime("%Y-%m-%d %H:%M:%S")
+def normalized_timestamp(value: str, formats: Sequence[str], *, source_timezone: tzinfo | None = None) -> str:
+    return parse_datetime_to_utc_naive(value.strip(), formats, source_timezone=source_timezone).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def event_id_for(adapter: str, raw_file: str, raw_row_ref: str) -> str:
@@ -706,7 +710,11 @@ class BinanceAdapter(SourceAdapter):
             executed_amount, executed_asset = parse_number_asset(row["Executed"])
             quote_amount, quote_asset = parse_number_asset(row["Amount"])
             fee_amount, fee_asset = parse_number_asset(row["Fee"])
-            timestamp = normalized_timestamp(row["Time"], BINANCE_TIME_FORMATS)
+            timestamp = normalized_timestamp(
+                row["Time"],
+                BINANCE_TIME_FORMATS,
+                source_timezone=source_timezone_from_filename(path.name),
+            )
             side = (row.get("Side") or "").strip().upper()
             raw_row_ref = f"row:{index}"
             event_id = event_id_for(self.name, path.name, raw_row_ref)
@@ -747,7 +755,11 @@ class BinanceAdapter(SourceAdapter):
                 continue
             sell_amount, sell_asset = parse_number_asset(row["Sell"])
             buy_amount, buy_asset = parse_number_asset(row["Buy"])
-            timestamp = normalized_timestamp(row["Time"], BINANCE_TIME_FORMATS)
+            timestamp = normalized_timestamp(
+                row["Time"],
+                BINANCE_TIME_FORMATS,
+                source_timezone=source_timezone_from_filename(path.name),
+            )
             raw_row_ref = f"row:{index}"
             events.append(
                 canonical_event(
@@ -786,7 +798,11 @@ class BinanceAdapter(SourceAdapter):
                     wallet="Funding",
                     raw_file=path.name,
                     raw_row_ref=raw_row_ref,
-                    timestamp=normalized_timestamp(row["Time"], BINANCE_TIME_FORMATS),
+                    timestamp=normalized_timestamp(
+                        row["Time"],
+                        BINANCE_TIME_FORMATS,
+                        source_timezone=source_timezone_from_filename(path.name),
+                    ),
                     event_kind="Deposit",
                     description=f"Binance deposit via {row['Network']}",
                     amount_in=decimal_text(decimal_or_zero(row["Amount"])),
@@ -814,7 +830,11 @@ class BinanceAdapter(SourceAdapter):
                     wallet="Funding",
                     raw_file=path.name,
                     raw_row_ref=raw_row_ref,
-                    timestamp=normalized_timestamp(row["Time"], BINANCE_TIME_FORMATS),
+                    timestamp=normalized_timestamp(
+                        row["Time"],
+                        BINANCE_TIME_FORMATS,
+                        source_timezone=source_timezone_from_filename(path.name),
+                    ),
                     event_kind="Withdrawal",
                     description=f"Binance withdrawal via {row['Network']}",
                     amount_out=decimal_text(decimal_or_zero(row["Amount"])),
@@ -846,7 +866,11 @@ class BinanceAdapter(SourceAdapter):
                     wallet="Funding",
                     raw_file=path.name,
                     raw_row_ref=raw_row_ref,
-                    timestamp=normalized_timestamp(row["Time"], BINANCE_TIME_FORMATS),
+                    timestamp=normalized_timestamp(
+                        row["Time"],
+                        BINANCE_TIME_FORMATS,
+                        source_timezone=source_timezone_from_filename(path.name),
+                    ),
                     event_kind="Trade",
                     description=f"Binance fiat buy via {row['Method']}",
                     amount_in=receive_amount,
@@ -881,7 +905,11 @@ class BinanceAdapter(SourceAdapter):
                     wallet="Funding",
                     raw_file=path.name,
                     raw_row_ref=raw_row_ref,
-                    timestamp=normalized_timestamp(row["Time"], BINANCE_TIME_FORMATS),
+                    timestamp=normalized_timestamp(
+                        row["Time"],
+                        BINANCE_TIME_FORMATS,
+                        source_timezone=source_timezone_from_filename(path.name),
+                    ),
                     event_kind="Trade",
                     description=f"Binance fiat sell via {row['Method']}",
                     amount_in=receive_amount,
@@ -919,7 +947,11 @@ class BinanceAdapter(SourceAdapter):
                     wallet="Funding",
                     raw_file=path.name,
                     raw_row_ref=raw_row_ref,
-                    timestamp=normalized_timestamp(row["Created Time"], BINANCE_TIME_FORMATS),
+                    timestamp=normalized_timestamp(
+                        row["Created Time"],
+                        BINANCE_TIME_FORMATS,
+                        source_timezone=source_timezone_from_filename(path.name),
+                    ),
                     event_kind="Trade",
                     description=f"Binance P2P {order_type} {crypto_asset}/{fiat_asset}",
                     amount_in=amount_in,
@@ -1019,7 +1051,11 @@ class BinanceAdapter(SourceAdapter):
             operation = (row.get("Operation") or "").strip()
             amount = decimal_text(abs(decimal_or_zero(row.get("Change"))))
             asset = (row.get("Coin") or "").strip().upper()
-            timestamp = normalized_timestamp(row["Time"], BINANCE_TIME_FORMATS)
+            timestamp = normalized_timestamp(
+                row["Time"],
+                BINANCE_TIME_FORMATS,
+                source_timezone=timezone.utc,
+            )
             raw_row_ref = f"row:{index}"
             event_id = event_id_for(self.name, path.name, raw_row_ref)
             description = row.get("Remark", "") or operation
@@ -1201,7 +1237,11 @@ class BinanceAdapter(SourceAdapter):
         rows = [row for _, row in indexed_rows]
         operations = {(row.get("Operation") or "").strip() for row in rows}
         raw_row_ref = f"group:{timestamp_text}:{account or 'unknown'}"
-        timestamp = normalized_timestamp(timestamp_text, BINANCE_TIME_FORMATS)
+        timestamp = normalized_timestamp(
+            timestamp_text,
+            BINANCE_TIME_FORMATS,
+            source_timezone=timezone.utc,
+        )
 
         if operations == {"Small Assets Exchange BNB"}:
             events, message = self._small_asset_exchange_events(path, profile.source, account, timestamp, indexed_rows)
@@ -1385,7 +1425,11 @@ class CryptoComAdapter(SourceAdapter):
                 kind = (row.get("Transaction Kind") or "").strip().lower()
                 if kind != "viban_deposit":
                     continue
-                timestamp = normalized_timestamp(row["Timestamp (UTC)"], CRYPTO_COM_TIME_FORMATS)
+                timestamp = normalized_timestamp(
+                    row["Timestamp (UTC)"],
+                    CRYPTO_COM_TIME_FORMATS,
+                    source_timezone=timezone.utc,
+                )
                 raw_row_ref = f"row:{index}"
                 event_id = event_id_for(self.name, path.name, raw_row_ref)
                 events.append(
@@ -1410,7 +1454,11 @@ class CryptoComAdapter(SourceAdapter):
         for path in crypto_paths:
             for index, row in enumerate(read_csv_rows(path), start=2):
                 kind = (row.get("Transaction Kind") or "").strip().lower()
-                timestamp = normalized_timestamp(row["Timestamp (UTC)"], CRYPTO_COM_TIME_FORMATS)
+                timestamp = normalized_timestamp(
+                    row["Timestamp (UTC)"],
+                    CRYPTO_COM_TIME_FORMATS,
+                    source_timezone=timezone.utc,
+                )
                 raw_row_ref = f"row:{index}"
                 event_id = event_id_for(self.name, path.name, raw_row_ref)
                 description = (row.get("Transaction Description") or kind or "Crypto.com event").strip()
@@ -1612,7 +1660,11 @@ class EvmExplorerAdapter(SourceAdapter):
         native_asset: str,
         exception_decisions: dict[str, dict[str, str]],
     ) -> tuple[list[dict[str, str]], dict[str, str] | None]:
-        timestamp = normalized_timestamp(self._group_timestamp(group), ("%Y-%m-%d %H:%M:%S",))
+        timestamp = normalized_timestamp(
+            self._group_timestamp(group),
+            ("%Y-%m-%d %H:%M:%S",),
+            source_timezone=timezone.utc,
+        )
         raw_file = self._group_raw_file(group)
         raw_row_ref = self._group_raw_ref(group)
         method = self._group_method(group)
@@ -2179,7 +2231,11 @@ class ShakepayAdapter(SourceAdapter):
         event_type = (row.get("Type") or "").strip()
         raw_row_ref = f"row:{index}"
         event_id = event_id_for(self.name, path.name, raw_row_ref)
-        timestamp = normalized_timestamp(row["Date"], SHAKEPAY_TIME_FORMATS)
+        timestamp = normalized_timestamp(
+            row["Date"],
+            SHAKEPAY_TIME_FORMATS,
+            source_timezone=SHAKEPAY_SOURCE_TIMEZONE,
+        )
         description = (row.get("Description") or event_type or "Shakepay").strip()
 
         if event_type == "Reward":
@@ -2281,7 +2337,11 @@ class ShakepayAdapter(SourceAdapter):
         event_type = (row.get("Type") or "").strip()
         raw_row_ref = f"row:{index}"
         event_id = event_id_for(self.name, path.name, raw_row_ref)
-        timestamp = normalized_timestamp(row["Date"], SHAKEPAY_TIME_FORMATS)
+        timestamp = normalized_timestamp(
+            row["Date"],
+            SHAKEPAY_TIME_FORMATS,
+            source_timezone=SHAKEPAY_SOURCE_TIMEZONE,
+        )
         description = (row.get("Description") or event_type or "Shakepay cash").strip()
         credit = abs(decimal_or_zero(row.get("Credit")))
         debit = abs(decimal_or_zero(row.get("Debit")))
@@ -2630,7 +2690,11 @@ class NearAdapter(SourceAdapter):
                         wallet=profile.source,
                         raw_file=path.name,
                         raw_row_ref=raw_row_ref,
-                        timestamp=normalized_timestamp(row["Time"], NEAR_TIME_FORMATS),
+                        timestamp=normalized_timestamp(
+                            row["Time"],
+                            NEAR_TIME_FORMATS,
+                            source_timezone=timezone.utc,
+                        ),
                         event_kind=event_kind,
                         description=token,
                         amount_in=decimal_text(decimal_or_zero(row.get("Quantity"))),
@@ -2657,7 +2721,11 @@ class NearAdapter(SourceAdapter):
                         wallet=profile.source,
                         raw_file=path.name,
                         raw_row_ref=raw_row_ref,
-                        timestamp=normalized_timestamp(row["Time"], NEAR_TIME_FORMATS),
+                        timestamp=normalized_timestamp(
+                            row["Time"],
+                            NEAR_TIME_FORMATS,
+                            source_timezone=timezone.utc,
+                        ),
                         event_kind="Airdrop",
                         description=token_name or contract or "NEAR NFT mint",
                         amount_in="1.00000000",
@@ -2685,7 +2753,11 @@ class NearAdapter(SourceAdapter):
             wallet=source,
             raw_file=path.name,
             raw_row_ref=raw_row_ref,
-            timestamp=normalized_timestamp(row["Time"], NEAR_TIME_FORMATS),
+            timestamp=normalized_timestamp(
+                row["Time"],
+                NEAR_TIME_FORMATS,
+                source_timezone=timezone.utc,
+            ),
             event_kind="Deposit",
             description=raw_hash_description(f"Transfer into {source}", row.get("Txn Hash") or "", f"Transfer into {source}"),
             amount_in=decimal_text(deposit_value - tx_fee),
@@ -2696,7 +2768,11 @@ class NearAdapter(SourceAdapter):
 
     def _near_stake_events(self, path: Path, source: str, index: int, row: dict[str, str]) -> list[dict[str, str]]:
         raw_row_ref = f"row:{index}"
-        timestamp = normalized_timestamp(row["Time"], NEAR_TIME_FORMATS)
+        timestamp = normalized_timestamp(
+            row["Time"],
+            NEAR_TIME_FORMATS,
+            source_timezone=timezone.utc,
+        )
         tx_hash = (row.get("Txn Hash") or "").strip()
         deposit_value = decimal_or_zero(row.get("Deposit Value"))
         tx_fee = decimal_or_zero(row.get("Txn Fee"))

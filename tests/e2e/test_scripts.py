@@ -170,6 +170,8 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(82, len(tx_rows))
         self.assertGreaterEqual(summary["normalized_balance_rows"], 10)
         self.assertEqual(summary["normalized_balance_rows"], len(balance_rows))
+        self.assertEqual("UTC", summary["canonical_timezone"])
+        self.assertEqual("UTC", summary["cointracking_import_timezone"])
 
     def test_pdf_balance_extract_cli_reads_supported_repo_pdfs(self) -> None:
         coinbase_pdf = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / (
@@ -289,6 +291,8 @@ class ScriptEndToEndTests(unittest.TestCase):
             candidate = read_dict_rows(out_dir / "cointracking_candidate.csv")
 
         self.assertEqual("ready", summary["status"])
+        self.assertEqual("UTC", summary["canonical_timezone"])
+        self.assertEqual("UTC", summary["cointracking_import_timezone"])
         self.assertEqual(26, summary["canonical_events"])
         self.assertEqual(0, summary["exceptions"])
         self.assertEqual(26, len(events))
@@ -608,6 +612,8 @@ class ScriptEndToEndTests(unittest.TestCase):
             )
             summary = json.loads(result.stdout)
             self.assertEqual("staged", summary["status"])
+            self.assertEqual("UTC", summary["canonical_timezone"])
+            self.assertEqual("UTC", summary["cointracking_import_timezone"])
             self.assertTrue((out_dir / "candidate.csv").exists())
             self.assertTrue((ready_dir / "candidate.csv").exists())
 

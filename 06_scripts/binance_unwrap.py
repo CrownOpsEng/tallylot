@@ -10,12 +10,12 @@ import json
 import re
 import unicodedata
 import zipfile
-from datetime import datetime
+from datetime import datetime, tzinfo
 from pathlib import Path
 from typing import Sequence
 
 from source_manifest import validate_source_dir
-from script_common import write_csv_rows
+from script_common import parse_datetime_to_utc_naive, source_timezone_from_filename, write_csv_rows
 
 
 ZIP_EXPORT_PATTERN = re.compile(
@@ -43,7 +43,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def parse_timestamp(value: str | None) -> datetime | None:
+def parse_timestamp(value: str | None, *, source_timezone: tzinfo | None = None) -> datetime | None:
     if value is None:
         return None
     text = value.strip()
@@ -52,7 +52,7 @@ def parse_timestamp(value: str | None) -> datetime | None:
     text = re.sub(r"\(UTC[^)]*\)$", "", text).strip()
     for fmt in DATE_FORMATS:
         try:
-            return datetime.strptime(text, fmt)
+            return parse_datetime_to_utc_naive(text, (fmt,), source_timezone=source_timezone)
         except ValueError:
             continue
     return None
@@ -114,13 +114,18 @@ def read_csv_payload(path: Path) -> tuple[list[str], list[dict[str, str]], bool]
     return fieldnames, rows, saw_no_data
 
 
-def detect_date_span(fieldnames: list[str], rows: list[dict[str, str]]) -> tuple[str, str, str]:
+def detect_date_span(
+    fieldnames: list[str],
+    rows: list[dict[str, str]],
+    *,
+    source_timezone: tzinfo | None = None,
+) -> tuple[str, str, str]:
     best_field = ""
     best_values: list[datetime] = []
     for field in fieldnames:
         if not DATE_FIELD_PATTERN.search(field):
             continue
-        values = [parse_timestamp(row.get(field)) for row in rows]
+        values = [parse_timestamp(row.get(field), source_timezone=source_timezone) for row in rows]
         parsed = [value for value in values if value is not None]
         if len(parsed) > len(best_values):
             best_field = field
@@ -138,7 +143,8 @@ def build_inventory_rows(source_dir: Path) -> list[dict[str, object]]:
     rows = []
     for path in sorted(source_dir.glob("*.csv")):
         fieldnames, data_rows, saw_no_data = read_csv_payload(path)
-        date_field, min_ts, max_ts = detect_date_span(fieldnames, data_rows)
+        source_timezone = source_timezone_from_filename(path.name)
+        date_field, min_ts, max_ts = detect_date_span(fieldnames, data_rows, source_timezone=source_timezone)
         rows.append(
             {
                 "filename": path.name,
@@ -151,8 +157,6 @@ def build_inventory_rows(source_dir: Path) -> list[dict[str, object]]:
             }
         )
     return rows
-
-
 def build_combined_outputs(source_dir: Path, normalized_dir: Path) -> list[dict[str, object]]:
     grouped: dict[str, list[Path]] = {}
     for path in sorted(source_dir.glob("*.csv")):

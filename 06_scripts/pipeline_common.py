@@ -9,11 +9,20 @@ import hashlib
 import json
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, tzinfo
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from script_common import parse_datetime, read_csv_rows, require_directory, require_file, write_csv_rows, write_json
+from script_common import (
+    parse_datetime,
+    parse_datetime_to_utc_naive,
+    read_csv_rows,
+    require_directory,
+    require_file,
+    source_timezone_from_filename,
+    write_csv_rows,
+    write_json,
+)
 
 
 CANONICAL_EVENT_HEADERS = (
@@ -243,13 +252,13 @@ def classify_file_family(path: Path, header: Sequence[str]) -> str:
     return "unknown"
 
 
-def parse_candidate_timestamp(value: str) -> datetime | None:
+def parse_candidate_timestamp(value: str, *, source_timezone: tzinfo | None = None) -> datetime | None:
     text = value.strip()
     if not text:
         return None
     for fmt in DATE_FORMATS:
         try:
-            return parse_datetime(text, (fmt,))
+            return parse_datetime_to_utc_naive(text, (fmt,), source_timezone=source_timezone)
         except ValueError:
             continue
     return None
@@ -273,8 +282,12 @@ def detect_date_span_from_csv(path: Path) -> tuple[str, str, str, int]:
     parsed_values: list[datetime] = []
     candidates = [field for field in header if any(token in field.lower() for token in DATE_FIELD_PATTERN)]
     best_count = -1
+    source_timezone = source_timezone_from_filename(path.name)
     for field in candidates:
-        current = [parse_candidate_timestamp((row.get(field) or "").strip()) for row in normalized_rows]
+        current = [
+            parse_candidate_timestamp((row.get(field) or "").strip(), source_timezone=source_timezone)
+            for row in normalized_rows
+        ]
         parsed = [value for value in current if value is not None]
         if len(parsed) > best_count:
             best_count = len(parsed)

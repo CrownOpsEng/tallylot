@@ -6,9 +6,10 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 import subprocess
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timedelta, timezone, tzinfo
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -20,6 +21,11 @@ DEFAULT_VERIFICATION_EXPORTS = (
     "Current Balance",
     "Balance by Exchange",
 )
+
+CANONICAL_TIMEZONE = "UTC"
+COINTRACKING_IMPORT_TIMEZONE = "UTC"
+
+UTC_LABEL_PATTERN = re.compile(r"\(UTC(?P<offset>[^)]*)\)")
 
 COINTRACKING_FILE_HEADERS = (
     "Type",
@@ -141,6 +147,58 @@ def parse_datetime(value: str, formats: Sequence[str]) -> datetime:
             return datetime.strptime(value, fmt)
         except ValueError:
             continue
+    format_list = ", ".join(formats)
+    raise ValueError(f"Unable to parse datetime {value!r}; expected one of: {format_list}")
+
+
+def _format_implies_utc(fmt: str) -> bool:
+    return "%z" not in fmt and ("UTC" in fmt or fmt.endswith("Z"))
+
+
+def parse_utc_offset_label(value: str) -> tzinfo:
+    text = value.strip()
+    if text.startswith(("+", "-")) and len(text) > 1 and text[1] in "+-":
+        text = text[1:]
+    if text in {"", "0", "+0", "-0", "+00", "-00", "+00:00", "-00:00"}:
+        return timezone.utc
+    match = re.fullmatch(r"(?P<sign>[+-]?)(?P<hours>\d{1,2})(?::?(?P<minutes>\d{2}))?", text)
+    if match is None:
+        raise ValueError(f"Unsupported UTC offset label: {value!r}")
+    sign = -1 if match.group("sign") == "-" else 1
+    hours = int(match.group("hours"))
+    minutes = int(match.group("minutes") or "0")
+    delta = timedelta(hours=hours, minutes=minutes) * sign
+    return timezone(delta)
+
+
+def source_timezone_from_filename(filename: str) -> tzinfo | None:
+    match = UTC_LABEL_PATTERN.search(filename)
+    if match is None:
+        return None
+    return parse_utc_offset_label(match.group("offset"))
+
+
+def coerce_datetime_to_utc_naive(value: datetime, *, source_timezone: tzinfo | None = None) -> datetime:
+    if value.tzinfo is None:
+        if source_timezone is None:
+            return value
+        value = value.replace(tzinfo=source_timezone)
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def parse_datetime_to_utc_naive(
+    value: str,
+    formats: Sequence[str],
+    *,
+    source_timezone: tzinfo | None = None,
+) -> datetime:
+    for fmt in formats:
+        try:
+            parsed = datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+        implied_timezone = timezone.utc if _format_implies_utc(fmt) else source_timezone
+        return coerce_datetime_to_utc_naive(parsed, source_timezone=implied_timezone)
     format_list = ", ".join(formats)
     raise ValueError(f"Unable to parse datetime {value!r}; expected one of: {format_list}")
 

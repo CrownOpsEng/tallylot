@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Sequence
 
 from overlap_check import summarize_overlap, write_overlap_artifacts
-from script_common import require_file, write_json
+from script_common import CANONICAL_TIMEZONE, COINTRACKING_IMPORT_TIMEZONE, require_file, write_json
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -42,6 +42,8 @@ def stage_import_batch(
         result = {
             "status": "blocked",
             "candidate": str(candidate),
+            "canonical_timezone": CANONICAL_TIMEZONE,
+            "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
             "overlap_summary": str(overlap_dir / "overlap_summary.json"),
             "rows_flagged": summary["rows_flagged"],
             "message": "Candidate failed overlap screening and was not staged.",
@@ -64,6 +66,8 @@ def stage_import_batch(
     result = {
         "status": "staged",
         "candidate": str(candidate),
+        "canonical_timezone": CANONICAL_TIMEZONE,
+        "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
         "staged_path": str(staged_path),
         "import_ready_path": import_ready_path,
         "overlap_summary": str(overlap_dir / "overlap_summary.json"),

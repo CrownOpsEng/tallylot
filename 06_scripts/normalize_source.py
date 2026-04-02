@@ -19,6 +19,7 @@ from pipeline_common import (
     write_json,
 )
 from render_cointracking import render_cointracking_rows
+from script_common import CANONICAL_TIMEZONE, COINTRACKING_IMPORT_TIMEZONE
 from source_adapters import decisions_fingerprint, get_adapter, load_exception_decisions
 
 
@@ -93,6 +94,8 @@ def normalize_source(
                 "source": source,
                 "adapter": adapter_name,
                 "manifest_fingerprint": manifest_fingerprint,
+                "canonical_timezone": CANONICAL_TIMEZONE,
+                "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
                 "status": "cached",
                 "canonical_events": int(existing.get("canonical_events", 0)),
                 "exceptions": int(existing.get("exceptions", 0)),
@@ -116,6 +119,8 @@ def normalize_source(
         "adapter": adapter.name,
         "adapter_supported": profile.adapter_supported,
         "manifest_fingerprint": profile.manifest_fingerprint,
+        "canonical_timezone": CANONICAL_TIMEZONE,
+        "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
         "canonical_events": len(result.canonical_events),
         "canonical_balances": len(result.canonical_balances),
         "exceptions": len(result.exceptions),

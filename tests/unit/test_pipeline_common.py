@@ -69,6 +69,30 @@ class PipelineCommonTests(unittest.TestCase):
         self.assertIsNotNone(parsed)
         self.assertEqual("2023-09-20 18:20:55", parsed.strftime("%Y-%m-%d %H:%M:%S"))
 
+    def test_parse_candidate_timestamp_applies_source_timezone(self) -> None:
+        parsed = pipeline_common.parse_candidate_timestamp(
+            "23-09-20 18:20:55",
+            source_timezone=pipeline_common.source_timezone_from_filename("Binance-Spot-Trade-History-202603230406(UTC--6)_5d63c10c.csv"),
+        )
+
+        self.assertIsNotNone(parsed)
+        self.assertEqual("2023-09-21 00:20:55", parsed.strftime("%Y-%m-%d %H:%M:%S"))
+
+    def test_build_file_inventory_converts_binance_filename_timezone_to_utc(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "Binance-Spot-Trade-History-202603230406(UTC--6)_abcd.csv").write_text(
+                "Time,Pair,Side,Price,Executed,Amount,Fee\n"
+                "23-09-20 18:20:55,ALGOUSDT,SELL,0.0997,103ALGO,10.2691USDT,0.00003593BNB\n",
+                encoding="utf-8",
+            )
+
+            inventory = pipeline_common.build_file_inventory(raw_dir)
+
+        row = inventory[0]
+        self.assertEqual("2023-09-21 00:20:55", row["min_timestamp"])
+        self.assertEqual("2023-09-21 00:20:55", row["max_timestamp"])
+
     def test_validate_canonical_event_row_requires_minimum_fields(self) -> None:
         row = {header: "" for header in pipeline_common.CANONICAL_EVENT_HEADERS}
         row.update(

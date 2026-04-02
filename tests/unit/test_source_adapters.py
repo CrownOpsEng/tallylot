@@ -63,6 +63,14 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertEqual(82, len(result.canonical_events))
         self.assertGreaterEqual(len(result.canonical_balances), 10)
         self.assertEqual([], result.exceptions)
+        self.assertEqual(
+            "2025-10-17 13:38:17",
+            next(
+                row["timestamp"]
+                for row in result.canonical_events
+                if row["event_id"] == "coinbase-asset-migration-68f246c9a0081dc3b61e422c-68f246c95d5ca606c968fd16"
+            ),
+        )
 
     def test_wealthsimple_adapter_normalizes_repo_exports(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "wealthsimple" / "raw"
@@ -120,6 +128,7 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertEqual([], result.exceptions)
         self.assertEqual("Reward / Bonus", result.canonical_events[0]["event_kind"])
         self.assertEqual("shakingsats", result.canonical_events[0]["description"])
+        self.assertEqual("2022-01-04 18:19:41", result.canonical_events[0]["timestamp"])
 
     def test_ledger_live_adapter_normalizes_repo_exports(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"
@@ -156,6 +165,32 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertEqual([], result.exceptions)
         self.assertTrue(any(row["source"] == "NEAR Wallet - Staking" for row in result.canonical_events))
         self.assertTrue(any(row["event_kind"] == "Airdrop" for row in result.canonical_events))
+        self.assertIn(
+            "2022-01-30 09:31:41",
+            {row["timestamp"] for row in result.canonical_events},
+        )
+
+    def test_binance_adapter_converts_filename_timezone_to_utc(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"
+        adapter = source_adapters.get_adapter("Binance")
+        profile = pipeline_common.build_source_profile(
+            source="Binance",
+            raw_dir=raw_dir,
+            adapter_name=adapter.name,
+            adapter_supported=adapter.supported,
+        )
+
+        result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+        self.assertIn(
+            "2023-09-21 00:20:55",
+            {
+                row["timestamp"]
+                for row in result.canonical_events
+                if row["raw_file"] == "Binance-Spot-Trade-History-202603230406(UTC--6)_5d63c10c.csv"
+                and row["raw_row_ref"] == "row:2"
+            },
+        )
 
     def test_evm_explorer_adapter_normalizes_bsc_repo_exports(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
