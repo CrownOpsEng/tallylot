@@ -123,6 +123,36 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertIn("Withdrawal", kinds)
         self.assertIn("Staking", kinds)
 
+    def test_binance_convert_date_updated_covers_transaction_history_one_second_skew(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "Binance-Convert-Order-History-202603230441(UTC--6)_abcd.csv").write_text(
+                (
+                    "Time,Wallet,Pair,Type,Sell,Buy,Price,Inverse Price,Date Updated,Status\n"
+                    "21-05-11 00:44:32,SPOT,ETHBUSD,Instant,124.60184573 BUSD,0.03158115 ETH,x,x,21-05-11 00:44:33,Successful\n"
+                ),
+                encoding="utf-8",
+            )
+            (raw_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
+                (
+                    "User ID,Time,Account,Operation,Coin,Change,Remark\n"
+                    "1,21-05-11 00:44:33,Spot,Binance Convert,ETH,0.03158115,\n"
+                ),
+                encoding="utf-8",
+            )
+
+            adapter = source_adapters.get_adapter("Binance")
+            profile = pipeline_common.build_source_profile(
+                source="Binance",
+                raw_dir=raw_dir,
+                adapter_name=adapter.name,
+                adapter_supported=adapter.supported,
+            )
+            result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+        self.assertEqual(1, len(result.canonical_events))
+        self.assertEqual(0, len(result.exceptions))
+
     def test_build_source_profile_smoke_covers_major_sources(self) -> None:
         cases = [
             ("Coinbase", REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"),

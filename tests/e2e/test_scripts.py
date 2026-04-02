@@ -314,8 +314,8 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual("needs_review", summary["status"])
         self.assertGreater(summary["canonical_events"], 26000)
         self.assertEqual(24, summary["canonical_balances"])
-        self.assertEqual(3, summary["exceptions"])
-        self.assertEqual(3, len(exceptions))
+        self.assertEqual(1, summary["exceptions"])
+        self.assertEqual(1, len(exceptions))
 
     def test_normalize_source_cli_caches_coinbase_outputs(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"

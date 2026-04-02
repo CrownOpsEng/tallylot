@@ -583,7 +583,7 @@ class BinanceAdapter(SourceAdapter):
                 covered_timestamps.update(self._timestamps_for_file(path, "Time", status_field=None, allowed_statuses=None))
             elif name.startswith("Binance-Convert-Order-History-"):
                 events.extend(self._convert_order_events(path, profile.source))
-                covered_timestamps.update(self._timestamps_for_file(path, "Time", status_field="Status", allowed_statuses={"Successful"}))
+                covered_timestamps.update(self._convert_covered_timestamps(path))
             elif name.startswith("Binance-Deposit-History-"):
                 events.extend(self._deposit_history_events(path, profile.source))
                 covered_timestamps.update(self._timestamps_for_file(path, "Time", status_field="Status", allowed_statuses={"Completed"}))
@@ -632,6 +632,11 @@ class BinanceAdapter(SourceAdapter):
             timestamp = (row.get(field) or "").strip()
             if timestamp:
                 timestamps.add(timestamp)
+        return timestamps
+
+    def _convert_covered_timestamps(self, path: Path) -> set[str]:
+        timestamps = self._timestamps_for_file(path, "Time", status_field="Status", allowed_statuses={"Successful"})
+        timestamps.update(self._timestamps_for_file(path, "Date Updated", status_field="Status", allowed_statuses={"Successful"}))
         return timestamps
 
     def _spot_trade_events(self, path: Path, source: str) -> list[dict[str, str]]:
