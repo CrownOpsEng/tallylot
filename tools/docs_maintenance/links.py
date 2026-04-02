@@ -15,6 +15,7 @@ REFERENCE_DEFINITION_PATTERN = re.compile(r"^\s{0,3}\[([^\]]+)\]:\s*(\S.*?)\s*$"
 HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 BARE_UV_LINE_PATTERN = re.compile(r"^uv (run|sync)\b")
 BARE_UV_INLINE_PATTERN = re.compile(r"`(uv (?:run|sync)\b[^`]*)`")
+FENCE_PATTERN = re.compile(r"^\s{0,3}([`~]{3,})(.*)$")
 
 
 def repo_markdown_paths() -> tuple[Path, ...]:
@@ -29,13 +30,22 @@ def repo_markdown_paths() -> tuple[Path, ...]:
 
 def text_without_fenced_code(text: str) -> str:
     lines: list[str] = []
-    in_fence = False
+    active_fence: str | None = None
     for line in text.splitlines():
-        if line.startswith("```"):
-            in_fence = not in_fence
+        fence_match = FENCE_PATTERN.match(line)
+        if fence_match is not None:
+            fence = fence_match.group(1)
+            fence_char = fence[0]
+            fence_length = len(fence)
+            if active_fence is None:
+                active_fence = fence_char * fence_length
+                continue
+            if active_fence[0] == fence_char and fence_length >= len(active_fence):
+                active_fence = None
+                continue
+        if active_fence is not None:
             continue
-        if not in_fence:
-            lines.append(line)
+        lines.append(line)
     return "\n".join(lines)
 
 
