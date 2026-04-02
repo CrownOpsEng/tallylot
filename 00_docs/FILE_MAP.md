@@ -14,6 +14,7 @@ This repo is built around the canonical CoinTracking full export stored in:
 | `00_docs/OPERATIONS_QUICKSTART.md` | Shortest safe execution path for manual work plus AI/script support |
 | `00_docs/BASELINE_VALIDATION.md` | Durable summary of baseline integrity and cutoff facts |
 | `00_docs/TIMEZONE_VALIDATION.md` | Source-by-source timezone evidence, platform doc links, and intake-gate rules |
+| `00_docs/WALLET_INVENTORY.md` | Canonical wallet-identifier inventory contract, generation flow, and review rules |
 | `00_docs/NEXT_PHASE_EXECUTION_PLAN.md` | Source-by-source execution queue and round checklist for the post-baseline phase |
 | `00_docs/PROJECT_STATE.md` | Current baseline counts, constraints, and decision boundary |
 | `00_docs/EXPORT_CHECKLIST.md` | Smallest efficient export set for each round |
@@ -24,6 +25,8 @@ This repo is built around the canonical CoinTracking full export stored in:
 | ---- | ------- | --------- |
 | `03_analysis/issues/issue_log.csv` | Master issue register with proof, action, and gate fields | Baseline repair, exception tracking |
 | `03_analysis/issues/source_inventory.csv` | Live post-cutoff source inventory | Before any new source export or import |
+| `03_analysis/inventory/wallet_inventory.csv` | Compact canonical wallet and public-account identifier inventory | Before wallet/source evidence review and source intake |
+| `03_analysis/inventory/wallet_inventory_issues.csv` | Deterministic wallet-identifier review items | When a source exposes only partial or conflicting identifier evidence |
 | `03_analysis/issues/README.md` | Status and field guide for the live control files | When updating issue or source states |
 | `05_outputs/logs/round_log.csv` | Structured round-by-round execution log | Every repair and import round |
 | `03_analysis/reconciliation/baseline_asset_snapshot.csv` | Asset-level baseline snapshot from Current Balance | Baseline lock, later comparison |
@@ -75,14 +78,17 @@ Loose exports outside the canonical full export folder are not part of the worki
 | `06_scripts/coinbase_check.py` | Validate CoinTracking Coinbase rows against normalized Coinbase evidence and optional balance rows |
 | `06_scripts/pdf_balance_extract.py` | Extract deterministic balance rows from supported statement PDFs such as Coinbase Binance and Shakepay |
 | `06_scripts/source_manifest.py` | Hash raw external evidence folders into deterministic manifests |
+| `06_scripts/wallet_inventory.py` | Build the canonical wallet inventory plus evidence and issue artifacts from raw captures |
 | `06_scripts/overlap_check.py` | Screen CoinTracking-ready import batches for cutoff overlap and baseline duplicates |
 | `06_scripts/round_scaffold.py` | Create a round folder and seed the round log |
 | `06_scripts/verification_compare.py` | Compare two verification folders and write deterministic drift artifacts |
 
-## Repo-local skills
+## Repo-local AI workflows
 
 | Path | Purpose |
 | ---- | ------- |
 | `07_skills/source-intake/` | Deterministic raw-source intake, profiling, and queue-state guidance |
 | `07_skills/normalization-exceptions/` | Exception-only AI workflow for unresolved normalization rows and adapter repair loops |
 | `07_skills/round-verification/` | Exact post-import and post-repair verification, issue logging, and gate handling |
+| `07_skills/wallet-inventory/` | Canonical wallet-identifier lookup, refresh, and issue-review workflow |
+| `.claude/commands/` | Claude-compatible wrappers that expose the same workflows from a supported project-local command path |

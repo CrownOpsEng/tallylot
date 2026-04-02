@@ -48,6 +48,7 @@ This repo is the evidence, staging, and verification workspace for that process.
 - `00_docs/TAX_REFERENCE_MAP.md` → targeted CRA source routing for edge cases and tax-position validation
 - `03_analysis/issues/issue_log.csv` → master issue register with proof and action fields
 - `03_analysis/issues/source_inventory.csv` → live source inventory for post-cutoff activity
+- `03_analysis/inventory/wallet_inventory.csv` → compact canonical wallet and public-account identifier inventory
 - `03_analysis/reconciliation/` → asset snapshot and exchange reconciliation artifacts
 - `05_outputs/logs/round_log.csv` → structured round-by-round execution log
 
@@ -236,10 +237,11 @@ AI tasks not allowed:
 Do:
 
 1. Run `06_scripts/profile_source.py` to fingerprint the raw source and classify file families.
-2. Run `06_scripts/normalize_source.py` to produce canonical events, canonical balances, exceptions, and a rendered working candidate under `02_working/normalized/<source>/`.
-3. Review `exceptions.csv`; unresolved exceptions stay out of the import path unless they are explicitly accepted and persisted.
-4. Run `06_scripts/stage_import_batch.py` to enforce overlap screening before a candidate enters `02_working/import_batches/<source>/`.
-5. Copy the approved staged file to `04_import_ready/`.
+2. Review the generated wallet inventory artifacts for wallet-scoped sources and refresh the repo-wide inventory if the profile output lives outside the repo.
+3. Run `06_scripts/normalize_source.py` to produce canonical events, canonical balances, exceptions, and a rendered working candidate under `02_working/normalized/<source>/`.
+4. Review `exceptions.csv`; unresolved exceptions stay out of the import path unless they are explicitly accepted and persisted.
+5. Run `06_scripts/stage_import_batch.py` to enforce overlap screening before a candidate enters `02_working/import_batches/<source>/`.
+6. Copy the approved staged file to `04_import_ready/`.
 
 Gate:
 

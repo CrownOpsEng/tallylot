@@ -1,0 +1,4 @@
+interface:
+  display_name: "Round Verification"
+  short_description: "Review post-import verification rounds"
+  default_prompt: "Use $round-verification to review this repair or import round and classify the verification gate result."

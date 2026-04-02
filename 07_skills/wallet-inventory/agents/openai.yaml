@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wallet Inventory"
+  short_description: "Refresh and review wallet identifier evidence"
+  default_prompt: "Use $wallet-inventory to refresh the wallet inventory and trace this address back to its raw evidence."

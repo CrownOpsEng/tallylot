@@ -12,7 +12,8 @@ Current helpers:
 - `reconcile_source.py` → compare canonical source outputs against a CoinTracking Trade Table slice and optional Balance by Exchange slice
 - `coinbase_normalize.py` → normalize Coinbase retail and Coinbase Pro raw exports into CoinTracking-schema transaction rows plus Coinbase PDF balance rows
 - `coinbase_check.py` → compare CoinTracking Coinbase rows against normalized Coinbase exports and optional balance evidence
-- `source_manifest.py` → build a deterministic manifest for a raw external source folder and refuse non-`raw/` inputs by default
+- `source_manifest.py` → build a deterministic manifest for one external source capture folder; both the legacy `raw/` layout and capture-local manifests are supported
+- `wallet_inventory.py` → build the canonical wallet inventory, evidence rows, and identifier issues from the raw capture set
 - `overlap_check.py` → screen a CoinTracking-ready import batch for cutoff overlap and baseline duplicate risk
 - `pdf_balance_extract.py` → extract deterministic balance rows from supported statement PDFs without guessing across unrelated PDFs
 - `round_scaffold.py` → create a verification round folder and seed the structured round log
@@ -37,6 +38,14 @@ Current deterministic universal adapters:
 The intake pipeline is intentionally not a blind importer. `normalize_source.py` can produce a CoinTracking candidate, but that candidate is still a staging artifact. Internal wallet shuffles, unsupported rows, and ambiguous groups must stay visible through `exceptions.csv`, `issue_log.csv`, and the round-verification workflow rather than being auto-reconciled by the script layer.
 
 The explorer adapter is now keyed to the export system and chain scope rather than a wallet-app label. A legacy wallet-app export dump is treated as EVM explorer evidence; the adapter only promotes rows that can be justified from the underlying explorer CSV families and leaves missing-evidence gaps visible instead of guessing.
+
+Preferred external-capture layout:
+
+- `01_raw_exports/external/<source>/<capture_id>/` for one evidence batch, with `<capture_id>` usually `YYYY-MM`
+- `manifest.csv` inside that same capture folder
+- chain-first explorer folder names such as `eth-ledger1`, `eth-gala1`, `eth-metamask1`, `polygon-metamask1`, and `bsc-metamask1`
+- aggregate or app folders for wallet-app-wide evidence that is not truly chain-scoped, such as cross-chain MetaMask portfolio snapshots or state logs
+- the older `01_raw_exports/external/<source>/raw/` plus source-root `manifest.csv` layout still works for legacy sources while the repo transitions
 
 The preferred prep flow is now:
 
@@ -66,3 +75,7 @@ Coverage is split into:
 ## Timezone Integrity
 
 The profiling and normalization flow now records timezone provenance per dated file and refuses normalization when a source presents unresolved timezone conflicts or unsupported timestamp semantics. See `00_docs/TIMEZONE_VALIDATION.md` for the current source-by-source policy map.
+
+## Wallet Inventory
+
+`profile_source.py` now also writes per-source wallet inventory artifacts into the normalized output folder. When the output folder lives inside this repo, profiling refreshes the repo-wide wallet inventory under `03_analysis/inventory/` so AI and manual review can answer wallet-identity questions without reopening raw captures by default.

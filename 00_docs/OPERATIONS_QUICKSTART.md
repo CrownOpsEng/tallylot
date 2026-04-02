@@ -95,6 +95,8 @@ Default rule:
      --out-dir 02_working/normalized/<source>
    ```
 
+   Review `wallet_inventory.csv` and `wallet_inventory_issues.csv` in the same output folder when the source is wallet-scoped. If the output lives inside this repo, the repo-wide `03_analysis/inventory/wallet_inventory.csv` is refreshed automatically.
+
 6. Normalize the source into canonical outputs and a rendered candidate:
 
    ```bash

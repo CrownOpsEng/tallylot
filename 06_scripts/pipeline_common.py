@@ -143,6 +143,9 @@ class SourceProfile:
     file_inventory: list[dict[str, str]]
     timezone_summary: dict[str, object] | None = None
     timezone_issues: list[dict[str, str]] | None = None
+    wallet_inventory: list[dict[str, str]] | None = None
+    wallet_issues: list[dict[str, str]] | None = None
+    wallet_summary: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -504,6 +507,11 @@ def write_profile_artifacts(out_dir: Path, profile: SourceProfile) -> tuple[Path
     timezone_issues_csv = out_dir / "timezone_issues.csv"
     timezone_summary = profile.timezone_summary or {"status": "not_checked", "issue_count": 0}
     timezone_issues = profile.timezone_issues or []
+    wallet_inventory_csv = out_dir / "wallet_inventory.csv"
+    wallet_issues_csv = out_dir / "wallet_inventory_issues.csv"
+    wallet_summary = profile.wallet_summary or {"status": "not_checked", "wallet_count": 0, "issue_count": 0}
+    wallet_inventory = profile.wallet_inventory or []
+    wallet_issues = profile.wallet_issues or []
     write_json(
         profile_json,
         {
@@ -520,10 +528,45 @@ def write_profile_artifacts(out_dir: Path, profile: SourceProfile) -> tuple[Path
             "timezone_summary": timezone_summary,
             "timezone_issue_count": len(timezone_issues),
             "timezone_issues_path": str(timezone_issues_csv),
+            "wallet_summary": wallet_summary,
+            "wallet_count": len(wallet_inventory),
+            "wallet_inventory_path": str(wallet_inventory_csv),
+            "wallet_issue_count": len(wallet_issues),
+            "wallet_issues_path": str(wallet_issues_csv),
         },
     )
     write_csv_rows(inventory_csv, list(PROFILE_INVENTORY_HEADERS), profile.file_inventory)
     write_csv_rows(timezone_issues_csv, list(TIMEZONE_ISSUE_HEADERS), timezone_issues)
+    if wallet_inventory:
+        write_csv_rows(wallet_inventory_csv, list(wallet_inventory[0].keys()), wallet_inventory)
+    else:
+        write_csv_rows(
+            wallet_inventory_csv,
+            [
+                "source",
+                "raw_dir",
+                "wallet_id",
+                "identifier_kind",
+                "normalized_identifier",
+                "display_identifier",
+                "network_scope",
+                "controller",
+                "account_label",
+                "evidence_kind",
+                "evidence_path",
+                "confidence",
+                "note",
+            ],
+            [],
+        )
+    if wallet_issues:
+        write_csv_rows(wallet_issues_csv, list(wallet_issues[0].keys()), wallet_issues)
+    else:
+        write_csv_rows(
+            wallet_issues_csv,
+            ["source", "raw_dir", "wallet_id", "issue_kind", "message", "evidence_path"],
+            [],
+        )
     return profile_json, inventory_csv
 
 

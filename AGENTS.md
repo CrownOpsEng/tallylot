@@ -32,6 +32,7 @@ Canadian tax compliance is foundational. When process convenience conflicts with
 - Never import multiple new sources into CoinTracking before verifying the previous source.
 - Always log unresolved items in `03_analysis/issues/issue_log.csv`.
 - Always keep `03_analysis/issues/source_inventory.csv` current before new source pulls.
+- Always keep `03_analysis/inventory/wallet_inventory.csv` current after new wallet-app evidence or wallet-source profiling.
 - Always update `05_outputs/logs/round_log.csv` after each repair or import round.
 - Never auto-accept unexplained negative fiat balances as harmless; record or resolve them with evidence.
 - Prefer the smallest efficient export set for repeated verification.
@@ -69,7 +70,17 @@ AI should not:
 - `00_docs/BASELINE_VALIDATION.md`
 - `03_analysis/issues/issue_log.csv`
 - `03_analysis/issues/source_inventory.csv`
+- `03_analysis/inventory/wallet_inventory.csv`
 - `05_outputs/logs/round_log.csv`
+
+## Repo-local AI workflows
+
+- `07_skills/source-intake/`
+- `07_skills/normalization-exceptions/`
+- `07_skills/round-verification/`
+- `07_skills/wallet-inventory/`
+
+Claude-compatible wrappers live under `.claude/commands/`.
 
 ## Success state
 
