@@ -184,6 +184,8 @@ def test_plan_intake_dump_merges_same_cycle_near_duplicate_packages(tmp_path: Pa
     assert f"{primary_row['bundle_id']}/interest.csv" in filenames
     assert f"{primary_row['bundle_id']}/repay.csv" in filenames
     assert all("202203291730-export" not in filename for filename in filenames)
+    superseded_row = next(row for row in plan_rows if "/202203291730-export/borrow.csv" in row["source_path"])
+    assert superseded_row["package_row_status"] == "package_merge_into_primary"
 
 
 @pytest.mark.pipeline
@@ -218,3 +220,76 @@ def test_plan_intake_dump_keeps_different_cycle_packages_separate(tmp_path: Path
     assert summary["overlap_packages"] == 2
     assert older_status == "overlap_partial_review"
     assert newer_status == "overlap_partial_review"
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_skips_superseded_conflicting_file_during_merge_apply(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    older = incoming / "2021" / "Binance" / "202203291730-export"
+    newer = incoming / "2021" / "Binance" / "202203291830-export"
+    older.mkdir(parents=True)
+    newer.mkdir(parents=True)
+    shared_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    older_trades = "Date(UTC),Pair,Side,Price,Executed,Amount,Fee\n2021-05-25 12:53:03,ADAUSDT,SELL,1.5,1ADA,1.5USDT,0.001BNB\n"
+    newer_trades = "Date(UTC),Pair,Side,Price,Executed,Amount,Fee\n2021-05-25 12:53:03,ADAUSDT,SELL,1.6,1ADA,1.6USDT,0.001BNB\n"
+    interest_payload = "Pair,Coin,Amount,Time,Interest Type\nADA/USDT,USDT,0.1,2021-05-25 12:53:03,Hourly\n"
+    (older / "borrow.csv").write_text(shared_payload, encoding="utf-8")
+    (older / "trades.csv").write_text(older_trades, encoding="utf-8")
+    (older / "interest.csv").write_text(interest_payload, encoding="utf-8")
+    (newer / "borrow.csv").write_text(shared_payload, encoding="utf-8")
+    (newer / "trades.csv").write_text(newer_trades, encoding="utf-8")
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    summary = pipeline.plan_intake_dump(
+        repo_root=repo_root,
+        incoming_dir=incoming,
+        report_dir=report_dir,
+        apply=True,
+    )
+
+    plan_rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    superseded_row = next(row for row in plan_rows if "/202203291730-export/trades.csv" in row["source_path"])
+    primary_trade_row = next(row for row in plan_rows if "/202203291830-export/trades.csv" in row["source_path"])
+    manifest_path = repo_root / "01_raw_exports" / "external" / "binance" / primary_trade_row["capture_id"] / "manifest.csv"
+    manifest_rows = list(csv.DictReader(manifest_path.open(encoding="utf-8")))
+    filenames = {row["filename"] for row in manifest_rows}
+
+    assert summary["merge_primary_packages"] == 1
+    assert superseded_row["package_row_status"] == "package_merge_superseded_skip"
+    assert superseded_row["placement_status"] == "package_merge_superseded_skip"
+    assert primary_trade_row["placement_status"] == "placed_primary"
+    assert f"{primary_trade_row['bundle_id']}/trades.csv" in filenames
+    assert len([name for name in filenames if name.endswith("/trades.csv")]) == 1
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_marks_mixed_cycle_bundle_for_review_but_still_places_files(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    bundle = incoming / "2021" / "Binance" / "MixedCycle"
+    bundle.mkdir(parents=True)
+    first_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    second_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-26 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    (bundle / "202203291730-borrow.csv").write_text(first_payload, encoding="utf-8")
+    (bundle / "202203301730-repay.csv").write_text(second_payload, encoding="utf-8")
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    summary = pipeline.plan_intake_dump(
+        repo_root=repo_root,
+        incoming_dir=incoming,
+        report_dir=report_dir,
+        apply=True,
+    )
+
+    plan_rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    mixed_rows = [row for row in plan_rows if row["package_status"] == "mixed_cycle_review"]
+    manifest_path = repo_root / "01_raw_exports" / "external" / "binance" / mixed_rows[0]["capture_id"] / "manifest.csv"
+    manifest_rows = list(csv.DictReader(manifest_path.open(encoding="utf-8")))
+
+    assert summary["mixed_cycle_packages"] == 1
+    assert len(mixed_rows) == 2
+    assert all(row["review_required"] == "yes" for row in mixed_rows)
+    assert all("package_cycle_mixed" in row["review_codes"] for row in mixed_rows)
+    assert all(row["placement_status"] == "placed_primary" for row in mixed_rows)
+    assert len(manifest_rows) == 2

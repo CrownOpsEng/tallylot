@@ -42,6 +42,18 @@ def strip_dynamic_paths(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     ]
 
 
+def _stage_pack_root(pack_root: Path, temp_root: Path) -> Path:
+    known_pack = next((candidate for candidate in load_adapter_packs() if candidate.root == pack_root), None)
+    if known_pack is not None:
+        return stage_adapter_pack(known_pack, temp_root)
+
+    payload = json.loads((pack_root / "pack.json").read_text(encoding="utf-8"))
+    capture_dir_name = str(payload.get("capture_dir_name", "")) or pack_root.name
+    target = temp_root / capture_dir_name / "raw"
+    shutil.copytree(pack_root / "raw", target)
+    return target
+
+
 def refresh_pack(pack_root: Path, workspace: Path) -> dict[str, object]:
     payload = json.loads((pack_root / "pack.json").read_text(encoding="utf-8"))
     source = str(payload["source"])
@@ -51,8 +63,7 @@ def refresh_pack(pack_root: Path, workspace: Path) -> dict[str, object]:
     if temp_root.exists():
         shutil.rmtree(temp_root)
     temp_root.mkdir(parents=True, exist_ok=True)
-    pack = next(candidate for candidate in load_adapter_packs() if candidate.root == pack_root)
-    staged_raw = stage_adapter_pack(pack, temp_root)
+    staged_raw = _stage_pack_root(pack_root, temp_root)
 
     written: dict[str, object] = {"pack": str(pack_root), "written": []}
     if "normalize" in capabilities:

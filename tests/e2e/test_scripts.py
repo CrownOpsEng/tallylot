@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import zipfile
 from pathlib import Path
 
@@ -276,6 +277,28 @@ def test_overlap_check_cli_writes_summary(tmp_path: Path) -> None:
 
     assert summary["status"] == "pass"
     assert (out_dir / "overlap_summary.json").exists()
+
+
+def test_golden_refresh_cli_respects_pack_capture_dir_name(tmp_path: Path) -> None:
+    source_pack = Path("tests/fixtures/adapter_packs/evm_explorer/suspicious_nft_review")
+    temp_pack = tmp_path / "suspicious_nft_review"
+    shutil.copytree(source_pack, temp_pack)
+    workspace = tmp_path / "workspace"
+
+    result = run_script(
+        "golden_refresh.py",
+        "--pack",
+        str(temp_pack),
+        "--workspace",
+        str(workspace),
+    )
+    summary = json.loads(result.stdout)
+    exceptions = read_json(temp_pack / "expected" / "exceptions.json")
+
+    assert str(temp_pack) == summary["pack"]
+    assert any("exceptions.json" in written for written in summary["written"])
+    assert exceptions[0]["exception_kind"] == "review_required"
+    assert "suspicious NFT airdrop" in exceptions[0]["message"]
 
 
 def test_intake_sort_cli_plans_historical_dump(tmp_path: Path) -> None:
