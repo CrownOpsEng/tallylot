@@ -6,15 +6,16 @@ import json
 from pathlib import Path
 from typing import cast
 
-from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths
-from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.wallet_record_support import (
-    AdapterIssueSpec,
-    WalletRecordSpec,
-    adapter_issue,
+from crypto_reconciliation.adapters.support import (
+    match_intake_by_path_or_header,
+    matching_file_paths,
+    no_intake_route,
     wallet_identifier_kind,
+    wallet_issue,
     wallet_record,
 )
+from crypto_reconciliation.adapters.support.drafts import normalization_result_from_drafts
+from crypto_reconciliation.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
@@ -80,8 +81,8 @@ class EvmWalletAdapter:
         if evidence:
             return tuple(evidence), ()
         return (), (
-            adapter_issue(
-                AdapterIssueSpec(
+            wallet_issue(
+                WalletIssueSpec(
                     source=source,
                     adapter_id=str(self.manifest.adapter_id),
                     issue_kind="missing_identifier",
@@ -92,11 +93,8 @@ class EvmWalletAdapter:
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         wallet_inventory, issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
-        return NormalizationResult(
-            transactions=(),
-            balances=(),
+        return normalization_result_from_drafts(
             issues=issues,
-            reviews=(),
             wallet_inventory=wallet_inventory,
         )
 

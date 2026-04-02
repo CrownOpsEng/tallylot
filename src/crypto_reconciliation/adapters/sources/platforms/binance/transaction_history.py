@@ -7,13 +7,13 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
-    MappedTransactionSpec,
-    NormalizationIssueSpec,
-    mapped_transaction,
-    normalization_issue,
+from crypto_reconciliation.adapters.support import IssueSpec, issue_record
+from crypto_reconciliation.adapters.support.drafts import (
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
 )
-from crypto_reconciliation.domain.models import IssueRecord, NormalizedTransaction, SourceProfile
+from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal, parse_timestamp
 
 from .csv_rows import is_no_data_row, read_rows
@@ -39,6 +39,9 @@ HISTORICAL_ONLY_IGNORED_OPERATIONS = frozenset(
         "BNB Fee Deduction",
     }
 )
+SUPPORTED_GROUP_OPERATIONS = frozenset({"ETH 2.0 Staking Rewards", "Small Assets Exchange BNB"})
+REVIEW_GROUP_OPERATIONS = frozenset({"Binance Convert"})
+PASSTHROUGH_MATCHED_OPERATIONS = frozenset({"P2P Trading"})
 
 
 def normalize_transaction_rows(
@@ -47,8 +50,8 @@ def normalize_transaction_rows(
     *,
     convert_match_times: frozenset[datetime] | None = None,
     p2p_match_times: frozenset[datetime] | None = None,
-) -> tuple[list[NormalizedTransaction], list[IssueRecord]]:
-    events: list[NormalizedTransaction] = []
+) -> tuple[list[EconomicActivityDraft], list[IssueRecord]]:
+    drafts: list[EconomicActivityDraft] = []
     issues: list[IssueRecord] = []
     resolved_convert_match_times = convert_match_times or frozenset()
     resolved_p2p_match_times = p2p_match_times or frozenset()
@@ -72,22 +75,26 @@ def normalize_transaction_rows(
             coin = (row.get("Coin") or "").strip().upper()
             if change is None or change <= Decimal("0"):
                 continue
-            events.append(
-                mapped_transaction(
-                    MappedTransactionSpec(
-                        transaction_id=f"binance:{path.name}:row:{index}",
-                        source=str(profile.source),
-                        adapter_id="binance",
-                        account=account,
-                        wallet=account,
-                        timestamp=parsed_time,
-                        category="staking_reward",
-                        description=operation,
-                        raw_file=path.name,
-                        raw_row_ref=f"row:{index}",
-                        asset_in=coin,
-                        amount_in=change,
-                    )
+            drafts.append(
+                EconomicActivityDraft(
+                    activity_id=f"binance:{path.name}:row:{index}",
+                    source=str(profile.source),
+                    adapter_id="binance",
+                    account=account,
+                    wallet=account,
+                    timestamp=parsed_time,
+                    classification=classification(
+                        normalized_category="staking_reward",
+                        economic_kind="staking_reward",
+                        projection_type="Staking",
+                        journal_intent="income_recognition",
+                        tax_treatment_code="staking_income",
+                    ),
+                    description=operation,
+                    raw_file=path.name,
+                    raw_row_ref=f"row:{index}",
+                    provider_operation_key=operation,
+                    legs=(economic_leg(direction="in", asset=coin, amount=change),),
                 )
             )
             continue
@@ -100,24 +107,37 @@ def normalize_transaction_rows(
             _, pos = positive_row
             neg_change = row_change(neg)
             pos_change = row_change(pos)
-            events.append(
-                mapped_transaction(
-                    MappedTransactionSpec(
-                        transaction_id=f"binance:{path.name}:small_assets:{(neg.get('Coin') or '').strip().upper()}",
-                        source=str(profile.source),
-                        adapter_id="binance",
-                        account=account,
-                        wallet=account,
-                        timestamp=parsed_time,
-                        category="trade",
-                        description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",
-                        raw_file=path.name,
-                        raw_row_ref=f"row:{neg_index}",
-                        asset_in=(pos.get("Coin") or "").strip().upper(),
-                        amount_in=pos_change,
-                        asset_out=(neg.get("Coin") or "").strip().upper(),
-                        amount_out=abs(neg_change),
-                    )
+            drafts.append(
+                EconomicActivityDraft(
+                    activity_id=f"binance:{path.name}:small_assets:{(neg.get('Coin') or '').strip().upper()}",
+                    source=str(profile.source),
+                    adapter_id="binance",
+                    account=account,
+                    wallet=account,
+                    timestamp=parsed_time,
+                    classification=classification(
+                        normalized_category="trade",
+                        economic_kind="asset_conversion",
+                        projection_type="Trade",
+                        journal_intent="asset_exchange",
+                        tax_treatment_code="capital_exchange",
+                    ),
+                    description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",
+                    raw_file=path.name,
+                    raw_row_ref=f"row:{neg_index}",
+                    provider_operation_key=operation,
+                    legs=(
+                        economic_leg(
+                            direction="in",
+                            asset=(pos.get("Coin") or "").strip().upper(),
+                            amount=pos_change,
+                        ),
+                        economic_leg(
+                            direction="out",
+                            asset=(neg.get("Coin") or "").strip().upper(),
+                            amount=abs(neg_change),
+                        ),
+                    ),
                 )
             )
             continue
@@ -132,8 +152,8 @@ def normalize_transaction_rows(
             else "Unsupported Binance transaction-history operations"
         )
         issues.append(
-            normalization_issue(
-                NormalizationIssueSpec(
+            issue_record(
+                IssueSpec(
                     source=str(profile.source),
                     adapter_id="binance",
                     issue_id=f"binance:{path.name}:group:{time_value}:{account}",
@@ -144,7 +164,7 @@ def normalize_transaction_rows(
                 )
             )
         )
-    return events, issues
+    return drafts, issues
 
 
 def _should_ignore_historical_operation(

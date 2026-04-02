@@ -4,14 +4,14 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.csv_support import (
+from crypto_reconciliation.adapters.support.drafts import EconomicActivityDraft, classification, economic_leg
+from crypto_reconciliation.adapters.support.rows import (
     CsvRowContext,
-    collect_row_normalization,
+    collect_csv_row_results,
     matching_file_paths,
     read_csv_rows,
 )
-from crypto_reconciliation.domain.models import IssueRecord, NormalizedTransaction
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from crypto_reconciliation.domain.models import IssueRecord
 
 
 def test_matching_file_paths_returns_sorted_matches(tmp_path: Path) -> None:
@@ -28,11 +28,11 @@ def test_read_csv_rows_uses_utf8_sig_and_preserves_rows(tmp_path: Path) -> None:
     assert read_csv_rows(path) == ({"kind": "trade", "value": "1"},)
 
 
-def test_collect_row_normalization_partitions_transactions_and_issues(tmp_path: Path) -> None:
+def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) -> None:
     path = tmp_path / "rows.csv"
     path.write_text("kind,value\ntransaction,1\nissue,2\nskip,3\n", encoding="utf-8")
 
-    def parse_row(row_context: CsvRowContext) -> NormalizedTransaction | IssueRecord | None:
+    def parse_row(row_context: CsvRowContext) -> EconomicActivityDraft | IssueRecord | None:
         kind = row_context.row["kind"]
         if kind == "skip":
             return None
@@ -47,21 +47,26 @@ def test_collect_row_normalization_partitions_transactions_and_issues(tmp_path: 
                 raw_file=row_context.raw_file,
                 raw_row_ref=row_context.raw_row_ref,
             )
-        return NormalizedTransaction(
-            transaction_id=TransactionId(f"tx:{row_context.raw_row_ref}"),
-            source=SourceId("fixture"),
-            adapter_id=AdapterId("fixture"),
+        return EconomicActivityDraft(
+            activity_id=f"tx:{row_context.raw_row_ref}",
+            source="fixture",
+            adapter_id="fixture",
             account="fixture",
             wallet="fixture",
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
-            category="trade",
-            asset_in=AssetSymbol("BTC"),
-            amount_in=Decimal("1"),
+            classification=classification(
+                normalized_category="trade",
+                economic_kind="spot_trade",
+                projection_type="Trade",
+                journal_intent="asset_exchange",
+                tax_treatment_code="capital_exchange",
+            ),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
+            legs=(economic_leg(direction="in", asset="BTC", amount=Decimal("1")),),
         )
 
-    transactions, issues = collect_row_normalization(tmp_path, parse_row)
+    drafts, issues = collect_csv_row_results(tmp_path, parse_row)
 
-    assert [transaction.raw_row_ref for transaction in transactions] == ["row:2"]
+    assert [draft.raw_row_ref for draft in drafts] == ["row:2"]
     assert [issue.raw_row_ref for issue in issues] == ["row:3"]

@@ -6,20 +6,27 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.csv_support import CsvRowContext, collect_row_normalization
-from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
-    MappedTransactionSpec,
-    NormalizationIssueSpec,
-    mapped_transaction,
-    normalization_issue,
+from crypto_reconciliation.adapters.support import (
+    CsvRowContext,
+    IssueSpec,
+    collect_csv_row_results,
+    issue_record,
+    match_intake_by_path_or_header,
+    no_intake_route,
+    passed_timezone_summary,
+    read_csv_header,
+)
+from crypto_reconciliation.adapters.support.drafts import (
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+    normalization_result_from_drafts,
 )
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
     IssueRecord,
-    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -37,6 +44,7 @@ HEADER_FIELDS = {
     "To Amount",
     "Transaction Kind",
 }
+SUPPORTED_TRANSACTION_KINDS = frozenset({"viban_deposit", "viban_purchase", "crypto_withdrawal"})
 
 
 class CryptoComAdapter:
@@ -70,13 +78,7 @@ class CryptoComAdapter:
         self,
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-        rows_with_dates = sum(1 for item in profile.file_inventory if item.date_field)
-        return {
-            "status": "passed",
-            "issue_count": 0,
-            "rows_with_dates": rows_with_dates,
-            "mode_counts": {"value_utc": rows_with_dates} if rows_with_dates else {},
-        }, ()
+        return passed_timezone_summary(profile, mode="value_utc")
 
     def extract_wallet_inventory(
         self,
@@ -88,29 +90,36 @@ class CryptoComAdapter:
         return (), ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        transactions, issues = collect_row_normalization(
+        drafts, issues = collect_csv_row_results(
             raw_dir,
             lambda row_context: _normalize_row(profile, row_context),
+            skip_file=_skip_unrecognized_csv,
         )
-        return NormalizationResult(
-            transactions=transactions,
-            balances=(),
+        return normalization_result_from_drafts(
+            drafts,
             issues=issues,
-            reviews=(),
-            wallet_inventory=(),
         )
 
 
 def _normalize_row(
     profile: SourceProfile,
     row_context: CsvRowContext,
-) -> NormalizedTransaction | IssueRecord:
+) -> EconomicActivityDraft | IssueRecord:
     row = row_context.row
-    timestamp = (
-        datetime.strptime((row.get("Timestamp (UTC)") or "").strip(), "%Y-%m-%d %H:%M:%S")
-        .replace(tzinfo=UTC)
-        .replace(tzinfo=None)
-    )
+    timestamp = _parse_timestamp((row.get("Timestamp (UTC)") or "").strip())
+    transaction_id = f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}"
+    if timestamp is None:
+        return issue_record(
+            IssueSpec(
+                source=str(profile.source),
+                adapter_id="crypto_com",
+                issue_id=f"{transaction_id}:invalid_timestamp",
+                kind="unsupported_row",
+                message="Crypto.com row is missing a supported UTC timestamp.",
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
+            )
+        )
     description = (row.get("Transaction Description") or "").strip()
     kind = (row.get("Transaction Kind") or "").strip()
     tx_hash = (row.get("Transaction Hash") or "").strip()
@@ -119,72 +128,98 @@ def _normalize_row(
     to_currency = (row.get("To Currency") or "").strip().upper()
     to_amount = parse_decimal((row.get("To Amount") or "").strip())
     if kind == "viban_deposit" and amount is not None and amount > Decimal("0"):
-        return mapped_transaction(
-            MappedTransactionSpec(
-                transaction_id=f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}",
-                source=str(profile.source),
-                adapter_id="crypto_com",
-                account=str(profile.source),
-                wallet=str(profile.source),
-                timestamp=timestamp,
-                category="deposit",
-                description=description,
-                raw_file=row_context.raw_file,
-                raw_row_ref=row_context.raw_row_ref,
-                asset_in=currency,
-                amount_in=amount,
-                tx_hash=tx_hash,
-            )
-        )
-    if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
-        return mapped_transaction(
-            MappedTransactionSpec(
-                transaction_id=f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}",
-                source=str(profile.source),
-                adapter_id="crypto_com",
-                account=str(profile.source),
-                wallet=str(profile.source),
-                timestamp=timestamp,
-                category="trade",
-                description=f"{currency} -> {to_currency}",
-                raw_file=row_context.raw_file,
-                raw_row_ref=row_context.raw_row_ref,
-                asset_in=to_currency,
-                amount_in=to_amount,
-                asset_out=currency,
-                amount_out=abs(amount),
-                tx_hash=tx_hash,
-            )
-        )
-    if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
-        return mapped_transaction(
-            MappedTransactionSpec(
-                transaction_id=f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}",
-                source=str(profile.source),
-                adapter_id="crypto_com",
-                account=str(profile.source),
-                wallet=str(profile.source),
-                timestamp=timestamp,
-                category="withdrawal",
-                description=description,
-                raw_file=row_context.raw_file,
-                raw_row_ref=row_context.raw_row_ref,
-                asset_out=currency,
-                amount_out=abs(amount),
-                tx_hash=tx_hash,
-            )
-        )
-    return normalization_issue(
-        NormalizationIssueSpec(
+        return EconomicActivityDraft(
+            activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="crypto_com",
-            issue_id=f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}",
+            account=str(profile.source),
+            wallet=str(profile.source),
+            timestamp=timestamp,
+            classification=classification(
+                normalized_category="deposit",
+                economic_kind="fiat_deposit",
+                projection_type="Deposit",
+                journal_intent="funding_inflow",
+                tax_treatment_code="non_taxable_transfer_in",
+            ),
+            description=description,
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
+            tx_hash=tx_hash,
+            provider_operation_key=kind,
+            legs=(economic_leg(direction="in", asset=currency, amount=amount),),
+        )
+    if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
+        return EconomicActivityDraft(
+            activity_id=transaction_id,
+            source=str(profile.source),
+            adapter_id="crypto_com",
+            account=str(profile.source),
+            wallet=str(profile.source),
+            timestamp=timestamp,
+            classification=classification(
+                normalized_category="trade",
+                economic_kind="spot_trade",
+                projection_type="Trade",
+                journal_intent="asset_exchange",
+                tax_treatment_code="capital_exchange",
+            ),
+            description=f"{currency} -> {to_currency}",
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
+            tx_hash=tx_hash,
+            provider_operation_key=kind,
+            legs=(
+                economic_leg(direction="in", asset=to_currency, amount=to_amount),
+                economic_leg(direction="out", asset=currency, amount=abs(amount)),
+            ),
+        )
+    if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
+        return EconomicActivityDraft(
+            activity_id=transaction_id,
+            source=str(profile.source),
+            adapter_id="crypto_com",
+            account=str(profile.source),
+            wallet=str(profile.source),
+            timestamp=timestamp,
+            classification=classification(
+                normalized_category="withdrawal",
+                economic_kind="asset_withdrawal",
+                projection_type="Withdrawal",
+                journal_intent="funding_outflow",
+                tax_treatment_code="non_taxable_transfer_out",
+            ),
+            description=description,
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
+            tx_hash=tx_hash,
+            provider_operation_key=kind,
+            legs=(economic_leg(direction="out", asset=currency, amount=abs(amount)),),
+        )
+    return issue_record(
+        IssueSpec(
+            source=str(profile.source),
+            adapter_id="crypto_com",
+            issue_id=transaction_id,
             kind="unsupported_row",
             message=f"Unsupported Crypto.com transaction kind: {kind}",
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
         )
     )
+
+
+def _skip_unrecognized_csv(path: Path) -> bool:
+    return not HEADER_FIELDS.issubset(set(read_csv_header(path)))
+
+
+def _parse_timestamp(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC).replace(tzinfo=None)
+    except ValueError:
+        return None
 
 
 ADAPTER = CryptoComAdapter()

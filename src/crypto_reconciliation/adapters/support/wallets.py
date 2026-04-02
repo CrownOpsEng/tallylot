@@ -1,4 +1,4 @@
-"""Shared wallet-identifier support for source adapters."""
+"""Shared wallet-evidence helpers for adapters."""
 
 from __future__ import annotations
 
@@ -19,11 +19,11 @@ __all__ = (
     "EVM_ADDRESS_PATTERN",
     "SOLANA_ADDRESS_PATTERN",
     "TRON_ADDRESS_PATTERN",
-    "AdapterIssueSpec",
+    "WalletIssueSpec",
     "WalletRecordSpec",
-    "adapter_issue",
     "normalized_identifier",
     "wallet_identifier_kind",
+    "wallet_issue",
     "wallet_record",
 )
 
@@ -43,7 +43,7 @@ class WalletRecordSpec:
 
 
 @dataclass(frozen=True)
-class AdapterIssueSpec:
+class WalletIssueSpec:
     source: str
     adapter_id: str
     issue_kind: str
@@ -72,7 +72,7 @@ def wallet_record(spec: WalletRecordSpec) -> WalletInventoryRecord:
     )
 
 
-def adapter_issue(spec: AdapterIssueSpec) -> IssueRecord:
+def wallet_issue(spec: WalletIssueSpec) -> IssueRecord:
     issue_ref = spec.wallet_id or spec.raw_file or spec.issue_kind
     return IssueRecord(
         issue_id=f"{spec.adapter_id}:{spec.source}:{spec.issue_kind}:{issue_ref}",

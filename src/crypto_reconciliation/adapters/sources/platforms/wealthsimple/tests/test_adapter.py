@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from crypto_reconciliation.adapters.sources.platforms.wealthsimple.adapter import WealthsimpleAdapter
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
+from tests.support.services import build_source_profile
 
 
 def test_wealthsimple_fixture_exercises_supported_and_unsupported_rows() -> None:
@@ -27,4 +31,39 @@ def test_wealthsimple_adapter_uses_broker_activity_family_without_filename_depen
     assert str(profile.adapter_id) == "wealthsimple"
     assert len(result.transactions) == 1
     assert result.transactions[0].raw_file == "broker-export.csv"
-    assert result.issues == ()
+    assert not result.issues
+
+
+def test_wealthsimple_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> None:
+    raw_dir = tmp_path
+    (raw_dir / "broker-export.csv").write_text(
+        ",".join(
+            (
+                "transaction_date",
+                "settlement_date",
+                "account_id",
+                "account_type",
+                "activity_type",
+                "activity_sub_type",
+                "direction",
+                "symbol",
+                "name",
+                "currency",
+                "quantity",
+                "unit_price",
+                "commission",
+                "net_cash_amount",
+            )
+        )
+        + "\n2023-09-20,2023-09-22,acct-1,Crypto,trade,BUY,,BTC,Bitcoin,CAD,0.1,30000,10,-3000\n",
+        encoding="utf-8",
+    )
+    (raw_dir / "other.csv").write_text("a,b,c\nbad,row,data\n", encoding="utf-8")
+
+    result = WealthsimpleAdapter().normalize(
+        build_source_profile(adapter_id="wealthsimple", raw_dir=str(raw_dir), source="Wealthsimple"),
+        raw_dir,
+    )
+
+    assert len(result.transactions) == 1
+    assert not result.issues

@@ -6,20 +6,28 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.csv_support import CsvRowContext, collect_row_normalization
-from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
-    MappedTransactionSpec,
-    NormalizationIssueSpec,
-    mapped_transaction,
-    normalization_issue,
+from crypto_reconciliation.adapters.support import (
+    CsvRowContext,
+    IssueSpec,
+    collect_csv_row_results,
+    issue_record,
+    match_intake_by_path_or_header,
+    no_intake_route,
+    passed_timezone_summary,
+    read_csv_header,
+)
+from crypto_reconciliation.adapters.support.drafts import (
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+    fee_leg,
+    normalization_result_from_drafts,
 )
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
     IssueRecord,
-    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -57,6 +65,7 @@ ACTIVITY_HEADER = (
     "commission",
     "net_cash_amount",
 )
+SUPPORTED_ACTIVITY_KEYS = frozenset({("trade", "BUY"), ("trade", "SELL")})
 
 
 class WealthsimpleAdapter:
@@ -91,13 +100,7 @@ class WealthsimpleAdapter:
         self,
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-        rows_with_dates = sum(1 for item in profile.file_inventory if item.date_field)
-        return {
-            "status": "passed",
-            "issue_count": 0,
-            "rows_with_dates": rows_with_dates,
-            "mode_counts": {"date_only": rows_with_dates} if rows_with_dates else {},
-        }, ()
+        return passed_timezone_summary(profile, mode="date_only")
 
     def extract_wallet_inventory(
         self,
@@ -109,79 +112,113 @@ class WealthsimpleAdapter:
         return (), ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        transactions, issues = collect_row_normalization(
+        drafts, issues = collect_csv_row_results(
             raw_dir,
             lambda row_context: _normalize_row(profile, row_context),
+            skip_file=_skip_unrecognized_csv,
         )
-        return NormalizationResult(
-            transactions=transactions,
-            balances=(),
+        return normalization_result_from_drafts(
+            drafts,
             issues=issues,
-            reviews=(),
-            wallet_inventory=(),
         )
 
 
 def _normalize_row(
     profile: SourceProfile,
     row_context: CsvRowContext,
-) -> NormalizedTransaction | IssueRecord | None:
+) -> EconomicActivityDraft | IssueRecord | None:
     row = row_context.row
     if (row.get("account_type") or "").strip().lower() != "crypto":
         return None
     activity_type = (row.get("activity_type") or "").strip()
     activity_sub_type = (row.get("activity_sub_type") or "").strip()
     timestamp = _parse_date((row.get("settlement_date") or row.get("transaction_date") or "").strip())
+    if timestamp is None:
+        return issue_record(
+            IssueSpec(
+                source=str(profile.source),
+                adapter_id="wealthsimple",
+                issue_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}:invalid_date",
+                kind="unsupported_row",
+                message="Wealthsimple crypto activity row is missing a supported settlement or transaction date.",
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
+            )
+        )
     account_id = (row.get("account_id") or "").strip()
     symbol = (row.get("symbol") or "").strip().upper()
     currency = (row.get("currency") or "").strip().upper()
     quantity = parse_decimal((row.get("quantity") or "").strip())
     commission = parse_decimal((row.get("commission") or "").strip())
     net_cash_amount = parse_decimal((row.get("net_cash_amount") or "").strip())
-    if activity_type.lower() == "trade" and activity_sub_type.upper() == "BUY":
-        return mapped_transaction(
-            MappedTransactionSpec(
-                transaction_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}",
+    if quantity is None or net_cash_amount is None:
+        return issue_record(
+            IssueSpec(
                 source=str(profile.source),
                 adapter_id="wealthsimple",
-                account=account_id,
-                wallet=account_id,
-                timestamp=timestamp,
-                category="trade",
-                description="Wealthsimple Crypto buy",
+                issue_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}:missing_amount",
+                kind="unsupported_row",
+                message="Wealthsimple crypto activity row is missing quantity or cash amount.",
                 raw_file=row_context.raw_file,
                 raw_row_ref=row_context.raw_row_ref,
-                asset_in=symbol,
-                amount_in=quantity,
-                asset_out=currency,
-                amount_out=abs(net_cash_amount) if net_cash_amount is not None else None,
-                fee_asset=currency if commission is not None and commission > Decimal("0") else "",
-                fee_amount=commission if commission is not None and commission > Decimal("0") else None,
             )
+        )
+    provider_operation_key = f"{activity_type.lower()}:{activity_sub_type.upper()}"
+    fee_legs = (
+        (fee_leg(asset=currency, amount=commission),) if commission is not None and commission > Decimal("0") else ()
+    )
+    if activity_type.lower() == "trade" and activity_sub_type.upper() == "BUY":
+        return EconomicActivityDraft(
+            activity_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}",
+            source=str(profile.source),
+            adapter_id="wealthsimple",
+            account=account_id,
+            wallet=account_id,
+            timestamp=timestamp,
+            classification=classification(
+                normalized_category="trade",
+                economic_kind="spot_trade",
+                projection_type="Trade",
+                journal_intent="asset_exchange",
+                tax_treatment_code="capital_exchange",
+            ),
+            description="Wealthsimple Crypto buy",
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
+            provider_operation_key=provider_operation_key,
+            legs=(
+                economic_leg(direction="in", asset=symbol, amount=quantity),
+                economic_leg(direction="out", asset=currency, amount=abs(net_cash_amount)),
+            ),
+            fee_legs=fee_legs,
         )
     if activity_type.lower() == "trade" and activity_sub_type.upper() == "SELL":
-        return mapped_transaction(
-            MappedTransactionSpec(
-                transaction_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}",
-                source=str(profile.source),
-                adapter_id="wealthsimple",
-                account=account_id,
-                wallet=account_id,
-                timestamp=timestamp,
-                category="trade",
-                description="Wealthsimple Crypto sell",
-                raw_file=row_context.raw_file,
-                raw_row_ref=row_context.raw_row_ref,
-                asset_in=currency,
-                amount_in=abs(net_cash_amount) if net_cash_amount is not None else None,
-                asset_out=symbol,
-                amount_out=quantity,
-                fee_asset=currency if commission is not None and commission > Decimal("0") else "",
-                fee_amount=commission if commission is not None and commission > Decimal("0") else None,
-            )
+        return EconomicActivityDraft(
+            activity_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}",
+            source=str(profile.source),
+            adapter_id="wealthsimple",
+            account=account_id,
+            wallet=account_id,
+            timestamp=timestamp,
+            classification=classification(
+                normalized_category="trade",
+                economic_kind="spot_trade",
+                projection_type="Trade",
+                journal_intent="asset_exchange",
+                tax_treatment_code="capital_exchange",
+            ),
+            description="Wealthsimple Crypto sell",
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
+            provider_operation_key=provider_operation_key,
+            legs=(
+                economic_leg(direction="in", asset=currency, amount=abs(net_cash_amount)),
+                economic_leg(direction="out", asset=symbol, amount=quantity),
+            ),
+            fee_legs=fee_legs,
         )
-    return normalization_issue(
-        NormalizationIssueSpec(
+    return issue_record(
+        IssueSpec(
             source=str(profile.source),
             adapter_id="wealthsimple",
             issue_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}",
@@ -193,8 +230,17 @@ def _normalize_row(
     )
 
 
-def _parse_date(value: str) -> datetime:
-    return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=UTC).replace(tzinfo=None)
+def _skip_unrecognized_csv(path: Path) -> bool:
+    return read_csv_header(path) not in {BROKER_HEADER, ACTIVITY_HEADER}
+
+
+def _parse_date(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").replace(tzinfo=UTC).replace(tzinfo=None)
+    except ValueError:
+        return None
 
 
 ADAPTER = WealthsimpleAdapter()

@@ -71,7 +71,7 @@ class StubPdfAdapter:
         del profile, raw_dir
         return NormalizationResult(
             transactions=(),
-            balances=(),
+            balance_evidence=(),
             issues=(),
             reviews=(),
             wallet_inventory=(),

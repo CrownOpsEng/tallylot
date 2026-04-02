@@ -71,3 +71,22 @@ def test_near_wallet_capture_extracts_near_account_identifiers() -> None:
     assert str(profile.adapter_id) == "near"
     assert issues == ()
     assert any(row.identifier_kind == "near_account" for row in evidence)
+
+
+def test_near_adapter_surfaces_unsupported_methods_without_crashing(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    path = raw_dir / "example.near_transactions.csv"
+    path.write_text(
+        "Time,Method,Deposit Value,Txn Fee,Txn Hash\n2023-08-06 10:00:00,unstake,2.5,0.1,tx-unstake\n",
+        encoding="utf-8",
+    )
+
+    result = NearAdapter().normalize(
+        build_source_profile(adapter_id="near", source="near-main", raw_dir=str(raw_dir)),
+        raw_dir,
+    )
+
+    assert not result.transactions
+    assert len(result.issues) == 1
+    assert result.issues[0].kind == "unsupported_row"

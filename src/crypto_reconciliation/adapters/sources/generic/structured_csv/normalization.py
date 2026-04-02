@@ -3,21 +3,26 @@
 from __future__ import annotations
 
 import csv
-from datetime import UTC, datetime
-from decimal import Decimal
 from pathlib import Path
 from typing import cast
 
+from crypto_reconciliation.adapters.support.drafts import (
+    ActivityClassification,
+    EconomicActivityDraft,
+    EconomicLegDraft,
+    classification,
+    economic_leg,
+    fee_leg,
+    normalization_result_from_drafts,
+)
+from crypto_reconciliation.adapters.support.issues import IssueSpec, issue_record
 from crypto_reconciliation.domain.models import (
-    BalanceSnapshot,
     IssueRecord,
     NormalizationReviewRecord,
-    NormalizedTransaction,
     SourceProfile,
     TransactionCategory,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.domain.value_objects import parse_decimal, parse_timestamp
 from crypto_reconciliation.ports.adapters import NormalizationResult
 
@@ -38,22 +43,20 @@ def normalize_structured_csv(
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         if tuple(reader.fieldnames or ()) != REQUIRED_HEADER:
-            return NormalizationResult(
-                transactions=(),
-                balances=(),
+            return normalization_result_from_drafts(
                 issues=(
-                    IssueRecord(
-                        issue_id=f"{profile.source}:schema",
-                        source=str(profile.source),
-                        adapter_id=adapter_id,
-                        severity="high",
-                        kind="invalid_schema",
-                        message="transactions.csv does not match the structured CSV schema.",
-                        raw_file=TRANSACTIONS_FILENAME,
+                    issue_record(
+                        IssueSpec(
+                            issue_id=f"{profile.source}:schema",
+                            source=str(profile.source),
+                            adapter_id=adapter_id,
+                            severity="high",
+                            kind="invalid_schema",
+                            message="transactions.csv does not match the structured CSV schema.",
+                            raw_file=TRANSACTIONS_FILENAME,
+                        )
                     ),
                 ),
-                reviews=(),
-                wallet_inventory=(),
             )
         return _normalized_result(profile, raw_dir, reader, feedback, validator)
 
@@ -65,45 +68,40 @@ def _normalized_result(
     feedback: StructuredCsvFeedbackFactory,
     validator: StructuredCsvRowValidator,
 ) -> NormalizationResult:
-    transactions: list[NormalizedTransaction] = []
+    drafts: list[EconomicActivityDraft] = []
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
-    balances: dict[tuple[str, str, str], Decimal] = {}
     wallet_rows: dict[str, WalletInventoryRecord] = {}
     for index, row in enumerate(reader, start=2):
         row_issue = validator.validate_row(row, index)
         if row_issue is not None:
             issues.append(row_issue)
             continue
-        transaction, row_reviews = _normalize_valid_row(
+        draft, row_reviews = _normalize_valid_row(
             profile,
             row,
             index,
             validator=validator,
         )
-        transactions.append(transaction)
+        drafts.append(draft)
         reviews.extend(row_reviews)
-        _apply_transaction_balance(balances, transaction)
-        wallet_rows[_wallet_id(profile, transaction.account, transaction.wallet)] = _wallet_record(
+        wallet_rows[_wallet_id(profile, row["account"].strip(), row["wallet"].strip())] = _wallet_record(
             profile,
             raw_dir,
-            transaction.account,
-            transaction.wallet,
+            row["account"].strip(),
+            row["wallet"].strip(),
         )
-    reviews.extend(_dataset_reviews(feedback, has_transactions=bool(transactions)))
-    return NormalizationResult(
-        transactions=tuple(transactions),
-        balances=_balance_rows(profile, balances, transactions),
-        issues=tuple(
-            _issues_with_no_valid_rows(
-                profile,
-                feedback.adapter_id,
-                issues,
-                has_transactions=bool(transactions),
-            )
+    reviews.extend(_dataset_reviews(feedback, has_transactions=bool(drafts)))
+    return normalization_result_from_drafts(
+        drafts,
+        issues=_issues_with_no_valid_rows(
+            profile,
+            feedback.adapter_id,
+            issues,
+            has_transactions=bool(drafts),
         ),
-        reviews=tuple(reviews),
-        wallet_inventory=tuple(wallet_rows.values()),
+        reviews=reviews,
+        wallet_inventory=wallet_rows.values(),
     )
 
 
@@ -113,46 +111,70 @@ def _normalize_valid_row(
     index: int,
     *,
     validator: StructuredCsvRowValidator,
-) -> tuple[NormalizedTransaction, tuple[NormalizationReviewRecord, ...]]:
+) -> tuple[EconomicActivityDraft, tuple[NormalizationReviewRecord, ...]]:
     amount_out, amount_out_review = validator.normalize_outbound_amount(index, "amount_out", row["amount_out"])
     fee_amount, fee_amount_review = validator.normalize_outbound_amount(index, "fee_amount", row["fee_amount"])
     reviews = tuple(review for review in (amount_out_review, fee_amount_review) if review is not None)
     account = row["account"].strip()
     wallet = row["wallet"].strip()
-    return NormalizedTransaction(
-        transaction_id=TransactionId(f"{profile.source}:{index}"),
-        source=SourceId(str(profile.source)),
-        adapter_id=AdapterId(validator.feedback.adapter_id),
+    legs: list[EconomicLegDraft] = []
+    if row["asset_in"] and (amount_in := parse_decimal(row["amount_in"])) is not None:
+        legs.append(economic_leg(direction="in", asset=row["asset_in"], amount=amount_in))
+    if row["asset_out"] and amount_out is not None:
+        legs.append(economic_leg(direction="out", asset=row["asset_out"], amount=amount_out))
+    fee_legs = (
+        (fee_leg(asset=row["fee_asset"], amount=fee_amount),) if row["fee_asset"] and fee_amount is not None else ()
+    )
+    category = cast(TransactionCategory, row["category"])
+    return EconomicActivityDraft(
+        activity_id=f"{profile.source}:{index}",
+        source=str(profile.source),
+        adapter_id=validator.feedback.adapter_id,
         account=account,
         wallet=wallet,
         timestamp=parse_timestamp(row["timestamp"]),
-        category=cast(TransactionCategory, row["category"]),
+        classification=_classification_for_category(category),
         description=row["description"],
-        asset_in=AssetSymbol(row["asset_in"]) if row["asset_in"] else None,
-        amount_in=parse_decimal(row["amount_in"]),
-        asset_out=AssetSymbol(row["asset_out"]) if row["asset_out"] else None,
-        amount_out=amount_out,
-        fee_asset=AssetSymbol(row["fee_asset"]) if row["fee_asset"] else None,
-        fee_amount=fee_amount,
-        tx_hash=row["tx_hash"] or None,
         raw_file=TRANSACTIONS_FILENAME,
         raw_row_ref=str(index),
+        tx_hash=row["tx_hash"] or "",
+        provider_operation_key=f"structured_csv:{category}",
+        legs=tuple(legs),
+        fee_legs=fee_legs,
     ), reviews
 
 
-def _apply_transaction_balance(
-    balances: dict[tuple[str, str, str], Decimal],
-    transaction: NormalizedTransaction,
-) -> None:
-    if transaction.asset_in is not None and transaction.amount_in is not None:
-        key = (transaction.account, transaction.wallet, str(transaction.asset_in))
-        balances[key] = balances.get(key, Decimal("0")) + transaction.amount_in
-    if transaction.asset_out is not None and transaction.amount_out is not None:
-        key = (transaction.account, transaction.wallet, str(transaction.asset_out))
-        balances[key] = balances.get(key, Decimal("0")) - transaction.amount_out
-    if transaction.fee_asset is not None and transaction.fee_amount is not None:
-        key = (transaction.account, transaction.wallet, str(transaction.fee_asset))
-        balances[key] = balances.get(key, Decimal("0")) - transaction.fee_amount
+def _classification_for_category(category: TransactionCategory) -> ActivityClassification:
+    mapping: dict[str, tuple[str, str, str, str]] = {
+        "trade": ("spot_trade", "Trade", "asset_exchange", "capital_exchange"),
+        "deposit": ("asset_deposit", "Deposit", "funding_inflow", "non_taxable_transfer_in"),
+        "withdrawal": ("asset_withdrawal", "Withdrawal", "funding_outflow", "non_taxable_transfer_out"),
+        "interest_income": ("interest_income", "Interest Income", "income_recognition", "ordinary_income"),
+        "reward": ("platform_reward", "Reward / Bonus", "income_recognition", "ordinary_income"),
+        "expense": ("cash_expense", "Expense (non taxable)", "expense_recognition", "non_taxable_expense"),
+        "swap": ("asset_swap", "Swap (non taxable)", "asset_exchange", "non_taxable_asset_migration"),
+        "staking_reward": ("staking_reward", "Staking", "income_recognition", "staking_income"),
+        "derivatives_profit": (
+            "derivative_realized_profit",
+            "Derivatives / Futures Profit",
+            "income_recognition",
+            "derivative_realized_gain",
+        ),
+        "derivatives_loss": (
+            "derivative_realized_loss",
+            "Derivatives / Futures Loss",
+            "expense_recognition",
+            "derivative_realized_loss",
+        ),
+    }
+    economic_kind, projection_type, journal_intent, tax_treatment_code = mapping[category]
+    return classification(
+        normalized_category=category,
+        economic_kind=economic_kind,
+        projection_type=projection_type,
+        journal_intent=journal_intent,
+        tax_treatment_code=tax_treatment_code,
+    )
 
 
 def _wallet_id(profile: SourceProfile, account: str, wallet: str) -> str:
@@ -202,25 +224,6 @@ def _dataset_reviews(
     )
 
 
-def _balance_rows(
-    profile: SourceProfile,
-    balances: dict[tuple[str, str, str], Decimal],
-    transactions: list[NormalizedTransaction],
-) -> tuple[BalanceSnapshot, ...]:
-    as_of = max(transaction.timestamp for transaction in transactions) if transactions else datetime.now(UTC)
-    return tuple(
-        BalanceSnapshot(
-            source=SourceId(str(profile.source)),
-            account=account,
-            wallet=wallet,
-            asset=AssetSymbol(asset),
-            quantity=quantity,
-            as_of=as_of,
-        )
-        for (account, wallet, asset), quantity in sorted(balances.items())
-    )
-
-
 def _issues_with_no_valid_rows(
     profile: SourceProfile,
     adapter_id: str,
@@ -232,13 +235,15 @@ def _issues_with_no_valid_rows(
         return issues
     return [
         *issues,
-        IssueRecord(
-            issue_id=f"{profile.source}:no_valid_rows",
-            source=str(profile.source),
-            adapter_id=adapter_id,
-            severity="high",
-            kind="no_valid_rows",
-            message="No valid rows were available for normalization.",
-            raw_file=TRANSACTIONS_FILENAME,
+        issue_record(
+            IssueSpec(
+                issue_id=f"{profile.source}:no_valid_rows",
+                source=str(profile.source),
+                adapter_id=adapter_id,
+                severity="high",
+                kind="no_valid_rows",
+                message="No valid rows were available for normalization.",
+                raw_file=TRANSACTIONS_FILENAME,
+            )
         ),
     ]

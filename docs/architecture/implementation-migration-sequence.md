@@ -52,12 +52,24 @@ wrappers around the current normalized transaction path.
 
 Implementation rule:
 
+- first land a fact-aligned adapter draft seam so working adapters stop
+  constructing the temporary normalized artifact directly
 - normalization writes transaction facts first
 - replace the normalized transaction artifact set directly once the fact path is
   ready
 - CoinTracking output remains an adapter projection, not a second core model
 - until fact services land, keep CoinTracking candidate rendering as an
   explicit projection step rather than a normalization side effect
+
+Bridge rule for the current branch:
+
+- source adapters translate provider exports into `EconomicActivityDraft`
+- adapter resolution remains registry-driven; shared support must not depend on
+  concrete adapter ids or hand-maintained provider lists
+- shared compiler code produces the temporary normalized transaction artifact
+- shared projection code produces CoinTracking CSV compatibility rows
+- application services, not adapters, derive runtime balances from translated
+  activity unless the source provides real balance evidence
 
 Exit criteria:
 
@@ -159,6 +171,8 @@ Do not remove an older path until all relevant gates pass:
 
 - no big-bang rewrite
 - no temporary wrappers that become permanent
+- no provider-local adapter glue for compilation, projection, or synthetic
+  balance assembly
 - no new tax logic in adapters
 - no new checkpoint logic in CoinTracking-specific code
 - no direct use of CoinTracking tax reports as production state

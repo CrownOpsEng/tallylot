@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "account": "capture-near",
+    "as_of": "2024-01-02 00:00:00",
+    "asset": "NEAR",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "-1.11",
+    "source": "capture-near",
+    "wallet": "capture-near"
+  },
+  {
+    "account": "capture-near - Staking",
+    "as_of": "2024-01-02 00:00:00",
+    "asset": "NEAR",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "2",
+    "source": "capture-near - Staking",
+    "wallet": "capture-near - Staking"
+  }
+]

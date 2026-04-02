@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from crypto_reconciliation.adapters.sources.platforms.gtrade.adapter import GTradeAdapter
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
+from tests.support.services import build_source_profile
 
 
 def test_gtrade_adapter_surfaces_report_limits_without_guessing() -> None:
@@ -27,3 +31,20 @@ def test_gtrade_wallet_inventory_includes_alias_issue() -> None:
     assert str(profile.adapter_id) == "gtrade"
     assert any(row.wallet_id == "address_alias:bb4d" for row in evidence)
     assert any(issue.kind == "partial_identifier_only" for issue in issues)
+
+
+def test_gtrade_adapter_surfaces_invalid_rows_without_crashing(tmp_path: Path) -> None:
+    raw_dir = tmp_path
+    (raw_dir / "report.csv").write_text(
+        "DATE,PAIR,ADDR,DESCRIPTION,PNL\nbad-date,BTCUSD,bb4d,broken row,not-a-number\n",
+        encoding="utf-8",
+    )
+
+    result = GTradeAdapter().normalize(
+        build_source_profile(adapter_id="gtrade", raw_dir=str(raw_dir), source="GTrade"),
+        raw_dir,
+    )
+
+    assert not result.transactions
+    assert len(result.issues) == 1
+    assert result.issues[0].kind == "unsupported_row"

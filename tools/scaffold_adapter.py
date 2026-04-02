@@ -88,6 +88,17 @@ def scaffold_adapter(
             ),
             force=force,
         ),
+        *(
+            (
+                _write_file(
+                    adapter_root / "translation.py",
+                    _source_translation_template(adapter_name=adapter_name),
+                    force=force,
+                ),
+            )
+            if spec.kind == "source"
+            else ()
+        ),
         _write_file(
             adapter_root / "tests" / "__init__.py",
             "",
@@ -145,15 +156,21 @@ def _adapter_template(
                 WalletInventoryRecord,
             )
             from crypto_reconciliation.domain.types import AdapterId, JsonValue
-            from crypto_reconciliation.ports.adapters import (
-                NormalizationResult,
-                RenderedArtifact,
-            )
             from crypto_reconciliation.ports.intake_routing import (
                 IntakeFileFacts,
                 IntakeRoute,
                 IntakeRoutingRequest,
             )
+            """
+        )
+        + (
+            "from crypto_reconciliation.ports.adapters import NormalizationResult\n"
+            "from .translation import normalize_source_drafts\n\n"
+            if spec.kind == "source"
+            else "from crypto_reconciliation.ports.adapters import RenderedArtifact\n\n"
+        )
+        + dedent(
+            f"""
 
 
             class {adapter_class_name}:
@@ -214,10 +231,7 @@ def _adapter_template(
                     profile: SourceProfile,
                     raw_dir: Path,
                 ) -> NormalizationResult:
-                    del profile, raw_dir
-                    raise NotImplementedError(
-                        "Implement adapter normalization before enabling this adapter."
-                    )
+                    return normalize_source_drafts(profile, raw_dir)
             """
         )
     else:
@@ -243,6 +257,62 @@ def _adapter_template(
         + "()\n"
     )
     return body
+
+
+def _source_translation_template(*, adapter_name: str) -> str:
+    return dedent(
+        f"""
+        \"\"\"Provider-local translation rules for the {adapter_name} source adapter.\"\"\"
+
+        from __future__ import annotations
+
+        from pathlib import Path
+
+        from crypto_reconciliation.adapters.support import (
+            FileTranslationContext,
+            FileTranslationRule,
+            translate_file_families,
+        )
+        from crypto_reconciliation.adapters.support.drafts import (
+            EconomicActivityDraft,
+            normalization_result_from_drafts,
+        )
+        from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
+        from crypto_reconciliation.ports.adapters import NormalizationResult
+
+        FILE_TRANSLATION_RULES = (
+            FileTranslationRule(
+                family="example_export",
+                matches_path=lambda path: path.name == "example.csv",
+                translate=_translate_example_export,
+            ),
+        )
+
+
+        def normalize_source_drafts(
+            profile: SourceProfile,
+            raw_dir: Path,
+        ) -> NormalizationResult:
+            translation = translate_file_families(
+                raw_dir,
+                profile=profile,
+                rules=FILE_TRANSLATION_RULES,
+            )
+            return normalization_result_from_drafts(
+                translation.drafts,
+                issues=translation.issues,
+            )
+
+
+        def _translate_example_export(
+            context: FileTranslationContext,
+        ) -> tuple[tuple[EconomicActivityDraft, ...], tuple[IssueRecord, ...]]:
+            del context
+            raise NotImplementedError(
+                "Implement provider-local parsing and translation rules before enabling this adapter."
+            )
+        """
+    )
 
 
 def _contract_test_template(*, kind: str, module_parts: tuple[str, ...]) -> str:

@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "account": "Coinbase",
+    "as_of": "2024-02-08 16:31:22",
+    "asset": "BTC",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "0.01",
+    "source": "Future Exchange",
+    "wallet": "Coinbase"
+  },
+  {
+    "account": "Coinbase",
+    "as_of": "2024-02-08 16:31:22",
+    "asset": "CAD",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "-620",
+    "source": "Future Exchange",
+    "wallet": "Coinbase"
+  }
+]

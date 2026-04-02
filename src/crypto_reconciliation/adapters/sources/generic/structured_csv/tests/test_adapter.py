@@ -91,6 +91,6 @@ def test_normalize_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
     )
 
     assert not result.transactions
-    assert not result.balances
+    assert not result.balance_evidence
     assert len(result.issues) == 1
     assert result.issues[0].kind == "invalid_schema"

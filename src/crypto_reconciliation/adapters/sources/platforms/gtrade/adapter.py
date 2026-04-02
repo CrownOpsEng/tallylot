@@ -6,25 +6,35 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths, read_csv_rows
-from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.wallet_record_support import (
-    AdapterIssueSpec,
-    WalletRecordSpec,
-    adapter_issue,
+from crypto_reconciliation.adapters.support import (
+    IssueSpec,
+    issue_record,
+    match_intake_by_path_or_header,
+    matching_file_paths,
+    no_intake_route,
+    passed_timezone_summary,
+    read_csv_header,
+    read_csv_rows,
+    wallet_issue,
     wallet_record,
 )
+from crypto_reconciliation.adapters.support.drafts import (
+    ActivityClassification,
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+    normalization_result_from_drafts,
+)
+from crypto_reconciliation.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
     IssueRecord,
-    NormalizedTransaction,
     SourceProfile,
-    TransactionCategory,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, JsonValue, TransactionId
+from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
@@ -49,11 +59,7 @@ class GTradeAdapter:
         return 0
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
-        return match_intake_by_path_or_header(
-            relative_path,
-            facts,
-            path_hints=("gtrade",),
-        )
+        return match_intake_by_path_or_header(relative_path, facts, path_hints=("gtrade",))
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
         return no_intake_route(request)
@@ -62,13 +68,7 @@ class GTradeAdapter:
         self,
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-        rows_with_dates = sum(1 for item in profile.file_inventory if item.date_field)
-        return {
-            "status": "passed",
-            "issue_count": 0,
-            "rows_with_dates": rows_with_dates,
-            "mode_counts": {"date_only": rows_with_dates} if rows_with_dates else {},
-        }, ()
+        return passed_timezone_summary(profile, mode="date_only")
 
     def extract_wallet_inventory(
         self,
@@ -80,6 +80,8 @@ class GTradeAdapter:
         evidence: list[WalletInventoryRecord] = []
         issues: list[IssueRecord] = []
         for path in matching_file_paths(raw_dir):
+            if _skip_unrecognized_csv(path):
+                continue
             for row in read_csv_rows(path):
                 alias = (row.get("ADDR") or "").strip().lower()
                 if not alias:
@@ -101,8 +103,8 @@ class GTradeAdapter:
                     )
                 )
                 issues.append(
-                    adapter_issue(
-                        AdapterIssueSpec(
+                    wallet_issue(
+                        WalletIssueSpec(
                             source=source,
                             adapter_id=str(self.manifest.adapter_id),
                             issue_kind="partial_identifier_only",
@@ -118,8 +120,8 @@ class GTradeAdapter:
                 break
         if not evidence:
             issues.append(
-                adapter_issue(
-                    AdapterIssueSpec(
+                wallet_issue(
+                    WalletIssueSpec(
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="missing_identifier",
@@ -130,64 +132,138 @@ class GTradeAdapter:
         return tuple(evidence), tuple(issues)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        transactions: list[NormalizedTransaction] = []
+        drafts: list[EconomicActivityDraft] = []
         issues: list[IssueRecord] = []
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         for path in matching_file_paths(raw_dir):
+            if _skip_unrecognized_csv(path):
+                continue
             for index, row in enumerate(read_csv_rows(path), start=2):
-                pnl = Decimal((row.get("PNL") or "0").strip())
-                if pnl == Decimal("0"):
+                pnl = _parse_decimal((row.get("PNL") or "").strip())
+                if pnl is None:
                     issues.append(
-                        IssueRecord(
-                            issue_id=f"gtrade:{path.name}:row:{index}",
-                            source=str(profile.source),
-                            adapter_id=str(self.manifest.adapter_id),
-                            severity="medium",
-                            kind="unsupported_row",
-                            message=(
-                                "GTrade report row lacks realized PnL and cannot be deterministically converted "
-                                "into a normalized transaction without supporting explorer evidence."
-                            ),
-                            raw_file=path.name,
-                            raw_row_ref=f"row:{index}",
-                            status="needs_review",
+                        issue_record(
+                            IssueSpec(
+                                source=str(profile.source),
+                                adapter_id=str(self.manifest.adapter_id),
+                                issue_id=f"gtrade:{path.name}:row:{index}:invalid_pnl",
+                                severity="medium",
+                                kind="unsupported_row",
+                                message="GTrade row is missing a supported realized PnL value.",
+                                raw_file=path.name,
+                                raw_row_ref=f"row:{index}",
+                                status="needs_review",
+                            )
                         )
                     )
                     continue
-                category: TransactionCategory = "derivatives_profit" if pnl > 0 else "derivatives_loss"
+                if pnl == Decimal("0"):
+                    issues.append(
+                        issue_record(
+                            IssueSpec(
+                                source=str(profile.source),
+                                adapter_id=str(self.manifest.adapter_id),
+                                issue_id=f"gtrade:{path.name}:row:{index}",
+                                severity="medium",
+                                kind="unsupported_row",
+                                message=(
+                                    "GTrade report row lacks realized PnL and cannot be deterministically converted "
+                                    "into a normalized transaction without supporting explorer evidence."
+                                ),
+                                raw_file=path.name,
+                                raw_row_ref=f"row:{index}",
+                                status="needs_review",
+                            )
+                        )
+                    )
+                    continue
                 description = (row.get("DESCRIPTION") or "").strip()
                 timestamp = _parse_report_date((row.get("DATE") or "").strip())
-                transactions.append(
-                    NormalizedTransaction(
-                        transaction_id=TransactionId(f"gtrade:{path.name}:row:{index}"),
-                        source=profile.source,
-                        adapter_id=self.manifest.adapter_id,
+                if timestamp is None:
+                    issues.append(
+                        issue_record(
+                            IssueSpec(
+                                source=str(profile.source),
+                                adapter_id=str(self.manifest.adapter_id),
+                                issue_id=f"gtrade:{path.name}:row:{index}:invalid_date",
+                                severity="medium",
+                                kind="unsupported_row",
+                                message="GTrade row is missing a supported report date.",
+                                raw_file=path.name,
+                                raw_row_ref=f"row:{index}",
+                                status="needs_review",
+                            )
+                        )
+                    )
+                    continue
+                drafts.append(
+                    EconomicActivityDraft(
+                        activity_id=f"gtrade:{path.name}:row:{index}",
+                        source=str(profile.source),
+                        adapter_id="gtrade",
                         account=str(profile.source),
                         wallet=str(profile.source),
                         timestamp=timestamp,
-                        category=category,
+                        classification=_classification_for_pnl(pnl),
                         description=description,
-                        asset_in=AssetSymbol("DAI") if pnl > 0 else None,
-                        amount_in=pnl if pnl > 0 else None,
-                        asset_out=AssetSymbol("DAI") if pnl < 0 else None,
-                        amount_out=abs(pnl) if pnl < 0 else None,
-                        tx_hash=f"gtrade:{path.name}:row:{index}",
                         raw_file=path.name,
                         raw_row_ref=f"row:{index}",
+                        tx_hash=f"gtrade:{path.name}:row:{index}",
+                        provider_operation_key="realized_pnl",
+                        legs=(
+                            (economic_leg(direction="in", asset="DAI", amount=pnl),)
+                            if pnl > 0
+                            else (economic_leg(direction="out", asset="DAI", amount=abs(pnl)),)
+                        ),
                     )
                 )
-        return NormalizationResult(
-            transactions=tuple(transactions),
-            balances=(),
-            issues=tuple(issues),
-            reviews=(),
+        return normalization_result_from_drafts(
+            drafts,
+            issues=issues,
             wallet_inventory=wallet_inventory,
         )
 
 
-def _parse_report_date(value: str) -> datetime:
-    day, month, year = value.split("/")
-    return datetime.fromisoformat(f"{year}-{month}-{day}T00:00:00+00:00").astimezone(UTC).replace(tzinfo=None)
+def _classification_for_pnl(pnl: Decimal) -> ActivityClassification:
+    if pnl > 0:
+        return classification(
+            normalized_category="derivatives_profit",
+            economic_kind="derivative_realized_profit",
+            projection_type="Derivatives / Futures Profit",
+            journal_intent="income_recognition",
+            tax_treatment_code="derivative_realized_gain",
+        )
+    return classification(
+        normalized_category="derivatives_loss",
+        economic_kind="derivative_realized_loss",
+        projection_type="Derivatives / Futures Loss",
+        journal_intent="expense_recognition",
+        tax_treatment_code="derivative_realized_loss",
+    )
+
+
+def _skip_unrecognized_csv(path: Path) -> bool:
+    header = read_csv_header(path)
+    return header[:3] != ("DATE", "PAIR", "ADDR")
+
+
+def _parse_decimal(value: str) -> Decimal | None:
+    if not value:
+        return None
+    try:
+        return Decimal(value)
+    except ArithmeticError:
+        return None
+
+
+def _parse_report_date(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        day, month, year = value.split("/")
+        return datetime.fromisoformat(f"{year}-{month}-{day}T00:00:00+00:00").astimezone(UTC).replace(tzinfo=None)
+    except ValueError:
+        return None
 
 
 ADAPTER = GTradeAdapter()

@@ -9,9 +9,9 @@ terms and only project to CoinTracking types at the compatibility edge.
 - `EconomicKind`: provider-neutral semantic meaning
 - `TaxTreatmentCode`: default tax intent used by policy layers
 - `JournalIntent`: default accounting intent used by journal renderers
-- `CoinTrackingType`: optional compatibility projection only
+- `ProjectionType`: optional compatibility projection only
 
-Core services must not depend on `CoinTrackingType` as the primary driver of
+Core services must not depend on `ProjectionType` as the primary driver of
 behavior.
 
 ## Support Tiers
@@ -22,7 +22,7 @@ behavior.
 
 ## Trade Types
 
-| CoinTrackingType | Default EconomicKind | Default TaxTreatmentCode | Default JournalIntent | Tier | Notes |
+| CoinTracking Type | Default EconomicKind | Default TaxTreatmentCode | Default JournalIntent | Tier | Notes |
 | ---- | ---- | ---- | ---- | ---- | ---- |
 | `Trade` | `spot_trade` | `taxable_disposition_or_acquisition` | `trade_exchange` | `T1` | Main spot trade path |
 | `Margin Trade` | `margin_trade` | `review_required_financing_trade` | `margin_trade` | `T1` | Requires borrow, collateral, and realized PnL semantics |

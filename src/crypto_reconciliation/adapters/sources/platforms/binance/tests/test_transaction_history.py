@@ -10,6 +10,7 @@ from crypto_reconciliation.adapters.sources.platforms.binance.field_parsing impo
 )
 from crypto_reconciliation.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
 from crypto_reconciliation.adapters.sources.platforms.binance.transaction_history import normalize_transaction_rows
+from crypto_reconciliation.adapters.support.drafts import compile_activity_drafts
 from tests.support.services import build_source_profile
 
 
@@ -23,10 +24,11 @@ def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambigu
         encoding="utf-8",
     )
 
-    events, issues = normalize_transaction_rows(
+    drafts, issues = normalize_transaction_rows(
         build_source_profile(adapter_id="binance"),
         path,
     )
+    events = compile_activity_drafts(tuple(drafts))
 
     assert len(events) == 1
     assert events[0].category == "trade"
@@ -45,10 +47,11 @@ def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewar
         encoding="utf-8",
     )
 
-    events, issues = normalize_transaction_rows(
+    drafts, issues = normalize_transaction_rows(
         build_source_profile(adapter_id="binance"),
         path,
     )
+    events = compile_activity_drafts(tuple(drafts))
 
     assert len(events) == 1
     assert events[0].category == "staking_reward"
@@ -70,8 +73,10 @@ def test_binance_historical_ignore_list_only_applies_when_profile_supplies_cutof
         normalization_hints={"project_baseline_cutoff_timestamp": "2023-08-05 08:34:04"},
     )
 
-    without_cutoff_events, without_cutoff_issues = normalize_transaction_rows(profile_without_cutoff, path)
-    with_cutoff_events, with_cutoff_issues = normalize_transaction_rows(profile_with_cutoff, path)
+    without_cutoff_drafts, without_cutoff_issues = normalize_transaction_rows(profile_without_cutoff, path)
+    with_cutoff_drafts, with_cutoff_issues = normalize_transaction_rows(profile_with_cutoff, path)
+    without_cutoff_events = compile_activity_drafts(tuple(without_cutoff_drafts))
+    with_cutoff_events = compile_activity_drafts(tuple(with_cutoff_drafts))
 
     assert not without_cutoff_events
     assert len(without_cutoff_issues) == 2
@@ -90,10 +95,11 @@ def test_binance_transaction_history_skips_non_positive_staking_and_incomplete_d
         encoding="utf-8",
     )
 
-    events, issues = normalize_transaction_rows(
+    drafts, issues = normalize_transaction_rows(
         build_source_profile(adapter_id="binance"),
         path,
     )
+    events = compile_activity_drafts(tuple(drafts))
 
     assert not events
     assert len(issues) == 1

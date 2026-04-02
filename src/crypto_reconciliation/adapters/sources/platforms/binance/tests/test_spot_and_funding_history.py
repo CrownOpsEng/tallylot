@@ -7,6 +7,7 @@ from crypto_reconciliation.adapters.sources.platforms.binance.funding_history im
     normalize_withdraw_rows,
 )
 from crypto_reconciliation.adapters.sources.platforms.binance.spot_trades import normalize_spot_rows
+from crypto_reconciliation.adapters.support.drafts import compile_activity_drafts
 from tests.support.services import build_source_profile
 
 
@@ -19,7 +20,7 @@ def test_binance_spot_rows_normalize_buy_and_sell_trades(tmp_path: Path) -> None
         encoding="utf-8",
     )
 
-    events = normalize_spot_rows(build_source_profile(adapter_id="binance"), path)
+    events = compile_activity_drafts(tuple(normalize_spot_rows(build_source_profile(adapter_id="binance"), path)))
 
     assert [event.category for event in events] == ["trade", "trade"]
     assert str(events[0].asset_in) == "BTC"
@@ -46,8 +47,17 @@ def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Pat
         encoding="utf-8",
     )
 
-    deposits = normalize_deposit_rows(build_source_profile(adapter_id="binance"), deposit_path)
-    withdrawals = normalize_withdraw_rows(build_source_profile(adapter_id="binance"), withdraw_path)
+    deposits = compile_activity_drafts(
+        tuple(
+            normalize_deposit_rows(
+                build_source_profile(adapter_id="binance"),
+                deposit_path,
+            )
+        )
+    )
+    withdrawals = compile_activity_drafts(
+        tuple(normalize_withdraw_rows(build_source_profile(adapter_id="binance"), withdraw_path))
+    )
 
     assert len(deposits) == 1
     assert deposits[0].category == "deposit"

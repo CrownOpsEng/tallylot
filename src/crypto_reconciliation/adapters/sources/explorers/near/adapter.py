@@ -6,21 +6,38 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths, read_csv_rows
-from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.wallet_record_support import WalletRecordSpec, wallet_record
+from crypto_reconciliation.adapters.support import (
+    IssueSpec,
+    issue_record,
+    match_intake_by_path_or_header,
+    matching_file_paths,
+    no_intake_route,
+    passed_timezone_summary,
+    read_csv_rows,
+    wallet_record,
+)
+from crypto_reconciliation.adapters.support.drafts import (
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+    fee_leg,
+    normalization_result_from_drafts,
+)
+from crypto_reconciliation.adapters.support.wallets import WalletRecordSpec
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
     IssueRecord,
-    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, JsonValue, SourceId, TransactionId
+from crypto_reconciliation.domain.types import AdapterId, JsonValue
+from crypto_reconciliation.domain.value_objects import parse_decimal
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+
+SUPPORTED_METHODS = frozenset({"transfer", "deposit_and_stake"})
 
 
 class NearAdapter:
@@ -52,13 +69,7 @@ class NearAdapter:
         self,
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-        rows_with_dates = sum(1 for item in profile.file_inventory if item.date_field)
-        return {
-            "status": "passed",
-            "issue_count": 0,
-            "rows_with_dates": rows_with_dates,
-            "mode_counts": {"naive": rows_with_dates} if rows_with_dates else {},
-        }, ()
+        return passed_timezone_summary(profile, mode="naive")
 
     def extract_wallet_inventory(
         self,
@@ -88,78 +99,139 @@ class NearAdapter:
         return tuple(evidence), ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        transactions: list[NormalizedTransaction] = []
+        drafts: list[EconomicActivityDraft] = []
+        issues: list[IssueRecord] = []
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         for path in matching_file_paths(raw_dir, pattern="*_transactions.csv"):
             for index, row in enumerate(read_csv_rows(path), start=2):
+                raw_row_ref = f"row:{index}"
                 timestamp = _parse_timestamp(_row_value(row, "Time", "Block Time"))
                 tx_hash = _row_value(row, "Txn Hash")
                 method = _row_value(row, "Method").lower()
-                amount = Decimal(_row_value(row, "Deposit Value"))
-                fee = Decimal(_row_value(row, "Txn Fee", default="0"))
-                raw_row_ref = f"row:{index}"
+                amount = parse_decimal(_row_value(row, "Deposit Value"))
+                fee = parse_decimal(_row_value(row, "Txn Fee", default="0")) or Decimal("0")
+                if timestamp is None:
+                    issues.append(
+                        _row_issue(
+                            profile,
+                            path.name,
+                            raw_row_ref,
+                            issue_id_suffix="invalid_timestamp",
+                            message="NEAR transaction row is missing a supported block timestamp.",
+                        )
+                    )
+                    continue
+                if amount is None or amount <= Decimal("0"):
+                    issues.append(
+                        _row_issue(
+                            profile,
+                            path.name,
+                            raw_row_ref,
+                            issue_id_suffix="invalid_amount",
+                            message="NEAR transaction row is missing a positive deposit value.",
+                        )
+                    )
+                    continue
                 if method == "transfer":
-                    transactions.append(
-                        NormalizedTransaction(
-                            transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}"),
-                            source=profile.source,
-                            adapter_id=self.manifest.adapter_id,
+                    net_amount = amount - fee
+                    if net_amount <= Decimal("0"):
+                        issues.append(
+                            _row_issue(
+                                profile,
+                                path.name,
+                                raw_row_ref,
+                                issue_id_suffix="non_positive_net_transfer",
+                                message="NEAR transfer row has a non-positive net amount after fees.",
+                            )
+                        )
+                        continue
+                    drafts.append(
+                        EconomicActivityDraft(
+                            activity_id=f"near:{path.name}:{raw_row_ref}",
+                            source=str(profile.source),
+                            adapter_id="near",
                             account=str(profile.source),
                             wallet=str(profile.source),
                             timestamp=timestamp,
-                            category="deposit",
+                            classification=classification(
+                                normalized_category="deposit",
+                                economic_kind="chain_transfer_in",
+                                projection_type="Deposit",
+                                journal_intent="funding_inflow",
+                                tax_treatment_code="non_taxable_transfer_in",
+                            ),
                             description=f"Transfer into {profile.source} - {tx_hash}",
-                            asset_in=AssetSymbol("NEAR"),
-                            amount_in=amount - fee,
-                            tx_hash=tx_hash,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
+                            tx_hash=tx_hash,
+                            provider_operation_key=method,
+                            legs=(economic_leg(direction="in", asset="NEAR", amount=net_amount),),
                         )
                     )
                 elif method == "deposit_and_stake":
                     description = f"Stake NEAR - {tx_hash}"
-                    transactions.append(
-                        NormalizedTransaction(
-                            transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}:wallet"),
-                            source=profile.source,
-                            adapter_id=self.manifest.adapter_id,
+                    fee_legs = (fee_leg(asset="NEAR", amount=fee),) if fee > Decimal("0") else ()
+                    drafts.append(
+                        EconomicActivityDraft(
+                            activity_id=f"near:{path.name}:{raw_row_ref}:wallet",
+                            source=str(profile.source),
+                            adapter_id="near",
                             account=str(profile.source),
                             wallet=str(profile.source),
                             timestamp=timestamp,
-                            category="withdrawal",
+                            classification=classification(
+                                normalized_category="withdrawal",
+                                economic_kind="staking_transfer_out",
+                                projection_type="Withdrawal",
+                                journal_intent="funding_outflow",
+                                tax_treatment_code="non_taxable_transfer_out",
+                            ),
                             description=description,
-                            asset_out=AssetSymbol("NEAR"),
-                            amount_out=amount,
-                            fee_asset=AssetSymbol("NEAR"),
-                            fee_amount=fee,
-                            tx_hash=tx_hash,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
+                            tx_hash=tx_hash,
+                            provider_operation_key=method,
+                            legs=(economic_leg(direction="out", asset="NEAR", amount=amount),),
+                            fee_legs=fee_legs,
                         )
                     )
                     staking_source = f"{profile.source} - Staking"
-                    transactions.append(
-                        NormalizedTransaction(
-                            transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}:staking"),
-                            source=SourceId(staking_source),
-                            adapter_id=self.manifest.adapter_id,
+                    drafts.append(
+                        EconomicActivityDraft(
+                            activity_id=f"near:{path.name}:{raw_row_ref}:staking",
+                            source=staking_source,
+                            adapter_id="near",
                             account=staking_source,
                             wallet=staking_source,
                             timestamp=timestamp,
-                            category="deposit",
+                            classification=classification(
+                                normalized_category="deposit",
+                                economic_kind="staking_transfer_in",
+                                projection_type="Deposit",
+                                journal_intent="funding_inflow",
+                                tax_treatment_code="non_taxable_transfer_in",
+                            ),
                             description=description,
-                            asset_in=AssetSymbol("NEAR"),
-                            amount_in=amount,
-                            tx_hash=tx_hash,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
+                            tx_hash=tx_hash,
+                            provider_operation_key=method,
+                            legs=(economic_leg(direction="in", asset="NEAR", amount=amount),),
                         )
                     )
-        return NormalizationResult(
-            transactions=tuple(transactions),
-            balances=(),
-            issues=(),
-            reviews=(),
+                else:
+                    issues.append(
+                        _row_issue(
+                            profile,
+                            path.name,
+                            raw_row_ref,
+                            issue_id_suffix=f"unsupported:{method or 'unknown'}",
+                            message=f"Unsupported NEAR transaction method: {method or '<missing>'}",
+                        )
+                    )
+        return normalization_result_from_drafts(
+            drafts,
+            issues=issues,
             wallet_inventory=wallet_inventory,
         )
 
@@ -175,8 +247,34 @@ def _row_value(row: dict[str, str], key: str, fallback: str = "", *, default: st
     return default
 
 
-def _parse_timestamp(value: str) -> datetime:
-    return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC).replace(tzinfo=None)
+def _row_issue(
+    profile: SourceProfile,
+    raw_file: str,
+    raw_row_ref: str,
+    *,
+    issue_id_suffix: str,
+    message: str,
+) -> IssueRecord:
+    return issue_record(
+        IssueSpec(
+            issue_id=f"near:{raw_file}:{raw_row_ref}:{issue_id_suffix}",
+            source=str(profile.source),
+            adapter_id="near",
+            kind="unsupported_row",
+            message=message,
+            raw_file=raw_file,
+            raw_row_ref=raw_row_ref,
+        )
+    )
+
+
+def _parse_timestamp(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC).replace(tzinfo=None)
+    except ValueError:
+        return None
 
 
 ADAPTER = NearAdapter()

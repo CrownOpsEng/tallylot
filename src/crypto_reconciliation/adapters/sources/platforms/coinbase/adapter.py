@@ -4,17 +4,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
-    NormalizationIssueSpec,
-    normalization_issue,
+from crypto_reconciliation.adapters.support import (
+    IssueSpec,
+    issue_record,
+    match_intake_by_path_or_header,
+    no_intake_route,
+    passed_timezone_summary,
 )
+from crypto_reconciliation.adapters.support.drafts import EconomicActivityDraft, normalization_result_from_drafts
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
     IssueRecord,
-    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -58,13 +60,7 @@ class CoinbaseAdapter:
         self,
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-        rows_with_dates = sum(1 for item in profile.file_inventory if item.date_field)
-        return {
-            "status": "passed",
-            "issue_count": 0,
-            "rows_with_dates": rows_with_dates,
-            "mode_counts": {"value_utc": rows_with_dates} if rows_with_dates else {},
-        }, ()
+        return passed_timezone_summary(profile, mode="value_utc")
 
     def extract_wallet_inventory(
         self,
@@ -84,12 +80,10 @@ class CoinbaseAdapter:
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         retail_path = _retail_path(raw_dir)
         if retail_path is None:
-            return NormalizationResult(
-                transactions=(),
-                balances=(),
+            return normalization_result_from_drafts(
                 issues=(
-                    normalization_issue(
-                        NormalizationIssueSpec(
+                    issue_record(
+                        IssueSpec(
                             source=str(profile.source),
                             adapter_id=str(self.manifest.adapter_id),
                             issue_id="coinbase:missing_retail_csv",
@@ -99,11 +93,9 @@ class CoinbaseAdapter:
                         )
                     ),
                 ),
-                reviews=(),
-                wallet_inventory=(),
             )
 
-        events: list[NormalizedTransaction] = []
+        drafts: list[EconomicActivityDraft] = []
         issues: list[IssueRecord] = []
         asset_migrations: dict[str, list[dict[str, str]]] = {}
         for index, row in enumerate(_read_retail_rows(retail_path), start=2):
@@ -114,11 +106,11 @@ class CoinbaseAdapter:
                 asset_migrations.setdefault(timestamp, []).append(row)
                 continue
             try:
-                event = _normalize_row(profile, retail_path.name, row)
+                drafts.append(_normalize_row(profile, retail_path.name, row))
             except ValueError as error:
                 issues.append(
-                    normalization_issue(
-                        NormalizationIssueSpec(
+                    issue_record(
+                        IssueSpec(
                             source=str(profile.source),
                             adapter_id=str(self.manifest.adapter_id),
                             issue_id=f"coinbase:{retail_path.name}:{row_id or tx_type or 'row'}",
@@ -129,15 +121,13 @@ class CoinbaseAdapter:
                         )
                     )
                 )
-                continue
-            events.append(event)
         for timestamp, rows in sorted(asset_migrations.items()):
             try:
-                events.append(_normalize_asset_migration(profile, retail_path.name, timestamp, rows))
+                drafts.append(_normalize_asset_migration(profile, retail_path.name, timestamp, rows))
             except ValueError as error:
                 issues.append(
-                    normalization_issue(
-                        NormalizationIssueSpec(
+                    issue_record(
+                        IssueSpec(
                             source=str(profile.source),
                             adapter_id=str(self.manifest.adapter_id),
                             issue_id=f"coinbase:{retail_path.name}:asset_migration:{timestamp}",
@@ -148,12 +138,9 @@ class CoinbaseAdapter:
                         )
                     )
                 )
-        return NormalizationResult(
-            transactions=tuple(events),
-            balances=(),
-            issues=tuple(issues),
-            reviews=(),
-            wallet_inventory=(),
+        return normalization_result_from_drafts(
+            drafts,
+            issues=issues,
         )
 
 

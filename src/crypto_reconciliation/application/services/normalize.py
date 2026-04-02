@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 from typing import cast
 
 from crypto_reconciliation.application.models.source import NormalizeRequest, NormalizeResponse
+from crypto_reconciliation.application.services.balance_snapshots import derive_balance_snapshots
 from crypto_reconciliation.application.services.common import ensure_directory
 from crypto_reconciliation.application.services.issue_context import enrich_issue_context_timestamps
 from crypto_reconciliation.application.services.normalization_window import (
@@ -73,13 +74,14 @@ class NormalizationService:
             window_start=request.window_start,
             window_end=request.window_end,
         )
+        derived_balances = derive_balance_snapshots(transactions)
         self._storage.write_transactions(
             request.output_dir / "transactions.csv",
             transactions,
         )
         self._storage.write_balances(
             request.output_dir / "balances.csv",
-            result.balances,
+            derived_balances,
         )
         self._storage.write_issue_records(request.output_dir / "exceptions.csv", issue_records)
         self._storage.write_review_records(
@@ -116,7 +118,8 @@ class NormalizationService:
                     "source": request.source,
                     "adapter_id": str(profile.adapter_id),
                     "transaction_count": len(transactions),
-                    "balance_count": len(result.balances),
+                    "balance_count": len(derived_balances),
+                    "balance_evidence_count": len(result.balance_evidence),
                     "issue_count": len(issue_records),
                     "review_count": len(result.reviews),
                     "review_summary": self._review_summary(result.reviews),
@@ -132,7 +135,7 @@ class NormalizationService:
             output_dir=request.output_dir,
             adapter_id=str(profile.adapter_id),
             transaction_count=len(transactions),
-            balance_count=len(result.balances),
+            balance_count=len(derived_balances),
             issue_count=len(issue_records),
             review_count=len(result.reviews),
         )

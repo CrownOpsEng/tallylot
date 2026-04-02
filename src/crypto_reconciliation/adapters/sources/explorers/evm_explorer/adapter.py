@@ -6,25 +6,34 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths, read_csv_rows
-from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.wallet_record_support import (
+from crypto_reconciliation.adapters.support import (
     EVM_ADDRESS_PATTERN,
-    AdapterIssueSpec,
-    WalletRecordSpec,
-    adapter_issue,
+    IssueSpec,
+    issue_record,
+    match_intake_by_path_or_header,
+    matching_file_paths,
+    no_intake_route,
+    passed_timezone_summary,
+    read_csv_rows,
+    wallet_issue,
     wallet_record,
 )
+from crypto_reconciliation.adapters.support.drafts import (
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+    normalization_result_from_drafts,
+)
+from crypto_reconciliation.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
     IssueRecord,
-    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, JsonValue, TransactionId
+from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
@@ -67,13 +76,7 @@ class EvmExplorerAdapter:
         self,
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-        rows_with_dates = sum(1 for item in profile.file_inventory if item.date_field)
-        return {
-            "status": "passed",
-            "issue_count": 0,
-            "rows_with_dates": rows_with_dates,
-            "mode_counts": {"header_utc": rows_with_dates} if rows_with_dates else {},
-        }, ()
+        return passed_timezone_summary(profile, mode="header_utc")
 
     def extract_wallet_inventory(
         self,
@@ -86,8 +89,8 @@ class EvmExplorerAdapter:
         issues: list[IssueRecord] = []
         if not addresses:
             return (), (
-                adapter_issue(
-                    AdapterIssueSpec(
+                wallet_issue(
+                    WalletIssueSpec(
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="missing_identifier",
@@ -97,8 +100,8 @@ class EvmExplorerAdapter:
             )
         if len(addresses) > 1:
             issues.append(
-                adapter_issue(
-                    AdapterIssueSpec(
+                wallet_issue(
+                    WalletIssueSpec(
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="multiple_primary_identifiers",
@@ -126,7 +129,7 @@ class EvmExplorerAdapter:
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         issues: list[IssueRecord] = []
-        transactions: list[NormalizedTransaction] = []
+        drafts: list[EconomicActivityDraft] = []
         wallet_inventory, wallet_issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         owned_addresses = _owned_addresses(raw_dir)
         suspicious_hashes = _suspicious_nft_hashes(raw_dir, owned_addresses)
@@ -139,20 +142,22 @@ class EvmExplorerAdapter:
                     continue
                 if tx_hash in suspicious_hashes:
                     issues.append(
-                        IssueRecord(
-                            issue_id=f"evm_explorer:{path.name}:{tx_hash}",
-                            source=str(profile.source),
-                            adapter_id=str(self.manifest.adapter_id),
-                            severity="medium",
-                            kind="review_required",
-                            message=(
-                                f"{profile.source} received suspicious NFT airdrop "
-                                f"{suspicious_hashes[tx_hash]} in tx {tx_hash}; keep it in review instead of "
-                                "auto-importing it as an economic deposit."
-                            ),
-                            raw_file=path.name,
-                            raw_row_ref=f"{path.name}:row:{index};{suspicious_hashes[tx_hash + ':ref']}",
-                            status="needs_review",
+                        issue_record(
+                            IssueSpec(
+                                source=str(profile.source),
+                                adapter_id=str(self.manifest.adapter_id),
+                                issue_id=f"evm_explorer:{path.name}:{tx_hash}",
+                                severity="medium",
+                                kind="review_required",
+                                message=(
+                                    f"{profile.source} received suspicious NFT airdrop "
+                                    f"{suspicious_hashes[tx_hash]} in tx {tx_hash}; keep it in review instead of "
+                                    "auto-importing it as an economic deposit."
+                                ),
+                                raw_file=path.name,
+                                raw_row_ref=f"{path.name}:row:{index};{suspicious_hashes[tx_hash + ':ref']}",
+                                status="needs_review",
+                            )
                         )
                     )
                     continue
@@ -160,28 +165,32 @@ class EvmExplorerAdapter:
                 if amount_in <= Decimal("0"):
                     continue
                 timestamp = _parse_utc_timestamp((row.get("DateTime (UTC)") or "").strip())
-                transactions.append(
-                    NormalizedTransaction(
-                        transaction_id=TransactionId(f"evm_explorer:{path.name}:{tx_hash}"),
-                        source=profile.source,
-                        adapter_id=self.manifest.adapter_id,
+                drafts.append(
+                    EconomicActivityDraft(
+                        activity_id=f"evm_explorer:{path.name}:{tx_hash}",
+                        source=str(profile.source),
+                        adapter_id="evm_explorer",
                         account=str(profile.source),
                         wallet=str(profile.source),
                         timestamp=timestamp,
-                        category="deposit",
+                        classification=classification(
+                            normalized_category="deposit",
+                            economic_kind="chain_transfer_in",
+                            projection_type="Deposit",
+                            journal_intent="funding_inflow",
+                            tax_treatment_code="non_taxable_transfer_in",
+                        ),
                         description=f"Transfer - {tx_hash}",
-                        asset_in=AssetSymbol("BNB"),
-                        amount_in=amount_in,
-                        tx_hash=tx_hash,
                         raw_file=path.name,
                         raw_row_ref=f"{path.name}:row:{index}",
+                        tx_hash=tx_hash,
+                        provider_operation_key="explorer_transfer_in",
+                        legs=(economic_leg(direction="in", asset="BNB", amount=amount_in),),
                     )
                 )
-        return NormalizationResult(
-            transactions=tuple(transactions),
-            balances=(),
+        return normalization_result_from_drafts(
+            drafts,
             issues=(*issues, *wallet_issues),
-            reviews=(),
             wallet_inventory=wallet_inventory,
         )
 

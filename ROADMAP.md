@@ -25,11 +25,25 @@ decisions that should not be rediscovered from scratch.
   boundary, not a hard checkpoint.
 - Treat CoinTracking as an adapter-only oracle and projection layer, not as the
   central business model.
-- Keep CoinTracking-specific rendering metadata out of core normalized models
-  and behind projection adapters.
+- Keep CoinTracking compatibility behavior behind shared projection contracts.
+  During the current bridge phase, adapters may carry CoinTracking-compatible
+  classification metadata in adapter drafts and the compiled compatibility
+  artifact, but provider modules must not own standalone CoinTracking mapping
+  tables or rendering logic.
 - Build shared adapter-layer support for stable translation chores such as file
-  traversal, row-context handling, mapped transaction assembly, and wallet
-  evidence construction so provider adapters stay thin.
+  traversal, file-family dispatch, row-context handling, draft compilation, and
+  wallet evidence construction so provider adapters stay thin.
+- Keep source adapters translation-only:
+  - provider-local parsing
+  - provider-local translation rules
+  - optional provider-local wallet evidence rules
+- Keep shared adapter support adapter-agnostic. It may operate on manifests,
+  capabilities, translation contracts, and projection contracts resolved
+  through registries, but it must not hard-code knowledge of concrete adapter
+  ids or provider families.
+- Keep adapter glue out of provider modules. The core and shared adapter
+  support layers should own repetitive compilation, projection, and
+  balance-derivation behavior.
 - Keep the core runtime platform-agnostic: normal reconstruction, checkpoint,
   accounting, and tax workflows must run from source evidence and intentional
   checkpoints without requiring CoinTracking tax or accounting outputs.
@@ -56,7 +70,8 @@ decisions that should not be rediscovered from scratch.
 - Keep the domain centered on frozen dataclasses, enums, and value objects so
   business invariants remain explicit and independent of framework behavior.
 - Support the required CoinTracking import taxonomy inside projection adapters
-  without leaking those labels into the core model.
+  and shared projection contracts without requiring provider-local mapping
+  helpers.
 - Keep CoinTracking tax reports, roll-forward outputs, average purchase price,
   and double-entry reports in the oracle lane only. They may support
   comparison, regression, and one-time review, but they must not become normal
@@ -150,6 +165,9 @@ decisions that should not be rediscovered from scratch.
   fields, surface an issue instead of guessing. When adapters do apply an
   interpretive normalization or fallback default, emit normalization review
   records so users can validate the behavior explicitly.
+- Keep source-derived runtime balances application-owned unless the source
+  provides true balance evidence. Adapters should not synthesize balance
+  snapshots from translated activity rows.
 - Keep normalization review artifacts separate from hard issues: invalid or
   unsupported data stays in exceptions, while assumption-driven transforms and
   defaults go to normalization review reporting with concise grouped summaries.
@@ -193,6 +211,9 @@ decisions that should not be rediscovered from scratch.
 - Add a provider-neutral transaction fact model and replace the current
   normalized-transaction workflow directly once the fact model is ready. Do not
   keep parallel compatibility aliases or dual-write wrappers.
+- Keep the interim adapter seam fact-aligned by translating provider exports
+  into adapter drafts first and compiling the temporary normalized transaction
+  artifact from that shared seam in one place.
 - Add deterministic checkpoint assembly and continuity validation centered on
   the best-evidenced balance date around `2026-03-23`.
 - Add a journal renderer port and Ledger CLI implementation for hard-gate

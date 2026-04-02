@@ -18,5 +18,5 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
         "withdrawal",
     }
     assert any(event.description == "shakingsats" for event in result.transactions)
-    assert result.balances == ()
+    assert result.balance_evidence == ()
     assert result.issues == ()

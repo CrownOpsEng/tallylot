@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "account": "acct-1",
+    "as_of": "2023-09-22 00:00:00",
+    "asset": "BTC",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "0.5",
+    "source": "WealthSimple",
+    "wallet": "acct-1"
+  },
+  {
+    "account": "acct-1",
+    "as_of": "2023-09-22 00:00:00",
+    "asset": "CAD",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "-10001.25",
+    "source": "WealthSimple",
+    "wallet": "acct-1"
+  }
+]

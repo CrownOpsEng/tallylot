@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "account": "Shakepay",
+    "as_of": "2024-01-04 12:30:00",
+    "asset": "BTC",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "0.0006",
+    "source": "Shakepay",
+    "wallet": "Shakepay"
+  },
+  {
+    "account": "Shakepay",
+    "as_of": "2024-01-04 12:30:00",
+    "asset": "CAD",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "20",
+    "source": "Shakepay",
+    "wallet": "Shakepay"
+  }
+]

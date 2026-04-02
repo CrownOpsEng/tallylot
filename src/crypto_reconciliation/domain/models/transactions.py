@@ -33,6 +33,12 @@ class NormalizedTransaction:
     wallet: str
     timestamp: datetime
     category: TransactionCategory
+    economic_kind: str = ""
+    projection_type: str = ""
+    journal_intent: str = ""
+    tax_treatment_code: str = ""
+    provider_operation_key: str = ""
+    group_key: str = ""
     description: str = ""
     asset_in: AssetSymbol | None = None
     amount_in: Decimal | None = None
@@ -76,6 +82,12 @@ class NormalizedTransaction:
             "wallet": self.wallet,
             "timestamp": format_timestamp(self.timestamp),
             "category": self.category,
+            "economic_kind": self.economic_kind,
+            "projection_type": self.projection_type,
+            "journal_intent": self.journal_intent,
+            "tax_treatment_code": self.tax_treatment_code,
+            "provider_operation_key": self.provider_operation_key,
+            "group_key": self.group_key,
             "description": self.description,
             "asset_in": str(self.asset_in or ""),
             "amount_in": format_decimal(self.amount_in),

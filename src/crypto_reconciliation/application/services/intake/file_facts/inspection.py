@@ -34,7 +34,6 @@ NETWORK_HINTS = (
     ("polygon", "polygon"),
     ("matic", "polygon"),
     ("bsc", "bsc"),
-    ("binance smart chain", "bsc"),
     ("arb", "arbitrum"),
     ("arbitrum", "arbitrum"),
     ("eth", "ethereum"),

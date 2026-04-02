@@ -6,10 +6,9 @@ import csv
 from pathlib import Path
 
 from crypto_reconciliation.domain.models import NormalizedTransaction
-from crypto_reconciliation.domain.value_objects import format_decimal, format_timestamp
 from crypto_reconciliation.ports.adapters import RenderedArtifact
 
-from .mapping import cointracking_type_for
+from .projection import cointracking_row
 from .schema import COINTRACKING_HEADER
 
 
@@ -19,22 +18,8 @@ def render(transactions: tuple[NormalizedTransaction, ...], output_path: Path) -
         writer = csv.DictWriter(handle, fieldnames=list(COINTRACKING_HEADER))
         writer.writeheader()
         for transaction in transactions:
-            writer.writerow(
-                {
-                    "Type": cointracking_type_for(transaction.category),
-                    "Buy": format_decimal(transaction.amount_in),
-                    "Cur.": str(transaction.asset_in or ""),
-                    "Sell": format_decimal(transaction.amount_out),
-                    "Cur..1": str(transaction.asset_out or ""),
-                    "Fee": format_decimal(transaction.fee_amount),
-                    "Cur..2": str(transaction.fee_asset or ""),
-                    "Exchange": transaction.account,
-                    "Group": "",
-                    "Comment": transaction.description,
-                    "Date": format_timestamp(transaction.timestamp),
-                    "Tx-ID": transaction.tx_hash or str(transaction.transaction_id),
-                }
-            )
+            row = cointracking_row(transaction)
+            writer.writerow({field: row[field] for field in COINTRACKING_HEADER})
     return RenderedArtifact(
         path=output_path,
         row_count=len(transactions),

@@ -78,7 +78,7 @@ A single `category` string is not a stable center for the next phase.
 Every normalized fact should support distinct classification layers:
 
 - `EconomicKind`: provider-neutral semantics
-- `CoinTrackingType`: compatibility projection
+- `ProjectionType`: compatibility projection type
 - `TaxTreatmentCode`: jurisdiction-neutral tax intent
 - `JournalIntent`: accounting intent
 
@@ -147,16 +147,21 @@ rules remain explicit and tool-friendly.
 
 ### Adapter Responsibilities
 
-- source adapters normalize raw exports into transaction facts and issues
+- source adapters translate raw exports into the shared adapter draft model and
+  surface explicit issues or reviews
 - output adapters render facts into CoinTracking, Ledger CLI, and report
   artifacts
+- while the full fact model is still landing, source adapters compile through a
+  shared `EconomicActivityDraft` seam into the temporary normalized artifact
 - CoinTracking-specific column defaults, `Tx-ID` behavior, and row-shape
-  compatibility metadata stay in output adapters or projection services rather
-  than in core normalized models
+  compatibility metadata stay in shared projection contracts rather than in
+  provider-local adapter code
 - adapters do not own tax logic, checkpoint policy, or reconciliation rules
 - adapters should stay focused on source/output translation. Core data
   manipulation, verification, and workflow policy belong in application and
   domain code.
+- application services own derived-balance assembly. Adapters return balance
+  evidence only when the source actually provides it.
 
 ## Input And Oracle Boundaries
 
@@ -210,6 +215,36 @@ to:
 The only lost capability should be comparison against the external oracle.
 
 ## Schema Contract
+
+### Transitional Adapter Draft Seam
+
+Until `TransactionFact` replaces the compatibility artifact end to end, source
+normalization should translate through `EconomicActivityDraft`.
+
+Required draft responsibilities:
+
+- stable identity plus evidence references
+- timestamp and provenance
+- account and wallet scope
+- one or more economic legs plus optional fee legs
+- provider operation key and grouped-row support
+- layered classification hints:
+  - economic kind
+  - projection type
+  - journal intent
+  - tax treatment code
+- explicit review or ambiguity markers
+
+Rules:
+
+- provider modules translate into drafts only; they do not assemble
+  `NormalizedTransaction` directly
+- shared support stays adapter-agnostic and registry-driven; adapters publish
+  manifests, translation registries, and provider-local coverage metadata
+- one shared compiler owns draft-to-compatibility conversion
+- one shared projection mapper owns CoinTracking CSV row construction
+- grouped operations and provider-local export families must resolve through
+  explicit translation registries, not ad hoc adapter entry-point branching
 
 ### Core Fact Model
 
@@ -381,7 +416,7 @@ Deliverables:
 
 - Pydantic row models for CoinTracking report families
 - parser services for all oracle exports
-- CoinTracking projection enum and alias normalization
+- projection-type enum and alias normalization for current compatibility outputs
 - comparison-ready artifact contracts
 
 ### Phase 2. Core Fact Model And Direct Normalization Replacement

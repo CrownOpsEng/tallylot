@@ -9,7 +9,7 @@
     "raw_row_ref": "group:21-05-11 00:44:33:Spot",
     "severity": "medium",
     "source": "Binance",
-    "status": "needs_review"
+    "status": "open"
   },
   {
     "adapter_id": "binance",
@@ -21,7 +21,7 @@
     "raw_row_ref": "group:23-09-20 18:17:41:Spot",
     "severity": "medium",
     "source": "Binance",
-    "status": "needs_review"
+    "status": "open"
   },
   {
     "adapter_id": "binance",
@@ -33,6 +33,6 @@
     "raw_row_ref": "group:23-09-20 18:17:41:USD-M Futures",
     "severity": "medium",
     "source": "Binance",
-    "status": "needs_review"
+    "status": "open"
   }
 ]

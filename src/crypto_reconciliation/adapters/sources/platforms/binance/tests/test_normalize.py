@@ -115,3 +115,45 @@ def test_binance_adapter_reads_nested_bundle_paths(tmp_path: Path) -> None:
     assert len(result.transactions) == 1
     assert result.transactions[0].category == "trade"
     assert not result.issues
+
+
+def test_binance_translation_priority_is_not_path_order_dependent(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    transaction_dir = raw_dir / "a_transaction"
+    convert_dir = raw_dir / "z_convert"
+    transaction_dir.mkdir(parents=True)
+    convert_dir.mkdir(parents=True)
+    (convert_dir / "Binance-Convert-Order-History-202603230441(UTC--6)_abcd.csv").write_text(
+        "Time,Wallet,Pair,Type,Sell,Buy,Price,Inverse Price,Date Updated,Status\n"
+        "21-05-11 00:44:32,SPOT,ETHBUSD,Instant,124.60184573 BUSD,0.03158115 ETH,x,x,21-05-11 00:44:33,Successful\n",
+        encoding="utf-8",
+    )
+    (transaction_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
+        "User ID,Time,Account,Operation,Coin,Change,Remark\n1,21-05-11 00:44:33,Spot,Binance Convert,ETH,0.03158115,\n",
+        encoding="utf-8",
+    )
+
+    result = BinanceAdapter().normalize(
+        build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
+        raw_dir,
+    )
+
+    assert len(result.transactions) == 1
+    assert not result.issues
+
+
+def test_binance_adapter_surfaces_unmatched_export_files(tmp_path: Path) -> None:
+    raw_dir = tmp_path
+    (raw_dir / "Binance-Unknown-History-202603230441(UTC--6)_abcd.csv").write_text(
+        "Header\nvalue\n",
+        encoding="utf-8",
+    )
+
+    result = BinanceAdapter().normalize(
+        build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
+        raw_dir,
+    )
+
+    assert not result.transactions
+    assert len(result.issues) == 1
+    assert result.issues[0].kind == "unsupported_file"

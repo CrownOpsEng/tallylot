@@ -26,7 +26,7 @@ from .output_workflows import BaselineArtifacts, ScreeningResult
 @dataclass(frozen=True)
 class NormalizationResult:
     transactions: tuple[NormalizedTransaction, ...]
-    balances: tuple[BalanceSnapshot, ...]
+    balance_evidence: tuple[BalanceSnapshot, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
     wallet_inventory: tuple[WalletInventoryRecord, ...]

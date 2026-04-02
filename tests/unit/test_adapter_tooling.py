@@ -43,6 +43,7 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
     assert created_paths == {
         Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/__init__.py"),
         Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/adapter.py"),
+        Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/translation.py"),
         Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/tests/__init__.py"),
         Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/tests/test_contract.py"),
         Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/fixtures/.gitkeep"),
@@ -57,7 +58,19 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
         / "example_exchange"
         / "adapter.py"
     )
+    translation_py = (
+        repo_root
+        / "src"
+        / "crypto_reconciliation"
+        / "adapters"
+        / "sources"
+        / "platforms"
+        / "example_exchange"
+        / "translation.py"
+    )
     assert "class ExampleExchangeSourceAdapter" in adapter_py.read_text(encoding="utf-8")
+    assert "normalize_source_drafts" in adapter_py.read_text(encoding="utf-8")
+    assert "FILE_TRANSLATION_RULES" in translation_py.read_text(encoding="utf-8")
 
 
 def test_scaffold_adapter_requires_source_category_namespace(tmp_path: Path) -> None:

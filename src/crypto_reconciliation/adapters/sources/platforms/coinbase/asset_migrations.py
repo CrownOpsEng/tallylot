@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from crypto_reconciliation.adapters.sources.mapped_transaction_support import MappedTransactionSpec, mapped_transaction
-from crypto_reconciliation.domain.models import NormalizedTransaction, SourceProfile
+from crypto_reconciliation.adapters.support.drafts import (
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+)
+from crypto_reconciliation.domain.models import SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal
 
 from .timestamps import parse_retail_timestamp
@@ -16,7 +20,7 @@ def normalize_asset_migration(
     raw_file: str,
     timestamp: str,
     rows: list[dict[str, str]],
-) -> NormalizedTransaction:
+) -> EconomicActivityDraft:
     if len(rows) != 2:
         raise ValueError(f"Expected 2 asset-migration rows at {timestamp}, found {len(rows)}")
     negatives = [
@@ -36,21 +40,26 @@ def normalize_asset_migration(
         raise ValueError(f"Asset-migration rows at {timestamp} are missing transacted quantities")
     sold_id = (sold_row.get("ID") or "").strip()
     bought_id = (bought_row.get("ID") or "").strip()
-    return mapped_transaction(
-        MappedTransactionSpec(
-            transaction_id=f"coinbase-asset-migration-{sold_id}-{bought_id}",
-            source=str(profile.source),
-            adapter_id="coinbase",
-            account="Coinbase",
-            wallet="Coinbase",
-            timestamp=parse_retail_timestamp(timestamp),
-            category="swap",
-            description="Coinbase Asset Migration",
-            raw_file=raw_file,
-            raw_row_ref=f"{sold_id}|{bought_id}",
-            asset_in=(bought_row.get("Asset") or "").strip().upper(),
-            amount_in=bought_quantity,
-            asset_out=(sold_row.get("Asset") or "").strip().upper(),
-            amount_out=sold_quantity,
-        )
+    return EconomicActivityDraft(
+        activity_id=f"coinbase-asset-migration-{sold_id}-{bought_id}",
+        source=str(profile.source),
+        adapter_id="coinbase",
+        account="Coinbase",
+        wallet="Coinbase",
+        timestamp=parse_retail_timestamp(timestamp),
+        classification=classification(
+            normalized_category="swap",
+            economic_kind="asset_migration",
+            projection_type="Swap (non taxable)",
+            journal_intent="asset_exchange",
+            tax_treatment_code="non_taxable_asset_migration",
+        ),
+        description="Coinbase Asset Migration",
+        raw_file=raw_file,
+        raw_row_ref=f"{sold_id}|{bought_id}",
+        provider_operation_key="asset_migration",
+        legs=(
+            economic_leg(direction="in", asset=(bought_row.get("Asset") or "").strip().upper(), amount=bought_quantity),
+            economic_leg(direction="out", asset=(sold_row.get("Asset") or "").strip().upper(), amount=sold_quantity),
+        ),
     )

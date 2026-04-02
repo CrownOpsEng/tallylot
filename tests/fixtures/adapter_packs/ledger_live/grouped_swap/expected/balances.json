@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "account": "Bitcoin 1",
+    "as_of": "2026-03-23 10:11:12",
+    "asset": "BTC",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "0.01",
+    "source": "ledger-live-main",
+    "wallet": "Bitcoin 1"
+  },
+  {
+    "account": "Bitcoin 1",
+    "as_of": "2026-03-23 10:11:12",
+    "asset": "ETH",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "-0.51",
+    "source": "ledger-live-main",
+    "wallet": "Bitcoin 1"
+  }
+]

@@ -26,13 +26,7 @@ def resolve_inventory_route(
     source_folder: str,
     facts: IntakeFileFacts,
 ) -> InventoryRouteDecision:
-    if source_folder not in {"evm_explorer", "evm_wallet"}:
-        return InventoryRouteDecision(
-            source_folder=source_folder,
-            inventory_match_status="unmatched",
-        )
-
-    identifiers = {token.split(":", 1)[1] for token in facts.scope_tokens if token.startswith("evm:")}
+    identifiers = _inventory_identifiers(facts.scope_tokens)
     if not identifiers:
         return InventoryRouteDecision(
             source_folder=source_folder,
@@ -98,6 +92,16 @@ def _read_rows(artifacts: ArtifactStorePort, path: Path) -> list[dict[str, str]]
     if not path.exists():
         return []
     return artifacts.read_rows(path)
+
+
+def _inventory_identifiers(scope_tokens: tuple[str, ...]) -> set[str]:
+    return {
+        value
+        for token in scope_tokens
+        if ":" in token
+        for kind, value in (token.split(":", 1),)
+        if kind != "label" and value
+    }
 
 
 def _generic_wallet_source_folder(identifiers: set[str], network_hints: tuple[str, ...]) -> str:

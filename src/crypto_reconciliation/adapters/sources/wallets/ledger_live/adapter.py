@@ -7,29 +7,38 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths, read_csv_rows
-from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
-from crypto_reconciliation.adapters.sources.wallet_record_support import (
-    AdapterIssueSpec,
-    WalletRecordSpec,
-    adapter_issue,
+from crypto_reconciliation.adapters.support import (
+    match_intake_by_path_or_header,
+    matching_file_paths,
+    no_intake_route,
+    passed_timezone_summary,
+    read_csv_rows,
     wallet_identifier_kind,
+    wallet_issue,
     wallet_record,
 )
+from crypto_reconciliation.adapters.support.drafts import (
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+    fee_leg,
+    normalization_result_from_drafts,
+)
+from crypto_reconciliation.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
     IssueRecord,
-    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, JsonValue, SourceId, TransactionId
+from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 HEADER_FIELDS = {"Account Name", "Account xpub", "Operation Date"}
+SUPPORTED_OPERATION_GROUPS = frozenset({"IN+OUT", "IN+OUT+FEES"})
 
 
 class LedgerLiveAdapter:
@@ -61,13 +70,7 @@ class LedgerLiveAdapter:
         self,
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-        rows_with_dates = sum(1 for item in profile.file_inventory if item.date_field)
-        return {
-            "status": "passed",
-            "issue_count": 0,
-            "rows_with_dates": rows_with_dates,
-            "mode_counts": {"value_utc": rows_with_dates} if rows_with_dates else {},
-        }, ()
+        return passed_timezone_summary(profile, mode="value_utc")
 
     def extract_wallet_inventory(
         self,
@@ -108,8 +111,8 @@ class LedgerLiveAdapter:
             if len(identifiers) <= 1:
                 continue
             issues.append(
-                adapter_issue(
-                    AdapterIssueSpec(
+                wallet_issue(
+                    WalletIssueSpec(
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="account_identifier_conflict",
@@ -119,8 +122,8 @@ class LedgerLiveAdapter:
             )
         if not evidence:
             issues.append(
-                adapter_issue(
-                    AdapterIssueSpec(
+                wallet_issue(
+                    WalletIssueSpec(
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="missing_identifier",
@@ -131,7 +134,7 @@ class LedgerLiveAdapter:
         return tuple(evidence), tuple(issues)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        transactions: list[NormalizedTransaction] = []
+        drafts: list[EconomicActivityDraft] = []
         operations_by_hash: dict[str, list[tuple[str, dict[str, str]]]] = defaultdict(list)
         for path in matching_file_paths(raw_dir):
             for index, row in enumerate(read_csv_rows(path), start=2):
@@ -153,33 +156,48 @@ class LedgerLiveAdapter:
             raw_row_ref = ";".join(f"{raw_file}:{ref.split(':', maxsplit=1)[1]}" for ref, _ in grouped_rows)
             fee_amount = Decimal((fee_row or {}).get("Operation Amount") or "0")
             fee_asset = (fee_row or outbound).get("Currency Ticker") or ""
-            transactions.append(
-                NormalizedTransaction(
-                    transaction_id=TransactionId(f"ledger_live:{raw_file}:{operation_hash}"),
-                    source=SourceId(str(profile.source)),
-                    adapter_id=self.manifest.adapter_id,
+            fee_legs = (
+                (fee_leg(asset=fee_asset.strip().upper(), amount=fee_amount),) if fee_amount > 0 and fee_asset else ()
+            )
+            drafts.append(
+                EconomicActivityDraft(
+                    activity_id=f"ledger_live:{raw_file}:{operation_hash}",
+                    source=str(profile.source),
+                    adapter_id="ledger_live",
                     account=account_label,
                     wallet=account_label,
                     timestamp=timestamp,
-                    category="trade",
+                    classification=classification(
+                        normalized_category="trade",
+                        economic_kind="asset_swap",
+                        projection_type="Trade",
+                        journal_intent="asset_exchange",
+                        tax_treatment_code="capital_exchange",
+                    ),
                     description=account_label,
-                    asset_in=AssetSymbol((inbound.get("Currency Ticker") or "").strip().upper()),
-                    amount_in=Decimal((inbound.get("Operation Amount") or "0").strip()),
-                    asset_out=AssetSymbol((outbound.get("Currency Ticker") or "").strip().upper()),
-                    amount_out=Decimal((outbound.get("Operation Amount") or "0").strip()),
-                    fee_asset=AssetSymbol(fee_asset.strip().upper()) if fee_amount > 0 and fee_asset else None,
-                    fee_amount=fee_amount if fee_amount > 0 else None,
-                    tx_hash=operation_hash,
                     raw_file=raw_file,
                     raw_row_ref=raw_row_ref,
+                    tx_hash=operation_hash,
+                    provider_operation_key="ledger_live_swap",
+                    group_key=operation_hash,
+                    legs=(
+                        economic_leg(
+                            direction="in",
+                            asset=(inbound.get("Currency Ticker") or "").strip().upper(),
+                            amount=Decimal((inbound.get("Operation Amount") or "0").strip()),
+                        ),
+                        economic_leg(
+                            direction="out",
+                            asset=(outbound.get("Currency Ticker") or "").strip().upper(),
+                            amount=Decimal((outbound.get("Operation Amount") or "0").strip()),
+                        ),
+                    ),
+                    fee_legs=fee_legs,
                 )
             )
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
-        return NormalizationResult(
-            transactions=tuple(transactions),
-            balances=(),
-            issues=(),
-            reviews=(),
+        return normalization_result_from_drafts(
+            drafts,
             wallet_inventory=wallet_inventory,
         )
 
