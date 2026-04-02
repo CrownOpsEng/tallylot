@@ -67,6 +67,8 @@ def token_from_header_value(header: str, value: str) -> set[str]:
     cleaned_value = _clean_scalar(value)
     if not cleaned_value:
         return set()
+    if normalized_header == "public key" and re.fullmatch(r"[a-fA-F0-9]{64}", cleaned_value):
+        return {f"cardano:{cleaned_value.lower()}"}
     tokens = extract_scope_tokens(cleaned_value)
     if tokens:
         return tokens

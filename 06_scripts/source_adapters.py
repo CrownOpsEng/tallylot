@@ -3570,16 +3570,24 @@ class NearAdapter(SourceAdapter):
         account_paths: dict[str, Path] = {}
         for row in profile.file_inventory:
             filename = row.get("filename", "")
-            for match in re.finditer(r"[a-f0-9]{64}", filename.lower()):
-                account_paths.setdefault(match.group(0), raw_dir / filename)
+            candidates = {
+                *{match.group(0) for match in re.finditer(r"[a-f0-9]{64}", filename.lower())},
+                *{match.group(0) for match in re.finditer(r"[a-z0-9][a-z0-9_.-]{1,62}\.near", filename.lower())},
+            }
+            for candidate in sorted(candidates):
+                account_paths.setdefault(normalize_identifier("near_account", candidate), raw_dir / filename)
         if account_paths:
             return sorted(account_paths.items())
         for path in profile_paths(raw_dir, profile, families={"near_transaction_csv", "near_receipt_csv"}, suffixes={".csv"}):
             for row in read_csv_rows(path):
                 for field in ("To", "Affected", "Involved"):
-                    value = (row.get(field) or "").strip().lower()
-                    if re.fullmatch(r"[a-f0-9]{64}", value):
-                        account_paths.setdefault(value, path)
+                    value = (row.get(field) or "").strip()
+                    if not re.fullmatch(r"[a-f0-9]{64}", value.lower()) and not re.fullmatch(
+                        r"[a-z0-9][a-z0-9_.-]{1,62}\.near",
+                        value.lower(),
+                    ):
+                        continue
+                    account_paths.setdefault(normalize_identifier("near_account", value), path)
         return sorted(account_paths.items())
 
     def _near_deposit_event(self, path: Path, source: str, index: int, row: dict[str, str]) -> dict[str, str]:

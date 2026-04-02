@@ -35,6 +35,7 @@ WALLET_ISSUE_HEADERS = (
 )
 
 EVM_ADDRESS_PATTERN = re.compile(r"0x[a-fA-F0-9]{40}")
+NEAR_ACCOUNT_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]{1,62}\.near$")
 NEAR_HEX_ACCOUNT_PATTERN = re.compile(r"(?<![a-f0-9])[a-f0-9]{64}(?![a-f0-9])")
 BTC_XPUB_PATTERN = re.compile(r"^(?:xpub|ypub|zpub|tpub|upub|vpub)[1-9A-HJ-NP-Za-km-z]+$")
 BTC_ADDRESS_PATTERN = re.compile(r"^(?:bc1[ac-hj-np-z02-9]{11,87}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$")
@@ -55,8 +56,10 @@ def infer_identifier_kind(value: str) -> str:
         return "tron_address"
     if SOLANA_ADDRESS_PATTERN.fullmatch(text):
         return "solana_address"
-    if NEAR_HEX_ACCOUNT_PATTERN.fullmatch(lower):
+    if NEAR_ACCOUNT_PATTERN.fullmatch(lower):
         return "near_account"
+    if NEAR_HEX_ACCOUNT_PATTERN.fullmatch(lower):
+        return "cardano_account_key"
     if lower.startswith("addr1") or len(text) >= 80 and all(char in "0123456789abcdef" for char in lower):
         return "cardano_account_key"
     return "address_alias"
