@@ -37,6 +37,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
     test_command = FULL_TEST_COMMAND if full_tests else DEFAULT_TEST_COMMAND
     return (
+        QualityGate(name="markdownlint", command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files")),
         QualityGate(name="actionlint", command=("uv", "run", "actionlint", "-color")),
         QualityGate(name="ruff", command=("uv", "run", "ruff", "check", ".")),
         QualityGate(name="mypy", command=("uv", "run", "mypy")),
