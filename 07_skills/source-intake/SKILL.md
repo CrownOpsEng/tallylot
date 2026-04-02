@@ -34,6 +34,8 @@ Use this skill for the deterministic front half of source prep.
 - Intake must never hand-edit raw files or silently guess placement. Physical file contents remain unchanged.
 - Content-derived wallet scope is stronger than filename or folder labels. Use existing `wallet_inventory_evidence.csv`, `wallet_inventory.csv`, and `source_inventory.csv` when the scope matches a known repo source, and only fall back to generic deterministic wallet naming when the inventory cannot justify a known name.
 - Intake is bundle-aware. Keep files from the same raw export together when the bundle relationship is explicit from folders, archives, HTML sidecars, or approved companion-set rules.
+- Bundle-level export provenance propagates to child artifacts. HTML sidecars and workbook/container members should inherit the parent export timestamp when the parent export can prove the cycle date and the child file cannot.
+- Non-export artifacts still route deterministically. Screenshots, scratch sheets, mixed user workbooks, and unsupported documents go into `02_working/supporting_artifacts/<source>/...` when the source is known, and only stay under `review` when the source itself is not defensible.
 - Package consolidation is allowed only at the bundle/package level when it is deterministic:
   - if one package is a strict superset of another, the subset package may be marked `package_duplicate_skip`
   - near-duplicate packages may be merged only when the merge engine can justify that they belong to the same export cycle

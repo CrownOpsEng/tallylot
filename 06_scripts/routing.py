@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 from inventory_resolution import resolve_inventory_route
-from inspection import HistoricalDateDecision, HistoricalDatePolicy, infer_historical_date
+from inspection import HistoricalDateDecision, HistoricalDatePolicy, infer_historical_date, inspect_file
 from pipeline_common import source_slug
 
 
@@ -115,7 +116,7 @@ def _bundle_for_path(relative_path: Path, target: RouteTarget, inspection_row: d
     return BundleDecision(bundle_id=_single_file_bundle_id(relative_path), bundle_type="single_file_bundle", bundle_relative_path=name)
 
 
-def classify_route(path: Path, inspection_row: dict[str, str]) -> RouteTarget:
+def _base_route_target(path: Path, inspection_row: dict[str, str]) -> RouteTarget:
     text = _normalized_text(path)
     name = path.name.lower()
     family = inspection_row.get("family", "")
@@ -155,6 +156,14 @@ def classify_route(path: Path, inspection_row: dict[str, str]) -> RouteTarget:
         return RouteTarget("source_raw", "Gemini", "gemini", "", "high", ())
     if "shakepay" in text:
         return RouteTarget("source_raw", "Shakepay", "shakepay", "", "high", ())
+    if family in {"coinberry_activity_csv", "shakepay_transactions_csv", "gemini_account_history_csv", "binance_staking_redemption_csv"}:
+        if family == "coinberry_activity_csv":
+            return RouteTarget("source_raw", "Coinberry", "coinberry", "", "high", ())
+        if family == "shakepay_transactions_csv":
+            return RouteTarget("source_raw", "Shakepay", "shakepay", "", "high", ())
+        if family == "gemini_account_history_csv":
+            return RouteTarget("source_raw", "Gemini", "gemini", "", "high", ())
+        return RouteTarget("source_raw", "Binance", "binance", "", "high", ())
     if "bsc wallet export" in name or family.startswith("explorer_"):
         return RouteTarget("source_raw", "Wallet Export", "wallet-export", "", "medium", (), generic_wallet_routing=True)
     if family.startswith("near_"):
@@ -170,6 +179,33 @@ def classify_route(path: Path, inspection_row: dict[str, str]) -> RouteTarget:
     return RouteTarget("working_derivative", "review", "review", "", "low", ("unsupported_routing",), "Could not deterministically classify file role/source.")
 
 
+def classify_route(path: Path, inspection_row: dict[str, str]) -> RouteTarget:
+    base_target = _base_route_target(path, inspection_row)
+    artifact_kind = inspection_row.get("artifact_kind", "")
+    artifact_reason = inspection_row.get("artifact_reason", "") or "Non-export artifact."
+    if not artifact_kind:
+        return base_target
+
+    source_label = base_target.source_label if base_target.source_folder != "review" else "review"
+    source_folder = base_target.source_folder if base_target.source_folder != "review" else "review"
+    confidence = "high" if source_folder != "review" else "medium"
+    review_codes: tuple[str, ...] = ()
+
+    if artifact_kind in {"image_artifact", "xps_document"}:
+        review_codes = ("non_export_artifact",)
+
+    return RouteTarget(
+        role="working_derivative",
+        source_label=source_label,
+        source_folder=source_folder,
+        system_label="",
+        confidence=confidence,
+        review_codes=review_codes,
+        review_reason=artifact_reason if review_codes else "",
+        generic_wallet_routing=base_target.generic_wallet_routing,
+    )
+
+
 def date_policy_for_target(target: RouteTarget, bundle: BundleDecision, inspection_row: dict[str, str]) -> tuple[str, HistoricalDatePolicy]:
     family = inspection_row.get("family", "")
     if target.role == "ledger_export" or family.startswith("cointracking_"):
@@ -181,16 +217,54 @@ def date_policy_for_target(target: RouteTarget, bundle: BundleDecision, inspecti
     return "generic_historical_capture", HistoricalDatePolicy()
 
 
+@lru_cache(maxsize=64)
+def _cached_inspect_file(path: str) -> dict[str, str]:
+    return inspect_file(Path(path))
+
+
+def _bundle_historical_context(
+    *,
+    incoming_root: Path,
+    relative_path: Path,
+    bundle: BundleDecision,
+    inspection_row: dict[str, str],
+) -> dict[str, str]:
+    if bundle.bundle_type != "html_export_bundle" or inspection_row.get("export_timestamp"):
+        return inspection_row
+    try:
+        sidecar_index = next(index for index, part in enumerate(relative_path.parts) if part.endswith("_files"))
+    except StopIteration:
+        return inspection_row
+    sidecar_dir = Path(*relative_path.parts[: sidecar_index + 1])
+    bundle_label = sidecar_dir.name.removesuffix("_files")
+    html_path = incoming_root / sidecar_dir.parent / f"{bundle_label}.html"
+    if not html_path.exists():
+        return inspection_row
+    parent_row = _cached_inspect_file(str(html_path.resolve()))
+    inherited = dict(inspection_row)
+    for field in ("export_timestamp", "report_period_start", "report_period_end"):
+        if not inherited.get(field):
+            inherited[field] = parent_row.get(field, "")
+    return inherited
+
+
 def infer_capture_folder_name(
     *,
     repo_root: Path,
+    incoming_root: Path,
     target: RouteTarget,
     relative_path: Path,
     inspection_row: dict[str, str],
     bundle: BundleDecision,
 ) -> tuple[str, str, HistoricalDateDecision, str]:
     date_policy, historical_policy = date_policy_for_target(target, bundle, inspection_row)
-    historical = infer_historical_date(relative_path.parts, inspection_row, policy=historical_policy)
+    historical_row = _bundle_historical_context(
+        incoming_root=incoming_root,
+        relative_path=relative_path,
+        bundle=bundle,
+        inspection_row=inspection_row,
+    )
+    historical = infer_historical_date(relative_path.parts, historical_row, policy=historical_policy)
     capture_id = historical.capture_id
     merge_recommendation = ""
     if capture_id != "review-required":
@@ -238,6 +312,7 @@ def resolve_routing_decision(
     bundle = _bundle_for_path(relative_path, target, inspection_row)
     capture_folder, date_policy, historical, merge_recommendation = infer_capture_folder_name(
         repo_root=repo_root,
+        incoming_root=incoming_root,
         target=target,
         relative_path=relative_path,
         inspection_row=inspection_row,

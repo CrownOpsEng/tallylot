@@ -122,6 +122,14 @@ PROFILE_INVENTORY_HEADERS = (
     "timezone_mode",
     "timezone_value",
     "timezone_conflict",
+    "export_timestamp",
+    "report_period_start",
+    "report_period_end",
+    "workbook_sheet_names",
+    "workbook_created_at",
+    "workbook_modified_at",
+    "artifact_kind",
+    "artifact_reason",
 )
 
 TIMEZONE_ISSUE_HEADERS = (

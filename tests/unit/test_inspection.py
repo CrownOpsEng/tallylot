@@ -5,6 +5,7 @@ import zipfile
 
 import inspection
 import pytest
+from tests.support.helpers import write_minimal_xlsx
 
 
 def test_detect_csv_header_supports_semicolon_delimited_rows(tmp_path: Path) -> None:
@@ -67,6 +68,13 @@ def test_infer_historical_date_parses_compact_archive_timestamps() -> None:
     decision = inspection.infer_historical_date(("202201152304.zip",), {"family": "archive_bundle"})
 
     assert decision.capture_id == "2022-01"
+
+
+def test_infer_historical_date_parses_unambiguous_month_day_year_filename_dates() -> None:
+    decision = inspection.infer_historical_date(("Coinberry Activity Report - 08-14-2021 v1.csv",), {"family": "coinberry_activity_csv"})
+
+    assert decision.capture_id == "2021-08"
+    assert decision.basis == "filename_or_folder:08-14-2021"
 
 
 def test_infer_historical_date_can_disable_content_span(tmp_path: Path) -> None:
@@ -151,3 +159,111 @@ def test_inspect_file_extracts_non_evm_wallet_scope_tokens_from_content(tmp_path
     row = inspection.inspect_file(path)
 
     assert row["content_scope_tokens"] == expected_token
+
+
+def test_inspect_file_classifies_binance_staking_workbook_and_export_timestamp(tmp_path: Path) -> None:
+    path = tmp_path / "Staking History-2022-03-22_2022-04-05.xlsx"
+    write_minimal_xlsx(
+        path,
+        rows=[
+            ["Redemption Date(UTC)", "Coin", "Redemption Amount", "Status"],
+            ["2022-04-05 21:00:00", "ADA", "5.00000000", "Completed"],
+        ],
+        modified_at="2022-04-05T21:34:36Z",
+    )
+
+    row = inspection.inspect_file(path)
+
+    assert row["family"] == "binance_staking_redemption_csv"
+    assert row["date_field"] == "Redemption Date(UTC)"
+    assert row["min_timestamp"] == "2022-04-05 21:00:00"
+    assert row["export_timestamp"] == "2022-04-05 21:34:36"
+    assert row["workbook_sheet_names"] == "Sheet1"
+
+
+def test_inspect_file_extracts_cointracking_html_export_timestamp_and_period(tmp_path: Path) -> None:
+    path = tmp_path / "CoinTracking · Tax Declaration Export.html"
+    path.write_text(
+        """
+        <html>
+        <head><title>CoinTracking · Tax Declaration Export</title></head>
+        <body>
+        Created by: CoinTracking as of: 06.04.2022 01:11
+        <p>period from <strong>01.01.2021</strong> until <strong>31.12.2021</strong></p>
+        </body>
+        </html>
+        """,
+        encoding="utf-8",
+    )
+
+    row = inspection.inspect_file(path)
+
+    assert row["family"] == "cointracking_tax_declaration_html"
+    assert row["export_timestamp"] == "2022-04-06 01:11:00"
+    assert row["report_period_start"] == "2021-01-01 00:00:00"
+    assert row["report_period_end"] == "2021-12-31 00:00:00"
+
+
+@pytest.mark.parametrize(
+    ("filename", "payload", "expected_family"),
+    [
+        (
+            "Coinberry Transaction History.csv",
+            "Receipt No,Date,Activity,Amount,Currency,CAD Amount,CAD Rate\n1,2022-01-01,Buy,1.0,BTC,100.00,100.00\n",
+            "coinberry_activity_csv",
+        ),
+        (
+            "transactions_summary.csv",
+            (
+                "Transaction Type,Date,Amount Debited,Debit Currency,Amount Credited,Credit Currency,"
+                "Buy / Sell Rate,Direction,Spot Rate,Source / Destination\n"
+                "Buy,2022-01-01 10:00:00,100.00,CAD,0.00100000,BTC,100000.00,In,100000.00,Shakepay\n"
+            ),
+            "shakepay_transactions_csv",
+        ),
+    ],
+)
+def test_inspect_file_classifies_common_csv_export_families(tmp_path: Path, filename: str, payload: str, expected_family: str) -> None:
+    path = tmp_path / filename
+    path.write_text(payload, encoding="utf-8")
+
+    row = inspection.inspect_file(path)
+
+    assert row["family"] == expected_family
+
+
+def test_inspect_file_classifies_gemini_account_history_workbook(tmp_path: Path) -> None:
+    path = tmp_path / "History.xlsx"
+    write_minimal_xlsx(
+        path,
+        rows=[
+            ["Date", "Time (UTC)", "Type", "Symbol", "Specification"],
+            ["2022-01-01", "10:00:00", "Credit", "BTC", "Deposit"],
+        ],
+        modified_at="2022-01-02T01:02:03Z",
+    )
+
+    row = inspection.inspect_file(path)
+
+    assert row["family"] == "gemini_account_history_csv"
+    assert row["export_timestamp"] == "2022-01-02 01:02:03"
+
+
+def test_inspect_file_marks_mixed_portfolio_workbook_as_artifact(tmp_path: Path) -> None:
+    path = tmp_path / "WealthSimple Trade + Crypto.xlsx"
+    write_minimal_xlsx(
+        path,
+        rows=[
+            ["Date", "Type", "Buy Amount", "Buy Cur.", "Sell Amount", "Sell Cur."],
+            ["2022-01-01", "Trade", "1.00000000", "BTC", "100.00", "CAD"],
+            ["Wealthsimple Trade (Non-Registered - WS Crypto)", "", "", "", "", ""],
+            ["Wealthsimple Crypto (Crypto)", "", "", "", "", ""],
+        ],
+        modified_at="2022-01-03T04:05:06Z",
+    )
+
+    row = inspection.inspect_file(path)
+
+    assert row["family"] == "mixed_portfolio_workbook"
+    assert row["artifact_kind"] == "mixed_portfolio_workbook"
+    assert row["artifact_reason"] == "User-assembled mixed workbook artifact."

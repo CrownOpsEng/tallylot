@@ -61,12 +61,13 @@ Preferred raw-capture layout:
 - aggregate or app folders for wallet-app-wide evidence that is not truly chain-scoped, such as cross-chain MetaMask portfolio snapshots or state logs
 - generic wallet folders only when the repo inventory cannot justify a known source name; in that case the folder should stay deterministic and identifier-based rather than guessing a friendly alias
 - historical ledger exports route separately from source evidence
-- working derivatives route into `02_working/supporting_artifacts/`
+- working derivatives route into `02_working/supporting_artifacts/<source>/`
+- saved HTML export sidecars inherit the parent HTML export timestamp and stay in the same canonical bundle instead of being treated as standalone undated files
 
 The preferred prep flow is now:
 
 1. `intake_sort.py` when starting from a mixed dump
-   It inspects archives independently, preserves the original archive, extracts positively identified crypto-report members into the same canonical bundle, suppresses fully redundant package copies when a deterministic superset exists, only merges near-duplicate packages when the shared package-resolution engine can prove they belong to the same export cycle, and resolves wallet-style source naming from content scope before filename labels.
+   It inspects archives independently, preserves the original archive, extracts positively identified crypto-report members into the same canonical bundle, suppresses fully redundant package copies when a deterministic superset exists, only merges near-duplicate packages when the shared package-resolution engine can prove they belong to the same export cycle, resolves wallet-style source naming from content scope before filename labels, and routes non-export artifacts into source-aware supporting-artifact folders instead of leaving them mixed into raw evidence.
 2. `source_manifest.py`
 3. `profile_source.py`
 4. `wallet_inventory.py` when wallet evidence changed

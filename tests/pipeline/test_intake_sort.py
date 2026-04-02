@@ -7,6 +7,7 @@ import zipfile
 import pytest
 
 import pipeline
+from tests.support.helpers import write_minimal_xlsx
 
 
 @pytest.mark.pipeline
@@ -377,3 +378,112 @@ def test_plan_intake_dump_routes_wallet_export_to_existing_inventory_source(tmp_
     assert row["source_label"] == "eth-gala1"
     assert row["inventory_match_status"] == "inventory_source_match"
     assert row["review_required"] == "no"
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_routes_cointracking_html_to_ledger_capture_without_review(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    path = incoming / "tmp" / "CoinTracking · Tax Declaration Export.html"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        """
+        <html>
+        <head><title>CoinTracking · Tax Declaration Export</title></head>
+        <body>
+        Created by: CoinTracking as of: 06.04.2022 01:11
+        <p>period from <strong>01.01.2021</strong> until <strong>31.12.2021</strong></p>
+        </body>
+        </html>
+        """,
+        encoding="utf-8",
+    )
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    pipeline.plan_intake_dump(repo_root=repo_root, incoming_dir=incoming, report_dir=report_dir, apply=False)
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    row = next(item for item in rows if item["archive_source_path"] == "")
+
+    assert row["role"] == "ledger_export"
+    assert row["capture_id"] == "2022-04"
+    assert row["review_required"] == "no"
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_inherits_cointracking_html_sidecar_timestamp_from_parent_export(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    html_path = incoming / "tmp" / "CoinTracking · Tax Declaration Export.html"
+    sidecar_path = incoming / "tmp" / "CoinTracking · Tax Declaration Export_files" / "style.min.css"
+    sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+    html_path.write_text(
+        """
+        <html>
+        <head><title>CoinTracking · Tax Declaration Export</title></head>
+        <body>Created by: CoinTracking as of: 06.04.2022 01:11</body>
+        </html>
+        """,
+        encoding="utf-8",
+    )
+    sidecar_path.write_text("body{}", encoding="utf-8")
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    pipeline.plan_intake_dump(repo_root=repo_root, incoming_dir=incoming, report_dir=report_dir, apply=False)
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    row = next(item for item in rows if item["source_path"].endswith("style.min.css"))
+
+    assert row["capture_id"] == "2022-04"
+    assert row["review_required"] == "no"
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_routes_source_artifacts_to_source_aware_supporting_artifacts(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    image_path = incoming / "2021" / "Binance" / "From Binance" / "Trade Analysis - ADA-USDT - Binance Isolated Margin 2021.png"
+    mixed_workbook = incoming / "2021" / "WealthSimple" / "WealthSimple Trade + Crypto.xlsx"
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image_path.write_bytes(b"png")
+    write_minimal_xlsx(
+        mixed_workbook,
+        rows=[
+            ["Date", "Type", "Buy Amount", "Buy Cur.", "Sell Amount", "Sell Cur."],
+            ["2022-01-01", "Trade", "1.00000000", "BTC", "100.00", "CAD"],
+            ["Wealthsimple Trade (Non-Registered - WS Crypto)", "", "", "", "", ""],
+            ["Wealthsimple Crypto (Crypto)", "", "", "", "", ""],
+        ],
+    )
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    pipeline.plan_intake_dump(repo_root=repo_root, incoming_dir=incoming, report_dir=report_dir, apply=False)
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    by_source_path = {Path(row["source_path"]).name: row for row in rows if row["archive_source_path"] == ""}
+
+    assert by_source_path["Trade Analysis - ADA-USDT - Binance Isolated Margin 2021.png"]["role"] == "working_derivative"
+    assert by_source_path["Trade Analysis - ADA-USDT - Binance Isolated Margin 2021.png"]["source_folder"] == "binance"
+    assert "/supporting_artifacts/binance/" in by_source_path["Trade Analysis - ADA-USDT - Binance Isolated Margin 2021.png"]["destination_path"]
+    assert by_source_path["WealthSimple Trade + Crypto.xlsx"]["role"] == "working_derivative"
+    assert by_source_path["WealthSimple Trade + Crypto.xlsx"]["source_folder"] == "wealthsimple"
+    assert "/supporting_artifacts/wealthsimple/" in by_source_path["WealthSimple Trade + Crypto.xlsx"]["destination_path"]
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_keeps_scratch_csv_out_of_raw_source_capture(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    path = incoming / "2021" / "Binance" / "2021 Isolated" / "test.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("a,b\n1,2\n", encoding="utf-8")
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    pipeline.plan_intake_dump(repo_root=repo_root, incoming_dir=incoming, report_dir=report_dir, apply=False)
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    row = next(item for item in rows if item["archive_source_path"] == "")
+
+    assert row["role"] == "working_derivative"
+    assert row["source_folder"] == "binance"
+    assert "/supporting_artifacts/binance/" in row["destination_path"]

@@ -540,6 +540,14 @@ def profile_paths(
     return sorted(paths)
 
 
+def profile_row_for_path(raw_dir: Path, profile: SourceProfile, path: Path) -> dict[str, str]:
+    try:
+        relative = str(path.relative_to(raw_dir))
+    except ValueError:
+        return {}
+    return next((row for row in profile.file_inventory if row.get("filename") == relative), {})
+
+
 def profile_has_row(
     profile: SourceProfile,
     *,
@@ -558,8 +566,8 @@ def profile_has_row(
     return False
 
 
-def first_matching_json_file(raw_dir: Path, *, predicate) -> Path | None:
-    for path in sorted(raw_dir.rglob("*.json")):
+def first_matching_json_file(raw_dir: Path, profile: SourceProfile, *, predicate) -> Path | None:
+    for path in profile_paths(raw_dir, profile, suffixes={".json"}):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -650,6 +658,7 @@ class MetamaskAppAdapter(SourceAdapter):
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         state_path = first_matching_json_file(
             raw_dir,
+            profile,
             predicate=lambda payload: isinstance(payload, dict) and isinstance(payload.get("metamask"), dict),
         )
         if state_path is None:
@@ -2109,7 +2118,7 @@ class EvmExplorerAdapter(SourceAdapter):
             lambda: {"normal": [], "token": [], "internal": [], "nft": []}
         )
         for path in selected_paths:
-            profile_row = next((row for row in profile.file_inventory if row.get("filename") == path.name), {})
+            profile_row = profile_row_for_path(raw_dir, profile, path)
             family = self._family_for_profile_row(profile_row)
             if family is None:
                 continue

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import inspection
 import routing
+from tests.support.helpers import write_minimal_xlsx
 
 
 def test_resolve_routing_decision_routes_cointracking_exports_to_ledger_history(tmp_path: Path) -> None:
@@ -167,3 +169,153 @@ def test_resolve_routing_decision_uses_generic_scope_folder_when_wallet_is_unkno
     assert decision.source_folder == "polygon-wallet-0x12345678"
     assert decision.inventory_match_status == "generic_scope_routing"
     assert decision.review_required is False
+
+
+def test_resolve_routing_decision_routes_cointracking_html_by_export_timestamp(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming_root = repo_root / "01_raw_exports" / "incoming"
+    path = incoming_root / "tmp" / "CoinTracking · Tax Declaration Export.html"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        """
+        <html>
+        <head><title>CoinTracking · Tax Declaration Export</title></head>
+        <body>
+        Created by: CoinTracking as of: 06.04.2022 01:11
+        <p>period from <strong>01.01.2021</strong> until <strong>31.12.2021</strong></p>
+        </body>
+        </html>
+        """,
+        encoding="utf-8",
+    )
+
+    decision = routing.resolve_routing_decision(
+        repo_root=repo_root,
+        incoming_root=incoming_root,
+        path=path,
+        inspection_row=inspection.inspect_file(path),
+    )
+
+    assert decision.role == "ledger_export"
+    assert decision.capture_id == "2022-04"
+    assert decision.review_required is False
+
+
+def test_resolve_routing_decision_inherits_cointracking_html_bundle_timestamp_for_sidecars(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming_root = repo_root / "01_raw_exports" / "incoming"
+    html_path = incoming_root / "tmp" / "CoinTracking · Tax Declaration Export.html"
+    sidecar_path = incoming_root / "tmp" / "CoinTracking · Tax Declaration Export_files" / "style.min.css"
+    sidecar_path.parent.mkdir(parents=True)
+    html_path.write_text(
+        """
+        <html>
+        <head><title>CoinTracking · Tax Declaration Export</title></head>
+        <body>Created by: CoinTracking as of: 06.04.2022 01:11</body>
+        </html>
+        """,
+        encoding="utf-8",
+    )
+    sidecar_path.write_text("body{}", encoding="utf-8")
+
+    decision = routing.resolve_routing_decision(
+        repo_root=repo_root,
+        incoming_root=incoming_root,
+        path=sidecar_path,
+        inspection_row=inspection.inspect_file(sidecar_path),
+    )
+
+    assert decision.role == "ledger_export"
+    assert decision.capture_id == "2022-04"
+    assert decision.review_required is False
+
+
+def test_resolve_routing_decision_routes_binance_staking_workbook_to_source_raw(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming_root = repo_root / "01_raw_exports" / "incoming"
+    path = incoming_root / "2022" / "Staking History-2022-03-22_2022-04-05.xlsx"
+    write_minimal_xlsx(
+        path,
+        rows=[
+            ["Redemption Date(UTC)", "Coin", "Redemption Amount", "Status"],
+            ["2022-04-05 21:00:00", "ADA", "5.00000000", "Completed"],
+        ],
+        modified_at="2022-04-05T21:34:36Z",
+    )
+
+    decision = routing.resolve_routing_decision(
+        repo_root=repo_root,
+        incoming_root=incoming_root,
+        path=path,
+        inspection_row=inspection.inspect_file(path),
+    )
+
+    assert decision.role == "source_raw"
+    assert decision.source_folder == "binance"
+    assert decision.capture_id == "2022-04"
+    assert decision.review_required is False
+
+
+def test_resolve_routing_decision_keeps_binance_analysis_images_as_source_aware_supporting_artifacts(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming_root = repo_root / "01_raw_exports" / "incoming"
+    path = incoming_root / "2021" / "Binance" / "From Binance" / "Trade Analysis - ADA-USDT - Binance Isolated Margin 2021.png"
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"png")
+
+    decision = routing.resolve_routing_decision(
+        repo_root=repo_root,
+        incoming_root=incoming_root,
+        path=path,
+        inspection_row=inspection.inspect_file(path),
+    )
+
+    assert decision.role == "working_derivative"
+    assert decision.source_folder == "binance"
+    assert "02_working/supporting_artifacts/binance" in str(decision.destination_dir)
+    assert decision.review_required is False
+
+
+def test_resolve_routing_decision_keeps_scratch_csv_as_source_aware_supporting_artifact(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming_root = repo_root / "01_raw_exports" / "incoming"
+    path = incoming_root / "2021" / "Binance" / "2021 Isolated" / "test.csv"
+    path.parent.mkdir(parents=True)
+    path.write_text("a,b\n1,2\n", encoding="utf-8")
+
+    decision = routing.resolve_routing_decision(
+        repo_root=repo_root,
+        incoming_root=incoming_root,
+        path=path,
+        inspection_row=inspection.inspect_file(path),
+    )
+
+    assert decision.role == "working_derivative"
+    assert decision.source_folder == "binance"
+    assert decision.review_required is False
+
+
+def test_resolve_routing_decision_routes_mixed_workbook_to_wealthsimple_supporting_artifacts(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming_root = repo_root / "01_raw_exports" / "incoming"
+    path = incoming_root / "2021" / "WealthSimple" / "WealthSimple Trade + Crypto.xlsx"
+    write_minimal_xlsx(
+        path,
+        rows=[
+            ["Date", "Type", "Buy Amount", "Buy Cur.", "Sell Amount", "Sell Cur."],
+            ["2022-01-01", "Trade", "1.00000000", "BTC", "100.00", "CAD"],
+            ["Wealthsimple Trade (Non-Registered - WS Crypto)", "", "", "", "", ""],
+            ["Wealthsimple Crypto (Crypto)", "", "", "", "", ""],
+        ],
+    )
+
+    decision = routing.resolve_routing_decision(
+        repo_root=repo_root,
+        incoming_root=incoming_root,
+        path=path,
+        inspection_row=inspection.inspect_file(path),
+    )
+
+    assert decision.role == "working_derivative"
+    assert decision.source_folder == "wealthsimple"
+    assert "02_working/supporting_artifacts/wealthsimple" in str(decision.destination_dir)
