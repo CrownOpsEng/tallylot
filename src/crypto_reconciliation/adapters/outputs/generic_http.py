@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, NormalizedTransaction
+from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.domain.types import AdapterId
 from crypto_reconciliation.ports.adapters import RenderedArtifact
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort

@@ -176,7 +176,6 @@ def _normalize_row(
             wallet=account_id,
             timestamp=timestamp,
             classification=classification(
-                normalized_category="trade",
                 economic_kind="spot_trade",
                 projection_type="Trade",
                 journal_intent="asset_exchange",
@@ -201,7 +200,6 @@ def _normalize_row(
             wallet=account_id,
             timestamp=timestamp,
             classification=classification(
-                normalized_category="trade",
                 economic_kind="spot_trade",
                 projection_type="Trade",
                 journal_intent="asset_exchange",

@@ -116,14 +116,12 @@ def translate_transactions(
 def _classification_for_pnl(pnl: Decimal) -> ActivityClassification:
     if pnl > 0:
         return classification(
-            normalized_category="derivatives_profit",
             economic_kind="derivative_realized_profit",
             projection_type="Derivatives / Futures Profit",
             journal_intent="income_recognition",
             tax_treatment_code="derivative_realized_gain",
         )
     return classification(
-        normalized_category="derivatives_loss",
         economic_kind="derivative_realized_loss",
         projection_type="Derivatives / Futures Loss",
         journal_intent="expense_recognition",

@@ -48,7 +48,6 @@ def normalize_asset_migration(
         wallet="Coinbase",
         timestamp=parse_retail_timestamp(timestamp),
         classification=classification(
-            normalized_category="swap",
             economic_kind="asset_migration",
             projection_type="Swap (non taxable)",
             journal_intent="asset_exchange",

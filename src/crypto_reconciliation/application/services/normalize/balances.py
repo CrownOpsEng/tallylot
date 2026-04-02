@@ -6,7 +6,8 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from crypto_reconciliation.domain.models import BalanceSnapshot, NormalizedTransaction
+from crypto_reconciliation.domain.models import BalanceSnapshot
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.domain.types import AssetSymbol, SourceId
 
 

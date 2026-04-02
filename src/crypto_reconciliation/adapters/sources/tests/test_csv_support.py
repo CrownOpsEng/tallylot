@@ -55,7 +55,6 @@ def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) ->
             wallet="fixture",
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
-                normalized_category="trade",
                 economic_kind="spot_trade",
                 projection_type="Trade",
                 journal_intent="asset_exchange",

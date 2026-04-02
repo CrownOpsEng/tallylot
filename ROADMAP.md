@@ -27,10 +27,10 @@ decisions that should not be rediscovered from scratch.
 - Treat CoinTracking as an adapter-only oracle and projection layer, not as the
   central business model.
 - Keep CoinTracking compatibility behavior behind shared projection contracts.
-  During the current bridge phase, adapters may carry CoinTracking-compatible
-  classification metadata in adapter drafts and the compiled compatibility
-  artifact, but provider modules must not own standalone CoinTracking mapping
-  tables or rendering logic.
+  During the current bridge phase, adapters publish layered classification
+  hints in shared drafts and shared compiler code owns the compatibility
+  category mapping plus the compiled artifact. Provider modules must not own
+  standalone CoinTracking mapping tables or rendering logic.
 - Build shared adapter-layer support for stable translation chores such as file
   traversal, file-family dispatch, row-context handling, draft compilation, and
   wallet evidence construction so provider adapters stay thin.
@@ -213,8 +213,9 @@ decisions that should not be rediscovered from scratch.
   normalized-transaction workflow directly once the fact model is ready. Do not
   keep parallel compatibility aliases or dual-write wrappers.
 - Keep the interim adapter seam fact-aligned by translating provider exports
-  into adapter drafts first and compiling the temporary normalized transaction
-  artifact from that shared seam in one place.
+  into adapter drafts first, constructing provider-neutral transaction facts at
+  the shared seam, and compiling the temporary normalized transaction artifact
+  from that same shared seam in one place.
 - Add deterministic checkpoint assembly and continuity validation centered on
   the best-evidenced balance date around `2026-03-23`.
 - Add a journal renderer port and Ledger CLI implementation for hard-gate

@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from crypto_reconciliation.domain.models import NormalizedTransaction
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.ports.adapters import RenderedArtifact
 
 from .projection import cointracking_row

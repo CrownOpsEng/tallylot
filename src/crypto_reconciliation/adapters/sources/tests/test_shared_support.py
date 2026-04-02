@@ -11,6 +11,7 @@ from crypto_reconciliation.adapters.support.drafts import (
     compile_activity_draft,
     economic_leg,
     normalization_result_from_drafts,
+    transaction_fact_from_draft,
 )
 from crypto_reconciliation.adapters.support.wallets import normalized_identifier, wallet_identifier_kind
 from crypto_reconciliation.domain.models import IssueRecord
@@ -27,7 +28,6 @@ def test_draft_compiler_preserves_internal_fields() -> None:
             wallet="Primary",
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
-                normalized_category="deposit",
                 economic_kind="asset_deposit",
                 projection_type="Deposit",
                 journal_intent="funding_inflow",
@@ -50,6 +50,34 @@ def test_wallet_identifier_helpers_normalize_evm_and_classify_near_accounts() ->
     assert wallet_identifier_kind("example.near") == "near_account"
 
 
+def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
+    fact = transaction_fact_from_draft(
+        EconomicActivityDraft(
+            activity_id="txn-1",
+            source="fixture",
+            adapter_id="fixture_adapter",
+            account="Primary",
+            wallet="Primary",
+            timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
+            classification=classification(
+                economic_kind="spot_trade",
+                projection_type="Trade",
+                journal_intent="asset_exchange",
+                tax_treatment_code="capital_exchange",
+            ),
+            legs=(
+                economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),
+                economic_leg(direction="out", asset="CAD", amount=Decimal("10")),
+            ),
+        )
+    )
+
+    assert fact.classification.economic_kind == "spot_trade"
+    assert len(fact.legs) == 2
+    assert fact.legs[0].asset == "BTC"
+    assert fact.legs[1].asset == "CAD"
+
+
 def test_normalization_result_from_drafts_compiles_transactions_and_preserves_side_channels() -> None:
     result = normalization_result_from_drafts(
         (
@@ -61,7 +89,6 @@ def test_normalization_result_from_drafts_compiles_transactions_and_preserves_si
                 wallet="Primary",
                 timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
                 classification=classification(
-                    normalized_category="deposit",
                     economic_kind="asset_deposit",
                     projection_type="Deposit",
                     journal_intent="funding_inflow",

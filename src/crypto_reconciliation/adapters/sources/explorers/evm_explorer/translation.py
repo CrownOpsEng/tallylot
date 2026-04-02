@@ -60,7 +60,6 @@ def translate_transactions(
                     wallet=str(profile.source),
                     timestamp=_parse_utc_timestamp((row.get("DateTime (UTC)") or "").strip()),
                     classification=classification(
-                        normalized_category="deposit",
                         economic_kind="chain_transfer_in",
                         projection_type="Deposit",
                         journal_intent="funding_inflow",

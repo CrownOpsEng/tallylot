@@ -3,11 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from crypto_reconciliation.application.services.normalization_window import (
+from crypto_reconciliation.application.services.normalize import (
     filter_issues_by_window,
     filter_transactions_by_window,
 )
-from crypto_reconciliation.domain.models import IssueRecord, NormalizedTransaction
+from crypto_reconciliation.domain.models import IssueRecord
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 
 

@@ -9,8 +9,8 @@ from crypto_reconciliation.domain.models import (
     BalanceSnapshot,
     IssueRecord,
     NormalizationReviewRecord,
-    NormalizedTransaction,
 )
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 
 

@@ -42,7 +42,6 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                     wallet="Spot",
                     timestamp=timestamp,
                     classification=classification(
-                        normalized_category="trade",
                         economic_kind="spot_trade",
                         projection_type="Trade",
                         journal_intent="asset_exchange",
@@ -69,7 +68,6 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                     wallet="Spot",
                     timestamp=timestamp,
                     classification=classification(
-                        normalized_category="trade",
                         economic_kind="spot_trade",
                         projection_type="Trade",
                         journal_intent="asset_exchange",

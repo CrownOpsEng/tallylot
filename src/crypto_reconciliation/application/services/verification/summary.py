@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -11,13 +10,15 @@ from typing import cast
 from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
-REQUIRED_FILES = {
-    "validate_transactions": "Validate Transactions.csv",
-    "missing_transactions": "Missing Transactions.csv",
-    "duplicate_transactions": "Duplicate Transactions.csv",
-    "current_balance": "Current Balance.csv",
-    "balance_by_exchange": "Balance by Exchange.csv",
-}
+from .balances import (
+    build_balance_map,
+    build_exchange_balance_map,
+    compare_balance_maps,
+    compare_exchange_balance_maps,
+    decimal_text,
+)
+from .paths import required_verification_paths
+from .rows import expand_counter_delta, row_counter, subtract_counters
 
 
 def summarize_verification_exports(
@@ -119,104 +120,3 @@ def summarize_verification_exports(
         "exchange_balance_deltas": cast(JsonValue, exchange_balance_deltas),
         "current_duplicate_transaction_rows": cast(JsonValue, current_duplicates),
     }
-
-
-def required_verification_paths(directory: Path) -> dict[str, Path]:
-    if not directory.exists():
-        raise FileNotFoundError(f"verification directory does not exist: {directory}")
-    if not directory.is_dir():
-        raise NotADirectoryError(f"verification path is not a directory: {directory}")
-    resolved: dict[str, Path] = {}
-    for key, filename in REQUIRED_FILES.items():
-        path = directory / filename
-        if not path.exists():
-            raise FileNotFoundError(f"Missing required export {filename!r} in {directory}")
-        if not path.is_file():
-            raise FileNotFoundError(f"Required export is not a file: {path}")
-        resolved[key] = path
-    return resolved
-
-
-def row_counter(rows: list[dict[str, str]]) -> Counter[tuple[tuple[str, str], ...]]:
-    return Counter(tuple(sorted((key, value or "") for key, value in row.items())) for row in rows)
-
-
-def expand_counter_delta(counter: Counter[tuple[tuple[str, str], ...]]) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    for signature, count in sorted(counter.items()):
-        row = dict(signature)
-        for _ in range(count):
-            rows.append(row)
-    return rows
-
-
-def subtract_counters(
-    current: Counter[tuple[tuple[str, str], ...]],
-    previous: Counter[tuple[tuple[str, str], ...]],
-) -> Counter[tuple[tuple[str, str], ...]]:
-    delta = current.copy()
-    delta.subtract(previous)
-    return Counter({key: count for key, count in delta.items() if count > 0})
-
-
-def build_balance_map(rows: list[dict[str, str]]) -> dict[str, Decimal]:
-    amounts: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
-    for row in rows:
-        amounts[row["Ticker"]] += Decimal(row["Amount"])
-    return dict(amounts)
-
-
-def build_exchange_balance_map(rows: list[dict[str, str]]) -> dict[tuple[str, str], Decimal]:
-    amounts: dict[tuple[str, str], Decimal] = defaultdict(lambda: Decimal("0"))
-    for row in rows:
-        amounts[(row["Exchange"], row["Currency"])] += Decimal(row["Amount"])
-    return dict(amounts)
-
-
-def compare_balance_maps(
-    previous: dict[str, Decimal],
-    current: dict[str, Decimal],
-) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    for ticker in sorted(set(previous) | set(current)):
-        previous_amount = previous.get(ticker, Decimal("0"))
-        current_amount = current.get(ticker, Decimal("0"))
-        difference = current_amount - previous_amount
-        if difference == Decimal("0"):
-            continue
-        rows.append(
-            {
-                "ticker": ticker,
-                "reference_amount": decimal_text(previous_amount),
-                "current_amount": decimal_text(current_amount),
-                "difference": decimal_text(difference),
-            }
-        )
-    return rows
-
-
-def compare_exchange_balance_maps(
-    previous: dict[tuple[str, str], Decimal],
-    current: dict[tuple[str, str], Decimal],
-) -> list[dict[str, str]]:
-    rows: list[dict[str, str]] = []
-    for exchange, currency in sorted(set(previous) | set(current)):
-        previous_amount = previous.get((exchange, currency), Decimal("0"))
-        current_amount = current.get((exchange, currency), Decimal("0"))
-        difference = current_amount - previous_amount
-        if difference == Decimal("0"):
-            continue
-        rows.append(
-            {
-                "exchange": exchange,
-                "currency": currency,
-                "reference_amount": decimal_text(previous_amount),
-                "current_amount": decimal_text(current_amount),
-                "difference": decimal_text(difference),
-            }
-        )
-    return rows
-
-
-def decimal_text(value: Decimal) -> str:
-    return format(value.quantize(Decimal("0.00000000")), "f")

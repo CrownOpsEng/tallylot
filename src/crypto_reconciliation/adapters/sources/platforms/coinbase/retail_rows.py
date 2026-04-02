@@ -162,7 +162,6 @@ def _fee_legs(fee_amount: Decimal | None, fee_asset: str) -> tuple[EconomicLegDr
 def _classification_for_type(tx_type: str) -> ActivityClassification:
     if tx_type in {"buy", "sell"}:
         return classification(
-            normalized_category="trade",
             economic_kind="spot_trade",
             projection_type="Trade",
             journal_intent="asset_exchange",
@@ -170,7 +169,6 @@ def _classification_for_type(tx_type: str) -> ActivityClassification:
         )
     if tx_type == "reward income":
         return classification(
-            normalized_category="interest_income",
             economic_kind="interest_income",
             projection_type="Interest Income",
             journal_intent="income_recognition",
@@ -178,14 +176,12 @@ def _classification_for_type(tx_type: str) -> ActivityClassification:
         )
     if tx_type in {"receive", "deposit"}:
         return classification(
-            normalized_category="deposit",
             economic_kind="asset_deposit",
             projection_type="Deposit",
             journal_intent="funding_inflow",
             tax_treatment_code="non_taxable_transfer_in",
         )
     return classification(
-        normalized_category="withdrawal",
         economic_kind="asset_withdrawal",
         projection_type="Withdrawal",
         journal_intent="funding_outflow",

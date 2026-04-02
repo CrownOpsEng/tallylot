@@ -6,7 +6,7 @@ from .adapters import AdapterCapability, AdapterManifest
 from .inventory import FileInventoryEntry, WalletInventoryRecord
 from .issues import IssueRecord, NormalizationReviewRecord
 from .profiles import SourceProfile, VerificationExportSet
-from .transactions import BalanceSnapshot, NormalizedTransaction, TransactionCategory
+from .transactions import BalanceSnapshot
 
 __all__ = [
     "AdapterCapability",
@@ -18,11 +18,9 @@ __all__ = [
     "IssueRecord",
     "JournalIntent",
     "NormalizationReviewRecord",
-    "NormalizedTransaction",
     "ProjectionType",
     "SourceProfile",
     "TaxTreatmentCode",
-    "TransactionCategory",
     "VerificationExportSet",
     "WalletInventoryRecord",
 ]

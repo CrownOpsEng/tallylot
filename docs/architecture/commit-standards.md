@@ -80,6 +80,7 @@ A stable checkpoint means:
 - the change slice is coherent and reviewable
 - the tree is internally consistent
 - relevant checks have passed
+- the commit has actually been created before the task is closed
 
 Heuristics:
 

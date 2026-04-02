@@ -12,7 +12,8 @@ from crypto_reconciliation.adapters.support.drafts import (
     economic_leg,
     fee_leg,
 )
-from crypto_reconciliation.domain.models import NormalizationReviewRecord, SourceProfile, TransactionCategory
+from crypto_reconciliation.domain.models import NormalizationReviewRecord, SourceProfile
+from crypto_reconciliation.domain.models.transactions import TransactionCategory
 from crypto_reconciliation.domain.value_objects import parse_decimal, parse_timestamp
 
 from .contracts import TRANSACTIONS_FILENAME
@@ -83,7 +84,6 @@ def classification_for_category(category: TransactionCategory) -> ActivityClassi
     }
     economic_kind, projection_type, journal_intent, tax_treatment_code = mapping[category]
     return classification(
-        normalized_category=category,
         economic_kind=economic_kind,
         projection_type=projection_type,
         journal_intent=journal_intent,

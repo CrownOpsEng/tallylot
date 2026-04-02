@@ -5,13 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from crypto_reconciliation.application.models.source import NormalizeRequest, NormalizeResponse
-from crypto_reconciliation.application.services.balance_snapshots import derive_balance_snapshots
 from crypto_reconciliation.application.services.common import ensure_directory
 from crypto_reconciliation.application.services.issue_context import enrich_issue_context_timestamps
-from crypto_reconciliation.application.services.normalization_window import (
-    filter_issues_by_window,
-    filter_transactions_by_window,
-)
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
 from crypto_reconciliation.domain.models import SourceProfile
@@ -20,8 +15,10 @@ from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 from crypto_reconciliation.ports.storage import StoragePort
 
 from .artifacts import write_normalization_artifacts
+from .balances import derive_balance_snapshots
 from .models import NormalizationOutputs, NormalizationWindowStats
 from .summary import build_normalization_summary
+from .window import filter_issues_by_window, filter_transactions_by_window
 
 
 @dataclass(frozen=True)

@@ -44,7 +44,6 @@ def normalize_convert_order_rows(
                 wallet=(row.get("Wallet") or "").strip() or "Spot",
                 timestamp=parse_export_timestamp(date_updated, path.name),
                 classification=classification(
-                    normalized_category="trade",
                     economic_kind="asset_conversion",
                     projection_type="Trade",
                     journal_intent="asset_exchange",
@@ -100,7 +99,6 @@ def normalize_c2c_order_rows(
                 wallet="Funding",
                 timestamp=parse_export_timestamp(created_time, path.name),
                 classification=classification(
-                    normalized_category="trade",
                     economic_kind="p2p_trade",
                     projection_type="Trade",
                     journal_intent="asset_exchange",

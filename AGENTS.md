@@ -44,6 +44,8 @@ Do not pre-load every repo doc by default.
   - `uv run python -m tools.install_git_hooks`
 - Do not consider work ready until `markdownlint`, `ruff`, `mypy`, `pyright`,
   `pylint`, and `pytest` pass.
+- Do not consider non-trivial work ready until the verified checkpoint commit
+  already exists.
 - Bootstrap the checked-in hooks:
   - `uv run python -m tools.install_git_hooks`
 - For explicit local verification, prefer:
@@ -60,6 +62,10 @@ Do not pre-load every repo doc by default.
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value
   - end the task on a clean, meaningful checkpoint commit
+- If a flat directory would exceed 3 same-prefix files for one capability,
+  regroup that capability into a package in the same task.
+- If a feature already has a package, keep new helpers inside that package
+  instead of beside it as flat sibling modules.
 
 ## Workspace Configuration
 

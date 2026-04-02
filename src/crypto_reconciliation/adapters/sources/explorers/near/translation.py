@@ -75,7 +75,6 @@ def translate_transactions(
                         wallet=str(profile.source),
                         timestamp=timestamp,
                         classification=classification(
-                            normalized_category="deposit",
                             economic_kind="chain_transfer_in",
                             projection_type="Deposit",
                             journal_intent="funding_inflow",
@@ -103,7 +102,6 @@ def translate_transactions(
                             wallet=str(profile.source),
                             timestamp=timestamp,
                             classification=classification(
-                                normalized_category="withdrawal",
                                 economic_kind="staking_transfer_out",
                                 projection_type="Withdrawal",
                                 journal_intent="funding_outflow",
@@ -125,7 +123,6 @@ def translate_transactions(
                             wallet=f"{profile.source} - Staking",
                             timestamp=timestamp,
                             classification=classification(
-                                normalized_category="deposit",
                                 economic_kind="staking_transfer_in",
                                 projection_type="Deposit",
                                 journal_intent="funding_inflow",

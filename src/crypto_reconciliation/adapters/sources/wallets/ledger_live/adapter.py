@@ -168,7 +168,6 @@ class LedgerLiveAdapter:
                     wallet=account_label,
                     timestamp=timestamp,
                     classification=classification(
-                        normalized_category="trade",
                         economic_kind="asset_swap",
                         projection_type="Trade",
                         journal_intent="asset_exchange",

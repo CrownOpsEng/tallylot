@@ -10,8 +10,8 @@ from crypto_reconciliation.domain.models import (
     BalanceSnapshot,
     IssueRecord,
     NormalizationReviewRecord,
-    NormalizedTransaction,
 )
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 
 
 class StoragePort(Protocol):

@@ -9,9 +9,9 @@ from crypto_reconciliation.domain.models import (
     BalanceSnapshot,
     IssueRecord,
     NormalizationReviewRecord,
-    NormalizedTransaction,
     WalletInventoryRecord,
 )
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 
 
 @dataclass(frozen=True)

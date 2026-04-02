@@ -8,12 +8,13 @@ from crypto_reconciliation.domain.models import (
     BalanceEvidence,
     IssueRecord,
     NormalizationReviewRecord,
-    NormalizedTransaction,
     WalletInventoryRecord,
 )
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.ports.adapters import NormalizationResult
 
+from .compatibility import compatibility_category_for_classification
 from .models import EconomicActivityDraft
 
 
@@ -57,7 +58,7 @@ def compile_activity_draft(draft: EconomicActivityDraft) -> NormalizedTransactio
         account=draft.account,
         wallet=draft.wallet,
         timestamp=draft.timestamp,
-        category=draft.classification.normalized_category,
+        category=compatibility_category_for_classification(draft.classification),
         economic_kind=draft.classification.economic_kind,
         projection_type=draft.classification.projection_type,
         journal_intent=draft.classification.journal_intent,

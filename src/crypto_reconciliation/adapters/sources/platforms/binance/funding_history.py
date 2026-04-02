@@ -37,7 +37,6 @@ def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[EconomicA
                 wallet="Funding",
                 timestamp=parse_export_timestamp((row.get("Time") or "").strip(), path.name),
                 classification=classification(
-                    normalized_category="deposit",
                     economic_kind="asset_deposit",
                     projection_type="Deposit",
                     journal_intent="funding_inflow",
@@ -74,7 +73,6 @@ def normalize_withdraw_rows(profile: SourceProfile, path: Path) -> list[Economic
                 wallet="Funding",
                 timestamp=parse_export_timestamp((row.get("Time") or "").strip(), path.name),
                 classification=classification(
-                    normalized_category="withdrawal",
                     economic_kind="asset_withdrawal",
                     projection_type="Withdrawal",
                     journal_intent="funding_outflow",

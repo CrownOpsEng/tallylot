@@ -7,14 +7,11 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal, TypeVar
 
-from crypto_reconciliation.domain.models import (
+from crypto_reconciliation.domain.transactions import (
     EconomicKind,
     JournalIntent,
     ProjectionType,
     TaxTreatmentCode,
-    TransactionCategory,
-)
-from crypto_reconciliation.domain.transactions import (
     parse_economic_kind,
     parse_journal_intent,
     parse_projection_type,
@@ -27,7 +24,6 @@ EnumT = TypeVar("EnumT")
 
 @dataclass(frozen=True)
 class ActivityClassification:
-    normalized_category: TransactionCategory
     economic_kind: EconomicKind
     projection_type: ProjectionType | None
     journal_intent: JournalIntent
@@ -94,14 +90,12 @@ class EconomicActivityDraft:
 
 def classification(
     *,
-    normalized_category: TransactionCategory,
     economic_kind: EconomicKind | str,
     projection_type: ProjectionType | str | None = None,
     journal_intent: JournalIntent | str,
     tax_treatment_code: TaxTreatmentCode | str,
 ) -> ActivityClassification:
     return ActivityClassification(
-        normalized_category=normalized_category,
         economic_kind=(
             economic_kind
             if isinstance(economic_kind, EconomicKind)

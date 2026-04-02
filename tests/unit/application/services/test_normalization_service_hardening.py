@@ -9,7 +9,8 @@ from typing import override
 import pytest
 
 from crypto_reconciliation.application.models.source import NormalizeRequest
-from crypto_reconciliation.domain.models import BalanceEvidence, NormalizedTransaction
+from crypto_reconciliation.domain.models import BalanceEvidence
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.domain.transactions import ProjectionType
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore

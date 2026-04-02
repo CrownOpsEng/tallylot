@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.services.verification_compare import required_verification_paths
+from crypto_reconciliation.application.services.verification import required_verification_paths
 
 
 def test_required_verification_paths_rejects_missing_exports(tmp_path: Path) -> None:

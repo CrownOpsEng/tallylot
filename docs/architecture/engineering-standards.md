@@ -51,8 +51,10 @@ Default to one responsibility per module.
 
 - Keep most modules under roughly 150 lines.
 - Start a split review once a module approaches 200 lines.
-- Refactor before extending beyond 250 lines unless the file is mostly
+- Refactor before extending beyond 300 lines unless the file is mostly
   declarative models, typed schemas, or protocol definitions.
+- Treat `300` lines as the official repo refactor limit.
+- Treat `450` lines as the hard-stop lint ceiling (`150%` of the repo limit).
 - Refactor by bounded concept, not by arbitrary suffixes.
 - Do not add new dumping-ground modules such as `helpers.py`, `utils.py`,
   `misc.py`, or another catch-all `common.py`.
@@ -86,6 +88,9 @@ Do not keep flattening files forever once a feature package exists.
 
 - Use a feature package when a flat layer directory would otherwise collect
   more than 3 same-prefix files for one capability.
+- Treat this as a hard refactor trigger, not a style preference. If a fourth
+  same-prefix sibling would be added, regroup the capability into a package in
+  the same task instead of leaving a flat prefix cluster behind.
 - Inside an existing feature package, create a nested subpackage when one
   bounded sub-capability meets any of these conditions:
   - 4 or more files share the same concept or repeated prefix
@@ -109,6 +114,10 @@ Current application of this rule:
   that now own their own models, rules, and entry points.
 - The plan-building support files should stay flat until they form a clearer
   subdomain than “helpers used by the intake service”.
+- Verification comparison belongs under `application/services/verification/`
+  so the service and compare helpers share one capability package.
+- Normalization window and derived-balance helpers belong under
+  `application/services/normalize/` rather than as nearby flat siblings.
 
 ## Naming Rules
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from crypto_reconciliation.domain.models import NormalizedTransaction
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.domain.value_objects import format_decimal, format_timestamp
 
 

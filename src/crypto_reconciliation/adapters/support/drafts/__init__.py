@@ -1,6 +1,7 @@
 """Shared adapter draft models and compilers."""
 
 from .compiler import compile_activity_draft, compile_activity_drafts, normalization_result_from_drafts
+from .facts import transaction_fact_from_draft, transaction_facts_from_drafts
 from .models import (
     ActivityClassification,
     ActivityDraftSeed,
@@ -22,4 +23,6 @@ __all__ = [
     "economic_leg",
     "fee_leg",
     "normalization_result_from_drafts",
+    "transaction_fact_from_draft",
+    "transaction_facts_from_drafts",
 ]

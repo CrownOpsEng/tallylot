@@ -10,11 +10,9 @@ from .models import (
     IssueRecord,
     JournalIntent,
     NormalizationReviewRecord,
-    NormalizedTransaction,
     ProjectionType,
     SourceProfile,
     TaxTreatmentCode,
-    TransactionCategory,
     VerificationExportSet,
     WalletInventoryRecord,
 )
@@ -29,11 +27,9 @@ __all__ = [
     "IssueRecord",
     "JournalIntent",
     "NormalizationReviewRecord",
-    "NormalizedTransaction",
     "ProjectionType",
     "SourceProfile",
     "TaxTreatmentCode",
-    "TransactionCategory",
     "VerificationExportSet",
     "WalletInventoryRecord",
 ]

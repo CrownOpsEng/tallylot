@@ -47,7 +47,6 @@ def _normalize_cash_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                normalized_category="deposit",
                 economic_kind="fiat_deposit",
                 projection_type="Deposit",
                 journal_intent="funding_inflow",
@@ -71,7 +70,6 @@ def _normalize_cash_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                normalized_category="expense",
                 economic_kind="cash_expense",
                 projection_type="Expense (non taxable)",
                 journal_intent="expense_recognition",
@@ -92,7 +90,6 @@ def _normalize_cash_row(
         wallet="Shakepay",
         timestamp=timestamp,
         classification=classification(
-            normalized_category="withdrawal",
             economic_kind="cash_withdrawal",
             projection_type="Withdrawal",
             journal_intent="funding_outflow",
@@ -129,7 +126,6 @@ def _normalize_crypto_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                normalized_category="reward",
                 economic_kind="platform_reward",
                 projection_type="Reward / Bonus",
                 journal_intent="income_recognition",
@@ -151,7 +147,6 @@ def _normalize_crypto_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                normalized_category="trade",
                 economic_kind="spot_trade",
                 projection_type="Trade",
                 journal_intent="asset_exchange",
@@ -176,7 +171,6 @@ def _normalize_crypto_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                normalized_category="withdrawal",
                 economic_kind="asset_withdrawal",
                 projection_type="Withdrawal",
                 journal_intent="funding_outflow",

@@ -6,8 +6,16 @@ from decimal import Decimal
 
 import pytest
 
-from crypto_reconciliation.domain.models import NormalizedTransaction
-from crypto_reconciliation.domain.transactions import ProjectionType
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
+from crypto_reconciliation.domain.transactions import (
+    EconomicKind,
+    EconomicLeg,
+    FactClassification,
+    JournalIntent,
+    ProjectionType,
+    TaxTreatmentCode,
+    TransactionFact,
+)
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 
 
@@ -68,3 +76,27 @@ def test_transaction_to_row_formats_fields() -> None:
     assert row["account"] == "Fixture"
     assert row["projection_type"] == "Trade"
     assert row["operation_group_id"] == "bundle-1"
+
+
+def test_transaction_fact_requires_at_least_one_leg() -> None:
+    with pytest.raises(ValueError, match="at least one economic leg"):
+        TransactionFact(
+            fact_id=TransactionId("fact-1"),
+            source=SourceId("fixture"),
+            adapter_id=AdapterId("structured_csv"),
+            account="Fixture",
+            wallet="Primary",
+            timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
+            classification=FactClassification(
+                economic_kind=EconomicKind.SPOT_TRADE,
+                journal_intent=JournalIntent.ASSET_EXCHANGE,
+                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                projection_type=ProjectionType.TRADE,
+            ),
+            legs=(),
+        )
+
+
+def test_fact_leg_rejects_non_positive_amounts() -> None:
+    with pytest.raises(ValueError, match="fact leg amount must be greater than zero"):
+        EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("0"))

@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from decimal import Decimal
 
-from crypto_reconciliation.application.services.verification_compare import (
+from crypto_reconciliation.application.services.verification import (
     build_balance_map,
     build_exchange_balance_map,
     compare_balance_maps,

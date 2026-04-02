@@ -136,7 +136,6 @@ def _normalize_row(
             wallet=str(profile.source),
             timestamp=timestamp,
             classification=classification(
-                normalized_category="deposit",
                 economic_kind="fiat_deposit",
                 projection_type="Deposit",
                 journal_intent="funding_inflow",
@@ -158,7 +157,6 @@ def _normalize_row(
             wallet=str(profile.source),
             timestamp=timestamp,
             classification=classification(
-                normalized_category="trade",
                 economic_kind="spot_trade",
                 projection_type="Trade",
                 journal_intent="asset_exchange",
@@ -183,7 +181,6 @@ def _normalize_row(
             wallet=str(profile.source),
             timestamp=timestamp,
             classification=classification(
-                normalized_category="withdrawal",
                 economic_kind="asset_withdrawal",
                 projection_type="Withdrawal",
                 journal_intent="funding_outflow",

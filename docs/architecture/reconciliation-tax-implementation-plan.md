@@ -239,9 +239,14 @@ Rules:
 
 - provider modules translate into drafts only; they do not assemble
   `NormalizedTransaction` directly
+- shared fact builders may derive `TransactionFact` objects from drafts before
+  the temporary compatibility artifact is retired, but that derivation stays in
+  shared support rather than provider-local code
 - shared support stays adapter-agnostic and registry-driven; adapters publish
   manifests, translation registries, and provider-local coverage metadata
 - one shared compiler owns draft-to-compatibility conversion
+- one shared compatibility mapper owns the legacy category mapping from layered
+  classifications
 - one shared projection mapper owns CoinTracking CSV row construction
 - grouped operations and provider-local export families must resolve through
   explicit translation registries, not ad hoc adapter entry-point branching

@@ -9,7 +9,8 @@ import pytest
 
 from crypto_reconciliation.application.models.output import RenderOutputRequest
 from crypto_reconciliation.application.services.projections import OutputProjectionService
-from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, NormalizedTransaction
+from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore

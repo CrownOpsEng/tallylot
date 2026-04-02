@@ -12,10 +12,10 @@ from crypto_reconciliation.domain.models import (
     FileInventoryEntry,
     IssueRecord,
     NormalizationReviewRecord,
-    NormalizedTransaction,
     SourceProfile,
     WalletInventoryRecord,
 )
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
 from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 

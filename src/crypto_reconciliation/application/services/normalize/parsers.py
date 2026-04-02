@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
-from crypto_reconciliation.domain.models import NormalizedTransaction, TransactionCategory
+from crypto_reconciliation.domain.models.transactions import NormalizedTransaction, TransactionCategory
 from crypto_reconciliation.domain.transactions import (
     parse_economic_kind,
     parse_journal_intent,
