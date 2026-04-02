@@ -7,6 +7,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from repo_support.paths import repo_root as active_repo_root
+from repo_support.pyright_config import sync_pyright_config
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -73,7 +74,7 @@ def _scaffold_adapter(
 
     adapter_name = module_parts[-1]
     adapter_class_name = f"{_camel_case(adapter_name)}{spec.kind.title()}Adapter"
-    return (
+    created = (
         _write_file(
             adapter_root / "__init__.py",
             'from .adapter import ADAPTER\n\n__all__ = ["ADAPTER"]\n',
@@ -115,6 +116,8 @@ def _scaffold_adapter(
             force=force,
         ),
     )
+    sync_pyright_config(root=spec.repo_root)
+    return created
 
 
 def _adapter_root(repo_root: Path, kind: str, module_parts: tuple[str, ...]) -> Path:

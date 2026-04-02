@@ -1,5 +1,11 @@
 {
-  "include": ["src", "tests", "tools", "conftest.py"],
+  "extends": "./pyrightconfig.tests.json",
+  "include": [
+    "src",
+    "tests",
+    "tools",
+    "conftest.py"
+  ],
   "exclude": [
     "**/__pycache__",
     "**/.pytest_cache",
@@ -9,7 +15,10 @@
     "**/build",
     "**/dist"
   ],
-  "extraPaths": ["src", "."],
+  "extraPaths": [
+    "src",
+    "."
+  ],
   "typeCheckingMode": "strict",
   "pythonVersion": "3.12",
   "pythonPlatform": "Linux",
@@ -65,12 +74,5 @@
   "reportMissingTypeArgument": true,
   "reportCallInDefaultInitializer": true,
   "reportUnnecessaryTypeIgnoreComment": true,
-  "reportImplicitOverride": true,
-  "executionEnvironments": [
-    {
-      "root": "tests",
-      "extraPaths": ["src", "."],
-      "reportPrivateUsage": false
-    }
-  ]
+  "reportImplicitOverride": true
 }

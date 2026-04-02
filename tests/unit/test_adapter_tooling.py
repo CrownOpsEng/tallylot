@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from repo_support import paths as repo_paths
@@ -57,6 +58,16 @@ def test_scaffold_parser_uses_active_repo_root_by_default(tmp_path: Path) -> Non
 
 def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    (repo_root / "pyrightconfig.json").write_text(
+        """\
+{
+  "extends": "./pyrightconfig.tests.json",
+  "include": ["src", "tests", "tools", "conftest.py"]
+}
+""",
+        encoding="utf-8",
+    )
     created = _scaffold_adapter(
         spec=_AdapterScaffoldSpec(
             repo_root=repo_root,
@@ -68,6 +79,7 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
         ),
         force=False,
     )
+    pyright_config = json.loads((repo_root / "pyrightconfig.tests.json").read_text(encoding="utf-8"))
 
     created_paths = {path.relative_to(repo_root) for path in created}
     assert created_paths == {
@@ -87,6 +99,14 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
     assert "class ExampleExchangeSourceAdapter" in adapter_py.read_text(encoding="utf-8")
     assert "translate_source_batches" in adapter_py.read_text(encoding="utf-8")
     assert "FILE_TRANSLATION_RULES" in translation_py.read_text(encoding="utf-8")
+    assert {
+        environment["root"]
+        for environment in pyright_config["executionEnvironments"]
+        if environment.get("reportPrivateUsage") is False
+    } == {
+        "tests",
+        "src/tallylot/adapters/sources/platforms/example_exchange/tests",
+    }
 
 
 def test_scaffold_adapter_requires_source_category_namespace(tmp_path: Path) -> None:
