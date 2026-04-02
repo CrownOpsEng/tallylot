@@ -54,12 +54,21 @@ Do not pre-load every repo doc by default.
   already exists.
 - Bootstrap the checked-in hooks:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
+- Prefer fresh VS Code workspace diagnostics for instant static-analysis feedback when the
+  `vscode-problems` skill or MCP snapshot is available and current.
+  Treat that signal as advisory only.
 - For explicit local verification, prefer:
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
 - Do not run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the parallel
   quality-gate runner unless you are debugging hook behavior itself.
+- Use `tools.run_quality_gates --full-tests` as the normal final local verification command.
+- Use `tools.run_ci_parity_checks` only when changes touch CI, packaging, release, or other
+  workflow surfaces where local parity with GitHub Actions is worth the extra time.
+- Do not run `tools.run_quality_gates --full-tests` immediately before
+  `tools.run_ci_parity_checks`; the parity runner already includes the full
+  quality gate pass.
 - The commit-time `pytest` hook is intentionally fast:
   - `unit and not slow`
   - no coverage

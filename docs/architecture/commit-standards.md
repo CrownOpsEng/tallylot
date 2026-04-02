@@ -89,7 +89,7 @@ PR body rules:
   - `What:`
   - `Checks:`
   - `Included checkpoints:`
-- use flat `- ` bullets under every section
+- use flat hyphen bullets under every section
 - keep `Included checkpoints:` in chronological order using the exact
   checkpoint subjects from the branch
 - wrap every `Included checkpoints:` entry in backticks using the exact commit
@@ -170,7 +170,6 @@ coverage, contract tests, or end-to-end CLI flows on every commit. Full
 verification still means running:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
 
@@ -190,7 +189,16 @@ parallel quality-gate runner:
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks
 ```
+
+Use `tools.run_quality_gates --full-tests` as the default final local
+verification command. Use `tools.run_ci_parity_checks` only when changing CI,
+packaging, release, or other workflow surfaces where exact local parity with
+GitHub Actions is worth the extra time.
+Do not run `tools.run_quality_gates --full-tests` immediately before
+`tools.run_ci_parity_checks`; the parity runner already includes the full
+quality gate pass.
 
 `pylint` remains part of the parallel quality-gate runner, but it is not part
 of the `pre-commit` hook path because it is materially slower than the other

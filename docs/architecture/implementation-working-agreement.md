@@ -21,12 +21,18 @@ commands so `uv` does not create a workspace-local environment.
 
 Prefer the repo's built-in tooling before inventing local workflows:
 
+- inspect a fresh VS Code Problems snapshot first when the `vscode-problems`
+  skill or MCP server is available, then fall back to CLI checks when the
+  snapshot is stale, missing, or incomplete
 - bootstrap hooks in each clone with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
 - run broad verification with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
 - run full verification before closing substantial work with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+- mirror GitHub Actions locally when changing workflow, packaging, or release
+  behavior with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
 - scaffold new adapters with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
 - refresh adapter golden fixtures with
@@ -163,6 +169,8 @@ When not to commit:
 
 Default verification expectations:
 
+- use fresh VS Code Problems diagnostics first for instant editor-grounded
+  lint and type feedback when they are available and current
 - targeted tests during development
 - full relevant checks before closing substantial work
 
@@ -171,7 +179,12 @@ is:
 
 - do not call work done with only local reasoning
 - verify the changed behavior at the smallest useful level first
-- then run the broader quality gates before closing the task
+- then run `tools.run_quality_gates --full-tests` before closing the task
+- escalate to `tools.run_ci_parity_checks` only when the change touches CI,
+  packaging, release, or other workflow surfaces where exact GitHub Actions
+  parity matters
+- do not run `tools.run_quality_gates --full-tests` again immediately before
+  `tools.run_ci_parity_checks`; the parity runner already includes it
 
 If you are changing commit-time or suite-selection policy, benchmark first
 instead of guessing:

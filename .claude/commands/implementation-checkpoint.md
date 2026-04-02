@@ -21,9 +21,12 @@ Use this route before closing any non-trivial coding task.
    - new parser or renderer contracts
    - fixed edge cases
 5. Run the appropriate verification path:
+   - use fresh VS Code Problems diagnostics first when they are available and current
    - targeted tests while iterating
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests` before closing
      substantial work
+   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks` when the change touches CI,
+     packaging, release, or other workflow surfaces
 6. If architecture, schema, or sequencing changed, update:
    - `ROADMAP.md`
    - `docs/architecture/reconciliation-tax-implementation-plan.md`

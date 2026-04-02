@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD041 MD032 -->
+
 Why:
 - explain the problem or constraint this PR resolves
 
