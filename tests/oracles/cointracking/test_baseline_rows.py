@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tools.oracles.cointracking.baseline import find_required_baseline_exports
-from tools.oracles.cointracking.baseline_rows import (
+from tools.oracles.cointracking.baseline.rows import (
     parse_baseline_export_rows,
     read_baseline_export_rows,
 )
