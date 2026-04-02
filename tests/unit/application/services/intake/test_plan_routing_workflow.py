@@ -153,10 +153,10 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
             {
                 "source": "eth-gala1",
                 "capture_path": "/tmp/capture",
-                "wallet_id": "evm_address:0x2222222222222222222222222222222222222222",
+                "wallet_id": "evm_address:0x3333333333333333333333333333333333333333",
                 "identifier_kind": "evm_address",
-                "normalized_identifier": "0x2222222222222222222222222222222222222222",
-                "display_identifier": "0x2222222222222222222222222222222222222222",
+                "normalized_identifier": "0x3333333333333333333333333333333333333333",
+                "display_identifier": "0x3333333333333333333333333333333333333333",
                 "network_scope": "ethereum",
                 "controller": "Explorer export",
                 "account_label": "Account 2",
@@ -173,7 +173,7 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
     export_path = incoming_dir / "Account1-bsc export-address-token.csv"
     export_path.write_text(
         "Transaction Hash,Blockno,UnixTimestamp,DateTime (UTC),TokenValue,TokenSymbol,From,To\n"
-        "0xabc,1,1710000000,2024-03-09 09:41:37,1,GALA,0x0,0x2222222222222222222222222222222222222222\n",
+        "0xabc,1,1710000000,2024-03-09 09:41:37,1,GALA,0x0,0x3333333333333333333333333333333333333333\n",
         encoding="utf-8",
     )
     report_dir = tmp_path / "reports"
