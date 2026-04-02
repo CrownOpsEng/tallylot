@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.adapter_packs import fixture_raw_dir
@@ -32,8 +33,8 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     response = service.execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-08-05 08:34:05",
             window_end="2025-12-31 23:59:59",
         )
@@ -79,8 +80,8 @@ def test_normalization_service_filters_timestamped_issues_outside_explicit_windo
     response = service.execute(
         NormalizeRequest(
             source="Binance",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-08-05 08:34:05",
             window_end="2025-12-31 23:59:59",
         )
@@ -111,8 +112,8 @@ def test_normalization_service_filters_row_scoped_issues_outside_explicit_window
     response = service.execute(
         NormalizeRequest(
             source="Future Broker",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-09-23 00:00:00",
             window_end="2025-12-31 23:59:59",
         )
@@ -141,8 +142,8 @@ def test_normalization_service_rejects_ambiguous_timezone_inventory(tmp_path: Pa
         service.execute(
             NormalizeRequest(
                 source="Binance",
-                raw_dir=raw_dir,
-                output_dir=tmp_path / "normalized",
+                raw_capture_ref=to_resource_ref(raw_dir),
+                normalized_output_ref=to_resource_ref(tmp_path / "normalized"),
             )
         )
 
@@ -176,8 +177,8 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
     response = service.execute(
         NormalizeRequest(
             source="Future Exchange",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
         )
     )
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
@@ -210,8 +211,8 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
     response = service.execute(
         NormalizeRequest(
             source=source,
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-01-01 00:00:00",
             window_end="2025-12-31 23:59:59",
         )

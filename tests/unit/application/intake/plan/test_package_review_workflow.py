@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from tallylot.application.intake import IntakePlanRequest, PlanIntakeUseCase
+from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -26,9 +27,9 @@ def test_source_intake_service_skips_subset_duplicate_packages(tmp_path: Path) -
 
     PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -79,9 +80,9 @@ def test_source_intake_service_flags_repo_manifest_overlap_for_review(tmp_path: 
 
     PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -111,9 +112,9 @@ def test_source_intake_service_flags_existing_capture_window_overlap_for_review(
 
     PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -148,9 +149,9 @@ def test_source_intake_service_keeps_different_cycle_packages_in_overlap_review(
 
     PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 

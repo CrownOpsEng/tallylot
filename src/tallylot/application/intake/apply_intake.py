@@ -15,6 +15,7 @@ from tallylot.application.intake.plan import (
     write_capture_manifests,
     write_reports,
 )
+from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 
@@ -25,17 +26,20 @@ class ApplyIntakeUseCase:
         self._artifacts = artifacts
 
     def execute(self, request: IntakeApplyRequest) -> IntakeApplyResponse:
-        request.report_dir.mkdir(parents=True, exist_ok=True)
+        incoming_dir = path_from_ref(request.incoming_capture_ref)
+        workspace_root = path_from_ref(request.workspace_root_ref)
+        report_dir = path_from_ref(request.report_output_ref)
+        report_dir.mkdir(parents=True, exist_ok=True)
         copied_count = 0
-        with scanned_tree_files(request.incoming_dir, inspect_archives=request.inspect_archives) as scanned_tree:
+        with scanned_tree_files(incoming_dir, inspect_archives=request.inspect_archives) as scanned_tree:
             planned_items = build_planned_items(
                 scanned_tree.files,
                 self._registry,
                 self._artifacts,
                 IntakePlanRequest(
-                    incoming_dir=request.incoming_dir,
-                    workspace_root=request.workspace_root,
-                    report_dir=request.report_dir,
+                    incoming_capture_ref=request.incoming_capture_ref,
+                    workspace_root_ref=request.workspace_root_ref,
+                    report_output_ref=request.report_output_ref,
                     inspect_archives=request.inspect_archives,
                 ),
             )
@@ -54,10 +58,10 @@ class ApplyIntakeUseCase:
                 item.target_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(item.source_path, item.target_path)
                 copied_count += 1
-            write_capture_manifests(self._artifacts, request.workspace_root, planned_items)
-        write_reports(self._artifacts, request.report_dir, planned_items, issue_rows, copied_count=copied_count)
+            write_capture_manifests(self._artifacts, workspace_root, planned_items)
+        write_reports(self._artifacts, report_dir, planned_items, issue_rows, copied_count=copied_count)
         return IntakeApplyResponse(
-            report_dir=request.report_dir,
+            report_output_ref=request.report_output_ref,
             file_count=len(planned_items),
             issue_count=len(issue_rows),
             copied_count=copied_count,

@@ -9,6 +9,7 @@ import pytest
 from tallylot.application.intake import ManifestRequest
 from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.intake.build_manifest import BuildManifestUseCase
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
@@ -59,8 +60,8 @@ def test_manifest_service_can_opt_out_of_archive_member_inspection(tmp_path: Pat
 
     response = service.execute(
         ManifestRequest(
-            source_dir=source_dir,
-            output_path=manifest_path,
+            source_capture_ref=to_resource_ref(source_dir),
+            manifest_output_ref=to_resource_ref(manifest_path),
             inspect_archives=False,
         )
     )

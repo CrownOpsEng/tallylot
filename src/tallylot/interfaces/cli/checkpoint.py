@@ -11,6 +11,7 @@ from tallylot.application.checkpoints.contracts import (
     LocationInventoryRequest,
     PdfBalanceExtractRequest,
 )
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.composition.runtime import (
     extract_pdf_balances_use_case,
     rebuild_location_inventory_use_case,
@@ -26,7 +27,10 @@ def rebuild_location_inventory(
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
     response = rebuild_location_inventory_use_case().execute(
-        LocationInventoryRequest(normalized_root=normalized_root, output_path=output)
+        LocationInventoryRequest(
+            normalized_dataset_ref=to_resource_ref(normalized_root),
+            inventory_output_ref=to_resource_ref(output),
+        )
     )
     emit_response(response.__dict__)
 
@@ -38,6 +42,10 @@ def extract_pdf_balances(
     statement_kind: Annotated[str | None, typer.Option()] = None,
 ) -> None:
     response = extract_pdf_balances_use_case().execute(
-        PdfBalanceExtractRequest(pdf_path=pdf, output_path=output, statement_kind=statement_kind)
+        PdfBalanceExtractRequest(
+            pdf_artifact_ref=to_resource_ref(pdf),
+            output_ref=to_resource_ref(output),
+            statement_kind=statement_kind,
+        )
     )
     emit_response(response.__dict__)

@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+
+from tallylot.domain.types import ResourceRef
 
 
 @dataclass(frozen=True)
 class NormalizeRequest:
     source: str
-    raw_dir: Path
-    output_dir: Path
+    raw_capture_ref: ResourceRef
+    normalized_output_ref: ResourceRef
     window_start: str | None = None
     window_end: str | None = None
     inspect_archives: bool = True
@@ -18,7 +19,7 @@ class NormalizeRequest:
 
 @dataclass(frozen=True)
 class NormalizeResponse:
-    output_dir: Path
+    normalized_output_ref: ResourceRef
     adapter_id: str
     fact_count: int
     balance_count: int

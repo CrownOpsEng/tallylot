@@ -11,6 +11,7 @@ from tallylot.application.normalization.issue_context import (
     enrich_review_context_timestamps,
 )
 from tallylot.application.profiling.build_profile import BuildProfileUseCase
+from tallylot.application.resource_refs import path_from_ref
 from tallylot.application.workspace.filesystem import ensure_directory, ensure_output_not_within_input_tree
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.evidence import EvidenceRepositoryPort
@@ -44,26 +45,28 @@ class NormalizeSourceUseCase:
         self._artifacts = dependencies.artifacts
 
     def execute(self, request: NormalizeRequest) -> NormalizeResponse:
+        raw_dir = path_from_ref(request.raw_capture_ref)
+        output_dir = path_from_ref(request.normalized_output_ref)
         ensure_output_not_within_input_tree(
-            request.raw_dir,
-            request.output_dir,
+            raw_dir,
+            output_dir,
             input_label="raw source directory",
             output_label="normalization output directory",
         )
-        ensure_directory(request.output_dir)
+        ensure_directory(output_dir)
         profile = self._profile_use_case.create_profile(
             request.source,
-            request.raw_dir,
+            raw_dir,
             inspect_archives=request.inspect_archives,
         )
         profile = _profile_with_window_hints(profile, request)
         if profile.timezone_issues:
             raise ValueError("source profile contains timezone issues that must be reviewed before normalization")
-        self._profile_use_case.write_profile_artifacts(profile, request.output_dir)
+        self._profile_use_case.write_profile_artifacts(profile, output_dir)
         adapter = self._source_registry.source_adapter(str(profile.adapter_id))
         if not profile.supported:
             raise ValueError(f"source adapter {profile.adapter_id} is not supported for normalization in this phase")
-        result = adapter.translate(profile, request.raw_dir)
+        result = adapter.translate(profile, raw_dir)
         drafts, facts_outside_window = filter_drafts_by_window(
             result.drafts,
             window_start=request.window_start,
@@ -72,7 +75,7 @@ class NormalizeSourceUseCase:
         facts = compile_activity_drafts(drafts)
         enriched_issues = enrich_issue_context_timestamps(
             result.issues,
-            raw_dir=request.raw_dir,
+            raw_dir=raw_dir,
             inventory=profile.file_inventory,
         )
         issue_records, issues_outside_window = filter_issues_by_window(
@@ -82,7 +85,7 @@ class NormalizeSourceUseCase:
         )
         enriched_reviews = enrich_review_context_timestamps(
             result.reviews,
-            raw_dir=request.raw_dir,
+            raw_dir=raw_dir,
             inventory=profile.file_inventory,
         )
         review_records, reviews_outside_window = filter_reviews_by_window(
@@ -102,14 +105,14 @@ class NormalizeSourceUseCase:
             location_inventory=result.location_inventory,
         )
         write_normalization_artifacts(
-            request.output_dir,
+            output_dir,
             facts=self._facts,
             evidence=self._evidence,
             artifacts=self._artifacts,
             outputs=outputs,
         )
         self._artifacts.write_json(
-            request.output_dir / "normalization_summary.json",
+            output_dir / "normalization_summary.json",
             build_normalization_summary(
                 request=request,
                 profile=profile,
@@ -122,7 +125,7 @@ class NormalizeSourceUseCase:
             ),
         )
         return NormalizeResponse(
-            output_dir=request.output_dir,
+            normalized_output_ref=request.normalized_output_ref,
             adapter_id=str(profile.adapter_id),
             fact_count=len(facts),
             balance_count=len(derived_balances),

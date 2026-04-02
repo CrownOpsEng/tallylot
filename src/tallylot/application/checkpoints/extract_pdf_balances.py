@@ -11,6 +11,7 @@ from tallylot.application.checkpoints.contracts import (
     PdfBalanceExtractRequest,
     PdfBalanceExtractResponse,
 )
+from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.adapter_contracts import AdapterManifest
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
@@ -32,13 +33,15 @@ class ExtractPdfBalancesUseCase:
         self._artifacts = artifacts
 
     def execute(self, request: PdfBalanceExtractRequest) -> PdfBalanceExtractResponse:
-        reader = PdfReader(str(request.pdf_path))
+        pdf_path = path_from_ref(request.pdf_artifact_ref)
+        output_path = path_from_ref(request.output_ref)
+        reader = PdfReader(str(pdf_path))
         text = "\n".join(page.extract_text() or "" for page in reader.pages)
-        adapter = _resolve_pdf_balance_adapter(self._registry, request.pdf_path, text, request.statement_kind)
-        rows = adapter.extract_pdf_balances(request.pdf_path, text)
-        self._artifacts.write_rows(request.output_path, BALANCE_HEADER, rows)
+        adapter = _resolve_pdf_balance_adapter(self._registry, pdf_path, text, request.statement_kind)
+        rows = adapter.extract_pdf_balances(pdf_path, text)
+        self._artifacts.write_rows(output_path, BALANCE_HEADER, rows)
         return PdfBalanceExtractResponse(
-            output_path=request.output_path,
+            output_ref=request.output_ref,
             row_count=len(rows),
             statement_kind=str(adapter.manifest.adapter_id),
         )

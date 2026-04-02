@@ -9,6 +9,7 @@ from typing import override
 import pytest
 
 from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -46,8 +47,8 @@ def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> N
         service.execute(
             NormalizeRequest(
                 source="fixture",
-                raw_dir=raw_dir,
-                output_dir=tmp_path / "normalized",
+                raw_capture_ref=to_resource_ref(raw_dir),
+                normalized_output_ref=to_resource_ref(tmp_path / "normalized"),
             )
         )
 
@@ -70,7 +71,13 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
     service = build_normalization_service(artifacts=artifacts)
     output_dir = tmp_path / "normalized"
 
-    response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
+    response = service.execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
 
     assert response.fact_count == 1
     assert response.issue_count == 1
@@ -102,7 +109,13 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
     service = build_normalization_service(artifacts=artifacts)
     output_dir = tmp_path / "normalized"
 
-    response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
+    response = service.execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
 
     assert response.fact_count == 0
     assert response.issue_count == 2
@@ -131,7 +144,13 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
     service = build_normalization_service(artifacts=artifacts)
     output_dir = tmp_path / "normalized"
 
-    response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
+    response = service.execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
 
     assert response.fact_count == 1
     assert response.issue_count == 0
@@ -208,7 +227,13 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
     service = build_normalization_service(artifacts=artifacts)
     output_dir = tmp_path / "normalized"
 
-    response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
+    response = service.execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
 
     assert response.fact_count == 0
     assert response.issue_count == 2
@@ -245,8 +270,8 @@ def test_normalization_service_rejects_output_inside_raw_tree(tmp_path: Path) ->
         service.execute(
             NormalizeRequest(
                 source="fixture_source",
-                raw_dir=raw_dir,
-                output_dir=raw_dir / "normalized",
+                raw_capture_ref=to_resource_ref(raw_dir),
+                normalized_output_ref=to_resource_ref(raw_dir / "normalized"),
             )
         )
 
@@ -301,8 +326,8 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
     response = service.execute(
         NormalizeRequest(
             source="fixture",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
         )
     )
 
@@ -359,8 +384,8 @@ def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp
     service.execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-08-05 08:34:05",
             window_end="2025-12-31 23:59:59",
         )
@@ -401,8 +426,8 @@ def test_normalization_service_filters_row_reviews_outside_explicit_window(tmp_p
     response = service.execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-08-05 08:34:05",
             window_end="2025-12-31 23:59:59",
         )

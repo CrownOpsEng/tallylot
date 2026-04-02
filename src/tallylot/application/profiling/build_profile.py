@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.application.profiling.contracts import ProfileRequest, ProfileResponse
+from tallylot.application.resource_refs import path_from_ref
 from tallylot.application.workspace.filesystem import ensure_directory, ensure_output_not_within_input_tree
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue, SourceId
@@ -22,21 +23,23 @@ class BuildProfileUseCase:
         self._artifacts = artifacts
 
     def execute(self, request: ProfileRequest) -> ProfileResponse:
+        raw_dir = path_from_ref(request.raw_capture_ref)
+        output_dir = path_from_ref(request.profile_output_ref)
         ensure_output_not_within_input_tree(
-            request.raw_dir,
-            request.output_dir,
+            raw_dir,
+            output_dir,
             input_label="raw source directory",
             output_label="profile output directory",
         )
-        ensure_directory(request.output_dir)
+        ensure_directory(output_dir)
         profile = self.create_profile(
             request.source,
-            request.raw_dir,
+            raw_dir,
             inspect_archives=request.inspect_archives,
         )
-        self.write_profile_artifacts(profile, request.output_dir)
+        self.write_profile_artifacts(profile, output_dir)
         return ProfileResponse(
-            output_dir=request.output_dir,
+            profile_output_ref=request.profile_output_ref,
             adapter_id=str(profile.adapter_id),
             file_count=len(profile.file_inventory),
             supported=profile.supported,

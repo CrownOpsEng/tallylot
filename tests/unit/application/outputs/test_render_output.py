@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from tallylot.application.outputs import RenderOutputRequest, RenderOutputUseCase
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.transactions import (
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     AccountingIntentHint,
@@ -81,8 +82,8 @@ def test_output_projection_service_rejects_unsupported_output_adapters(tmp_path:
         service.execute(
             RenderOutputRequest(
                 output_adapter="cointracking_csv",
-                facts_path=facts_path,
-                output_path=tmp_path / "cointracking.csv",
+                facts_ref=to_resource_ref(facts_path),
+                output_ref=to_resource_ref(tmp_path / "cointracking.csv"),
             )
         )
 
@@ -103,8 +104,8 @@ def test_output_projection_service_rejects_adapters_without_render_capability(tm
         service.execute(
             RenderOutputRequest(
                 output_adapter="cointracking_csv",
-                facts_path=facts_path,
-                output_path=tmp_path / "cointracking.csv",
+                facts_ref=to_resource_ref(facts_path),
+                output_ref=to_resource_ref(tmp_path / "cointracking.csv"),
             )
         )
 
@@ -125,8 +126,8 @@ def test_output_projection_service_rejects_facts_outside_render_policy(tmp_path:
         service.execute(
             RenderOutputRequest(
                 output_adapter="cointracking_csv",
-                facts_path=facts_path,
-                output_path=tmp_path / "cointracking.csv",
+                facts_ref=to_resource_ref(facts_path),
+                output_ref=to_resource_ref(tmp_path / "cointracking.csv"),
             )
         )
 

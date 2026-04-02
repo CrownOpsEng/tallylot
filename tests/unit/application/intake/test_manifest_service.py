@@ -5,6 +5,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from tallylot.application.intake import ManifestRequest
 from tallylot.application.intake.build_manifest import BuildManifestUseCase, _sha256sum_from_text
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
@@ -19,7 +20,10 @@ def test_manifest_service_excludes_output_and_issue_artifacts_from_scan(tmp_path
     output_path = source_dir / "manifest.csv"
 
     response = BuildManifestUseCase(FilesystemArtifactStore()).execute(
-        ManifestRequest(source_dir=source_dir, output_path=output_path)
+        ManifestRequest(
+            source_capture_ref=to_resource_ref(source_dir),
+            manifest_output_ref=to_resource_ref(output_path),
+        )
     )
 
     rows = FilesystemArtifactStore().read_rows(output_path)
@@ -45,7 +49,10 @@ def test_manifest_service_writes_archive_member_rows(tmp_path: Path) -> None:
 
     output_path = tmp_path / "manifest.csv"
     BuildManifestUseCase(FilesystemArtifactStore()).execute(
-        ManifestRequest(source_dir=source_dir, output_path=output_path)
+        ManifestRequest(
+            source_capture_ref=to_resource_ref(source_dir),
+            manifest_output_ref=to_resource_ref(output_path),
+        )
     )
 
     rows = FilesystemArtifactStore().read_rows(output_path)

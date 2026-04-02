@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 from typing import cast
 
 from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.composition import build_profile_use_case, normalize_source_use_case
 from tallylot.infrastructure.discovery.adapters import build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
@@ -89,8 +90,8 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
             normalization_use_case.execute(
                 NormalizeRequest(
                     source=pack.source,
-                    raw_dir=pack.raw_dir,
-                    output_dir=output_dir,
+                    raw_capture_ref=to_resource_ref(pack.raw_dir),
+                    normalized_output_ref=to_resource_ref(output_dir),
                 )
             )
             payloads.update(

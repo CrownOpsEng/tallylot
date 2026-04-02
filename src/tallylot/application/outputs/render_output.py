@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from tallylot.application.outputs.contracts import RenderOutputRequest, RenderOutputResponse
+from tallylot.application.resource_refs import path_from_ref, to_resource_ref
 from tallylot.domain.transactions import LegKind, LegShapeLimit, TransactionFact
 from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.facts import FactRepositoryPort
@@ -15,15 +16,15 @@ class RenderOutputUseCase:
         self._facts = facts
 
     def execute(self, request: RenderOutputRequest) -> RenderOutputResponse:
-        facts = self._facts.read_facts(request.facts_path)
+        facts = self._facts.read_facts(path_from_ref(request.facts_ref))
         adapter = self._registry.output_adapter(request.output_adapter)
         if not adapter.manifest.supported:
             raise ValueError(f"output adapter {adapter.manifest.adapter_id} is not supported for rendering")
         if AdapterCapability.OUTPUT_RENDER not in adapter.manifest.capabilities:
             raise ValueError(f"output adapter {adapter.manifest.adapter_id} does not declare render capability")
         _validate_render_policy(facts, adapter=adapter)
-        artifact = adapter.render(facts, request.output_path)
-        return RenderOutputResponse(output_path=artifact.path, row_count=artifact.row_count)
+        artifact = adapter.render(facts, path_from_ref(request.output_ref))
+        return RenderOutputResponse(output_ref=to_resource_ref(artifact.path), row_count=artifact.row_count)
 
 
 def _validate_render_policy(facts: tuple[TransactionFact, ...], *, adapter: OutputAdapter) -> None:

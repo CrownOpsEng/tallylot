@@ -10,6 +10,7 @@ from tallylot.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
 from tallylot.adapters.outputs.cointracking_csv.projection import COINTRACKING_TYPE_LABELS, cointracking_row
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.outputs import RenderOutputRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.transactions import (
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     AccountingIntentHint,
@@ -45,16 +46,16 @@ def test_cointracking_output_matches_expected_schema_and_projection_mapping(
     normalization.execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=structured_source_dir,
-            output_dir=normalized_dir,
+            raw_capture_ref=to_resource_ref(structured_source_dir),
+            normalized_output_ref=to_resource_ref(normalized_dir),
         )
     )
     output_path = tmp_path / "cointracking.csv"
     render.execute(
         RenderOutputRequest(
             output_adapter="cointracking_csv",
-            facts_path=normalized_dir / "facts.csv",
-            output_path=output_path,
+            facts_ref=to_resource_ref(normalized_dir / "facts.csv"),
+            output_ref=to_resource_ref(output_path),
         )
     )
 

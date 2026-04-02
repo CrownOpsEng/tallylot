@@ -6,6 +6,7 @@ import pytest
 from reportlab.pdfgen import canvas
 
 from tallylot.application.checkpoints import ExtractPdfBalancesUseCase, PdfBalanceExtractRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
@@ -125,7 +126,11 @@ def test_pdf_balance_extraction_service_uses_requested_supported_adapter(tmp_pat
     registry = StubRegistry([StubPdfAdapter("example", 0, rows)])
 
     response = ExtractPdfBalancesUseCase(registry, artifacts).execute(
-        PdfBalanceExtractRequest(pdf_path=pdf_path, output_path=output_path, statement_kind="example")
+        PdfBalanceExtractRequest(
+            pdf_artifact_ref=to_resource_ref(pdf_path),
+            output_ref=to_resource_ref(output_path),
+            statement_kind="example",
+        )
     )
 
     assert response.statement_kind == "example"
@@ -141,7 +146,11 @@ def test_pdf_balance_extraction_service_rejects_unknown_requested_kind(tmp_path:
 
     with pytest.raises(ValueError, match="unsupported statement kind"):
         ExtractPdfBalancesUseCase(StubRegistry([]), artifacts).execute(
-            PdfBalanceExtractRequest(pdf_path=pdf_path, output_path=tmp_path / "balances.csv", statement_kind="kraken")
+            PdfBalanceExtractRequest(
+                pdf_artifact_ref=to_resource_ref(pdf_path),
+                output_ref=to_resource_ref(tmp_path / "balances.csv"),
+                statement_kind="kraken",
+            )
         )
 
 
@@ -154,7 +163,12 @@ def test_pdf_balance_extraction_service_rejects_unknown_pdf_text(tmp_path: Path)
         ExtractPdfBalancesUseCase(
             StubRegistry([StubPdfAdapter("example", 0, [])]),
             artifacts,
-        ).execute(PdfBalanceExtractRequest(pdf_path=pdf_path, output_path=tmp_path / "balances.csv"))
+        ).execute(
+            PdfBalanceExtractRequest(
+                pdf_artifact_ref=to_resource_ref(pdf_path),
+                output_ref=to_resource_ref(tmp_path / "balances.csv"),
+            )
+        )
 
 
 def test_pdf_balance_extraction_service_rejects_ambiguous_detection(tmp_path: Path) -> None:
@@ -170,5 +184,8 @@ def test_pdf_balance_extraction_service_rejects_ambiguous_detection(tmp_path: Pa
 
     with pytest.raises(ValueError, match="ambiguous PDF statement kind: alpha, beta"):
         ExtractPdfBalancesUseCase(registry, artifacts).execute(
-            PdfBalanceExtractRequest(pdf_path=pdf_path, output_path=tmp_path / "balances.csv")
+            PdfBalanceExtractRequest(
+                pdf_artifact_ref=to_resource_ref(pdf_path),
+                output_ref=to_resource_ref(tmp_path / "balances.csv"),
+            )
         )

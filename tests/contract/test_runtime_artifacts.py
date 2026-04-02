@@ -6,6 +6,7 @@ from pathlib import Path
 from tallylot.application.checkpoints import LocationInventoryRequest, RebuildLocationInventoryUseCase
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.profiling import BuildProfileUseCase, ProfileRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service
@@ -21,8 +22,8 @@ def test_profile_service_emits_timezone_artifacts(
     BuildProfileUseCase(build_registry(), artifacts).execute(
         ProfileRequest(
             source="fixture_source",
-            raw_dir=structured_source_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(structured_source_dir),
+            profile_output_ref=to_resource_ref(output_dir),
         )
     )
 
@@ -46,13 +47,16 @@ def test_location_inventory_rebuild_emits_documented_outputs(
     build_normalization_service(artifacts=artifacts).execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=structured_source_dir,
-            output_dir=normalized_dir,
+            raw_capture_ref=to_resource_ref(structured_source_dir),
+            normalized_output_ref=to_resource_ref(normalized_dir),
         )
     )
 
     RebuildLocationInventoryUseCase(artifacts).execute(
-        LocationInventoryRequest(normalized_root=normalized_dir, output_path=output_path)
+        LocationInventoryRequest(
+            normalized_dataset_ref=to_resource_ref(normalized_dir),
+            inventory_output_ref=to_resource_ref(output_path),
+        )
     )
 
     assert output_path.exists()
@@ -70,8 +74,8 @@ def test_normalization_emits_fact_and_balance_artifacts(
     build_normalization_service(artifacts=FilesystemArtifactStore()).execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=structured_source_dir,
-            output_dir=normalized_dir,
+            raw_capture_ref=to_resource_ref(structured_source_dir),
+            normalized_output_ref=to_resource_ref(normalized_dir),
         )
     )
 

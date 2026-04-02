@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+
+from tallylot.domain.types import WorkspacePath
 
 
 @dataclass(frozen=True)
 class WorkspaceInitRequest:
-    workspace_root: Path
+    workspace_root_ref: WorkspacePath
 
 
 @dataclass(frozen=True)
 class WorkspaceInitResponse:
-    workspace_root: Path
-    created_paths: tuple[Path, ...]
+    workspace_root_ref: WorkspacePath
+    created_refs: tuple[WorkspacePath, ...]

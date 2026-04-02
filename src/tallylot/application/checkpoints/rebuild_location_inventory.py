@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from tallylot.application.checkpoints.contracts import LocationInventoryRequest, LocationInventoryResponse
 from tallylot.application.checkpoints.location_inventory_summary import summarize_location_inventory
+from tallylot.application.resource_refs import path_from_ref
 from tallylot.application.workspace.filesystem import ensure_output_not_within_input_tree, iter_tree_files
 from tallylot.ports.artifacts import ArtifactStorePort
 
@@ -59,28 +62,30 @@ class RebuildLocationInventoryUseCase:
         self._artifacts = artifacts
 
     def execute(self, request: LocationInventoryRequest) -> LocationInventoryResponse:
+        normalized_root = path_from_ref(request.normalized_dataset_ref)
+        output_path = path_from_ref(request.inventory_output_ref)
         ensure_output_not_within_input_tree(
-            request.normalized_root,
-            request.output_path,
+            normalized_root,
+            output_path,
             input_label="normalized root",
             output_label="location inventory aggregate output",
         )
-        evidence_rows = self._collect_evidence_rows(request)
+        evidence_rows = self._collect_evidence_rows(normalized_root, output_path)
         inventory_rows, issue_rows = summarize_location_inventory(evidence_rows)
 
-        self._artifacts.write_rows(request.output_path, INVENTORY_HEADER, inventory_rows)
+        self._artifacts.write_rows(output_path, INVENTORY_HEADER, inventory_rows)
         self._artifacts.write_rows(
-            request.output_path.with_name("location_inventory_evidence.csv"),
+            output_path.with_name("location_inventory_evidence.csv"),
             EVIDENCE_HEADER,
             evidence_rows,
         )
         self._artifacts.write_rows(
-            request.output_path.with_name("location_inventory_issues.csv"),
+            output_path.with_name("location_inventory_issues.csv"),
             ISSUE_HEADER,
             issue_rows,
         )
         self._artifacts.write_json(
-            request.output_path.with_name("location_inventory_summary.json"),
+            output_path.with_name("location_inventory_summary.json"),
             {
                 "location_count": len(inventory_rows),
                 "evidence_count": len(evidence_rows),
@@ -88,16 +93,16 @@ class RebuildLocationInventoryUseCase:
             },
         )
         return LocationInventoryResponse(
-            output_path=request.output_path,
+            inventory_output_ref=request.inventory_output_ref,
             location_count=len(inventory_rows),
             evidence_count=len(evidence_rows),
             issue_count=len(issue_rows),
         )
 
-    def _collect_evidence_rows(self, request: LocationInventoryRequest) -> list[dict[str, str]]:
+    def _collect_evidence_rows(self, normalized_root: Path, output_path: Path) -> list[dict[str, str]]:
         rows: list[dict[str, str]] = []
         seen: set[tuple[str, ...]] = set()
-        for path in iter_tree_files(request.normalized_root, exclude_paths=(request.output_path,)):
+        for path in iter_tree_files(normalized_root, exclude_paths=(output_path,)):
             if path.name != "location_inventory.csv":
                 continue
             for row in self._artifacts.read_rows(path):

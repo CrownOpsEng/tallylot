@@ -5,6 +5,7 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 
 from tallylot.application.checkpoints import ExtractPdfBalancesUseCase, PdfBalanceExtractRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -20,7 +21,10 @@ def test_pdf_balance_extraction_service_extracts_supported_statement_rows(tmp_pa
     pdf.save()
 
     response = ExtractPdfBalancesUseCase(build_registry(), FilesystemArtifactStore()).execute(
-        PdfBalanceExtractRequest(pdf_path=pdf_path, output_path=output_path)
+        PdfBalanceExtractRequest(
+            pdf_artifact_ref=to_resource_ref(pdf_path),
+            output_ref=to_resource_ref(output_path),
+        )
     )
 
     rows = FilesystemArtifactStore().read_rows(output_path)

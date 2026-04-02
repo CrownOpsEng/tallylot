@@ -7,6 +7,7 @@ from typing import Protocol, cast
 import pytest
 from typer.testing import CliRunner
 
+from tallylot.domain.types import WorkspacePath
 from tallylot.interfaces.cli import app
 from tallylot.interfaces.cli import workspace as cli_workspace
 
@@ -14,7 +15,7 @@ runner = CliRunner()
 
 
 class HasWorkspaceRoot(Protocol):
-    workspace_root: Path
+    workspace_root_ref: WorkspacePath
 
 
 def test_cli_registers_current_command_groups() -> None:
@@ -32,13 +33,13 @@ def test_workspace_init_uses_configured_root_when_option_is_omitted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     configured_root = tmp_path / "configured-workspace"
-    seen: dict[str, Path] = {}
+    seen: dict[str, WorkspacePath] = {}
 
     class StubWorkspaceUseCase:
         def execute(self, request: object) -> object:
-            workspace_root = cast(HasWorkspaceRoot, request).workspace_root
+            workspace_root = cast(HasWorkspaceRoot, request).workspace_root_ref
             seen["workspace_root"] = workspace_root
-            return SimpleNamespace(workspace_root=workspace_root, created_paths=("a", "b"))
+            return SimpleNamespace(workspace_root_ref=workspace_root, created_refs=("a", "b"))
 
     monkeypatch.setattr(cli_workspace, "configured_workspace_root", lambda: configured_root)
     monkeypatch.setattr(cli_workspace, "initialize_workspace_use_case", lambda: StubWorkspaceUseCase())
@@ -46,4 +47,4 @@ def test_workspace_init_uses_configured_root_when_option_is_omitted(
     result = runner.invoke(app, ["workspace", "init"])
 
     assert result.exit_code == 0
-    assert seen["workspace_root"] == configured_root
+    assert seen["workspace_root"] == str(configured_root)

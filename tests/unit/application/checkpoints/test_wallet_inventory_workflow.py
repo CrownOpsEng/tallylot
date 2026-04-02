@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.application.checkpoints import LocationInventoryRequest, RebuildLocationInventoryUseCase
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.csv_io import write_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -59,7 +60,10 @@ def test_location_inventory_service_deduplicates_rows(tmp_path: Path) -> None:
     write_rows(normalized_b, header, (row,))
 
     response = RebuildLocationInventoryUseCase(FilesystemArtifactStore()).execute(
-        LocationInventoryRequest(normalized_root=normalized_root, output_path=tmp_path / "wallets.csv"),
+        LocationInventoryRequest(
+            normalized_dataset_ref=to_resource_ref(normalized_root),
+            inventory_output_ref=to_resource_ref(tmp_path / "wallets.csv"),
+        ),
     )
 
     inventory_rows = FilesystemArtifactStore().read_rows(tmp_path / "wallets.csv")
@@ -132,7 +136,10 @@ def test_location_inventory_service_marks_aliases_and_flags_identifier_conflicts
     )
 
     response = RebuildLocationInventoryUseCase(FilesystemArtifactStore()).execute(
-        LocationInventoryRequest(normalized_root=normalized_root, output_path=tmp_path / "wallets.csv"),
+        LocationInventoryRequest(
+            normalized_dataset_ref=to_resource_ref(normalized_root),
+            inventory_output_ref=to_resource_ref(tmp_path / "wallets.csv"),
+        ),
     )
 
     inventory_rows = FilesystemArtifactStore().read_rows(tmp_path / "wallets.csv")
@@ -174,9 +181,19 @@ def test_location_inventory_service_excludes_stale_aggregate_output(tmp_path: Pa
     write_rows(wallet_file, header, (row,))
     service = RebuildLocationInventoryUseCase(FilesystemArtifactStore())
 
-    first = service.execute(LocationInventoryRequest(normalized_root=normalized_root, output_path=output_path))
+    first = service.execute(
+        LocationInventoryRequest(
+            normalized_dataset_ref=to_resource_ref(normalized_root),
+            inventory_output_ref=to_resource_ref(output_path),
+        )
+    )
     wallet_file.unlink()
-    second = service.execute(LocationInventoryRequest(normalized_root=normalized_root, output_path=output_path))
+    second = service.execute(
+        LocationInventoryRequest(
+            normalized_dataset_ref=to_resource_ref(normalized_root),
+            inventory_output_ref=to_resource_ref(output_path),
+        )
+    )
 
     assert first.location_count == 1
     assert second.location_count == 0
