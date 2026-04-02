@@ -11,8 +11,8 @@ not as a loose idea list.
 ## Objective
 
 Deliver a filing-ready `2023` to `2025` workflow without relying on CoinTracking
-as the live ledger, while preserving the repo's current typing, layering, and
-evidence discipline.
+as the central runtime ledger, while preserving the repo's current typing,
+layering, and evidence discipline.
 
 The system must:
 

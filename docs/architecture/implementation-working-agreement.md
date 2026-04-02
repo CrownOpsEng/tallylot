@@ -6,10 +6,10 @@ future sessions do not depend on repeated reminders from the user.
 
 This document complements:
 
-- `docs/engineering-standards.md` for placement and modularity rules
-- `docs/commit-standards.md` for commit format and checkpoint policy
-- `docs/RECONCILIATION_TAX_IMPLEMENTATION_PLAN.md` for architecture direction
-- `docs/IMPLEMENTATION_MIGRATION_SEQUENCE.md` for no-big-bang migration order
+- `docs/architecture/engineering-standards.md` for placement and modularity rules
+- `docs/architecture/commit-standards.md` for commit format and checkpoint policy
+- `docs/architecture/reconciliation-tax-implementation-plan.md` for architecture direction
+- `docs/architecture/implementation-migration-sequence.md` for no-big-bang migration order
 
 ## Repo-Native Tooling To Use
 
@@ -219,7 +219,7 @@ Pause feature work and fix the structure first when:
 
 - a new change would require importing across a forbidden layer boundary
 - a module is becoming a new catch-all
-- a hotspot module called out in `docs/engineering-standards.md` is about to
+- a hotspot module called out in `docs/architecture/engineering-standards.md` is about to
   absorb materially new behavior without first being split
 - CoinTracking-specific semantics are drifting into the core domain
 - an oracle-only artifact is being treated like a required runtime input

@@ -7,7 +7,9 @@ Suggested folder names:
 - `baseline_repair_round_01`
 - `post_import_coinbase_01`
 
-Each folder should contain the fresh CoinTracking exports captured immediately after the related action.
+Each folder should contain the fresh verification export set captured
+immediately after the related action. In the current workflow, this usually
+means CoinTracking exports.
 
 For import rounds, also keep the `verification compare` output under a subfolder
 such as `comparison/`.

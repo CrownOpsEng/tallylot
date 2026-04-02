@@ -3,8 +3,8 @@
 Use this route before closing any non-trivial coding task.
 
 1. Read:
-   - `docs/IMPLEMENTATION_WORKING_AGREEMENT.md`
-   - `docs/commit-standards.md`
+   - `docs/architecture/implementation-working-agreement.md`
+   - `docs/architecture/commit-standards.md`
 2. Confirm the change still respects:
    - layer ownership
    - provider-neutral core design
@@ -25,7 +25,7 @@ Use this route before closing any non-trivial coding task.
      substantial work
 6. If architecture, schema, or sequencing changed, update:
    - `ROADMAP.md`
-   - `docs/RECONCILIATION_TAX_IMPLEMENTATION_PLAN.md`
+   - `docs/architecture/reconciliation-tax-implementation-plan.md`
    - any boundary, matrix, or migration docs affected
 7. Create a stable checkpoint commit when the slice is coherent and verified.
 

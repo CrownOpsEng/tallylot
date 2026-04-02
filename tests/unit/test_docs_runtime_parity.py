@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -9,6 +10,21 @@ DOC_PATHS = [
     *sorted((REPO_ROOT / "docs").rglob("*.md")),
     *sorted((REPO_ROOT / ".claude").rglob("*.md")),
 ]
+DOC_COMMAND_ROUTE_PATTERN = re.compile(
+    r"uv run crypto-reconciliation "
+    r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
+)
+
+
+def _documented_cli_routes() -> set[str]:
+    routes: set[str] = set()
+
+    for path in DOC_PATHS:
+        text = path.read_text(encoding="utf-8")
+        for match in DOC_COMMAND_ROUTE_PATTERN.finditer(text):
+            routes.add(match.group("route"))
+
+    return routes
 
 
 def test_docs_do_not_reference_removed_legacy_paths() -> None:
@@ -68,3 +84,26 @@ def test_supporting_route_mentions_pdf_balance_extraction_command() -> None:
     text = (REPO_ROOT / ".claude/commands/supporting-artifacts.md").read_text(encoding="utf-8")
 
     assert "supporting extract-pdf-balances" in text
+
+
+def test_documented_cli_routes_exist() -> None:
+    for route in sorted(_documented_cli_routes()):
+        result = subprocess.run(
+            ("uv", "run", "crypto-reconciliation", *route.split(), "--help"),
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, (
+            f"documented CLI route does not exist: {route}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+        )
+
+
+def test_docs_use_lowercase_filenames_except_readmes() -> None:
+    for path in sorted((REPO_ROOT / "docs").rglob("*")):
+        if not path.is_file():
+            continue
+        if path.name == "README.md":
+            continue
+        assert path.name == path.name.lower(), f"doc filename is not lowercase: {path}"

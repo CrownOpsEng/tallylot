@@ -17,10 +17,10 @@ Anchor to these facts first:
 5. The first hard checkpoint target is the best-evidenced balance date around
    `2026-03-23`
 6. The implementation anchor is
-   `docs/RECONCILIATION_TAX_IMPLEMENTATION_PLAN.md`
+   `docs/architecture/reconciliation-tax-implementation-plan.md`
 7. CoinTracking tax and accounting reports are oracle-only support artifacts,
    not normal runtime inputs
-8. follow `docs/IMPLEMENTATION_WORKING_AGREEMENT.md` for execution discipline
+8. follow `docs/architecture/implementation-working-agreement.md` for execution discipline
 
 Priority artifacts:
 

@@ -14,5 +14,5 @@ Use this route for a full typed intake pass:
 10. `batch stage` only if the screen passes
 11. `source reconcile` when the candidate or a support slice needs a direct ledger comparison
 
-Use `docs/OPERATIONS_QUICKSTART.md` for the short operator route and
-`docs/MOP.md` for the full workflow.
+Use `docs/operations/operations-quickstart.md` for the short operator route and
+`docs/operations/mop.md` for the full workflow.

@@ -1,18 +1,20 @@
 # Method Of Procedure
 
-Use `docs/OPERATIONS_QUICKSTART.md` when you want the short operational path.
-Use this file when you need the full procedure and supporting detail.
+Use `docs/operations/operations-quickstart.md` when you want the short
+operational path. Use this file when you need the full procedure and
+supporting detail.
 
 ## Objective
 
-Use this runbook for the current operator workflow, where the typed package
-manages evidence, normalization, staging, verification, and review artifacts
-in the external workspace and manual CoinTracking work is still part of the
-round-close process.
+Use this runbook for the current operator workflow. The typed package manages
+evidence, normalization, staging, verification, and review artifacts in the
+external workspace, while manual CoinTracking steps still remain part of the
+current round-close process.
 
 ## Working Principles
 
-- CoinTracking remains the manual system of record for repairs and imports.
+- CoinTracking remains part of the current operator workflow for repairs and
+  imports, but it is not the long-term architecture center.
 - Raw exports are immutable.
 - One source at a time. No multi-source imports before verification.
 - The typed package should do the mechanical work; ambiguous cases stay visible

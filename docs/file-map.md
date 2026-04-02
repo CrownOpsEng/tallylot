@@ -7,22 +7,23 @@ command, artifact, or agent route.
 
 | If you need to... | Use this |
 | ---- | ---- |
-| understand the current implemented surface | `docs/PROJECT_STATE.md` |
-| make a code or architecture change | `docs/engineering-standards.md` |
-| follow repo coding discipline while implementing | `docs/IMPLEMENTATION_WORKING_AGREEMENT.md` |
-| work on reconciliation, checkpoints, journaling, or tax | `docs/RECONCILIATION_TAX_IMPLEMENTATION_PLAN.md` |
-| enforce platform-agnostic runtime and oracle boundaries | `docs/ORACLE_AND_INPUT_BOUNDARIES.md` |
-| map transaction semantics and support tiers | `docs/TRANSACTION_CLASSIFICATION_MATRIX.md` |
-| follow the no-big-bang migration order | `docs/IMPLEMENTATION_MIGRATION_SEQUENCE.md` |
-| author or repair a source or output adapter | `docs/adapter-authoring.md` |
-| follow the short operator workflow | `docs/OPERATIONS_QUICKSTART.md` |
-| follow the detailed operator workflow | `docs/MOP.md` |
-| review baseline artifact expectations | `docs/BASELINE_VALIDATION.md` |
-| review wallet inventory outputs | `docs/WALLET_INVENTORY.md` |
-| review timezone provenance outputs | `docs/TIMEZONE_VALIDATION.md` |
-| check export and verification hygiene | `docs/EXPORT_CHECKLIST.md` |
-| check commit format and checkpoint rules | `docs/commit-standards.md` |
-| load a compact repo-specific agent prompt | `docs/AI_SESSION_PROMPT.md` |
+| understand the current implemented surface | `docs/operations/project-state.md` |
+| make a code or architecture change | `docs/architecture/engineering-standards.md` |
+| follow repo coding discipline while implementing | `docs/architecture/implementation-working-agreement.md` |
+| work on reconciliation, checkpoints, journaling, or tax | `docs/architecture/reconciliation-tax-implementation-plan.md` |
+| enforce platform-agnostic runtime and oracle boundaries | `docs/architecture/oracle-and-input-boundaries.md` |
+| map transaction semantics and support tiers | `docs/architecture/transaction-classification-matrix.md` |
+| follow the no-big-bang migration order | `docs/architecture/implementation-migration-sequence.md` |
+| author or repair a source or output adapter | `docs/architecture/adapter-authoring.md` |
+| follow the short operator workflow | `docs/operations/operations-quickstart.md` |
+| follow the detailed operator workflow | `docs/operations/mop.md` |
+| review baseline artifact expectations | `docs/operations/baseline-validation.md` |
+| review wallet inventory outputs | `docs/operations/wallet-inventory.md` |
+| review timezone provenance outputs | `docs/operations/timezone-validation.md` |
+| check export and verification hygiene | `docs/operations/export-checklist.md` |
+| check commit format and checkpoint rules | `docs/architecture/commit-standards.md` |
+| load a compact repo-specific agent prompt | `docs/operations/ai-session-prompt.md` |
+| inspect the historical CoinTracking export inventory | `docs/reference/cointracking-full-export-manifest.csv` |
 
 ## Workspace Artifacts
 

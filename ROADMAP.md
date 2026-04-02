@@ -115,9 +115,9 @@ decisions that should not be rediscovered from scratch.
 - Keep the agent guidance router-first: `AGENTS.md` should stay short and direct
   agents to narrow task-specific docs rather than front-loading broad repo
   context.
-- Treat `docs/engineering-standards.md` as the code placement, typing,
+- Treat `docs/architecture/engineering-standards.md` as the code placement, typing,
   modularization, and naming contract.
-- Treat `docs/commit-standards.md` as the commit message and stable-checkpoint
+- Treat `docs/architecture/commit-standards.md` as the commit message and stable-checkpoint
   contract. Use Conventional Commits and prefer small cohesive checkpoint
   commits without forcing micro-commit overhead.
 - Keep application services on port contracts for adapter resolution and artifact

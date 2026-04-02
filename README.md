@@ -21,7 +21,7 @@ in the external workspace.
 - `uv` for environment and command execution
 - CLI and library interfaces only in this phase
 - filesystem-backed operational storage
-- CoinTracking CSV as the implemented output target
+- generic file output rendering with the CoinTracking CSV adapter implemented
 - archive-aware source scanning and intake planning/apply
 - restored real source adapters for Coinbase, Wealthsimple, Binance,
   Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
@@ -60,7 +60,7 @@ uv run crypto-reconciliation source profile --source <name> --raw-dir <path> --o
 uv run crypto-reconciliation source normalize --source <name> --raw-dir <path> --output-dir <path>
 uv run crypto-reconciliation source reconcile --candidate <path> --reference <path> --output-dir <path>
 uv run crypto-reconciliation wallet inventory rebuild --normalized-root <path> --output <path>
-uv run crypto-reconciliation output render cointracking --canonical-events <path> --output <path>
+uv run crypto-reconciliation output render file --output-adapter cointracking_csv --canonical-events <path> --output <path>
 uv run crypto-reconciliation verification compare --previous-dir <path> --current-dir <path> --output-dir <path>
 uv run crypto-reconciliation batch screen --candidate <path> --baseline-export-dir <path> --output-dir <path>
 uv run crypto-reconciliation batch stage --candidate <path> --baseline-export-dir <path> --output-dir <path>
@@ -113,7 +113,7 @@ uv run python -m tools.run_quality_gates --full-tests
 
 Start with [AGENTS.md](AGENTS.md) for task routing, then use the repo-owned
 docs under [docs/](docs/README.md). For the narrowest doc or command route,
-use [docs/FILE_MAP.md](docs/FILE_MAP.md).
+use [docs/file-map.md](docs/file-map.md).
 
 ## License
 

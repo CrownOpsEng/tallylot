@@ -1,6 +1,10 @@
 # Import Batches
 
-Place the next CoinTracking-ready import file for a single source here.
+Place the next approved import batch for a single source here.
+
+In the current runtime, this is usually a CoinTracking-ready CSV candidate.
+Keep the folder semantics tracker-agnostic even while the implemented operator
+workflow still targets CoinTracking.
 
 Every file here should have:
 

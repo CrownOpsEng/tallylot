@@ -1,13 +1,14 @@
 # Operations Quickstart
 
 Use this file for the shortest safe path through a normal operator session.
-Use `docs/MOP.md` when you need the long-form procedure or supporting detail.
+Use `docs/operations/mop.md` when you need the long-form procedure or
+supporting detail.
 
 ## Start Of Session
 
-1. Confirm the current runtime surface in `docs/PROJECT_STATE.md` if the repo
-   has changed since the last session.
-2. Confirm the baseline contract in `docs/BASELINE_VALIDATION.md`.
+1. Confirm the current runtime surface in `docs/operations/project-state.md`
+   if the repo has changed since the last session.
+2. Confirm the baseline contract in `docs/operations/baseline-validation.md`.
 3. Review `analysis/issues/issue_log.csv` and
    `analysis/issues/source_inventory.csv`.
 4. Review the latest baseline reconciliation package under
