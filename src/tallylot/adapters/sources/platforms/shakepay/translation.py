@@ -213,4 +213,4 @@ def _normalize_crypto_row(
 
 def _parse_local_timestamp(value: str) -> datetime:
     local = datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TORONTO)
-    return local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None)
+    return local.astimezone(ZoneInfo("UTC"))

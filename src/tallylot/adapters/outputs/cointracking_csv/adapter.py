@@ -28,7 +28,7 @@ class CoinTrackingCsvAdapter:
     render_policy = OutputRenderPolicy(
         shape_policy=FactLegPolicy(
             limits=(
-                LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_in_count=1, max_out_count=1),
+                LegShapeLimit(kind=LegKind.PRIMARY, min_count=1, max_count=2, max_in_count=1, max_out_count=1),
                 LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
             )
         ),

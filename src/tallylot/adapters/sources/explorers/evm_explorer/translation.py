@@ -100,4 +100,4 @@ def _suspicious_nft_hashes(raw_dir: Path, owned_addresses: set[str]) -> dict[str
 
 
 def _parse_utc_timestamp(value: str) -> datetime:
-    return datetime.fromisoformat(f"{value}+00:00").astimezone(UTC).replace(tzinfo=None)
+    return datetime.fromisoformat(f"{value}+00:00").astimezone(UTC)

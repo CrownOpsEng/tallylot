@@ -182,4 +182,4 @@ def _should_ignore_historical_operation(
     cutoff_value = profile.normalization_hints.get("project_baseline_cutoff_timestamp")
     if not isinstance(cutoff_value, str) or operation not in HISTORICAL_ONLY_IGNORED_OPERATIONS:
         return False
-    return parsed_time <= parse_timestamp(cutoff_value).replace(tzinfo=None)
+    return parsed_time <= parse_timestamp(cutoff_value)

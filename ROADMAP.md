@@ -187,7 +187,8 @@ decisions that should not be rediscovered from scratch.
   plus optional adapter detail `subtype`; fact classification remains a
   separate fact-level concern.
 - Keep fact shape policy explicit and adapter-declared. `FactLegPolicy` uses
-  per-kind `LegShapeLimit` entries, unspecified kinds are disallowed, and
+  per-kind `LegShapeLimit` entries with explicit minimum and maximum counts,
+  unspecified kinds are disallowed, zero-`primary` shapes are opt-in, and
   adapters must declare policy intentionally on emitted drafts rather than
   relying on hidden defaults in the core.
 - Keep non-primary attribution metadata narrow. `attributed_to_direction` is
@@ -196,8 +197,9 @@ decisions that should not be rediscovered from scratch.
 - Do not reintroduce convenience selectors such as `asset_in`, `amount_out`,
   or `fee_amount`. Engine code must consume canonical `legs` directly.
 - Keep CoinTracking strict at the edge. Its render policy supports one inbound
-  `primary`, one outbound `primary`, and one `charge` leg; unsupported shapes
-  must fail explicitly rather than truncate.
+  `primary`, one outbound `primary`, and one `charge` leg with at least one
+  `primary` required; unsupported shapes must fail explicitly rather than
+  truncate.
 - Keep draft-only provenance references and review markers in
   `fact_annotations.json` keyed by `fact_id` rather than dropping them during
   draft-to-fact compilation or embedding them as CoinTracking-specific
@@ -224,6 +226,10 @@ decisions that should not be rediscovered from scratch.
   `wallet_inventory.csv`. Review records must carry `context_timestamp`, and
   normalization summaries must report
   `reviews_outside_normalization_window`.
+- Keep runtime datetimes UTC-aware across drafts, facts, balances, and balance
+  evidence. Adapter parsing must normalize to UTC before domain construction,
+  while persisted artifact timestamp text remains timezone-less and is
+  interpreted as UTC on read.
 - Reserve reconciliation naming for fact, checkpoint, and oracle-comparison
   workflows. Candidate-versus-reference CSV comparison stays under `source
   diff` until fact-based reconciliation exists.

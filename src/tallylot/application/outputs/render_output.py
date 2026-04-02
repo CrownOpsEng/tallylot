@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from tallylot.application.outputs.contracts import RenderOutputRequest, RenderOutputResponse
-from tallylot.domain.transactions import LegKind, TransactionFact
+from tallylot.domain.transactions import LegKind, LegShapeLimit, TransactionFact
 from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.output_adapters import OutputAdapter, OutputAdapterRegistryPort, OutputRenderPolicy
@@ -55,15 +55,94 @@ def _validate_fact_shape(
     counts_by_kind: dict[LegKind, int],
     directional_counts: dict[tuple[LegKind, str], int],
 ) -> None:
-    for kind, count in counts_by_kind.items():
+    for kind in counts_by_kind:
+        if policy.shape_policy.limit_for(kind) is None:
+            raise ValueError(f"fact {fact.fact_id} has unsupported {adapter_id} render leg kind: {kind.value}")
+    for kind in counts_by_kind:
         limit = policy.shape_policy.limit_for(kind)
         if limit is None:
-            raise ValueError(f"fact {fact.fact_id} has unsupported {adapter_id} render leg kind: {kind.value}")
-        if count > limit.max_count:
-            raise ValueError(f"fact {fact.fact_id} exceeds {adapter_id} render policy for {kind.value} legs")
-        inbound_count = directional_counts.get((kind, "in"), 0)
-        outbound_count = directional_counts.get((kind, "out"), 0)
-        if limit.max_in_count is not None and inbound_count > limit.max_in_count:
-            raise ValueError(f"fact {fact.fact_id} exceeds {adapter_id} render policy for inbound {kind.value} legs")
-        if limit.max_out_count is not None and outbound_count > limit.max_out_count:
-            raise ValueError(f"fact {fact.fact_id} exceeds {adapter_id} render policy for outbound {kind.value} legs")
+            continue
+        _validate_render_total_count(
+            fact=fact,
+            adapter_id=adapter_id,
+            kind=kind,
+            total_count=counts_by_kind.get(kind, 0),
+            limit=limit,
+        )
+        _validate_render_directional_count(
+            fact=fact,
+            adapter_id=adapter_id,
+            limit=limit,
+            direction="in",
+            count=directional_counts.get((kind, "in"), 0),
+        )
+        _validate_render_directional_count(
+            fact=fact,
+            adapter_id=adapter_id,
+            limit=limit,
+            direction="out",
+            count=directional_counts.get((kind, "out"), 0),
+        )
+    for limit in policy.shape_policy.limits:
+        _validate_absent_render_kind(
+            fact=fact,
+            adapter_id=adapter_id,
+            limit=limit,
+            is_present=limit.kind in counts_by_kind,
+        )
+
+
+def _validate_render_total_count(
+    *,
+    fact: TransactionFact,
+    adapter_id: str,
+    kind: LegKind,
+    total_count: int,
+    limit: LegShapeLimit,
+) -> None:
+    if total_count < limit.min_count:
+        raise ValueError(f"fact {fact.fact_id} falls below {adapter_id} render policy for {kind.value} legs")
+    if total_count > limit.max_count:
+        raise ValueError(f"fact {fact.fact_id} exceeds {adapter_id} render policy for {kind.value} legs")
+
+
+def _validate_render_directional_count(
+    *,
+    fact: TransactionFact,
+    adapter_id: str,
+    limit: LegShapeLimit,
+    direction: str,
+    count: int,
+) -> None:
+    direction_label = "inbound" if direction == "in" else "outbound"
+    minimum = limit.min_in_count if direction == "in" else limit.min_out_count
+    maximum = limit.max_in_count if direction == "in" else limit.max_out_count
+    if minimum is not None and count < minimum:
+        raise ValueError(
+            f"fact {fact.fact_id} falls below {adapter_id} render policy for {direction_label} {limit.kind.value} legs"
+        )
+    if maximum is not None and count > maximum:
+        raise ValueError(
+            f"fact {fact.fact_id} exceeds {adapter_id} render policy for {direction_label} {limit.kind.value} legs"
+        )
+
+
+def _validate_absent_render_kind(
+    *,
+    fact: TransactionFact,
+    adapter_id: str,
+    limit: LegShapeLimit,
+    is_present: bool,
+) -> None:
+    if is_present:
+        return
+    if limit.min_count > 0:
+        raise ValueError(f"fact {fact.fact_id} falls below {adapter_id} render policy for {limit.kind.value} legs")
+    if limit.min_in_count not in (None, 0):
+        raise ValueError(
+            f"fact {fact.fact_id} falls below {adapter_id} render policy for inbound {limit.kind.value} legs"
+        )
+    if limit.min_out_count not in (None, 0):
+        raise ValueError(
+            f"fact {fact.fact_id} falls below {adapter_id} render policy for outbound {limit.kind.value} legs"
+        )

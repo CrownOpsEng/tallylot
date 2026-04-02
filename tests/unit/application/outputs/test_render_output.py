@@ -52,7 +52,10 @@ class FakeOutputAdapter:
         )
         self.render_policy = OutputRenderPolicy(
             shape_policy=FactLegPolicy(
-                limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_in_count=0, max_out_count=0),)
+                limits=(
+                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_in_count=0, max_out_count=0),
+                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+                )
             ),
             requires_projection_type=False,
         )

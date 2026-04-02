@@ -34,6 +34,12 @@ automatically.
 - Normalize source-specific sign conventions at the adapter edge. Normalized
   fact-leg amounts stay positive; direction belongs in the mapped fields, not
   signed magnitudes.
+- Normalize runtime timestamps at the adapter edge. Draft, fact, balance, and
+  balance-evidence timestamps must be timezone-aware UTC before they enter the
+  shared domain or port models.
+- Declare `FactLegPolicy` explicitly on every emitted draft. Required kinds and
+  zero-`primary` behavior must be expressed through the policy limits rather
+  than inferred by shared defaults.
 
 ## Source Adapter Shape
 
@@ -49,6 +55,10 @@ The default source adapter package should keep:
 - `adapter.py` for the thin port implementation and manifest
 - `translation.py` for provider-local file-family or row translation registries
 - optional provider-local parser modules and wallet-evidence modules
+
+Provider-local translation code should convert provider timestamps to UTC-aware
+runtime datetimes before draft construction and should publish any non-default
+leg shape through explicit `LegShapeLimit` entries.
 
 The core service should resolve the adapter through the registry and supply
 only the minimal context the adapter needs to translate correctly. Export

@@ -84,8 +84,10 @@ def test_transaction_fact_exposes_projection_properties_and_serializes_legs() ->
         '"attributed_to_direction":"out","account":"","wallet":""}]'
     )
     assert row["leg_policy"] == (
-        '[{"kind":"charge","max_count":1,"max_in_count":0,"max_out_count":1},'
-        '{"kind":"primary","max_count":2,"max_in_count":1,"max_out_count":1}]'
+        '[{"kind":"charge","min_count":0,"max_count":1,"min_in_count":null,"max_in_count":0,'
+        '"min_out_count":null,"max_out_count":1},'
+        '{"kind":"primary","min_count":2,"max_count":2,"min_in_count":1,"max_in_count":1,'
+        '"min_out_count":1,"max_out_count":1}]'
     )
 
 
@@ -119,8 +121,23 @@ def test_fact_leg_rejects_invalid_direction_values() -> None:
 
 
 def test_fact_leg_policy_rejects_invalid_limits() -> None:
+    with pytest.raises(ValueError, match="min_count must be non-negative"):
+        LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, min_count=-1)
+
     with pytest.raises(ValueError, match="max_count must be non-negative"):
         LegShapeLimit(kind=LegKind.PRIMARY, max_count=-1)
+
+    with pytest.raises(ValueError, match="min_count must not exceed max_count"):
+        LegShapeLimit(kind=LegKind.PRIMARY, min_count=2, max_count=1)
+
+    with pytest.raises(ValueError, match="min_in_count must not exceed max_in_count"):
+        LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, min_in_count=2, max_in_count=1)
+
+    with pytest.raises(ValueError, match="min_out_count must not exceed max_out_count"):
+        LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, min_out_count=2, max_out_count=1)
+
+    with pytest.raises(ValueError, match="directional minimum counts must not exceed max_count"):
+        LegShapeLimit(kind=LegKind.PRIMARY, min_count=0, max_count=1, min_in_count=1, min_out_count=1)
 
     with pytest.raises(ValueError, match="duplicates kind primary"):
         FactLegPolicy(
@@ -171,6 +188,31 @@ def test_transaction_fact_rejects_legs_that_exceed_declared_policy() -> None:
         )
 
 
+def test_transaction_fact_rejects_legs_that_fall_below_declared_policy() -> None:
+    with pytest.raises(ValueError, match="primary legs fall below declared leg policy"):
+        _build_fact(
+            legs=(EconomicLeg(direction="out", kind=LegKind.CHARGE, asset=AssetSymbol("CAD"), amount=Decimal("1")),),
+            leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
+        )
+
+    with pytest.raises(ValueError, match="outbound primary legs fall below declared leg policy"):
+        _build_fact(
+            legs=(EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),),
+            leg_policy=FactLegPolicy(
+                limits=(
+                    LegShapeLimit(
+                        kind=LegKind.PRIMARY,
+                        min_count=1,
+                        max_count=2,
+                        min_out_count=1,
+                        max_in_count=1,
+                        max_out_count=1,
+                    ),
+                )
+            ),
+        )
+
+
 def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requirement() -> None:
     fact = TransactionFact(
         fact_id=TransactionId("fact-2"),
@@ -200,6 +242,26 @@ def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requ
 
     assert fact.projection_type is None
     assert fact.leg_policy.limit_for(LegKind.REBATE) is not None
+
+
+def test_transaction_fact_requires_utc_timestamp() -> None:
+    with pytest.raises(ValueError, match="transaction fact timestamp must be timezone-aware UTC"):
+        TransactionFact(
+            fact_id=TransactionId("fact-utc"),
+            source=SourceId("fixture"),
+            adapter_id=AdapterId("structured_csv"),
+            timestamp=datetime.fromisoformat("2025-01-01T00:00:00"),
+            account="taxable",
+            wallet="spot",
+            classification=FactClassification(
+                economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
+                journal_intent=JournalIntent.FUNDING_INFLOW,
+                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                projection_type=ProjectionType.DEPOSIT,
+            ),
+            legs=(EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
+        )
 
 
 def test_transaction_fact_rejects_ambiguous_attributed_to_direction() -> None:

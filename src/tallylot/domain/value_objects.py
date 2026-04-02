@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 CANONICAL_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -30,8 +30,16 @@ def parse_decimal(value: str | Decimal | None) -> Decimal | None:
     return quantize_decimal(Decimal(text))
 
 
+def require_utc_datetime(value: datetime, *, label: str) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{label} must be timezone-aware UTC")
+    if value.utcoffset() != timedelta(0):
+        raise ValueError(f"{label} must be timezone-aware UTC")
+    return value.astimezone(UTC)
+
+
 def format_timestamp(value: datetime) -> str:
-    return value.strftime(CANONICAL_TIMESTAMP_FORMAT)
+    return require_utc_datetime(value, label="timestamp").strftime(CANONICAL_TIMESTAMP_FORMAT)
 
 
 def parse_timestamp(value: str) -> datetime:

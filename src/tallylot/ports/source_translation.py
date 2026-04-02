@@ -22,6 +22,7 @@ from tallylot.domain.transactions import (
     TransactionFact,
 )
 from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.value_objects import require_utc_datetime
 from tallylot.ports.evidence import WalletInventoryRecord
 
 DraftDirection = Literal["in", "out"]
@@ -50,6 +51,13 @@ class ActivityDraftSeed:
     review_markers: tuple[str, ...] = ()
     confidence: str = "high"
     status: str = "mapped"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "timestamp",
+            require_utc_datetime(self.timestamp, label="activity draft seed timestamp"),
+        )
 
 
 @dataclass(frozen=True)
@@ -99,6 +107,11 @@ class EconomicActivityDraft:
     status: str = "mapped"
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "timestamp",
+            require_utc_datetime(self.timestamp, label="economic activity draft timestamp"),
+        )
         if not self.legs:
             raise ValueError("draft must include at least one leg")
         TransactionFact(

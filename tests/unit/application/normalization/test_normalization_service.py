@@ -8,6 +8,7 @@ import pytest
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tests.support.adapter_packs import fixture_raw_dir
 from tests.support.services import build_normalization_service
 
 
@@ -184,3 +185,43 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
     assert profile["adapter_id"] == "coinbase"
     assert profile["supported"] is True
     assert profile["manifest_fingerprint"] != "stale"
+
+
+@pytest.mark.parametrize(
+    ("source", "raw_dir", "expected_fact_count", "expected_issue_count"),
+    (
+        ("Future Exchange", fixture_raw_dir("coinbase", "retail_buy_renamed"), 1, 0),
+        ("Future Broker", fixture_raw_dir("wealthsimple", "broker_trade"), 1, 0),
+        ("Binance", fixture_raw_dir("binance", "mixed_history"), 5, 2),
+    ),
+)
+def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
+    tmp_path: Path,
+    source: str,
+    raw_dir: Path,
+    expected_fact_count: int,
+    expected_issue_count: int,
+) -> None:
+    artifacts = FilesystemArtifactStore()
+    service = build_normalization_service(artifacts=artifacts)
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(
+            source=source,
+            raw_dir=raw_dir,
+            output_dir=output_dir,
+            window_start="2023-01-01 00:00:00",
+            window_end="2025-12-31 23:59:59",
+        )
+    )
+
+    assert response.fact_count == expected_fact_count
+    assert response.issue_count == expected_issue_count
+    assert (output_dir / "facts.csv").exists()
+    assert (
+        json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))[
+            "normalization_window_start"
+        ]
+        == "2023-01-01 00:00:00"
+    )

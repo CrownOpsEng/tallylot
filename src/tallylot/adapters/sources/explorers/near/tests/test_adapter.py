@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -52,7 +53,7 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
     assert result.facts[0].projection_type == ProjectionType.DEPOSIT
     assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
     assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
-    assert str(result.facts[0].timestamp) == "2023-08-06 10:00:00"
+    assert result.facts[0].timestamp == datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC)
 
 
 def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:

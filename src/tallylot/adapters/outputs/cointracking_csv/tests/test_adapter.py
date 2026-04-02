@@ -149,7 +149,39 @@ def test_cointracking_projection_rejects_inbound_charge_legs() -> None:
                     journal_intent=JournalIntent.EXPENSE_RECOGNITION,
                     tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_EXPENSE,
                 ),
-                legs=(EconomicLeg(direction="in", kind=LegKind.CHARGE, asset=AssetSymbol("CAD"), amount=Decimal("1")),),
-                leg_policy=FactLegPolicy(limits=(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=1),)),
+                legs=(
+                    EconomicLeg(direction="out", kind=LegKind.PRIMARY, asset=AssetSymbol("CAD"), amount=Decimal("1")),
+                    EconomicLeg(direction="in", kind=LegKind.CHARGE, asset=AssetSymbol("CAD"), amount=Decimal("1")),
+                ),
+                leg_policy=FactLegPolicy(
+                    limits=(
+                        LegShapeLimit(kind=LegKind.PRIMARY, min_count=1, max_count=1, max_in_count=0, max_out_count=1),
+                        LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=1),
+                    )
+                ),
+            )
+        )
+
+
+def test_cointracking_projection_rejects_fee_only_shapes() -> None:
+    with pytest.raises(ValueError, match="expected at least one primary leg"):
+        cointracking_row(
+            TransactionFact(
+                fact_id=TransactionId("txn-4"),
+                source=SourceId("fixture"),
+                adapter_id=AdapterId("fixture"),
+                timestamp=datetime(2025, 1, 1, tzinfo=UTC),
+                account="Fixture",
+                wallet="Primary",
+                classification=FactClassification(
+                    economic_kind=EconomicKind.CASH_EXPENSE,
+                    projection_type=ProjectionType.EXPENSE_NON_TAXABLE,
+                    journal_intent=JournalIntent.EXPENSE_RECOGNITION,
+                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+                ),
+                legs=(
+                    EconomicLeg(direction="out", kind=LegKind.CHARGE, asset=AssetSymbol("CAD"), amount=Decimal("1")),
+                ),
+                leg_policy=FactLegPolicy(limits=(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_out_count=1),)),
             )
         )

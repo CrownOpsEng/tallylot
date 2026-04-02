@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from tallylot.domain.types import AssetSymbol, SourceId
-from tallylot.domain.value_objects import format_decimal, format_timestamp
+from tallylot.domain.value_objects import format_decimal, format_timestamp, require_utc_datetime
 
 
 @dataclass(frozen=True)
@@ -21,6 +21,13 @@ class BalanceEvidence:
     balance_kind: str = "available"
     evidence_ref: str = ""
     notes: str = ""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "as_of",
+            require_utc_datetime(self.as_of, label="balance evidence as_of"),
+        )
 
     def to_row(self) -> dict[str, str]:
         return {

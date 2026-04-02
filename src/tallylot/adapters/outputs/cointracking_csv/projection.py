@@ -22,6 +22,11 @@ COINTRACKING_TYPE_LABELS = {
 def cointracking_row(transaction: TransactionFact) -> dict[str, str]:
     if not transaction.projection_type:
         raise ValueError(f"fact {transaction.fact_id} is missing CoinTracking projection metadata")
+    if not any(leg.kind is LegKind.PRIMARY for leg in transaction.legs):
+        raise ValueError(
+            f"fact {transaction.fact_id} has unsupported CoinTracking projection shape: "
+            "expected at least one primary leg"
+        )
     inbound_leg = _single_primary_leg(transaction, direction="in")
     outbound_leg = _single_primary_leg(transaction, direction="out")
     charge_leg = _single_charge_leg(transaction)

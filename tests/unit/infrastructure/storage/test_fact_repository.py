@@ -73,8 +73,10 @@ def _fact_row(*, projection_type: str) -> dict[str, str]:
             '"attributed_to_direction":"out","account":"","wallet":""}]'
         ),
         "leg_policy": (
-            '[{"kind":"charge","max_count":1,"max_in_count":0,"max_out_count":1},'
-            '{"kind":"primary","max_count":2,"max_in_count":1,"max_out_count":1}]'
+            '[{"kind":"charge","min_count":0,"max_count":1,"min_in_count":null,"max_in_count":0,'
+            '"min_out_count":null,"max_out_count":1},'
+            '{"kind":"primary","min_count":0,"max_count":2,"min_in_count":null,"max_in_count":1,'
+            '"min_out_count":null,"max_out_count":1}]'
         ),
     }
 
@@ -93,8 +95,10 @@ def test_fact_repository_rejects_boolean_policy_counts(tmp_path: Path) -> None:
     path = tmp_path / "facts.csv"
     row = _fact_row(projection_type="trade")
     row["leg_policy"] = (
-        '[{"kind":"charge","max_count":true,"max_in_count":0,"max_out_count":1},'
-        '{"kind":"primary","max_count":2,"max_in_count":1,"max_out_count":1}]'
+        '[{"kind":"charge","min_count":0,"max_count":true,"min_in_count":null,"max_in_count":0,'
+        '"min_out_count":null,"max_out_count":1},'
+        '{"kind":"primary","min_count":0,"max_count":2,"min_in_count":null,"max_in_count":1,'
+        '"min_out_count":null,"max_out_count":1}]'
     )
     write_rows(path, FACT_HEADER, (row,))
 
@@ -135,7 +139,15 @@ def test_fact_repository_round_trips_deterministic_legs_and_leg_policy(tmp_path:
         ),
         leg_policy=FactLegPolicy(
             limits=(
-                LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_in_count=1, max_out_count=1),
+                LegShapeLimit(
+                    kind=LegKind.PRIMARY,
+                    min_count=2,
+                    max_count=2,
+                    min_in_count=1,
+                    max_in_count=1,
+                    min_out_count=1,
+                    max_out_count=1,
+                ),
                 LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
             )
         ),
@@ -160,7 +172,9 @@ def test_fact_repository_round_trips_deterministic_legs_and_leg_policy(tmp_path:
         '"attributed_to_direction":"out","account":"","wallet":""}]'
     )
     assert rows[0]["leg_policy"] == (
-        '[{"kind":"charge","max_count":1,"max_in_count":0,"max_out_count":1},'
-        '{"kind":"primary","max_count":2,"max_in_count":1,"max_out_count":1}]'
+        '[{"kind":"charge","min_count":0,"max_count":1,"min_in_count":null,"max_in_count":0,'
+        '"min_out_count":null,"max_out_count":1},'
+        '{"kind":"primary","min_count":2,"max_count":2,"min_in_count":1,"max_in_count":1,'
+        '"min_out_count":1,"max_out_count":1}]'
     )
     assert round_tripped[0].to_row() == fact.to_row()

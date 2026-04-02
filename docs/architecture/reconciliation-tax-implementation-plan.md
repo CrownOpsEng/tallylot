@@ -261,15 +261,19 @@ The only lost capability should be comparison against the external oracle.
 - `attributed_to_direction` is valid only on non-`primary` legs and only when
   exactly one `primary` leg exists on the referenced side.
 - `FactLegPolicy` is generic and per-kind:
+  - `LegShapeLimit` declares `min_count`, `max_count`, `min_in_count`,
+    `max_in_count`, `min_out_count`, and `max_out_count`
   - no duplicate kinds
+  - minimum counts cannot exceed maximum counts
   - directional limits cannot exceed per-kind totals
   - unspecified kinds are disallowed
-  - facts may allow zero `primary` legs when the declared policy permits it
+  - zero-`primary` shapes are opt-in through the declared policy
 - Current shared policy constants cover:
   - single-primary activity
   - two-sided primary exchange
   - two-sided primary exchange with one `charge`
 - CoinTracking currently supports only:
+  - at least one `primary`
   - up to one inbound `primary`
   - up to one outbound `primary`
   - up to one `charge`
@@ -277,6 +281,9 @@ The only lost capability should be comparison against the external oracle.
 
 ### Current Normalization Window Contract
 
+- Runtime timestamps are timezone-aware UTC in drafts, facts, balances, and
+  balance evidence. Persisted artifact timestamp text remains
+  `YYYY-MM-DD HH:MM:SS` and is interpreted as UTC on read.
 - Windowed normalization applies to:
   - `facts.csv`
   - `fact_annotations.json`
@@ -298,7 +305,7 @@ adapters emit `TransactionFact` artifacts directly.
 Required draft responsibilities:
 
 - stable identity plus evidence references
-- timestamp and provenance
+- UTC-aware timestamp and provenance
 - account and wallet scope
 - one canonical `legs` tuple only; no separate fee lane
 - explicit leg semantics per leg:
@@ -306,7 +313,7 @@ Required draft responsibilities:
   - optional `subtype`
   - optional `attributed_to_direction` on non-`primary` legs only
 - explicit per-kind leg-shape policy through `FactLegPolicy` and
-  `LegShapeLimit`
+  `LegShapeLimit`, including any required minimum counts
 - provider operation key and grouped-row support
 - layered classification hints:
   - economic kind

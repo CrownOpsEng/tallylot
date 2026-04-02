@@ -153,7 +153,7 @@ def _parse_report_date(value: str) -> datetime | None:
         return None
     for date_format in ("%Y-%m-%d", "%d/%m/%Y"):
         try:
-            return datetime.strptime(value, date_format).replace(tzinfo=UTC).replace(tzinfo=None)
+            return datetime.strptime(value, date_format).replace(tzinfo=UTC)
         except ValueError:
             continue
     return None

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -21,7 +22,7 @@ def test_wealthsimple_fixture_exercises_supported_and_unsupported_rows() -> None
     assert result.facts[0].projection_type == ProjectionType.TRADE
     assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
     assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
-    assert str(result.facts[0].timestamp) == "2023-09-22 00:00:00"
+    assert result.facts[0].timestamp == datetime(2023, 9, 22, 0, 0, 0, tzinfo=UTC)
     primary_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.PRIMARY)
     charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
     assert primary_legs[1].amount == Decimal("9998.75")

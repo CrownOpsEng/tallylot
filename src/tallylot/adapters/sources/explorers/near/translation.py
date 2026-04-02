@@ -221,6 +221,6 @@ def _parse_timestamp(value: str) -> datetime | None:
     if not value:
         return None
     try:
-        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC).replace(tzinfo=None)
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
     except ValueError:
         return None
