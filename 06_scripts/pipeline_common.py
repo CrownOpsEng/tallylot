@@ -96,6 +96,7 @@ DATE_FORMATS = (
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%d %H:%M:%S UTC",
     "%Y-%m-%dT%H:%M:%S.%fZ",
+    "%y-%m-%d %H:%M:%S",
     "%Y-%m-%d",
     "%m/%d/%Y %H:%M:%S",
     "%m/%d/%Y",
@@ -205,6 +206,20 @@ def classify_file_family(path: Path, header: Sequence[str]) -> str:
         return "wallet_operation_csv"
     if "futures-trade-history" in name or "spot-trade-history" in name:
         return "fills_csv"
+    if "convert-order-history" in name:
+        return "convert_order_csv"
+    if "deposit-history" in name and "fiat" not in name:
+        return "deposit_history_csv"
+    if "withdraw-history" in name and "fiat" not in name:
+        return "withdrawal_history_csv"
+    if "c2c-order-history" in name:
+        return "p2p_order_csv"
+    if "fiat-buy-history" in name:
+        return "fiat_buy_csv"
+    if "fiat-sell-history" in name:
+        return "fiat_sell_csv"
+    if "fiat-exchange-history" in name:
+        return "fiat_exchange_csv"
     if "futures-transaction-history" in name:
         return "futures_transaction_csv"
     if "transaction" in name and "history" in name:

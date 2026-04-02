@@ -270,6 +270,53 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(summary["files_profiled"], len(inventory))
         self.assertIn("manifest_fingerprint", profile)
 
+    def test_normalize_source_cli_supports_wealthsimple_repo_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "wealthsimple" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "wealthsimple"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "WealthSimple",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            candidate = read_dict_rows(out_dir / "cointracking_candidate.csv")
+
+        self.assertEqual("ready", summary["status"])
+        self.assertEqual(26, summary["canonical_events"])
+        self.assertEqual(0, summary["exceptions"])
+        self.assertEqual(26, len(events))
+        self.assertEqual(26, len(candidate))
+
+    def test_normalize_source_cli_surfaces_small_binance_review_set(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "binance"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "Binance",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            exceptions = read_dict_rows(out_dir / "exceptions.csv")
+
+        self.assertEqual("needs_review", summary["status"])
+        self.assertGreater(summary["canonical_events"], 26000)
+        self.assertEqual(24, summary["canonical_balances"])
+        self.assertEqual(3, summary["exceptions"])
+        self.assertEqual(3, len(exceptions))
+
     def test_normalize_source_cli_caches_coinbase_outputs(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"
 

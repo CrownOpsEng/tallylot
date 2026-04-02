@@ -48,8 +48,7 @@ def normalize_source(
     if profile_json is not None and profile_json.exists():
         profile_payload = read_profile(profile_json)
         manifest_fingerprint = str(profile_payload["manifest_fingerprint"])
-        adapter_name = str(profile_payload["adapter"])
-        adapter_supported = bool(profile_payload["adapter_supported"])
+        adapter_name = adapter.name
     else:
         profile = build_source_profile(
             source=source,
@@ -59,8 +58,7 @@ def normalize_source(
             adapter_supported=adapter.supported,
         )
         manifest_fingerprint = profile.manifest_fingerprint
-        adapter_name = profile.adapter
-        adapter_supported = profile.adapter_supported
+        adapter_name = adapter.name
 
     profile = build_source_profile(
         source=source,
@@ -87,7 +85,9 @@ def normalize_source(
             and existing.get("adapter") == adapter_name
             and existing.get("exception_decisions_fingerprint") == decisions_digest
             and events_path.exists()
+            and balances_path.exists()
             and exceptions_path.exists()
+            and candidate_path.exists()
         ):
             return {
                 "source": source,
@@ -114,7 +114,7 @@ def normalize_source(
     summary = {
         "source": source,
         "adapter": adapter.name,
-        "adapter_supported": adapter_supported,
+        "adapter_supported": profile.adapter_supported,
         "manifest_fingerprint": profile.manifest_fingerprint,
         "canonical_events": len(result.canonical_events),
         "canonical_balances": len(result.canonical_balances),
@@ -124,8 +124,8 @@ def normalize_source(
         "skipped_non_mapped_rows": len(skipped_rows),
         "status": (
             "ready"
-            if adapter.supported and not result.exceptions
-            else "needs_review" if adapter.supported else "adapter_not_implemented"
+            if profile.adapter_supported and not result.exceptions
+            else "needs_review" if profile.adapter_supported else "adapter_not_implemented"
         ),
         "paths": {
             "canonical_events": str(events_path),

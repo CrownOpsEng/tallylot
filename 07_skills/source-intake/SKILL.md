@@ -29,6 +29,8 @@ Use this skill for the deterministic front half of source prep.
 - Prefer deterministic evidence over interpretation.
 - Do not send full raw exports to an LLM when profile artifacts are enough.
 - If file families are unknown or the adapter is unsupported, mark normalization as pending and route to the normalization-exceptions skill only after profiling is complete.
+- If normalization is `ready`, that still means "candidate staged for human review", not "safe to import without checking overlap and verification gates".
+- If normalization is `needs_review`, prefer a compact exception artifact and an issue-log entry over hand-editing raw exports or silently dropping ambiguous rows.
 - Keep the raw folder immutable.
 
 ## Commands

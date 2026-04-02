@@ -28,6 +28,7 @@ Use this skill only after deterministic profiling and normalization have run.
    - adapter patch
    - regression test
 4. Re-run normalization after the patch.
+5. If a source still has a small unresolved set after the durable repair, log the residual items and keep them explicit rather than forcing the adapter to guess.
 
 ## Guardrails
 
@@ -35,6 +36,7 @@ Use this skill only after deterministic profiling and normalization have run.
 - Use compact fixture slices, not entire ledgers, for repair prompts.
 - Only propose adapter promotion after deterministic tests pass.
 - Keep ledger-impacting issues in `03_analysis/issues/issue_log.csv`; parser noise stays out unless it blocks import or verification.
+- "Universal" means deterministic coverage plus visible review gates, not automatic treatment of every exchange-specific internal movement.
 
 ## Decision memory
 
