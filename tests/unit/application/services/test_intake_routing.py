@@ -67,6 +67,56 @@ def test_route_intake_file_routes_cointracking_sidecar_by_html_export_timestamp(
     )
 
 
+def test_route_intake_file_routes_cointracking_sidecar_to_unknown_capture_without_html(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    sidecar_dir = incoming_dir / "CoinTracking Export_files"
+    sidecar_dir.mkdir(parents=True)
+    sidecar_path = sidecar_dir / "style.min.css"
+    sidecar_path.write_text("body{}", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+
+    route = route_intake_file(
+        ScannedFile(
+            relative_path="CoinTracking Export_files/style.min.css",
+            file_path=sidecar_path,
+            size_bytes=sidecar_path.stat().st_size,
+            sha256="fixture",
+        ),
+        incoming_dir=incoming_dir,
+        workspace_root=workspace_root,
+        facts=IntakeFileFacts(),
+    )
+
+    assert route.category == "portfolio_raw"
+    assert route.capture_id == "unknown"
+
+
+def test_route_intake_file_routes_archive_sidecar_by_archive_capture_id(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    archive_path = incoming_dir / "CoinTracking-202203.zip"
+    archive_path.write_bytes(b"PK\x03\x04")
+    workspace_root = tmp_path / "workspace"
+
+    route = route_intake_file(
+        ScannedFile(
+            relative_path="CoinTracking-202203.zip::CoinTracking Export_files/style.min.css",
+            file_path=archive_path,
+            size_bytes=archive_path.stat().st_size,
+            sha256="fixture",
+            archive_source_path="CoinTracking-202203.zip",
+            archive_member_path="CoinTracking Export_files/style.min.css",
+        ),
+        incoming_dir=incoming_dir,
+        workspace_root=workspace_root,
+        facts=IntakeFileFacts(),
+    )
+
+    assert route.category == "portfolio_raw"
+    assert route.role == "portfolio_sidecar"
+    assert route.capture_id == "2022-03"
+
+
 def test_route_intake_file_routes_archive_members_under_contents_tree(tmp_path: Path) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
@@ -118,6 +168,32 @@ def test_route_intake_file_routes_working_derivatives_to_supporting_artifacts(tm
     assert route.target_path == (
         workspace_root / "working/supporting_artifacts/binance/incoming/Trade Analysis - ADA-USDT - Binance.png"
     )
+
+
+def test_route_intake_file_routes_generic_supporting_artifacts_when_suffix_is_not_raw_or_derivative(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    note_path = incoming_dir / "capture-notes.txt"
+    note_path.write_text("notes", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+
+    route = route_intake_file(
+        ScannedFile(
+            relative_path=note_path.name,
+            file_path=note_path,
+            size_bytes=note_path.stat().st_size,
+            sha256="fixture",
+        ),
+        incoming_dir=incoming_dir,
+        workspace_root=workspace_root,
+        facts=IntakeFileFacts(),
+    )
+
+    assert route.category == "supporting_artifact"
+    assert route.role == "supporting_artifact"
+    assert route.source_folder == "unclassified"
 
 
 def test_route_intake_file_uses_header_hints_for_loose_source_exports(tmp_path: Path) -> None:

@@ -13,6 +13,7 @@ COINTRACKING_CAPTURE_PATTERN = re.compile(r"as of:\s*(\d{2})\.(\d{2})\.(\d{4})",
 CAPTURE_MONTH_PATTERNS = (
     re.compile(r"(?P<year>20\d{2})-(?P<month>\d{2})"),
     re.compile(r"(?P<year>20\d{2})(?P<month>\d{2})(?P<day>\d{2})\d{4}"),
+    re.compile(r"(?P<year>20\d{2})(?P<month>\d{2})(?!\d)"),
 )
 SOURCE_FOLDER_HINTS = (
     ("wealthsimple", "wealthsimple"),

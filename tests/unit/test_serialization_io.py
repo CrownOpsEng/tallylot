@@ -39,4 +39,4 @@ def test_write_json_creates_parent_directories_and_sorts_keys(tmp_path: Path) ->
     write_json(path, {"zeta": 2, "alpha": 1})
 
     assert path.exists()
-    assert path.read_text(encoding="utf-8") == '{\n  "alpha": 1,\n  "zeta": 2\n}'
+    assert path.read_text(encoding="utf-8") == '{\n  "alpha": 1,\n  "zeta": 2\n}\n'

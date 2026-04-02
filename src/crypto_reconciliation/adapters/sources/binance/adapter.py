@@ -102,6 +102,10 @@ def _read_rows(path: Path) -> tuple[dict[str, str], ...]:
         return tuple(csv.DictReader(handle))
 
 
+def _is_no_data_row(row: dict[str, str]) -> bool:
+    return (row.get("User ID") or "").strip() == "No data matches the criteria."
+
+
 def _normalize_spot_rows(profile: SourceProfile, path: Path) -> list[CanonicalEvent]:
     events: list[CanonicalEvent] = []
     for index, row in enumerate(_read_rows(path), start=2):
@@ -249,6 +253,8 @@ def _normalize_transaction_rows(
     issues: list[IssueRecord] = []
     grouped_rows: dict[tuple[str, str, str], list[tuple[int, dict[str, str]]]] = defaultdict(list)
     for index, row in enumerate(_read_rows(path), start=2):
+        if _is_no_data_row(row):
+            continue
         key = (
             (row.get("Time") or "").strip(),
             (row.get("Account") or "").strip(),
