@@ -173,7 +173,7 @@ def _normalize_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="spot_trade",
-                projection_type="Trade",
+                projection_type="trade",
                 journal_intent="asset_exchange",
                 tax_treatment_code="capital_exchange",
             ),
@@ -197,7 +197,7 @@ def _normalize_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="spot_trade",
-                projection_type="Trade",
+                projection_type="trade",
                 journal_intent="asset_exchange",
                 tax_treatment_code="capital_exchange",
             ),

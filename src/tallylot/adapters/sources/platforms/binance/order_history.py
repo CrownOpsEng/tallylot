@@ -45,7 +45,7 @@ def normalize_convert_order_rows(
                 timestamp=parse_export_timestamp(date_updated, path.name),
                 classification=classification(
                     economic_kind="asset_conversion",
-                    projection_type="Trade",
+                    projection_type="trade",
                     journal_intent="asset_exchange",
                     tax_treatment_code="capital_exchange",
                 ),
@@ -100,7 +100,7 @@ def normalize_c2c_order_rows(
                 timestamp=parse_export_timestamp(created_time, path.name),
                 classification=classification(
                     economic_kind="p2p_trade",
-                    projection_type="Trade",
+                    projection_type="trade",
                     journal_intent="asset_exchange",
                     tax_treatment_code="capital_exchange",
                 ),

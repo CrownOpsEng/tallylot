@@ -10,7 +10,7 @@
     "journal_intent": "funding_inflow",
     "legs": "in:BNB:1.5::",
     "operation_group_id": "",
-    "projection_type": "Deposit",
+    "projection_type": "deposit",
     "provider_operation_key": "explorer_transfer_in",
     "raw_file": "transactions.csv",
     "raw_row_ref": "transactions.csv:row:2",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.infrastructure.filesystem import ensure_directory
+from tallylot.application.workspace.filesystem import ensure_directory
 
 
 def test_ensure_directory_creates_nested_path_and_returns_it(tmp_path: Path) -> None:

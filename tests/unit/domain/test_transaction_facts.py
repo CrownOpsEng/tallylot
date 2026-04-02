@@ -47,14 +47,14 @@ def test_transaction_fact_exposes_projection_properties_and_serializes_legs() ->
         fee_legs=(EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("12.5")),),
     )
 
-    assert fact.category == "trade"
+    assert fact.projection_type == ProjectionType.TRADE
     assert fact.asset_in == AssetSymbol("BTC")
     assert fact.amount_out == Decimal("100000")
 
     row = fact.to_row()
 
     assert row["fact_id"] == "fact-1"
-    assert row["projection_type"] == "Trade"
+    assert row["projection_type"] == "trade"
     assert row["legs"] == "in:BTC:1.25::|out:CAD:100000::"
     assert row["fee_legs"] == "out:CAD:12.5::"
 
@@ -78,7 +78,7 @@ def test_transaction_fact_returns_none_for_absent_optional_leg_views() -> None:
     assert fact.fee_amount is None
 
 
-def test_transaction_fact_category_falls_back_to_economic_kind_without_projection_type() -> None:
+def test_transaction_fact_omits_projection_type_when_unset() -> None:
     fact = TransactionFact(
         fact_id=TransactionId("fact-2"),
         source=SourceId("fixture"),
@@ -95,4 +95,4 @@ def test_transaction_fact_category_falls_back_to_economic_kind_without_projectio
         legs=(EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("0.5")),),
     )
 
-    assert fact.category == "platform_reward"
+    assert fact.projection_type is None

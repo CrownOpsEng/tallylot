@@ -10,7 +10,7 @@ from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactS
 from tests.support.services import build_normalization_service, build_render_service
 
 
-def test_cointracking_output_matches_expected_schema(
+def test_cointracking_output_matches_expected_schema_and_projection_mapping(
     structured_source_dir: Path,
     tmp_path: Path,
 ) -> None:
@@ -36,7 +36,10 @@ def test_cointracking_output_matches_expected_schema(
     )
 
     rows = read_rows(output_path)
+    fact_rows = artifacts.read_rows(normalized_dir / "facts.csv")
 
     assert tuple(rows[0]) == COINTRACKING_HEADER
     assert len(rows) == 2
+    assert {row["projection_type"] for row in fact_rows} == {"reward_bonus", "trade"}
+    assert {row["Type"] for row in rows} == {"Reward / Bonus", "Trade"}
     assert not (normalized_dir / "cointracking_candidate.csv").exists()

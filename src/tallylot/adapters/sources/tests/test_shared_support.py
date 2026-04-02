@@ -15,6 +15,7 @@ from tallylot.adapters.support.drafts import (
 )
 from tallylot.adapters.support.wallets import normalized_identifier, wallet_identifier_kind
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, ProjectionType
 from tests.support.services import build_source_profile
 
 
@@ -29,7 +30,7 @@ def test_draft_compiler_preserves_internal_fields() -> None:
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
                 economic_kind="asset_deposit",
-                projection_type="Deposit",
+                projection_type="deposit",
                 journal_intent="funding_inflow",
                 tax_treatment_code="non_taxable_transfer_in",
             ),
@@ -40,7 +41,8 @@ def test_draft_compiler_preserves_internal_fields() -> None:
         )
     )
 
-    assert event.category == "deposit"
+    assert event.economic_kind == EconomicKind.ASSET_DEPOSIT
+    assert event.projection_type == ProjectionType.DEPOSIT
     assert event.description == "Fixture deposit"
     assert str(event.asset_in) == "BTC"
 
@@ -61,7 +63,7 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
                 economic_kind="spot_trade",
-                projection_type="Trade",
+                projection_type="trade",
                 journal_intent="asset_exchange",
                 tax_treatment_code="capital_exchange",
             ),
@@ -72,7 +74,8 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
         )
     )
 
-    assert fact.classification.economic_kind == "spot_trade"
+    assert fact.economic_kind == EconomicKind.SPOT_TRADE
+    assert fact.projection_type == ProjectionType.TRADE
     assert len(fact.legs) == 2
     assert fact.legs[0].asset == "BTC"
     assert fact.legs[1].asset == "CAD"
@@ -90,7 +93,7 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
                 timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
                 classification=classification(
                     economic_kind="asset_deposit",
-                    projection_type="Deposit",
+                    projection_type="deposit",
                     journal_intent="funding_inflow",
                     tax_treatment_code="non_taxable_transfer_in",
                 ),
@@ -105,7 +108,7 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
     )
 
     assert len(result.facts) == 1
-    assert result.facts[0].projection_type == "Deposit"
+    assert result.facts[0].projection_type == ProjectionType.DEPOSIT
     assert not result.issues
 
 

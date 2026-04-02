@@ -1,0 +1,1 @@
+"""CoinTracking CSV adapter tests."""

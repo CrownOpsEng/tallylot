@@ -61,23 +61,23 @@ def translate_row(
 
 def classification_for_category(category: StructuredCategory) -> ActivityClassification:
     mapping: dict[str, tuple[str, str, str, str]] = {
-        "trade": ("spot_trade", "Trade", "asset_exchange", "capital_exchange"),
-        "deposit": ("asset_deposit", "Deposit", "funding_inflow", "non_taxable_transfer_in"),
-        "withdrawal": ("asset_withdrawal", "Withdrawal", "funding_outflow", "non_taxable_transfer_out"),
-        "interest_income": ("interest_income", "Interest Income", "income_recognition", "ordinary_income"),
-        "reward": ("platform_reward", "Reward / Bonus", "income_recognition", "ordinary_income"),
-        "expense": ("cash_expense", "Expense (non taxable)", "expense_recognition", "non_taxable_expense"),
-        "swap": ("asset_swap", "Swap (non taxable)", "asset_exchange", "non_taxable_asset_migration"),
-        "staking_reward": ("staking_reward", "Staking", "income_recognition", "staking_income"),
+        "trade": ("spot_trade", "trade", "asset_exchange", "capital_exchange"),
+        "deposit": ("asset_deposit", "deposit", "funding_inflow", "non_taxable_transfer_in"),
+        "withdrawal": ("asset_withdrawal", "withdrawal", "funding_outflow", "non_taxable_transfer_out"),
+        "interest_income": ("interest_income", "interest_income", "income_recognition", "ordinary_income"),
+        "reward": ("platform_reward", "reward_bonus", "income_recognition", "ordinary_income"),
+        "expense": ("cash_expense", "expense_non_taxable", "expense_recognition", "non_taxable_expense"),
+        "swap": ("asset_swap", "swap_non_taxable", "asset_exchange", "non_taxable_asset_migration"),
+        "staking_reward": ("staking_reward", "staking", "income_recognition", "staking_income"),
         "derivatives_profit": (
             "derivative_realized_profit",
-            "Derivatives / Futures Profit",
+            "derivatives_futures_profit",
             "income_recognition",
             "derivative_realized_gain",
         ),
         "derivatives_loss": (
             "derivative_realized_loss",
-            "Derivatives / Futures Loss",
+            "derivatives_futures_loss",
             "expense_recognition",
             "derivative_realized_loss",
         ),

@@ -31,6 +31,8 @@ Normal runtime operation must stay platform-agnostic:
   for dev-only comparison workflows
 - CoinTracking tax and accounting reports are oracle-only support artifacts for
   comparison and regression, not normal runtime dependencies
+- the internal engine should stay asset-class-agnostic so crypto, FX,
+  securities, and similar surfaces can remain adapter- and policy-driven
 
 ## Key Decisions
 
@@ -84,18 +86,34 @@ Every transaction fact should support distinct classification layers:
 - `TaxTreatmentCode`: jurisdiction-neutral tax intent
 - `JournalIntent`: accounting intent
 
-### 5. Keep The Ledger Replaceable
+### 5. Keep The Core Runtime Asset-Class Agnostic
+
+The internal runtime should generalize across financial asset classes even when
+the current adapters and policies are crypto-first.
+
+Rules:
+
+- core facts, checkpoints, accounting, and tax seams should avoid
+  crypto-exclusive semantics unless the concept is truly crypto-specific
+- crypto, FX, securities, and later import or output surfaces should enter
+  through adapters and policy contracts rather than through domain renames or
+  special-case compatibility shims
+- repo, package, and CLI naming may remain stable for now; internal abstractions
+  should still be chosen so later generalization does not require another core
+  rewrite
+
+### 6. Keep The Ledger Replaceable
 
 Use Ledger CLI first because it is permissive, mature, and scriptable, but keep
 all journaling behind a renderer port so later Beancount or hledger adapters do
 not require domain refactors.
 
-### 6. Keep The Tax Layer Replaceable
+### 7. Keep The Tax Layer Replaceable
 
 Implement Canadian capital-account handling first, but keep policy behind a tax
 policy port so future jurisdictions do not require a domain rewrite.
 
-### 7. Expand `pydantic` At Boundaries, Not In The Core Domain
+### 8. Expand `pydantic` At Boundaries, Not In The Core Domain
 
 Use `pydantic` for:
 
@@ -109,6 +127,11 @@ Keep domain models as frozen dataclasses, enums, and value objects so business
 rules remain explicit and tool-friendly.
 
 ## Target Architecture
+
+Core abstractions added from this point forward must stay neutral enough to
+support multiple asset classes. If a term is only correct for one provider,
+chain, or asset class, keep it adapter-local unless the domain concept itself
+is inherently specific.
 
 ### Domain Packages
 

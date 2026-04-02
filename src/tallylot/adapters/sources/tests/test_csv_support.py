@@ -56,7 +56,7 @@ def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) ->
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
                 economic_kind="spot_trade",
-                projection_type="Trade",
+                projection_type="trade",
                 journal_intent="asset_exchange",
                 tax_treatment_code="capital_exchange",
             ),

@@ -49,7 +49,7 @@ def _normalize_cash_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="fiat_deposit",
-                projection_type="Deposit",
+                projection_type="deposit",
                 journal_intent="funding_inflow",
                 tax_treatment_code="non_taxable_transfer_in",
             ),
@@ -72,7 +72,7 @@ def _normalize_cash_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="cash_expense",
-                projection_type="Expense (non taxable)",
+                projection_type="expense_non_taxable",
                 journal_intent="expense_recognition",
                 tax_treatment_code="non_taxable_expense",
             ),
@@ -92,7 +92,7 @@ def _normalize_cash_row(
         timestamp=timestamp,
         classification=classification(
             economic_kind="cash_withdrawal",
-            projection_type="Withdrawal",
+            projection_type="withdrawal",
             journal_intent="funding_outflow",
             tax_treatment_code="non_taxable_transfer_out",
         ),
@@ -128,7 +128,7 @@ def _normalize_crypto_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="platform_reward",
-                projection_type="Reward / Bonus",
+                projection_type="reward_bonus",
                 journal_intent="income_recognition",
                 tax_treatment_code="ordinary_income",
             ),
@@ -149,7 +149,7 @@ def _normalize_crypto_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="spot_trade",
-                projection_type="Trade",
+                projection_type="trade",
                 journal_intent="asset_exchange",
                 tax_treatment_code="capital_exchange",
             ),
@@ -173,7 +173,7 @@ def _normalize_crypto_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="asset_withdrawal",
-                projection_type="Withdrawal",
+                projection_type="withdrawal",
                 journal_intent="funding_outflow",
                 tax_treatment_code="non_taxable_transfer_out",
             ),

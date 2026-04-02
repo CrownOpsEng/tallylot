@@ -10,7 +10,7 @@
     "journal_intent": "asset_exchange",
     "legs": "in:BTC:0.01::|out:ETH:0.5::",
     "operation_group_id": "op-1",
-    "projection_type": "Trade",
+    "projection_type": "trade",
     "provider_operation_key": "ledger_live_swap",
     "raw_file": "ledgerlive-operations.csv",
     "raw_row_ref": "ledgerlive-operations.csv:row:2;ledgerlive-operations.csv:row:3;ledgerlive-operations.csv:row:4",

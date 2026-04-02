@@ -77,7 +77,7 @@ def translate_transactions(
                         timestamp=timestamp,
                         classification=classification(
                             economic_kind="chain_transfer_in",
-                            projection_type="Deposit",
+                            projection_type="deposit",
                             journal_intent="funding_inflow",
                             tax_treatment_code="non_taxable_transfer_in",
                         ),
@@ -104,7 +104,7 @@ def translate_transactions(
                             timestamp=timestamp,
                             classification=classification(
                                 economic_kind="staking_transfer_out",
-                                projection_type="Withdrawal",
+                                projection_type="withdrawal",
                                 journal_intent="funding_outflow",
                                 tax_treatment_code="non_taxable_transfer_out",
                             ),
@@ -125,7 +125,7 @@ def translate_transactions(
                             timestamp=timestamp,
                             classification=classification(
                                 economic_kind="staking_transfer_in",
-                                projection_type="Deposit",
+                                projection_type="deposit",
                                 journal_intent="funding_inflow",
                                 tax_treatment_code="non_taxable_transfer_in",
                             ),

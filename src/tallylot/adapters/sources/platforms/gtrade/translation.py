@@ -118,13 +118,13 @@ def _classification_for_pnl(pnl: Decimal) -> ActivityClassification:
     if pnl > 0:
         return classification(
             economic_kind="derivative_realized_profit",
-            projection_type="Derivatives / Futures Profit",
+            projection_type="derivatives_futures_profit",
             journal_intent="income_recognition",
             tax_treatment_code="derivative_realized_gain",
         )
     return classification(
         economic_kind="derivative_realized_loss",
-        projection_type="Derivatives / Futures Loss",
+        projection_type="derivatives_futures_loss",
         journal_intent="expense_recognition",
         tax_treatment_code="derivative_realized_loss",
     )

@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.application.profiling.contracts import ProfileRequest, ProfileResponse
+from tallylot.application.workspace.filesystem import ensure_directory, ensure_output_not_within_input_tree
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue, SourceId
-from tallylot.infrastructure.filesystem import ensure_directory, ensure_output_not_within_input_tree
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile

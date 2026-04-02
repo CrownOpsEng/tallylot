@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.wealthsimple.adapter import WealthsimpleAdapter
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -15,7 +16,10 @@ def test_wealthsimple_fixture_exercises_supported_and_unsupported_rows() -> None
 
     assert str(profile.adapter_id) == "wealthsimple"
     assert len(result.facts) == 1
-    assert result.facts[0].category == "trade"
+    assert result.facts[0].economic_kind == EconomicKind.SPOT_TRADE
+    assert result.facts[0].projection_type == ProjectionType.TRADE
+    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert str(result.facts[0].timestamp) == "2023-09-22 00:00:00"
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
@@ -31,6 +35,7 @@ def test_wealthsimple_adapter_uses_broker_activity_family_without_filename_depen
     assert str(profile.adapter_id) == "wealthsimple"
     assert len(result.facts) == 1
     assert result.facts[0].raw_file == "broker-export.csv"
+    assert result.facts[0].projection_type == ProjectionType.TRADE
     assert not result.issues
 
 
@@ -66,4 +71,5 @@ def test_wealthsimple_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> 
     )
 
     assert len(result.facts) == 1
+    assert result.facts[0].projection_type == ProjectionType.TRADE
     assert not result.issues

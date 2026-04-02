@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 from tallylot.application.normalization.contracts import NormalizeRequest, NormalizeResponse
 from tallylot.application.normalization.issue_context import enrich_issue_context_timestamps
 from tallylot.application.profiling.build_profile import BuildProfileUseCase
-from tallylot.infrastructure.filesystem import ensure_directory, ensure_output_not_within_input_tree
+from tallylot.application.workspace.filesystem import ensure_directory, ensure_output_not_within_input_tree
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.evidence import EvidenceRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort

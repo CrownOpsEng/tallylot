@@ -86,7 +86,7 @@ def normalize_transaction_rows(
                     timestamp=parsed_time,
                     classification=classification(
                         economic_kind="staking_reward",
-                        projection_type="Staking",
+                        projection_type="staking",
                         journal_intent="income_recognition",
                         tax_treatment_code="staking_income",
                     ),
@@ -117,7 +117,7 @@ def normalize_transaction_rows(
                     timestamp=parsed_time,
                     classification=classification(
                         economic_kind="asset_conversion",
-                        projection_type="Trade",
+                        projection_type="trade",
                         journal_intent="asset_exchange",
                         tax_treatment_code="capital_exchange",
                     ),

@@ -106,23 +106,6 @@ class TransactionFact:
         leg = self.fee_legs[0] if self.fee_legs else None
         return None if leg is None else leg.amount
 
-    @property
-    def category(self) -> str:
-        if self.projection_type is None:
-            return self.economic_kind.value
-        return {
-            ProjectionType.DEPOSIT: "deposit",
-            ProjectionType.DERIVATIVES_FUTURES_LOSS: "derivatives_loss",
-            ProjectionType.DERIVATIVES_FUTURES_PROFIT: "derivatives_profit",
-            ProjectionType.EXPENSE_NON_TAXABLE: "expense",
-            ProjectionType.INTEREST_INCOME: "interest_income",
-            ProjectionType.REWARD_BONUS: "reward",
-            ProjectionType.STAKING: "staking_reward",
-            ProjectionType.SWAP_NON_TAXABLE: "swap",
-            ProjectionType.TRADE: "trade",
-            ProjectionType.WITHDRAWAL: "withdrawal",
-        }[self.projection_type]
-
     def to_row(self) -> dict[str, str]:
         return {
             "fact_id": str(self.fact_id),

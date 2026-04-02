@@ -6,6 +6,7 @@ from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
 from tallylot.adapters.sources.platforms.coinbase.matching import RETAIL_HEADER
 from tallylot.adapters.sources.platforms.coinbase.timestamps import parse_retail_timestamp
 from tallylot.application.profiling import BuildProfileUseCase
+from tallylot.domain.transactions import ProjectionType
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.source_adapters import SourceAdapter
@@ -49,5 +50,5 @@ def test_coinbase_adapter_uses_retail_family_without_filename_dependency() -> No
     assert str(profile.adapter_id) == "coinbase"
     assert len(result.facts) == 1
     assert result.facts[0].raw_file == "retail-export.csv"
-    assert result.facts[0].category == "trade"
+    assert result.facts[0].projection_type == ProjectionType.TRADE
     assert result.issues == ()

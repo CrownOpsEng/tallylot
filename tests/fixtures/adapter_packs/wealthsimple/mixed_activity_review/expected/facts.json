@@ -10,7 +10,7 @@
     "journal_intent": "asset_exchange",
     "legs": "in:BTC:0.5::|out:CAD:10000::",
     "operation_group_id": "",
-    "projection_type": "Trade",
+    "projection_type": "trade",
     "provider_operation_key": "trade:BUY",
     "raw_file": "activities-export-2026-03-23.csv",
     "raw_row_ref": "row:2",

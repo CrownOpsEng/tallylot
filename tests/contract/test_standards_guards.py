@@ -6,6 +6,8 @@ import tomllib
 from collections import defaultdict
 from pathlib import Path
 
+from tallylot.domain.transactions import TransactionFact
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -129,3 +131,43 @@ def test_typecheck_configs_remain_strict() -> None:
     assert "warn_unused_ignores = true" in mypy_text
     assert pyright_config["typeCheckingMode"] == "strict"
     assert pyright_config["reportUnnecessaryTypeIgnoreComment"] is True
+
+
+def test_application_modules_do_not_import_infrastructure() -> None:
+    application_root = REPO_ROOT / "src" / "tallylot" / "application"
+
+    for path in sorted(application_root.rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        assert re.search(r"(^|\n)(from|import)\s+tallylot\.infrastructure\b", text) is None, (
+            f"{path} imports infrastructure from the application layer"
+        )
+
+
+def test_transaction_fact_category_bridge_is_removed() -> None:
+    assert not hasattr(TransactionFact, "category")
+
+
+def test_repo_does_not_reference_fact_category_attribute() -> None:
+    guarded_roots = (
+        REPO_ROOT / "src" / "tallylot" / "adapters" / "sources",
+        REPO_ROOT / "src" / "tallylot" / "adapters" / "support",
+        REPO_ROOT / "tests" / "unit" / "domain",
+    )
+
+    for root in guarded_roots:
+        for path in sorted(root.rglob("*.py")):
+            text = path.read_text(encoding="utf-8")
+            assert re.search(r"\.category\b", text) is None, f"{path} references removed fact category attribute"
+
+
+def test_source_adapters_do_not_emit_cointracking_projection_labels() -> None:
+    adapters_root = REPO_ROOT / "src" / "tallylot" / "adapters" / "sources"
+    forbidden_pattern = re.compile(
+        r'projection_type\s*=\s*"(Deposit|Trade|Withdrawal|Interest Income|Reward / Bonus|'
+        r"Expense \(non taxable\)|Swap \(non taxable\)|Staking|"
+        r'Derivatives / Futures Profit|Derivatives / Futures Loss)"'
+    )
+
+    for path in sorted(adapters_root.rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        assert forbidden_pattern.search(text) is None, f"{path} embeds CoinTracking projection labels"

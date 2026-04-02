@@ -133,6 +133,8 @@ Current application of this rule:
   `issue_rules.py` over generic names.
 - Match package structure to the architecture first and the external provider
   second.
+- New core-domain and application names should avoid crypto-exclusive language
+  unless the concept is genuinely adapter-local or asset-class-specific.
 - Under `adapters/sources/`, group packages by source kind before the provider:
   `platforms/<provider>/`, `wallets/<provider>/`, `explorers/<provider>/`,
   `portfolio/<surface>/`, `generic/<contract>/`, or `stubs/<reserved>/`.

@@ -62,7 +62,7 @@ def translate_transactions(
                     timestamp=_parse_utc_timestamp((row.get("DateTime (UTC)") or "").strip()),
                     classification=classification(
                         economic_kind="chain_transfer_in",
-                        projection_type="Deposit",
+                        projection_type="deposit",
                         journal_intent="funding_inflow",
                         tax_treatment_code="non_taxable_transfer_in",
                     ),

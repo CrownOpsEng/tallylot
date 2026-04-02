@@ -165,7 +165,7 @@ class LedgerLiveAdapter:
                     timestamp=timestamp,
                     classification=classification(
                         economic_kind="asset_swap",
-                        projection_type="Trade",
+                        projection_type="trade",
                         journal_intent="asset_exchange",
                         tax_treatment_code="capital_exchange",
                     ),

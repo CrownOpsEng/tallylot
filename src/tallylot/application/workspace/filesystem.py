@@ -1,4 +1,4 @@
-"""Filesystem path primitives."""
+"""Application-owned filesystem guards for workspace-oriented workflows."""
 
 from __future__ import annotations
 
@@ -30,9 +30,7 @@ def ensure_output_not_within_input_tree(
     output_label: str,
 ) -> None:
     if _path_is_within(output_path, input_root):
-        raise ValueError(
-            f"{output_label} must not be inside {input_label}: {output_path}",
-        )
+        raise ValueError(f"{output_label} must not be inside {input_label}: {output_path}")
 
 
 def iter_tree_files(root: Path, *, exclude_paths: tuple[Path, ...] = ()) -> tuple[Path, ...]:

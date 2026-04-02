@@ -133,7 +133,7 @@ def _normalize_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="fiat_deposit",
-                projection_type="Deposit",
+                projection_type="deposit",
                 journal_intent="funding_inflow",
                 tax_treatment_code="non_taxable_transfer_in",
             ),
@@ -154,7 +154,7 @@ def _normalize_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="spot_trade",
-                projection_type="Trade",
+                projection_type="trade",
                 journal_intent="asset_exchange",
                 tax_treatment_code="capital_exchange",
             ),
@@ -178,7 +178,7 @@ def _normalize_row(
             timestamp=timestamp,
             classification=classification(
                 economic_kind="asset_withdrawal",
-                projection_type="Withdrawal",
+                projection_type="withdrawal",
                 journal_intent="funding_outflow",
                 tax_treatment_code="non_taxable_transfer_out",
             ),

@@ -49,7 +49,7 @@ def normalize_asset_migration(
         timestamp=parse_retail_timestamp(timestamp),
         classification=classification(
             economic_kind="asset_migration",
-            projection_type="Swap (non taxable)",
+            projection_type="swap_non_taxable",
             journal_intent="asset_exchange",
             tax_treatment_code="non_taxable_asset_migration",
         ),
