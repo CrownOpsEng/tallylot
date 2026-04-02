@@ -9,7 +9,11 @@ from tools.scaffold_adapter import AdapterScaffoldSpec, scaffold_adapter
 def test_load_adapter_packs_discovers_structured_csv_pack() -> None:
     packs = load_adapter_packs()
 
-    assert [pack.id for pack in packs] == ["structured_csv/basic"]
+    pack_ids = {pack.id for pack in packs}
+
+    assert "structured_csv/basic" in pack_ids
+    assert "coinbase/retail_buy_renamed" in pack_ids
+    assert "evm_wallet/wallets" in pack_ids
 
 
 def test_select_adapter_packs_rejects_unknown_id() -> None:

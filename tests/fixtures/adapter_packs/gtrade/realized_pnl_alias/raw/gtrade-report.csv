@@ -1,0 +1,4 @@
+DATE,PAIR,ADDR,TYPE,DIR,DESCRIPTION,PNL
+06/05/2023,BTC-USD,bb4d,close,long,Closed profit,10
+07/05/2023,BTC-USD,bb4d,close,short,Closed loss,-5
+08/05/2023,BTC-USD,bb4d,close,flat,No pnl,0

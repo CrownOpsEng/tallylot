@@ -25,6 +25,16 @@ def test_adapter_registry_discovers_expected_adapters() -> None:
     output_ids = {str(adapter.manifest.adapter_id) for adapter in registry.output_adapters}
 
     assert "structured_csv" in source_ids
+    assert "coinbase" in source_ids
+    assert "wealthsimple" in source_ids
+    assert "binance" in source_ids
+    assert "crypto_com" in source_ids
+    assert "shakepay" in source_ids
+    assert "ledger_live" in source_ids
+    assert "near" in source_ids
+    assert "gtrade" in source_ids
+    assert "evm_explorer" in source_ids
+    assert "evm_wallet" in source_ids
     assert "blockchain_stub" in source_ids
     assert "platform_api_stub" in source_ids
     assert "cointracking_csv" in output_ids
@@ -56,7 +66,7 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
 
     monkeypatch.setattr(discovery_adapters, "_iter_discoverable_modules", fake_iter_modules)
 
-    with pytest.raises(ValueError, match="must declare normalize capability"):
+    with pytest.raises(ValueError, match="must declare normalize or wallet inventory capability"):
         discovery_adapters.build_registry()
 
 
@@ -75,6 +85,19 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
         def match(self, source: str, raw_dir: object, inventory: tuple[object, ...]) -> int:
             del source, raw_dir, inventory
             return 100
+
+        def validate_profile_timezones(self, profile: object) -> tuple[dict[str, object], tuple[object, ...]]:
+            del profile
+            return {}, ()
+
+        def extract_wallet_inventory(
+            self,
+            source: str,
+            raw_dir: object,
+            profile: object,
+        ) -> tuple[tuple[object, ...], tuple[object, ...]]:
+            del source, raw_dir, profile
+            return (), ()
 
         def normalize(self, profile: object, raw_dir: object) -> object:
             del profile, raw_dir

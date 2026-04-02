@@ -1,0 +1,13 @@
+[
+  {
+    "adapter_id": "evm_explorer",
+    "issue_id": "evm_explorer:explorer-transactions-0x1111111111111111111111111111111111111111.csv:0xabc",
+    "kind": "review_required",
+    "message": "bsc-wallet received suspicious NFT airdrop $Airdrop Pass in tx 0xabc; keep it in review instead of auto-importing it as an economic deposit.",
+    "raw_file": "explorer-transactions-0x1111111111111111111111111111111111111111.csv",
+    "raw_row_ref": "explorer-transactions-0x1111111111111111111111111111111111111111.csv:row:2;explorer-nft-transfers-0x1111111111111111111111111111111111111111.csv:row:2",
+    "severity": "medium",
+    "source": "bsc-wallet",
+    "status": "needs_review"
+  }
+]

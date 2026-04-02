@@ -17,14 +17,18 @@ from crypto_reconciliation.infrastructure.serialization import FilesystemArtifac
 from crypto_reconciliation.infrastructure.storage.filesystem import FilesystemStorage
 from tools.adapter_packs import DEFAULT_PACK_ROOT, AdapterPack, select_adapter_packs
 
-EXPECTED_ARTIFACTS = (
+EXPECTED_NORMALIZATION_ARTIFACTS = (
     "canonical_events",
     "canonical_balances",
     "exceptions",
     "normalization_reviews",
-    "wallet_inventory",
     "normalization_summary",
 )
+EXPECTED_WALLET_ARTIFACTS = (
+    "wallet_inventory",
+    "wallet_issues",
+)
+EXPECTED_ARTIFACTS = EXPECTED_NORMALIZATION_ARTIFACTS + EXPECTED_WALLET_ARTIFACTS
 
 
 def _sanitize_public_fixture_payload(payload: object, *, raw_dir: Path) -> object:
@@ -75,34 +79,44 @@ def _build_argument_parser() -> argparse.ArgumentParser:
 def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
     registry = build_registry()
     artifacts = FilesystemArtifactStore()
+    profile_service = ProfileService(registry, artifacts)
     normalization_service = NormalizationService(
         NormalizationDependencies(
             source_registry=registry,
             output_registry=registry,
-            profile_service=ProfileService(registry, artifacts),
+            profile_service=profile_service,
             storage=FilesystemStorage(),
             artifacts=artifacts,
         )
     )
+    profile = profile_service.create_profile(pack.source, pack.raw_dir)
+    adapter = registry.source_adapter(str(profile.adapter_id))
+    wallet_inventory, wallet_issues = adapter.extract_wallet_inventory(pack.source, pack.raw_dir, profile)
+    payloads: dict[str, object] = {
+        "wallet_inventory": [record.to_row() for record in wallet_inventory],
+        "wallet_issues": [issue.to_row() for issue in wallet_issues],
+    }
     with TemporaryDirectory(prefix="crypto-recon-pack-refresh-") as temp_dir_name:
-        output_dir = Path(temp_dir_name) / "normalized"
-        normalization_service.execute(
-            NormalizeRequest(
-                source=pack.source,
-                raw_dir=pack.raw_dir,
-                output_dir=output_dir,
+        if pack.supports("normalize"):
+            output_dir = Path(temp_dir_name) / "normalized"
+            normalization_service.execute(
+                NormalizeRequest(
+                    source=pack.source,
+                    raw_dir=pack.raw_dir,
+                    output_dir=output_dir,
+                )
             )
-        )
-        payloads = {
-            "canonical_events": artifacts.read_rows(output_dir / "canonical_events.csv"),
-            "canonical_balances": artifacts.read_rows(output_dir / "canonical_balances.csv"),
-            "exceptions": artifacts.read_rows(output_dir / "exceptions.csv"),
-            "normalization_reviews": artifacts.read_rows(output_dir / "normalization_reviews.csv"),
-            "wallet_inventory": artifacts.read_rows(output_dir / "wallet_inventory.csv"),
-            "normalization_summary": json.loads(
-                (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
-            ),
-        }
+            payloads.update(
+                {
+                    "canonical_events": artifacts.read_rows(output_dir / "canonical_events.csv"),
+                    "canonical_balances": artifacts.read_rows(output_dir / "canonical_balances.csv"),
+                    "exceptions": artifacts.read_rows(output_dir / "exceptions.csv"),
+                    "normalization_reviews": artifacts.read_rows(output_dir / "normalization_reviews.csv"),
+                    "normalization_summary": json.loads(
+                        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+                    ),
+                }
+            )
         return {
             artifact_name: _sanitize_public_fixture_payload(payload, raw_dir=pack.raw_dir)
             for artifact_name, payload in payloads.items()
@@ -113,7 +127,10 @@ def refresh_pack(pack: AdapterPack) -> tuple[Path, ...]:
     payloads = collect_pack_outputs(pack)
     pack.expected_dir.mkdir(parents=True, exist_ok=True)
     written_paths: list[Path] = []
-    for artifact_name in EXPECTED_ARTIFACTS:
+    artifact_names: tuple[str, ...] = EXPECTED_WALLET_ARTIFACTS
+    if pack.supports("normalize"):
+        artifact_names = EXPECTED_NORMALIZATION_ARTIFACTS + EXPECTED_WALLET_ARTIFACTS
+    for artifact_name in artifact_names:
         target = pack.expected_dir / f"{artifact_name}.json"
         target.write_text(
             json.dumps(payloads[artifact_name], indent=2, sort_keys=True) + "\n",

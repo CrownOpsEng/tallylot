@@ -1,0 +1,35 @@
+[
+  {
+    "adapter_id": "binance",
+    "issue_id": "binance:Binance-Transaction-History-202603230400(UTC--6)_abcd.csv:group:21-05-11 00:44:33:Spot",
+    "kind": "ambiguous_group",
+    "message": "Unable to safely collapse Binance grouped rows with operations: Binance Convert",
+    "raw_file": "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv",
+    "raw_row_ref": "group:21-05-11 00:44:33:Spot",
+    "severity": "medium",
+    "source": "Binance",
+    "status": "needs_review"
+  },
+  {
+    "adapter_id": "binance",
+    "issue_id": "binance:Binance-Transaction-History-202603230400(UTC--6)_abcd.csv:group:23-09-20 18:17:41:Spot",
+    "kind": "unsupported_group",
+    "message": "Unsupported Binance transaction-history operations: Transfer Between Spot Account and UM Futures Account",
+    "raw_file": "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv",
+    "raw_row_ref": "group:23-09-20 18:17:41:Spot",
+    "severity": "medium",
+    "source": "Binance",
+    "status": "needs_review"
+  },
+  {
+    "adapter_id": "binance",
+    "issue_id": "binance:Binance-Transaction-History-202603230400(UTC--6)_abcd.csv:group:23-09-20 18:17:41:USD-M Futures",
+    "kind": "unsupported_group",
+    "message": "Unsupported Binance transaction-history operations: Transfer Between Spot Account and UM Futures Account",
+    "raw_file": "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv",
+    "raw_row_ref": "group:23-09-20 18:17:41:USD-M Futures",
+    "severity": "medium",
+    "source": "Binance",
+    "status": "needs_review"
+  }
+]

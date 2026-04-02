@@ -1,0 +1,13 @@
+[
+  {
+    "adapter_id": "evm_wallet",
+    "issue_id": "evm_wallet:EVM wallet:missing_identifier:missing_identifier",
+    "kind": "missing_identifier",
+    "message": "No wallet identifiers could be extracted from the EVM wallet state export.",
+    "raw_file": "",
+    "raw_row_ref": "",
+    "severity": "medium",
+    "source": "EVM wallet",
+    "status": "open"
+  }
+]

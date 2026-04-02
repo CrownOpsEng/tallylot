@@ -1,0 +1,10 @@
+{
+  "adapter_id": "evm_explorer",
+  "balance_count": 0,
+  "event_count": 1,
+  "issue_count": 0,
+  "review_count": 0,
+  "review_summary": [],
+  "source": "bsc-wallet",
+  "wallet_count": 1
+}

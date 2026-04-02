@@ -1,0 +1,13 @@
+[
+  {
+    "adapter_id": "ledger_live",
+    "issue_id": "ledger_live:ledger-live-main:account_identifier_conflict:account_identifier_conflict",
+    "kind": "account_identifier_conflict",
+    "message": "Ledger Live account Bitcoin 1 maps to multiple identifiers.",
+    "raw_file": "",
+    "raw_row_ref": "",
+    "severity": "medium",
+    "source": "ledger-live-main",
+    "status": "open"
+  }
+]

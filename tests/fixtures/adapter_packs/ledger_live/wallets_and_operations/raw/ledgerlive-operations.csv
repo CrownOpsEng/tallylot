@@ -1,0 +1,4 @@
+Operation Date,Status,Currency Ticker,Operation Type,Operation Amount,Fee,Account Name,Account xpub,Transaction ID,Parent Account,Account Type
+2026-03-23T10:11:12.000Z,confirmed,BTC,IN,0.01000000,0.00010000,Bitcoin 1,xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111,btc-tx,,bitcoin
+2026-03-23T10:12:12.000Z,confirmed,ETH,IN,1.00000000,0.00100000,Ethereum 1,0x2222222222222222222222222222222222222222,eth-tx,,ethereum
+2026-03-23T10:13:12.000Z,confirmed,ADA,IN,5.00000000,0.10000000,Cardano 1,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,ada-tx,,cardano

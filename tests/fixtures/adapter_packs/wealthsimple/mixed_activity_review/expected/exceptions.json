@@ -1,0 +1,13 @@
+[
+  {
+    "adapter_id": "wealthsimple",
+    "issue_id": "wealthsimple:activities-export-2026-03-23.csv:row:3",
+    "kind": "unsupported_row",
+    "message": "Unsupported Wealthsimple crypto activity: Staking/REWARD",
+    "raw_file": "activities-export-2026-03-23.csv",
+    "raw_row_ref": "row:3",
+    "severity": "medium",
+    "source": "WealthSimple",
+    "status": "needs_review"
+  }
+]
