@@ -117,12 +117,109 @@ def test_resolve_inventory_route_marks_ambiguous_wallet_matches_for_review(tmp_p
         facts=IntakeFileFacts(scope_tokens=("evm:0x1111111111111111111111111111111111111111",)),
     )
 
-    assert decision.source_folder == "evm_wallet"
+    assert decision.source_folder == "wallet-export-unassigned"
     assert decision.inventory_match_status == "inventory_source_ambiguous"
     assert decision.review_required == "yes"
     assert decision.review_codes == "inventory_source_ambiguous"
     assert "evm_explorer" in decision.review_reason
     assert "evm_wallet" in decision.review_reason
+
+
+def test_resolve_inventory_route_uses_generic_scope_folder_for_unknown_wallet(tmp_path: Path) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    FilesystemWorkspaceRepository().initialize(workspace_root)
+
+    decision = resolve_inventory_route(
+        artifacts=artifacts,
+        workspace_root=workspace_root,
+        source_folder="evm_explorer",
+        facts=IntakeFileFacts(
+            scope_tokens=("evm:0x1234567890abcdef1234567890abcdef12345678",),
+            network_hints=("polygon",),
+        ),
+    )
+
+    assert decision.source_folder == "polygon-wallet-0x12345678"
+    assert decision.inventory_match_status == "generic_scope_routing"
+
+
+def test_resolve_inventory_route_uses_generic_scope_folder_when_inventory_rows_do_not_match(tmp_path: Path) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    FilesystemWorkspaceRepository().initialize(workspace_root)
+    _write_inventory_rows(
+        artifacts,
+        workspace_root,
+        evidence_rows=(
+            {
+                "source": "eth-primary",
+                "normalized_identifier": "0x9999999999999999999999999999999999999999",
+            },
+        ),
+        source_rows=({"source": "eth-primary"},),
+    )
+
+    decision = resolve_inventory_route(
+        artifacts=artifacts,
+        workspace_root=workspace_root,
+        source_folder="evm_explorer",
+        facts=IntakeFileFacts(
+            scope_tokens=("evm:0x1234567890abcdef1234567890abcdef12345678",),
+            network_hints=("ethereum",),
+        ),
+    )
+
+    assert decision.source_folder == "ethereum-wallet-0x12345678"
+    assert decision.inventory_match_status == "generic_scope_routing"
+
+
+def test_resolve_inventory_route_reloads_inventory_after_file_changes(tmp_path: Path) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    FilesystemWorkspaceRepository().initialize(workspace_root)
+    facts = IntakeFileFacts(scope_tokens=("evm:0x1111111111111111111111111111111111111111",))
+
+    _write_inventory_rows(
+        artifacts,
+        workspace_root,
+        evidence_rows=(
+            {
+                "source": "source-a",
+                "normalized_identifier": "0x1111111111111111111111111111111111111111",
+            },
+        ),
+        source_rows=({"source": "source-a"},),
+    )
+    first = resolve_inventory_route(
+        artifacts=artifacts,
+        workspace_root=workspace_root,
+        source_folder="evm_wallet",
+        facts=facts,
+    )
+
+    _write_inventory_rows(
+        artifacts,
+        workspace_root,
+        evidence_rows=(
+            {
+                "source": "source-b",
+                "normalized_identifier": "0x1111111111111111111111111111111111111111",
+            },
+        ),
+        source_rows=({"source": "source-b"},),
+    )
+    second = resolve_inventory_route(
+        artifacts=artifacts,
+        workspace_root=workspace_root,
+        source_folder="evm_wallet",
+        facts=facts,
+    )
+
+    assert first.source_folder == "source-a"
+    assert first.inventory_match_status == "inventory_source_match"
+    assert second.source_folder == "source-b"
+    assert second.inventory_match_status == "inventory_source_match"
 
 
 def _write_inventory_rows(

@@ -68,4 +68,6 @@ repo-local agent entrypoint.
 | `.claude/commands/round-verification.md` | Verification compare and round-close workflow |
 | `.claude/commands/wallet-inventory.md` | Wallet inventory rebuild workflow |
 | `.claude/commands/normalization-exceptions.md` | Review normalization exceptions and reviews |
+| `.claude/commands/source-reconcile.md` | Candidate-versus-reference reconciliation workflow |
+| `.claude/commands/supporting-artifacts.md` | PDF balance extraction and supporting evidence workflow |
 | `.claude/commands/adapter-authoring.md` | Adapter authoring and repair route |

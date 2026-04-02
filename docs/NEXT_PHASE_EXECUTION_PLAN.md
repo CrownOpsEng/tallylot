@@ -5,10 +5,11 @@ Use this document as a template for the next verified source round.
 ## Preparation
 
 1. Confirm the source row in `analysis/issues/source_inventory.csv`.
-2. Confirm the capture path under `evidence/raw/source/<source>/<capture_id>/`.
-3. Run `source manifest`, `source profile`, and `source normalize`.
-4. Review timezone, exception, and normalization review artifacts.
-5. Run `batch screen`.
+2. If starting from a new dump, run `source intake plan` and `source intake apply`.
+3. Confirm the capture path under `evidence/raw/source/<source>/<capture_id>/`.
+4. Run `source manifest`, `source profile`, and `source normalize`.
+5. Review timezone, exception, and normalization review artifacts.
+6. Run `batch screen`.
 
 ## Round Start
 

@@ -24,7 +24,9 @@ review the generated reconciliation package.
 
 ### 2. Capture Raw Evidence
 
-- save raw files to `evidence/raw/source/<source>/<capture_id>/`
+- for new incoming dumps, run `source intake plan` and review the intake reports first
+- run `source intake apply` only after the plan looks correct
+- keep the settled raw files under `evidence/raw/source/<source>/<capture_id>/`
 - run `source manifest`
 - keep `manifest.csv` inside the capture folder
 

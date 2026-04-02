@@ -2,23 +2,29 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 
 from crypto_reconciliation.domain.models import IssueRecord, WalletInventoryRecord
+from crypto_reconciliation.domain.wallet_identifiers import (
+    BTC_ADDRESS_PATTERN,
+    EVM_ADDRESS_PATTERN,
+    SOLANA_ADDRESS_PATTERN,
+    TRON_ADDRESS_PATTERN,
+    normalized_identifier,
+    wallet_identifier_kind,
+)
 
-EVM_ADDRESS_PATTERN = re.compile(r"0x[a-fA-F0-9]{40}")
-BTC_XPUB_PATTERN = re.compile(r"xpub[1-9A-HJ-NP-Za-km-z]+")
-TRON_ADDRESS_PATTERN = re.compile(r"T[1-9A-HJ-NP-Za-km-z]{33}")
-BTC_ADDRESS_PATTERN = re.compile(r"(bc1[ac-hj-np-z02-9]{11,71}|[13][1-9A-HJ-NP-Za-km-z]{25,34})")
-SOLANA_ADDRESS_PATTERN = re.compile(r"[1-9A-HJ-NP-Za-km-z]{32,44}")
-
-_IDENTIFIER_PATTERNS = (
-    ("btc_xpub", BTC_XPUB_PATTERN),
-    ("evm_address", EVM_ADDRESS_PATTERN),
-    ("tron_address", TRON_ADDRESS_PATTERN),
-    ("btc_address", BTC_ADDRESS_PATTERN),
-    ("solana_address", SOLANA_ADDRESS_PATTERN),
+__all__ = (
+    "BTC_ADDRESS_PATTERN",
+    "EVM_ADDRESS_PATTERN",
+    "SOLANA_ADDRESS_PATTERN",
+    "TRON_ADDRESS_PATTERN",
+    "AdapterIssueSpec",
+    "WalletRecordSpec",
+    "adapter_issue",
+    "normalized_identifier",
+    "wallet_identifier_kind",
+    "wallet_record",
 )
 
 
@@ -45,25 +51,6 @@ class AdapterIssueSpec:
     wallet_id: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
-
-
-def normalized_identifier(identifier_kind: str, identifier_value: str) -> str:
-    normalized = identifier_value.strip()
-    if identifier_kind in {"evm_address", "address_alias"}:
-        return normalized.lower()
-    return normalized
-
-
-def wallet_identifier_kind(identifier_value: str) -> str:
-    value = identifier_value.strip()
-    for identifier_kind, pattern in _IDENTIFIER_PATTERNS:
-        if pattern.fullmatch(value):
-            return identifier_kind
-    if re.fullmatch(r"[a-fA-F0-9]{64,}", value):
-        return "cardano_account_key"
-    if re.fullmatch(r"[a-z0-9_.-]{6,64}", value):
-        return "near_account"
-    return "unknown"
 
 
 def wallet_record(spec: WalletRecordSpec) -> WalletInventoryRecord:

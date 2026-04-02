@@ -68,8 +68,8 @@ def route_intake_file(
         if entry.archive_member_path
         else entry.relative_path
     )
-    if _is_cointracking_html(route_key):
-        capture_id = _cointracking_capture_id(entry.file_path) or "unknown"
+    if _is_cointracking_portfolio_export(route_key):
+        capture_id = _cointracking_capture_id(entry.file_path) or detect_capture_id(route_key, facts) or "unknown"
         target_path = (
             workspace_root / "evidence" / "raw" / "portfolio" / "cointracking" / capture_id / Path(route_key).name
         )
@@ -155,9 +155,9 @@ def detect_source_folder(relative_path: str, facts: IntakeFileFacts) -> str:
     return "unclassified"
 
 
-def _is_cointracking_html(relative_path: str) -> bool:
+def _is_cointracking_portfolio_export(relative_path: str) -> bool:
     lower_path = relative_path.lower()
-    return lower_path.endswith(".html") and "cointracking" in lower_path
+    return "cointracking" in lower_path and Path(lower_path).suffix in {".html", ".pdf"}
 
 
 def _is_cointracking_sidecar(relative_path: str) -> bool:
