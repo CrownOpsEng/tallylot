@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from tools.validate_pr_metadata import validate_pr_body, validate_pr_title
+from pytest import MonkeyPatch
+
+from tools.validate_pr_metadata import validate_pr_body, validate_pr_checkpoints, validate_pr_title
 
 
 def test_pr_title_with_conventional_commit_subject_is_valid() -> None:
@@ -74,3 +76,89 @@ Included checkpoints:
     errors = validate_pr_body(body)
 
     assert errors == ("`Why:` entries must use `- ` bullets", "`Why:` must contain at least one bullet")
+
+
+def test_pr_checkpoints_match_commit_subjects(monkeypatch: MonkeyPatch) -> None:
+    body = """\
+Why:
+- keep mainline history concise
+
+What:
+- document and validate squash-merge metadata
+
+Checks:
+- uv run python -m tools.run_quality_gates
+
+Included checkpoints:
+- `docs: codify pull request standards`
+- `ci: tighten workflow metadata checks`
+"""
+
+    def fake_loader(base_sha: str, head_sha: str) -> tuple[str, ...]:
+        del base_sha, head_sha
+        return (
+            "docs: codify pull request standards",
+            "ci: tighten workflow metadata checks",
+        )
+
+    monkeypatch.setattr("tools.validate_pr_metadata._load_commit_subjects", fake_loader)
+
+    errors = validate_pr_checkpoints(
+        body,
+        base_sha="0000000",
+        head_sha="1111111",
+    )
+
+    assert errors == ()
+
+
+def test_pr_checkpoints_reject_non_exact_commit_subjects(monkeypatch: MonkeyPatch) -> None:
+    body = """\
+Why:
+- keep mainline history concise
+
+What:
+- document and validate squash-merge metadata
+
+Checks:
+- uv run python -m tools.run_quality_gates
+
+Included checkpoints:
+- docs: codify pull request standards
+"""
+
+    def fake_loader(base_sha: str, head_sha: str) -> tuple[str, ...]:
+        del base_sha, head_sha
+        return ("docs: codify pull request standards",)
+
+    monkeypatch.setattr("tools.validate_pr_metadata._load_commit_subjects", fake_loader)
+
+    errors = validate_pr_checkpoints(body, base_sha="base", head_sha="head")
+
+    assert errors == ("`Included checkpoints:` entries must wrap commit subjects in backticks",)
+
+
+def test_pr_checkpoints_reject_subject_mismatch(monkeypatch: MonkeyPatch) -> None:
+    body = """\
+Why:
+- keep mainline history concise
+
+What:
+- document and validate squash-merge metadata
+
+Checks:
+- uv run python -m tools.run_quality_gates
+
+Included checkpoints:
+- `docs: codify pull request standards`
+"""
+
+    def fake_loader(base_sha: str, head_sha: str) -> tuple[str, ...]:
+        del base_sha, head_sha
+        return ("ci: tighten workflow metadata checks",)
+
+    monkeypatch.setattr("tools.validate_pr_metadata._load_commit_subjects", fake_loader)
+
+    errors = validate_pr_checkpoints(body, base_sha="base", head_sha="head")
+
+    assert errors == ("`Included checkpoints:` must exactly match the branch commit subjects in order",)

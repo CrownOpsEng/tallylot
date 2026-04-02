@@ -92,6 +92,8 @@ PR body rules:
 - use flat `- ` bullets under every section
 - keep `Included checkpoints:` in chronological order using the exact
   checkpoint subjects from the branch
+- wrap every `Included checkpoints:` entry in backticks using the exact commit
+  subject, because CI validates that the list matches the branch history
 - describe the engineering outcome and reviewable behavior, not branch
   choreography or replay mechanics
 - for a one-commit PR, still list that single checkpoint under
