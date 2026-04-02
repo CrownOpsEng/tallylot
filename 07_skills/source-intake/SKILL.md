@@ -35,8 +35,11 @@ Use this skill for the deterministic front half of source prep.
 - Intake is bundle-aware. Keep files from the same raw export together when the bundle relationship is explicit from folders, archives, HTML sidecars, or approved companion-set rules.
 - Package consolidation is allowed only at the bundle/package level when it is deterministic:
   - if one package is a strict superset of another, the subset package may be marked `package_duplicate_skip`
+  - near-duplicate packages may be merged only when the merge engine can justify that they belong to the same export cycle
+  - if both packages expose explicit export-cycle markers, those markers must agree on the same cycle day before auto-merge is allowed
+  - if a bundle appears to mix files from multiple cycle days, mark it `mixed_cycle_review` and do not auto-merge it
+  - if packages partially overlap but same-cycle proof is insufficient, keep them separate and report `overlap_partial_review`
   - this is a reporting decision, not silent deletion
-  - partial overlaps stay visible as review items and must not be auto-consolidated
 - File collisions inside a kept bundle must resolve deterministically:
   - identical bytes become alias records
   - same path with different bytes gets a stable renamed placement plus review metadata
@@ -54,7 +57,11 @@ Use this skill for the deterministic front half of source prep.
 - `placed_primary` or `placed_renamed` means the file or extracted archive member will be physically present in the canonical capture.
 - `alias_only` means the bytes are already represented by another placed file in the same bundle; check `alias_group` and `source_paths`.
 - `package_duplicate_skip` means the bundle was proven redundant because another bundle in the same capture is a deterministic superset.
+- `merge_primary` means this bundle is the kept canonical package for a same-cycle merge cluster.
+- `merge_member` means this bundle is merged into the `package_primary_bundle_id` bundle because it adds same-cycle material without justifying a separate kept package.
+- `package_merge_superseded_skip` means an older conflicting file inside a same-cycle merge cluster was safely superseded by a newer file from the kept package.
 - `overlap_partial_review` means there is shared content across packages, but neither package is a strict superset; do not auto-consolidate.
+- `mixed_cycle_review` means the bundle itself appears to contain files from multiple export-cycle days; keep it separate and review before treating it as a coherent export package.
 - `review_required=yes` means review metadata is needed before trusting the classification, not that the planner is allowed to handwave or mutate the evidence.
 
 ## Commands

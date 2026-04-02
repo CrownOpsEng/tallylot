@@ -6,7 +6,7 @@ Current helpers:
 
 - `inspection.py` → shared delimiter-aware file inspection, file-family classification, timestamp extraction, and historical-date inference
 - `archive_handling.py` → shared archive member inspection, crypto-record detection, and deterministic extraction helpers for intake
-- `package_resolution.py` → shared bundle/package consolidation so fully redundant partial packages are reported and skipped deterministically
+- `package_resolution.py` → shared bundle/package consolidation and same-cycle merge rules so strict duplicate packages can be skipped and warranted near-duplicate packages can be merged deterministically without crossing export cycles
 - `routing.py` → shared role-based routing for historical intake dumps and canonical destination resolution
 - `overlap_engine.py` → shared overlap services for raw-evidence hash matching and CoinTracking candidate/baseline overlap checks
 - `pipeline.py` → shared orchestration layer used by the CLI entrypoints
@@ -63,7 +63,7 @@ Preferred raw-capture layout:
 The preferred prep flow is now:
 
 1. `intake_sort.py` when starting from a mixed dump
-   It inspects archives independently, preserves the original archive, extracts positively identified crypto-report members into the same canonical bundle, and suppresses fully redundant package copies when a deterministic superset exists.
+   It inspects archives independently, preserves the original archive, extracts positively identified crypto-report members into the same canonical bundle, suppresses fully redundant package copies when a deterministic superset exists, and only merges near-duplicate packages when the shared package-resolution engine can prove they belong to the same export cycle.
 2. `source_manifest.py`
 3. `profile_source.py`
 4. `wallet_inventory.py` when wallet evidence changed

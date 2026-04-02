@@ -16,6 +16,7 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 - an active source inventory and structured round log
 - a universal source-intake pipeline for profiling, canonical normalization, CoinTracking rendering, and reconciliation
 - shared inspection, archive handling, routing, overlap, and orchestration modules used across intake, profiling, normalization, staging, and verification
+- shared package-resolution logic that handles strict duplicate bundles, same-cycle near-duplicate merges, and mixed-cycle review without duplicating those rules across scripts
 - lightweight helper scripts for baseline checks, raw-source manifests, intake sorting, overlap screening, fixture scaffolding, golden refresh, and verification comparison
 - repo-local AI skills under `07_skills/` for source intake, adapter authoring, normalization exceptions, round verification, and wallet inventory
 
@@ -38,7 +39,7 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 2. resolve or document baseline exceptions with evidence
 3. inventory post-cutoff sources
 4. sort mixed dumps into canonical historical capture folders and archive bundles
-   The intake report also consolidates fully redundant package copies when one bundle is a strict superset of another.
+   The intake report also consolidates fully redundant package copies when one bundle is a strict superset of another, and only merges near-duplicate bundles when the package-resolution engine can justify that they are from the same export cycle.
 5. profile one raw source capture at a time
 6. normalize into canonical events and balances
 7. stage and overlap-screen one CoinTracking candidate at a time

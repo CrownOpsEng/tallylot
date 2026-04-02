@@ -16,7 +16,7 @@ from typing import Iterable, Sequence
 from archive_handling import inspect_archive_members, read_archive_member_bytes
 from inspection import inspect_file
 from overlap_engine import summarize_candidate_overlap, summarize_file_overlap, write_candidate_overlap_artifacts
-from package_resolution import reconcile_bundle_packages
+from package_resolution import resolve_bundle_packages
 from pipeline_common import (
     CANONICAL_BALANCE_HEADERS,
     CANONICAL_EVENT_HEADERS,
@@ -793,26 +793,34 @@ def plan_intake_dump(
                 }
             )
 
-    groups: dict[str, list[dict[str, str]]] = defaultdict(list)
-    for row in planned_rows:
-        groups[row["destination_path"]].append(row)
-
-    package_decisions = reconcile_bundle_packages(planned_rows)
+    package_resolution = resolve_bundle_packages(planned_rows)
     duplicate_packages: set[tuple[str, str, str, str]] = set()
+    merged_packages: set[tuple[str, str, str, str]] = set()
+    merge_primary_packages: set[tuple[str, str, str, str]] = set()
     overlap_packages: set[tuple[str, str, str, str]] = set()
-    for row in planned_rows:
+    mixed_cycle_packages: set[tuple[str, str, str, str]] = set()
+    for index, row in enumerate(planned_rows):
         package_key = (row["role"], row["source_folder"], row["capture_id"], row["bundle_id"])
-        package_decision = package_decisions.get(package_key)
+        package_decision = package_resolution.package_decisions.get(package_key)
+        row_action = package_resolution.row_actions[index]
+        row["package_row_status"] = row_action["package_row_status"]
         if package_decision is None:
             row["package_status"] = ""
             row["package_primary_bundle_id"] = ""
             row["package_related_bundles"] = ""
+            row["package_cycle_status"] = ""
             continue
         row["package_status"] = package_decision["package_status"]
         row["package_primary_bundle_id"] = package_decision["package_primary_bundle_id"]
         row["package_related_bundles"] = package_decision["package_related_bundles"]
+        row["package_cycle_status"] = package_decision["package_cycle_status"]
         if package_decision["package_status"].startswith("duplicate_package"):
             duplicate_packages.add(package_key)
+            row["placement_status"] = "package_duplicate_skip"
+        elif package_decision["package_status"] == "merge_member":
+            merged_packages.add(package_key)
+        elif package_decision["package_status"] == "merge_primary":
+            merge_primary_packages.add(package_key)
         elif package_decision["package_status"] == "overlap_partial_review":
             overlap_packages.add(package_key)
             row["review_required"] = "yes"
@@ -820,15 +828,44 @@ def plan_intake_dump(
                 part for part in [row["review_reason"], f"Package overlap with {package_decision['package_related_bundles']}"] if part
             )
             row["review_codes"] = ";".join(sorted(set(filter(None, (row["review_codes"] + ";package_overlap_review").split(";")))))
+        elif package_decision["package_status"] == "mixed_cycle_review":
+            mixed_cycle_packages.add(package_key)
+            row["review_required"] = "yes"
+            row["review_reason"] = "; ".join(
+                part for part in [row["review_reason"], "Bundle appears to mix files from multiple export-cycle days."] if part
+            )
+            row["review_codes"] = ";".join(sorted(set(filter(None, (row["review_codes"] + ";package_cycle_mixed").split(";")))))
+
+        if row["package_row_status"] == "package_merge_into_primary":
+            primary_bundle_id = row["package_primary_bundle_id"]
+            capture_dir = Path(row["destination_dir"]).parent
+            row["bundle_id"] = primary_bundle_id
+            row["destination_dir"] = str(capture_dir / primary_bundle_id)
+            row["destination_path"] = str(Path(row["destination_dir"]) / row["bundle_relative_path"])
+            row["destination_relative_path"] = str(Path(primary_bundle_id) / row["bundle_relative_path"])
+            row["placed_filename"] = Path(row["bundle_relative_path"]).name
+        elif row["package_row_status"] == "package_merge_superseded_skip":
+            row["placement_status"] = "package_merge_superseded_skip"
+
+    groups: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in planned_rows:
+        groups[row["destination_path"]].append(row)
 
     copied_files = 0
     renamed_collisions = 0
     alias_groups = 0
     for destination_path, rows in groups.items():
-        active_rows = [row for row in rows if not row.get("package_status", "").startswith("duplicate_package")]
+        active_rows = [
+            row
+            for row in rows
+            if not row.get("package_status", "").startswith("duplicate_package")
+            and row.get("package_row_status") != "package_merge_superseded_skip"
+        ]
         if not active_rows:
             for row in rows:
-                row["placement_status"] = "package_duplicate_skip"
+                row["placement_status"] = (
+                    "package_merge_superseded_skip" if row.get("package_row_status") == "package_merge_superseded_skip" else "package_duplicate_skip"
+                )
             continue
         rows = active_rows
         if len(rows) == 1:
@@ -921,6 +958,8 @@ def plan_intake_dump(
             "package_status",
             "package_primary_bundle_id",
             "package_related_bundles",
+            "package_cycle_status",
+            "package_row_status",
             "confidence",
             "review_required",
             "review_reason",
@@ -954,7 +993,10 @@ def plan_intake_dump(
         "alias_groups": alias_groups,
         "renamed_collisions": renamed_collisions,
         "duplicate_packages": len(duplicate_packages),
+        "merge_primary_packages": len(merge_primary_packages),
+        "merged_packages": len(merged_packages),
         "overlap_packages": len(overlap_packages),
+        "mixed_cycle_packages": len(mixed_cycle_packages),
         "report_dir": str(report_dir),
         "file_overlap_summary": str(report_dir / "file_overlap_summary.json"),
         "intake_plan_csv": str(report_dir / "intake_plan.csv"),

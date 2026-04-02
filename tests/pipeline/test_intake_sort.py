@@ -146,3 +146,75 @@ def test_plan_intake_dump_skips_subset_duplicate_packages(tmp_path: Path) -> Non
     assert loose_row["package_status"] == "duplicate_package_subset"
     assert loose_row["placement_status"] == "package_duplicate_skip"
     assert bundle_row["package_status"] == "primary"
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_merges_same_cycle_near_duplicate_packages(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    older = incoming / "2021" / "Binance" / "202203291730-export"
+    newer = incoming / "2021" / "Binance" / "202203291830-export"
+    older.mkdir(parents=True)
+    newer.mkdir(parents=True)
+    borrow_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    interest_payload = "Pair,Coin,Amount,Time,Interest Type\nADA/USDT,USDT,0.1,2021-05-25 12:53:03,Hourly\n"
+    repay_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 13:53:03,0.0345,Auto repayment,CONFIRM\n"
+    (older / "borrow.csv").write_text(borrow_payload, encoding="utf-8")
+    (older / "interest.csv").write_text(interest_payload, encoding="utf-8")
+    (newer / "borrow.csv").write_text(borrow_payload, encoding="utf-8")
+    (newer / "repay.csv").write_text(repay_payload, encoding="utf-8")
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    summary = pipeline.plan_intake_dump(
+        repo_root=repo_root,
+        incoming_dir=incoming,
+        report_dir=report_dir,
+        apply=True,
+    )
+
+    plan_rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    primary_row = next(row for row in plan_rows if row["package_status"] == "merge_primary")
+    manifest_path = repo_root / "01_raw_exports" / "external" / "binance" / primary_row["capture_id"] / "manifest.csv"
+    rows = list(csv.DictReader(manifest_path.open(encoding="utf-8")))
+    filenames = {row["filename"] for row in rows}
+
+    assert summary["merge_primary_packages"] == 1
+    assert summary["merged_packages"] == 1
+    assert f"{primary_row['bundle_id']}/borrow.csv" in filenames
+    assert f"{primary_row['bundle_id']}/interest.csv" in filenames
+    assert f"{primary_row['bundle_id']}/repay.csv" in filenames
+    assert all("202203291730-export" not in filename for filename in filenames)
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_keeps_different_cycle_packages_separate(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    older = incoming / "2021" / "Binance" / "202203291730-export"
+    newer = incoming / "2021" / "Binance" / "202203301830-export"
+    older.mkdir(parents=True)
+    newer.mkdir(parents=True)
+    borrow_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    interest_payload = "Pair,Coin,Amount,Time,Interest Type\nADA/USDT,USDT,0.1,2021-05-25 12:53:03,Hourly\n"
+    repay_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 13:53:03,0.0345,Auto repayment,CONFIRM\n"
+    (older / "borrow.csv").write_text(borrow_payload, encoding="utf-8")
+    (older / "interest.csv").write_text(interest_payload, encoding="utf-8")
+    (newer / "borrow.csv").write_text(borrow_payload, encoding="utf-8")
+    (newer / "repay.csv").write_text(repay_payload, encoding="utf-8")
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    summary = pipeline.plan_intake_dump(
+        repo_root=repo_root,
+        incoming_dir=incoming,
+        report_dir=report_dir,
+        apply=False,
+    )
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    older_status = next(row["package_status"] for row in rows if "/202203291730-export/borrow.csv" in row["source_path"])
+    newer_status = next(row["package_status"] for row in rows if "/202203301830-export/borrow.csv" in row["source_path"])
+
+    assert summary["merged_packages"] == 0
+    assert summary["overlap_packages"] == 2
+    assert older_status == "overlap_partial_review"
+    assert newer_status == "overlap_partial_review"
