@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from crypto_reconciliation.application.dtos import NormalizeRequest
 from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
@@ -114,3 +116,64 @@ def test_normalization_service_filters_row_scoped_issues_outside_explicit_window
     assert not issue_rows
     assert summary["issue_count"] == 0
     assert summary["issues_outside_normalization_window"] == 1
+
+
+def test_normalization_service_rejects_ambiguous_timezone_inventory(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "Binance-Spot-Trade-History.csv").write_text(
+        "Time,Pair,Side,Price,Executed,Amount,Fee\n"
+        "23-09-20 18:20:55,ALGOUSDT,SELL,0.0997,103ALGO,10.2691USDT,0.00003593BNB\n",
+        encoding="utf-8",
+    )
+    service = build_normalization_service()
+
+    with pytest.raises(ValueError, match="timezone issues"):
+        service.execute(
+            NormalizeRequest(
+                source="Binance",
+                raw_dir=raw_dir,
+                output_dir=tmp_path / "normalized",
+            )
+        )
+
+
+def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_state(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail-export.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-1,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+        "Bought 0.01 BTC for 610 CAD\n",
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "normalized"
+    output_dir.mkdir()
+    (output_dir / "profile.json").write_text(
+        json.dumps(
+            {
+                "manifest_fingerprint": "stale",
+                "adapter_id": "generic",
+                "supported": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+    service = build_normalization_service()
+
+    response = service.execute(
+        NormalizeRequest(
+            source="Future Exchange",
+            raw_dir=raw_dir,
+            output_dir=output_dir,
+        )
+    )
+    profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
+
+    assert response.adapter_id == "coinbase"
+    assert profile["adapter_id"] == "coinbase"
+    assert profile["supported"] is True
+    assert profile["manifest_fingerprint"] != "stale"

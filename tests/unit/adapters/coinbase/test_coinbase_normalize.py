@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.coinbase.adapter import CoinbaseAdapter, _money_decimal, _read_retail_rows
+from crypto_reconciliation.adapters.sources.coinbase.adapter import CoinbaseAdapter
 from tests.support.services import build_source_profile
 
 
@@ -46,7 +45,7 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: 
     assert event.amount_out == 610
 
 
-def test_coinbase_adapter_normalizes_sell_and_receive_rows(tmp_path: Path) -> None:
+def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "retail-export.csv").write_text(
@@ -56,6 +55,8 @@ def test_coinbase_adapter_normalizes_sell_and_receive_rows(tmp_path: Path) -> No
         "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
         "tx-sell,2024-02-08 16:31:22 UTC,Sell,BTC,0.01000000,CAD,$60000.00,$600.00,$590.00,$10.00,"
         "Sold 0.01 BTC for 590 CAD\n"
+        "tx-send,2024-02-08 17:31:22 UTC,Send,ETH,-0.50000000,CAD,$0.00,$0.00,$0.00,$0.00,"
+        "Sent ETH\n"
         "tx-receive,2024-02-09 10:00:00 UTC,Receive,ETH,1.50000000,CAD,$0.00,$0.00,$0.00,$0.00,"
         "Received ETH\n",
         encoding="utf-8",
@@ -66,12 +67,14 @@ def test_coinbase_adapter_normalizes_sell_and_receive_rows(tmp_path: Path) -> No
         raw_dir,
     )
 
-    sell_event, receive_event = result.canonical_events
+    sell_event, send_event, receive_event = result.canonical_events
 
-    assert len(result.canonical_events) == 2
+    assert len(result.canonical_events) == 3
     assert sell_event.event_kind == "Trade"
     assert str(sell_event.asset_in) == "CAD"
     assert str(sell_event.asset_out) == "BTC"
+    assert send_event.event_kind == "Withdrawal"
+    assert str(send_event.asset_out) == "ETH"
     assert receive_event.event_kind == "Deposit"
     assert str(receive_event.asset_in) == "ETH"
     assert not result.issues
@@ -101,26 +104,6 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
     assert result.canonical_events[0].event_kind == "Trade"
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
-
-
-def test_coinbase_retail_row_reader_skips_preface_lines(tmp_path: Path) -> None:
-    path = tmp_path / "coinbase.csv"
-    path.write_text(
-        "\nTransactions\nUser,Example,acct\n"
-        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
-        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
-        "raw-1,2025-01-01 00:00:00 UTC,Reward Income,ADA,1.0,CAD,$1.00,$1.00,$1.00,$0.00,Received 1 ADA\n",
-        encoding="utf-8",
-    )
-
-    rows = _read_retail_rows(path)
-
-    assert len(rows) == 1
-    assert rows[0]["ID"] == "raw-1"
-
-
-def test_coinbase_money_decimal_parses_currency_text() -> None:
-    assert _money_decimal("$1,234.56") == Decimal("1234.56")
 
 
 def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_path: Path) -> None:
