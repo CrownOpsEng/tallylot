@@ -33,6 +33,11 @@ Use this route before closing any non-trivial coding task.
    - any boundary, matrix, or migration docs affected
 7. Create the stable checkpoint commit when the slice is coherent and verified.
    Do not close the task first and plan to commit afterward.
+8. Confirm branch handling stayed PR-only for protected branches:
+   - do not push directly to `main`
+   - do not use branch-protection bypass for ordinary delivery
+   - if the user explicitly requested a one-time protected-branch repair,
+     verify the remote branch tip afterward and return to PR-only flow
 
 If a needed structural fix is already obvious and bounded, include it in the
 same checkpoint instead of deferring it.

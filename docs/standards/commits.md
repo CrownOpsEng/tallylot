@@ -83,6 +83,15 @@ Standard footers are allowed, including `BREAKING CHANGE:`.
 `main` uses squash merges. Treat the pull request title and description as the
 canonical source for the commit that lands on `main`.
 
+Protected-branch rule:
+
+- land changes on `main` through pull requests only
+- do not push directly to `main`
+- do not use branch-protection bypass or force-push for normal delivery
+- if a protected-branch repair exception is explicitly requested, limit that
+  exception to the exact repair action, verify the remote branch tip
+  immediately afterward, and restore PR-only flow before continuing
+
 PR title rules:
 
 - use the same Conventional Commit subject format required for authored commits
