@@ -4,7 +4,14 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import FileTranslationContext, FileTranslationRule, translate_file_families
+from tallylot.adapters.support import (
+    DecimalPrecisionExpectation,
+    FileTranslationContext,
+    FileTranslationRule,
+    check_decimal_precision,
+    decimal_fraction_digits,
+    translate_file_families,
+)
 from tallylot.adapters.support.drafts import (
     EconomicActivityDraft,
     classification,
@@ -165,3 +172,36 @@ def test_translate_file_families_surfaces_ambiguous_and_unmatched_files(tmp_path
 
     assert result.unmatched_paths == ("beta.csv",)
     assert {issue.kind for issue in result.issues} == {"ambiguous_file_match", "unsupported_file"}
+
+
+def test_decimal_precision_support_validates_minimum_digits_and_zero_exemptions() -> None:
+    expectation = DecimalPrecisionExpectation(minimum_fraction_digits=9, allow_zero=True)
+
+    precise = check_decimal_precision("0.000051876", expectation=expectation)
+    rounded = check_decimal_precision("0.000052", expectation=expectation)
+    zero = check_decimal_precision("0.000000", expectation=expectation)
+
+    assert precise is not None
+    assert precise.satisfies_expectation is True
+    assert precise.fraction_digits == 9
+    assert rounded is not None
+    assert rounded.satisfies_expectation is False
+    assert rounded.mismatch_message == (
+        "has 6 fractional digits; expected at least 9 fractional digits for non-zero values"
+    )
+    assert zero is not None
+    assert zero.satisfies_expectation is True
+    assert zero.fraction_digits == 6
+
+
+def test_decimal_precision_support_can_require_exact_digits() -> None:
+    expectation = DecimalPrecisionExpectation(exact_fraction_digits=11)
+
+    exact = check_decimal_precision("1.12345678901", expectation=expectation)
+    short = check_decimal_precision("1.1234567890", expectation=expectation)
+
+    assert decimal_fraction_digits("1.12345678901") == 11
+    assert exact is not None
+    assert exact.satisfies_expectation is True
+    assert short is not None
+    assert short.satisfies_expectation is False

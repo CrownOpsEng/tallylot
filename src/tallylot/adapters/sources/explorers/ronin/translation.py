@@ -11,9 +11,11 @@ from pathlib import Path
 
 from tallylot.adapters.sources.explorers.ronin.families import classified_csv_paths
 from tallylot.adapters.support import (
+    DecimalPrecisionExpectation,
     IssueSpec,
     ReviewSpec,
     canonical_location_id_from_identifier,
+    check_decimal_precision,
     issue_record,
     read_csv_rows,
     review_record,
@@ -22,7 +24,10 @@ from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     ActivitySemantics,
     EconomicActivityDraft,
+    EconomicLegDraft,
+    FactLegPolicy,
     LegKind,
+    LegShapeLimit,
     economic_leg,
     symbol_claim,
 )
@@ -34,8 +39,10 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
 )
 from tallylot.domain.types import LocationId
-from tallylot.domain.value_objects import format_decimal, format_timestamp, parse_decimal
+from tallylot.domain.value_objects import format_timestamp, parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
+
+ZERO = Decimal("0")
 
 
 @dataclass(frozen=True)
@@ -50,6 +57,7 @@ class RoninRawRow:
     asset_symbol: str
     inbound_quantity: Decimal
     outbound_quantity: Decimal
+    fee_text: str
     fee: Decimal
     status: str
 
@@ -82,6 +90,26 @@ class SummaryDraftContext:
     location_id: LocationId
     quantity: Decimal
     semantics: ActivitySemantics
+
+
+@dataclass(frozen=True)
+class RoninRawDraftContext:
+    source: str
+    location_id: LocationId
+    semantics: ActivitySemantics
+    fee: Decimal = ZERO
+
+
+@dataclass(frozen=True)
+class RoninFeeResolution:
+    authoritative_fee: Decimal = ZERO
+    review: NormalizationReviewRecord | None = None
+
+
+# Current Ronin explorer CSV exports can round some newly downloaded
+# historical-activity fees to six fractional digits. Treat only 9+ digit
+# non-zero fees as authoritative.
+RONIN_FEE_PRECISION = DecimalPrecisionExpectation(minimum_fraction_digits=9, allow_zero=True)
 
 
 def translate_transactions(
@@ -214,6 +242,7 @@ def _translate_raw_group(
             (),
         )
     method = next(iter(methods))
+    fee_resolution = _resolve_fee(profile, raw_rows)
     if method == "restakerewards":
         if summary_rows:
             summary_drafts, summary_issues = _translate_summary_group(
@@ -223,10 +252,19 @@ def _translate_raw_group(
                 timestamp_override=raw_rows[0].timestamp,
             )
             if summary_drafts:
-                return summary_drafts, summary_issues, ()
-        raw_pair_drafts = _raw_restake_pair_drafts(profile, raw_rows, owned_addresses=owned_addresses)
+                return (
+                    summary_drafts,
+                    summary_issues,
+                    _supported_fee_reviews(fee_resolution, draft_count=len(summary_drafts)),
+                )
+        raw_pair_drafts = _raw_restake_pair_drafts(
+            profile,
+            raw_rows,
+            owned_addresses=owned_addresses,
+            authoritative_fee=fee_resolution.authoritative_fee,
+        )
         if raw_pair_drafts is not None:
-            return raw_pair_drafts, (), ()
+            return raw_pair_drafts, (), _supported_fee_reviews(fee_resolution, draft_count=len(raw_pair_drafts))
         return (
             (),
             (
@@ -254,8 +292,13 @@ def _translate_raw_group(
             ),
             (),
         )
-    drafts, issues = _translate_raw_row(profile, raw_rows[0], owned_addresses=owned_addresses)
-    return drafts, issues, _fee_reviews(profile, raw_rows[0], draft_count=len(drafts))
+    drafts, issues = _translate_raw_row(
+        profile,
+        raw_rows[0],
+        owned_addresses=owned_addresses,
+        authoritative_fee=fee_resolution.authoritative_fee,
+    )
+    return drafts, issues, _supported_fee_reviews(fee_resolution, draft_count=len(drafts))
 
 
 def _translate_raw_row(
@@ -263,6 +306,7 @@ def _translate_raw_row(
     row: RoninRawRow,
     *,
     owned_addresses: set[str],
+    authoritative_fee: Decimal,
 ) -> tuple[tuple[EconomicActivityDraft, ...], tuple[IssueRecord, ...]]:
     # pylint: disable=too-many-return-statements
     if row.status != "success":
@@ -276,7 +320,12 @@ def _translate_raw_row(
             ),
         )
     if row.method == "transfer":
-        draft = _simple_transfer_draft(profile, row, owned_addresses=owned_addresses)
+        draft = _simple_transfer_draft(
+            profile,
+            row,
+            owned_addresses=owned_addresses,
+            authoritative_fee=authoritative_fee,
+        )
         if draft is not None:
             return (draft,), ()
         return (), (
@@ -290,7 +339,14 @@ def _translate_raw_row(
         )
     if row.method == "stake":
         if row.from_address in owned_addresses and row.outbound_quantity > Decimal("0"):
-            return (_staking_transfer_out_draft(profile, row, location_id=_ronin_location_id(row.from_address)),), ()
+            return (
+                _staking_transfer_out_draft(
+                    profile,
+                    row,
+                    location_id=_ronin_location_id(row.from_address),
+                    fee=authoritative_fee,
+                ),
+            ), ()
         return (), (
             _row_issue(
                 profile,
@@ -302,7 +358,14 @@ def _translate_raw_row(
         )
     if row.method == "unstake":
         if row.to_address in owned_addresses and row.inbound_quantity > Decimal("0"):
-            return (_staking_transfer_in_draft(profile, row, location_id=_ronin_location_id(row.to_address)),), ()
+            return (
+                _staking_transfer_in_draft(
+                    profile,
+                    row,
+                    location_id=_ronin_location_id(row.to_address),
+                    fee=authoritative_fee,
+                ),
+            ), ()
         return (), (
             _row_issue(
                 profile,
@@ -314,7 +377,14 @@ def _translate_raw_row(
         )
     if row.method == "claimpendingrewards":
         if row.to_address in owned_addresses and row.inbound_quantity > Decimal("0"):
-            return (_staking_reward_draft(profile, row, location_id=_ronin_location_id(row.to_address)),), ()
+            return (
+                _staking_reward_draft(
+                    profile,
+                    row,
+                    location_id=_ronin_location_id(row.to_address),
+                    fee=authoritative_fee,
+                ),
+            ), ()
         return (), (
             _row_issue(
                 profile,
@@ -477,6 +547,7 @@ def _simple_transfer_draft(
     row: RoninRawRow,
     *,
     owned_addresses: set[str],
+    authoritative_fee: Decimal,
 ) -> EconomicActivityDraft | None:
     if (
         row.inbound_quantity > Decimal("0")
@@ -484,11 +555,14 @@ def _simple_transfer_draft(
         and row.to_address in owned_addresses
     ):
         return _transfer_draft(
-            profile,
             row=row,
-            location_id=_ronin_location_id(row.to_address),
             quantity=row.inbound_quantity,
-            semantics=_transfer_in_semantics(),
+            context=RoninRawDraftContext(
+                source=str(profile.source),
+                location_id=_ronin_location_id(row.to_address),
+                semantics=_transfer_in_semantics(),
+                fee=authoritative_fee,
+            ),
         )
     if (
         row.outbound_quantity > Decimal("0")
@@ -496,32 +570,33 @@ def _simple_transfer_draft(
         and row.from_address in owned_addresses
     ):
         return _transfer_draft(
-            profile,
             row=row,
-            location_id=_ronin_location_id(row.from_address),
             quantity=-row.outbound_quantity,
-            semantics=_transfer_out_semantics(),
+            context=RoninRawDraftContext(
+                source=str(profile.source),
+                location_id=_ronin_location_id(row.from_address),
+                semantics=_transfer_out_semantics(),
+                fee=authoritative_fee,
+            ),
         )
     return None
 
 
 def _transfer_draft(
-    profile: SourceProfile,
     *,
     row: RoninRawRow,
-    location_id: LocationId,
     quantity: Decimal,
-    semantics: ActivitySemantics,
+    context: RoninRawDraftContext,
 ) -> EconomicActivityDraft:
     primary_leg_id = "primary_in" if quantity > Decimal("0") else "primary_out"
     return EconomicActivityDraft(
         activity_id=f"ronin:{row.path_name}:{row.tx_hash}",
-        source=str(profile.source),
+        source=context.source,
         adapter_id="ronin",
-        location_id=location_id,
+        location_id=context.location_id,
         timestamp=row.timestamp,
-        classification=semantics.to_classification(),
-        leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
+        classification=context.semantics.to_classification(),
+        leg_policy=_single_primary_with_optional_fee_policy(context.fee),
         description=f"Ronin {row.method} - {row.tx_hash}",
         raw_file=row.path_name,
         raw_row_ref=row.raw_row_ref,
@@ -534,6 +609,7 @@ def _transfer_draft(
                 quantity=quantity,
                 instrument=symbol_claim(row.asset_symbol, venue="ronin"),
             ),
+            *_fee_legs(context.fee, attributed_to_leg_id=primary_leg_id),
         ),
     )
 
@@ -543,13 +619,17 @@ def _staking_transfer_out_draft(
     row: RoninRawRow,
     *,
     location_id: LocationId,
+    fee: Decimal = ZERO,
 ) -> EconomicActivityDraft:
     return _transfer_draft(
-        profile,
         row=row,
-        location_id=location_id,
         quantity=-row.outbound_quantity,
-        semantics=_staking_out_semantics(),
+        context=RoninRawDraftContext(
+            source=str(profile.source),
+            location_id=location_id,
+            semantics=_staking_out_semantics(),
+            fee=fee,
+        ),
     )
 
 
@@ -558,13 +638,17 @@ def _staking_reward_draft(
     row: RoninRawRow,
     *,
     location_id: LocationId,
+    fee: Decimal = ZERO,
 ) -> EconomicActivityDraft:
     return _transfer_draft(
-        profile,
         row=row,
-        location_id=location_id,
         quantity=row.inbound_quantity,
-        semantics=_staking_reward_semantics(),
+        context=RoninRawDraftContext(
+            source=str(profile.source),
+            location_id=location_id,
+            semantics=_staking_reward_semantics(),
+            fee=fee,
+        ),
     )
 
 
@@ -573,13 +657,17 @@ def _staking_transfer_in_draft(
     row: RoninRawRow,
     *,
     location_id: LocationId,
+    fee: Decimal = ZERO,
 ) -> EconomicActivityDraft:
     return _transfer_draft(
-        profile,
         row=row,
-        location_id=location_id,
         quantity=row.inbound_quantity,
-        semantics=_staking_in_semantics(),
+        context=RoninRawDraftContext(
+            source=str(profile.source),
+            location_id=location_id,
+            semantics=_staking_in_semantics(),
+            fee=fee,
+        ),
     )
 
 
@@ -622,7 +710,8 @@ def _parse_raw_row(path_name: str, row_index: int, row: dict[str, str]) -> Ronin
     asset_symbol = _asset_symbol((row.get("Token / Collectibles") or "").strip())
     inbound_quantity = parse_decimal((row.get("Value in") or "").strip()) or Decimal("0")
     outbound_quantity = parse_decimal((row.get("Value out") or "").strip()) or Decimal("0")
-    fee = parse_decimal((row.get("TxnFee(RON)") or "").strip()) or Decimal("0")
+    fee_text = (row.get("TxnFee(RON)") or "").strip()
+    fee = parse_decimal(fee_text) or Decimal("0")
     status = (row.get("Status") or "").strip().lower()
     if not tx_hash or timestamp is None or not asset_symbol:
         return None
@@ -637,6 +726,7 @@ def _parse_raw_row(path_name: str, row_index: int, row: dict[str, str]) -> Ronin
         asset_symbol=asset_symbol,
         inbound_quantity=inbound_quantity,
         outbound_quantity=outbound_quantity,
+        fee_text=fee_text,
         fee=fee,
         status=status,
     )
@@ -652,6 +742,7 @@ def _raw_signature(row: RoninRawRow) -> tuple[object, ...]:
         row.asset_symbol,
         row.inbound_quantity,
         row.outbound_quantity,
+        row.fee_text,
         row.fee,
         row.status,
     )
@@ -781,6 +872,7 @@ def _raw_restake_pair_drafts(
     raw_rows: tuple[RoninRawRow, ...],
     *,
     owned_addresses: set[str],
+    authoritative_fee: Decimal,
 ) -> tuple[EconomicActivityDraft, ...] | None:
     if len(raw_rows) != 2:
         return None
@@ -818,37 +910,83 @@ def _raw_restake_pair_drafts(
             profile,
             stake_row,
             location_id=_ronin_location_id(stake_row.from_address),
+            fee=authoritative_fee,
         ),
     )
 
 
-def _fee_reviews(
+def _resolve_fee(
     profile: SourceProfile,
-    row: RoninRawRow,
-    *,
-    draft_count: int,
-) -> tuple[NormalizationReviewRecord, ...]:
-    if draft_count == 0 or row.fee <= Decimal("0"):
-        return ()
-    return (
-        review_record(
+    rows: tuple[RoninRawRow, ...],
+) -> RoninFeeResolution:
+    fee_rows = [row for row in rows if row.fee > Decimal("0")]
+    if not fee_rows:
+        return RoninFeeResolution()
+    row = fee_rows[0]
+    precision_check = check_decimal_precision(row.fee_text, expectation=RONIN_FEE_PRECISION)
+    if precision_check is not None and precision_check.satisfies_expectation:
+        return RoninFeeResolution(authoritative_fee=row.fee)
+    mismatch = precision_check.mismatch_message if precision_check is not None else RONIN_FEE_PRECISION.describe()
+    return RoninFeeResolution(
+        review=review_record(
             ReviewSpec(
-                review_id=f"ronin:{row.path_name}:{row.raw_row_ref}:non_authoritative_fee",
+                review_id=f"ronin:{row.path_name}:{row.raw_row_ref}:insufficient_decimal_precision",
                 source=str(profile.source),
                 adapter_id="ronin",
                 scope="row",
-                kind="non_authoritative_fee",
+                kind="insufficient_decimal_precision",
                 message=(
-                    "Ronin explorer TxnFee(RON) is a display-rounded export value and was omitted from "
-                    "the normalized fact until authoritative fee evidence is available."
+                    "Ronin explorer TxnFee(RON) did not expose enough fractional digits to prove an authoritative "
+                    "network fee. The fee was omitted from the normalized fact. "
+                    f"Observed value {row.fee_text} {mismatch}."
                 ),
                 context_timestamp=format_timestamp(row.timestamp),
                 raw_file=row.path_name,
                 raw_row_ref=row.raw_row_ref,
                 field_name="TxnFee(RON)",
-                original_value=format_decimal(row.fee),
+                original_value=row.fee_text,
                 normalized_value="",
             )
+        )
+    )
+
+
+def _supported_fee_reviews(
+    fee_resolution: RoninFeeResolution,
+    *,
+    draft_count: int,
+) -> tuple[NormalizationReviewRecord, ...]:
+    if draft_count == 0 or fee_resolution.review is None:
+        return ()
+    return (fee_resolution.review,)
+
+
+def _single_primary_with_optional_fee_policy(fee: Decimal) -> FactLegPolicy:
+    if fee <= Decimal("0"):
+        return SINGLE_PRIMARY_ACTIVITY_POLICY
+    return FactLegPolicy(
+        limits=(
+            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1, max_negative_count=1),
+            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+        )
+    )
+
+
+def _fee_legs(
+    fee: Decimal,
+    *,
+    attributed_to_leg_id: str,
+) -> tuple[EconomicLegDraft, ...]:
+    if fee <= Decimal("0"):
+        return ()
+    return (
+        economic_leg(
+            leg_id="charge",
+            kind=LegKind.CHARGE,
+            quantity=-fee,
+            instrument=symbol_claim("RON", venue="ronin"),
+            subtype="network_fee",
+            attributed_to_leg_id=attributed_to_leg_id,
         ),
     )
 

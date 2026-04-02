@@ -254,6 +254,11 @@ Rules:
   domain code.
 - application services own derived-balance assembly. Adapters return balance
   evidence only when the source actually provides it.
+- adapters may declare numeric precision expectations for source fields when
+  decimal scale is part of the source contract. Shared adapter support should
+  validate displayed raw-text fractional digits and support exact or minimum
+  scale checks so rounded export values are surfaced explicitly rather than
+  normalized silently.
 
 ## Input And Oracle Boundaries
 

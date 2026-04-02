@@ -5,7 +5,7 @@ from pathlib import Path
 
 from tallylot.adapters.sources.explorers.ronin.adapter import RoninAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, ProjectionHint
+from tallylot.domain.transactions import EconomicKind, LegKind, ProjectionHint
 from tests.support.services import build_source_profile
 
 RAW_HEADER = (
@@ -67,7 +67,30 @@ def test_ronin_adapter_extracts_owned_wallet_and_normalizes_supported_rows(tmp_p
     assert facts_by_hash[("0xrestake", "-0.0277578354")].legs[0].quantity == Decimal("-0.0277578354")
     assert not result.issues
     assert len(result.reviews) == 1
-    assert result.reviews[0].kind == "non_authoritative_fee"
+    assert result.reviews[0].kind == "insufficient_decimal_precision"
+
+
+def test_ronin_adapter_accepts_precise_non_zero_fee_values(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    address = "0x1b1953d5124442b879e3dfc6b9c413d0a8c03e94"
+    (raw_dir / f"{address}-tx.csv").write_text(
+        RAW_HEADER + "0xtransfer,1,1641068696,2022-01-01 20:24:56,0xb32e9a84ae0b55b8ab715e4ac793a61b277bafa3,"
+        f"{address},transfer,Axie Infinity Shard,0.1950000000,0,0.000051876,Success\n",
+        encoding="utf-8",
+    )
+
+    result = RoninAdapter().translate(
+        build_source_profile(adapter_id="ronin", source="wallet-a", raw_dir=str(raw_dir)),
+        raw_dir,
+    )
+    facts = compile_activity_drafts(result.drafts)
+
+    assert len(facts) == 1
+    charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert charge_legs[0].quantity == Decimal("-0.000051876")
+    assert str(charge_legs[0].instrument_id) == "symbol:RON@ronin"
+    assert not result.reviews
 
 
 def test_ronin_adapter_surfaces_approvals_as_explicit_issues(tmp_path: Path) -> None:

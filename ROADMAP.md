@@ -47,6 +47,10 @@ decisions that should not be rediscovered from scratch.
 - Build shared adapter-layer support for stable translation chores such as file
   traversal, file-family dispatch, row-context handling, draft compilation, and
   wallet evidence construction so provider adapters stay thin.
+- Build shared adapter-layer support for source-contract numeric validation
+  such as decimal precision expectations so adapters can validate displayed
+  raw-text fractional digits and require exact or minimum scale without
+  duplicating field-scale logic.
 - Keep source adapters translation-only:
   - provider-local parsing
   - provider-local translation rules
@@ -107,6 +111,9 @@ decisions that should not be rediscovered from scratch.
 - Hard-block mixed raw captures that combine incompatible adapter families in
   one source directory. Profiles with blocking scan issues must not proceed to
   normalization.
+- Treat display-rounded numeric exports as non-authoritative when the adapter
+  contract requires more source precision. Adapters may omit affected legs and
+  emit explicit reviews rather than silently booking rounded values.
 - Treat wallet-state evidence as ownership evidence only when the export proves
   chain-scoped or chain-specific account identity. UI identity maps and
   friendly labels are labels only, not canonical ownership records.
@@ -276,6 +283,11 @@ decisions that should not be rediscovered from scratch.
   other fields, surface an issue instead of guessing. When adapters do apply an
   interpretive normalization or fallback default, emit normalization review
   records so users can validate the behavior explicitly.
+- When a source export field is only a display-rounded value, adapters must not
+  silently book it as authoritative economic data. Require the published
+  precision contract when one exists, otherwise emit an issue or review. Ronin
+  explorer `TxnFee(RON)` is a current example: non-zero values with fewer than
+  nine fractional digits are treated as rounded and are omitted from fee legs.
 - Keep source-derived runtime balances application-owned unless the source
   provides true balance evidence. Adapters should not synthesize balance
   snapshots from translated activity rows.

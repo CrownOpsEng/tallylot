@@ -55,6 +55,12 @@ automatically.
 - Normalize runtime timestamps at the adapter edge. Draft, fact, balance, and
   balance-evidence timestamps must be timezone-aware UTC before they enter the
   shared domain or port models.
+- Declare numeric precision expectations at the adapter edge when the source
+  contract depends on decimal scale for integrity. Use the shared decimal
+  precision support to validate the fractional digits displayed in the raw
+  source text, require exact or minimum scale as needed, allow explicit zero
+  exemptions when appropriate, and surface rounded or truncated values as
+  issues or reviews instead of silently accepting them.
 - Preserve effective-time precision at the adapter edge. If the source provides
   only a date, emit date-only effective-time metadata. If the source provides an
   exact timestamp, preserve that exact timestamp even when it is midnight.
@@ -100,6 +106,15 @@ blocking scan issue instead of attempting a best-effort normalization pass.
 Wallet-state adapters must treat UI identity maps and friendly labels as labels
 only. Emit canonical wallet inventory only when the export proves authoritative
 chain-scoped or chain-specific ownership.
+
+Known current adapter workaround:
+
+- Ronin explorer `TxnFee(RON)` can round some historical-activity non-zero fees
+  to six fractional digits even in newly downloaded CSV exports. Ronin
+  therefore accepts non-zero fees only when the export exposes at least nine
+  fractional digits, books those precise fees directly from CSV, and surfaces
+  lower-precision non-zero values as explicit reviews while omitting the fee
+  leg.
 
 ## Discovery
 
