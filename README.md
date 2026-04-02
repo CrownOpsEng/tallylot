@@ -73,13 +73,9 @@ uv run crypto-reconciliation supporting extract-pdf-balances --pdf <path> --outp
 uv sync --python 3.12
 git config --local commit.template .gitmessage.txt
 uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
-uv run pre-commit run --all-files
 uv run pre-commit run markdownlint --all-files
-uv run ruff check .
-uv run mypy
-uv run pyright
-uv run python -m tools.run_pylint
-uv run pytest
+uv run python -m tools.run_quality_gates
+uv run python -m tools.run_quality_gates --full-tests
 ```
 
 `markdownlint`, `ruff`, `mypy`, `pyright`, `pylint`, and `pytest` are all part
@@ -88,6 +84,10 @@ of the expected quality baseline.
 Commit-time `pytest` hooks intentionally run only `unit and not slow` without
 coverage so local commits stay responsive. Use the full `uv run pytest` command
 for complete verification.
+
+The parallel quality-gate runner is the preferred explicit verification path.
+Do not also run `uv run pre-commit run --all-files` unless you specifically
+need to validate the hook wiring itself.
 
 Benchmark test segments with:
 

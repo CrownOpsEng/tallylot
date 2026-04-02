@@ -64,11 +64,8 @@ What:
 - keep ADAPTER discovery entry point unchanged
 
 Checks:
-- uv run ruff check .
-- uv run mypy
-- uv run pyright
-- uv run python -m tools.run_pylint
-- uv run pytest
+- uv run pre-commit run markdownlint --all-files
+- uv run python -m tools.run_quality_gates --full-tests
 ```
 
 Standard footers are allowed, including `BREAKING CHANGE:`.
@@ -126,9 +123,12 @@ coverage, contract tests, or end-to-end CLI flows on every commit. Full
 verification still means running:
 
 ```bash
-uv run pre-commit run --all-files
-uv run pytest
+uv run pre-commit run markdownlint --all-files
+uv run python -m tools.run_quality_gates --full-tests
 ```
+
+Do not also run `uv run pre-commit run --all-files` in addition to the
+parallel quality-gate runner unless you are validating the hooks themselves.
 
 Re-benchmark suite segments before broadening or shrinking the fast test slice:
 
@@ -144,3 +144,7 @@ parallel quality-gate runner:
 uv run python -m tools.run_quality_gates
 uv run python -m tools.run_quality_gates --full-tests
 ```
+
+`pylint` remains part of the parallel quality-gate runner, but it is not part
+of the `pre-commit` hook path because it is materially slower than the other
+commit-time checks.
