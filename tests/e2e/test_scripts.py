@@ -352,7 +352,7 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(2, len(balances))
 
     def test_normalize_source_cli_supports_ledger_live_repo_raw_dir(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger-live-main" / "2026-03"
 
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir) / "normalized" / "ledger_live"
@@ -396,14 +396,14 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(12, len(events))
 
     def test_normalize_source_cli_supports_near_repo_raw_dir(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "near" / "raw"
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "near-main" / "2026-03"
 
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir) / "normalized" / "near"
             result = run_script(
                 "normalize_source.py",
                 "--source",
-                "NEAR Wallet",
+                "near-main",
                 "--raw-dir",
                 str(raw_dir),
                 "--out-dir",
@@ -418,7 +418,7 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(10, len(events))
 
     def test_normalize_source_cli_supports_bsc_explorer_repo_raw_dir(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "bsc-metamask1" / "2026-03"
 
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir) / "normalized" / "bsc_explorer"
@@ -441,7 +441,7 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(41, len(events))
 
     def test_normalize_source_cli_surfaces_polygon_review_rows(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "polygon-metamask1" / "2026-03"
 
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir) / "normalized" / "polygon_explorer"
@@ -466,7 +466,7 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(5, len(exceptions))
 
     def test_normalize_source_cli_surfaces_eth_gala_review_rows(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "eth-gala1" / "2026-03"
 
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir) / "normalized" / "eth_gala_explorer"

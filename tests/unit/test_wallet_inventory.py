@@ -11,7 +11,7 @@ from tests.support.helpers import REPO_ROOT, write_csv
 
 class WalletInventoryTests(unittest.TestCase):
     def test_profile_wallet_identifiers_extracts_ledger_live_accounts(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger-live-main" / "2026-03"
 
         evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("ledger-live-main", raw_dir, adapter_name="ledger_live")
 
@@ -27,6 +27,7 @@ class WalletInventoryTests(unittest.TestCase):
         )
         self.assertEqual([], issues)
         self.assertEqual("passed", summary["status"])
+        self.assertEqual("ledger_live", summary["adapter"])
 
     def test_profile_wallet_identifiers_extracts_metamask_app_accounts_and_snap_addresses(self) -> None:
         payload = {
@@ -77,8 +78,10 @@ class WalletInventoryTests(unittest.TestCase):
             out_dir = Path(tmpdir) / "inventory"
             summary = wallet_inventory.refresh_wallet_inventory(REPO_ROOT, out_dir=out_dir)
 
-            inventory_rows = list((out_dir / "wallet_inventory.csv").open(encoding="utf-8"))
-            evidence_rows = list((out_dir / "wallet_inventory_evidence.csv").open(encoding="utf-8"))
+            with (out_dir / "wallet_inventory.csv").open(encoding="utf-8") as handle:
+                inventory_rows = list(handle)
+            with (out_dir / "wallet_inventory_evidence.csv").open(encoding="utf-8") as handle:
+                evidence_rows = list(handle)
             issues = json.loads((out_dir / "wallet_inventory_summary.json").read_text(encoding="utf-8"))
 
         self.assertEqual(str(out_dir / "wallet_inventory.csv"), summary["inventory_path"])
@@ -91,8 +94,17 @@ class WalletInventoryTests(unittest.TestCase):
             raw_dir = Path(tmpdir)
             write_csv(raw_dir / "export-empty.csv", ["Transaction Hash", "DateTime (UTC)"], [])
 
-            evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("eth-metamask1", raw_dir, adapter_name="evm_explorer")
+            evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("eth-metamask1", raw_dir)
 
         self.assertEqual([], evidence)
         self.assertEqual("needs_review", summary["status"])
         self.assertTrue(any(row["issue_kind"] == "missing_identifier" for row in issues))
+
+    def test_profile_wallet_identifiers_resolves_adapter_from_profile_without_hint(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "near-main" / "2026-03"
+
+        evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("capture-near", raw_dir)
+
+        self.assertTrue(any(row["identifier_kind"] == "near_account" for row in evidence))
+        self.assertEqual([], issues)
+        self.assertEqual("near", summary["adapter"])

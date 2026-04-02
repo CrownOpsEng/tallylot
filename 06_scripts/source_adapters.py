@@ -32,6 +32,15 @@ from script_common import (
     read_csv_rows,
     source_timezone_from_filename,
 )
+from wallet_inventory_common import (
+    EVM_ADDRESS_PATTERN,
+    WALLET_EVIDENCE_HEADERS,
+    dedupe_rows,
+    infer_identifier_kind,
+    normalize_identifier,
+    wallet_evidence_row,
+    wallet_issue_row,
+)
 
 
 DECISION_HEADERS = (
@@ -519,6 +528,14 @@ class SourceAdapter:
     def validate_profile_timezones(self, profile: SourceProfile) -> tuple[dict[str, object], list[dict[str, str]]]:
         return summarize_timezone_validation(profile=profile, policy_for_row=self.timezone_policy_for_row)
 
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        return [], []
+
     def normalize(
         self,
         raw_dir: Path,
@@ -540,6 +557,99 @@ class SourceAdapter:
         )
         exceptions = [] if exception["resolution_status"] == "accepted" else [exception]
         return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
+
+
+class MetamaskAppAdapter(SourceAdapter):
+    name = "metamask_app"
+    aliases = ("metamask app", "app-metamask")
+    supported = False
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return any(row.get("filename") == "MetaMask state logs.json" for row in profile.file_inventory)
+
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        state_path = raw_dir / "MetaMask state logs.json"
+        if not state_path.exists():
+            return [], [
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="MetaMask state logs were not found.",
+                )
+            ]
+
+        payload = json.loads(state_path.read_text(encoding="utf-8"))
+        metamask = payload.get("metamask", {})
+        evidence: list[dict[str, str]] = []
+        issues: list[dict[str, str]] = []
+        internal_accounts = (((metamask.get("internalAccounts") or {}).get("accounts")) or {})
+        for account in internal_accounts.values():
+            identifier_value = (account.get("address") or "").strip()
+            if not identifier_value:
+                continue
+            metadata = account.get("metadata") or {}
+            keyring = metadata.get("keyring") or {}
+            evidence.append(
+                wallet_evidence_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    identifier_value=identifier_value,
+                    network_scope="ethereum",
+                    controller=f"MetaMask {keyring.get('type', '').strip()}".strip(),
+                    account_label=(metadata.get("name") or "").strip(),
+                    evidence_kind="app_state",
+                    evidence_path=state_path,
+                    confidence="high",
+                )
+            )
+
+        identities = metamask.get("identities") or {}
+        for identifier_value, identity in identities.items():
+            kind = infer_identifier_kind(identifier_value)
+            normalized_identifier = normalize_identifier(kind, identifier_value)
+            if any(row["normalized_identifier"] == normalized_identifier for row in evidence):
+                continue
+            network_scope = {
+                "btc_address": "bitcoin",
+                "tron_address": "tron",
+                "solana_address": "solana",
+                "evm_address": "ethereum",
+            }.get(kind, "")
+            evidence.append(
+                wallet_evidence_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    identifier_value=identifier_value,
+                    network_scope=network_scope,
+                    controller="MetaMask app",
+                    account_label=(identity.get("name") or "").strip(),
+                    evidence_kind="app_state",
+                    evidence_path=state_path,
+                    confidence="medium",
+                    note="Discovered from the MetaMask identity map rather than a chain-scoped export.",
+                    identifier_kind=kind,
+                )
+            )
+
+        if not evidence:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No wallet identifiers could be extracted from the MetaMask app state.",
+                    evidence_path=state_path,
+                )
+            )
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
 
 
 class CoinbaseAdapter(SourceAdapter):
@@ -570,8 +680,9 @@ class CoinbaseAdapter(SourceAdapter):
             profile,
             families={"custodial_all_time_csv"},
             suffixes={".csv"},
+            predicate=lambda path, _: "statement - all time" in path.name.lower(),
         )
-        retail_path = retail_candidates[0] if retail_candidates else None
+        retail_path = retail_candidates[-1] if retail_candidates else None
         pro_statement_paths = profile_paths(
             raw_dir,
             profile,
@@ -1639,16 +1750,18 @@ class CryptoComAdapter(SourceAdapter):
         cash_paths = profile_paths(
             raw_dir,
             profile,
-            families={"fiat_transaction_csv"},
+            families={"custodial_transaction_csv"},
             suffixes={".csv"},
-            predicate=lambda path, row: "timestamp (utc)" in row.get("header_preview", "").lower(),
+            predicate=lambda path, row: path.name.lower().startswith("cash_transactions_")
+            and "timestamp (utc)" in row.get("header_preview", "").lower(),
         )
         crypto_paths = profile_paths(
             raw_dir,
             profile,
             families={"custodial_transaction_csv"},
             suffixes={".csv"},
-            predicate=lambda path, row: "timestamp (utc)" in row.get("header_preview", "").lower(),
+            predicate=lambda path, row: path.name.lower().startswith("crypto_transactions_")
+            and "timestamp (utc)" in row.get("header_preview", "").lower(),
         )
         exceptions: list[dict[str, str]] = []
         if not cash_paths and not crypto_paths:
@@ -1817,6 +1930,60 @@ class EvmExplorerAdapter(SourceAdapter):
             for row in profile.file_inventory
         )
 
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        evidence: list[dict[str, str]] = []
+        issues: list[dict[str, str]] = []
+        scope_key = self._scope_for_profile(profile)
+        selected_paths = self._selected_paths(raw_dir, profile, scope_key)
+        addresses = {
+            match.group(0)
+            for path in selected_paths
+            for match in EVM_ADDRESS_PATTERN.finditer(path.name)
+        }
+        for address in sorted(addresses, key=str.lower):
+            path = next(path for path in selected_paths if address.lower() in path.name.lower())
+            evidence.append(
+                wallet_evidence_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    identifier_value=address,
+                    network_scope=self._network_scope_for_key(scope_key),
+                    controller="Explorer export",
+                    account_label="",
+                    evidence_kind="filename",
+                    evidence_path=path,
+                    confidence="high",
+                )
+            )
+
+        if not evidence:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No EVM address could be extracted from the profiled explorer capture.",
+                )
+            )
+        elif len({row["normalized_identifier"] for row in evidence}) > 1:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="multiple_primary_identifiers",
+                    message="The profiled explorer capture exposed more than one owned EVM address.",
+                )
+            )
+
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
+
     def normalize(
         self,
         raw_dir: Path,
@@ -1888,6 +2055,11 @@ class EvmExplorerAdapter(SourceAdapter):
             return "bsc"
         return "eth"
 
+    def _network_scope_for_key(self, scope_key: str) -> str:
+        if scope_key == "eth":
+            return "ethereum"
+        return scope_key
+
     def _selected_paths(self, raw_dir: Path, profile: SourceProfile, scope_key: str) -> list[Path]:
         candidates = profile_paths(
             raw_dir,
@@ -1904,11 +2076,6 @@ class EvmExplorerAdapter(SourceAdapter):
         if self._is_chain_scoped_capture(profile.raw_dir):
             return candidates
         scoped = [path for path in candidates if self._path_matches_scope(path, scope_key)]
-        source_context = source_slug(profile.source)
-        if scope_key == "eth" and "gala" in source_context:
-            return [path for path in scoped if "account2-eth" in path.name.lower()]
-        if scope_key == "eth" and any(token in source_context for token in ("metamask", "ledger")):
-            return [path for path in scoped if "account1-eth" in path.name.lower()]
         return scoped
 
     def _is_chain_scoped_capture(self, raw_dir: Path) -> bool:
@@ -2754,6 +2921,61 @@ class LedgerLiveAdapter(SourceAdapter):
     def matches_profile(self, profile: SourceProfile) -> bool:
         return profile_has_row(profile, families={"wallet_operation_csv"}, header_contains="account xpub")
 
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        evidence: list[dict[str, str]] = []
+        issues: list[dict[str, str]] = []
+        account_identifiers: dict[str, set[str]] = defaultdict(set)
+        for path in profile_paths(raw_dir, profile, families={"wallet_operation_csv"}, suffixes={".csv"}):
+            for row in read_csv_rows(path):
+                account_label = (row.get("Account Name") or "").strip()
+                identifier_value = (row.get("Account xpub") or "").strip()
+                if not identifier_value:
+                    continue
+                account_identifiers[account_label].add(identifier_value)
+                evidence.append(
+                    wallet_evidence_row(
+                        source=source,
+                        raw_dir=raw_dir,
+                        identifier_value=identifier_value,
+                        network_scope=self._wallet_network_scope(identifier_value, account_label, row),
+                        controller="Ledger Live",
+                        account_label=account_label,
+                        evidence_kind="csv_row",
+                        evidence_path=path,
+                        confidence="high",
+                    )
+                )
+
+        for account_label, identifiers in sorted(account_identifiers.items()):
+            if len(identifiers) > 1:
+                issues.append(
+                    wallet_issue_row(
+                        source=source,
+                        raw_dir=raw_dir,
+                        wallet_id="",
+                        issue_kind="account_identifier_conflict",
+                        message=f"Ledger Live account {account_label or 'blank'} maps to multiple identifiers.",
+                    )
+                )
+
+        if not evidence:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No account identifier was found in the Ledger Live operations exports.",
+                )
+            )
+
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -2955,11 +3177,33 @@ class LedgerLiveAdapter(SourceAdapter):
             )
         return events
 
+    def _wallet_network_scope(self, identifier_value: str, account_label: str, row: dict[str, str]) -> str:
+        kind = infer_identifier_kind(identifier_value)
+        if kind == "btc_xpub":
+            return "bitcoin"
+        if kind == "cardano_account_key":
+            return "cardano"
+        if kind == "evm_address":
+            ticker = (row.get("Currency Ticker") or "").strip().upper()
+            if ticker == "ETH":
+                return "ethereum"
+        account = account_label.lower()
+        if "ethereum" in account or account.startswith("eth"):
+            return "ethereum"
+        if "bitcoin" in account or account.startswith("btc"):
+            return "bitcoin"
+        if "cardano" in account or "ada" in account:
+            return "cardano"
+        return ""
+
 
 class NearAdapter(SourceAdapter):
     name = "near"
-    aliases = ("near", "near wallet", "near wallet - staking")
+    aliases = ("near", "near wallet", "near wallet - staking", "near-main")
     supported = True
+
+    def matches_source(self, source_name: str) -> bool:
+        return super().matches_source(source_name) or source_slug(source_name).startswith("near")
 
     def matches_profile(self, profile: SourceProfile) -> bool:
         return any(
@@ -2971,6 +3215,39 @@ class NearAdapter(SourceAdapter):
         if not row.get("date_field"):
             return None
         return ASSUMED_UTC_NAIVE_POLICY
+
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        evidence = [
+            wallet_evidence_row(
+                source=source,
+                raw_dir=raw_dir,
+                identifier_value=identifier_value,
+                network_scope="near",
+                controller="NearBlocks export",
+                account_label="",
+                evidence_kind="filename",
+                evidence_path=path,
+                confidence="high",
+            )
+            for identifier_value, path in self._owned_account_paths(profile, raw_dir)
+        ]
+        issues: list[dict[str, str]] = []
+        if not evidence:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No NEAR account identifier was found in the profiled capture.",
+                )
+            )
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
 
     def normalize(
         self,
@@ -3080,20 +3357,23 @@ class NearAdapter(SourceAdapter):
         return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
 
     def _owned_accounts(self, profile: SourceProfile, raw_dir: Path) -> set[str]:
-        accounts = {
-            match.group(0).lower()
-            for row in profile.file_inventory
-            for match in re.finditer(r"[a-f0-9]{64}", row.get("filename", "").lower())
-        }
-        if accounts:
-            return accounts
+        return {identifier_value for identifier_value, _ in self._owned_account_paths(profile, raw_dir)}
+
+    def _owned_account_paths(self, profile: SourceProfile, raw_dir: Path) -> list[tuple[str, Path]]:
+        account_paths: dict[str, Path] = {}
+        for row in profile.file_inventory:
+            filename = row.get("filename", "")
+            for match in re.finditer(r"[a-f0-9]{64}", filename.lower()):
+                account_paths.setdefault(match.group(0), raw_dir / filename)
+        if account_paths:
+            return sorted(account_paths.items())
         for path in profile_paths(raw_dir, profile, families={"near_transaction_csv", "near_receipt_csv"}, suffixes={".csv"}):
             for row in read_csv_rows(path):
                 for field in ("To", "Affected", "Involved"):
                     value = (row.get(field) or "").strip().lower()
                     if re.fullmatch(r"[a-f0-9]{64}", value):
-                        accounts.add(value)
-        return accounts
+                        account_paths.setdefault(value, path)
+        return sorted(account_paths.items())
 
     def _near_deposit_event(self, path: Path, source: str, index: int, row: dict[str, str]) -> dict[str, str]:
         raw_row_ref = f"row:{index}"
@@ -3183,6 +3463,61 @@ class GTradeAdapter(SourceAdapter):
             return None
         return GTRADE_DATE_ONLY_POLICY
 
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        evidence: list[dict[str, str]] = []
+        aliases: set[str] = set()
+        for path in profile_paths(raw_dir, profile, families={"derivatives_report_csv"}, suffixes={".csv"}):
+            for row in read_csv_rows(path):
+                alias = (row.get("ADDR") or "").strip()
+                if not alias:
+                    continue
+                aliases.add(alias)
+                evidence.append(
+                    wallet_evidence_row(
+                        source=source,
+                        raw_dir=raw_dir,
+                        identifier_value=alias,
+                        network_scope="polygon",
+                        controller="GTrade report",
+                        account_label="",
+                        evidence_kind="csv_row",
+                        evidence_path=path,
+                        confidence="medium",
+                        note="The report exposes a truncated trader alias instead of a full on-chain address.",
+                        identifier_kind="address_alias",
+                    )
+                )
+
+        issues: list[dict[str, str]] = []
+        if aliases:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="address_alias:" + min(alias.lower() for alias in aliases),
+                    issue_kind="partial_identifier_only",
+                    message="GTrade evidence exposes only a truncated address alias; keep companion explorer evidence linked in the canonical wallet inventory.",
+                    evidence_path=next(iter(profile_paths(raw_dir, profile, families={"derivatives_report_csv"}, suffixes={".csv"})), None),
+                )
+            )
+        else:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No address alias was found in the GTrade report.",
+                )
+            )
+
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
+
     def normalize(
         self,
         raw_dir: Path,
@@ -3256,6 +3591,7 @@ class GTradeAdapter(SourceAdapter):
 
 
 ADAPTERS: tuple[SourceAdapter, ...] = (
+    MetamaskAppAdapter(),
     CoinbaseAdapter(),
     WealthsimpleAdapter(),
     BinanceAdapter(),

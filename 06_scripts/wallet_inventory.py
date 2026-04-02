@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 
-"""Build a canonical wallet inventory from raw captures and profile-time evidence."""
+"""Build a canonical wallet inventory from profiled raw captures."""
 
 from __future__ import annotations
 
 import argparse
 import csv
 import json
-import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Sequence
 
-from script_common import read_csv_rows, require_directory, write_csv_rows, write_json
+from pipeline_common import build_source_profile
+from script_common import require_directory, write_csv_rows, write_json
+from source_adapters import get_adapter
+from wallet_inventory_common import WALLET_EVIDENCE_HEADERS, WALLET_ISSUE_HEADERS, dedupe_rows, wallet_issue_row
 
 
 WALLET_INVENTORY_HEADERS = (
@@ -28,31 +30,6 @@ WALLET_INVENTORY_HEADERS = (
     "primary_evidence_path",
     "status",
     "notes",
-)
-
-WALLET_EVIDENCE_HEADERS = (
-    "source",
-    "raw_dir",
-    "wallet_id",
-    "identifier_kind",
-    "normalized_identifier",
-    "display_identifier",
-    "network_scope",
-    "controller",
-    "account_label",
-    "evidence_kind",
-    "evidence_path",
-    "confidence",
-    "note",
-)
-
-WALLET_ISSUE_HEADERS = (
-    "source",
-    "raw_dir",
-    "wallet_id",
-    "issue_kind",
-    "message",
-    "evidence_path",
 )
 
 SOURCE_INVENTORY_HEADERS = (
@@ -71,13 +48,6 @@ SOURCE_INVENTORY_HEADERS = (
     "candidate_path",
     "notes",
 )
-
-EVM_ADDRESS_PATTERN = re.compile(r"0x[a-fA-F0-9]{40}")
-NEAR_HEX_ACCOUNT_PATTERN = re.compile(r"(?<![a-f0-9])[a-f0-9]{64}(?![a-f0-9])")
-BTC_XPUB_PATTERN = re.compile(r"^(?:xpub|ypub|zpub|tpub|upub|vpub)[1-9A-HJ-NP-Za-km-z]+$")
-BTC_ADDRESS_PATTERN = re.compile(r"^(?:bc1[ac-hj-np-z02-9]{11,87}|[13][1-9A-HJ-NP-Za-km-z]{25,34})$")
-TRON_ADDRESS_PATTERN = re.compile(r"^T[1-9A-HJ-NP-Za-km-z]{33}$")
-SOLANA_ADDRESS_PATTERN = re.compile(r"^[1-9A-HJ-NP-Za-km-z]{32,44}$")
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -108,457 +78,25 @@ def load_source_inventory(path: Path) -> list[dict[str, str]]:
     ]
 
 
-def slugify(value: str) -> str:
-    text = value.strip().lower().replace("&", " and ")
-    chars = [char if char.isalnum() else "_" for char in text]
-    slug = "".join(chars)
-    while "__" in slug:
-        slug = slug.replace("__", "_")
-    return slug.strip("_")
-
-
-def infer_identifier_kind(value: str) -> str:
-    text = value.strip()
-    lower = text.lower()
-    if EVM_ADDRESS_PATTERN.fullmatch(text):
-        return "evm_address"
-    if BTC_XPUB_PATTERN.fullmatch(text):
-        return "btc_xpub"
-    if BTC_ADDRESS_PATTERN.fullmatch(text.lower()):
-        return "btc_address"
-    if TRON_ADDRESS_PATTERN.fullmatch(text):
-        return "tron_address"
-    if SOLANA_ADDRESS_PATTERN.fullmatch(text):
-        return "solana_address"
-    if NEAR_HEX_ACCOUNT_PATTERN.fullmatch(lower):
-        return "near_account"
-    if lower.startswith("addr1") or len(text) >= 80 and all(char in "0123456789abcdef" for char in lower):
-        return "cardano_account_key"
-    return "address_alias"
-
-
-def normalize_identifier(identifier_kind: str, value: str) -> str:
-    text = value.strip()
-    if identifier_kind in {"evm_address", "near_account", "address_alias"}:
-        return text.lower()
-    if identifier_kind == "btc_address":
-        return text.lower()
-    return text
-
-
-def infer_network_scope(identifier_kind: str, source: str, raw_dir: Path, account_label: str = "") -> str:
-    source_lower = source.strip().lower()
-    context = " ".join(filter(None, [slugify(source), *(slugify(part) for part in raw_dir.parts[-3:])]))
-    account_lower = account_label.strip().lower()
-    if identifier_kind == "address_alias":
-        if "gtrade" in context:
-            return "polygon"
-        return ""
-    if identifier_kind == "evm_address":
-        if "polygon" in context:
-            return "polygon"
-        if "bsc" in context or "bnb" in context:
-            return "bsc"
-        if "ronin" in context:
-            return "ronin"
-        return "ethereum"
-    if identifier_kind in {"btc_xpub", "btc_address"} or "btc" in account_lower or "bitcoin" in account_lower:
-        return "bitcoin"
-    if identifier_kind == "tron_address":
-        return "tron"
-    if identifier_kind == "solana_address":
-        return "solana"
-    if identifier_kind == "near_account":
-        return "near"
-    if identifier_kind == "cardano_account_key" or "cardano" in account_lower or "ada" in account_lower:
-        return "cardano"
-    return ""
-
-
-def wallet_id_for(identifier_kind: str, normalized_identifier: str) -> str:
-    return f"{identifier_kind}:{normalized_identifier}"
-
-
-def wallet_evidence_row(
-    *,
-    source: str,
-    raw_dir: Path,
-    identifier_value: str,
-    controller: str,
-    account_label: str,
-    evidence_kind: str,
-    evidence_path: Path,
-    confidence: str,
-    note: str = "",
-    identifier_kind: str | None = None,
-) -> dict[str, str]:
-    kind = identifier_kind or infer_identifier_kind(identifier_value)
-    normalized_identifier = normalize_identifier(kind, identifier_value)
-    network_scope = infer_network_scope(kind, source, raw_dir, account_label)
-    return {
-        "source": source,
-        "raw_dir": str(raw_dir),
-        "wallet_id": wallet_id_for(kind, normalized_identifier),
-        "identifier_kind": kind,
-        "normalized_identifier": normalized_identifier,
-        "display_identifier": identifier_value.strip(),
-        "network_scope": network_scope,
-        "controller": controller,
-        "account_label": account_label.strip(),
-        "evidence_kind": evidence_kind,
-        "evidence_path": str(evidence_path),
-        "confidence": confidence,
-        "note": note.strip(),
-    }
-
-
-def wallet_issue_row(
-    *,
-    source: str,
-    raw_dir: Path,
-    wallet_id: str,
-    issue_kind: str,
-    message: str,
-    evidence_path: Path | None = None,
-) -> dict[str, str]:
-    return {
-        "source": source,
-        "raw_dir": str(raw_dir),
-        "wallet_id": wallet_id,
-        "issue_kind": issue_kind,
-        "message": message,
-        "evidence_path": str(evidence_path) if evidence_path is not None else "",
-    }
-
-
-def dedupe_rows(rows: Iterable[dict[str, str]], *, key_fields: Sequence[str]) -> list[dict[str, str]]:
-    seen: set[tuple[str, ...]] = set()
-    deduped: list[dict[str, str]] = []
-    for row in rows:
-        key = tuple(row.get(field, "") for field in key_fields)
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(row)
-    return deduped
-
-
-def extract_evm_wallets(source: str, raw_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    evidence: list[dict[str, str]] = []
-    issues: list[dict[str, str]] = []
-    addresses = {
-        match.group(0)
-        for path in raw_dir.glob("*.csv")
-        for match in EVM_ADDRESS_PATTERN.finditer(path.name)
-    }
-    for address in sorted(addresses, key=str.lower):
-        path = next(path for path in raw_dir.glob("*.csv") if address.lower() in path.name.lower())
-        evidence.append(
-            wallet_evidence_row(
-                source=source,
-                raw_dir=raw_dir,
-                identifier_value=address,
-                controller="Explorer export",
-                account_label="",
-                evidence_kind="filename",
-                evidence_path=path,
-                confidence="high",
-            )
-        )
-
-    if not evidence:
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="",
-                issue_kind="missing_identifier",
-                message="No EVM address could be extracted from the chain-scoped explorer capture.",
-            )
-        )
-    elif len({row["normalized_identifier"] for row in evidence}) > 1:
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="",
-                issue_kind="multiple_primary_identifiers",
-                message="A chain-scoped explorer capture exposed more than one owned EVM address.",
-            )
-        )
-
-    return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
-
-
-def extract_ledger_live_wallets(source: str, raw_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    evidence: list[dict[str, str]] = []
-    issues: list[dict[str, str]] = []
-    account_identifiers: dict[str, set[str]] = defaultdict(set)
-    for path in sorted(raw_dir.glob("ledgerlive-operations-*.csv")):
-        for row in read_csv_rows(path):
-            account_label = (row.get("Account Name") or "").strip()
-            identifier_value = (row.get("Account xpub") or "").strip()
-            if not identifier_value:
-                continue
-            account_identifiers[account_label].add(identifier_value)
-            evidence.append(
-                wallet_evidence_row(
-                    source=source,
-                    raw_dir=raw_dir,
-                    identifier_value=identifier_value,
-                    controller="Ledger Live",
-                    account_label=account_label,
-                    evidence_kind="csv_row",
-                    evidence_path=path,
-                    confidence="high",
-                )
-            )
-
-    for account_label, identifiers in sorted(account_identifiers.items()):
-        if len(identifiers) > 1:
-            issues.append(
-                wallet_issue_row(
-                    source=source,
-                    raw_dir=raw_dir,
-                    wallet_id="",
-                    issue_kind="account_identifier_conflict",
-                    message=f"Ledger Live account {account_label or 'blank'} maps to multiple identifiers.",
-                )
-            )
-
-    if not evidence:
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="",
-                issue_kind="missing_identifier",
-                message="No account identifier was found in the Ledger Live operations exports.",
-            )
-        )
-
-    return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
-
-
-def extract_near_wallets(source: str, raw_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    evidence: list[dict[str, str]] = []
-    identifiers = {
-        match.group(0)
-        for path in raw_dir.glob("*.csv")
-        for match in NEAR_HEX_ACCOUNT_PATTERN.finditer(path.name)
-    }
-    for identifier_value in sorted(identifiers):
-        path = next(path for path in raw_dir.glob("*.csv") if identifier_value in path.name)
-        evidence.append(
-            wallet_evidence_row(
-                source=source,
-                raw_dir=raw_dir,
-                identifier_value=identifier_value,
-                controller="NearBlocks export",
-                account_label="",
-                evidence_kind="filename",
-                evidence_path=path,
-                confidence="high",
-            )
-        )
-
-    issues: list[dict[str, str]] = []
-    if not evidence:
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="",
-                issue_kind="missing_identifier",
-                message="No NEAR account identifier was found in the raw filenames.",
-            )
-        )
-    return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
-
-
-def extract_ronin_wallets(source: str, raw_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    evidence: list[dict[str, str]] = []
-    identifiers = {
-        match.group(0)
-        for path in raw_dir.glob("*.csv")
-        for match in EVM_ADDRESS_PATTERN.finditer(path.name)
-    }
-    for identifier_value in sorted(identifiers, key=str.lower):
-        path = next(path for path in raw_dir.glob("*.csv") if identifier_value.lower() in path.name.lower())
-        evidence.append(
-            wallet_evidence_row(
-                source=source,
-                raw_dir=raw_dir,
-                identifier_value=identifier_value,
-                controller="Ronin explorer export",
-                account_label="",
-                evidence_kind="filename",
-                evidence_path=path,
-                confidence="high",
-                note="Ronin addresses are recorded in 0x form in the raw export package.",
-            )
-        )
-
-    issues: list[dict[str, str]] = []
-    if not evidence:
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="",
-                issue_kind="missing_identifier",
-                message="No Ronin address could be extracted from the raw filenames.",
-            )
-        )
-    return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
-
-
-def extract_gtrade_identifiers(source: str, raw_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    evidence: list[dict[str, str]] = []
-    aliases: set[str] = set()
-    for path in raw_dir.glob("*.csv"):
-        for row in read_csv_rows(path):
-            alias = (row.get("ADDR") or "").strip()
-            if alias:
-                aliases.add(alias)
-                evidence.append(
-                    wallet_evidence_row(
-                        source=source,
-                        raw_dir=raw_dir,
-                        identifier_value=alias,
-                        identifier_kind="address_alias",
-                        controller="GTrade report",
-                        account_label="",
-                        evidence_kind="csv_row",
-                        evidence_path=path,
-                        confidence="medium",
-                        note="The report exposes a truncated trader alias instead of a full on-chain address.",
-                    )
-                )
-
-    issues: list[dict[str, str]] = []
-    if aliases:
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="address_alias:" + min(alias.lower() for alias in aliases),
-                issue_kind="partial_identifier_only",
-                message="GTrade evidence exposes only a truncated address alias; keep companion explorer evidence linked in the canonical wallet inventory.",
-                evidence_path=next(iter(raw_dir.glob("*.csv"))),
-            )
-        )
-    else:
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="",
-                issue_kind="missing_identifier",
-                message="No address alias was found in the GTrade report.",
-            )
-        )
-    return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
-
-
-def extract_metamask_app_wallets(source: str, raw_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    evidence: list[dict[str, str]] = []
-    issues: list[dict[str, str]] = []
-    state_path = raw_dir / "MetaMask state logs.json"
-    if not state_path.exists():
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="",
-                issue_kind="missing_identifier",
-                message="MetaMask state logs were not found.",
-            )
-        )
-        return evidence, issues
-
-    payload = json.loads(state_path.read_text(encoding="utf-8"))
-    metamask = payload.get("metamask", {})
-    internal_accounts = (((metamask.get("internalAccounts") or {}).get("accounts")) or {})
-    for account in internal_accounts.values():
-        identifier_value = (account.get("address") or "").strip()
-        if not identifier_value:
-            continue
-        metadata = account.get("metadata") or {}
-        keyring = metadata.get("keyring") or {}
-        evidence.append(
-            wallet_evidence_row(
-                source=source,
-                raw_dir=raw_dir,
-                identifier_value=identifier_value,
-                controller=f"MetaMask {keyring.get('type', '').strip()}".strip(),
-                account_label=(metadata.get("name") or "").strip(),
-                evidence_kind="app_state",
-                evidence_path=state_path,
-                confidence="high",
-            )
-        )
-
-    identities = metamask.get("identities") or {}
-    for identifier_value, identity in identities.items():
-        if any(
-            row["normalized_identifier"] == normalize_identifier(infer_identifier_kind(identifier_value), identifier_value)
-            for row in evidence
-        ):
-            continue
-        evidence.append(
-            wallet_evidence_row(
-                source=source,
-                raw_dir=raw_dir,
-                identifier_value=identifier_value,
-                controller="MetaMask app",
-                account_label=(identity.get("name") or "").strip(),
-                evidence_kind="app_state",
-                evidence_path=state_path,
-                confidence="medium",
-                note="Discovered from the MetaMask identity map rather than a chain-scoped export.",
-            )
-        )
-
-    if not evidence:
-        issues.append(
-            wallet_issue_row(
-                source=source,
-                raw_dir=raw_dir,
-                wallet_id="",
-                issue_kind="missing_identifier",
-                message="No wallet identifiers could be extracted from the MetaMask app state.",
-                evidence_path=state_path,
-            )
-        )
-    return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
-
-
 def profile_wallet_identifiers(
     source: str,
     raw_dir: Path,
     adapter_name: str = "",
 ) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, object]]:
     raw_dir = require_directory(raw_dir.resolve(), "Raw source directory")
-    source_slug = slugify(source)
-    raw_slug = " ".join(slugify(part) for part in raw_dir.parts[-3:])
-    if source_slug == "metamask_app" or "app_metamask" in raw_slug:
-        evidence, issues = extract_metamask_app_wallets(source, raw_dir)
-    elif adapter_name == "ledger_live" or source_slug.startswith("ledger_live"):
-        evidence, issues = extract_ledger_live_wallets(source, raw_dir)
-    elif adapter_name == "near" or source_slug.startswith("near"):
-        evidence, issues = extract_near_wallets(source, raw_dir)
-    elif "ronin" in raw_slug or source_slug.startswith("ronin"):
-        evidence, issues = extract_ronin_wallets(source, raw_dir)
-    elif adapter_name == "gtrade" or source_slug.startswith("gtrade"):
-        evidence, issues = extract_gtrade_identifiers(source, raw_dir)
-    elif adapter_name == "evm_explorer" or source_slug.startswith(("bsc_", "eth_", "polygon_")) or "metamask" in source_slug:
-        evidence, issues = extract_evm_wallets(source, raw_dir)
-    else:
-        evidence, issues = [], []
-
+    profile = build_source_profile(
+        source=source,
+        raw_dir=raw_dir,
+        adapter_name="generic",
+        adapter_supported=False,
+    )
+    adapter = get_adapter(source, profile)
+    if adapter.name == "generic" and adapter_name:
+        adapter = get_adapter(adapter_name, profile)
+    evidence, issues = adapter.extract_wallet_identifiers(source, raw_dir, profile)
     summary = {
         "status": "passed" if not issues else "needs_review",
+        "adapter": adapter.name,
         "wallet_count": len({row["wallet_id"] for row in evidence}),
         "evidence_rows": len(evidence),
         "issue_count": len(issues),
@@ -566,7 +104,10 @@ def profile_wallet_identifiers(
     return evidence, issues, summary
 
 
-def summarize_wallet_inventory(evidence_rows: Sequence[dict[str, str]], issue_rows: Sequence[dict[str, str]]) -> tuple[list[dict[str, str]], dict[str, object]]:
+def summarize_wallet_inventory(
+    evidence_rows: Sequence[dict[str, str]],
+    issue_rows: Sequence[dict[str, str]],
+) -> tuple[list[dict[str, str]], dict[str, object]]:
     grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
     for row in evidence_rows:
         grouped[row["wallet_id"]].append(row)

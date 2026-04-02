@@ -45,13 +45,14 @@ Default rule:
 ## Baseline repair round
 
 1. Pick the specific issue IDs you are resolving.
-2. Pull raw source evidence into `01_raw_exports/external/<source>/raw/`.
+2. Pull raw source evidence into `01_raw_exports/external/<source>/<capture_id>/` when possible. The older `raw/` layout is only for legacy sources that have not been split into capture-local folders yet.
 3. Run:
 
    ```bash
    python3 06_scripts/source_manifest.py \
-     --source-dir 01_raw_exports/external/<source>/raw \
-     --output 01_raw_exports/external/<source>/manifest.csv
+     --source-dir 01_raw_exports/external/<source>/<capture_id> \
+     --output 01_raw_exports/external/<source>/<capture_id>/manifest.csv \
+     --allow-non-raw-dir
    ```
 
 4. Update `proof_path` and `proof_summary` in `03_analysis/issues/issue_log.csv`.
@@ -84,14 +85,14 @@ Default rule:
 
 1. Confirm the source row exists in `03_analysis/issues/source_inventory.csv`.
 2. Confirm the source export window begins strictly after `2023-08-05 08:34:04`.
-3. Pull the raw export into `01_raw_exports/external/<source>/raw/`.
+3. Pull the raw export into `01_raw_exports/external/<source>/<capture_id>/` when possible. The legacy `raw/` layout still works, but capture-local folders and manifests are now the preferred contract.
 4. Run `source_manifest.py`.
 5. Profile the raw source into `02_working/normalized/<source>/`:
 
    ```bash
    python3 06_scripts/profile_source.py \
      --source "<Source Name>" \
-     --raw-dir 01_raw_exports/external/<source>/raw \
+     --raw-dir 01_raw_exports/external/<source>/<capture_id> \
      --out-dir 02_working/normalized/<source>
    ```
 
@@ -109,7 +110,7 @@ Default rule:
    ```bash
    python3 06_scripts/normalize_source.py \
      --source "<Source Name>" \
-     --raw-dir 01_raw_exports/external/<source>/raw \
+     --raw-dir 01_raw_exports/external/<source>/<capture_id> \
      --out-dir 02_working/normalized/<source> \
      --profile-json 02_working/normalized/<source>/profile.json
    ```

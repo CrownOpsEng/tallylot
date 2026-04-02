@@ -35,6 +35,8 @@ Current deterministic universal adapters:
 - `evm_explorer` → explorer-family adapter for EVM CSV exports; ready for the BSC and primary Ethereum transfer/token scopes, and intentionally leaves suspicious standalone NFT airdrops in `exceptions.csv` instead of auto-importing them as deposits
 - `gtrade` → report-level adapter for realized PnL rows and intentionally leaves open-position rows in `exceptions.csv` until companion explorer evidence exists
 
+Wallet identification is now adapter-owned as well: `wallet_inventory.py` profiles each raw capture, resolves the adapter from the profile, and only then asks that adapter to emit wallet evidence. Shared scripts no longer decide wallet behavior from source-label heuristics.
+
 The intake pipeline is intentionally not a blind importer. `normalize_source.py` can produce a CoinTracking candidate, but that candidate is still a staging artifact. Internal wallet shuffles, unsupported rows, and ambiguous groups must stay visible through `exceptions.csv`, `issue_log.csv`, and the round-verification workflow rather than being auto-reconciled by the script layer.
 
 The explorer adapter is now keyed to the export system and chain scope rather than a wallet-app label. A legacy wallet-app export dump is treated as EVM explorer evidence; the adapter only promotes rows that can be justified from the underlying explorer CSV families and leaves missing-evidence gaps visible instead of guessing.
@@ -81,4 +83,4 @@ The profiling and normalization flow now records timezone provenance per dated f
 
 ## Wallet Inventory
 
-`profile_source.py` now also writes per-source wallet inventory artifacts into the normalized output folder. When the output folder lives inside this repo, profiling refreshes the repo-wide wallet inventory under `03_analysis/inventory/` so AI and manual review can answer wallet-identity questions without reopening raw captures by default.
+Run `wallet_inventory.py` explicitly after adding wallet-scoped evidence or changing wallet-source profiling. The canonical artifacts live under `03_analysis/inventory/`, and they are rebuilt from the active source inventory plus adapter-owned wallet extraction logic.

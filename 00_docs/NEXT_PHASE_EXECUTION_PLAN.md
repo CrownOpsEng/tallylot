@@ -29,9 +29,8 @@ The project still follows the canonical cutoff:
 | 2 | WealthSimple | `raw_export_captured` | Trim to the project window, normalize for CoinTracking, and overlap-screen | `post_import_wealthsimple_01` |
 | 3 | ledger-live-main | `confirmed_active_pending_export` | Pull the post-cutoff raw export, manifest it, then prepare the candidate | `post_import_ledger_live_main_01` |
 | 4 | bsc-metamask1 | `confirmed_active_pending_export` | Confirm the full post-cutoff wallet export set is present, then normalize and overlap-screen | `post_import_bsc_metamask1_01` |
-| 5 | Ledger Live | `raw_export_captured` | Determine which post-cutoff records are not already represented by prior imports, then prepare the smallest safe candidate | `post_import_ledger_live_01` |
-| 6 | Binance | `raw_export_captured` | Classify the residual WBETH dust treatment, trim all candidates to `<= 2025-12-31`, then overlap-screen | `post_import_binance_01` |
-| 7 | Shakepay | `raw_export_captured` | Prepare the final import tranche and keep it last per project procedure | `post_import_shakepay_01` |
+| 5 | Binance | `raw_export_captured` | Classify the residual WBETH dust treatment, trim all candidates to `<= 2025-12-31`, then overlap-screen | `post_import_binance_01` |
+| 6 | Shakepay | `raw_export_captured` | Prepare the final import tranche and keep it last per project procedure | `post_import_shakepay_01` |
 
 ## Open Follow-Ups
 
@@ -48,8 +47,8 @@ Use this checklist for every source in the queue:
 
 1. Confirm the source row in `03_analysis/issues/source_inventory.csv` is current.
 2. Confirm the candidate window starts strictly after `2023-08-05 08:34:04`.
-3. Capture raw files in `01_raw_exports/external/<source>/raw/` if not already complete.
-4. Run `06_scripts/source_manifest.py`.
+3. Capture raw files in `01_raw_exports/external/<source>/<capture_id>/` when possible and keep `manifest.csv` inside that capture folder. The legacy `raw/` layout still works for older sources.
+4. Run `06_scripts/source_manifest.py` against the capture folder.
 5. Prepare the working import file in `02_working/import_batches/<source>/`.
 6. Run `06_scripts/overlap_check.py` against the CoinTracking-ready candidate.
 7. Hold the batch if overlap screening does not pass.
