@@ -2,9 +2,9 @@
 
 ## Objective
 
-Work in the rebuilt typed application architecture under
-`src/tallylot/`. Treat the repo as code, tests, docs, templates,
-and automation. Treat the live workspace as external to the repo.
+Work in the rebuilt typed application architecture under `src/tallylot/`.
+Treat the repo as code, tests, docs, templates, and automation. Treat the live
+workspace as external to the repo.
 
 ## Invariants
 
@@ -33,10 +33,26 @@ Do not pre-load every repo doc by default.
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
 | Source or output adapter work | `docs/guides/write-an-adapter.md` |
 | External workspace layout and seeded files | `docs/concepts/workspace-model.md`, `docs/workspace/README.md` |
-| Operational state, manual workflow, or agent runbooks | `docs/README.md`, then the specific doc it routes you to |
+| Operational state or manual workflow | `docs/status/current-state.md`, `docs/guides/operator-quickstart.md`, `docs/guides/full-operator-workflow.md` |
 | Workspace subtree conventions, checklists, or templates | `docs/workspace/README.md` |
 | Commit messages, templates, and checkpoint behavior | `docs/standards/commits.md` |
 | Final pre-close implementation checks | `.claude/commands/implementation-checkpoint.md` |
+
+## Documentation Maintenance Rules
+
+- Human docs live under `docs/`.
+- `docs/workspace/` remains the mirrored workspace reference subtree.
+- Agent routing and repo execution rules live in `AGENTS.md` and
+  `.claude/commands/`.
+- Agent-only context must not live in `docs/` unless it is genuinely useful to
+  humans.
+- Every new doc must have one primary type: concept, guide, reference,
+  standard, or status.
+- Avoid duplicate routing pages. Prefer `README.md`, `docs/README.md`, and
+  this file over adding another switchboard.
+- Broad docs or repo-structure reshapes should land as checkpoint commits at
+  stable slices, not as one giant umbrella commit unless the slice cannot be
+  validated incrementally.
 
 ## Execution Rules
 
@@ -52,20 +68,19 @@ Do not pre-load every repo doc by default.
   `pylint`, and `pytest` pass.
 - Do not consider non-trivial work ready until the verified checkpoint commit
   already exists.
-- Bootstrap the checked-in hooks:
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
-- Prefer fresh VS Code workspace diagnostics for instant static-analysis feedback when the
-  `vscode-problems` skill or MCP snapshot is available and current.
-  Treat that signal as advisory only.
+- Prefer fresh VS Code workspace diagnostics for instant static-analysis
+  feedback when the `vscode-problems` skill or MCP snapshot is available and
+  current. Treat that signal as advisory only.
 - For explicit local verification, prefer:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
-- Do not run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the parallel
-  quality-gate runner unless you are debugging hook behavior itself.
-- Use `tools.run_quality_gates --full-tests` as the normal final local verification command.
-- Use `tools.run_ci_parity_checks` only when changes touch CI, packaging, release, or other
-  workflow surfaces where local parity with GitHub Actions is worth the extra time.
+- Do not run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the parallel quality-gate runner unless you are debugging hook behavior itself.
+- Use `tools.run_quality_gates --full-tests` as the normal final local
+  verification command.
+- Use `tools.run_ci_parity_checks` only when changes touch CI, packaging,
+  release, or other workflow surfaces where local parity with GitHub Actions is
+  worth the extra time.
 - Do not run `tools.run_quality_gates --full-tests` immediately before
   `tools.run_ci_parity_checks`; the parity runner already includes the full
   quality gate pass.
@@ -100,13 +115,14 @@ Workspace resolution order:
 
 ## Current Build Direction
 
-- Treat `docs/concepts/reconciliation-tax-architecture.md` as the implementation
-  anchor for reconciliation, checkpointing, journaling, and tax computation.
+- Treat `docs/concepts/reconciliation-tax-architecture.md` as the
+  implementation anchor for reconciliation, checkpointing, journaling, and tax
+  computation.
 - Do not treat CoinTracking as the live ledger for new architecture work.
   CoinTracking is now a compatibility and oracle layer.
-- Do not treat CoinTracking tax or accounting reports as normal runtime inputs.
-  They are development-only oracle support artifacts unless an explicit
-  one-time checkpoint import workflow adopts them with provenance.
+- Do not treat CoinTracking tax or accounting reports as normal runtime
+  inputs. They are development-only oracle support artifacts unless an
+  explicit one-time checkpoint import workflow adopts them with provenance.
 - Do not expand the current canonical event model into the long-term center of
   the system. New structural work should target the provider-neutral
   transaction fact model described in the implementation plan.

@@ -10,5 +10,5 @@ path.
    do not treat them as canonical transaction imports
 
 Use `docs/guides/operator-quickstart.md` for the short surrounding workflow,
-`docs/guides/full-operator-workflow.md` for the detailed procedure, and `docs/file-map.md` when you need
-the narrowest related artifact or command.
+`docs/guides/full-operator-workflow.md` for the detailed procedure, and
+`docs/README.md` when you need the nearest human-facing entrypoint.
