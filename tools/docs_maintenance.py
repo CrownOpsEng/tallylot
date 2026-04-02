@@ -128,29 +128,31 @@ def _expected_doc_type(path: Path) -> str | None:
     relative = _relative_path(path)
     if relative == "docs/README.md":
         return "reference"
-    if relative.startswith("docs/workspace/"):
-        return "reference"
-    if relative.startswith("docs/concepts/"):
-        return "concept"
-    if relative.startswith("docs/guides/"):
-        return "guide"
-    if relative.startswith("docs/reference/"):
-        return "reference"
-    if relative.startswith("docs/standards/"):
-        return "standard"
-    if relative.startswith("docs/status/"):
-        return "status"
+
+    prefix_map = (
+        ("docs/workspace/", "reference"),
+        ("docs/concepts/", "concept"),
+        ("docs/guides/", "guide"),
+        ("docs/reference/", "reference"),
+        ("docs/standards/", "standard"),
+        ("docs/status/", "status"),
+    )
+    for prefix, doc_type in prefix_map:
+        if relative.startswith(prefix):
+            return doc_type
     return None
 
 
 def _expected_audience(path: Path) -> str | None:
     relative = _relative_path(path)
-    if relative.startswith("agents/"):
-        return "agent"
-    if relative.startswith("docs/workspace/"):
-        return "both"
-    if relative.startswith("docs/"):
-        return "human"
+    prefix_map = (
+        ("agents/", "agent"),
+        ("docs/workspace/", "both"),
+        ("docs/", "human"),
+    )
+    for prefix, audience in prefix_map:
+        if relative.startswith(prefix):
+            return audience
     return None
 
 
@@ -187,6 +189,10 @@ def _collect_documents() -> list[Document]:
         _validate_frontmatter(path, frontmatter)
         documents.append(Document(path=path, relative_path=_relative_path(path), frontmatter=frontmatter))
     return documents
+
+
+def validate_documents() -> list[Document]:
+    return _collect_documents()
 
 
 def _section_documents(documents: list[Document], section: str) -> list[Document]:

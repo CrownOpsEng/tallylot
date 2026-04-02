@@ -333,9 +333,7 @@ def test_balance_evidence_has_single_production_owner() -> None:
 
 
 def test_transaction_classification_matrix_describes_runtime_projection_values() -> None:
-    matrix_text = (REPO_ROOT / "docs" / "architecture" / "transaction-classification-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix_text = (REPO_ROOT / "docs" / "concepts" / "transaction-classification.md").read_text(encoding="utf-8")
 
     assert "| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` |" in matrix_text
     assert "| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` |" in matrix_text

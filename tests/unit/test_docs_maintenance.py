@@ -21,10 +21,9 @@ def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
         *sorted((REPO_ROOT / "docs").rglob("*.md")),
         *sorted((REPO_ROOT / "agents").rglob("*.md")),
     )
+    documents = docs_maintenance.validate_documents()
 
-    for path in paths:
-        frontmatter = docs_maintenance._parse_frontmatter(path.read_text(encoding="utf-8"), path)
-        docs_maintenance._validate_frontmatter(path, frontmatter)
+    assert {document.path for document in documents} == set(paths)
 
 
 def test_entrypoints_do_not_reference_retired_docs_paths() -> None:
