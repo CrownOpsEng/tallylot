@@ -9,10 +9,28 @@ from tools.message_standards import validate_structured_sections, validate_subje
 
 
 def _normalize_body_lines(body: str) -> tuple[str, ...]:
-    lines = tuple(line.rstrip() for line in body.splitlines())
+    lines: list[str] = []
+    in_html_comment = False
+
+    for raw_line in body.splitlines():
+        line = raw_line.rstrip()
+        stripped = line.strip()
+
+        if in_html_comment:
+            if "-->" in stripped:
+                in_html_comment = False
+            continue
+
+        if stripped.startswith("<!--"):
+            if "-->" not in stripped:
+                in_html_comment = True
+            continue
+
+        lines.append(line)
+
     while lines and lines[-1] == "":
-        lines = lines[:-1]
-    return lines
+        lines.pop()
+    return tuple(lines)
 
 
 def _parse_required_sections(body: str) -> dict[str, tuple[str, ...]]:

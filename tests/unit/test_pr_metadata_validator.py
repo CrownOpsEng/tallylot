@@ -41,6 +41,28 @@ Included checkpoints:
     assert not errors
 
 
+def test_pr_body_tolerates_leading_html_comment() -> None:
+    body = """\
+<!-- markdownlint-disable-file MD041 MD032 -->
+
+Why:
+- keep mainline history concise
+
+What:
+- document and validate squash-merge metadata
+
+Checks:
+- uv run python -m tools.run_quality_gates
+
+Included checkpoints:
+- `docs: codify pull request standards`
+"""
+
+    errors = validate_pr_body(body)
+
+    assert not errors
+
+
 def test_pr_body_rejects_missing_section() -> None:
     body = """\
 Why:
@@ -108,6 +130,34 @@ Included checkpoints:
         base_sha="0000000",
         head_sha="1111111",
     )
+
+    assert errors == ()
+
+
+def test_pr_checkpoints_ignore_leading_html_comment(monkeypatch: MonkeyPatch) -> None:
+    body = """\
+<!-- markdownlint-disable-file MD041 MD032 -->
+
+Why:
+- keep mainline history concise
+
+What:
+- document and validate squash-merge metadata
+
+Checks:
+- uv run python -m tools.run_quality_gates
+
+Included checkpoints:
+- `docs: codify pull request standards`
+"""
+
+    def fake_loader(base_sha: str, head_sha: str) -> tuple[str, ...]:
+        del base_sha, head_sha
+        return ("docs: codify pull request standards",)
+
+    monkeypatch.setattr("tools.validate_pr_metadata._load_commit_subjects", fake_loader)
+
+    errors = validate_pr_checkpoints(body, base_sha="base", head_sha="head")
 
     assert errors == ()
 
