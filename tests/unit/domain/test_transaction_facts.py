@@ -6,11 +6,15 @@ from decimal import Decimal
 import pytest
 
 from tallylot.domain.transactions import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     EconomicKind,
     EconomicLeg,
     FactClassification,
     FactLegPolicy,
     JournalIntent,
+    LegKind,
+    LegShapeLimit,
     ProjectionType,
     TaxTreatmentCode,
     TransactionFact,
@@ -19,7 +23,11 @@ from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionI
 from tallylot.domain.value_objects import parse_timestamp
 
 
-def _build_fact(*, legs: tuple[EconomicLeg, ...], fee_legs: tuple[EconomicLeg, ...] = ()) -> TransactionFact:
+def _build_fact(
+    *,
+    legs: tuple[EconomicLeg, ...],
+    leg_policy: FactLegPolicy = SINGLE_PRIMARY_ACTIVITY_POLICY,
+) -> TransactionFact:
     return TransactionFact(
         fact_id=TransactionId("fact-1"),
         source=SourceId("fixture"),
@@ -34,7 +42,7 @@ def _build_fact(*, legs: tuple[EconomicLeg, ...], fee_legs: tuple[EconomicLeg, .
             tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
         ),
         legs=legs,
-        fee_legs=fee_legs,
+        leg_policy=leg_policy,
         tx_hash="abc123",
     )
 
@@ -42,54 +50,79 @@ def _build_fact(*, legs: tuple[EconomicLeg, ...], fee_legs: tuple[EconomicLeg, .
 def test_transaction_fact_exposes_projection_properties_and_serializes_legs() -> None:
     fact = _build_fact(
         legs=(
-            EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("1.25")),
-            EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("100000")),
+            EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1.25")),
+            EconomicLeg(direction="out", kind=LegKind.PRIMARY, asset=AssetSymbol("CAD"), amount=Decimal("100000")),
+            EconomicLeg(
+                direction="out",
+                kind=LegKind.CHARGE,
+                asset=AssetSymbol("CAD"),
+                amount=Decimal("12.5"),
+                attributed_to_direction="out",
+                subtype="trading_fee",
+            ),
         ),
-        fee_legs=(EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("12.5")),),
+        leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     )
 
     assert fact.projection_type == ProjectionType.TRADE
-    assert fact.leg_policy == FactLegPolicy()
+    assert fact.leg_policy == TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY
     assert fact.legs[0].asset == AssetSymbol("BTC")
     assert fact.legs[1].amount == Decimal("100000")
 
     row = fact.to_row()
 
     assert row["fact_id"] == "fact-1"
-    assert row["max_in_legs"] == "1"
-    assert row["max_out_legs"] == "1"
-    assert row["max_fee_legs"] == "1"
     assert row["projection_type"] == "trade"
-    assert row["legs"] == "in:BTC:1.25::|out:CAD:100000::"
-    assert row["fee_legs"] == "out:CAD:12.5::"
+    assert row["legs"] == (
+        '[{"direction":"in","kind":"primary","subtype":"","asset":"BTC","amount":"1.25",'
+        '"attributed_to_direction":"","account":"","wallet":""},'
+        '{"direction":"out","kind":"primary","subtype":"","asset":"CAD","amount":"100000",'
+        '"attributed_to_direction":"","account":"","wallet":""},'
+        '{"direction":"out","kind":"charge","subtype":"trading_fee","asset":"CAD","amount":"12.5",'
+        '"attributed_to_direction":"out","account":"","wallet":""}]'
+    )
+    assert row["leg_policy"] == (
+        '[{"kind":"charge","max_count":1,"max_in_count":0,"max_out_count":1},'
+        '{"kind":"primary","max_count":2,"max_in_count":1,"max_out_count":1}]'
+    )
 
 
 def test_transaction_fact_requires_at_least_one_leg() -> None:
-    with pytest.raises(ValueError, match="at least one economic leg"):
+    with pytest.raises(ValueError, match="include at least one leg"):
         _build_fact(legs=())
 
 
 def test_fact_leg_rejects_non_positive_amounts() -> None:
     with pytest.raises(ValueError, match="fact leg amount must be greater than zero"):
-        EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("0"))
+        EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("0"))
 
 
-def test_fact_leg_policy_rejects_negative_limits() -> None:
-    with pytest.raises(ValueError, match="max_in_legs must be non-negative"):
-        FactLegPolicy(max_in_legs=-1)
+def test_fact_leg_policy_rejects_invalid_limits() -> None:
+    with pytest.raises(ValueError, match="max_count must be non-negative"):
+        LegShapeLimit(kind=LegKind.PRIMARY, max_count=-1)
+
+    with pytest.raises(ValueError, match="duplicates kind primary"):
+        FactLegPolicy(
+            limits=(
+                LegShapeLimit(kind=LegKind.PRIMARY, max_count=1),
+                LegShapeLimit(kind=LegKind.PRIMARY, max_count=2),
+            )
+        )
 
 
 def test_transaction_fact_rejects_legs_that_exceed_declared_policy() -> None:
-    with pytest.raises(ValueError, match="inbound legs exceed declared leg policy"):
+    with pytest.raises(ValueError, match="inbound primary legs exceed declared leg policy"):
         _build_fact(
             legs=(
-                EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("1")),
-                EconomicLeg(direction="in", asset=AssetSymbol("ETH"), amount=Decimal("2")),
+                EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
+                EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("ETH"), amount=Decimal("2")),
             ),
-            fee_legs=(),
+            leg_policy=FactLegPolicy(
+                limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_in_count=1, max_out_count=1),)
+            ),
         )
 
-    with pytest.raises(ValueError, match="fee legs exceed declared leg policy"):
+    with pytest.raises(ValueError, match="charge legs exceed declared leg policy"):
         TransactionFact(
             fact_id=TransactionId("fact-2"),
             source=SourceId("fixture"),
@@ -103,15 +136,21 @@ def test_transaction_fact_rejects_legs_that_exceed_declared_policy() -> None:
                 tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
                 projection_type=None,
             ),
-            legs=(EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("0.5")),),
-            fee_legs=(
-                EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("1")),
-                EconomicLeg(direction="out", asset=AssetSymbol("USD"), amount=Decimal("2")),
+            legs=(
+                EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("0.5")),
+                EconomicLeg(direction="out", kind=LegKind.CHARGE, asset=AssetSymbol("CAD"), amount=Decimal("1")),
+                EconomicLeg(direction="out", kind=LegKind.CHARGE, asset=AssetSymbol("USD"), amount=Decimal("2")),
+            ),
+            leg_policy=FactLegPolicy(
+                limits=(
+                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_in_count=1, max_out_count=1),
+                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+                )
             ),
         )
 
 
-def test_transaction_fact_accepts_explicit_multi_leg_policy() -> None:
+def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requirement() -> None:
     fact = TransactionFact(
         fact_id=TransactionId("fact-2"),
         source=SourceId("fixture"),
@@ -126,12 +165,52 @@ def test_transaction_fact_accepts_explicit_multi_leg_policy() -> None:
             projection_type=None,
         ),
         legs=(
-            EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("0.5")),
-            EconomicLeg(direction="in", asset=AssetSymbol("ETH"), amount=Decimal("1.5")),
-            EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("100")),
+            EconomicLeg(direction="in", kind=LegKind.REBATE, asset=AssetSymbol("BTC"), amount=Decimal("0.5")),
+            EconomicLeg(direction="in", kind=LegKind.REBATE, asset=AssetSymbol("ETH"), amount=Decimal("1.5")),
+            EconomicLeg(direction="out", kind=LegKind.WITHHOLDING, asset=AssetSymbol("CAD"), amount=Decimal("100")),
         ),
-        leg_policy=FactLegPolicy(max_in_legs=2, max_out_legs=1, max_fee_legs=0),
+        leg_policy=FactLegPolicy(
+            limits=(
+                LegShapeLimit(kind=LegKind.REBATE, max_count=2, max_in_count=2, max_out_count=0),
+                LegShapeLimit(kind=LegKind.WITHHOLDING, max_count=1, max_in_count=0, max_out_count=1),
+            )
+        ),
     )
 
     assert fact.projection_type is None
-    assert fact.leg_policy.max_in_legs == 2
+    assert fact.leg_policy.limit_for(LegKind.REBATE) is not None
+
+
+def test_transaction_fact_rejects_ambiguous_attributed_to_direction() -> None:
+    with pytest.raises(ValueError, match="attributed_to_direction must reference exactly one primary leg"):
+        TransactionFact(
+            fact_id=TransactionId("fact-3"),
+            source=SourceId("fixture"),
+            adapter_id=AdapterId("structured_csv"),
+            timestamp=parse_timestamp("2025-01-01 00:00:00"),
+            account="taxable",
+            wallet="spot",
+            classification=FactClassification(
+                economic_kind=EconomicKind.SPOT_TRADE,
+                journal_intent=JournalIntent.ASSET_EXCHANGE,
+                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                projection_type=ProjectionType.TRADE,
+            ),
+            legs=(
+                EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
+                EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("ETH"), amount=Decimal("2")),
+                EconomicLeg(
+                    direction="out",
+                    kind=LegKind.CHARGE,
+                    asset=AssetSymbol("CAD"),
+                    amount=Decimal("10"),
+                    attributed_to_direction="in",
+                ),
+            ),
+            leg_policy=FactLegPolicy(
+                limits=(
+                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_in_count=2, max_out_count=0),
+                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+                )
+            ),
+        )

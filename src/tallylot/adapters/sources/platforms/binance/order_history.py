@@ -6,7 +6,9 @@ from datetime import datetime
 from pathlib import Path
 
 from tallylot.adapters.support.drafts import (
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
 )
@@ -50,13 +52,14 @@ def normalize_convert_order_rows(
                     journal_intent=JournalIntent.ASSET_EXCHANGE,
                     tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                 ),
+                leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
                 description=f"Binance convert {(row.get('Pair') or '').strip()}",
                 raw_file=path.name,
                 raw_row_ref=f"row:{index}",
                 provider_operation_key="order_history:convert",
                 legs=(
-                    economic_leg(direction="in", asset=buy_asset, amount=buy_amount),
-                    economic_leg(direction="out", asset=sell_asset, amount=sell_amount),
+                    economic_leg(direction="in", kind=LegKind.PRIMARY, asset=buy_asset, amount=buy_amount),
+                    economic_leg(direction="out", kind=LegKind.PRIMARY, asset=sell_asset, amount=sell_amount),
                 ),
             )
         )
@@ -83,13 +86,13 @@ def normalize_c2c_order_rows(
         matched_times.add(parse_transaction_history_timestamp(created_time))
         if order_type == "SELL":
             legs = (
-                economic_leg(direction="in", asset=fiat, amount=total_price),
-                economic_leg(direction="out", asset=asset, amount=quantity),
+                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=fiat, amount=total_price),
+                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=asset, amount=quantity),
             )
         else:
             legs = (
-                economic_leg(direction="in", asset=asset, amount=quantity),
-                economic_leg(direction="out", asset=fiat, amount=total_price),
+                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=asset, amount=quantity),
+                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=fiat, amount=total_price),
             )
         drafts.append(
             EconomicActivityDraft(
@@ -105,6 +108,7 @@ def normalize_c2c_order_rows(
                     journal_intent=JournalIntent.ASSET_EXCHANGE,
                     tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                 ),
+                leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
                 description=f"Binance C2C {(row.get('Order Type') or '').strip()} {asset}/{fiat}",
                 raw_file=path.name,
                 raw_row_ref=f"row:{index}",

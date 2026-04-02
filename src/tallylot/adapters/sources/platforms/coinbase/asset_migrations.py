@@ -5,7 +5,9 @@ from __future__ import annotations
 from decimal import Decimal
 
 from tallylot.adapters.support.drafts import (
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
 )
@@ -54,12 +56,23 @@ def normalize_asset_migration(
             journal_intent=JournalIntent.ASSET_EXCHANGE,
             tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_ASSET_MIGRATION,
         ),
+        leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
         description="Coinbase Asset Migration",
         raw_file=raw_file,
         raw_row_ref=f"{sold_id}|{bought_id}",
         provider_operation_key="asset_migration",
         legs=(
-            economic_leg(direction="in", asset=(bought_row.get("Asset") or "").strip().upper(), amount=bought_quantity),
-            economic_leg(direction="out", asset=(sold_row.get("Asset") or "").strip().upper(), amount=sold_quantity),
+            economic_leg(
+                direction="in",
+                kind=LegKind.PRIMARY,
+                asset=(bought_row.get("Asset") or "").strip().upper(),
+                amount=bought_quantity,
+            ),
+            economic_leg(
+                direction="out",
+                kind=LegKind.PRIMARY,
+                asset=(sold_row.get("Asset") or "").strip().upper(),
+                amount=sold_quantity,
+            ),
         ),
     )

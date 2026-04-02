@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     ActivityClassification,
     EconomicActivityDraft,
     EconomicLegDraft,
+    FactLegPolicy,
+    LegKind,
+    LegShapeLimit,
     classification,
     economic_leg,
-    fee_leg,
 )
 from tallylot.domain.issues import NormalizationReviewRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -29,18 +34,39 @@ def translate_row(
     validator: StructuredCsvRowValidator,
 ) -> tuple[EconomicActivityDraft, tuple[NormalizationReviewRecord, ...]]:
     amount_out, amount_out_review = validator.normalize_outbound_amount(index, "amount_out", row["amount_out"])
-    fee_amount, fee_amount_review = validator.normalize_outbound_amount(index, "fee_amount", row["fee_amount"])
-    reviews = tuple(review for review in (amount_out_review, fee_amount_review) if review is not None)
+    charge_amount, charge_amount_review = validator.normalize_outbound_amount(
+        index,
+        "charge_amount",
+        row["charge_amount"],
+    )
+    reviews = tuple(review for review in (amount_out_review, charge_amount_review) if review is not None)
     account = row["account"].strip()
     wallet = row["wallet"].strip()
     legs: list[EconomicLegDraft] = []
     if row["asset_in"] and (amount_in := parse_decimal(row["amount_in"])) is not None:
-        legs.append(economic_leg(direction="in", asset=row["asset_in"], amount=amount_in))
+        legs.append(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=row["asset_in"], amount=amount_in))
     if row["asset_out"] and amount_out is not None:
-        legs.append(economic_leg(direction="out", asset=row["asset_out"], amount=amount_out))
-    fee_legs = (
-        (fee_leg(asset=row["fee_asset"], amount=fee_amount),) if row["fee_asset"] and fee_amount is not None else ()
-    )
+        legs.append(economic_leg(direction="out", kind=LegKind.PRIMARY, asset=row["asset_out"], amount=amount_out))
+    if row["charge_asset"] and charge_amount is not None:
+        legs.append(
+            economic_leg(
+                direction="out",
+                kind=LegKind.CHARGE,
+                asset=row["charge_asset"],
+                amount=charge_amount,
+                attributed_to_direction=_side_value(row["charge_side"]),
+            )
+        )
+    if row["rebate_asset"] and (rebate_amount := parse_decimal(row["rebate_amount"])) is not None:
+        legs.append(
+            economic_leg(
+                direction="in",
+                kind=LegKind.REBATE,
+                asset=row["rebate_asset"],
+                amount=rebate_amount,
+                attributed_to_direction=_side_value(row["rebate_side"]),
+            )
+        )
     category = row["category"]
     return EconomicActivityDraft(
         activity_id=f"{profile.source}:{index}",
@@ -56,8 +82,37 @@ def translate_row(
         tx_hash=row["tx_hash"] or "",
         provider_operation_key=f"structured_csv:{category}",
         legs=tuple(legs),
-        fee_legs=fee_legs,
+        leg_policy=policy_for_row(row),
     ), reviews
+
+
+def policy_for_row(row: dict[str, str]) -> FactLegPolicy:
+    has_charge = bool(row["charge_asset"].strip() and row["charge_amount"].strip())
+    has_rebate = bool(row["rebate_asset"].strip() and row["rebate_amount"].strip())
+    has_in = bool(row["asset_in"].strip())
+    has_out = bool(row["asset_out"].strip())
+    if has_in and has_out and has_charge and not has_rebate:
+        return TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY
+    if has_in and has_out and not has_charge and not has_rebate:
+        return TWO_SIDED_PRIMARY_EXCHANGE_POLICY
+    if (has_in ^ has_out) and not has_charge and not has_rebate:
+        return SINGLE_PRIMARY_ACTIVITY_POLICY
+
+    limits = [LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_in_count=1, max_out_count=1)]
+    if has_charge:
+        limits.append(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1))
+    if has_rebate:
+        limits.append(LegShapeLimit(kind=LegKind.REBATE, max_count=1, max_in_count=1, max_out_count=0))
+    return FactLegPolicy(limits=tuple(limits))
+
+
+def _side_value(raw_value: str) -> FactDirection | None:
+    stripped = raw_value.strip()
+    if stripped == "in":
+        return "in"
+    if stripped == "out":
+        return "out"
+    return None
 
 
 def classification_for_category(category: StructuredCategory) -> ActivityClassification:

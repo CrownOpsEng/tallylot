@@ -10,6 +10,7 @@
   "normalization_window_start": "",
   "review_count": 0,
   "review_summary": [],
+  "reviews_outside_normalization_window": 0,
   "source": "GTrade 1CT",
   "wallet_count": 1
 }

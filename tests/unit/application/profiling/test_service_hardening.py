@@ -40,7 +40,8 @@ def test_profile_service_rejects_output_inside_raw_tree(tmp_path: Path) -> None:
     (raw_dir / "transactions.csv").write_text(
         (
             "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-            "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+            "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+            "tx_hash,description,account,wallet\n"
         ),
         encoding="utf-8",
     )

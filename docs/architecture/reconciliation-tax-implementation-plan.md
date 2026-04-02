@@ -188,7 +188,7 @@ is inherently specific.
   metadata stay inside the CoinTracking output adapter package rather than in
   provider-local source code
 - CoinTracking rendering must validate that a fact stays within the adapter's
-  supported single-row shape rather than truncating richer legs silently
+  published render policy rather than truncating richer legs silently
 - adapters do not own tax logic, checkpoint policy, or reconciliation rules
 - adapters should stay focused on source/output translation. Core data
   manipulation, verification, and workflow policy belong in application and
@@ -250,6 +250,46 @@ The only lost capability should be comparison against the external oracle.
 
 ## Schema Contract
 
+### Current Fact-Shape Contract
+
+- `TransactionFact` and `EconomicActivityDraft` use one canonical `legs` tuple.
+- Every leg carries:
+  - flow `direction`
+  - semantic `LegKind`
+  - optional adapter-detail `subtype`
+  - optional `attributed_to_direction` metadata
+- `attributed_to_direction` is valid only on non-`primary` legs and only when
+  exactly one `primary` leg exists on the referenced side.
+- `FactLegPolicy` is generic and per-kind:
+  - no duplicate kinds
+  - directional limits cannot exceed per-kind totals
+  - unspecified kinds are disallowed
+  - facts may allow zero `primary` legs when the declared policy permits it
+- Current shared policy constants cover:
+  - single-primary activity
+  - two-sided primary exchange
+  - two-sided primary exchange with one `charge`
+- CoinTracking currently supports only:
+  - up to one inbound `primary`
+  - up to one outbound `primary`
+  - up to one `charge`
+  - no other non-primary leg kinds
+
+### Current Normalization Window Contract
+
+- Windowed normalization applies to:
+  - `facts.csv`
+  - `fact_annotations.json`
+  - `balances.csv`
+  - `exceptions.csv`
+  - `normalization_reviews.csv`
+- Windowed normalization does not apply to:
+  - `balance_evidence.csv`
+  - `wallet_inventory.csv`
+- Review records carry `context_timestamp`, dataset-level untimed reviews stay
+  visible when a window is active, and summaries report
+  `reviews_outside_normalization_window`.
+
 ### Transitional Adapter Draft Seam
 
 Source normalization should translate through `EconomicActivityDraft` until all
@@ -260,9 +300,13 @@ Required draft responsibilities:
 - stable identity plus evidence references
 - timestamp and provenance
 - account and wallet scope
-- one or more economic legs plus optional fee legs
-- explicit leg-shape policy with a strict default of one inbound leg, one
-  outbound leg, and one fee leg unless the adapter opts into a richer shape
+- one canonical `legs` tuple only; no separate fee lane
+- explicit leg semantics per leg:
+  - `LegKind`
+  - optional `subtype`
+  - optional `attributed_to_direction` on non-`primary` legs only
+- explicit per-kind leg-shape policy through `FactLegPolicy` and
+  `LegShapeLimit`
 - provider operation key and grouped-row support
 - layered classification hints:
   - economic kind
@@ -312,7 +356,7 @@ Required fields:
   - ownership scope
 - economics
   - `tuple[EconomicLeg, ...]`
-  - explicit leg-shape policy
+  - explicit per-kind leg-shape policy
   - optional grouped correction or bundle links
   - beneficial ownership change classification
 - valuation
@@ -346,7 +390,7 @@ Required fields:
 Lock these early:
 
 - `EconomicKind`
-- `LegRole`
+- `LegKind`
 - `OwnershipChange`
 - `ValuationMethod`
 - `CorrectionReason`

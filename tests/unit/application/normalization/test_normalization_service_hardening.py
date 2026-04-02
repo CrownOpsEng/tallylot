@@ -10,7 +10,14 @@ import pytest
 
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.domain.reconciliation import BalanceEvidence
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    EconomicKind,
+    JournalIntent,
+    LegKind,
+    ProjectionType,
+    TaxTreatmentCode,
+)
 from tallylot.domain.types import AssetSymbol, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemFactRepository
@@ -50,12 +57,13 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
     raw_dir.mkdir()
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
         header
-        + "2023-08-06 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n"
-        + "2023-08-07 15:00:00,reward,ETH,not-a-decimal,,,,,tx-2,ETH reward,Fixture,Primary\n",
+        + "2023-08-06 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n"
+        + "2023-08-07 15:00:00,reward,ETH,not-a-decimal,,,,,,,,,tx-2,ETH reward,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -83,10 +91,11 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
     raw_dir.mkdir()
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,trade,BTC,0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n",
+        header + "2023-08-06 10:00:00,trade,BTC,0,CAD,10.0,CAD,0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -111,10 +120,11 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
     raw_dir.mkdir()
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,trade,BTC,1.5,CAD,-10.0,CAD,-0.1,tx-1,BTC buy,Fixture,Primary\n",
+        header + "2023-08-06 10:00:00,trade,BTC,1.5,CAD,-10.0,CAD,-0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -134,7 +144,8 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
 
     assert facts[0].legs[0].amount == Decimal("1.5")
     assert facts[0].legs[1].amount == Decimal("10")
-    assert facts[0].fee_legs[0].amount == Decimal("0.1")
+    charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert charge_legs[0].amount == Decimal("0.1")
     assert fact_annotations == [
         {
             "fact_id": str(facts[0].fact_id),
@@ -150,7 +161,7 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
     assert review_rows[0]["field_name"] == "amount_out"
     assert review_rows[0]["original_value"] == "-10.0"
     assert review_rows[0]["normalized_value"] == "10"
-    assert review_rows[1]["field_name"] == "fee_amount"
+    assert review_rows[1]["field_name"] == "charge_amount"
     assert review_rows[1]["original_value"] == "-0.1"
     assert review_rows[1]["normalized_value"] == "0.1"
     assert summary["review_count"] == 3
@@ -171,10 +182,10 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
             "scope": "row",
             "kind": "outbound_amount_sign_normalized",
             "count": 2,
-            "field_names": ["amount_out", "fee_amount"],
+            "field_names": ["amount_out", "charge_amount"],
             "messages": [
                 "amount_out was negative and was normalized to a positive outbound value.",
-                "fee_amount was negative and was normalized to a positive outbound value.",
+                "charge_amount was negative and was normalized to a positive outbound value.",
             ],
         },
     ]
@@ -185,10 +196,11 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
     raw_dir.mkdir()
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,trade,BTC,-1.5,,,,,tx-1,BTC transfer,Fixture,Primary\n",
+        header + "2023-08-06 10:00:00,trade,BTC,-1.5,,,,,,,,,tx-1,BTC transfer,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -217,8 +229,9 @@ def test_normalization_service_rejects_output_inside_raw_tree(tmp_path: Path) ->
     (raw_dir / "transactions.csv").write_text(
         (
             "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-            "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
-            "2023-08-06 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n"
+            "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+            "tx_hash,description,account,wallet\n"
+            "2023-08-06 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n"
         ),
         encoding="utf-8",
     )
@@ -256,7 +269,8 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
                         journal_intent=JournalIntent.FUNDING_INFLOW,
                         tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                     ),
-                    legs=(economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),),
+                    legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     tx_hash="tx-1",
                 ),
             ),
@@ -332,12 +346,13 @@ def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp
     raw_dir.mkdir()
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
         header
-        + "2023-08-04 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-early,early,Fixture,Primary\n"
-        + "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,tx-keep,keep,Fixture,Primary\n",
+        + "2023-08-04 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,out,,,,tx-early,early,Fixture,Primary\n"
+        + "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,out,,,,tx-keep,keep,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -365,3 +380,40 @@ def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp
             "review_markers": [],
         }
     ]
+
+
+def test_normalization_service_filters_row_reviews_outside_explicit_window(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    header = (
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
+    )
+    (raw_dir / "transactions.csv").write_text(
+        header
+        + "2023-08-04 10:00:00,trade,BTC,1.0,CAD,-10.0,CAD,-0.1,out,,,,tx-early,early,Fixture,Primary\n"
+        + "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,out,,,,tx-keep,keep,Fixture,Primary\n",
+        encoding="utf-8",
+    )
+    artifacts = FilesystemArtifactStore()
+    service = build_normalization_service(artifacts=artifacts)
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_dir=raw_dir,
+            output_dir=output_dir,
+            window_start="2023-08-05 08:34:05",
+            window_end="2025-12-31 23:59:59",
+        )
+    )
+
+    review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
+    summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
+
+    assert response.review_count == 1
+    assert [row["kind"] for row in review_rows] == ["timestamp_timezone_assumed_utc"]
+    assert summary["review_count"] == 1
+    assert summary["reviews_outside_normalization_window"] == 2

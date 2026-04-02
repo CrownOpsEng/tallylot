@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 
 
@@ -20,7 +20,8 @@ def test_ledger_live_adapter_normalizes_grouped_trade_rows() -> None:
     assert result.facts[0].legs[1].direction == "out"
     assert str(result.facts[0].legs[0].amount) == "0.01000000"
     assert str(result.facts[0].legs[1].asset) == "ETH"
-    assert str(result.facts[0].fee_legs[0].amount) == "0.01000000"
+    charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert str(charge_legs[0].amount) == "0.01000000"
     assert result.issues == ()
 
 

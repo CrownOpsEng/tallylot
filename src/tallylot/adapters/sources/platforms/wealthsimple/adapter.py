@@ -17,21 +17,24 @@ from tallylot.adapters.support import (
     read_csv_header,
 )
 from tallylot.adapters.support.drafts import (
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     EconomicActivityDraft,
+    FactLegPolicy,
+    LegKind,
+    LegShapeLimit,
     classification,
     economic_leg,
-    fee_leg,
     translation_batch_from_drafts,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import WalletInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
-from tallylot.ports.source_translation import SourceTranslationBatch
+from tallylot.ports.source_translation import EconomicLegDraft, SourceTranslationBatch
 
 BROKER_HEADER = (
     "transaction_date",
@@ -62,7 +65,6 @@ ACTIVITY_HEADER = (
     "commission",
     "net_cash_amount",
 )
-SUPPORTED_ACTIVITY_KEYS = frozenset({("trade", "BUY"), ("trade", "SELL")})
 
 
 class WealthsimpleAdapter:
@@ -161,9 +163,6 @@ def _normalize_row(
             )
         )
     provider_operation_key = f"{activity_type.lower()}:{activity_sub_type.upper()}"
-    fee_legs = (
-        (fee_leg(asset=currency, amount=commission),) if commission is not None and commission > Decimal("0") else ()
-    )
     if activity_type.lower() == "trade" and activity_sub_type.upper() == "BUY":
         return EconomicActivityDraft(
             activity_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}",
@@ -178,15 +177,16 @@ def _normalize_row(
                 journal_intent=JournalIntent.ASSET_EXCHANGE,
                 tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
+            leg_policy=_trade_policy(commission),
             description="Wealthsimple Crypto buy",
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             provider_operation_key=provider_operation_key,
             legs=(
-                economic_leg(direction="in", asset=symbol, amount=quantity),
-                economic_leg(direction="out", asset=currency, amount=abs(net_cash_amount)),
+                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=symbol, amount=quantity),
+                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=currency, amount=abs(net_cash_amount)),
+                *_charge_legs(commission, currency, attributed_to_direction="out"),
             ),
-            fee_legs=fee_legs,
         )
     if activity_type.lower() == "trade" and activity_sub_type.upper() == "SELL":
         return EconomicActivityDraft(
@@ -202,15 +202,16 @@ def _normalize_row(
                 journal_intent=JournalIntent.ASSET_EXCHANGE,
                 tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
+            leg_policy=_trade_policy(commission),
             description="Wealthsimple Crypto sell",
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             provider_operation_key=provider_operation_key,
             legs=(
-                economic_leg(direction="in", asset=currency, amount=abs(net_cash_amount)),
-                economic_leg(direction="out", asset=symbol, amount=quantity),
+                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=currency, amount=abs(net_cash_amount)),
+                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=symbol, amount=quantity),
+                *_charge_legs(commission, currency, attributed_to_direction="in"),
             ),
-            fee_legs=fee_legs,
         )
     return issue_record(
         IssueSpec(
@@ -223,6 +224,32 @@ def _normalize_row(
             raw_row_ref=row_context.raw_row_ref,
         )
     )
+
+
+def _charge_legs(
+    commission: Decimal | None,
+    currency: str,
+    *,
+    attributed_to_direction: FactDirection,
+) -> tuple[EconomicLegDraft, ...]:
+    if commission is None or commission <= Decimal("0"):
+        return ()
+    return (
+        economic_leg(
+            direction="out",
+            kind=LegKind.CHARGE,
+            asset=currency,
+            amount=commission,
+            subtype="commission",
+            attributed_to_direction=attributed_to_direction,
+        ),
+    )
+
+
+def _trade_policy(commission: Decimal | None) -> FactLegPolicy:
+    if commission is not None and commission > Decimal("0"):
+        return TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY
+    return FactLegPolicy(limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_in_count=1, max_out_count=1),))
 
 
 def _skip_unrecognized_csv(path: Path) -> bool:

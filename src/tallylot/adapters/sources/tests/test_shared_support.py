@@ -15,7 +15,15 @@ from tallylot.adapters.support.drafts import (
 )
 from tallylot.adapters.support.wallets import normalized_identifier, wallet_identifier_kind
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, FactLegPolicy, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    EconomicKind,
+    JournalIntent,
+    LegKind,
+    ProjectionType,
+    TaxTreatmentCode,
+)
 from tests.support.services import build_source_profile
 
 
@@ -37,7 +45,8 @@ def test_draft_compiler_preserves_internal_fields() -> None:
             description="Fixture deposit",
             raw_file="fixture.csv",
             raw_row_ref="row:2",
-            legs=(economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),),
+            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
         )
     )
 
@@ -70,9 +79,10 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
                 tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
             legs=(
-                economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),
-                economic_leg(direction="out", asset="CAD", amount=Decimal("10")),
+                economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),
+                economic_leg(direction="out", kind=LegKind.PRIMARY, asset="CAD", amount=Decimal("10")),
             ),
+            leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
         )
     )
 
@@ -80,10 +90,10 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
     assert fact.projection_type == ProjectionType.TRADE
     assert fact.journal_intent == JournalIntent.ASSET_EXCHANGE
     assert fact.tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
-    assert fact.leg_policy == FactLegPolicy()
+    assert fact.leg_policy == TWO_SIDED_PRIMARY_EXCHANGE_POLICY
     assert len(fact.legs) == 2
-    assert fact.legs[0].asset == "BTC"
-    assert fact.legs[1].asset == "CAD"
+    assert str(fact.legs[0].asset) == "BTC"
+    assert str(fact.legs[1].asset) == "CAD"
     assert fact.legs[0].direction == "in"
     assert fact.legs[1].direction == "out"
 
@@ -106,7 +116,8 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
                 ),
                 raw_file="fixture.csv",
                 raw_row_ref="row:2",
-                legs=(economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),),
+                legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),),
+                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             ),
         ),
         issues=(),
@@ -119,7 +130,7 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
     assert result.facts[0].projection_type == ProjectionType.DEPOSIT
     assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
     assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
-    assert result.facts[0].leg_policy == FactLegPolicy()
+    assert result.facts[0].leg_policy == SINGLE_PRIMARY_ACTIVITY_POLICY
     assert not result.issues
 
 

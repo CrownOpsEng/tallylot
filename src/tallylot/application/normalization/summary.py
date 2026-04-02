@@ -34,6 +34,7 @@ def build_normalization_summary(
             "wallet_count": len(outputs.wallet_inventory),
             "facts_outside_normalization_window": window_stats.facts_outside_window,
             "issues_outside_normalization_window": window_stats.issues_outside_window,
+            "reviews_outside_normalization_window": window_stats.reviews_outside_window,
             "normalization_window_start": request.window_start or "",
             "normalization_window_end": request.window_end or "",
         },

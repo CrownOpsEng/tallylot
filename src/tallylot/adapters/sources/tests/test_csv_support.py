@@ -4,7 +4,12 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support.drafts import EconomicActivityDraft, classification, economic_leg
+from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+)
 from tallylot.adapters.support.rows import (
     CsvRowContext,
     collect_csv_row_results,
@@ -12,7 +17,7 @@ from tallylot.adapters.support.rows import (
     read_csv_rows,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
 
 
 def test_matching_file_paths_returns_sorted_matches(tmp_path: Path) -> None:
@@ -63,7 +68,8 @@ def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) ->
             ),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
-            legs=(economic_leg(direction="in", asset="BTC", amount=Decimal("1")),),
+            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1")),),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
         )
 
     drafts, issues = collect_csv_row_results(tmp_path, parse_row)

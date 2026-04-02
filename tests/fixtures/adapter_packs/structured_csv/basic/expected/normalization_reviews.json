@@ -1,6 +1,7 @@
 [
   {
     "adapter_id": "structured_csv",
+    "context_timestamp": "",
     "field_name": "",
     "kind": "timestamp_timezone_assumed_utc",
     "message": "Structured CSV timestamps are timezone-naive; normalization assigns UTC and those timestamps should be validated against the source system.",

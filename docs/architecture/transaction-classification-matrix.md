@@ -62,8 +62,10 @@ aligned on these values exactly.
 ## Runtime Rules
 
 - Adapters populate layered classifications first.
-- Runtime consumers operate on explicit `legs` and `fee_legs`; there is no
-  first-leg compatibility view on `TransactionFact`.
+- Runtime consumers operate on canonical `legs` only; there is no split
+  `fee_legs` lane and no first-leg compatibility view on `TransactionFact`.
+- Leg-level semantics live on the leg through `LegKind`; fact classification
+  remains a separate fact-level layer.
 - Output adapters map layered classifications into concrete external row
   families when they need them.
 - `ProjectionType` is output metadata, not the long-term core driver of

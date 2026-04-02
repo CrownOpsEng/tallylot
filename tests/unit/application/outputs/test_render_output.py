@@ -9,10 +9,14 @@ import pytest
 
 from tallylot.application.outputs import RenderOutputRequest, RenderOutputUseCase
 from tallylot.domain.transactions import (
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     EconomicKind,
     EconomicLeg,
     FactClassification,
+    FactLegPolicy,
     JournalIntent,
+    LegKind,
+    LegShapeLimit,
     ProjectionType,
     TaxTreatmentCode,
     TransactionFact,
@@ -20,7 +24,7 @@ from tallylot.domain.transactions import (
 from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from tallylot.infrastructure.storage import FilesystemFactRepository
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.output_adapters import OutputAdapter, RenderedArtifact
+from tallylot.ports.output_adapters import OutputAdapter, OutputRenderPolicy, RenderedArtifact
 
 
 @dataclass(frozen=True)
@@ -45,6 +49,12 @@ class FakeOutputAdapter:
             version="1.0.0",
             capabilities=capabilities,
             supported=supported,
+        )
+        self.render_policy = OutputRenderPolicy(
+            shape_policy=FactLegPolicy(
+                limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_in_count=0, max_out_count=0),)
+            ),
+            requires_projection_type=False,
         )
 
     def render(self, facts: tuple[TransactionFact, ...], output_path: Path) -> RenderedArtifact:
@@ -112,10 +122,17 @@ def _write_facts(tmp_path: Path) -> Path:
             projection_type=ProjectionType.TRADE,
         ),
         legs=(
-            EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("1")),
-            EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("10")),
+            EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
+            EconomicLeg(direction="out", kind=LegKind.PRIMARY, asset=AssetSymbol("CAD"), amount=Decimal("10")),
+            EconomicLeg(
+                direction="out",
+                kind=LegKind.CHARGE,
+                asset=AssetSymbol("CAD"),
+                amount=Decimal("0.1"),
+                attributed_to_direction="out",
+            ),
         ),
-        fee_legs=(EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("0.1")),),
+        leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
         tx_hash="tx-1",
     )
     FilesystemFactRepository().write_facts(path, (fact,))

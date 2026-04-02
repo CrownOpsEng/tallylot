@@ -7,7 +7,14 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from tallylot.adapters.support import CsvRowContext, IssueSpec, issue_record
-from tallylot.adapters.support.drafts import EconomicActivityDraft, classification, economic_leg
+from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    EconomicActivityDraft,
+    LegKind,
+    classification,
+    economic_leg,
+)
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal
@@ -54,12 +61,13 @@ def _normalize_cash_row(
                 journal_intent=JournalIntent.FUNDING_INFLOW,
                 tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type or "cash_credit",
-            legs=(economic_leg(direction="in", asset="CAD", amount=credit),),
+            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="CAD", amount=credit),),
         )
     if debit is None or debit <= Decimal("0"):
         return None
@@ -77,12 +85,13 @@ def _normalize_cash_row(
                 journal_intent=JournalIntent.EXPENSE_RECOGNITION,
                 tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_EXPENSE,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="out", asset="CAD", amount=debit),),
+            legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset="CAD", amount=debit),),
         )
     return EconomicActivityDraft(
         activity_id=transaction_id,
@@ -97,12 +106,13 @@ def _normalize_cash_row(
             journal_intent=JournalIntent.FUNDING_OUTFLOW,
             tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
         ),
+        leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
         description=description,
         raw_file=row_context.raw_file,
         raw_row_ref=row_context.raw_row_ref,
         tx_hash=transaction_id,
         provider_operation_key=row_type or "cash_debit",
-        legs=(economic_leg(direction="out", asset="CAD", amount=debit),),
+        legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset="CAD", amount=debit),),
     )
 
 
@@ -133,12 +143,13 @@ def _normalize_crypto_row(
                 journal_intent=JournalIntent.INCOME_RECOGNITION,
                 tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="in", asset=credited_asset, amount=credited_amount),),
+            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=credited_asset, amount=credited_amount),),
         )
     if row_type == "Buy" and debited_amount is not None and credited_amount is not None:
         return EconomicActivityDraft(
@@ -154,14 +165,15 @@ def _normalize_crypto_row(
                 journal_intent=JournalIntent.ASSET_EXCHANGE,
                 tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
+            leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
             description=(row.get("Description") or "").strip(),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
             legs=(
-                economic_leg(direction="in", asset=credited_asset, amount=credited_amount),
-                economic_leg(direction="out", asset=debited_asset, amount=debited_amount),
+                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=credited_asset, amount=credited_amount),
+                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=debited_asset, amount=debited_amount),
             ),
         )
     if row_type == "Send" and debited_amount is not None and debited_asset:
@@ -178,12 +190,13 @@ def _normalize_crypto_row(
                 journal_intent=JournalIntent.FUNDING_OUTFLOW,
                 tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=(row.get("Description") or "").strip(),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="out", asset=debited_asset, amount=debited_amount),),
+            legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset=debited_asset, amount=debited_amount),),
         )
     return issue_record(
         IssueSpec(

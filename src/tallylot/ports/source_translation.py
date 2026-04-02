@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from typing import Literal
@@ -13,8 +13,10 @@ from tallylot.domain.transactions import (
     EconomicKind,
     EconomicLeg,
     FactClassification,
+    FactDirection,
     FactLegPolicy,
     JournalIntent,
+    LegKind,
     ProjectionType,
     TaxTreatmentCode,
     TransactionFact,
@@ -37,7 +39,7 @@ class ActivityClassification:
 class ActivityDraftSeed:
     activity_id: str
     timestamp: datetime
-    leg_policy: FactLegPolicy = field(default_factory=FactLegPolicy)
+    leg_policy: FactLegPolicy
     description: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
@@ -53,16 +55,25 @@ class ActivityDraftSeed:
 @dataclass(frozen=True)
 class EconomicLegDraft:
     direction: DraftDirection
+    kind: LegKind
     asset: str
     amount: Decimal
+    subtype: str | None = None
+    attributed_to_direction: FactDirection | None = None
     account: str = ""
     wallet: str = ""
 
     def __post_init__(self) -> None:
-        if self.amount <= Decimal("0"):
-            raise ValueError("draft leg amount must be greater than zero")
-        if not self.asset:
-            raise ValueError("draft leg asset must be present")
+        EconomicLeg(
+            direction=self.direction,
+            kind=self.kind,
+            asset=AssetSymbol(self.asset),
+            amount=self.amount,
+            subtype=self.subtype,
+            attributed_to_direction=self.attributed_to_direction,
+            account=self.account,
+            wallet=self.wallet,
+        )
 
 
 @dataclass(frozen=True)
@@ -75,8 +86,7 @@ class EconomicActivityDraft:
     wallet: str
     classification: ActivityClassification
     legs: tuple[EconomicLegDraft, ...]
-    leg_policy: FactLegPolicy = field(default_factory=FactLegPolicy)
-    fee_legs: tuple[EconomicLegDraft, ...] = ()
+    leg_policy: FactLegPolicy
     description: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
@@ -90,15 +100,43 @@ class EconomicActivityDraft:
 
     def __post_init__(self) -> None:
         if not self.legs:
-            raise ValueError("draft must include at least one economic leg")
-        inbound_legs = sum(1 for leg in self.legs if leg.direction == "in")
-        outbound_legs = sum(1 for leg in self.legs if leg.direction == "out")
-        if inbound_legs > self.leg_policy.max_in_legs:
-            raise ValueError("draft inbound legs exceed declared leg policy")
-        if outbound_legs > self.leg_policy.max_out_legs:
-            raise ValueError("draft outbound legs exceed declared leg policy")
-        if len(self.fee_legs) > self.leg_policy.max_fee_legs:
-            raise ValueError("draft fee legs exceed declared leg policy")
+            raise ValueError("draft must include at least one leg")
+        TransactionFact(
+            fact_id=TransactionId(self.activity_id),
+            source=SourceId(self.source),
+            adapter_id=AdapterId(self.adapter_id),
+            timestamp=self.timestamp,
+            account=self.account,
+            wallet=self.wallet,
+            classification=FactClassification(
+                economic_kind=self.classification.economic_kind,
+                journal_intent=self.classification.journal_intent,
+                tax_treatment_code=self.classification.tax_treatment_code,
+                projection_type=self.classification.projection_type,
+            ),
+            legs=tuple(
+                EconomicLeg(
+                    direction=leg.direction,
+                    kind=leg.kind,
+                    asset=AssetSymbol(leg.asset),
+                    amount=leg.amount,
+                    subtype=leg.subtype,
+                    attributed_to_direction=leg.attributed_to_direction,
+                    account=leg.account,
+                    wallet=leg.wallet,
+                )
+                for leg in self.legs
+            ),
+            leg_policy=self.leg_policy,
+            description=self.description,
+            provider_operation_key=self.provider_operation_key,
+            operation_group_id=self.operation_group_id,
+            tx_hash=self.tx_hash or None,
+            raw_file=self.raw_file,
+            raw_row_ref=self.raw_row_ref,
+            confidence=self.confidence,
+            status=self.status,
+        )
 
 
 @dataclass(frozen=True)
@@ -129,25 +167,27 @@ def classification(
     )
 
 
-def economic_leg(
+def economic_leg(  # pylint: disable=too-many-arguments
     *,
     direction: DraftDirection,
+    kind: LegKind,
     asset: str,
     amount: Decimal,
+    subtype: str | None = None,
+    attributed_to_direction: FactDirection | None = None,
     account: str = "",
     wallet: str = "",
 ) -> EconomicLegDraft:
-    return EconomicLegDraft(direction=direction, asset=asset, amount=amount, account=account, wallet=wallet)
-
-
-def fee_leg(
-    *,
-    asset: str,
-    amount: Decimal,
-    account: str = "",
-    wallet: str = "",
-) -> EconomicLegDraft:
-    return EconomicLegDraft(direction="out", asset=asset, amount=amount, account=account, wallet=wallet)
+    return EconomicLegDraft(
+        direction=direction,
+        kind=kind,
+        asset=asset,
+        amount=amount,
+        subtype=subtype,
+        attributed_to_direction=attributed_to_direction,
+        account=account,
+        wallet=wallet,
+    )
 
 
 def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact:
@@ -167,24 +207,17 @@ def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact
         legs=tuple(
             EconomicLeg(
                 direction=leg.direction,
+                kind=leg.kind,
                 asset=AssetSymbol(leg.asset),
                 amount=leg.amount,
+                subtype=leg.subtype,
+                attributed_to_direction=leg.attributed_to_direction,
                 account=leg.account,
                 wallet=leg.wallet,
             )
             for leg in draft.legs
         ),
         leg_policy=draft.leg_policy,
-        fee_legs=tuple(
-            EconomicLeg(
-                direction=leg.direction,
-                asset=AssetSymbol(leg.asset),
-                amount=leg.amount,
-                account=leg.account,
-                wallet=leg.wallet,
-            )
-            for leg in draft.fee_legs
-        ),
         description=draft.description,
         provider_operation_key=draft.provider_operation_key,
         operation_group_id=draft.operation_group_id,

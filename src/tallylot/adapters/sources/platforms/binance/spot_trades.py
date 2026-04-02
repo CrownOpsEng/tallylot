@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.support.drafts import (
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     EconomicActivityDraft,
+    FactLegPolicy,
+    LegKind,
     classification,
     economic_leg,
-    fee_leg,
 )
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_translation import EconomicLegDraft
 
 from .csv_rows import read_rows
 from .field_parsing import amount_with_asset, split_pair
@@ -32,7 +37,6 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
         timestamp = parse_export_timestamp((row.get("Time") or "").strip(), path.name)
         if executed_amount is None or quote_amount is None:
             continue
-        fee_legs = (fee_leg(asset=fee_asset, amount=fee_amount),) if fee_amount is not None and fee_asset else ()
         if side == "SELL":
             drafts.append(
                 EconomicActivityDraft(
@@ -48,15 +52,21 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                         journal_intent=JournalIntent.ASSET_EXCHANGE,
                         tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                     ),
+                    leg_policy=_trade_policy(fee_amount, fee_asset),
                     description=f"Binance spot sell {pair}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
                     provider_operation_key=f"spot:{side}",
                     legs=(
-                        economic_leg(direction="in", asset=quote_asset, amount=quote_amount),
-                        economic_leg(direction="out", asset=base_asset or executed_asset, amount=executed_amount),
+                        economic_leg(direction="in", kind=LegKind.PRIMARY, asset=quote_asset, amount=quote_amount),
+                        economic_leg(
+                            direction="out",
+                            kind=LegKind.PRIMARY,
+                            asset=base_asset or executed_asset,
+                            amount=executed_amount,
+                        ),
+                        *_charge_legs(fee_amount, fee_asset, attributed_to_direction="in"),
                     ),
-                    fee_legs=fee_legs,
                 )
             )
         elif side == "BUY":
@@ -74,15 +84,47 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                         journal_intent=JournalIntent.ASSET_EXCHANGE,
                         tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                     ),
+                    leg_policy=_trade_policy(fee_amount, fee_asset),
                     description=f"Binance spot buy {pair}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
                     provider_operation_key=f"spot:{side}",
                     legs=(
-                        economic_leg(direction="in", asset=base_asset or executed_asset, amount=executed_amount),
-                        economic_leg(direction="out", asset=quote_asset, amount=quote_amount),
+                        economic_leg(
+                            direction="in",
+                            kind=LegKind.PRIMARY,
+                            asset=base_asset or executed_asset,
+                            amount=executed_amount,
+                        ),
+                        economic_leg(direction="out", kind=LegKind.PRIMARY, asset=quote_asset, amount=quote_amount),
+                        *_charge_legs(fee_amount, fee_asset, attributed_to_direction="out"),
                     ),
-                    fee_legs=fee_legs,
                 )
             )
     return drafts
+
+
+def _trade_policy(fee_amount: Decimal | None, fee_asset: str | None) -> FactLegPolicy:
+    if fee_amount is not None and fee_asset:
+        return TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY
+    return TWO_SIDED_PRIMARY_EXCHANGE_POLICY
+
+
+def _charge_legs(
+    fee_amount: Decimal | None,
+    fee_asset: str | None,
+    *,
+    attributed_to_direction: FactDirection,
+) -> tuple[EconomicLegDraft, ...]:
+    if fee_amount is None or not fee_asset:
+        return ()
+    return (
+        economic_leg(
+            direction="out",
+            kind=LegKind.CHARGE,
+            asset=fee_asset,
+            amount=fee_amount,
+            subtype="trading_fee",
+            attributed_to_direction=attributed_to_direction,
+        ),
+    )

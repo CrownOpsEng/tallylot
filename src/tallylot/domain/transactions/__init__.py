@@ -10,15 +10,31 @@ from .classification import (
     parse_projection_type,
     parse_tax_treatment_code,
 )
-from .facts import EconomicLeg, FactClassification, FactDirection, FactLegPolicy, TransactionFact
+from .facts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
+    EconomicLeg,
+    FactClassification,
+    FactDirection,
+    FactLegPolicy,
+    LegKind,
+    LegShapeLimit,
+    TransactionFact,
+)
 
 __all__ = [
+    "SINGLE_PRIMARY_ACTIVITY_POLICY",
+    "TWO_SIDED_PRIMARY_EXCHANGE_POLICY",
+    "TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY",
     "EconomicKind",
     "EconomicLeg",
     "FactClassification",
     "FactDirection",
     "FactLegPolicy",
     "JournalIntent",
+    "LegKind",
+    "LegShapeLimit",
     "ProjectionType",
     "TaxTreatmentCode",
     "TransactionFact",

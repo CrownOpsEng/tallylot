@@ -17,9 +17,10 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     (raw_dir / "transactions.csv").write_text(
         (
             "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-            "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
-            "2023-08-04 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-early,early,Fixture,Primary\n"
-            "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,tx-keep,keep,Fixture,Primary\n"
+            "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+            "tx_hash,description,account,wallet\n"
+            "2023-08-04 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,out,,,,tx-early,early,Fixture,Primary\n"
+            "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,out,,,,tx-keep,keep,Fixture,Primary\n"
         ),
         encoding="utf-8",
     )

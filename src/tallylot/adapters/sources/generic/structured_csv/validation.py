@@ -27,6 +27,7 @@ class StructuredCsvRowValidator:
             self._validate_event_amount_presence,
             self._validate_timestamp_field,
             self._validate_numeric_fields,
+            self._validate_side_fields,
         )
         for validator in validators:
             issue = validator(row, index)
@@ -82,10 +83,11 @@ class StructuredCsvRowValidator:
         row: dict[str, str | None],
         index: int,
     ) -> IssueRecord | None:
-        for asset_field, amount_field in (
-            ("asset_in", "amount_in"),
-            ("asset_out", "amount_out"),
-            ("fee_asset", "fee_amount"),
+        for asset_field, amount_field, side_field in (
+            ("asset_in", "amount_in", None),
+            ("asset_out", "amount_out", None),
+            ("charge_asset", "charge_amount", "charge_side"),
+            ("rebate_asset", "rebate_amount", "rebate_side"),
         ):
             asset_value = (row.get(asset_field) or "").strip()
             amount_value = (row.get(amount_field) or "").strip()
@@ -94,6 +96,12 @@ class StructuredCsvRowValidator:
                     index,
                     "incomplete_amount_pair",
                     f"{asset_field} and {amount_field} must both be present or both be blank.",
+                )
+            if side_field is not None and (row.get(side_field) or "").strip() and not asset_value:
+                return self.feedback.issue(
+                    index,
+                    "incomplete_amount_pair",
+                    f"{side_field} requires {asset_field} and {amount_field}.",
                 )
         return None
 
@@ -130,7 +138,7 @@ class StructuredCsvRowValidator:
         row: dict[str, str | None],
         index: int,
     ) -> IssueRecord | None:
-        for field_name in ("amount_in", "amount_out", "fee_amount"):
+        for field_name in ("amount_in", "amount_out", "charge_amount", "rebate_amount"):
             try:
                 parsed_value = parse_decimal((row.get(field_name) or "").strip())
             except (InvalidOperation, ValueError):
@@ -145,10 +153,29 @@ class StructuredCsvRowValidator:
                     "zero_amount",
                     f"{field_name} must be greater than zero when present.",
                 )
-            if field_name == "amount_in" and parsed_value is not None and parsed_value < Decimal("0"):
+            if (
+                field_name in {"amount_in", "rebate_amount"}
+                and parsed_value is not None
+                and parsed_value < Decimal("0")
+            ):
                 return self.feedback.issue(
                     index,
                     "conflicting_amount_sign",
-                    "amount_in cannot be negative; use amount_out for outbound value flows.",
+                    f"{field_name} cannot be negative.",
+                )
+        return None
+
+    def _validate_side_fields(
+        self,
+        row: dict[str, str | None],
+        index: int,
+    ) -> IssueRecord | None:
+        for field_name in ("charge_side", "rebate_side"):
+            side_value = (row.get(field_name) or "").strip()
+            if side_value and side_value not in {"in", "out"}:
+                return self.feedback.issue(
+                    index,
+                    "invalid_side_value",
+                    f"{field_name} must be 'in', 'out', or blank.",
                 )
         return None

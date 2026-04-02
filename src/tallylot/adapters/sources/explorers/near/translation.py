@@ -8,15 +8,19 @@ from pathlib import Path
 
 from tallylot.adapters.support import IssueSpec, issue_record, matching_file_paths, read_csv_rows
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
     EconomicActivityDraft,
+    FactLegPolicy,
+    LegKind,
+    LegShapeLimit,
     classification,
     economic_leg,
-    fee_leg,
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_translation import EconomicLegDraft
 
 
 def translate_transactions(
@@ -82,18 +86,18 @@ def translate_transactions(
                             journal_intent=JournalIntent.FUNDING_INFLOW,
                             tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                         ),
+                        leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                         description=f"Transfer into {profile.source} - {tx_hash}",
                         raw_file=path.name,
                         raw_row_ref=raw_row_ref,
                         tx_hash=tx_hash,
                         provider_operation_key=method,
-                        legs=(economic_leg(direction="in", asset="NEAR", amount=net_amount),),
+                        legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="NEAR", amount=net_amount),),
                     )
                 )
                 continue
             if method == "deposit_and_stake":
                 description = f"Stake NEAR - {tx_hash}"
-                fee_legs = (fee_leg(asset="NEAR", amount=fee),) if fee > Decimal("0") else ()
                 drafts.extend(
                     (
                         EconomicActivityDraft(
@@ -109,13 +113,16 @@ def translate_transactions(
                                 journal_intent=JournalIntent.FUNDING_OUTFLOW,
                                 tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
                             ),
+                            leg_policy=_staking_out_policy(fee),
                             description=description,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
                             tx_hash=tx_hash,
                             provider_operation_key=method,
-                            legs=(economic_leg(direction="out", asset="NEAR", amount=amount),),
-                            fee_legs=fee_legs,
+                            legs=(
+                                economic_leg(direction="out", kind=LegKind.PRIMARY, asset="NEAR", amount=amount),
+                                *_charge_legs(fee),
+                            ),
                         ),
                         EconomicActivityDraft(
                             activity_id=f"near:{path.name}:{raw_row_ref}:staking",
@@ -130,12 +137,13 @@ def translate_transactions(
                                 journal_intent=JournalIntent.FUNDING_INFLOW,
                                 tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                             ),
+                            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                             description=description,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
                             tx_hash=tx_hash,
                             provider_operation_key=method,
-                            legs=(economic_leg(direction="in", asset="NEAR", amount=amount),),
+                            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="NEAR", amount=amount),),
                         ),
                     )
                 )
@@ -150,6 +158,32 @@ def translate_transactions(
                 )
             )
     return tuple(drafts), tuple(issues)
+
+
+def _staking_out_policy(fee: Decimal) -> FactLegPolicy:
+    if fee <= Decimal("0"):
+        return SINGLE_PRIMARY_ACTIVITY_POLICY
+    return FactLegPolicy(
+        limits=(
+            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_in_count=1, max_out_count=1),
+            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+        )
+    )
+
+
+def _charge_legs(fee: Decimal) -> tuple[EconomicLegDraft, ...]:
+    if fee <= Decimal("0"):
+        return ()
+    return (
+        economic_leg(
+            direction="out",
+            kind=LegKind.CHARGE,
+            asset="NEAR",
+            amount=fee,
+            subtype="network_fee",
+            attributed_to_direction="out",
+        ),
+    )
 
 
 def _row_value(row: dict[str, str], key: str, fallback: str = "", *, default: str = "") -> str:

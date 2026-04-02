@@ -8,7 +8,7 @@ from tallylot.adapters.sources.platforms.binance.funding_history import (
 )
 from tallylot.adapters.sources.platforms.binance.spot_trades import normalize_spot_rows
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, ProjectionType
+from tallylot.domain.transactions import EconomicKind, LegKind, ProjectionType
 from tests.support.services import build_source_profile
 
 
@@ -70,7 +70,8 @@ def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Pat
     assert withdrawals[0].economic_kind == EconomicKind.ASSET_WITHDRAWAL
     assert withdrawals[0].projection_type == ProjectionType.WITHDRAWAL
     assert str(withdrawals[0].legs[0].asset) == "ETH"
-    assert str(withdrawals[0].fee_legs[0].asset) == "ETH"
+    charge_legs = tuple(leg for leg in withdrawals[0].legs if leg.kind is LegKind.CHARGE)
+    assert str(charge_legs[0].asset) == "ETH"
     assert withdrawals[0].tx_hash == "withdraw-tx"
 
 

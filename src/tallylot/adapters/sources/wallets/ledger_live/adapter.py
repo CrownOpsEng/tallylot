@@ -18,10 +18,14 @@ from tallylot.adapters.support import (
     wallet_record,
 )
 from tallylot.adapters.support.drafts import (
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     EconomicActivityDraft,
+    EconomicLegDraft,
+    FactLegPolicy,
+    LegKind,
     classification,
     economic_leg,
-    fee_leg,
     translation_batch_from_drafts,
 )
 from tallylot.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
@@ -35,7 +39,6 @@ from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 HEADER_FIELDS = {"Account Name", "Account xpub", "Operation Date"}
-SUPPORTED_OPERATION_GROUPS = frozenset({"IN+OUT", "IN+OUT+FEES"})
 
 
 class LedgerLiveAdapter:
@@ -153,9 +156,6 @@ class LedgerLiveAdapter:
             raw_row_ref = ";".join(f"{raw_file}:{ref.split(':', maxsplit=1)[1]}" for ref, _ in grouped_rows)
             fee_amount = Decimal((fee_row or {}).get("Operation Amount") or "0")
             fee_asset = (fee_row or outbound).get("Currency Ticker") or ""
-            fee_legs = (
-                (fee_leg(asset=fee_asset.strip().upper(), amount=fee_amount),) if fee_amount > 0 and fee_asset else ()
-            )
             drafts.append(
                 EconomicActivityDraft(
                     activity_id=f"ledger_live:{raw_file}:{operation_hash}",
@@ -170,6 +170,7 @@ class LedgerLiveAdapter:
                         journal_intent=JournalIntent.ASSET_EXCHANGE,
                         tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                     ),
+                    leg_policy=_swap_policy(fee_amount, fee_asset),
                     description=account_label,
                     raw_file=raw_file,
                     raw_row_ref=raw_row_ref,
@@ -179,16 +180,18 @@ class LedgerLiveAdapter:
                     legs=(
                         economic_leg(
                             direction="in",
+                            kind=LegKind.PRIMARY,
                             asset=(inbound.get("Currency Ticker") or "").strip().upper(),
                             amount=Decimal((inbound.get("Operation Amount") or "0").strip()),
                         ),
                         economic_leg(
                             direction="out",
+                            kind=LegKind.PRIMARY,
                             asset=(outbound.get("Currency Ticker") or "").strip().upper(),
                             amount=Decimal((outbound.get("Operation Amount") or "0").strip()),
                         ),
+                        *_charge_legs(fee_amount, fee_asset),
                     ),
-                    fee_legs=fee_legs,
                 )
             )
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
@@ -196,6 +199,27 @@ class LedgerLiveAdapter:
             drafts,
             wallet_inventory=wallet_inventory,
         )
+
+
+def _swap_policy(fee_amount: Decimal, fee_asset: str) -> FactLegPolicy:
+    if fee_amount > 0 and fee_asset:
+        return TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY
+    return TWO_SIDED_PRIMARY_EXCHANGE_POLICY
+
+
+def _charge_legs(fee_amount: Decimal, fee_asset: str) -> tuple[EconomicLegDraft, ...]:
+    if fee_amount <= Decimal("0") or not fee_asset:
+        return ()
+    return (
+        economic_leg(
+            direction="out",
+            kind=LegKind.CHARGE,
+            asset=fee_asset.strip().upper(),
+            amount=fee_amount,
+            subtype="network_fee",
+            attributed_to_direction="out",
+        ),
+    )
 
 
 def _ledger_identifier_kind(identifier_value: str, account_type: str) -> str:

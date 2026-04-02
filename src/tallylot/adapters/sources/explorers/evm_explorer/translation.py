@@ -7,7 +7,13 @@ from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.support import IssueSpec, issue_record, matching_file_paths, read_csv_rows
-from tallylot.adapters.support.drafts import EconomicActivityDraft, classification, economic_leg
+from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    EconomicActivityDraft,
+    LegKind,
+    classification,
+    economic_leg,
+)
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.ports.source_profiles import SourceProfile
@@ -67,12 +73,13 @@ def translate_transactions(
                         journal_intent=JournalIntent.FUNDING_INFLOW,
                         tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                     ),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     description=f"Transfer - {tx_hash}",
                     raw_file=path.name,
                     raw_row_ref=f"{path.name}:row:{index}",
                     tx_hash=tx_hash,
                     provider_operation_key="explorer_transfer_in",
-                    legs=(economic_leg(direction="in", asset="BNB", amount=amount_in),),
+                    legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BNB", amount=amount_in),),
                 )
             )
     return tuple(drafts), tuple(issues)

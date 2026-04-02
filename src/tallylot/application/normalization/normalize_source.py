@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from tallylot.application.normalization.contracts import NormalizeRequest, NormalizeResponse
-from tallylot.application.normalization.issue_context import enrich_issue_context_timestamps
+from tallylot.application.normalization.issue_context import (
+    enrich_issue_context_timestamps,
+    enrich_review_context_timestamps,
+)
 from tallylot.application.profiling.build_profile import BuildProfileUseCase
 from tallylot.application.workspace.filesystem import ensure_directory, ensure_output_not_within_input_tree
 from tallylot.ports.artifacts import ArtifactStorePort
@@ -20,7 +23,7 @@ from .artifacts import write_normalization_artifacts
 from .balances import derive_balance_snapshots
 from .models import NormalizationOutputs, NormalizationWindowStats
 from .summary import build_normalization_summary
-from .window import filter_drafts_by_window, filter_issues_by_window
+from .window import filter_drafts_by_window, filter_issues_by_window, filter_reviews_by_window
 
 
 @dataclass(frozen=True)
@@ -77,6 +80,16 @@ class NormalizeSourceUseCase:
             window_start=request.window_start,
             window_end=request.window_end,
         )
+        enriched_reviews = enrich_review_context_timestamps(
+            result.reviews,
+            raw_dir=request.raw_dir,
+            inventory=profile.file_inventory,
+        )
+        review_records, reviews_outside_window = filter_reviews_by_window(
+            enriched_reviews,
+            window_start=request.window_start,
+            window_end=request.window_end,
+        )
         derived_balances = derive_balance_snapshots(facts)
         outputs = NormalizationOutputs(
             facts=facts,
@@ -84,7 +97,7 @@ class NormalizeSourceUseCase:
             derived_balances=derived_balances,
             balance_evidence=result.balance_evidence,
             issues=issue_records,
-            reviews=result.reviews,
+            reviews=review_records,
             wallet_inventory=result.wallet_inventory,
         )
         write_normalization_artifacts(
@@ -103,6 +116,7 @@ class NormalizeSourceUseCase:
                 window_stats=NormalizationWindowStats(
                     facts_outside_window=facts_outside_window,
                     issues_outside_window=issues_outside_window,
+                    reviews_outside_window=reviews_outside_window,
                 ),
             ),
         )
@@ -112,7 +126,7 @@ class NormalizeSourceUseCase:
             fact_count=len(facts),
             balance_count=len(derived_balances),
             issue_count=len(issue_records),
-            review_count=len(result.reviews),
+            review_count=len(review_records),
         )
 
 

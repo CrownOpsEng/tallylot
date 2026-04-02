@@ -29,17 +29,6 @@ def derive_balance_snapshots(
                 ),
                 quantity=leg.amount if leg.direction == "in" else -leg.amount,
             )
-        for fee_leg in fact.fee_legs:
-            _apply_balance_delta(
-                balances,
-                key=(
-                    str(fact.source),
-                    fee_leg.account or fact.account,
-                    fee_leg.wallet or fact.wallet,
-                    str(fee_leg.asset),
-                ),
-                quantity=-fee_leg.amount,
-            )
     as_of = latest_timestamp if latest_timestamp is not None else datetime.now(UTC)
     return tuple(
         BalanceSnapshot(

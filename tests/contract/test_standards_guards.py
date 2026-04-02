@@ -7,7 +7,8 @@ import tomllib
 from collections import defaultdict
 from pathlib import Path
 
-from tallylot.domain.transactions import ProjectionType, TransactionFact
+from tallylot.adapters.support.drafts import economic_leg
+from tallylot.domain.transactions import EconomicLeg, ProjectionType, TransactionFact
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CLASSIFICATION_KEYWORDS = frozenset(
@@ -187,8 +188,14 @@ def test_transaction_fact_single_leg_compatibility_helpers_are_removed() -> None
         "amount_out",
         "fee_asset",
         "fee_amount",
+        "fee_legs",
     ):
         assert not hasattr(TransactionFact, attribute)
+
+
+def test_economic_leg_fee_specific_helper_and_flag_are_removed() -> None:
+    assert not hasattr(EconomicLeg, "is_fee")
+    assert economic_leg.__name__ != "fee_leg"
 
 
 def test_repo_does_not_reference_fact_category_attribute() -> None:
@@ -221,6 +228,8 @@ def test_repo_does_not_reference_removed_single_leg_fact_attributes() -> None:
         "amount_out",
         "fee_asset",
         "fee_amount",
+        "fee_legs",
+        "is_fee",
     }
 
     for root in guarded_roots:

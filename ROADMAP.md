@@ -12,7 +12,8 @@ decisions that should not be rediscovered from scratch.
 - Filesystem-backed operational storage
 - One concrete CoinTracking CSV edge adapter is implemented today
 - Normalization writes `facts.csv`, `fact_annotations.json`, `balances.csv`,
-  and `balance_evidence.csv` as active runtime artifacts
+  `balance_evidence.csv`, `exceptions.csv`, and
+  `normalization_reviews.csv` as active runtime artifacts
 - Dev-only oracle workflows run through `uv run python -m tools.oracles.cli`
   and stay outside the production package and production CLI surface
 - Archive-aware source scanning and intake plan/apply workflows
@@ -179,11 +180,24 @@ decisions that should not be rediscovered from scratch.
 - Keep transaction facts structurally strict: every fact must retain at least
   one positive-value economic leg, and leg direction must be modeled
   explicitly rather than by signed magnitudes.
-- Keep fact leg shape explicit. Facts default to one inbound leg, one outbound
-  leg, and one fee leg unless the adapter declares a richer leg policy on the
-  emitted draft.
+- Keep one canonical `legs` tuple only. Do not reintroduce `fee_legs`,
+  `is_fee`, or any other fee-only storage lane in facts, drafts, or
+  persistence.
+- Keep leg semantics explicit per leg. Every leg carries canonical `LegKind`
+  plus optional adapter detail `subtype`; fact classification remains a
+  separate fact-level concern.
+- Keep fact shape policy explicit and adapter-declared. `FactLegPolicy` uses
+  per-kind `LegShapeLimit` entries, unspecified kinds are disallowed, and
+  adapters must declare policy intentionally on emitted drafts rather than
+  relying on hidden defaults in the core.
+- Keep non-primary attribution metadata narrow. `attributed_to_direction` is
+  optional metadata on non-`primary` legs only, and it is valid only when
+  exactly one `primary` leg exists on the referenced side.
 - Do not reintroduce convenience selectors such as `asset_in`, `amount_out`,
-  or `fee_amount`. Engine code must consume `legs` and `fee_legs` directly.
+  or `fee_amount`. Engine code must consume canonical `legs` directly.
+- Keep CoinTracking strict at the edge. Its render policy supports one inbound
+  `primary`, one outbound `primary`, and one `charge` leg; unsupported shapes
+  must fail explicitly rather than truncate.
 - Keep draft-only provenance references and review markers in
   `fact_annotations.json` keyed by `fact_id` rather than dropping them during
   draft-to-fact compilation or embedding them as CoinTracking-specific
@@ -204,6 +218,12 @@ decisions that should not be rediscovered from scratch.
 - Keep normalization review artifacts separate from hard issues: invalid or
   unsupported data stays in exceptions, while assumption-driven transforms and
   defaults go to normalization review reporting with concise grouped summaries.
+- Keep normalization windows explicit and internally consistent. Window
+  `facts.csv`, `fact_annotations.json`, `balances.csv`, `exceptions.csv`, and
+  `normalization_reviews.csv`; do not window `balance_evidence.csv` or
+  `wallet_inventory.csv`. Review records must carry `context_timestamp`, and
+  normalization summaries must report
+  `reviews_outside_normalization_window`.
 - Reserve reconciliation naming for fact, checkpoint, and oracle-comparison
   workflows. Candidate-versus-reference CSV comparison stays under `source
   diff` until fact-based reconciliation exists.

@@ -20,6 +20,7 @@
       "scope": "dataset"
     }
   ],
+  "reviews_outside_normalization_window": 0,
   "source": "Structured Example",
   "wallet_count": 1
 }

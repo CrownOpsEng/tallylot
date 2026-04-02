@@ -28,3 +28,4 @@ class NormalizationOutputs:
 class NormalizationWindowStats:
     facts_outside_window: int
     issues_outside_window: int
+    reviews_outside_window: int

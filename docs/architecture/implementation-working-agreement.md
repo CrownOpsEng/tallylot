@@ -13,20 +13,26 @@ This document complements:
 
 ## Repo-Native Tooling To Use
 
+This repo uses the external uv environment at
+`$HOME/.venvs/tallylot-py312`. The repo-root `.venv` file is a sentinel,
+not a virtualenv directory. Use
+`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv ...` for repo
+commands so `uv` does not create a workspace-local environment.
+
 Prefer the repo's built-in tooling before inventing local workflows:
 
 - bootstrap hooks in each clone with
-  `uv run python -m tools.install_git_hooks`
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
 - run broad verification with
-  `uv run python -m tools.run_quality_gates`
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
 - run full verification before closing substantial work with
-  `uv run python -m tools.run_quality_gates --full-tests`
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
 - scaffold new adapters with
-  `uv run python -m tools.scaffold_adapter ...`
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
 - refresh adapter golden fixtures with
-  `uv run python -m tools.refresh_adapter_goldens ...`
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.refresh_adapter_goldens ...`
 - benchmark test-slice changes with
-  `uv run python -m tools.benchmark_tests`
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests`
 
 Do not replace these with ad hoc shell habits when the repo already has a
 supported path.

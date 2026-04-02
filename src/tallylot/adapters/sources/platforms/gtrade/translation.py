@@ -14,8 +14,10 @@ from tallylot.adapters.support import (
     read_csv_rows,
 )
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
     ActivityClassification,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
 )
@@ -100,15 +102,16 @@ def translate_transactions(
                     wallet=str(profile.source),
                     timestamp=timestamp,
                     classification=_classification_for_pnl(pnl),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     description=description,
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
                     tx_hash=f"gtrade:{path.name}:row:{index}",
                     provider_operation_key="realized_pnl",
                     legs=(
-                        (economic_leg(direction="in", asset="DAI", amount=pnl),)
+                        (economic_leg(direction="in", kind=LegKind.PRIMARY, asset="DAI", amount=pnl),)
                         if pnl > 0
-                        else (economic_leg(direction="out", asset="DAI", amount=abs(pnl)),)
+                        else (economic_leg(direction="out", kind=LegKind.PRIMARY, asset="DAI", amount=abs(pnl)),)
                     ),
                 )
             )

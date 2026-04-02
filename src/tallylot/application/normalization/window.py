@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tallylot.domain.issues import IssueRecord
+from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.transactions import TransactionFact
 from tallylot.domain.value_objects import parse_timestamp
 from tallylot.ports.source_translation import EconomicActivityDraft
@@ -78,4 +78,31 @@ def filter_issues_by_window(
             excluded_count += 1
             continue
         filtered.append(issue)
+    return tuple(filtered), excluded_count
+
+
+def filter_reviews_by_window(
+    reviews: tuple[NormalizationReviewRecord, ...],
+    *,
+    window_start: str | None,
+    window_end: str | None,
+) -> tuple[tuple[NormalizationReviewRecord, ...], int]:
+    if not window_start and not window_end:
+        return reviews, 0
+    start_dt = parse_timestamp(window_start) if window_start else None
+    end_dt = parse_timestamp(window_end) if window_end else None
+    filtered: list[NormalizationReviewRecord] = []
+    excluded_count = 0
+    for review in reviews:
+        if review.scope == "dataset" or not review.context_timestamp:
+            filtered.append(review)
+            continue
+        review_dt = parse_timestamp(review.context_timestamp)
+        if start_dt is not None and review_dt < start_dt:
+            excluded_count += 1
+            continue
+        if end_dt is not None and review_dt > end_dt:
+            excluded_count += 1
+            continue
+        filtered.append(review)
     return tuple(filtered), excluded_count

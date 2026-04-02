@@ -11,11 +11,14 @@ from tallylot.adapters.outputs.cointracking_csv.projection import COINTRACKING_T
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.outputs import RenderOutputRequest
 from tallylot.domain.transactions import (
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     EconomicKind,
     EconomicLeg,
     FactClassification,
     FactLegPolicy,
     JournalIntent,
+    LegKind,
+    LegShapeLimit,
     ProjectionType,
     TaxTreatmentCode,
     TransactionFact,
@@ -81,10 +84,17 @@ def test_cointracking_projection_reads_standard_fee_leg() -> None:
                 tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
             legs=(
-                EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("1")),
-                EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("10")),
+                EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
+                EconomicLeg(direction="out", kind=LegKind.PRIMARY, asset=AssetSymbol("CAD"), amount=Decimal("10")),
+                EconomicLeg(
+                    direction="out",
+                    kind=LegKind.CHARGE,
+                    asset=AssetSymbol("CAD"),
+                    amount=Decimal("0.1"),
+                    attributed_to_direction="out",
+                ),
             ),
-            fee_legs=(EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("0.1")),),
+            leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
         )
     )
 
@@ -109,10 +119,15 @@ def test_cointracking_projection_rejects_unsupported_multi_leg_shapes() -> None:
                     tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                 ),
                 legs=(
-                    EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("1")),
-                    EconomicLeg(direction="in", asset=AssetSymbol("ETH"), amount=Decimal("2")),
-                    EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("10")),
+                    EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
+                    EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("ETH"), amount=Decimal("2")),
+                    EconomicLeg(direction="out", kind=LegKind.PRIMARY, asset=AssetSymbol("CAD"), amount=Decimal("10")),
                 ),
-                leg_policy=FactLegPolicy(max_in_legs=2, max_out_legs=1, max_fee_legs=1),
+                leg_policy=FactLegPolicy(
+                    limits=(
+                        LegShapeLimit(kind=LegKind.PRIMARY, max_count=3, max_in_count=2, max_out_count=1),
+                        LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+                    )
+                ),
             )
         )

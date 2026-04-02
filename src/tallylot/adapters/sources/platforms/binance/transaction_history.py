@@ -9,7 +9,10 @@ from pathlib import Path
 
 from tallylot.adapters.support import IssueSpec, issue_record
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
 )
@@ -91,11 +94,12 @@ def normalize_transaction_rows(
                         journal_intent=JournalIntent.INCOME_RECOGNITION,
                         tax_treatment_code=TaxTreatmentCode.STAKING_INCOME,
                     ),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     description=operation,
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
                     provider_operation_key=operation,
-                    legs=(economic_leg(direction="in", asset=coin, amount=change),),
+                    legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=coin, amount=change),),
                 )
             )
             continue
@@ -122,6 +126,7 @@ def normalize_transaction_rows(
                         journal_intent=JournalIntent.ASSET_EXCHANGE,
                         tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                     ),
+                    leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
                     description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{neg_index}",
@@ -129,11 +134,13 @@ def normalize_transaction_rows(
                     legs=(
                         economic_leg(
                             direction="in",
+                            kind=LegKind.PRIMARY,
                             asset=(pos.get("Coin") or "").strip().upper(),
                             amount=pos_change,
                         ),
                         economic_leg(
                             direction="out",
+                            kind=LegKind.PRIMARY,
                             asset=(neg.get("Coin") or "").strip().upper(),
                             amount=abs(neg_change),
                         ),

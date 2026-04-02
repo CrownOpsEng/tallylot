@@ -17,7 +17,10 @@ from tallylot.adapters.support import (
     read_csv_header,
 )
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
     translation_batch_from_drafts,
@@ -138,12 +141,13 @@ def _normalize_row(
                 journal_intent=JournalIntent.FUNDING_INFLOW,
                 tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=tx_hash,
             provider_operation_key=kind,
-            legs=(economic_leg(direction="in", asset=currency, amount=amount),),
+            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=currency, amount=amount),),
         )
     if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
         return EconomicActivityDraft(
@@ -159,14 +163,15 @@ def _normalize_row(
                 journal_intent=JournalIntent.ASSET_EXCHANGE,
                 tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
+            leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
             description=f"{currency} -> {to_currency}",
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=tx_hash,
             provider_operation_key=kind,
             legs=(
-                economic_leg(direction="in", asset=to_currency, amount=to_amount),
-                economic_leg(direction="out", asset=currency, amount=abs(amount)),
+                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=to_currency, amount=to_amount),
+                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=currency, amount=abs(amount)),
             ),
         )
     if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
@@ -183,12 +188,13 @@ def _normalize_row(
                 journal_intent=JournalIntent.FUNDING_OUTFLOW,
                 tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=tx_hash,
             provider_operation_key=kind,
-            legs=(economic_leg(direction="out", asset=currency, amount=abs(amount)),),
+            legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset=currency, amount=abs(amount)),),
         )
     return issue_record(
         IssueSpec(

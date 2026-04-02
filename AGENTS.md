@@ -40,24 +40,30 @@ Do not pre-load every repo doc by default.
 
 ## Execution Rules
 
+- This repo intentionally uses the external uv environment at
+  `$HOME/.venvs/tallylot-py312`.
+- The repo-root `.venv` file is a sentinel, not a virtualenv directory. Do not
+  override it with ad hoc repo-local envs.
+- For all `uv` commands in this repo, use:
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv ...`
 - Bootstrap each clone before doing stable work:
-  - `uv run python -m tools.install_git_hooks`
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
 - Do not consider work ready until `markdownlint`, `ruff`, `mypy`, `pyright`,
   `pylint`, and `pytest` pass.
 - Do not consider non-trivial work ready until the verified checkpoint commit
   already exists.
 - Bootstrap the checked-in hooks:
-  - `uv run python -m tools.install_git_hooks`
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
 - For explicit local verification, prefer:
-  - `uv run pre-commit run markdownlint --all-files`
-  - `uv run python -m tools.run_quality_gates`
-  - `uv run python -m tools.run_quality_gates --full-tests`
-- Do not run `uv run pre-commit run --all-files` in addition to the parallel
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files`
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+- Do not run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the parallel
   quality-gate runner unless you are debugging hook behavior itself.
 - The commit-time `pytest` hook is intentionally fast:
   - `unit and not slow`
   - no coverage
-  - run full `uv run pytest` before closing substantial work
+  - run full `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest` before closing substantial work
 - Treat commits as stable checkpoints by default:
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value
