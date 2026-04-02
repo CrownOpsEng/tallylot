@@ -1484,12 +1484,645 @@ class EvmExplorerAdapter(SourceAdapter):
     name = "evm_explorer"
     aliases = (
         "evm explorer",
-        "metamask",
         "bsc metamask wallet",
         "eth metamask wallet",
         "eth galagames wallet",
         "metamask - polygon",
     )
+    supported = True
+
+    _scope_prefixes = (
+        ("bsc", "Account1-bsc"),
+        ("polygon", "Account1-polygon"),
+        ("eth_gala", "Account2-eth"),
+        ("eth", "Account1-eth"),
+    )
+    _native_asset_by_scope = {
+        "bsc": "BNB",
+        "polygon": "MATIC",
+        "eth_gala": "ETH",
+        "eth": "ETH",
+    }
+    _token_symbol_overrides = {
+        "0x7ddee176f665cd201f93eede625770e2fd911990": "GALA",
+    }
+
+    def normalize(
+        self,
+        raw_dir: Path,
+        profile: SourceProfile,
+        *,
+        exception_decisions: dict[str, dict[str, str]],
+    ) -> AdapterNormalizationResult:
+        scope_key, prefix = self._scope_for_source(profile.source)
+        selected_paths = sorted(
+            path
+            for path in raw_dir.glob("*.csv")
+            if path.is_file() and (prefix in path.name or (scope_key == "eth" and path.name.startswith("Account1-eth ")))
+        )
+        exceptions: list[dict[str, str]] = []
+        if not selected_paths:
+            maybe_append_exception(
+                exceptions,
+                exception_decisions,
+                manifest_fingerprint=profile.manifest_fingerprint,
+                source=profile.source,
+                adapter=self.name,
+                event_id=f"{self.name}:{scope_key}:missing_scope_files",
+                raw_file="",
+                raw_row_ref="",
+                exception_kind="missing_required_input",
+                message=f"No explorer CSV files matched the {scope_key} scope for {profile.source}.",
+            )
+            return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
+
+        owned_addresses = {
+            match.group(0).lower()
+            for path in selected_paths
+            for match in re.finditer(r"0x[a-fA-F0-9]{40}", path.name)
+        }
+        native_asset = self._native_asset_by_scope[scope_key]
+        grouped: dict[str, dict[str, list[tuple[Path, int, dict[str, str]]]]] = defaultdict(
+            lambda: {"normal": [], "token": [], "internal": [], "nft": []}
+        )
+        for path in selected_paths:
+            family = self._family_for_path(path)
+            if family is None:
+                continue
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                tx_hash = (row.get("Transaction Hash") or "").strip()
+                if not tx_hash:
+                    continue
+                grouped[tx_hash][family].append((path, index, row))
+
+        events: list[dict[str, str]] = []
+        for tx_hash, group in sorted(grouped.items(), key=lambda item: self._group_timestamp(item[1])):
+            group_events, group_exception = self._group_events(
+                profile,
+                tx_hash,
+                group,
+                owned_addresses=owned_addresses,
+                native_asset=native_asset,
+                exception_decisions=exception_decisions,
+            )
+            events.extend(group_events)
+            if group_exception is not None and group_exception.get("resolution_status") != "accepted":
+                exceptions.append(group_exception)
+
+        return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
+
+    def _scope_for_source(self, source: str) -> tuple[str, str]:
+        label = source.strip().lower()
+        if "polygon" in label:
+            return "polygon", "Account1-polygon"
+        if "gala" in label:
+            return "eth_gala", "Account2-eth"
+        if "eth" in label:
+            return "eth", "Account1-eth"
+        return "bsc", "Account1-bsc"
+
+    def _family_for_path(self, path: Path) -> str | None:
+        name = path.name.lower()
+        if "export-address-token" in name:
+            return "token"
+        if "export-internal-tx" in name:
+            return "internal"
+        if "export-address-nfts" in name:
+            return "nft"
+        if " export-" in name:
+            return "normal"
+        return None
+
+    def _group_timestamp(self, group: dict[str, list[tuple[Path, int, dict[str, str]]]]) -> str:
+        timestamps = [
+            (row.get("DateTime (UTC)") or "").strip()
+            for family_rows in group.values()
+            for _, _, row in family_rows
+            if (row.get("DateTime (UTC)") or "").strip()
+        ]
+        return min(timestamps) if timestamps else ""
+
+    def _group_events(
+        self,
+        profile: SourceProfile,
+        tx_hash: str,
+        group: dict[str, list[tuple[Path, int, dict[str, str]]]],
+        *,
+        owned_addresses: set[str],
+        native_asset: str,
+        exception_decisions: dict[str, dict[str, str]],
+    ) -> tuple[list[dict[str, str]], dict[str, str] | None]:
+        timestamp = normalized_timestamp(self._group_timestamp(group), ("%Y-%m-%d %H:%M:%S",))
+        raw_file = self._group_raw_file(group)
+        raw_row_ref = self._group_raw_ref(group)
+        method = self._group_method(group)
+        event_id = event_id_for(self.name, raw_file, tx_hash)
+        fee_paid = self._group_fee_paid(group, owned_addresses)
+        native_in, native_out = self._native_movements(group, native_asset)
+        token_in, token_out, inbound_is_airdrop = self._token_movements(group["token"], owned_addresses)
+        nft_in, nft_out, suspicious_nft_assets = self._nft_movements(group["nft"], owned_addresses)
+        incoming = token_in + nft_in
+        outgoing = token_out + nft_out
+        has_token_history = bool(group["token"] or group["nft"])
+
+        if not has_token_history and method.lower() in {"exact input", "swap exact eth for tokens", "swap exact tokens for eth", "execute"}:
+            decision = exception_decisions.get(event_id, {})
+            return [], default_exception_row(
+                manifest_fingerprint=profile.manifest_fingerprint,
+                source=profile.source,
+                adapter=self.name,
+                event_id=event_id,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                exception_kind="missing_required_input",
+                message=f"{profile.source} needs token-transfer history to deterministically classify {method} tx {tx_hash}.",
+                resolution_status=decision.get("resolution_status", ""),
+                resolution_note=decision.get("resolution_note", ""),
+            )
+
+        if method.lower() in {"approve", "set delegate"}:
+            if fee_paid <= 0:
+                return [], None
+            return [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Other Fee",
+                    description=f"{method} - {tx_hash}",
+                    amount_out=decimal_text(fee_paid),
+                    asset_out=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_fee_only",
+                )
+            ], None
+
+        if method.lower().startswith("stake") and outgoing and not incoming:
+            return self._stake_events(
+                profile.source,
+                raw_file,
+                raw_row_ref,
+                timestamp,
+                tx_hash,
+                outgoing[0],
+                fee_paid,
+                native_asset,
+            ), None
+
+        if method.lower().startswith("withdraw") and incoming and not outgoing:
+            return self._unstake_events(
+                profile.source,
+                raw_file,
+                raw_row_ref,
+                timestamp,
+                tx_hash,
+                incoming[0],
+                fee_paid,
+                native_asset,
+            ), None
+
+        if "claim" in method.lower() and incoming and not outgoing:
+            events = [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Staking",
+                    description=f"{method} - {tx_hash}",
+                    amount_in=decimal_text(incoming[0][1]),
+                    asset_in=incoming[0][0],
+                    tx_hash=tx_hash,
+                    render_notes="evm_claim",
+                )
+            ]
+            if fee_paid > 0:
+                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method))
+            return events, None
+
+        if incoming and (outgoing or native_out > 0):
+            asset_out, amount_out = outgoing[0] if outgoing else (native_asset, native_out)
+            asset_in, amount_in = incoming[0]
+            events = [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Trade",
+                    description=f"{method} - {tx_hash}",
+                    amount_in=decimal_text(amount_in),
+                    asset_in=asset_in,
+                    amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
+                    asset_out=asset_out,
+                    tx_hash=tx_hash,
+                    render_notes="evm_trade",
+                )
+            ]
+            if fee_paid > 0:
+                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method))
+            return events, None
+
+        if suspicious_nft_assets and not incoming and not outgoing and native_in <= 0 and native_out <= 0:
+            decision = exception_decisions.get(event_id, {})
+            asset_list = ", ".join(suspicious_nft_assets)
+            return [], default_exception_row(
+                manifest_fingerprint=profile.manifest_fingerprint,
+                source=profile.source,
+                adapter=self.name,
+                event_id=event_id,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                exception_kind="review_required",
+                message=(
+                    f"{profile.source} received suspicious NFT airdrop {asset_list} in tx {tx_hash}; "
+                    "keep it in review instead of auto-importing it as an economic deposit."
+                ),
+                resolution_status=decision.get("resolution_status", ""),
+                resolution_note=decision.get("resolution_note", ""),
+            )
+
+        if outgoing:
+            asset_out, amount_out = outgoing[0]
+            events = [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Withdrawal",
+                    description=f"{method or 'Transfer out'} - {tx_hash}",
+                    amount_out=decimal_text(amount_out),
+                    asset_out=asset_out,
+                    tx_hash=tx_hash,
+                    render_notes="evm_out",
+                )
+            ]
+            if fee_paid > 0:
+                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method or "Transfer"))
+            return events, None
+
+        if native_out > 0:
+            return [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Withdrawal",
+                    description=f"{method or 'Transfer out'} - {tx_hash}",
+                    amount_out=decimal_text(native_out + fee_paid),
+                    asset_out=native_asset,
+                    fee_amount=decimal_text(fee_paid) if fee_paid > 0 else "",
+                    fee_asset=native_asset if fee_paid > 0 else "",
+                    tx_hash=tx_hash,
+                    render_notes="evm_native_out",
+                )
+            ], None
+
+        if incoming:
+            asset_in, amount_in = incoming[0]
+            event_kind = "Airdrop" if inbound_is_airdrop else "Deposit"
+            return [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind=event_kind,
+                    description=f"{method or event_kind} - {tx_hash}",
+                    amount_in=decimal_text(amount_in),
+                    asset_in=asset_in,
+                    tx_hash=tx_hash,
+                    render_notes="evm_in",
+                )
+            ], None
+
+        if native_in > 0:
+            return [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Deposit",
+                    description=f"{method or 'Transfer in'} - {tx_hash}",
+                    amount_in=decimal_text(native_in),
+                    asset_in=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_native_in",
+                )
+            ], None
+
+        if fee_paid > 0:
+            return [self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method or "Explorer tx")], None
+        return [], None
+
+    def _group_raw_file(self, group: dict[str, list[tuple[Path, int, dict[str, str]]]]) -> str:
+        for family_rows in group.values():
+            if family_rows:
+                return family_rows[0][0].name
+        return ""
+
+    def _group_raw_ref(self, group: dict[str, list[tuple[Path, int, dict[str, str]]]]) -> str:
+        return ";".join(f"{path.name}:row:{index}" for family_rows in group.values() for path, index, _ in family_rows)
+
+    def _group_method(self, group: dict[str, list[tuple[Path, int, dict[str, str]]]]) -> str:
+        for _, _, row in group["normal"]:
+            method = (row.get("Method") or "").strip()
+            if method:
+                return method
+        for _, _, row in group["internal"]:
+            row_type = (row.get("Type") or "").strip()
+            if row_type:
+                return row_type
+        for _, _, row in group["token"]:
+            return "Transfer"
+        for _, _, row in group["nft"]:
+            return (row.get("Method") or "").strip() or "NFT"
+        return "Explorer tx"
+
+    def _group_fee_paid(
+        self,
+        group: dict[str, list[tuple[Path, int, dict[str, str]]]],
+        owned_addresses: set[str],
+    ) -> Decimal:
+        total = Decimal("0")
+        for _, _, row in group["normal"]:
+            from_owned = (row.get("From") or "").strip().lower() in owned_addresses
+            if from_owned or decimal_or_zero(self._value_out(row)) > 0 or (row.get("ErrCode") or "").strip():
+                total += decimal_or_zero(self._tx_fee(row))
+        return total
+
+    def _native_movements(
+        self,
+        group: dict[str, list[tuple[Path, int, dict[str, str]]]],
+        native_asset: str,
+    ) -> tuple[Decimal, Decimal]:
+        native_in = Decimal("0")
+        native_out = Decimal("0")
+        for _, _, row in group["normal"]:
+            native_in += decimal_or_zero(self._value_in(row))
+            native_out += decimal_or_zero(self._value_out(row))
+        for _, _, row in group["internal"]:
+            native_in += decimal_or_zero(self._value_in(row))
+            native_out += decimal_or_zero(self._value_out(row))
+        return native_in, native_out
+
+    def _token_movements(
+        self,
+        rows: list[tuple[Path, int, dict[str, str]]],
+        owned_addresses: set[str],
+    ) -> tuple[list[tuple[str, Decimal]], list[tuple[str, Decimal]], bool]:
+        incoming: dict[str, Decimal] = defaultdict(Decimal)
+        outgoing: dict[str, Decimal] = defaultdict(Decimal)
+        inbound_is_airdrop = False
+        for _, _, row in rows:
+            symbol = self._token_symbol(row)
+            amount = decimal_or_zero(row.get("TokenValue"))
+            from_address = (row.get("From") or "").strip().lower()
+            to_address = (row.get("To") or "").strip().lower()
+            if to_address in owned_addresses and from_address not in owned_addresses:
+                incoming[symbol] += amount
+                inbound_is_airdrop = inbound_is_airdrop or self._is_airdrop_like_token(row)
+            elif from_address in owned_addresses and to_address not in owned_addresses:
+                outgoing[symbol] += amount
+        return sorted(incoming.items()), sorted(outgoing.items()), inbound_is_airdrop
+
+    def _nft_movements(
+        self,
+        rows: list[tuple[Path, int, dict[str, str]]],
+        owned_addresses: set[str],
+    ) -> tuple[list[tuple[str, Decimal]], list[tuple[str, Decimal]], list[str]]:
+        incoming: dict[str, Decimal] = defaultdict(Decimal)
+        outgoing: dict[str, Decimal] = defaultdict(Decimal)
+        suspicious_incoming: set[str] = set()
+        for _, _, row in rows:
+            asset = (row.get("TokenName") or "").strip() or (row.get("Contract") or "").strip() or "NFT"
+            quantity = decimal_or_zero(row.get("Quantity") or "1")
+            from_address = (row.get("From") or "").strip().lower()
+            to_address = (row.get("To") or "").strip().lower()
+            if to_address in owned_addresses and from_address not in owned_addresses:
+                if self._is_suspicious_nft(row):
+                    suspicious_incoming.add(asset)
+                else:
+                    incoming[asset] += quantity
+            elif from_address in owned_addresses and to_address not in owned_addresses:
+                outgoing[asset] += quantity
+        return sorted(incoming.items()), sorted(outgoing.items()), sorted(suspicious_incoming)
+
+    def _token_symbol(self, row: dict[str, str]) -> str:
+        contract = (row.get("ContractAddress") or "").strip().lower()
+        if contract in self._token_symbol_overrides:
+            return self._token_symbol_overrides[contract]
+        symbol = (row.get("TokenSymbol") or "").strip()
+        if symbol and "TOKEN*" not in symbol:
+            return symbol.upper()
+        token_name = (row.get("TokenName") or "").strip()
+        if token_name and "TOKEN*" not in token_name:
+            return token_name.upper()
+        return (contract[-8:] or "TOKEN").upper()
+
+    def _is_airdrop_like_token(self, row: dict[str, str]) -> bool:
+        from_address = (row.get("From") or "").strip().lower()
+        contract = (row.get("ContractAddress") or "").strip().lower()
+        if contract in self._token_symbol_overrides and from_address != "0x0000000000000000000000000000000000000000":
+            return False
+        symbol = (row.get("TokenSymbol") or "").strip()
+        token_name = (row.get("TokenName") or "").strip()
+        return (
+            from_address == "0x0000000000000000000000000000000000000000"
+            or "." in symbol
+            or "*" in symbol
+            or ":" in token_name
+        )
+
+    def _is_suspicious_nft(self, row: dict[str, str]) -> bool:
+        token_name = (row.get("TokenName") or "").strip()
+        lowered = token_name.lower()
+        return (
+            lowered.startswith("$")
+            or "token*" in lowered
+            or " pass " in f" {lowered} "
+            or lowered.endswith(" pass")
+        )
+
+    def _value_in(self, row: dict[str, str]) -> str:
+        for key, value in row.items():
+            if key.startswith("Value_IN("):
+                return value
+        return ""
+
+    def _value_out(self, row: dict[str, str]) -> str:
+        for key, value in row.items():
+            if key.startswith("Value_OUT("):
+                return value
+        return ""
+
+    def _tx_fee(self, row: dict[str, str]) -> str:
+        for key, value in row.items():
+            if key.startswith("TxnFee("):
+                return value
+        return ""
+
+    def _fee_event(
+        self,
+        source: str,
+        raw_file: str,
+        raw_row_ref: str,
+        timestamp: str,
+        tx_hash: str,
+        fee_paid: Decimal,
+        native_asset: str,
+        method: str,
+    ) -> dict[str, str]:
+        return canonical_event(
+            event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
+            source=source,
+            adapter=self.name,
+            account=source,
+            wallet=source,
+            raw_file=raw_file,
+            raw_row_ref=raw_row_ref,
+            timestamp=timestamp,
+            event_kind="Other Fee",
+            description=f"{method} - {tx_hash}",
+            amount_out=decimal_text(fee_paid),
+            asset_out=native_asset,
+            tx_hash=tx_hash,
+            render_notes="evm_fee",
+        )
+
+    def _stake_events(
+        self,
+        source: str,
+        raw_file: str,
+        raw_row_ref: str,
+        timestamp: str,
+        tx_hash: str,
+        outgoing: tuple[str, Decimal],
+        fee_paid: Decimal,
+        native_asset: str,
+    ) -> list[dict[str, str]]:
+        asset, amount = outgoing
+        staked_source = f"{source} Staked"
+        events = [
+            canonical_event(
+                event_id=event_id_for(self.name, raw_file, f"{tx_hash}:stake_out"),
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Withdrawal",
+                description=f"Stake {asset} - {tx_hash}",
+                amount_out=decimal_text(amount),
+                asset_out=asset,
+                tx_hash=tx_hash,
+                render_notes="evm_stake_out",
+            ),
+            canonical_event(
+                event_id=event_id_for(self.name, raw_file, f"{tx_hash}:stake_in"),
+                source=staked_source,
+                adapter=self.name,
+                account=staked_source,
+                wallet=staked_source,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Deposit",
+                description=f"Stake {asset} - {tx_hash}",
+                amount_in=decimal_text(amount),
+                asset_in=asset,
+                tx_hash=tx_hash,
+                render_notes="evm_stake_in",
+            ),
+        ]
+        if fee_paid > 0:
+            events.append(self._fee_event(source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, "Stake"))
+        return events
+
+    def _unstake_events(
+        self,
+        source: str,
+        raw_file: str,
+        raw_row_ref: str,
+        timestamp: str,
+        tx_hash: str,
+        incoming: tuple[str, Decimal],
+        fee_paid: Decimal,
+        native_asset: str,
+    ) -> list[dict[str, str]]:
+        asset, amount = incoming
+        staked_source = f"{source} Staked"
+        events = [
+            canonical_event(
+                event_id=event_id_for(self.name, raw_file, f"{tx_hash}:unstake_in"),
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Deposit",
+                description=f"Unstake {asset} - {tx_hash}",
+                amount_in=decimal_text(amount),
+                asset_in=asset,
+                tx_hash=tx_hash,
+                render_notes="evm_unstake_in",
+            ),
+            canonical_event(
+                event_id=event_id_for(self.name, raw_file, f"{tx_hash}:unstake_out"),
+                source=staked_source,
+                adapter=self.name,
+                account=staked_source,
+                wallet=staked_source,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Withdrawal",
+                description=f"Unstake {asset} - {tx_hash}",
+                amount_out=decimal_text(amount),
+                asset_out=asset,
+                tx_hash=tx_hash,
+                render_notes="evm_unstake_out",
+            ),
+        ]
+        if fee_paid > 0:
+            events.append(self._fee_event(source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, "Unstake"))
+        return events
 
 
 class ShakepayAdapter(SourceAdapter):
@@ -2106,6 +2739,82 @@ class NearAdapter(SourceAdapter):
         ]
 
 
+class GTradeAdapter(SourceAdapter):
+    name = "gtrade"
+    aliases = ("gtrade", "gtrade 1ct")
+    supported = True
+
+    def normalize(
+        self,
+        raw_dir: Path,
+        profile: SourceProfile,
+        *,
+        exception_decisions: dict[str, dict[str, str]],
+    ) -> AdapterNormalizationResult:
+        report_paths = sorted(path for path in raw_dir.glob("*My_Trading_History_Report.csv") if path.is_file())
+        exceptions: list[dict[str, str]] = []
+        if not report_paths:
+            maybe_append_exception(
+                exceptions,
+                exception_decisions,
+                manifest_fingerprint=profile.manifest_fingerprint,
+                source=profile.source,
+                adapter=self.name,
+                event_id="gtrade:missing_report_csv",
+                raw_file="",
+                raw_row_ref="",
+                exception_kind="missing_required_input",
+                message="GTrade trading-history CSV is required for normalization.",
+            )
+            return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
+
+        events: list[dict[str, str]] = []
+        for path in report_paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                raw_row_ref = f"row:{index}"
+                event_id = event_id_for(self.name, path.name, raw_row_ref)
+                timestamp = normalized_timestamp(f"{row['DATE']} 00:00:00", ("%d/%m/%Y %H:%M:%S",))
+                pnl = decimal_or_zero(row.get("PNL"))
+                description = (row.get("DESCRIPTION") or "").strip()
+                if pnl != 0:
+                    event_kind = "Derivatives / Futures Profit" if pnl > 0 else "Derivatives / Futures Loss"
+                    payload = {
+                        "event_id": event_id,
+                        "source": profile.source,
+                        "adapter": self.name,
+                        "account": profile.source,
+                        "wallet": profile.source,
+                        "raw_file": path.name,
+                        "raw_row_ref": raw_row_ref,
+                        "timestamp": timestamp,
+                        "event_kind": event_kind,
+                        "description": description,
+                        "tx_hash": event_id,
+                        "render_notes": f"{row.get('PAIR', '')}:{row.get('TYPE', '')}:{row.get('DIR', '')}",
+                    }
+                    if pnl > 0:
+                        payload.update({"amount_in": decimal_text(abs(pnl)), "asset_in": "DAI"})
+                    else:
+                        payload.update({"amount_out": decimal_text(abs(pnl)), "asset_out": "DAI"})
+                    events.append(canonical_event(**payload))
+                    continue
+
+                maybe_append_exception(
+                    exceptions,
+                    exception_decisions,
+                    manifest_fingerprint=profile.manifest_fingerprint,
+                    source=profile.source,
+                    adapter=self.name,
+                    event_id=event_id,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    exception_kind="unsupported_row",
+                    message="GTrade report row lacks realized PnL and cannot be deterministically converted into a CoinTracking transaction without supporting explorer evidence.",
+                )
+
+        return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
+
+
 ADAPTERS: tuple[SourceAdapter, ...] = (
     CoinbaseAdapter(),
     WealthsimpleAdapter(),
@@ -2115,6 +2824,7 @@ ADAPTERS: tuple[SourceAdapter, ...] = (
     ShakepayAdapter(),
     LedgerLiveAdapter(),
     NearAdapter(),
+    GTradeAdapter(),
 )
 
 

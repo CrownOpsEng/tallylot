@@ -27,8 +27,16 @@ Current deterministic universal adapters:
 - `coinbase` → ready on the current repo exports
 - `wealthsimple` → ready for the crypto `activities-export` workflow
 - `binance` → ready for the main spot / funding / fiat / reward paths and intentionally leaves a compact `exceptions.csv` review set for ambiguous legacy rows instead of guessing
+- `shakepay` → ready on the captured cash, crypto, and performance-report exports
+- `ledger_live` → ready on the captured Ledger Live operations exports, including grouped swap handling and delegation de-duplication
+- `crypto_com` → ready on the captured cash and crypto transaction exports
+- `near` → ready on the current NEAR transaction/token/NFT export set
+- `evm_explorer` → explorer-family adapter for EVM CSV exports; ready for the BSC and primary Ethereum transfer/token scopes, and intentionally leaves suspicious standalone NFT airdrops in `exceptions.csv` instead of auto-importing them as deposits
+- `gtrade` → report-level adapter for realized PnL rows and intentionally leaves open-position rows in `exceptions.csv` until companion explorer evidence exists
 
 The intake pipeline is intentionally not a blind importer. `normalize_source.py` can produce a CoinTracking candidate, but that candidate is still a staging artifact. Internal wallet shuffles, unsupported rows, and ambiguous groups must stay visible through `exceptions.csv`, `issue_log.csv`, and the round-verification workflow rather than being auto-reconciled by the script layer.
+
+The explorer adapter is now keyed to the export system and chain scope rather than a wallet-app label. A legacy wallet-app export dump is treated as EVM explorer evidence; the adapter only promotes rows that can be justified from the underlying explorer CSV families and leaves missing-evidence gaps visible instead of guessing.
 
 The preferred prep flow is now:
 

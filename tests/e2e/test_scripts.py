@@ -385,6 +385,104 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(0, summary["exceptions"])
         self.assertEqual(14, len(events))
 
+    def test_normalize_source_cli_supports_bsc_explorer_repo_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "bsc_explorer"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "BSC MetaMask Wallet",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+
+        self.assertEqual("ready", summary["status"])
+        self.assertEqual("evm_explorer", summary["adapter"])
+        self.assertEqual(41, summary["canonical_events"])
+        self.assertEqual(0, summary["exceptions"])
+        self.assertEqual(41, len(events))
+
+    def test_normalize_source_cli_surfaces_polygon_review_rows(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "polygon_explorer"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "MetaMask - Polygon",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            exceptions = read_dict_rows(out_dir / "exceptions.csv")
+
+        self.assertEqual("needs_review", summary["status"])
+        self.assertEqual("evm_explorer", summary["adapter"])
+        self.assertEqual(20, summary["canonical_events"])
+        self.assertEqual(5, summary["exceptions"])
+        self.assertEqual(20, len(events))
+        self.assertEqual(5, len(exceptions))
+
+    def test_normalize_source_cli_surfaces_eth_gala_review_rows(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "eth_gala_explorer"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "ETH GalaGames Wallet",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            exceptions = read_dict_rows(out_dir / "exceptions.csv")
+
+        self.assertEqual("needs_review", summary["status"])
+        self.assertEqual("evm_explorer", summary["adapter"])
+        self.assertEqual(14, summary["canonical_events"])
+        self.assertEqual(3, summary["exceptions"])
+        self.assertEqual(14, len(events))
+        self.assertEqual(3, len(exceptions))
+
+    def test_normalize_source_cli_surfaces_gtrade_report_limits(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "gtrade" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "gtrade"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "GTrade 1CT",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            exceptions = read_dict_rows(out_dir / "exceptions.csv")
+
+        self.assertEqual("needs_review", summary["status"])
+        self.assertEqual("gtrade", summary["adapter"])
+        self.assertEqual(3, summary["canonical_events"])
+        self.assertEqual(3, summary["exceptions"])
+        self.assertEqual(3, len(events))
+        self.assertEqual(3, len(exceptions))
+
     def test_normalize_source_cli_surfaces_small_binance_review_set(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"
 
