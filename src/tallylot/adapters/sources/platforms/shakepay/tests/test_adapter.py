@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 
@@ -9,9 +10,10 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
 
     profile, adapter = profile_and_adapter("Shakepay", raw_dir)
     result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "shakepay"
-    assert {event.economic_kind for event in result.facts} == {
+    assert {event.economic_kind for event in facts} == {
         EconomicKind.FIAT_DEPOSIT,
         EconomicKind.CASH_EXPENSE,
         EconomicKind.CASH_WITHDRAWAL,
@@ -19,27 +21,27 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
         EconomicKind.PLATFORM_REWARD,
         EconomicKind.SPOT_TRADE,
     }
-    assert {event.projection_type for event in result.facts} == {
+    assert {event.projection_type for event in facts} == {
         ProjectionType.DEPOSIT,
         ProjectionType.EXPENSE_NON_TAXABLE,
         ProjectionType.REWARD_BONUS,
         ProjectionType.TRADE,
         ProjectionType.WITHDRAWAL,
     }
-    assert {event.journal_intent for event in result.facts} == {
+    assert {event.journal_intent for event in facts} == {
         JournalIntent.FUNDING_INFLOW,
         JournalIntent.EXPENSE_RECOGNITION,
         JournalIntent.FUNDING_OUTFLOW,
         JournalIntent.INCOME_RECOGNITION,
         JournalIntent.ASSET_EXCHANGE,
     }
-    assert {event.tax_treatment_code for event in result.facts} == {
+    assert {event.tax_treatment_code for event in facts} == {
         TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
         TaxTreatmentCode.NON_TAXABLE_EXPENSE,
         TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
         TaxTreatmentCode.ORDINARY_INCOME,
         TaxTreatmentCode.CAPITAL_EXCHANGE,
     }
-    assert any(event.description == "shakingsats" for event in result.facts)
+    assert any(event.description == "shakingsats" for event in facts)
     assert result.balance_evidence == ()
     assert result.issues == ()

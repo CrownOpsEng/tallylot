@@ -12,7 +12,7 @@
 Run:
 
 ```bash
-uv run python -m tools.oracles.cli baseline validate \
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli baseline validate \
   --export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
   --output-dir <workspace>/analysis/reconciliation
 ```

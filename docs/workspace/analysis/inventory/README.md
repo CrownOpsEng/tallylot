@@ -13,7 +13,7 @@ Files:
 Refresh with:
 
 ```bash
-uv run tallylot checkpoint rebuild-wallet-inventory \
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint rebuild-wallet-inventory \
   --normalized-root <workspace>/working/normalized \
   --output <workspace>/analysis/inventory/wallet_inventory.csv
 ```

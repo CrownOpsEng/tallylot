@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.services import build_source_profile
 
@@ -13,7 +14,7 @@ def test_coinbase_adapter_reports_missing_retail_csv_as_explicit_issue(tmp_path:
         tmp_path,
     )
 
-    assert not result.facts
+    assert not compile_activity_drafts(result.drafts)
     assert result.issues[0].kind == "missing_required_input"
     assert "retail all-time CSV" in result.issues[0].message
 
@@ -35,10 +36,11 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: 
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    event = result.facts[0]
+    event = facts[0]
 
-    assert len(result.facts) == 1
+    assert len(facts) == 1
     assert event.economic_kind == EconomicKind.SPOT_TRADE
     assert event.projection_type == ProjectionType.TRADE
     assert event.journal_intent == JournalIntent.ASSET_EXCHANGE
@@ -70,10 +72,11 @@ def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) 
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    sell_event, send_event, receive_event = result.facts
+    sell_event, send_event, receive_event = facts
 
-    assert len(result.facts) == 3
+    assert len(facts) == 3
     assert sell_event.economic_kind == EconomicKind.SPOT_TRADE
     assert sell_event.projection_type == ProjectionType.TRADE
     assert str(sell_event.legs[0].asset) == "CAD"
@@ -106,9 +109,10 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    assert len(result.facts) == 1
-    assert result.facts[0].projection_type == ProjectionType.TRADE
+    assert len(facts) == 1
+    assert facts[0].projection_type == ProjectionType.TRADE
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
 
@@ -132,10 +136,11 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    reward_event, migration_event = result.facts
+    reward_event, migration_event = facts
 
-    assert len(result.facts) == 2
+    assert len(facts) == 2
     assert reward_event.economic_kind == EconomicKind.INTEREST_INCOME
     assert reward_event.projection_type == ProjectionType.INTEREST_INCOME
     assert str(reward_event.legs[0].asset) == "ADA"

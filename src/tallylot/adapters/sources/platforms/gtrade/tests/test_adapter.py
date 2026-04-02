@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.gtrade.adapter import GTradeAdapter
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
@@ -13,21 +14,22 @@ def test_gtrade_adapter_surfaces_report_limits_without_guessing() -> None:
 
     profile, adapter = profile_and_adapter("GTrade 1CT", raw_dir)
     result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "gtrade"
-    assert [event.economic_kind for event in result.facts] == [
+    assert [event.economic_kind for event in facts] == [
         EconomicKind.DERIVATIVE_REALIZED_PROFIT,
         EconomicKind.DERIVATIVE_REALIZED_LOSS,
     ]
-    assert [event.projection_type for event in result.facts] == [
+    assert [event.projection_type for event in facts] == [
         ProjectionType.DERIVATIVES_FUTURES_PROFIT,
         ProjectionType.DERIVATIVES_FUTURES_LOSS,
     ]
-    assert [event.journal_intent for event in result.facts] == [
+    assert [event.journal_intent for event in facts] == [
         JournalIntent.INCOME_RECOGNITION,
         JournalIntent.EXPENSE_RECOGNITION,
     ]
-    assert [event.tax_treatment_code for event in result.facts] == [
+    assert [event.tax_treatment_code for event in facts] == [
         TaxTreatmentCode.DERIVATIVE_REALIZED_GAIN,
         TaxTreatmentCode.DERIVATIVE_REALIZED_LOSS,
     ]
@@ -58,6 +60,6 @@ def test_gtrade_adapter_surfaces_invalid_rows_without_crashing(tmp_path: Path) -
         raw_dir,
     )
 
-    assert not result.facts
+    assert not compile_activity_drafts(result.drafts)
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"

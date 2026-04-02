@@ -9,6 +9,7 @@ from tallylot.adapters.support.drafts import (
     EconomicActivityDraft,
     classification,
     compile_activity_draft,
+    compile_activity_drafts,
     economic_leg,
     transaction_fact_from_draft,
     translation_batch_from_drafts,
@@ -125,12 +126,13 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
         wallet_inventory=(),
     )
 
-    assert len(result.facts) == 1
-    assert result.facts[0].economic_kind == EconomicKind.ASSET_DEPOSIT
-    assert result.facts[0].projection_type == ProjectionType.DEPOSIT
-    assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
-    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
-    assert result.facts[0].leg_policy == SINGLE_PRIMARY_ACTIVITY_POLICY
+    facts = compile_activity_drafts(result.drafts)
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.ASSET_DEPOSIT
+    assert facts[0].projection_type == ProjectionType.DEPOSIT
+    assert facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
+    assert facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
+    assert facts[0].leg_policy == SINGLE_PRIMARY_ACTIVITY_POLICY
     assert not result.issues
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.application.normalization.contracts import NormalizeRequest, NormalizeResponse
 from tallylot.application.normalization.issue_context import (
     enrich_issue_context_timestamps,
@@ -16,7 +17,6 @@ from tallylot.ports.evidence import EvidenceRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
-from tallylot.ports.source_translation import transaction_facts_from_drafts
 
 from .annotations import annotation_records_from_drafts
 from .artifacts import write_normalization_artifacts
@@ -69,7 +69,7 @@ class NormalizeSourceUseCase:
             window_start=request.window_start,
             window_end=request.window_end,
         )
-        facts = transaction_facts_from_drafts(drafts)
+        facts = compile_activity_drafts(drafts)
         enriched_issues = enrich_issue_context_timestamps(
             result.issues,
             raw_dir=request.raw_dir,

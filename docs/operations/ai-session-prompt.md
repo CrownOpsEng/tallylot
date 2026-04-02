@@ -38,7 +38,7 @@ Working rules:
 2. Stop before staging or importing when `timezone_issues.csv`,
    `exceptions.csv`, or `stage_summary.json` still show blockers.
 3. Update the round log after each seeded round and verification cycle.
-4. Use `uv run python -m tools.oracles.cli source diff` when a candidate or
+4. Use `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli source diff` when a candidate or
    reference slice needs a deterministic row comparison.
 5. Build reconciliation before tax computation.
 6. Keep the core centered on provider-neutral transaction facts.

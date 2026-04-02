@@ -114,42 +114,7 @@ class EconomicActivityDraft:
         )
         if not self.legs:
             raise ValueError("draft must include at least one leg")
-        TransactionFact(
-            fact_id=TransactionId(self.activity_id),
-            source=SourceId(self.source),
-            adapter_id=AdapterId(self.adapter_id),
-            timestamp=self.timestamp,
-            account=self.account,
-            wallet=self.wallet,
-            classification=FactClassification(
-                economic_kind=self.classification.economic_kind,
-                journal_intent=self.classification.journal_intent,
-                tax_treatment_code=self.classification.tax_treatment_code,
-                projection_type=self.classification.projection_type,
-            ),
-            legs=tuple(
-                EconomicLeg(
-                    direction=leg.direction,
-                    kind=leg.kind,
-                    asset=AssetSymbol(leg.asset),
-                    amount=leg.amount,
-                    subtype=leg.subtype,
-                    attributed_to_direction=leg.attributed_to_direction,
-                    account=leg.account,
-                    wallet=leg.wallet,
-                )
-                for leg in self.legs
-            ),
-            leg_policy=self.leg_policy,
-            description=self.description,
-            provider_operation_key=self.provider_operation_key,
-            operation_group_id=self.operation_group_id,
-            tx_hash=self.tx_hash or None,
-            raw_file=self.raw_file,
-            raw_row_ref=self.raw_row_ref,
-            confidence=self.confidence,
-            status=self.status,
-        )
+        _validated_transaction_fact(self)
 
 
 @dataclass(frozen=True)
@@ -159,10 +124,6 @@ class SourceTranslationBatch:
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
     wallet_inventory: tuple[WalletInventoryRecord, ...]
-
-    @property
-    def facts(self) -> tuple[TransactionFact, ...]:
-        return transaction_facts_from_drafts(self.drafts)
 
 
 def classification(
@@ -203,7 +164,7 @@ def economic_leg(  # pylint: disable=too-many-arguments
     )
 
 
-def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact:
+def _validated_transaction_fact(draft: EconomicActivityDraft) -> TransactionFact:
     return TransactionFact(
         fact_id=TransactionId(draft.activity_id),
         source=SourceId(draft.source),
@@ -240,7 +201,3 @@ def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact
         confidence=draft.confidence,
         status=draft.status,
     )
-
-
-def transaction_facts_from_drafts(drafts: tuple[EconomicActivityDraft, ...]) -> tuple[TransactionFact, ...]:
-    return tuple(transaction_fact_from_draft(draft) for draft in drafts)

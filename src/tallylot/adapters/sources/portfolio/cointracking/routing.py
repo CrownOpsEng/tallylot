@@ -3,18 +3,24 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from pathlib import Path
 
-from tallylot.application.intake.file_facts import detect_capture_id
-from tallylot.application.intake.routing.targets import relative_target_path
-from tallylot.ports.intake_routing import IntakeRoute, IntakeRoutingRequest
+from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 COINTRACKING_CAPTURE_PATTERN = re.compile(r"as of:\s*(\d{2})\.(\d{2})\.(\d{4})", re.IGNORECASE)
+PATH_DATE_PATTERNS = (
+    re.compile(r"(?<!\d)(?P<year>20\d{2})[-_.](?P<month>\d{2})[-_.](?P<day>\d{2})(?!\d)"),
+    re.compile(r"(?<!\d)(?P<month>\d{2})[-_.](?P<day>\d{2})[-_.](?P<year>20\d{2})(?!\d)"),
+    re.compile(r"(?<!\d)(?P<year>20\d{2})(?P<month>\d{2})(?P<day>\d{2})(?:\d{4})?(?!\d)"),
+)
 CAPTURE_MONTH_PATTERNS = (
     re.compile(r"(?P<year>20\d{2})-(?P<month>\d{2})"),
     re.compile(r"(?P<year>20\d{2})(?P<month>\d{2})(?P<day>\d{2})\d{4}"),
     re.compile(r"(?P<year>20\d{2})(?P<month>\d{2})(?!\d)"),
 )
+PATH_YEAR_PATTERN = re.compile(r"(?<!\d)(20\d{2})(?!\d)")
+MIN_TIMESTAMP_PATTERN = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{2})-\d{2}(?: \d{2}:\d{2}:\d{2})?$")
 
 
 def match_intake(relative_path: str) -> int:
@@ -31,7 +37,7 @@ def match_intake(relative_path: str) -> int:
 def route_intake(request: IntakeRoutingRequest) -> IntakeRoute | None:
     route_key = request.route_key
     if _is_portfolio_export(route_key):
-        capture_id = _capture_id(request.file_path) or detect_capture_id(route_key, request.facts) or "unknown"
+        capture_id = _capture_id(request.file_path) or _fallback_capture_id(route_key, request.facts) or "unknown"
         target_path = (
             request.workspace_root
             / "evidence"
@@ -58,7 +64,7 @@ def route_intake(request: IntakeRoutingRequest) -> IntakeRoute | None:
             / "portfolio"
             / "cointracking"
             / capture_id
-            / relative_target_path(route_key)
+            / _relative_target_path(route_key)
         )
         return IntakeRoute(
             category="portfolio_raw",
@@ -103,8 +109,39 @@ def _sidecar_capture_id(request: IntakeRoutingRequest) -> str:
 
 
 def _path_capture_id(relative_path: str) -> str:
+    parsed_dates = sorted(_parsed_path_dates(relative_path))
+    if parsed_dates:
+        return parsed_dates[-1].strftime("%Y-%m")
     for pattern in CAPTURE_MONTH_PATTERNS:
         match = pattern.search(relative_path)
         if match is not None:
             return f"{match.group('year')}-{match.group('month')}"
+    year_match = PATH_YEAR_PATTERN.search(relative_path)
+    if year_match is not None:
+        return year_match.group(1)
     return ""
+
+
+def _fallback_capture_id(relative_path: str, facts: IntakeFileFacts) -> str:
+    match = MIN_TIMESTAMP_PATTERN.match(facts.min_timestamp.strip())
+    if match is not None:
+        return f"{match.group('year')}-{match.group('month')}"
+    return _path_capture_id(relative_path)
+
+
+def _parsed_path_dates(relative_path: str) -> list[date]:
+    parsed_dates: list[date] = []
+    for pattern in PATH_DATE_PATTERNS:
+        for match in pattern.finditer(relative_path):
+            month = int(match.group("month"))
+            day = int(match.group("day"))
+            year = int(match.group("year"))
+            try:
+                parsed_dates.append(date(year, month, day))
+            except ValueError:
+                continue
+    return parsed_dates
+
+
+def _relative_target_path(relative_path: str) -> Path:
+    return Path(relative_path.replace("::", "/members/"))

@@ -43,6 +43,24 @@ ARCHITECTURE_DOC_PATHS = [
     REPO_ROOT / "docs" / "architecture" / "reconciliation-tax-implementation-plan.md",
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
 ]
+ENV_PREFIX_REQUIRED_DOC_PATHS = (
+    REPO_ROOT / "README.md",
+    REPO_ROOT / "docs" / "operations" / "operations-quickstart.md",
+    REPO_ROOT / "docs" / "operations" / "mop.md",
+    REPO_ROOT / "docs" / "operations" / "baseline-validation.md",
+    REPO_ROOT / "docs" / "operations" / "export-checklist.md",
+    REPO_ROOT / "docs" / "operations" / "wallet-inventory.md",
+    REPO_ROOT / "docs" / "workspace" / "analysis" / "inventory" / "README.md",
+    REPO_ROOT / ".claude" / "commands" / "adapter-authoring.md",
+    REPO_ROOT / ".claude" / "commands" / "implementation-checkpoint.md",
+    REPO_ROOT / ".claude" / "commands" / "normalization-exceptions.md",
+    REPO_ROOT / ".claude" / "commands" / "reconciliation-tax-build.md",
+    REPO_ROOT / ".claude" / "commands" / "round-verification.md",
+    REPO_ROOT / ".claude" / "commands" / "source-diff.md",
+    REPO_ROOT / ".claude" / "commands" / "source-intake.md",
+    REPO_ROOT / ".claude" / "commands" / "supporting-artifacts.md",
+    REPO_ROOT / ".claude" / "commands" / "wallet-inventory.md",
+)
 PRODUCTION_COMMAND_ROUTE_PATTERN = re.compile(
     r'(?:UV_PROJECT_ENVIRONMENT="\$HOME/\.venvs/tallylot-py312" )?uv run tallylot '
     r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
@@ -82,6 +100,22 @@ def _registered_routes(typer_app: Typer) -> set[str]:
     return routes
 
 
+def _bare_uv_command_examples(path: Path) -> tuple[str, ...]:
+    offenders: list[str] = []
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("UV_PROJECT_ENVIRONMENT="):
+            continue
+        if re.match(r"^uv (run|sync)\b", stripped):
+            offenders.append(stripped)
+            continue
+        for match in re.finditer(r"`(uv (?:run|sync)\b[^`]*)`", line):
+            offenders.append(match.group(1))
+
+    return tuple(offenders)
+
+
 def test_documented_cli_routes_exist() -> None:
     documented_routes = _documented_routes(PRODUCTION_ROUTE_DOC_PATHS, PRODUCTION_COMMAND_ROUTE_PATTERN)
     registered_routes = _registered_routes(app)
@@ -119,6 +153,7 @@ def test_documented_claude_command_routes_exist() -> None:
         ".claude/commands/supporting-artifacts.md",
         ".claude/commands/adapter-authoring.md",
         ".claude/commands/implementation-checkpoint.md",
+        ".claude/commands/reconciliation-tax-build.md",
     )
 
     for relative_path in command_paths:
@@ -135,6 +170,7 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
         ".claude/commands/supporting-artifacts.md",
         ".claude/commands/adapter-authoring.md",
         ".claude/commands/implementation-checkpoint.md",
+        ".claude/commands/reconciliation-tax-build.md",
     )
 
     for relative_path in command_paths:
@@ -187,6 +223,17 @@ def test_wallet_inventory_route_mentions_checkpoint_command() -> None:
     text = (REPO_ROOT / ".claude" / "commands" / "wallet-inventory.md").read_text(encoding="utf-8")
 
     assert "checkpoint rebuild-wallet-inventory" in text
+
+
+def test_known_command_docs_use_env_prefixed_uv_examples() -> None:
+    offenders: dict[str, tuple[str, ...]] = {}
+
+    for path in ENV_PREFIX_REQUIRED_DOC_PATHS:
+        examples = _bare_uv_command_examples(path)
+        if examples:
+            offenders[str(path.relative_to(REPO_ROOT))] = examples
+
+    assert not offenders, f"command docs contain bare uv examples: {offenders}"
 
 
 def test_docs_do_not_reference_retired_service_or_model_buckets() -> None:

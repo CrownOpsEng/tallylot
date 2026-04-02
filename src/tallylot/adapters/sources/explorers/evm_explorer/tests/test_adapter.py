@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.explorers.evm_explorer.adapter import EvmExplorerAdapter
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
@@ -86,14 +87,15 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(tmp_path: 
         build_source_profile(adapter_id="evm_explorer", source="ethereum-wallet", raw_dir=str(raw_dir)),
         raw_dir,
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    assert len(result.facts) == 1
-    assert result.facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
-    assert result.facts[0].projection_type == ProjectionType.DEPOSIT
-    assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
-    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
-    assert result.facts[0].legs[0].direction == "in"
-    assert str(result.facts[0].legs[0].amount) == "1.50000000"
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
+    assert facts[0].projection_type == ProjectionType.DEPOSIT
+    assert facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
+    assert facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
+    assert facts[0].legs[0].direction == "in"
+    assert str(facts[0].legs[0].amount) == "1.50000000"
     assert not result.issues
 
 
@@ -115,7 +117,7 @@ def test_evm_explorer_adapter_surfaces_suspicious_nft_airdrops_for_review(tmp_pa
         raw_dir,
     )
 
-    assert not result.facts
+    assert not compile_activity_drafts(result.drafts)
     assert len(result.issues) == 1
     assert result.issues[0].kind == "review_required"
     assert "$SCAM AIRDROP" in result.issues[0].message
@@ -154,15 +156,16 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames() -> None:
     profile, adapter = profile_and_adapter("bsc-wallet", raw_dir)
     result = adapter.translate(profile, raw_dir)
     evidence, issues = adapter.extract_wallet_inventory("bsc-wallet", raw_dir, profile)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "evm_explorer"
     assert issues == ()
     assert [row.wallet_id for row in evidence] == ["evm_address:0x1111111111111111111111111111111111111111"]
-    assert len(result.facts) == 1
-    assert result.facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
-    assert result.facts[0].projection_type == ProjectionType.DEPOSIT
-    assert str(result.facts[0].legs[0].asset) == "BNB"
-    assert str(result.facts[0].legs[0].amount) == "1.50000000"
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
+    assert facts[0].projection_type == ProjectionType.DEPOSIT
+    assert str(facts[0].legs[0].asset) == "BNB"
+    assert str(facts[0].legs[0].amount) == "1.50000000"
 
 
 def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_path: Path) -> None:
@@ -175,8 +178,9 @@ def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_pa
     result = adapter.translate(profile, tmp_path / "raw")
 
     assert str(profile.adapter_id) == "evm_explorer"
-    assert len(result.facts) == 1
-    assert result.facts[0].projection_type == ProjectionType.DEPOSIT
+    facts = compile_activity_drafts(result.drafts)
+    assert len(facts) == 1
+    assert facts[0].projection_type == ProjectionType.DEPOSIT
 
 
 def test_evm_explorer_suspicious_nft_fixture_surfaces_review_without_auto_import() -> None:
@@ -185,7 +189,7 @@ def test_evm_explorer_suspicious_nft_fixture_surfaces_review_without_auto_import
     profile, adapter = profile_and_adapter("bsc-wallet", raw_dir)
     result = adapter.translate(profile, raw_dir)
 
-    assert result.facts == ()
+    assert not compile_activity_drafts(result.drafts)
     assert len(result.issues) == 1
     assert result.issues[0].kind == "review_required"
     assert "suspicious NFT airdrop" in result.issues[0].message

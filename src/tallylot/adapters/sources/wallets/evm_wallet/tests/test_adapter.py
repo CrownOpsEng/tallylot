@@ -13,6 +13,7 @@ from tallylot.adapters.sources.wallets.evm_wallet.adapter import (
     _object_map,
     _wallet_state_root,
 )
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.ports.source_profiles import FileInventoryEntry
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
@@ -123,7 +124,7 @@ def test_evm_wallet_adapter_normalize_returns_wallet_inventory_and_missing_ident
         raw_dir,
     )
 
-    assert not result.facts
+    assert not compile_activity_drafts(result.drafts)
     assert not result.wallet_inventory
     assert len(result.issues) == 1
     assert result.issues[0].kind == "missing_identifier"

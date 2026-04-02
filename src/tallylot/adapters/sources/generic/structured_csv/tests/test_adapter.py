@@ -8,6 +8,7 @@ from tallylot.adapters.sources.generic.structured_csv.contracts import REQUIRED_
 from tallylot.adapters.sources.generic.structured_csv.feedback import StructuredCsvFeedbackFactory
 from tallylot.adapters.sources.generic.structured_csv.normalization import translate_structured_csv
 from tallylot.adapters.sources.generic.structured_csv.validation import StructuredCsvRowValidator
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import LegKind
 from tallylot.ports.source_profiles import FileInventoryEntry
 from tests.support.services import build_source_profile
@@ -95,7 +96,7 @@ def test_translate_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
         adapter_id="structured_csv",
     )
 
-    assert not result.facts
+    assert not compile_activity_drafts(result.drafts)
     assert not result.balance_evidence
     assert len(result.issues) == 1
     assert result.issues[0].kind == "invalid_schema"
@@ -150,10 +151,11 @@ def test_translate_structured_csv_maps_charge_and_rebate_legs(tmp_path: Path) ->
         raw_dir,
         adapter_id="structured_csv",
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    assert len(result.facts) == 1
-    charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
-    rebate_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.REBATE)
+    assert len(facts) == 1
+    charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
+    rebate_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.REBATE)
     assert charge_legs[0].amount == Decimal("1.0")
     assert charge_legs[0].attributed_to_direction == "out"
     assert rebate_legs[0].amount == Decimal("0.01")

@@ -5,6 +5,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.wealthsimple.adapter import WealthsimpleAdapter
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
@@ -15,16 +16,17 @@ def test_wealthsimple_fixture_exercises_supported_and_unsupported_rows() -> None
 
     profile, adapter = profile_and_adapter("WealthSimple", raw_dir)
     result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "wealthsimple"
-    assert len(result.facts) == 1
-    assert result.facts[0].economic_kind == EconomicKind.SPOT_TRADE
-    assert result.facts[0].projection_type == ProjectionType.TRADE
-    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
-    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
-    assert result.facts[0].timestamp == datetime(2023, 9, 22, 0, 0, 0, tzinfo=UTC)
-    primary_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.PRIMARY)
-    charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.SPOT_TRADE
+    assert facts[0].projection_type == ProjectionType.TRADE
+    assert facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
+    assert facts[0].timestamp == datetime(2023, 9, 22, 0, 0, 0, tzinfo=UTC)
+    primary_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.PRIMARY)
+    charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
     assert primary_legs[1].amount == Decimal("9998.75")
     assert charge_legs[0].amount == Decimal("1.25")
     assert len(result.issues) == 1
@@ -37,13 +39,14 @@ def test_wealthsimple_adapter_uses_broker_activity_family_without_filename_depen
 
     profile, adapter = profile_and_adapter("Future Broker", raw_dir)
     result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "wealthsimple"
-    assert len(result.facts) == 1
-    assert result.facts[0].raw_file == "broker-export.csv"
-    assert result.facts[0].projection_type == ProjectionType.TRADE
-    primary_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.PRIMARY)
-    charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert len(facts) == 1
+    assert facts[0].raw_file == "broker-export.csv"
+    assert facts[0].projection_type == ProjectionType.TRADE
+    primary_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.PRIMARY)
+    charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
     assert primary_legs[1].amount == Decimal("17500")
     assert charge_legs[0].amount == Decimal("12")
     assert not result.issues
@@ -80,6 +83,7 @@ def test_wealthsimple_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> 
         raw_dir,
     )
 
-    assert len(result.facts) == 1
-    assert result.facts[0].projection_type == ProjectionType.TRADE
+    facts = compile_activity_drafts(result.drafts)
+    assert len(facts) == 1
+    assert facts[0].projection_type == ProjectionType.TRADE
     assert not result.issues

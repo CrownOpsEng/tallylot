@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
@@ -12,18 +13,19 @@ def test_ledger_live_adapter_normalizes_grouped_trade_rows() -> None:
 
     profile, adapter = profile_and_adapter("ledger-live-main", raw_dir)
     result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "ledger_live"
-    assert len(result.facts) == 1
-    assert result.facts[0].economic_kind == EconomicKind.ASSET_SWAP
-    assert result.facts[0].projection_type == ProjectionType.TRADE
-    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
-    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
-    assert result.facts[0].legs[0].direction == "in"
-    assert result.facts[0].legs[1].direction == "out"
-    assert str(result.facts[0].legs[0].amount) == "0.01000000"
-    assert str(result.facts[0].legs[1].asset) == "ETH"
-    charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.ASSET_SWAP
+    assert facts[0].projection_type == ProjectionType.TRADE
+    assert facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
+    assert facts[0].legs[0].direction == "in"
+    assert facts[0].legs[1].direction == "out"
+    assert str(facts[0].legs[0].amount) == "0.01000000"
+    assert str(facts[0].legs[1].asset) == "ETH"
+    charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
     assert str(charge_legs[0].amount) == "0.01000000"
     assert result.issues == ()
 
@@ -70,6 +72,6 @@ def test_ledger_live_adapter_surfaces_duplicate_group_rows_without_truncating(tm
     adapter = profile_and_adapter("ledger-live-main", raw_dir)[1]
     result = adapter.translate(profile, raw_dir)
 
-    assert not result.facts
+    assert not compile_activity_drafts(result.drafts)
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_group"

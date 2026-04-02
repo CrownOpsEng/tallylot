@@ -25,7 +25,7 @@ remain part of the current round-close process.
 
 ### 1. Lock The Baseline
 
-Run `uv run python -m tools.oracles.cli baseline validate` against the oracle
+Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli baseline validate` against the oracle
 baseline export folder and review the generated reconciliation package.
 
 ### 2. Capture Raw Evidence
@@ -47,26 +47,26 @@ baseline export folder and review the generated reconciliation package.
 
 ### 4. Screen And Stage
 
-- run `uv run python -m tools.oracles.cli batch screen`
+- run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen`
 - do not proceed while `stage_summary.json` reports `passed: false`
-- run `uv run python -m tools.oracles.cli batch stage` only after the candidate passes the screen
+- run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch stage` only after the candidate passes the screen
 
 ### 5. Seed And Execute The Round
 
-- run `uv run python -m tools.oracles.cli round scaffold`
+- run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli round scaffold`
 - make the manual repair or import in the external verification tool
 - save the fresh verification export set in `working/verification/<round_id>/`
 
 ### 6. Verify
 
-- run `uv run python -m tools.oracles.cli verification compare`
+- run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli verification compare`
 - review the comparison package
 - update issue and source-tracking files
 - update the round log
 
 ### 7. Reconcile When Needed
 
-Use `uv run python -m tools.oracles.cli source diff` when you need a
+Use `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli source diff` when you need a
 deterministic comparison between the candidate or reference source slice and a
 reference ledger slice.
 
