@@ -1,5 +1,9 @@
 {
   "python.terminal.activateEnvironment": true,
+  "python.defaultInterpreterPath": "${env:HOME}/.venvs/tallylot-py312/bin/python",
+  "terminal.integrated.env.linux": {
+    "UV_PROJECT_ENVIRONMENT": "${env:HOME}/.venvs/tallylot-py312"
+  },
   "python.analysis.extraPaths": [
     "${workspaceFolder}/src"
   ],
@@ -10,6 +14,8 @@
   ],
   "files.exclude": {
     "**/.venv": true,
+    "**/.uv-env": true,
+    "**/.uv-venv": true,
     "**/__pycache__": true,
     "**/.mypy_cache": true,
     "**/.pytest_cache": true,
@@ -17,6 +23,8 @@
   },
   "files.watcherExclude": {
     "**/.venv/**": true,
+    "**/.uv-env/**": true,
+    "**/.uv-venv/**": true,
     "**/__pycache__/**": true,
     "**/.mypy_cache/**": true,
     "**/.pytest_cache/**": true,
@@ -24,6 +32,8 @@
   },
   "search.exclude": {
     "**/.venv": true,
+    "**/.uv-env": true,
+    "**/.uv-venv": true,
     "**/__pycache__": true,
     "**/.mypy_cache": true,
     "**/.pytest_cache": true,
@@ -31,6 +41,8 @@
   },
   "python.analysis.exclude": [
     "**/.venv",
+    "**/.uv-env",
+    "**/.uv-venv",
     "**/__pycache__",
     "**/.mypy_cache",
     "**/.pytest_cache",

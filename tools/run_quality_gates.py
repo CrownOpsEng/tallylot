@@ -7,6 +7,8 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
+from tools.uv_environment import repo_uv_environment
+
 
 @dataclass(frozen=True)
 class QualityGate:
@@ -45,7 +47,13 @@ def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
 
 def _run_gate(gate: QualityGate) -> tuple[QualityGate, subprocess.CompletedProcess[str], float]:
     started = time.perf_counter()
-    result = subprocess.run(gate.command, capture_output=True, text=True, check=False)
+    result = subprocess.run(
+        gate.command,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=repo_uv_environment(),
+    )
     return gate, result, time.perf_counter() - started
 
 

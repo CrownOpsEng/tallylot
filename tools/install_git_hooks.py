@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from tools.uv_environment import default_project_environment, repo_uv_environment
+
 HOOK_TEMPLATE = """#!/usr/bin/env bash
 set -euo pipefail
 
@@ -72,6 +74,10 @@ def _installed_project_environment() -> str | None:
     return str(Path(sys.executable).parent.parent)
 
 
+def _hook_project_environment() -> str:
+    return _installed_project_environment() or default_project_environment()
+
+
 def install_hooks(repo_root: Path) -> None:
     subprocess.run(
         ["git", "config", "--local", "commit.template", ".gitmessage.txt"],
@@ -92,9 +98,10 @@ def install_hooks(repo_root: Path) -> None:
         ],
         check=True,
         cwd=repo_root,
+        env=repo_uv_environment(),
     )
     hook_format_args = {
-        "project_environment": shlex.quote(_installed_project_environment() or ""),
+        "project_environment": shlex.quote(_hook_project_environment()),
         "python": shlex.quote(sys.executable),
     }
     hook_path = repo_root / ".git/hooks/pre-commit"
