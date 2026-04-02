@@ -57,7 +57,7 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source inta
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake apply --incoming-dir <path> --report-dir <path>
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source profile --source <name> --raw-dir <path> --output-dir <path>
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize --source <name> --raw-dir <path> --output-dir <path>
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint rebuild-wallet-inventory --normalized-root <path> --output <path>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint rebuild-location-inventory --normalized-root <path> --output <path>
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint extract-pdf-balances --pdf <path> --output <path> --statement-kind <kind>
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot output render file --output-adapter cointracking_csv --facts <path> --output <path>
 ```

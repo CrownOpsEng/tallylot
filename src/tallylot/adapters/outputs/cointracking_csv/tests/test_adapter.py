@@ -12,25 +12,25 @@ from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.outputs import RenderOutputRequest
 from tallylot.domain.transactions import (
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
+    AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactClassification,
     FactLegPolicy,
-    JournalIntent,
+    FactSemantics,
     LegKind,
     LegShapeLimit,
-    ProjectionType,
-    TaxTreatmentCode,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service, build_render_service
 
 
-def test_cointracking_projection_mapping_covers_every_runtime_projection_type() -> None:
-    assert set(COINTRACKING_TYPE_LABELS) == set(ProjectionType)
+def test_cointracking_projection_mapping_covers_every_runtime_projection_hint() -> None:
+    assert set(COINTRACKING_TYPE_LABELS) == set(ProjectionHint)
 
 
 def test_cointracking_output_matches_expected_schema_and_projection_mapping(
@@ -63,7 +63,7 @@ def test_cointracking_output_matches_expected_schema_and_projection_mapping(
 
     assert tuple(rows[0]) == COINTRACKING_HEADER
     assert len(rows) == 2
-    assert {row["projection_type"] for row in fact_rows} == {"reward_bonus", "trade"}
+    assert {row["projection_hint"] for row in fact_rows} == {"reward_bonus", "trade"}
     assert {row["Type"] for row in rows} == {"Reward / Bonus", "Trade"}
     assert not (normalized_dir / "cointracking_candidate.csv").exists()
 
@@ -75,13 +75,12 @@ def test_cointracking_projection_reads_standard_fee_leg() -> None:
             source=SourceId("fixture"),
             adapter_id=AdapterId("fixture"),
             timestamp=datetime(2025, 1, 1, tzinfo=UTC),
-            account="Fixture",
-            wallet="Primary",
-            classification=FactClassification(
+            location_id=LocationId("fixture:primary"),
+            semantics=FactSemantics(
                 economic_kind=EconomicKind.SPOT_TRADE,
-                projection_type=ProjectionType.TRADE,
-                journal_intent=JournalIntent.ASSET_EXCHANGE,
-                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                projection_hint=ProjectionHint.TRADE,
+                accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
             ),
             legs=(
                 EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
@@ -110,13 +109,12 @@ def test_cointracking_projection_rejects_unsupported_multi_leg_shapes() -> None:
                 source=SourceId("fixture"),
                 adapter_id=AdapterId("fixture"),
                 timestamp=datetime(2025, 1, 1, tzinfo=UTC),
-                account="Fixture",
-                wallet="Primary",
-                classification=FactClassification(
+                location_id=LocationId("fixture:primary"),
+                semantics=FactSemantics(
                     economic_kind=EconomicKind.SPOT_TRADE,
-                    projection_type=ProjectionType.TRADE,
-                    journal_intent=JournalIntent.ASSET_EXCHANGE,
-                    tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                    projection_hint=ProjectionHint.TRADE,
+                    accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                    tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                 ),
                 legs=(
                     EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
@@ -141,13 +139,12 @@ def test_cointracking_projection_rejects_inbound_charge_legs() -> None:
                 source=SourceId("fixture"),
                 adapter_id=AdapterId("fixture"),
                 timestamp=datetime(2025, 1, 1, tzinfo=UTC),
-                account="Fixture",
-                wallet="Primary",
-                classification=FactClassification(
+                location_id=LocationId("fixture:primary"),
+                semantics=FactSemantics(
                     economic_kind=EconomicKind.CASH_EXPENSE,
-                    projection_type=ProjectionType.EXPENSE_NON_TAXABLE,
-                    journal_intent=JournalIntent.EXPENSE_RECOGNITION,
-                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+                    projection_hint=ProjectionHint.EXPENSE_NON_TAXABLE,
+                    accounting_intent_hint=AccountingIntentHint.EXPENSE_RECOGNITION,
+                    tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_EXPENSE,
                 ),
                 legs=(
                     EconomicLeg(direction="out", kind=LegKind.PRIMARY, asset=AssetSymbol("CAD"), amount=Decimal("1")),
@@ -171,13 +168,12 @@ def test_cointracking_projection_rejects_fee_only_shapes() -> None:
                 source=SourceId("fixture"),
                 adapter_id=AdapterId("fixture"),
                 timestamp=datetime(2025, 1, 1, tzinfo=UTC),
-                account="Fixture",
-                wallet="Primary",
-                classification=FactClassification(
+                location_id=LocationId("fixture:primary"),
+                semantics=FactSemantics(
                     economic_kind=EconomicKind.CASH_EXPENSE,
-                    projection_type=ProjectionType.EXPENSE_NON_TAXABLE,
-                    journal_intent=JournalIntent.EXPENSE_RECOGNITION,
-                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+                    projection_hint=ProjectionHint.EXPENSE_NON_TAXABLE,
+                    accounting_intent_hint=AccountingIntentHint.EXPENSE_RECOGNITION,
+                    tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_EXPENSE,
                 ),
                 legs=(
                     EconomicLeg(direction="out", kind=LegKind.CHARGE, asset=AssetSymbol("CAD"), amount=Decimal("1")),

@@ -2,25 +2,25 @@
 
 from __future__ import annotations
 
-from tallylot.domain.transactions import EconomicLeg, LegKind, ProjectionType, TransactionFact
+from tallylot.domain.transactions import EconomicLeg, LegKind, ProjectionHint, TransactionFact
 from tallylot.domain.value_objects import format_decimal, format_timestamp
 
 COINTRACKING_TYPE_LABELS = {
-    ProjectionType.DEPOSIT: "Deposit",
-    ProjectionType.DERIVATIVES_FUTURES_LOSS: "Derivatives / Futures Loss",
-    ProjectionType.DERIVATIVES_FUTURES_PROFIT: "Derivatives / Futures Profit",
-    ProjectionType.EXPENSE_NON_TAXABLE: "Expense (non taxable)",
-    ProjectionType.INTEREST_INCOME: "Interest Income",
-    ProjectionType.REWARD_BONUS: "Reward / Bonus",
-    ProjectionType.STAKING: "Staking",
-    ProjectionType.SWAP_NON_TAXABLE: "Swap (non taxable)",
-    ProjectionType.TRADE: "Trade",
-    ProjectionType.WITHDRAWAL: "Withdrawal",
+    ProjectionHint.DEPOSIT: "Deposit",
+    ProjectionHint.DERIVATIVES_FUTURES_LOSS: "Derivatives / Futures Loss",
+    ProjectionHint.DERIVATIVES_FUTURES_PROFIT: "Derivatives / Futures Profit",
+    ProjectionHint.EXPENSE_NON_TAXABLE: "Expense (non taxable)",
+    ProjectionHint.INTEREST_INCOME: "Interest Income",
+    ProjectionHint.REWARD_BONUS: "Reward / Bonus",
+    ProjectionHint.STAKING: "Staking",
+    ProjectionHint.SWAP_NON_TAXABLE: "Swap (non taxable)",
+    ProjectionHint.TRADE: "Trade",
+    ProjectionHint.WITHDRAWAL: "Withdrawal",
 }
 
 
 def cointracking_row(transaction: TransactionFact) -> dict[str, str]:
-    if not transaction.projection_type:
+    if not transaction.projection_hint:
         raise ValueError(f"fact {transaction.fact_id} is missing CoinTracking projection metadata")
     if not any(leg.kind is LegKind.PRIMARY for leg in transaction.legs):
         raise ValueError(
@@ -32,14 +32,14 @@ def cointracking_row(transaction: TransactionFact) -> dict[str, str]:
     charge_leg = _single_charge_leg(transaction)
     _reject_other_non_primary_legs(transaction)
     return {
-        "Type": COINTRACKING_TYPE_LABELS[transaction.projection_type],
+        "Type": COINTRACKING_TYPE_LABELS[transaction.projection_hint],
         "Buy": format_decimal(None if inbound_leg is None else inbound_leg.amount),
         "Cur.": "" if inbound_leg is None else str(inbound_leg.asset),
         "Sell": format_decimal(None if outbound_leg is None else outbound_leg.amount),
         "Cur..1": "" if outbound_leg is None else str(outbound_leg.asset),
         "Fee": format_decimal(None if charge_leg is None else charge_leg.amount),
         "Cur..2": "" if charge_leg is None else str(charge_leg.asset),
-        "Exchange": transaction.account,
+        "Exchange": str(transaction.location_id),
         "Group": transaction.operation_group_id,
         "Comment": transaction.description,
         "Date": format_timestamp(transaction.timestamp),

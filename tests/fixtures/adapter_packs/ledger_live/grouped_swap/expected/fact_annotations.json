@@ -1,5 +1,6 @@
 [
   {
+    "adapter_metadata": [],
     "fact_id": "ledger_live:ledgerlive-operations.csv:op-1",
     "provenance_refs": [],
     "review_markers": []

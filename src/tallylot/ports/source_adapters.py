@@ -8,7 +8,7 @@ from typing import Protocol
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import JsonValue
 from tallylot.ports.adapter_contracts import AdapterManifest
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
@@ -28,12 +28,12 @@ class SourceAdapter(Protocol):
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]: ...
 
-    def extract_wallet_inventory(
+    def extract_location_inventory(
         self,
         source: str,
         raw_dir: Path,
         profile: SourceProfile,
-    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]: ...
+    ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]: ...
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch: ...
 

@@ -1,12 +1,11 @@
 [
   {
-    "account": "bsc-wallet",
     "as_of": "2023-11-14 12:00:00",
     "asset": "BNB",
     "balance_kind": "available",
+    "location_id": "bsc_wallet",
     "notes": "",
     "quantity": "1.5",
-    "source": "bsc-wallet",
-    "wallet": "bsc-wallet"
+    "source": "bsc-wallet"
   }
 ]

@@ -8,22 +8,24 @@ from decimal import Decimal
 from typing import Literal
 
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+from tallylot.domain.locations import LocationKind, LocationRecord
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import (
+    AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactClassification,
     FactDirection,
     FactLegPolicy,
-    JournalIntent,
+    FactSemantics,
     LegKind,
-    ProjectionType,
-    TaxTreatmentCode,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
 from tallylot.domain.value_objects import require_utc_datetime
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.annotations import AdapterMetadata
+from tallylot.ports.evidence import LocationInventoryRecord
 
 DraftDirection = Literal["in", "out"]
 
@@ -31,9 +33,9 @@ DraftDirection = Literal["in", "out"]
 @dataclass(frozen=True)
 class ActivityClassification:
     economic_kind: EconomicKind
-    projection_type: ProjectionType | None
-    journal_intent: JournalIntent
-    tax_treatment_code: TaxTreatmentCode
+    projection_hint: ProjectionHint | None
+    accounting_intent_hint: AccountingIntentHint
+    tax_treatment_hint: TaxTreatmentHint
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,7 @@ class ActivityDraftSeed:
     operation_group_id: str = ""
     provenance_refs: tuple[str, ...] = ()
     review_markers: tuple[str, ...] = ()
+    adapter_metadata: tuple[AdapterMetadata, ...] = ()
     confidence: str = "high"
     status: str = "mapped"
 
@@ -68,8 +71,7 @@ class EconomicLegDraft:
     amount: Decimal
     subtype: str | None = None
     attributed_to_direction: FactDirection | None = None
-    account: str = ""
-    wallet: str = ""
+    location_id: LocationId | None = None
 
     def __post_init__(self) -> None:
         EconomicLeg(
@@ -79,8 +81,7 @@ class EconomicLegDraft:
             amount=self.amount,
             subtype=self.subtype,
             attributed_to_direction=self.attributed_to_direction,
-            account=self.account,
-            wallet=self.wallet,
+            location_id=self.location_id,
         )
 
 
@@ -90,8 +91,7 @@ class EconomicActivityDraft:
     source: str
     adapter_id: str
     timestamp: datetime
-    account: str
-    wallet: str
+    location_id: LocationId
     classification: ActivityClassification
     legs: tuple[EconomicLegDraft, ...]
     leg_policy: FactLegPolicy
@@ -103,6 +103,7 @@ class EconomicActivityDraft:
     operation_group_id: str = ""
     provenance_refs: tuple[str, ...] = ()
     review_markers: tuple[str, ...] = ()
+    adapter_metadata: tuple[AdapterMetadata, ...] = ()
     confidence: str = "high"
     status: str = "mapped"
 
@@ -123,21 +124,39 @@ class SourceTranslationBatch:
     balance_evidence: tuple[BalanceEvidence, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
-    wallet_inventory: tuple[WalletInventoryRecord, ...]
+    location_inventory: tuple[LocationInventoryRecord, ...]
+
+
+@dataclass(frozen=True)
+class LocationDraft:
+    location_id: LocationId
+    location_kind: LocationKind
+    label: str
+    parent_location_id: LocationId | None = None
+    path: tuple[str, ...] = ()
+
+    def to_record(self) -> LocationRecord:
+        return LocationRecord(
+            location_id=self.location_id,
+            location_kind=self.location_kind,
+            label=self.label,
+            parent_location_id=self.parent_location_id,
+            path=self.path,
+        )
 
 
 def classification(
     *,
     economic_kind: EconomicKind,
-    projection_type: ProjectionType | None = None,
-    journal_intent: JournalIntent,
-    tax_treatment_code: TaxTreatmentCode,
+    projection_hint: ProjectionHint | None = None,
+    accounting_intent_hint: AccountingIntentHint,
+    tax_treatment_hint: TaxTreatmentHint,
 ) -> ActivityClassification:
     return ActivityClassification(
         economic_kind=economic_kind,
-        projection_type=projection_type,
-        journal_intent=journal_intent,
-        tax_treatment_code=tax_treatment_code,
+        projection_hint=projection_hint,
+        accounting_intent_hint=accounting_intent_hint,
+        tax_treatment_hint=tax_treatment_hint,
     )
 
 
@@ -149,8 +168,7 @@ def economic_leg(  # pylint: disable=too-many-arguments
     amount: Decimal,
     subtype: str | None = None,
     attributed_to_direction: FactDirection | None = None,
-    account: str = "",
-    wallet: str = "",
+    location_id: LocationId | None = None,
 ) -> EconomicLegDraft:
     return EconomicLegDraft(
         direction=direction,
@@ -159,8 +177,7 @@ def economic_leg(  # pylint: disable=too-many-arguments
         amount=amount,
         subtype=subtype,
         attributed_to_direction=attributed_to_direction,
-        account=account,
-        wallet=wallet,
+        location_id=location_id,
     )
 
 
@@ -170,13 +187,12 @@ def _validated_transaction_fact(draft: EconomicActivityDraft) -> TransactionFact
         source=SourceId(draft.source),
         adapter_id=AdapterId(draft.adapter_id),
         timestamp=draft.timestamp,
-        account=draft.account,
-        wallet=draft.wallet,
-        classification=FactClassification(
+        location_id=draft.location_id,
+        semantics=FactSemantics(
             economic_kind=draft.classification.economic_kind,
-            journal_intent=draft.classification.journal_intent,
-            tax_treatment_code=draft.classification.tax_treatment_code,
-            projection_type=draft.classification.projection_type,
+            accounting_intent_hint=draft.classification.accounting_intent_hint,
+            tax_treatment_hint=draft.classification.tax_treatment_hint,
+            projection_hint=draft.classification.projection_hint,
         ),
         legs=tuple(
             EconomicLeg(
@@ -186,8 +202,7 @@ def _validated_transaction_fact(draft: EconomicActivityDraft) -> TransactionFact
                 amount=leg.amount,
                 subtype=leg.subtype,
                 attributed_to_direction=leg.attributed_to_direction,
-                account=leg.account,
-                wallet=leg.wallet,
+                location_id=leg.location_id,
             )
             for leg in draft.legs
         ),

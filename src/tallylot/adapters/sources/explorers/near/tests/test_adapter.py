@@ -6,12 +6,12 @@ from pathlib import Path
 
 from tallylot.adapters.sources.explorers.near.adapter import NearAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
 
-def test_near_adapter_extracts_wallet_inventory_and_staking_split_events(tmp_path: Path) -> None:
+def test_near_adapter_extracts_location_inventory_and_staking_split_events(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     path = raw_dir / "example.near_transactions.csv"
@@ -25,13 +25,13 @@ def test_near_adapter_extracts_wallet_inventory_and_staking_split_events(tmp_pat
     adapter = NearAdapter()
     profile = build_source_profile(adapter_id="near", source="near-main", raw_dir=str(raw_dir))
 
-    wallet_inventory, wallet_issues = adapter.extract_wallet_inventory("near-main", raw_dir, profile)
+    location_inventory, location_issues = adapter.extract_location_inventory("near-main", raw_dir, profile)
     result = adapter.translate(profile, raw_dir)
     facts = compile_activity_drafts(result.drafts)
 
-    assert not wallet_issues
-    assert wallet_inventory[0].identifier_kind == "near_account"
-    assert wallet_inventory[0].identifier_value == "example.near"
+    assert not location_issues
+    assert location_inventory[0].identifier_kind == "near_account"
+    assert location_inventory[0].identifier_value == "example.near"
     assert len(facts) == 3
     assert any(str(event.source) == "near-main - Staking" for event in facts)
 
@@ -53,9 +53,9 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
 
     assert len(facts) == 1
     assert facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
-    assert facts[0].projection_type == ProjectionType.DEPOSIT
-    assert facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
-    assert facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
+    assert facts[0].projection_hint == ProjectionHint.DEPOSIT
+    assert facts[0].accounting_intent_hint == AccountingIntentHint.FUNDING_INFLOW
+    assert facts[0].tax_treatment_hint == TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN
     assert facts[0].timestamp == datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC)
 
 
@@ -72,20 +72,20 @@ def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
         EconomicKind.STAKING_TRANSFER_OUT,
         EconomicKind.STAKING_TRANSFER_IN,
     ]
-    assert [event.projection_type for event in facts] == [
-        ProjectionType.DEPOSIT,
-        ProjectionType.WITHDRAWAL,
-        ProjectionType.DEPOSIT,
+    assert [event.projection_hint for event in facts] == [
+        ProjectionHint.DEPOSIT,
+        ProjectionHint.WITHDRAWAL,
+        ProjectionHint.DEPOSIT,
     ]
-    assert [event.journal_intent for event in facts] == [
-        JournalIntent.FUNDING_INFLOW,
-        JournalIntent.FUNDING_OUTFLOW,
-        JournalIntent.FUNDING_INFLOW,
+    assert [event.accounting_intent_hint for event in facts] == [
+        AccountingIntentHint.FUNDING_INFLOW,
+        AccountingIntentHint.FUNDING_OUTFLOW,
+        AccountingIntentHint.FUNDING_INFLOW,
     ]
-    assert [event.tax_treatment_code for event in facts] == [
-        TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
-        TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
-        TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+    assert [event.tax_treatment_hint for event in facts] == [
+        TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+        TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
+        TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
     ]
     transfer_charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
     assert facts[0].legs[0].amount == Decimal("1")
@@ -98,7 +98,7 @@ def test_near_wallet_capture_extracts_near_account_identifiers() -> None:
     raw_dir = fixture_raw_dir("near", "wallet_capture")
 
     profile, adapter = profile_and_adapter("capture-near", raw_dir)
-    evidence, issues = adapter.extract_wallet_inventory("capture-near", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory("capture-near", raw_dir, profile)
 
     assert str(profile.adapter_id) == "near"
     assert issues == ()

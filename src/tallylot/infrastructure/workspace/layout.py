@@ -47,8 +47,8 @@ SEED_FILES = (
         ),
     ),
     SeedFile(
-        "analysis/inventory/wallet_inventory.csv",
-        "wallet_id,source,account,wallet,evidence_path,identifier_kind,identifier_value,notes\n",
+        "analysis/inventory/location_inventory.csv",
+        "location_id,source,location_kind,location_label,evidence_path,identifier_kind,identifier_value,notes\n",
     ),
     SeedFile(
         "outputs/logs/round_log.csv",

@@ -30,7 +30,7 @@ def _validate_render_policy(facts: tuple[TransactionFact, ...], *, adapter: Outp
     adapter_id = str(adapter.manifest.adapter_id)
     policy = adapter.render_policy
     for fact in facts:
-        if policy.requires_projection_type and fact.projection_type is None:
+        if policy.requires_projection_hint and fact.projection_hint is None:
             raise ValueError(f"fact {fact.fact_id} is missing required {adapter_id} projection metadata")
         counts_by_kind: dict[LegKind, int] = {}
         directional_counts: dict[tuple[LegKind, str], int] = {}

@@ -130,7 +130,7 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
             },
         ),
     )
-    wallet_evidence_path = workspace_root / "analysis" / "inventory" / "wallet_inventory_evidence.csv"
+    wallet_evidence_path = workspace_root / "analysis" / "inventory" / "location_inventory_evidence.csv"
     wallet_evidence_path.parent.mkdir(parents=True, exist_ok=True)
     FilesystemArtifactStore().write_rows(
         wallet_evidence_path,

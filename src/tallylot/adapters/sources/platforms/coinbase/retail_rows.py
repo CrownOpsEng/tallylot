@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
@@ -15,7 +16,13 @@ from tallylot.adapters.support.drafts import (
     classification,
     economic_leg,
 )
-from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    FactDirection,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -150,8 +157,7 @@ def _draft(
         activity_id=seed.activity_id,
         source=str(profile.source),
         adapter_id="coinbase",
-        account="Coinbase",
-        wallet="Coinbase",
+        location_id=location_id_from_parts(str(profile.source)),
         timestamp=seed.timestamp,
         classification=_classification_for_type(tx_type),
         description=seed.description,
@@ -209,29 +215,29 @@ def _classification_for_type(tx_type: str) -> ActivityClassification:
     if tx_type in {"buy", "sell"}:
         return classification(
             economic_kind=EconomicKind.SPOT_TRADE,
-            projection_type=ProjectionType.TRADE,
-            journal_intent=JournalIntent.ASSET_EXCHANGE,
-            tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+            projection_hint=ProjectionHint.TRADE,
+            accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+            tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
         )
     if tx_type == "reward income":
         return classification(
             economic_kind=EconomicKind.INTEREST_INCOME,
-            projection_type=ProjectionType.INTEREST_INCOME,
-            journal_intent=JournalIntent.INCOME_RECOGNITION,
-            tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
+            projection_hint=ProjectionHint.INTEREST_INCOME,
+            accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+            tax_treatment_hint=TaxTreatmentHint.ORDINARY_INCOME,
         )
     if tx_type in {"receive", "deposit"}:
         return classification(
             economic_kind=EconomicKind.ASSET_DEPOSIT,
-            projection_type=ProjectionType.DEPOSIT,
-            journal_intent=JournalIntent.FUNDING_INFLOW,
-            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+            projection_hint=ProjectionHint.DEPOSIT,
+            accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
         )
     return classification(
         economic_kind=EconomicKind.ASSET_WITHDRAWAL,
-        projection_type=ProjectionType.WITHDRAWAL,
-        journal_intent=JournalIntent.FUNDING_OUTFLOW,
-        tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+        projection_hint=ProjectionHint.WITHDRAWAL,
+        accounting_intent_hint=AccountingIntentHint.FUNDING_OUTFLOW,
+        tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
     )
 
 

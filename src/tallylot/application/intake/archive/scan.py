@@ -29,7 +29,7 @@ def scanned_tree_files(
     exclude_paths: tuple[Path, ...] = (),
     inspect_archives: bool = True,
 ) -> ScannedTree:
-    extracted_root = Path(mkdtemp(prefix="crypto-recon-archive-scan-")) if inspect_archives else None
+    extracted_root = Path(mkdtemp(prefix="tallylot-archive-scan-")) if inspect_archives else None
     tree = ScannedTree(extracted_root)
     files: list[ScannedFile] = []
     issues: list[ScanIssue] = []

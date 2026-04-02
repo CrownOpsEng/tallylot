@@ -10,25 +10,27 @@ from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import TransactionFact
 from tallylot.infrastructure.serialization.csv_io import write_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 
 from .fact_codec import FACT_HEADER, fact_from_row
 
-WALLET_INVENTORY_HEADER = (
+LOCATION_INVENTORY_HEADER = (
     "source",
     "capture_path",
-    "wallet_id",
+    "location_id",
+    "location_kind",
+    "location_label",
+    "parent_location_id",
+    "location_path",
     "identifier_kind",
     "normalized_identifier",
     "display_identifier",
     "network_scope",
     "controller",
-    "account_label",
+    "parent_location_label",
     "evidence_kind",
     "evidence_path",
     "confidence",
-    "account",
-    "wallet",
     "identifier_value",
     "notes",
 )
@@ -50,14 +52,14 @@ class FilesystemEvidenceRepository:
     def write_balance_snapshots(self, path: Path, balances: tuple[BalanceSnapshot, ...]) -> None:
         write_rows(
             path,
-            ("source", "account", "wallet", "asset", "quantity", "as_of", "balance_kind", "notes"),
+            ("source", "location_id", "asset", "quantity", "as_of", "balance_kind", "notes"),
             (balance.to_row() for balance in balances),
         )
 
     def write_balance_evidence(self, path: Path, evidence: tuple[BalanceEvidence, ...]) -> None:
         write_rows(
             path,
-            ("source", "account", "wallet", "asset", "quantity", "as_of", "balance_kind", "evidence_ref", "notes"),
+            ("source", "location_id", "asset", "quantity", "as_of", "balance_kind", "evidence_ref", "notes"),
             (record.to_row() for record in evidence),
         )
 
@@ -104,5 +106,5 @@ class FilesystemEvidenceRepository:
             (review.to_row() for review in reviews),
         )
 
-    def write_wallet_inventory(self, path: Path, wallet_inventory: tuple[WalletInventoryRecord, ...]) -> None:
-        write_rows(path, WALLET_INVENTORY_HEADER, (record.to_row() for record in wallet_inventory))
+    def write_location_inventory(self, path: Path, location_inventory: tuple[LocationInventoryRecord, ...]) -> None:
+        write_rows(path, LOCATION_INVENTORY_HEADER, (record.to_row() for record in location_inventory))

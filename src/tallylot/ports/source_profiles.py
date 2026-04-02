@@ -82,12 +82,3 @@ class SourceProfile:
             "scan_issues": [issue.to_row() for issue in self.scan_issues],
             "file_inventory": [item.__dict__ for item in self.file_inventory],
         }
-
-
-@dataclass(frozen=True)
-class VerificationExportSet:
-    validate_transactions: str
-    missing_transactions: str
-    duplicate_transactions: str
-    current_balance: str
-    balance_by_exchange: str

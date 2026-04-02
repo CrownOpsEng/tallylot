@@ -1,24 +1,23 @@
 [
   {
-    "account": "Coinbase",
+    "accounting_intent_hint": "asset_exchange",
     "adapter_id": "coinbase",
     "confidence": "high",
     "description": "Bought 0.01 BTC for $610 CAD",
     "economic_kind": "spot_trade",
     "fact_id": "coinbase-retail-tx-1",
-    "journal_intent": "asset_exchange",
     "leg_policy": "[{\"kind\":\"charge\",\"min_count\":0,\"max_count\":1,\"min_in_count\":null,\"max_in_count\":0,\"min_out_count\":null,\"max_out_count\":1},{\"kind\":\"primary\",\"min_count\":2,\"max_count\":2,\"min_in_count\":1,\"max_in_count\":1,\"min_out_count\":1,\"max_out_count\":1}]",
-    "legs": "[{\"direction\":\"in\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"BTC\",\"amount\":\"0.01\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"CAD\",\"amount\":\"600\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"charge\",\"subtype\":\"trading_fee\",\"asset\":\"CAD\",\"amount\":\"10\",\"attributed_to_direction\":\"out\",\"account\":\"\",\"wallet\":\"\"}]",
+    "legs": "[{\"direction\":\"in\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"BTC\",\"amount\":\"0.01\",\"attributed_to_direction\":\"\",\"location_id\":\"\"},{\"direction\":\"out\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"CAD\",\"amount\":\"600\",\"attributed_to_direction\":\"\",\"location_id\":\"\"},{\"direction\":\"out\",\"kind\":\"charge\",\"subtype\":\"trading_fee\",\"asset\":\"CAD\",\"amount\":\"10\",\"attributed_to_direction\":\"out\",\"location_id\":\"\"}]",
+    "location_id": "future_exchange",
     "operation_group_id": "",
-    "projection_type": "trade",
+    "projection_hint": "trade",
     "provider_operation_key": "buy",
     "raw_file": "retail-export.csv",
     "raw_row_ref": "tx-1",
     "source": "Future Exchange",
     "status": "mapped",
-    "tax_treatment_code": "capital_exchange",
+    "tax_treatment_hint": "capital_exchange",
     "timestamp": "2024-02-08 16:31:22",
-    "tx_hash": "coinbase-retail-tx-1",
-    "wallet": "Coinbase"
+    "tx_hash": "coinbase-retail-tx-1"
   }
 ]

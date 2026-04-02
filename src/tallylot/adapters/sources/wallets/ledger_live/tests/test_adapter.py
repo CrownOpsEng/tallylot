@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -18,9 +18,9 @@ def test_ledger_live_adapter_normalizes_grouped_trade_rows() -> None:
     assert str(profile.adapter_id) == "ledger_live"
     assert len(facts) == 1
     assert facts[0].economic_kind == EconomicKind.ASSET_SWAP
-    assert facts[0].projection_type == ProjectionType.TRADE
-    assert facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
-    assert facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
+    assert facts[0].projection_hint == ProjectionHint.TRADE
+    assert facts[0].accounting_intent_hint == AccountingIntentHint.ASSET_EXCHANGE
+    assert facts[0].tax_treatment_hint == TaxTreatmentHint.CAPITAL_EXCHANGE
     assert facts[0].legs[0].direction == "in"
     assert facts[0].legs[1].direction == "out"
     assert str(facts[0].legs[0].amount) == "0.01000000"
@@ -30,26 +30,26 @@ def test_ledger_live_adapter_normalizes_grouped_trade_rows() -> None:
     assert result.issues == ()
 
 
-def test_ledger_live_wallet_inventory_extracts_fixture_accounts() -> None:
+def test_ledger_live_location_inventory_extracts_fixture_accounts() -> None:
     raw_dir = fixture_raw_dir("ledger_live", "wallets_and_operations")
 
     profile, adapter = profile_and_adapter("ledger-live-main", raw_dir)
-    evidence, issues = adapter.extract_wallet_inventory("ledger-live-main", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory("ledger-live-main", raw_dir, profile)
 
     assert str(profile.adapter_id) == "ledger_live"
-    assert {row.wallet_id for row in evidence} == {
-        "btc_xpub:xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
-        "evm_address:0x2222222222222222222222222222222222222222",
-        "cardano_account_key:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    assert {str(row.location_id) for row in evidence} == {
+        "ledger_live_main:bitcoin_1",
+        "ledger_live_main:ethereum_1",
+        "ledger_live_main:cardano_1",
     }
     assert issues == ()
 
 
-def test_ledger_live_wallet_inventory_reports_account_conflict() -> None:
+def test_ledger_live_location_inventory_reports_account_conflict() -> None:
     raw_dir = fixture_raw_dir("ledger_live", "account_conflict_wallets")
 
     profile, adapter = profile_and_adapter("ledger-live-main", raw_dir)
-    evidence, issues = adapter.extract_wallet_inventory("ledger-live-main", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory("ledger-live-main", raw_dir, profile)
 
     assert str(profile.adapter_id) == "ledger_live"
     assert len(evidence) == 2

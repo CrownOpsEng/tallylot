@@ -1,24 +1,24 @@
 from __future__ import annotations
 
-from tallylot.domain.wallet_identifiers import (
+from tallylot.domain.location_identifiers import (
+    identifier_kind_for_value,
     normalized_identifier,
     scope_token_for_identifier,
-    wallet_identifier_kind,
 )
 
 
-def test_wallet_identifier_kind_detects_supported_wallet_formats() -> None:
-    assert wallet_identifier_kind("0x1111111111111111111111111111111111111111") == "evm_address"
-    assert wallet_identifier_kind("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA") == "tron_address"
-    assert wallet_identifier_kind("bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == "btc_address"
+def test_identifier_kind_for_value_detects_supported_formats() -> None:
+    assert identifier_kind_for_value("0x1111111111111111111111111111111111111111") == "evm_address"
+    assert identifier_kind_for_value("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA") == "tron_address"
+    assert identifier_kind_for_value("bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") == "btc_address"
 
 
-def test_wallet_identifier_kind_detects_cardano_and_near_values() -> None:
+def test_identifier_kind_for_value_detects_cardano_and_near_values() -> None:
     assert (
-        wallet_identifier_kind("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        identifier_kind_for_value("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         == "cardano_account_key"
     )
-    assert wallet_identifier_kind("alice.near") == "near_account"
+    assert identifier_kind_for_value("alice.near") == "near_account"
 
 
 def test_normalized_identifier_lowercases_only_evm_addresses() -> None:

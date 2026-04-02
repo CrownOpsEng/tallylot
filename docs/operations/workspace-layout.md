@@ -36,7 +36,7 @@ workspace/
   template under `docs/workspace/analysis/issues/`
 - `analysis/issues/source_inventory.csv` seeded from the repo-owned source
   inventory template under `docs/workspace/analysis/issues/`
-- `analysis/inventory/wallet_inventory.csv`
+- `analysis/inventory/location_inventory.csv`
 - `outputs/logs/round_log.csv`
 - `config/workspace.json`
 

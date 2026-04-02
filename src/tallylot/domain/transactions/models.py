@@ -10,10 +10,10 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Literal
 
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
 from tallylot.domain.value_objects import format_decimal, format_timestamp, require_utc_datetime
 
-from .classification import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from .classification import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from .validation import (
     fact_leg_counts,
     validate_directional_counts,
@@ -77,11 +77,11 @@ class FactLegPolicy:
 
 
 @dataclass(frozen=True)
-class FactClassification:
+class FactSemantics:
     economic_kind: EconomicKind
-    journal_intent: JournalIntent
-    tax_treatment_code: TaxTreatmentCode
-    projection_type: ProjectionType | None = None
+    accounting_intent_hint: AccountingIntentHint
+    tax_treatment_hint: TaxTreatmentHint
+    projection_hint: ProjectionHint | None = None
 
 
 @dataclass(frozen=True)
@@ -92,8 +92,7 @@ class EconomicLeg:
     amount: Decimal
     subtype: str | None = None
     attributed_to_direction: FactDirection | None = None
-    account: str = ""
-    wallet: str = ""
+    location_id: LocationId | None = None
 
     def __post_init__(self) -> None:
         validate_fact_direction(self.direction, label="fact leg direction")
@@ -116,9 +115,8 @@ class TransactionFact:
     source: SourceId
     adapter_id: AdapterId
     timestamp: datetime
-    account: str
-    wallet: str
-    classification: FactClassification
+    location_id: LocationId
+    semantics: FactSemantics
     legs: tuple[EconomicLeg, ...]
     leg_policy: FactLegPolicy
     description: str = ""
@@ -144,19 +142,19 @@ class TransactionFact:
 
     @property
     def economic_kind(self) -> EconomicKind:
-        return self.classification.economic_kind
+        return self.semantics.economic_kind
 
     @property
-    def journal_intent(self) -> JournalIntent:
-        return self.classification.journal_intent
+    def accounting_intent_hint(self) -> AccountingIntentHint:
+        return self.semantics.accounting_intent_hint
 
     @property
-    def tax_treatment_code(self) -> TaxTreatmentCode:
-        return self.classification.tax_treatment_code
+    def tax_treatment_hint(self) -> TaxTreatmentHint:
+        return self.semantics.tax_treatment_hint
 
     @property
-    def projection_type(self) -> ProjectionType | None:
-        return self.classification.projection_type
+    def projection_hint(self) -> ProjectionHint | None:
+        return self.semantics.projection_hint
 
     def to_row(self) -> dict[str, str]:
         return {
@@ -164,12 +162,11 @@ class TransactionFact:
             "source": str(self.source),
             "adapter_id": str(self.adapter_id),
             "timestamp": format_timestamp(self.timestamp),
-            "account": self.account,
-            "wallet": self.wallet,
+            "location_id": str(self.location_id),
             "economic_kind": self.economic_kind.value,
-            "projection_type": "" if self.projection_type is None else self.projection_type.value,
-            "journal_intent": self.journal_intent.value,
-            "tax_treatment_code": self.tax_treatment_code.value,
+            "projection_hint": "" if self.projection_hint is None else self.projection_hint.value,
+            "accounting_intent_hint": self.accounting_intent_hint.value,
+            "tax_treatment_hint": self.tax_treatment_hint.value,
             "description": self.description,
             "provider_operation_key": self.provider_operation_key,
             "operation_group_id": self.operation_group_id,
@@ -192,8 +189,7 @@ def _legs_json(legs: tuple[EconomicLeg, ...]) -> list[dict[str, object]]:
             "asset": str(leg.asset),
             "amount": format_decimal(leg.amount),
             "attributed_to_direction": "" if leg.attributed_to_direction is None else leg.attributed_to_direction,
-            "account": leg.account,
-            "wallet": leg.wallet,
+            "location_id": "" if leg.location_id is None else str(leg.location_id),
         }
         for leg in legs
     ]

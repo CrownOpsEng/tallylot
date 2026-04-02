@@ -1,24 +1,23 @@
 [
   {
-    "account": "acct-1",
+    "accounting_intent_hint": "asset_exchange",
     "adapter_id": "wealthsimple",
     "confidence": "high",
     "description": "Wealthsimple Crypto buy",
     "economic_kind": "spot_trade",
     "fact_id": "wealthsimple:broker-export.csv:row:2",
-    "journal_intent": "asset_exchange",
     "leg_policy": "[{\"kind\":\"charge\",\"min_count\":0,\"max_count\":1,\"min_in_count\":null,\"max_in_count\":0,\"min_out_count\":null,\"max_out_count\":1},{\"kind\":\"primary\",\"min_count\":2,\"max_count\":2,\"min_in_count\":1,\"max_in_count\":1,\"min_out_count\":1,\"max_out_count\":1}]",
-    "legs": "[{\"direction\":\"in\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"BTC\",\"amount\":\"0.5\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"CAD\",\"amount\":\"17500\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"charge\",\"subtype\":\"commission\",\"asset\":\"CAD\",\"amount\":\"12\",\"attributed_to_direction\":\"out\",\"account\":\"\",\"wallet\":\"\"}]",
+    "legs": "[{\"direction\":\"in\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"BTC\",\"amount\":\"0.5\",\"attributed_to_direction\":\"\",\"location_id\":\"\"},{\"direction\":\"out\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"CAD\",\"amount\":\"17500\",\"attributed_to_direction\":\"\",\"location_id\":\"\"},{\"direction\":\"out\",\"kind\":\"charge\",\"subtype\":\"commission\",\"asset\":\"CAD\",\"amount\":\"12\",\"attributed_to_direction\":\"out\",\"location_id\":\"\"}]",
+    "location_id": "future_broker:acct_1",
     "operation_group_id": "",
-    "projection_type": "trade",
+    "projection_hint": "trade",
     "provider_operation_key": "trade:BUY",
     "raw_file": "broker-export.csv",
     "raw_row_ref": "row:2",
     "source": "Future Broker",
     "status": "mapped",
-    "tax_treatment_code": "capital_exchange",
+    "tax_treatment_hint": "capital_exchange",
     "timestamp": "2023-09-22 00:00:00",
-    "tx_hash": "",
-    "wallet": "acct-1"
+    "tx_hash": ""
   }
 ]

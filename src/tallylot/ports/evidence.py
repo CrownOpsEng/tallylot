@@ -8,44 +8,52 @@ from typing import Protocol
 
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+from tallylot.domain.locations import LocationKind
 from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.types import LocationId
+from tallylot.ports.annotations import AdapterMetadata
 
 
 @dataclass(frozen=True)
-class WalletInventoryRecord:
+class LocationInventoryRecord:
     source: str
+    location_id: LocationId
+    location_kind: LocationKind
+    location_label: str
     identifier_kind: str
     identifier_value: str
-    wallet_id: str = ""
-    account: str = ""
-    wallet: str = ""
+    parent_location_id: LocationId | None = None
+    location_path: tuple[str, ...] = ()
     capture_path: str = ""
     normalized_identifier: str = ""
     display_identifier: str = ""
     network_scope: str = ""
     controller: str = ""
-    account_label: str = ""
+    parent_location_label: str = ""
     evidence_kind: str = ""
     evidence_path: str = ""
     confidence: str = ""
     notes: str = ""
+    adapter_metadata: tuple[AdapterMetadata, ...] = ()
 
     def to_row(self) -> dict[str, str]:
         return {
             "source": self.source,
             "capture_path": self.capture_path,
-            "wallet_id": self.wallet_id,
+            "location_id": str(self.location_id),
+            "location_kind": self.location_kind.value,
+            "location_label": self.location_label,
+            "parent_location_id": "" if self.parent_location_id is None else str(self.parent_location_id),
+            "location_path": " / ".join(self.location_path),
             "identifier_kind": self.identifier_kind,
             "normalized_identifier": self.normalized_identifier or self.identifier_value,
             "display_identifier": self.display_identifier or self.identifier_value,
             "network_scope": self.network_scope,
             "controller": self.controller,
-            "account_label": self.account_label,
+            "parent_location_label": self.parent_location_label,
             "evidence_kind": self.evidence_kind,
             "evidence_path": self.evidence_path,
             "confidence": self.confidence,
-            "account": self.account,
-            "wallet": self.wallet,
             "identifier_value": self.identifier_value,
             "notes": self.notes,
         }
@@ -60,4 +68,4 @@ class EvidenceRepositoryPort(Protocol):
 
     def write_review_records(self, path: Path, reviews: tuple[NormalizationReviewRecord, ...]) -> None: ...
 
-    def write_wallet_inventory(self, path: Path, wallet_inventory: tuple[WalletInventoryRecord, ...]) -> None: ...
+    def write_location_inventory(self, path: Path, location_inventory: tuple[LocationInventoryRecord, ...]) -> None: ...

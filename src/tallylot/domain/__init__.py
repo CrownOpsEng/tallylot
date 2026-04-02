@@ -2,18 +2,19 @@
 
 from .checkpoints import BalanceSnapshot
 from .issues import IssueRecord, NormalizationReviewRecord
+from .locations import LocationKind, LocationRecord
 from .reconciliation import BalanceEvidence
 from .transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
+    AccountingIntentHint,
     EconomicKind,
     FactLegPolicy,
-    JournalIntent,
     LegKind,
     LegShapeLimit,
-    ProjectionType,
-    TaxTreatmentCode,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
 
@@ -21,16 +22,18 @@ __all__ = [
     "SINGLE_PRIMARY_ACTIVITY_POLICY",
     "TWO_SIDED_PRIMARY_EXCHANGE_POLICY",
     "TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY",
+    "AccountingIntentHint",
     "BalanceEvidence",
     "BalanceSnapshot",
     "EconomicKind",
     "FactLegPolicy",
     "IssueRecord",
-    "JournalIntent",
     "LegKind",
     "LegShapeLimit",
+    "LocationKind",
+    "LocationRecord",
     "NormalizationReviewRecord",
-    "ProjectionType",
-    "TaxTreatmentCode",
+    "ProjectionHint",
+    "TaxTreatmentHint",
     "TransactionFact",
 ]

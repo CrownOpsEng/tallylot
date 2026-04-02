@@ -10,18 +10,18 @@ import pytest
 from tallylot.application.outputs import RenderOutputRequest, RenderOutputUseCase
 from tallylot.domain.transactions import (
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
+    AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactClassification,
     FactLegPolicy,
-    JournalIntent,
+    FactSemantics,
     LegKind,
     LegShapeLimit,
-    ProjectionType,
-    TaxTreatmentCode,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
 from tallylot.infrastructure.storage import FilesystemFactRepository
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.output_adapters import OutputAdapter, OutputRenderPolicy, RenderedArtifact
@@ -57,7 +57,7 @@ class FakeOutputAdapter:
                     LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
                 )
             ),
-            requires_projection_type=False,
+            requires_projection_hint=False,
         )
 
     def render(self, facts: tuple[TransactionFact, ...], output_path: Path) -> RenderedArtifact:
@@ -138,13 +138,12 @@ def _write_facts(tmp_path: Path) -> Path:
         source=SourceId("fixture"),
         adapter_id=AdapterId("structured_csv"),
         timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
-        account="Fixture",
-        wallet="Primary",
-        classification=FactClassification(
+        location_id=LocationId("fixture:primary"),
+        semantics=FactSemantics(
             economic_kind=EconomicKind.SPOT_TRADE,
-            journal_intent=JournalIntent.ASSET_EXCHANGE,
-            tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
-            projection_type=ProjectionType.TRADE,
+            accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+            tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
+            projection_hint=ProjectionHint.TRADE,
         ),
         legs=(
             EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),

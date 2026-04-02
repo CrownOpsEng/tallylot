@@ -2,9 +2,9 @@
 
 from .models import (
     EconomicLeg,
-    FactClassification,
     FactDirection,
     FactLegPolicy,
+    FactSemantics,
     LegKind,
     LegShapeLimit,
     TransactionFact,
@@ -20,9 +20,9 @@ __all__ = [
     "TWO_SIDED_PRIMARY_EXCHANGE_POLICY",
     "TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY",
     "EconomicLeg",
-    "FactClassification",
     "FactDirection",
     "FactLegPolicy",
+    "FactSemantics",
     "LegKind",
     "LegShapeLimit",
     "TransactionFact",

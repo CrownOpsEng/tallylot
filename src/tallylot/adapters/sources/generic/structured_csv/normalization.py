@@ -5,13 +5,16 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
     EconomicActivityDraft,
     translation_batch_from_drafts,
 )
 from tallylot.adapters.support.issues import IssueSpec, issue_record
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.domain.locations import LocationKind
+from tallylot.domain.types import LocationId
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
@@ -61,7 +64,7 @@ def _normalized_result(
     drafts: list[EconomicActivityDraft] = []
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
-    wallet_rows: dict[str, WalletInventoryRecord] = {}
+    location_rows: dict[str, LocationInventoryRecord] = {}
     for index, row in enumerate(reader, start=2):
         row_issue = validator.validate_row(row, index)
         if row_issue is not None:
@@ -75,7 +78,7 @@ def _normalized_result(
         )
         drafts.append(draft)
         reviews.extend(row_reviews)
-        wallet_rows[_wallet_id(profile, row["account"].strip(), row["wallet"].strip())] = _wallet_record(
+        location_rows[_location_id(profile, row["account"].strip(), row["wallet"].strip())] = _location_record(
             profile,
             raw_dir,
             row["account"].strip(),
@@ -91,7 +94,7 @@ def _normalized_result(
             has_transactions=bool(drafts),
         ),
         reviews=reviews,
-        wallet_inventory=wallet_rows.values(),
+        location_inventory=tuple(location_rows.values()),
     )
 
 
@@ -105,32 +108,36 @@ def _normalize_valid_row(
     return translate_row(profile, row, index, validator=validator)
 
 
-def _wallet_id(profile: SourceProfile, account: str, wallet: str) -> str:
-    return f"{profile.source}:{account}:{wallet}"
+def _location_id(profile: SourceProfile, account: str, wallet: str) -> LocationId:
+    return location_id_from_parts(str(profile.source), account, wallet)
 
 
-def _wallet_record(
+def _location_record(
     profile: SourceProfile,
     raw_dir: Path,
     account: str,
     wallet: str,
-) -> WalletInventoryRecord:
-    return WalletInventoryRecord(
+) -> LocationInventoryRecord:
+    location_id = _location_id(profile, account, wallet)
+    parent_location_id = None if account == wallet else location_id_from_parts(str(profile.source), account)
+    return LocationInventoryRecord(
         source=str(profile.source),
+        location_id=location_id,
+        location_kind=LocationKind.SUBACCOUNT if account != wallet else LocationKind.ACCOUNT,
+        location_label=wallet,
+        identifier_kind="account_wallet",
+        identifier_value=f"{account}:{wallet}",
+        parent_location_id=parent_location_id,
+        location_path=(account, wallet) if account != wallet else (wallet,),
         capture_path=str(raw_dir),
-        wallet_id=_wallet_id(profile, account, wallet),
         normalized_identifier=f"{account}:{wallet}",
         display_identifier=f"{account}:{wallet}",
         network_scope="",
         controller=account,
-        account_label=wallet,
+        parent_location_label="" if parent_location_id is None else account,
         evidence_kind="normalized_transactions",
         confidence="high",
-        account=account,
-        wallet=wallet,
         evidence_path=TRANSACTIONS_FILENAME,
-        identifier_kind="account_wallet",
-        identifier_value=f"{account}:{wallet}",
     )
 
 

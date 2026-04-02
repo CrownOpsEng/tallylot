@@ -1,32 +1,29 @@
 [
   {
-    "account": "Fixture Exchange",
     "as_of": "2023-08-07 15:00:00",
     "asset": "BTC",
     "balance_kind": "available",
+    "location_id": "structured_example:fixture_exchange:primary",
     "notes": "",
     "quantity": "1",
-    "source": "Structured Example",
-    "wallet": "Primary"
+    "source": "Structured Example"
   },
   {
-    "account": "Fixture Exchange",
     "as_of": "2023-08-07 15:00:00",
     "asset": "CAD",
     "balance_kind": "available",
+    "location_id": "structured_example:fixture_exchange:primary",
     "notes": "",
     "quantity": "-10.1",
-    "source": "Structured Example",
-    "wallet": "Primary"
+    "source": "Structured Example"
   },
   {
-    "account": "Fixture Exchange",
     "as_of": "2023-08-07 15:00:00",
     "asset": "ETH",
     "balance_kind": "available",
+    "location_id": "structured_example:fixture_exchange:primary",
     "notes": "",
     "quantity": "0.5",
-    "source": "Structured Example",
-    "wallet": "Primary"
+    "source": "Structured Example"
   }
 ]

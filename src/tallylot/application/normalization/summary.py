@@ -31,7 +31,7 @@ def build_normalization_summary(
             "issue_count": len(outputs.issues),
             "review_count": len(outputs.reviews),
             "review_summary": _review_summary(outputs.reviews),
-            "wallet_count": len(outputs.wallet_inventory),
+            "location_count": len(outputs.location_inventory),
             "facts_outside_normalization_window": window_stats.facts_outside_window,
             "issues_outside_normalization_window": window_stats.issues_outside_window,
             "reviews_outside_normalization_window": window_stats.reviews_outside_window,

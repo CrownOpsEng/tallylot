@@ -9,7 +9,7 @@ from .runtime import (
     initialize_workspace_use_case,
     normalize_source_use_case,
     plan_intake_use_case,
-    rebuild_wallet_inventory_use_case,
+    rebuild_location_inventory_use_case,
     render_output_use_case,
     runtime_dependencies,
 )
@@ -23,7 +23,7 @@ __all__ = [
     "initialize_workspace_use_case",
     "normalize_source_use_case",
     "plan_intake_use_case",
-    "rebuild_wallet_inventory_use_case",
+    "rebuild_location_inventory_use_case",
     "render_output_use_case",
     "runtime_dependencies",
 ]

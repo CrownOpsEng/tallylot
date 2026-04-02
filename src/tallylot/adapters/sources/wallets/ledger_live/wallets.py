@@ -1,4 +1,4 @@
-"""Ledger Live wallet inventory helpers."""
+"""Ledger Live location inventory helpers."""
 
 from __future__ import annotations
 
@@ -6,24 +6,26 @@ from collections import defaultdict
 from pathlib import Path
 
 from tallylot.adapters.support import (
+    location_id_from_parts,
+    location_identifier_kind,
+    location_issue,
+    location_record,
     matching_file_paths,
     read_csv_rows,
-    wallet_identifier_kind,
-    wallet_issue,
-    wallet_record,
 )
-from tallylot.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
+from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
 from tallylot.domain.issues import IssueRecord
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.domain.locations import LocationKind
+from tallylot.ports.evidence import LocationInventoryRecord
 
 HEADER_FIELDS = {"Account Name", "Account xpub", "Operation Date"}
 
 
-def extract_wallet_inventory(
+def extract_location_inventory(
     source: str,
     raw_dir: Path,
-) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
-    evidence: list[WalletInventoryRecord] = []
+) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
+    evidence: list[LocationInventoryRecord] = []
     issues: list[IssueRecord] = []
     identifiers_by_account: dict[str, set[str]] = defaultdict(set)
     for path in matching_file_paths(raw_dir):
@@ -35,14 +37,16 @@ def extract_wallet_inventory(
                 continue
             kind = _ledger_identifier_kind(identifier_value, account_type)
             evidence.append(
-                wallet_record(
-                    WalletRecordSpec(
+                location_record(
+                    LocationRecordSpec(
                         source=source,
+                        location_id=location_id_from_parts(source, account_label or identifier_value),
+                        location_kind=LocationKind.ACCOUNT,
+                        location_label=account_label or identifier_value,
                         identifier_kind=kind,
                         identifier_value=identifier_value,
                         network_scope=account_type or _network_scope_from_kind(kind),
                         controller="Ledger Live",
-                        account_label=account_label,
                         evidence_kind="csv_row",
                         evidence_path=path.name,
                         confidence="high",
@@ -55,8 +59,8 @@ def extract_wallet_inventory(
         if len(identifiers) <= 1:
             continue
         issues.append(
-            wallet_issue(
-                WalletIssueSpec(
+            location_issue(
+                LocationIssueSpec(
                     source=source,
                     adapter_id="ledger_live",
                     issue_kind="account_identifier_conflict",
@@ -66,8 +70,8 @@ def extract_wallet_inventory(
         )
     if not evidence:
         issues.append(
-            wallet_issue(
-                WalletIssueSpec(
+            location_issue(
+                LocationIssueSpec(
                     source=source,
                     adapter_id="ledger_live",
                     issue_kind="missing_identifier",
@@ -83,7 +87,7 @@ def _ledger_identifier_kind(identifier_value: str, account_type: str) -> str:
         return "btc_xpub"
     if account_type == "cardano":
         return "cardano_account_key"
-    kind = wallet_identifier_kind(identifier_value)
+    kind = location_identifier_kind(identifier_value)
     return kind if kind != "unknown" else "account_wallet"
 
 

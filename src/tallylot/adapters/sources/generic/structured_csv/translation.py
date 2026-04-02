@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
@@ -16,7 +17,13 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import NormalizationReviewRecord
-from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    FactDirection,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -72,8 +79,7 @@ def translate_row(
         activity_id=f"{profile.source}:{index}",
         source=str(profile.source),
         adapter_id=validator.feedback.adapter_id,
-        account=account,
-        wallet=wallet,
+        location_id=location_id_from_parts(str(profile.source), account, wallet),
         timestamp=parse_timestamp(row["timestamp"]),
         classification=classification_for_category(category),
         description=row["description"],
@@ -116,72 +122,72 @@ def _side_value(raw_value: str) -> FactDirection | None:
 
 
 def classification_for_category(category: StructuredCategory) -> ActivityClassification:
-    mapping: dict[str, tuple[EconomicKind, ProjectionType, JournalIntent, TaxTreatmentCode]] = {
+    mapping: dict[str, tuple[EconomicKind, ProjectionHint, AccountingIntentHint, TaxTreatmentHint]] = {
         "trade": (
             EconomicKind.SPOT_TRADE,
-            ProjectionType.TRADE,
-            JournalIntent.ASSET_EXCHANGE,
-            TaxTreatmentCode.CAPITAL_EXCHANGE,
+            ProjectionHint.TRADE,
+            AccountingIntentHint.ASSET_EXCHANGE,
+            TaxTreatmentHint.CAPITAL_EXCHANGE,
         ),
         "deposit": (
             EconomicKind.ASSET_DEPOSIT,
-            ProjectionType.DEPOSIT,
-            JournalIntent.FUNDING_INFLOW,
-            TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+            ProjectionHint.DEPOSIT,
+            AccountingIntentHint.FUNDING_INFLOW,
+            TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
         ),
         "withdrawal": (
             EconomicKind.ASSET_WITHDRAWAL,
-            ProjectionType.WITHDRAWAL,
-            JournalIntent.FUNDING_OUTFLOW,
-            TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+            ProjectionHint.WITHDRAWAL,
+            AccountingIntentHint.FUNDING_OUTFLOW,
+            TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
         ),
         "interest_income": (
             EconomicKind.INTEREST_INCOME,
-            ProjectionType.INTEREST_INCOME,
-            JournalIntent.INCOME_RECOGNITION,
-            TaxTreatmentCode.ORDINARY_INCOME,
+            ProjectionHint.INTEREST_INCOME,
+            AccountingIntentHint.INCOME_RECOGNITION,
+            TaxTreatmentHint.ORDINARY_INCOME,
         ),
         "reward": (
             EconomicKind.PLATFORM_REWARD,
-            ProjectionType.REWARD_BONUS,
-            JournalIntent.INCOME_RECOGNITION,
-            TaxTreatmentCode.ORDINARY_INCOME,
+            ProjectionHint.REWARD_BONUS,
+            AccountingIntentHint.INCOME_RECOGNITION,
+            TaxTreatmentHint.ORDINARY_INCOME,
         ),
         "expense": (
             EconomicKind.CASH_EXPENSE,
-            ProjectionType.EXPENSE_NON_TAXABLE,
-            JournalIntent.EXPENSE_RECOGNITION,
-            TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+            ProjectionHint.EXPENSE_NON_TAXABLE,
+            AccountingIntentHint.EXPENSE_RECOGNITION,
+            TaxTreatmentHint.NON_TAXABLE_EXPENSE,
         ),
         "swap": (
             EconomicKind.ASSET_SWAP,
-            ProjectionType.SWAP_NON_TAXABLE,
-            JournalIntent.ASSET_EXCHANGE,
-            TaxTreatmentCode.NON_TAXABLE_ASSET_MIGRATION,
+            ProjectionHint.SWAP_NON_TAXABLE,
+            AccountingIntentHint.ASSET_EXCHANGE,
+            TaxTreatmentHint.NON_TAXABLE_ASSET_MIGRATION,
         ),
         "staking_reward": (
             EconomicKind.STAKING_REWARD,
-            ProjectionType.STAKING,
-            JournalIntent.INCOME_RECOGNITION,
-            TaxTreatmentCode.STAKING_INCOME,
+            ProjectionHint.STAKING,
+            AccountingIntentHint.INCOME_RECOGNITION,
+            TaxTreatmentHint.STAKING_INCOME,
         ),
         "derivatives_profit": (
             EconomicKind.DERIVATIVE_REALIZED_PROFIT,
-            ProjectionType.DERIVATIVES_FUTURES_PROFIT,
-            JournalIntent.INCOME_RECOGNITION,
-            TaxTreatmentCode.DERIVATIVE_REALIZED_GAIN,
+            ProjectionHint.DERIVATIVES_FUTURES_PROFIT,
+            AccountingIntentHint.INCOME_RECOGNITION,
+            TaxTreatmentHint.DERIVATIVE_REALIZED_GAIN,
         ),
         "derivatives_loss": (
             EconomicKind.DERIVATIVE_REALIZED_LOSS,
-            ProjectionType.DERIVATIVES_FUTURES_LOSS,
-            JournalIntent.EXPENSE_RECOGNITION,
-            TaxTreatmentCode.DERIVATIVE_REALIZED_LOSS,
+            ProjectionHint.DERIVATIVES_FUTURES_LOSS,
+            AccountingIntentHint.EXPENSE_RECOGNITION,
+            TaxTreatmentHint.DERIVATIVE_REALIZED_LOSS,
         ),
     }
-    economic_kind, projection_type, journal_intent, tax_treatment_code = mapping[category]
+    economic_kind, projection_hint, accounting_intent_hint, tax_treatment_hint = mapping[category]
     return classification(
         economic_kind=economic_kind,
-        projection_type=projection_type,
-        journal_intent=journal_intent,
-        tax_treatment_code=tax_treatment_code,
+        projection_hint=projection_hint,
+        accounting_intent_hint=accounting_intent_hint,
+        tax_treatment_hint=tax_treatment_hint,
     )

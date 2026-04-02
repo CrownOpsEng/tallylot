@@ -33,7 +33,7 @@ def resolve_inventory_route(
             inventory_match_status="unmatched",
         )
 
-    evidence_rows = _read_rows(artifacts, workspace_root / "analysis" / "inventory" / "wallet_inventory_evidence.csv")
+    evidence_rows = _read_rows(artifacts, workspace_root / "analysis" / "inventory" / "location_inventory_evidence.csv")
     source_rows = _read_rows(artifacts, workspace_root / "analysis" / "issues" / "source_inventory.csv")
     inventory_match = _inventory_match_decision(
         identifiers=identifiers,

@@ -9,6 +9,7 @@ from pathlib import Path
 from tallylot.adapters.support import (
     IssueSpec,
     issue_record,
+    location_id_from_parts,
     matching_file_paths,
     read_csv_header,
     read_csv_rows,
@@ -22,7 +23,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.ports.source_profiles import SourceProfile
 
 
@@ -98,8 +99,7 @@ def translate_transactions(
                     activity_id=f"gtrade:{path.name}:row:{index}",
                     source=str(profile.source),
                     adapter_id="gtrade",
-                    account=str(profile.source),
-                    wallet=str(profile.source),
+                    location_id=location_id_from_parts(str(profile.source)),
                     timestamp=timestamp,
                     classification=_classification_for_pnl(pnl),
                     leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -122,15 +122,15 @@ def _classification_for_pnl(pnl: Decimal) -> ActivityClassification:
     if pnl > 0:
         return classification(
             economic_kind=EconomicKind.DERIVATIVE_REALIZED_PROFIT,
-            projection_type=ProjectionType.DERIVATIVES_FUTURES_PROFIT,
-            journal_intent=JournalIntent.INCOME_RECOGNITION,
-            tax_treatment_code=TaxTreatmentCode.DERIVATIVE_REALIZED_GAIN,
+            projection_hint=ProjectionHint.DERIVATIVES_FUTURES_PROFIT,
+            accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+            tax_treatment_hint=TaxTreatmentHint.DERIVATIVE_REALIZED_GAIN,
         )
     return classification(
         economic_kind=EconomicKind.DERIVATIVE_REALIZED_LOSS,
-        projection_type=ProjectionType.DERIVATIVES_FUTURES_LOSS,
-        journal_intent=JournalIntent.EXPENSE_RECOGNITION,
-        tax_treatment_code=TaxTreatmentCode.DERIVATIVE_REALIZED_LOSS,
+        projection_hint=ProjectionHint.DERIVATIVES_FUTURES_LOSS,
+        accounting_intent_hint=AccountingIntentHint.EXPENSE_RECOGNITION,
+        tax_treatment_hint=TaxTreatmentHint.DERIVATIVE_REALIZED_LOSS,
     )
 
 

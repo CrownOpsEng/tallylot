@@ -11,7 +11,7 @@ from tallylot.adapters.sources.platforms.binance.field_parsing import (
 from tallylot.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
 from tallylot.adapters.sources.platforms.binance.transaction_history import normalize_transaction_rows
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, ProjectionType
+from tallylot.domain.transactions import EconomicKind, ProjectionHint
 from tests.support.services import build_source_profile
 
 
@@ -33,7 +33,7 @@ def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambigu
 
     assert len(events) == 1
     assert events[0].economic_kind == EconomicKind.ASSET_CONVERSION
-    assert events[0].projection_type == ProjectionType.TRADE
+    assert events[0].projection_hint == ProjectionHint.TRADE
     assert str(events[0].legs[0].asset) == "BNB"
     assert str(events[0].legs[1].asset) == "ADA"
     assert len(issues) == 1
@@ -57,7 +57,7 @@ def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewar
 
     assert len(events) == 1
     assert events[0].economic_kind == EconomicKind.STAKING_REWARD
-    assert events[0].projection_type == ProjectionType.STAKING
+    assert events[0].projection_hint == ProjectionHint.STAKING
     assert str(events[0].legs[0].asset) == "ETH"
     assert not issues
 

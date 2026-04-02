@@ -36,8 +36,8 @@ def test_ensure_output_not_within_input_tree_rejects_nested_outputs(tmp_path: Pa
 
 def test_iter_tree_files_sorts_results_and_honors_exclusions(tmp_path: Path) -> None:
     root = tmp_path / "normalized"
-    excluded = root / "aggregate" / "wallet_inventory.csv"
-    included_a = root / "b" / "wallet_inventory.csv"
+    excluded = root / "aggregate" / "location_inventory.csv"
+    included_a = root / "b" / "location_inventory.csv"
     included_b = root / "a" / "facts.csv"
     for path in (excluded, included_a, included_b):
         path.parent.mkdir(parents=True, exist_ok=True)

@@ -6,7 +6,13 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import IssueSpec, issue_record, matching_file_paths, read_csv_rows
+from tallylot.adapters.support import (
+    IssueSpec,
+    issue_record,
+    location_id_from_parts,
+    matching_file_paths,
+    read_csv_rows,
+)
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     EconomicActivityDraft,
@@ -17,7 +23,13 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    FactDirection,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import EconomicLegDraft
@@ -65,14 +77,13 @@ def translate_transactions(
                         activity_id=f"near:{path.name}:{raw_row_ref}",
                         source=str(profile.source),
                         adapter_id="near",
-                        account=str(profile.source),
-                        wallet=str(profile.source),
+                        location_id=location_id_from_parts(str(profile.source)),
                         timestamp=timestamp,
                         classification=classification(
                             economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
-                            projection_type=ProjectionType.DEPOSIT,
-                            journal_intent=JournalIntent.FUNDING_INFLOW,
-                            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                            projection_hint=ProjectionHint.DEPOSIT,
+                            accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                         ),
                         leg_policy=_transfer_in_policy(fee),
                         description=f"Transfer into {profile.source} - {tx_hash}",
@@ -95,14 +106,13 @@ def translate_transactions(
                             activity_id=f"near:{path.name}:{raw_row_ref}:wallet",
                             source=str(profile.source),
                             adapter_id="near",
-                            account=str(profile.source),
-                            wallet=str(profile.source),
+                            location_id=location_id_from_parts(str(profile.source)),
                             timestamp=timestamp,
                             classification=classification(
                                 economic_kind=EconomicKind.STAKING_TRANSFER_OUT,
-                                projection_type=ProjectionType.WITHDRAWAL,
-                                journal_intent=JournalIntent.FUNDING_OUTFLOW,
-                                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+                                projection_hint=ProjectionHint.WITHDRAWAL,
+                                accounting_intent_hint=AccountingIntentHint.FUNDING_OUTFLOW,
+                                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
                             ),
                             leg_policy=_staking_out_policy(fee),
                             description=description,
@@ -119,14 +129,13 @@ def translate_transactions(
                             activity_id=f"near:{path.name}:{raw_row_ref}:staking",
                             source=f"{profile.source} - Staking",
                             adapter_id="near",
-                            account=f"{profile.source} - Staking",
-                            wallet=f"{profile.source} - Staking",
+                            location_id=location_id_from_parts(f"{profile.source} - Staking"),
                             timestamp=timestamp,
                             classification=classification(
                                 economic_kind=EconomicKind.STAKING_TRANSFER_IN,
-                                projection_type=ProjectionType.DEPOSIT,
-                                journal_intent=JournalIntent.FUNDING_INFLOW,
-                                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                                projection_hint=ProjectionHint.DEPOSIT,
+                                accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                             ),
                             leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                             description=description,

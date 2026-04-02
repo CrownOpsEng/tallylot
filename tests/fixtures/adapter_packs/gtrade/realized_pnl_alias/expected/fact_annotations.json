@@ -1,10 +1,12 @@
 [
   {
+    "adapter_metadata": [],
     "fact_id": "gtrade:gtrade-report.csv:row:2",
     "provenance_refs": [],
     "review_markers": []
   },
   {
+    "adapter_metadata": [],
     "fact_id": "gtrade:gtrade-report.csv:row:3",
     "provenance_refs": [],
     "review_markers": []

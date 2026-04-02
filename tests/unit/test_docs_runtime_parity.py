@@ -193,7 +193,7 @@ def test_source_intake_route_mentions_current_typed_commands() -> None:
         "source manifest",
         "source profile",
         "source normalize",
-        "checkpoint rebuild-wallet-inventory",
+        "checkpoint rebuild-location-inventory",
         "output render file",
     ):
         assert command in text
@@ -219,10 +219,10 @@ def test_supporting_route_mentions_checkpoint_pdf_balance_extraction_command() -
     assert "checkpoint extract-pdf-balances" in text
 
 
-def test_wallet_inventory_route_mentions_checkpoint_command() -> None:
+def test_location_inventory_route_mentions_checkpoint_command() -> None:
     text = (REPO_ROOT / ".claude" / "commands" / "wallet-inventory.md").read_text(encoding="utf-8")
 
-    assert "checkpoint rebuild-wallet-inventory" in text
+    assert "checkpoint rebuild-location-inventory" in text
 
 
 def test_known_command_docs_use_env_prefixed_uv_examples() -> None:

@@ -1,7 +1,5 @@
 [
   {
-    "account": "",
-    "account_label": "Bitcoin 1",
     "capture_path": "",
     "confidence": "high",
     "controller": "Ledger Live",
@@ -10,16 +8,18 @@
     "evidence_path": "ledgerlive-operations.csv",
     "identifier_kind": "btc_xpub",
     "identifier_value": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "location_id": "ledger_live_main:bitcoin_1",
+    "location_kind": "account",
+    "location_label": "Bitcoin 1",
+    "location_path": "",
     "network_scope": "bitcoin",
     "normalized_identifier": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
     "notes": "",
-    "source": "ledger-live-main",
-    "wallet": "",
-    "wallet_id": "btc_xpub:xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    "parent_location_id": "",
+    "parent_location_label": "",
+    "source": "ledger-live-main"
   },
   {
-    "account": "",
-    "account_label": "Bitcoin 1",
     "capture_path": "",
     "confidence": "high",
     "controller": "Ledger Live",
@@ -28,16 +28,18 @@
     "evidence_path": "ledgerlive-operations.csv",
     "identifier_kind": "btc_xpub",
     "identifier_value": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "location_id": "ledger_live_main:bitcoin_1",
+    "location_kind": "account",
+    "location_label": "Bitcoin 1",
+    "location_path": "",
     "network_scope": "bitcoin",
     "normalized_identifier": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
     "notes": "",
-    "source": "ledger-live-main",
-    "wallet": "",
-    "wallet_id": "btc_xpub:xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    "parent_location_id": "",
+    "parent_location_label": "",
+    "source": "ledger-live-main"
   },
   {
-    "account": "",
-    "account_label": "Bitcoin 1",
     "capture_path": "",
     "confidence": "high",
     "controller": "Ledger Live",
@@ -46,11 +48,15 @@
     "evidence_path": "ledgerlive-operations.csv",
     "identifier_kind": "btc_xpub",
     "identifier_value": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "location_id": "ledger_live_main:bitcoin_1",
+    "location_kind": "account",
+    "location_label": "Bitcoin 1",
+    "location_path": "",
     "network_scope": "bitcoin",
     "normalized_identifier": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
     "notes": "",
-    "source": "ledger-live-main",
-    "wallet": "",
-    "wallet_id": "btc_xpub:xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111"
+    "parent_location_id": "",
+    "parent_location_label": "",
+    "source": "ledger-live-main"
   }
 ]

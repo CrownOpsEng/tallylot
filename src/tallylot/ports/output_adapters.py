@@ -20,7 +20,7 @@ class RenderedArtifact:
 @dataclass(frozen=True)
 class OutputRenderPolicy:
     shape_policy: FactLegPolicy
-    requires_projection_type: bool
+    requires_projection_hint: bool
 
 
 class OutputAdapter(Protocol):

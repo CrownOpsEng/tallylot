@@ -4,7 +4,7 @@ from pathlib import Path
 
 from tallylot.adapters.sources.platforms.gtrade.adapter import GTradeAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -21,30 +21,30 @@ def test_gtrade_adapter_surfaces_report_limits_without_guessing() -> None:
         EconomicKind.DERIVATIVE_REALIZED_PROFIT,
         EconomicKind.DERIVATIVE_REALIZED_LOSS,
     ]
-    assert [event.projection_type for event in facts] == [
-        ProjectionType.DERIVATIVES_FUTURES_PROFIT,
-        ProjectionType.DERIVATIVES_FUTURES_LOSS,
+    assert [event.projection_hint for event in facts] == [
+        ProjectionHint.DERIVATIVES_FUTURES_PROFIT,
+        ProjectionHint.DERIVATIVES_FUTURES_LOSS,
     ]
-    assert [event.journal_intent for event in facts] == [
-        JournalIntent.INCOME_RECOGNITION,
-        JournalIntent.EXPENSE_RECOGNITION,
+    assert [event.accounting_intent_hint for event in facts] == [
+        AccountingIntentHint.INCOME_RECOGNITION,
+        AccountingIntentHint.EXPENSE_RECOGNITION,
     ]
-    assert [event.tax_treatment_code for event in facts] == [
-        TaxTreatmentCode.DERIVATIVE_REALIZED_GAIN,
-        TaxTreatmentCode.DERIVATIVE_REALIZED_LOSS,
+    assert [event.tax_treatment_hint for event in facts] == [
+        TaxTreatmentHint.DERIVATIVE_REALIZED_GAIN,
+        TaxTreatmentHint.DERIVATIVE_REALIZED_LOSS,
     ]
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
 
 
-def test_gtrade_wallet_inventory_includes_alias_issue() -> None:
+def test_gtrade_location_inventory_includes_alias_issue() -> None:
     raw_dir = fixture_raw_dir("gtrade", "realized_pnl_alias")
 
     profile, adapter = profile_and_adapter("GTrade 1CT", raw_dir)
-    evidence, issues = adapter.extract_wallet_inventory("GTrade 1CT", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory("GTrade 1CT", raw_dir, profile)
 
     assert str(profile.adapter_id) == "gtrade"
-    assert any(row.wallet_id == "address_alias:bb4d" for row in evidence)
+    assert any(str(row.location_id) == "gtrade_1ct:alias:bb4d" for row in evidence)
     assert any(issue.kind == "partial_identifier_only" for issue in issues)
 
 

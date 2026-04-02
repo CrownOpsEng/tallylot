@@ -5,6 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
@@ -14,7 +15,13 @@ from tallylot.adapters.support.drafts import (
     classification,
     economic_leg,
 )
-from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    FactDirection,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import EconomicLegDraft
 
@@ -43,14 +50,13 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                     activity_id=f"binance:{path.name}:row:{index}",
                     source=str(profile.source),
                     adapter_id="binance",
-                    account="Spot",
-                    wallet="Spot",
+                    location_id=location_id_from_parts(str(profile.source), "spot"),
                     timestamp=timestamp,
                     classification=classification(
                         economic_kind=EconomicKind.SPOT_TRADE,
-                        projection_type=ProjectionType.TRADE,
-                        journal_intent=JournalIntent.ASSET_EXCHANGE,
-                        tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                        projection_hint=ProjectionHint.TRADE,
+                        accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                        tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                     ),
                     leg_policy=_trade_policy(fee_amount, fee_asset),
                     description=f"Binance spot sell {pair}",
@@ -75,14 +81,13 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                     activity_id=f"binance:{path.name}:row:{index}",
                     source=str(profile.source),
                     adapter_id="binance",
-                    account="Spot",
-                    wallet="Spot",
+                    location_id=location_id_from_parts(str(profile.source), "spot"),
                     timestamp=timestamp,
                     classification=classification(
                         economic_kind=EconomicKind.SPOT_TRADE,
-                        projection_type=ProjectionType.TRADE,
-                        journal_intent=JournalIntent.ASSET_EXCHANGE,
-                        tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                        projection_hint=ProjectionHint.TRADE,
+                        accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                        tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                     ),
                     leg_policy=_trade_policy(fee_amount, fee_asset),
                     description=f"Binance spot buy {pair}",

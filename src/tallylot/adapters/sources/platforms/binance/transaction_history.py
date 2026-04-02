@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import IssueSpec, issue_record
+from tallylot.adapters.support import IssueSpec, issue_record, location_id_from_parts
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
@@ -17,7 +17,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -85,14 +85,13 @@ def normalize_transaction_rows(
                     activity_id=f"binance:{path.name}:row:{index}",
                     source=str(profile.source),
                     adapter_id="binance",
-                    account=account,
-                    wallet=account,
+                    location_id=location_id_from_parts(str(profile.source), account),
                     timestamp=parsed_time,
                     classification=classification(
                         economic_kind=EconomicKind.STAKING_REWARD,
-                        projection_type=ProjectionType.STAKING,
-                        journal_intent=JournalIntent.INCOME_RECOGNITION,
-                        tax_treatment_code=TaxTreatmentCode.STAKING_INCOME,
+                        projection_hint=ProjectionHint.STAKING,
+                        accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+                        tax_treatment_hint=TaxTreatmentHint.STAKING_INCOME,
                     ),
                     leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     description=operation,
@@ -117,14 +116,13 @@ def normalize_transaction_rows(
                     activity_id=f"binance:{path.name}:small_assets:{(neg.get('Coin') or '').strip().upper()}",
                     source=str(profile.source),
                     adapter_id="binance",
-                    account=account,
-                    wallet=account,
+                    location_id=location_id_from_parts(str(profile.source), account),
                     timestamp=parsed_time,
                     classification=classification(
                         economic_kind=EconomicKind.ASSET_CONVERSION,
-                        projection_type=ProjectionType.TRADE,
-                        journal_intent=JournalIntent.ASSET_EXCHANGE,
-                        tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                        projection_hint=ProjectionHint.TRADE,
+                        accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                        tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                     ),
                     leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
                     description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
@@ -12,7 +13,7 @@ from tallylot.adapters.support.drafts import (
     classification,
     economic_leg,
 )
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -38,19 +39,19 @@ def normalize_convert_order_rows(
             continue
         date_updated = (row.get("Date Updated") or row.get("Time") or "").strip()
         matched_times.add(parse_transaction_history_timestamp(date_updated))
+        wallet_name = (row.get("Wallet") or "").strip() or "Spot"
         drafts.append(
             EconomicActivityDraft(
                 activity_id=f"binance:{path.name}:convert:{index}",
                 source=str(profile.source),
                 adapter_id="binance",
-                account=(row.get("Wallet") or "").strip() or "Spot",
-                wallet=(row.get("Wallet") or "").strip() or "Spot",
+                location_id=location_id_from_parts(str(profile.source), wallet_name),
                 timestamp=parse_export_timestamp(date_updated, path.name),
                 classification=classification(
                     economic_kind=EconomicKind.ASSET_CONVERSION,
-                    projection_type=ProjectionType.TRADE,
-                    journal_intent=JournalIntent.ASSET_EXCHANGE,
-                    tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                    projection_hint=ProjectionHint.TRADE,
+                    accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                    tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                 ),
                 leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
                 description=f"Binance convert {(row.get('Pair') or '').strip()}",
@@ -99,14 +100,13 @@ def normalize_c2c_order_rows(
                 activity_id=f"binance:{path.name}:c2c:{(row.get('Order Number') or '').strip() or index}",
                 source=str(profile.source),
                 adapter_id="binance",
-                account="Funding",
-                wallet="Funding",
+                location_id=location_id_from_parts(str(profile.source), "funding"),
                 timestamp=parse_export_timestamp(created_time, path.name),
                 classification=classification(
                     economic_kind=EconomicKind.P2P_TRADE,
-                    projection_type=ProjectionType.TRADE,
-                    journal_intent=JournalIntent.ASSET_EXCHANGE,
-                    tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                    projection_hint=ProjectionHint.TRADE,
+                    accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                    tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                 ),
                 leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
                 description=f"Binance C2C {(row.get('Order Type') or '').strip()} {asset}/{fiat}",

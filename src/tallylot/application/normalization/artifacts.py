@@ -24,8 +24,12 @@ def write_normalization_artifacts(
         output_dir / "fact_annotations.json",
         [record.to_json() for record in outputs.fact_annotations],
     )
+    artifacts.write_json(
+        output_dir / "location_annotations.json",
+        [record.to_json() for record in outputs.location_annotations],
+    )
     evidence.write_balance_snapshots(output_dir / "balances.csv", outputs.derived_balances)
     evidence.write_balance_evidence(output_dir / "balance_evidence.csv", outputs.balance_evidence)
     evidence.write_issue_records(output_dir / "exceptions.csv", outputs.issues)
     evidence.write_review_records(output_dir / "normalization_reviews.csv", outputs.reviews)
-    evidence.write_wallet_inventory(output_dir / "wallet_inventory.csv", outputs.wallet_inventory)
+    evidence.write_location_inventory(output_dir / "location_inventory.csv", outputs.location_inventory)

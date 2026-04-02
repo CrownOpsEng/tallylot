@@ -10,7 +10,7 @@ Use this route for a full typed intake pass:
 6. review `profile.json`, `profile_inventory.csv`, `timezone_issues.csv`
 7. `source normalize`
 8. review `facts.csv`, `exceptions.csv`, `normalization_reviews.csv`, and `normalization_summary.json`
-9. `checkpoint rebuild-wallet-inventory` when normalization emitted wallet evidence
+9. `checkpoint rebuild-location-inventory` when normalization emitted wallet evidence
 10. `output render file` when the round needs an external output artifact such as `cointracking_candidate.csv`
 
 Use `docs/operations/operations-quickstart.md` for the short operator route and

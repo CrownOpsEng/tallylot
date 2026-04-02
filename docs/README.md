@@ -93,7 +93,7 @@ Naming convention:
 - [`.claude/commands/round-verification.md`](../.claude/commands/round-verification.md):
   dev-only oracle round scaffold and verification compare route
 - [`.claude/commands/wallet-inventory.md`](../.claude/commands/wallet-inventory.md):
-  checkpoint wallet inventory rebuild route
+  checkpoint location inventory rebuild route
 - [`.claude/commands/normalization-exceptions.md`](../.claude/commands/normalization-exceptions.md):
   normalization review route
 - [`.claude/commands/source-diff.md`](../.claude/commands/source-diff.md):

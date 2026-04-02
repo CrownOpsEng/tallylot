@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.wallets.ledger_live.translation import translate_operations
-from tallylot.adapters.sources.wallets.ledger_live.wallets import HEADER_FIELDS, extract_wallet_inventory
+from tallylot.adapters.sources.wallets.ledger_live.wallets import HEADER_FIELDS, extract_location_inventory
 from tallylot.adapters.support import (
     match_intake_by_path_or_header,
     no_intake_route,
@@ -15,7 +15,7 @@ from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
@@ -27,7 +27,7 @@ class LedgerLiveAdapter:
         display_name="Ledger Live",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}
         ),
         description="Normalizes Ledger Live operations and extracts wallet identifiers.",
     )
@@ -52,22 +52,22 @@ class LedgerLiveAdapter:
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
         return passed_timezone_summary(profile, mode="value_utc")
 
-    def extract_wallet_inventory(
+    def extract_location_inventory(
         self,
         source: str,
         raw_dir: Path,
         profile: SourceProfile,
-    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+    ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
-        return extract_wallet_inventory(source, raw_dir)
+        return extract_location_inventory(source, raw_dir)
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         drafts, issues = translate_operations(profile, raw_dir)
-        wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
+        location_inventory, _ = self.extract_location_inventory(str(profile.source), raw_dir, profile)
         return translation_batch_from_drafts(
             drafts,
             issues=issues,
-            wallet_inventory=wallet_inventory,
+            location_inventory=location_inventory,
         )
 
 

@@ -23,7 +23,7 @@ class GenericHttpOutputStubAdapter:
         shape_policy=FactLegPolicy(
             limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_in_count=0, max_out_count=0),)
         ),
-        requires_projection_type=False,
+        requires_projection_hint=False,
     )
 
     def render(self, facts: tuple[TransactionFact, ...], output_path: Path) -> RenderedArtifact:

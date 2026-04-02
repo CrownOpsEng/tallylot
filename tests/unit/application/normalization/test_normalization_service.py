@@ -53,6 +53,7 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
             "fact_id": canonical_rows[0]["fact_id"],
             "provenance_refs": [],
             "review_markers": [],
+            "adapter_metadata": [],
         }
     ]
     assert summary["fact_count"] == 1

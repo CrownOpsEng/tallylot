@@ -8,13 +8,13 @@ from decimal import Decimal
 
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.transactions import TransactionFact
-from tallylot.domain.types import AssetSymbol, SourceId
+from tallylot.domain.types import AssetSymbol, LocationId, SourceId
 
 
 def derive_balance_snapshots(
     facts: tuple[TransactionFact, ...],
 ) -> tuple[BalanceSnapshot, ...]:
-    balances: dict[tuple[str, str, str, str], Decimal] = defaultdict(lambda: Decimal("0"))
+    balances: dict[tuple[str, str, str], Decimal] = defaultdict(lambda: Decimal("0"))
     latest_timestamp: datetime | None = None
     for fact in facts:
         latest_timestamp = fact.timestamp if latest_timestamp is None else max(latest_timestamp, fact.timestamp)
@@ -23,8 +23,7 @@ def derive_balance_snapshots(
                 balances,
                 key=(
                     str(fact.source),
-                    leg.account or fact.account,
-                    leg.wallet or fact.wallet,
+                    str(leg.location_id or fact.location_id),
                     str(leg.asset),
                 ),
                 quantity=leg.amount if leg.direction == "in" else -leg.amount,
@@ -33,20 +32,19 @@ def derive_balance_snapshots(
     return tuple(
         BalanceSnapshot(
             source=SourceId(source),
-            account=account,
-            wallet=wallet,
+            location_id=LocationId(location_id),
             asset=AssetSymbol(asset),
             quantity=quantity,
             as_of=as_of,
         )
-        for (source, account, wallet, asset), quantity in sorted(balances.items())
+        for (source, location_id, asset), quantity in sorted(balances.items())
     )
 
 
 def _apply_balance_delta(
-    balances: dict[tuple[str, str, str, str], Decimal],
+    balances: dict[tuple[str, str, str], Decimal],
     *,
-    key: tuple[str, str, str, str],
+    key: tuple[str, str, str],
     quantity: Decimal,
 ) -> None:
     balances[key] += quantity

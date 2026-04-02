@@ -1,4 +1,4 @@
-"""Provider-neutral layered classification enums."""
+"""Provider-neutral declared semantics enums."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ class EconomicKind(StrEnum):
     STAKING_TRANSFER_OUT = "staking_transfer_out"
 
 
-class ProjectionType(StrEnum):
+class ProjectionHint(StrEnum):
     DEPOSIT = "deposit"
     DERIVATIVES_FUTURES_LOSS = "derivatives_futures_loss"
     DERIVATIVES_FUTURES_PROFIT = "derivatives_futures_profit"
@@ -40,7 +40,7 @@ class ProjectionType(StrEnum):
     WITHDRAWAL = "withdrawal"
 
 
-class JournalIntent(StrEnum):
+class AccountingIntentHint(StrEnum):
     ASSET_EXCHANGE = "asset_exchange"
     EXPENSE_RECOGNITION = "expense_recognition"
     FUNDING_INFLOW = "funding_inflow"
@@ -48,7 +48,7 @@ class JournalIntent(StrEnum):
     INCOME_RECOGNITION = "income_recognition"
 
 
-class TaxTreatmentCode(StrEnum):
+class TaxTreatmentHint(StrEnum):
     CAPITAL_EXCHANGE = "capital_exchange"
     DERIVATIVE_REALIZED_GAIN = "derivative_realized_gain"
     DERIVATIVE_REALIZED_LOSS = "derivative_realized_loss"
@@ -77,13 +77,13 @@ def parse_economic_kind(value: str) -> EconomicKind | None:
     return _parse_optional_enum(EconomicKind, value)
 
 
-def parse_projection_type(value: str) -> ProjectionType | None:
-    return _parse_optional_enum(ProjectionType, value)
+def parse_projection_hint(value: str) -> ProjectionHint | None:
+    return _parse_optional_enum(ProjectionHint, value)
 
 
-def parse_journal_intent(value: str) -> JournalIntent | None:
-    return _parse_optional_enum(JournalIntent, value)
+def parse_accounting_intent_hint(value: str) -> AccountingIntentHint | None:
+    return _parse_optional_enum(AccountingIntentHint, value)
 
 
-def parse_tax_treatment_code(value: str) -> TaxTreatmentCode | None:
-    return _parse_optional_enum(TaxTreatmentCode, value)
+def parse_tax_treatment_hint(value: str) -> TaxTreatmentHint | None:
+    return _parse_optional_enum(TaxTreatmentHint, value)

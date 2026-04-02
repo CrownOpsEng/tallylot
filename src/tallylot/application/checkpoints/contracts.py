@@ -7,15 +7,15 @@ from pathlib import Path
 
 
 @dataclass(frozen=True)
-class WalletInventoryRequest:
+class LocationInventoryRequest:
     normalized_root: Path
     output_path: Path
 
 
 @dataclass(frozen=True)
-class WalletInventoryResponse:
+class LocationInventoryResponse:
     output_path: Path
-    wallet_count: int
+    location_count: int
     evidence_count: int
     issue_count: int
 

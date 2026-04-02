@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 
 
@@ -21,26 +21,26 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
         EconomicKind.PLATFORM_REWARD,
         EconomicKind.SPOT_TRADE,
     }
-    assert {event.projection_type for event in facts} == {
-        ProjectionType.DEPOSIT,
-        ProjectionType.EXPENSE_NON_TAXABLE,
-        ProjectionType.REWARD_BONUS,
-        ProjectionType.TRADE,
-        ProjectionType.WITHDRAWAL,
+    assert {event.projection_hint for event in facts} == {
+        ProjectionHint.DEPOSIT,
+        ProjectionHint.EXPENSE_NON_TAXABLE,
+        ProjectionHint.REWARD_BONUS,
+        ProjectionHint.TRADE,
+        ProjectionHint.WITHDRAWAL,
     }
-    assert {event.journal_intent for event in facts} == {
-        JournalIntent.FUNDING_INFLOW,
-        JournalIntent.EXPENSE_RECOGNITION,
-        JournalIntent.FUNDING_OUTFLOW,
-        JournalIntent.INCOME_RECOGNITION,
-        JournalIntent.ASSET_EXCHANGE,
+    assert {event.accounting_intent_hint for event in facts} == {
+        AccountingIntentHint.FUNDING_INFLOW,
+        AccountingIntentHint.EXPENSE_RECOGNITION,
+        AccountingIntentHint.FUNDING_OUTFLOW,
+        AccountingIntentHint.INCOME_RECOGNITION,
+        AccountingIntentHint.ASSET_EXCHANGE,
     }
-    assert {event.tax_treatment_code for event in facts} == {
-        TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
-        TaxTreatmentCode.NON_TAXABLE_EXPENSE,
-        TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
-        TaxTreatmentCode.ORDINARY_INCOME,
-        TaxTreatmentCode.CAPITAL_EXCHANGE,
+    assert {event.tax_treatment_hint for event in facts} == {
+        TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+        TaxTreatmentHint.NON_TAXABLE_EXPENSE,
+        TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
+        TaxTreatmentHint.ORDINARY_INCOME,
+        TaxTreatmentHint.CAPITAL_EXCHANGE,
     }
     assert any(event.description == "shakingsats" for event in facts)
     assert result.balance_evidence == ()

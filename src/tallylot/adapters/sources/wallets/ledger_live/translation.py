@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import matching_file_paths, read_csv_rows
+from tallylot.adapters.support import location_id_from_parts, matching_file_paths, read_csv_rows
 from tallylot.adapters.support.drafts import (
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
@@ -19,7 +19,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.ports.source_profiles import SourceProfile
 
 
@@ -75,14 +75,13 @@ def translate_operations(
                 activity_id=f"ledger_live:{raw_file}:{operation_hash}",
                 source=str(profile.source),
                 adapter_id="ledger_live",
-                account=account_label,
-                wallet=account_label,
+                location_id=location_id_from_parts(str(profile.source), account_label or operation_hash),
                 timestamp=timestamp,
                 classification=classification(
                     economic_kind=EconomicKind.ASSET_SWAP,
-                    projection_type=ProjectionType.TRADE,
-                    journal_intent=JournalIntent.ASSET_EXCHANGE,
-                    tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                    projection_hint=ProjectionHint.TRADE,
+                    accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                    tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                 ),
                 leg_policy=_swap_policy(fee_amount, fee_asset),
                 description=account_label,

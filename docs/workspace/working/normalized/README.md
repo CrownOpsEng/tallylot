@@ -15,7 +15,7 @@ Per-source folders should use the typed pipeline artifact set:
 - `balance_evidence.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
-- `wallet_inventory.csv`
+- `location_inventory.csv`
 - `normalization_summary.json`
 
 `fact_annotations.json` preserves fact-keyed provenance references and

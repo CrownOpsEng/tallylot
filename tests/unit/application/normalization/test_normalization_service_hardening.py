@@ -12,13 +12,13 @@ from tallylot.application.normalization import NormalizeRequest
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
+    AccountingIntentHint,
     EconomicKind,
-    JournalIntent,
     LegKind,
-    ProjectionType,
-    TaxTreatmentCode,
+    ProjectionHint,
+    TaxTreatmentHint,
 )
-from tallylot.domain.types import AssetSymbol, SourceId
+from tallylot.domain.types import AssetSymbol, LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemFactRepository
 from tallylot.ports.source_translation import (
@@ -78,7 +78,7 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
 
     exception_rows = artifacts.read_rows(output_dir / "exceptions.csv")
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
-    wallet_rows = artifacts.read_rows(output_dir / "wallet_inventory.csv")
+    wallet_rows = artifacts.read_rows(output_dir / "location_inventory.csv")
 
     assert exception_rows[0]["kind"] == "invalid_decimal"
     assert [row["kind"] for row in review_rows] == ["timestamp_timezone_assumed_utc"]
@@ -151,6 +151,7 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
             "fact_id": str(facts[0].fact_id),
             "provenance_refs": [],
             "review_markers": [],
+            "adapter_metadata": [],
         }
     ]
     assert [row["kind"] for row in review_rows] == [
@@ -261,13 +262,12 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
                     source="fixture",
                     adapter_id="evidence_fixture",
                     timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
-                    account="Fixture",
-                    wallet="Primary",
+                    location_id=LocationId("fixture:primary"),
                     classification=classification(
                         economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
-                        projection_type=ProjectionType.DEPOSIT,
-                        journal_intent=JournalIntent.FUNDING_INFLOW,
-                        tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                        projection_hint=ProjectionHint.DEPOSIT,
+                        accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                        tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                     ),
                     legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),),
                     leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -277,8 +277,7 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
             balance_evidence=(
                 BalanceEvidence(
                     source=SourceId("fixture"),
-                    account="Fixture",
-                    wallet="Primary",
+                    location_id=LocationId("fixture:primary"),
                     asset=AssetSymbol("BTC"),
                     quantity=Decimal("2.5"),
                     as_of=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
@@ -287,7 +286,7 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
             ),
             issues=(),
             reviews=(),
-            wallet_inventory=(),
+            location_inventory=(),
         )
 
 
@@ -315,8 +314,7 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
     assert balance_rows == [
         {
             "source": "fixture",
-            "account": "Fixture",
-            "wallet": "Primary",
+            "location_id": "fixture:primary",
             "asset": "BTC",
             "quantity": "1.5",
             "as_of": "2023-08-06 10:00:00",
@@ -327,8 +325,7 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
     assert balance_evidence_rows == [
         {
             "source": "fixture",
-            "account": "Fixture",
-            "wallet": "Primary",
+            "location_id": "fixture:primary",
             "asset": "BTC",
             "quantity": "2.5",
             "as_of": "2023-08-06 12:00:00",
@@ -378,6 +375,7 @@ def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp
             "fact_id": fact_rows[0]["fact_id"],
             "provenance_refs": [],
             "review_markers": [],
+            "adapter_metadata": [],
         }
     ]
 

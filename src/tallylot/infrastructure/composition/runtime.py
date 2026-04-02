@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.application.checkpoints.extract_pdf_balances import ExtractPdfBalancesUseCase
-from tallylot.application.checkpoints.rebuild_wallet_inventory import RebuildWalletInventoryUseCase
+from tallylot.application.checkpoints.rebuild_location_inventory import RebuildLocationInventoryUseCase
 from tallylot.application.intake.apply_intake import ApplyIntakeUseCase
 from tallylot.application.intake.build_manifest import BuildManifestUseCase
 from tallylot.application.intake.plan_intake import PlanIntakeUseCase
@@ -70,9 +70,9 @@ def render_output_use_case() -> RenderOutputUseCase:
     return RenderOutputUseCase(registry, facts)
 
 
-def rebuild_wallet_inventory_use_case() -> RebuildWalletInventoryUseCase:
+def rebuild_location_inventory_use_case() -> RebuildLocationInventoryUseCase:
     _, artifacts, _, _ = runtime_dependencies()
-    return RebuildWalletInventoryUseCase(artifacts)
+    return RebuildLocationInventoryUseCase(artifacts)
 
 
 def extract_pdf_balances_use_case() -> ExtractPdfBalancesUseCase:

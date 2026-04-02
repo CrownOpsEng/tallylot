@@ -8,18 +8,18 @@ from typing import TypeVar, cast
 
 from tallylot.domain.transactions import (
     EconomicLeg,
-    FactClassification,
     FactDirection,
     FactLegPolicy,
+    FactSemantics,
     LegKind,
     LegShapeLimit,
     TransactionFact,
+    parse_accounting_intent_hint,
     parse_economic_kind,
-    parse_journal_intent,
-    parse_projection_type,
-    parse_tax_treatment_code,
+    parse_projection_hint,
+    parse_tax_treatment_hint,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 
 EnumT = TypeVar("EnumT")
@@ -30,12 +30,11 @@ FACT_HEADER = (
     "source",
     "adapter_id",
     "timestamp",
-    "account",
-    "wallet",
+    "location_id",
     "economic_kind",
-    "projection_type",
-    "journal_intent",
-    "tax_treatment_code",
+    "projection_hint",
+    "accounting_intent_hint",
+    "tax_treatment_hint",
     "description",
     "provider_operation_key",
     "operation_group_id",
@@ -55,17 +54,19 @@ def fact_from_row(row: dict[str, str]) -> TransactionFact:
         source=SourceId(row["source"]),
         adapter_id=AdapterId(row["adapter_id"]),
         timestamp=parse_timestamp(row["timestamp"]),
-        account=row["account"],
-        wallet=row["wallet"],
+        location_id=LocationId(row["location_id"]),
         leg_policy=_policy_from_text(row.get("leg_policy", "")),
-        classification=FactClassification(
+        semantics=FactSemantics(
             economic_kind=_required_enum(parse_economic_kind(row["economic_kind"]), "economic_kind"),
-            journal_intent=_required_enum(parse_journal_intent(row["journal_intent"]), "journal_intent"),
-            tax_treatment_code=_required_enum(
-                parse_tax_treatment_code(row["tax_treatment_code"]),
-                "tax_treatment_code",
+            accounting_intent_hint=_required_enum(
+                parse_accounting_intent_hint(row["accounting_intent_hint"]),
+                "accounting_intent_hint",
             ),
-            projection_type=parse_projection_type(row.get("projection_type", "")),
+            tax_treatment_hint=_required_enum(
+                parse_tax_treatment_hint(row["tax_treatment_hint"]),
+                "tax_treatment_hint",
+            ),
+            projection_hint=parse_projection_hint(row.get("projection_hint", "")),
         ),
         legs=_legs_from_text(row.get("legs", "")),
         description=row.get("description", ""),
@@ -93,8 +94,11 @@ def _legs_from_text(value: str) -> tuple[EconomicLeg, ...]:
                 amount=_required_decimal(parse_decimal(_required_str(raw_leg, "amount")), "leg.amount"),
                 subtype=_optional_str(raw_leg, "subtype"),
                 attributed_to_direction=_optional_fact_direction(raw_leg, "attributed_to_direction"),
-                account=_optional_str(raw_leg, "account") or "",
-                wallet=_optional_str(raw_leg, "wallet") or "",
+                location_id=(
+                    None
+                    if _optional_str(raw_leg, "location_id") is None
+                    else LocationId(_required_str(raw_leg, "location_id"))
+                ),
             )
         )
     return tuple(legs)

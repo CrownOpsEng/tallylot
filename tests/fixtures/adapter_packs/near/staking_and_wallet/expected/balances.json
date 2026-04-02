@@ -1,22 +1,20 @@
 [
   {
-    "account": "capture-near",
     "as_of": "2024-01-02 00:00:00",
     "asset": "NEAR",
     "balance_kind": "available",
+    "location_id": "capture_near",
     "notes": "",
     "quantity": "-1.11",
-    "source": "capture-near",
-    "wallet": "capture-near"
+    "source": "capture-near"
   },
   {
-    "account": "capture-near - Staking",
     "as_of": "2024-01-02 00:00:00",
     "asset": "NEAR",
     "balance_kind": "available",
+    "location_id": "capture_near_staking",
     "notes": "",
     "quantity": "2",
-    "source": "capture-near - Staking",
-    "wallet": "capture-near - Staking"
+    "source": "capture-near - Staking"
   }
 ]

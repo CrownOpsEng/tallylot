@@ -32,7 +32,7 @@ class CoinTrackingCsvAdapter:
                 LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
             )
         ),
-        requires_projection_type=True,
+        requires_projection_hint=True,
     )
 
     def render(self, facts: tuple[TransactionFact, ...], output_path: Path) -> RenderedArtifact:

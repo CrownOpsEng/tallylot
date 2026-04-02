@@ -1,7 +1,5 @@
 [
   {
-    "account": "Fixture Exchange",
-    "account_label": "Primary",
     "capture_path": "<fixture-raw-dir>",
     "confidence": "high",
     "controller": "Fixture Exchange",
@@ -10,11 +8,15 @@
     "evidence_path": "transactions.csv",
     "identifier_kind": "account_wallet",
     "identifier_value": "Fixture Exchange:Primary",
+    "location_id": "structured_example:fixture_exchange:primary",
+    "location_kind": "subaccount",
+    "location_label": "Primary",
+    "location_path": "Fixture Exchange / Primary",
     "network_scope": "",
     "normalized_identifier": "Fixture Exchange:Primary",
     "notes": "",
-    "source": "Structured Example",
-    "wallet": "Primary",
-    "wallet_id": "Structured Example:Fixture Exchange:Primary"
+    "parent_location_id": "structured_example:fixture_exchange",
+    "parent_location_label": "Fixture Exchange",
+    "source": "Structured Example"
   }
 ]

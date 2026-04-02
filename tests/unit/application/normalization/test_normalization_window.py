@@ -12,16 +12,16 @@ from tallylot.application.normalization import (
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
+    AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactClassification,
-    JournalIntent,
+    FactSemantics,
     LegKind,
-    ProjectionType,
-    TaxTreatmentCode,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
 from tallylot.ports.source_translation import EconomicActivityDraft, classification, economic_leg
 
 
@@ -237,13 +237,12 @@ def _transaction(transaction_id: str, timestamp: str) -> TransactionFact:
         source=SourceId("fixture-source"),
         adapter_id=AdapterId("fixture-adapter"),
         timestamp=datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC),
-        account="fixture-account",
-        wallet="fixture-wallet",
-        classification=FactClassification(
+        location_id=LocationId("fixture-account:fixture-wallet"),
+        semantics=FactSemantics(
             economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
-            journal_intent=JournalIntent.FUNDING_INFLOW,
-            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
-            projection_type=ProjectionType.DEPOSIT,
+            accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+            projection_hint=ProjectionHint.DEPOSIT,
         ),
         legs=(EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),),
         leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -256,13 +255,12 @@ def _draft(transaction_id: str, timestamp: str) -> EconomicActivityDraft:
         source="fixture-source",
         adapter_id="fixture-adapter",
         timestamp=datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC),
-        account="fixture-account",
-        wallet="fixture-wallet",
+        location_id=LocationId("fixture-account:fixture-wallet"),
         classification=classification(
             economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
-            journal_intent=JournalIntent.FUNDING_INFLOW,
-            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
-            projection_type=ProjectionType.DEPOSIT,
+            accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+            projection_hint=ProjectionHint.DEPOSIT,
         ),
         legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1")),),
         leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,

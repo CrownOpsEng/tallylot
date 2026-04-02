@@ -10,16 +10,16 @@ fact metadata into external row types such as the CoinTracking `Type` column.
 
 Naming convention:
 
-- enum members such as `ProjectionType.TRADE` stay Python-style uppercase names
+- enum members such as `ProjectionHint.TRADE` stay Python-style uppercase names
 - stored/runtime values such as `trade` stay lowercase snake_case machine identifiers
 - renderer labels such as `Trade` stay adapter-local presentation strings
 
 ## Classification Layers
 
 - `EconomicKind`: provider-neutral semantic meaning
-- `TaxTreatmentCode`: default tax intent used by later policy layers
-- `JournalIntent`: default accounting intent used by later journal renderers
-- `ProjectionType`: output projection metadata for concrete renderers
+- `TaxTreatmentHint`: default tax intent used by later policy layers
+- `AccountingIntentHint`: default accounting intent used by later journal renderers
+- `ProjectionHint`: output projection metadata for concrete renderers
 
 Core behavior should not key primarily on the legacy normalized `category`
 string.
@@ -35,7 +35,7 @@ string.
 These are the currently implemented canonical mappings. Code and docs must stay
 aligned on these values exactly.
 
-| Normalized Category | ProjectionType | EconomicKind | TaxTreatmentCode | JournalIntent | Tier | Notes |
+| Normalized Category | ProjectionHint | EconomicKind | TaxTreatmentHint | AccountingIntentHint | Tier | Notes |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
 | `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` | `T1` | Main spot trade path |
 | `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` | `T1` | Compatibility deposit before later transfer-linking |
@@ -68,7 +68,7 @@ aligned on these values exactly.
   remains a separate fact-level layer.
 - Output adapters map layered classifications into concrete external row
   families when they need them.
-- `ProjectionType` is output metadata, not the long-term core driver of
+- `ProjectionHint` is output metadata, not the long-term core driver of
   business behavior.
 - Machine-oriented runtime values should stay lowercase snake_case even when an
   output adapter renders them as title-style labels.

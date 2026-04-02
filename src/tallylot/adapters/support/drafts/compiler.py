@@ -6,9 +6,9 @@ from collections.abc import Iterable
 
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
-from tallylot.domain.transactions import EconomicLeg, FactClassification, TransactionFact
+from tallylot.domain.transactions import EconomicLeg, FactSemantics, TransactionFact
 from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.source_translation import EconomicActivityDraft, SourceTranslationBatch
 
 
@@ -22,14 +22,14 @@ def translation_batch_from_drafts(
     balance_evidence: Iterable[BalanceEvidence] = (),
     issues: Iterable[IssueRecord] = (),
     reviews: Iterable[NormalizationReviewRecord] = (),
-    wallet_inventory: Iterable[WalletInventoryRecord] = (),
+    location_inventory: Iterable[LocationInventoryRecord] = (),
 ) -> SourceTranslationBatch:
     return SourceTranslationBatch(
         drafts=tuple(drafts),
         balance_evidence=tuple(balance_evidence),
         issues=tuple(issues),
         reviews=tuple(reviews),
-        wallet_inventory=tuple(wallet_inventory),
+        location_inventory=tuple(location_inventory),
     )
 
 
@@ -43,13 +43,12 @@ def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact
         source=SourceId(draft.source),
         adapter_id=AdapterId(draft.adapter_id),
         timestamp=draft.timestamp,
-        account=draft.account,
-        wallet=draft.wallet,
-        classification=FactClassification(
+        location_id=draft.location_id,
+        semantics=FactSemantics(
             economic_kind=draft.classification.economic_kind,
-            journal_intent=draft.classification.journal_intent,
-            tax_treatment_code=draft.classification.tax_treatment_code,
-            projection_type=draft.classification.projection_type,
+            accounting_intent_hint=draft.classification.accounting_intent_hint,
+            tax_treatment_hint=draft.classification.tax_treatment_hint,
+            projection_hint=draft.classification.projection_hint,
         ),
         legs=tuple(
             EconomicLeg(
@@ -59,8 +58,7 @@ def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact
                 amount=leg.amount,
                 subtype=leg.subtype,
                 attributed_to_direction=leg.attributed_to_direction,
-                account=leg.account,
-                wallet=leg.wallet,
+                location_id=leg.location_id,
             )
             for leg in draft.legs
         ),

@@ -6,7 +6,13 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import IssueSpec, issue_record, matching_file_paths, read_csv_rows
+from tallylot.adapters.support import (
+    IssueSpec,
+    issue_record,
+    location_id_from_parts,
+    matching_file_paths,
+    read_csv_rows,
+)
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     EconomicActivityDraft,
@@ -15,7 +21,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.ports.source_profiles import SourceProfile
 
 
@@ -64,14 +70,13 @@ def translate_transactions(
                     activity_id=f"evm_explorer:{path.name}:{tx_hash}",
                     source=str(profile.source),
                     adapter_id="evm_explorer",
-                    account=str(profile.source),
-                    wallet=str(profile.source),
+                    location_id=location_id_from_parts(str(profile.source)),
                     timestamp=_parse_utc_timestamp((row.get("DateTime (UTC)") or "").strip()),
                     classification=classification(
                         economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
-                        projection_type=ProjectionType.DEPOSIT,
-                        journal_intent=JournalIntent.FUNDING_INFLOW,
-                        tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                        projection_hint=ProjectionHint.DEPOSIT,
+                        accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                        tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                     ),
                     leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     description=f"Transfer - {tx_hash}",

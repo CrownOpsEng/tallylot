@@ -5,18 +5,18 @@ from decimal import Decimal
 from pathlib import Path
 
 from tallylot.domain.transactions import (
+    AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactClassification,
     FactLegPolicy,
-    JournalIntent,
+    FactSemantics,
     LegKind,
     LegShapeLimit,
-    ProjectionType,
-    TaxTreatmentCode,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
 from tallylot.infrastructure.serialization.csv_io import read_rows, write_rows
 from tallylot.infrastructure.storage import FilesystemFactRepository
 
@@ -25,12 +25,11 @@ FACT_HEADER = (
     "source",
     "adapter_id",
     "timestamp",
-    "account",
-    "wallet",
+    "location_id",
     "economic_kind",
-    "projection_type",
-    "journal_intent",
-    "tax_treatment_code",
+    "projection_hint",
+    "accounting_intent_hint",
+    "tax_treatment_hint",
     "description",
     "provider_operation_key",
     "operation_group_id",
@@ -44,18 +43,17 @@ FACT_HEADER = (
 )
 
 
-def _fact_row(*, projection_type: str) -> dict[str, str]:
+def _fact_row(*, projection_hint: str) -> dict[str, str]:
     return {
         "fact_id": "fact-1",
         "source": "fixture",
         "adapter_id": "structured_csv",
         "timestamp": "2025-01-01 00:00:00",
-        "account": "Taxable",
-        "wallet": "Primary",
+        "location_id": "taxable:primary",
         "economic_kind": "spot_trade",
-        "projection_type": projection_type,
-        "journal_intent": "asset_exchange",
-        "tax_treatment_code": "capital_exchange",
+        "projection_hint": projection_hint,
+        "accounting_intent_hint": "asset_exchange",
+        "tax_treatment_hint": "capital_exchange",
         "description": "fixture trade",
         "provider_operation_key": "trade",
         "operation_group_id": "",
@@ -66,11 +64,11 @@ def _fact_row(*, projection_type: str) -> dict[str, str]:
         "status": "mapped",
         "legs": (
             '[{"direction":"in","kind":"primary","subtype":"","asset":"BTC","amount":"1",'
-            '"attributed_to_direction":"","account":"","wallet":""},'
+            '"attributed_to_direction":"","location_id":""},'
             '{"direction":"out","kind":"primary","subtype":"","asset":"CAD","amount":"100",'
-            '"attributed_to_direction":"","account":"","wallet":""},'
+            '"attributed_to_direction":"","location_id":""},'
             '{"direction":"out","kind":"charge","subtype":"","asset":"CAD","amount":"1",'
-            '"attributed_to_direction":"out","account":"","wallet":""}]'
+            '"attributed_to_direction":"out","location_id":""}]'
         ),
         "leg_policy": (
             '[{"kind":"charge","min_count":0,"max_count":1,"min_in_count":null,"max_in_count":0,'
@@ -83,17 +81,17 @@ def _fact_row(*, projection_type: str) -> dict[str, str]:
 
 def test_fact_repository_reads_machine_projection_values(tmp_path: Path) -> None:
     path = tmp_path / "facts.csv"
-    write_rows(path, FACT_HEADER, (_fact_row(projection_type="trade"),))
+    write_rows(path, FACT_HEADER, (_fact_row(projection_hint="trade"),))
 
     facts = FilesystemFactRepository().read_facts(path)
 
-    assert facts[0].projection_type == ProjectionType.TRADE
+    assert facts[0].projection_hint == ProjectionHint.TRADE
     assert facts[0].leg_policy.limit_for(LegKind.CHARGE) is not None
 
 
 def test_fact_repository_rejects_boolean_policy_counts(tmp_path: Path) -> None:
     path = tmp_path / "facts.csv"
-    row = _fact_row(projection_type="trade")
+    row = _fact_row(projection_hint="trade")
     row["leg_policy"] = (
         '[{"kind":"charge","min_count":0,"max_count":true,"min_in_count":null,"max_in_count":0,'
         '"min_out_count":null,"max_out_count":1},'
@@ -117,13 +115,12 @@ def test_fact_repository_round_trips_deterministic_legs_and_leg_policy(tmp_path:
         source=SourceId("fixture"),
         adapter_id=AdapterId("structured_csv"),
         timestamp=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-        account="Taxable",
-        wallet="Primary",
-        classification=FactClassification(
+        location_id=LocationId("taxable:primary"),
+        semantics=FactSemantics(
             economic_kind=EconomicKind.SPOT_TRADE,
-            journal_intent=JournalIntent.ASSET_EXCHANGE,
-            tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
-            projection_type=ProjectionType.TRADE,
+            accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+            tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
+            projection_hint=ProjectionHint.TRADE,
         ),
         legs=(
             EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
@@ -165,11 +162,11 @@ def test_fact_repository_round_trips_deterministic_legs_and_leg_policy(tmp_path:
 
     assert rows[0]["legs"] == (
         '[{"direction":"in","kind":"primary","subtype":"","asset":"BTC","amount":"1",'
-        '"attributed_to_direction":"","account":"","wallet":""},'
+        '"attributed_to_direction":"","location_id":""},'
         '{"direction":"out","kind":"primary","subtype":"","asset":"CAD","amount":"100",'
-        '"attributed_to_direction":"","account":"","wallet":""},'
+        '"attributed_to_direction":"","location_id":""},'
         '{"direction":"out","kind":"charge","subtype":"trading_fee","asset":"CAD","amount":"1",'
-        '"attributed_to_direction":"out","account":"","wallet":""}]'
+        '"attributed_to_direction":"out","location_id":""}]'
     )
     assert rows[0]["leg_policy"] == (
         '[{"kind":"charge","min_count":0,"max_count":1,"min_in_count":null,"max_in_count":0,'

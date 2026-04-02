@@ -1,11 +1,11 @@
-"""Wallet inventory aggregation rules."""
+"""Location inventory aggregation rules."""
 
 from __future__ import annotations
 
 from collections import defaultdict
 
 
-def summarize_wallet_inventory(
+def summarize_location_inventory(
     evidence_rows: list[dict[str, str]],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
@@ -13,36 +13,42 @@ def summarize_wallet_inventory(
     issue_rows: list[dict[str, str]] = []
 
     for row in evidence_rows:
-        grouped[row["wallet_id"]].append(row)
+        grouped[row["location_id"]].append(row)
         identifier_kinds_by_identifier[row["normalized_identifier"]].add(row["identifier_kind"])
         if not row["evidence_path"]:
             issue_rows.append(
                 {
                     "source": row["source"],
                     "capture_path": row["capture_path"],
-                    "wallet_id": row["wallet_id"],
+                    "location_id": row["location_id"],
                     "issue_kind": "missing_evidence_path",
-                    "message": "Wallet evidence rows must retain a source-relative evidence path.",
+                    "message": "Location evidence rows must retain a source-relative evidence path.",
                     "evidence_path": "",
                 }
             )
 
     inventory_rows: list[dict[str, str]] = []
-    for wallet_id, rows in sorted(grouped.items()):
+    for location_id, rows in sorted(grouped.items()):
         primary = rows[0]
         identifier_kind = primary["identifier_kind"]
         status = "needs_linked_evidence" if identifier_kind == "address_alias" else "ready"
         notes = sorted({row["note"] for row in rows if row["note"]})
         inventory_rows.append(
             {
-                "wallet_id": wallet_id,
+                "location_id": location_id,
+                "location_kind": primary["location_kind"],
+                "location_label": primary["location_label"],
+                "parent_location_id": primary["parent_location_id"],
+                "location_path": primary["location_path"],
                 "identifier_kind": identifier_kind,
                 "normalized_identifier": primary["normalized_identifier"],
                 "display_identifier": primary["display_identifier"],
                 "network_scopes": "; ".join(sorted({row["network_scope"] for row in rows if row["network_scope"]})),
                 "source_labels": "; ".join(sorted({row["source"] for row in rows if row["source"]})),
                 "controller_labels": "; ".join(sorted({row["controller"] for row in rows if row["controller"]})),
-                "account_labels": "; ".join(sorted({row["account_label"] for row in rows if row["account_label"]})),
+                "parent_location_labels": "; ".join(
+                    sorted({row["parent_location_label"] for row in rows if row["parent_location_label"]})
+                ),
                 "evidence_count": str(len(rows)),
                 "primary_evidence_path": primary["evidence_path"],
                 "status": status,
@@ -57,7 +63,7 @@ def summarize_wallet_inventory(
             {
                 "source": "",
                 "capture_path": "",
-                "wallet_id": "",
+                "location_id": "",
                 "issue_kind": "identifier_kind_conflict",
                 "message": (
                     "The same identifier was classified under multiple kinds: " + ", ".join(sorted(identifier_kinds))

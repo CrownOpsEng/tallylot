@@ -84,9 +84,9 @@ A single `category` string is not a stable center for the next phase.
 Every transaction fact should support distinct classification layers:
 
 - `EconomicKind`: provider-neutral semantics
-- `ProjectionType`: output projection metadata for external renderers
-- `TaxTreatmentCode`: jurisdiction-neutral tax intent
-- `JournalIntent`: accounting intent
+- `ProjectionHint`: output projection metadata for external renderers
+- `TaxTreatmentHint`: jurisdiction-neutral tax intent
+- `AccountingIntentHint`: accounting intent
 
 ### 5. Keep The Core Runtime Asset-Class Agnostic
 
@@ -312,7 +312,7 @@ The only lost capability should be comparison against the external oracle.
   - `normalization_reviews.csv`
 - Windowed normalization does not apply to:
   - `balance_evidence.csv`
-  - `wallet_inventory.csv`
+  - `location_inventory.csv`
 - Review records carry `context_timestamp`, dataset-level untimed reviews stay
   visible when a window is active, and summaries report
   `reviews_outside_normalization_window`.
@@ -390,9 +390,9 @@ Required fields:
   - `tuple[Valuation, ...]`
   - currency, amount, method, provenance, confidence
 - projection and policy hints
-  - optional `ProjectionType`
-  - optional `TaxTreatmentCode`
-  - optional `JournalIntent`
+  - optional `ProjectionHint`
+  - optional `TaxTreatmentHint`
+  - optional `AccountingIntentHint`
 - annotations
   - fact-keyed provenance and review-marker sidecar for draft-only metadata
 - status
@@ -421,9 +421,9 @@ Lock these early:
 - `OwnershipChange`
 - `ValuationMethod`
 - `CorrectionReason`
-- `ProjectionType`
-- `TaxTreatmentCode`
-- `JournalIntent`
+- `ProjectionHint`
+- `TaxTreatmentHint`
+- `AccountingIntentHint`
 
 ## Current CoinTracking Adapter Contract
 

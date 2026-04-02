@@ -100,9 +100,9 @@ def test_source_manifest_cli(tmp_path: Path) -> None:
     assert output_path.exists()
 
 
-def test_checkpoint_wallet_inventory_rebuild_cli(structured_source_dir: Path, tmp_path: Path) -> None:
+def test_checkpoint_location_inventory_rebuild_cli(structured_source_dir: Path, tmp_path: Path) -> None:
     normalized_dir = tmp_path / "normalized"
-    output_path = tmp_path / "wallet_inventory.csv"
+    output_path = tmp_path / "location_inventory.csv"
 
     runner.invoke(
         app,
@@ -122,7 +122,7 @@ def test_checkpoint_wallet_inventory_rebuild_cli(structured_source_dir: Path, tm
         app,
         [
             "checkpoint",
-            "rebuild-wallet-inventory",
+            "rebuild-location-inventory",
             "--normalized-root",
             str(normalized_dir),
             "--output",
@@ -132,7 +132,7 @@ def test_checkpoint_wallet_inventory_rebuild_cli(structured_source_dir: Path, tm
 
     assert result.exit_code == 0
     assert output_path.exists()
-    assert (tmp_path / "wallet_inventory_summary.json").exists()
+    assert (tmp_path / "location_inventory_summary.json").exists()
 
 
 def test_source_intake_plan_and_apply_cli(tmp_path: Path) -> None:

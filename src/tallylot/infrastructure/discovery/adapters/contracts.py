@@ -18,12 +18,12 @@ def validate_source_adapter_contract(adapter: object, module: ModuleType) -> Sou
     source_capabilities = {
         AdapterCapability.INTAKE_ROUTE,
         AdapterCapability.SOURCE_TRANSLATE,
-        AdapterCapability.WALLET_INVENTORY,
+        AdapterCapability.LOCATION_INVENTORY,
     }
     if not manifest.capabilities.intersection(source_capabilities):
         raise ValueError(
             f"{module.__name__} adapter {manifest.adapter_id} must declare intake route, source translation, "
-            "or wallet inventory capability"
+            "or location inventory capability"
         )
     if AdapterCapability.OUTPUT_RENDER in manifest.capabilities:
         raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} cannot declare output render capability")
@@ -32,7 +32,7 @@ def validate_source_adapter_contract(adapter: object, module: ModuleType) -> Sou
         "match_intake",
         "route_intake",
         "validate_profile_timezones",
-        "extract_wallet_inventory",
+        "extract_location_inventory",
         "translate",
     )
     if not all(has_callable(adapter, method_name) for method_name in required_methods):
@@ -46,7 +46,7 @@ def validate_output_adapter_contract(adapter: object, module: ModuleType) -> Out
         raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} must declare output render capability")
     forbidden_capabilities = {
         AdapterCapability.SOURCE_TRANSLATE,
-        AdapterCapability.WALLET_INVENTORY,
+        AdapterCapability.LOCATION_INVENTORY,
     }
     if manifest.capabilities.intersection(forbidden_capabilities):
         raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} declares source-only capabilities")

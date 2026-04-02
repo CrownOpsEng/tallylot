@@ -1,4 +1,4 @@
-"""Shared wallet identifier parsing and normalization."""
+"""Shared location identifier parsing and normalization."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def normalized_identifier(identifier_kind: str, identifier_value: str) -> str:
     return normalized
 
 
-def wallet_identifier_kind(identifier_value: str) -> str:
+def identifier_kind_for_value(identifier_value: str) -> str:
     value = identifier_value.strip()
     for identifier_kind, pattern in _IDENTIFIER_PATTERNS:
         if pattern.fullmatch(value):
@@ -48,7 +48,7 @@ def wallet_identifier_kind(identifier_value: str) -> str:
 
 
 def scope_token_for_identifier(identifier_value: str) -> str:
-    identifier_kind = wallet_identifier_kind(identifier_value)
+    identifier_kind = identifier_kind_for_value(identifier_value)
     network = _SCOPE_NETWORKS.get(identifier_kind)
     if network is None:
         return ""

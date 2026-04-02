@@ -18,7 +18,7 @@ from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
 
-from .annotations import annotation_records_from_drafts
+from .annotations import annotation_records_from_drafts, location_annotation_records
 from .artifacts import write_normalization_artifacts
 from .balances import derive_balance_snapshots
 from .models import NormalizationOutputs, NormalizationWindowStats
@@ -94,11 +94,12 @@ class NormalizeSourceUseCase:
         outputs = NormalizationOutputs(
             facts=facts,
             fact_annotations=annotation_records_from_drafts(drafts),
+            location_annotations=location_annotation_records(result.location_inventory),
             derived_balances=derived_balances,
             balance_evidence=result.balance_evidence,
             issues=issue_records,
             reviews=review_records,
-            wallet_inventory=result.wallet_inventory,
+            location_inventory=result.location_inventory,
         )
         write_normalization_artifacts(
             request.output_dir,

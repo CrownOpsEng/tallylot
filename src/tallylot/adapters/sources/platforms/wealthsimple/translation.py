@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import CsvRowContext, IssueSpec, issue_record, read_csv_header
+from tallylot.adapters.support import CsvRowContext, IssueSpec, issue_record, location_id_from_parts, read_csv_header
 from tallylot.adapters.support.drafts import (
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     EconomicActivityDraft,
@@ -18,7 +18,13 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    FactDirection,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import EconomicLegDraft
@@ -192,14 +198,13 @@ def _trade_draft_or_issue(
         activity_id=f"wealthsimple:{row_context.raw_file}:{row_context.raw_row_ref}",
         source=str(profile.source),
         adapter_id="wealthsimple",
-        account=context.account_id,
-        wallet=context.account_id,
+        location_id=location_id_from_parts(str(profile.source), context.account_id),
         timestamp=context.timestamp,
         classification=classification(
             economic_kind=EconomicKind.SPOT_TRADE,
-            projection_type=ProjectionType.TRADE,
-            journal_intent=JournalIntent.ASSET_EXCHANGE,
-            tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+            projection_hint=ProjectionHint.TRADE,
+            accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+            tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
         ),
         leg_policy=_trade_policy(context.commission),
         description=f"Wealthsimple Crypto {trade_side_lower}",

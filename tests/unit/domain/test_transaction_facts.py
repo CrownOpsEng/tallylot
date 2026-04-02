@@ -9,19 +9,19 @@ import pytest
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
+    AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactClassification,
     FactDirection,
     FactLegPolicy,
-    JournalIntent,
+    FactSemantics,
     LegKind,
     LegShapeLimit,
-    ProjectionType,
-    TaxTreatmentCode,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
 from tallylot.domain.value_objects import parse_timestamp
 
 
@@ -35,13 +35,12 @@ def _build_fact(
         source=SourceId("fixture"),
         adapter_id=AdapterId("structured_csv"),
         timestamp=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-        account="taxable",
-        wallet="spot",
-        classification=FactClassification(
+        location_id=LocationId("taxable:spot"),
+        semantics=FactSemantics(
             economic_kind=EconomicKind.SPOT_TRADE,
-            projection_type=ProjectionType.TRADE,
-            journal_intent=JournalIntent.ASSET_EXCHANGE,
-            tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+            projection_hint=ProjectionHint.TRADE,
+            accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+            tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
         ),
         legs=legs,
         leg_policy=leg_policy,
@@ -66,7 +65,7 @@ def test_transaction_fact_exposes_projection_properties_and_serializes_legs() ->
         leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     )
 
-    assert fact.projection_type == ProjectionType.TRADE
+    assert fact.projection_hint == ProjectionHint.TRADE
     assert fact.leg_policy == TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY
     assert fact.legs[0].asset == AssetSymbol("BTC")
     assert fact.legs[1].amount == Decimal("100000")
@@ -74,14 +73,14 @@ def test_transaction_fact_exposes_projection_properties_and_serializes_legs() ->
     row = fact.to_row()
 
     assert row["fact_id"] == "fact-1"
-    assert row["projection_type"] == "trade"
+    assert row["projection_hint"] == "trade"
     assert row["legs"] == (
         '[{"direction":"in","kind":"primary","subtype":"","asset":"BTC","amount":"1.25",'
-        '"attributed_to_direction":"","account":"","wallet":""},'
+        '"attributed_to_direction":"","location_id":""},'
         '{"direction":"out","kind":"primary","subtype":"","asset":"CAD","amount":"100000",'
-        '"attributed_to_direction":"","account":"","wallet":""},'
+        '"attributed_to_direction":"","location_id":""},'
         '{"direction":"out","kind":"charge","subtype":"trading_fee","asset":"CAD","amount":"12.5",'
-        '"attributed_to_direction":"out","account":"","wallet":""}]'
+        '"attributed_to_direction":"out","location_id":""}]'
     )
     assert row["leg_policy"] == (
         '[{"kind":"charge","min_count":0,"max_count":1,"min_in_count":null,"max_in_count":0,'
@@ -166,13 +165,12 @@ def test_transaction_fact_rejects_legs_that_exceed_declared_policy() -> None:
             source=SourceId("fixture"),
             adapter_id=AdapterId("structured_csv"),
             timestamp=parse_timestamp("2025-01-01 00:00:00"),
-            account="taxable",
-            wallet="spot",
-            classification=FactClassification(
+            location_id=LocationId("taxable:spot"),
+            semantics=FactSemantics(
                 economic_kind=EconomicKind.PLATFORM_REWARD,
-                journal_intent=JournalIntent.INCOME_RECOGNITION,
-                tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
-                projection_type=None,
+                accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+                tax_treatment_hint=TaxTreatmentHint.ORDINARY_INCOME,
+                projection_hint=None,
             ),
             legs=(
                 EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("0.5")),
@@ -219,13 +217,12 @@ def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requ
         source=SourceId("fixture"),
         adapter_id=AdapterId("structured_csv"),
         timestamp=parse_timestamp("2025-01-01 00:00:00"),
-        account="taxable",
-        wallet="spot",
-        classification=FactClassification(
+        location_id=LocationId("taxable:spot"),
+        semantics=FactSemantics(
             economic_kind=EconomicKind.PLATFORM_REWARD,
-            journal_intent=JournalIntent.INCOME_RECOGNITION,
-            tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
-            projection_type=None,
+            accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+            tax_treatment_hint=TaxTreatmentHint.ORDINARY_INCOME,
+            projection_hint=None,
         ),
         legs=(
             EconomicLeg(direction="in", kind=LegKind.REBATE, asset=AssetSymbol("BTC"), amount=Decimal("0.5")),
@@ -240,7 +237,7 @@ def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requ
         ),
     )
 
-    assert fact.projection_type is None
+    assert fact.projection_hint is None
     assert fact.leg_policy.limit_for(LegKind.REBATE) is not None
 
 
@@ -251,13 +248,12 @@ def test_transaction_fact_requires_utc_timestamp() -> None:
             source=SourceId("fixture"),
             adapter_id=AdapterId("structured_csv"),
             timestamp=datetime.fromisoformat("2025-01-01T00:00:00"),
-            account="taxable",
-            wallet="spot",
-            classification=FactClassification(
+            location_id=LocationId("taxable:spot"),
+            semantics=FactSemantics(
                 economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
-                journal_intent=JournalIntent.FUNDING_INFLOW,
-                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
-                projection_type=ProjectionType.DEPOSIT,
+                accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+                projection_hint=ProjectionHint.DEPOSIT,
             ),
             legs=(EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),),
             leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -271,13 +267,12 @@ def test_transaction_fact_rejects_ambiguous_attributed_to_direction() -> None:
             source=SourceId("fixture"),
             adapter_id=AdapterId("structured_csv"),
             timestamp=parse_timestamp("2025-01-01 00:00:00"),
-            account="taxable",
-            wallet="spot",
-            classification=FactClassification(
+            location_id=LocationId("taxable:spot"),
+            semantics=FactSemantics(
                 economic_kind=EconomicKind.SPOT_TRADE,
-                journal_intent=JournalIntent.ASSET_EXCHANGE,
-                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
-                projection_type=ProjectionType.TRADE,
+                accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
+                projection_hint=ProjectionHint.TRADE,
             ),
             legs=(
                 EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),

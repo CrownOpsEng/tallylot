@@ -4,8 +4,8 @@ This folder holds the two live issue-tracking control files that must stay
 current during execution.
 
 Related generated inventory artifacts now live beside them in
-`analysis/inventory/`, especially `wallet_inventory.csv` and
-`wallet_inventory_issues.csv`.
+`analysis/inventory/`, especially `location_inventory.csv` and
+`location_inventory_issues.csv`.
 
 ## `issue_log.csv`
 

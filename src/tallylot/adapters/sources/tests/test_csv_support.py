@@ -17,7 +17,8 @@ from tallylot.adapters.support.rows import (
     read_csv_rows,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.types import LocationId
 
 
 def test_matching_file_paths_returns_sorted_matches(tmp_path: Path) -> None:
@@ -57,14 +58,13 @@ def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) ->
             activity_id=f"tx:{row_context.raw_row_ref}",
             source="fixture",
             adapter_id="fixture",
-            account="fixture",
-            wallet="fixture",
+            location_id=LocationId("fixture:fixture"),
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
                 economic_kind=EconomicKind.SPOT_TRADE,
-                projection_type=ProjectionType.TRADE,
-                journal_intent=JournalIntent.ASSET_EXCHANGE,
-                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                projection_hint=ProjectionHint.TRADE,
+                accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
             ),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,

@@ -9,15 +9,15 @@ from collections import defaultdict
 from pathlib import Path
 
 from tallylot.adapters.support.drafts import economic_leg
-from tallylot.domain.transactions import EconomicLeg, ProjectionType, TransactionFact
+from tallylot.domain.transactions import EconomicLeg, ProjectionHint, TransactionFact
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CLASSIFICATION_KEYWORDS = frozenset(
     {
         "economic_kind",
-        "projection_type",
-        "journal_intent",
-        "tax_treatment_code",
+        "projection_hint",
+        "accounting_intent_hint",
+        "tax_treatment_hint",
     }
 )
 
@@ -318,10 +318,10 @@ def test_source_adapters_do_not_pass_string_classification_values() -> None:
                     )
 
 
-def test_projection_type_runtime_values_remain_machine_oriented() -> None:
-    assert ProjectionType.TRADE.value == "trade"
-    assert ProjectionType.DEPOSIT.value == "deposit"
-    assert ProjectionType.WITHDRAWAL.value == "withdrawal"
+def test_projection_hint_runtime_values_remain_machine_oriented() -> None:
+    assert ProjectionHint.TRADE.value == "trade"
+    assert ProjectionHint.DEPOSIT.value == "deposit"
+    assert ProjectionHint.WITHDRAWAL.value == "withdrawal"
 
 
 def test_balance_evidence_has_single_production_owner() -> None:
@@ -343,6 +343,6 @@ def test_transaction_classification_matrix_describes_runtime_projection_values()
         "| `withdrawal` | `withdrawal` | `asset_withdrawal` | `non_taxable_transfer_out` | `funding_outflow` |"
         in matrix_text
     )
-    assert "enum members such as `ProjectionType.TRADE`" in matrix_text
+    assert "enum members such as `ProjectionHint.TRADE`" in matrix_text
     assert "stored/runtime values such as `trade`" in matrix_text
     assert "renderer labels such as `Trade`" in matrix_text

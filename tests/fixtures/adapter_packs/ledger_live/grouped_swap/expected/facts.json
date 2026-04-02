@@ -1,24 +1,23 @@
 [
   {
-    "account": "Bitcoin 1",
+    "accounting_intent_hint": "asset_exchange",
     "adapter_id": "ledger_live",
     "confidence": "high",
     "description": "Bitcoin 1",
     "economic_kind": "asset_swap",
     "fact_id": "ledger_live:ledgerlive-operations.csv:op-1",
-    "journal_intent": "asset_exchange",
     "leg_policy": "[{\"kind\":\"charge\",\"min_count\":0,\"max_count\":1,\"min_in_count\":null,\"max_in_count\":0,\"min_out_count\":null,\"max_out_count\":1},{\"kind\":\"primary\",\"min_count\":2,\"max_count\":2,\"min_in_count\":1,\"max_in_count\":1,\"min_out_count\":1,\"max_out_count\":1}]",
-    "legs": "[{\"direction\":\"in\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"BTC\",\"amount\":\"0.01\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"ETH\",\"amount\":\"0.5\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"charge\",\"subtype\":\"network_fee\",\"asset\":\"ETH\",\"amount\":\"0.01\",\"attributed_to_direction\":\"out\",\"account\":\"\",\"wallet\":\"\"}]",
+    "legs": "[{\"direction\":\"in\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"BTC\",\"amount\":\"0.01\",\"attributed_to_direction\":\"\",\"location_id\":\"\"},{\"direction\":\"out\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"ETH\",\"amount\":\"0.5\",\"attributed_to_direction\":\"\",\"location_id\":\"\"},{\"direction\":\"out\",\"kind\":\"charge\",\"subtype\":\"network_fee\",\"asset\":\"ETH\",\"amount\":\"0.01\",\"attributed_to_direction\":\"out\",\"location_id\":\"\"}]",
+    "location_id": "ledger_live_main:bitcoin_1",
     "operation_group_id": "op-1",
-    "projection_type": "trade",
+    "projection_hint": "trade",
     "provider_operation_key": "ledger_live_swap",
     "raw_file": "ledgerlive-operations.csv",
     "raw_row_ref": "ledgerlive-operations.csv:row:2;ledgerlive-operations.csv:row:3;ledgerlive-operations.csv:row:4",
     "source": "ledger-live-main",
     "status": "mapped",
-    "tax_treatment_code": "capital_exchange",
+    "tax_treatment_hint": "capital_exchange",
     "timestamp": "2026-03-23 10:11:12",
-    "tx_hash": "op-1",
-    "wallet": "Bitcoin 1"
+    "tx_hash": "op-1"
   }
 ]
