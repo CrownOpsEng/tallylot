@@ -22,6 +22,8 @@ def repo_markdown_paths() -> tuple[Path, ...]:
     return (
         REPO_ROOT / "README.md",
         REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "ROADMAP.md",
+        REPO_ROOT / "CHANGELOG.md",
         *sorted(DOCS_ROOT.rglob("*.md")),
         *sorted((REPO_ROOT / ".claude" / "commands").glob("*.md")),
         *sorted(AGENTS_ROOT.rglob("*.md")),

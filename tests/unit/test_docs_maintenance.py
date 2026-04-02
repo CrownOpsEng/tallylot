@@ -11,6 +11,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ENTRYPOINT_PATHS = (
     REPO_ROOT / "README.md",
     REPO_ROOT / "AGENTS.md",
+    REPO_ROOT / "ROADMAP.md",
+    REPO_ROOT / "CHANGELOG.md",
     *sorted((REPO_ROOT / ".claude" / "commands").glob("*.md")),
 )
 
@@ -106,6 +108,13 @@ def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
     documents = docs_maintenance.validate_documents()
 
     assert {document.path for document in documents} == set(paths)
+
+
+def test_repo_markdown_paths_include_root_repo_docs() -> None:
+    repo_paths = set(docs_maintenance.repo_markdown_paths())
+
+    assert REPO_ROOT / "ROADMAP.md" in repo_paths
+    assert REPO_ROOT / "CHANGELOG.md" in repo_paths
 
 
 def test_entrypoints_do_not_reference_retired_docs_paths() -> None:
@@ -476,6 +485,8 @@ def test_sync_check_rejects_bare_uv_examples(
     )
     (tmp_path / "README.md").write_text("# Repo\n", encoding="utf-8")
     (tmp_path / "AGENTS.md").write_text("# AGENTS.md\n", encoding="utf-8")
+    (tmp_path / "ROADMAP.md").write_text("# ROADMAP\n", encoding="utf-8")
+    (tmp_path / "CHANGELOG.md").write_text("# Changelog\n", encoding="utf-8")
 
     monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
     monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", docs_root)
