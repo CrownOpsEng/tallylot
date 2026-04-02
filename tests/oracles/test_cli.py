@@ -51,7 +51,7 @@ def test_round_scaffold_uses_configured_root_when_option_is_omitted(
         return StubRoundScaffoldingService()
 
     monkeypatch.setattr(oracle_cli, "configured_workspace_root", configured_root_stub)
-    monkeypatch.setattr(oracle_cli, "round_scaffolding_service", round_scaffolding_service_stub)
+    monkeypatch.setattr(oracle_cli, "_round_scaffolding_service", round_scaffolding_service_stub)
 
     result = runner.invoke(
         oracle_cli.app,

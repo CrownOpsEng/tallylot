@@ -9,39 +9,39 @@ from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactS
 from tallylot.infrastructure.workspace import FilesystemWorkspaceRepository
 from tools.oracles.contracts import RoundScaffoldRequest
 from tools.oracles.rounds import (
-    DEFAULT_VERIFICATION_EXPORTS,
     RoundScaffoldingService,
-    build_verification_readme,
-    create_round_log_entry,
-    validate_round_id,
+    _DEFAULT_VERIFICATION_EXPORTS,
+    _build_verification_readme,
+    _create_round_log_entry,
+    _validate_round_id,
 )
 
 
 def test_validate_round_id_rejects_empty_value() -> None:
     with pytest.raises(ValueError, match="must not be empty"):
-        validate_round_id("   ")
+        _validate_round_id("   ")
 
 
 def test_validate_round_id_rejects_traversal() -> None:
     with pytest.raises(ValueError, match="single path segment"):
-        validate_round_id("../outside")
+        _validate_round_id("../outside")
 
 
 def test_validate_round_id_rejects_nested_path() -> None:
     with pytest.raises(ValueError, match="single path segment"):
-        validate_round_id("rounds/01")
+        _validate_round_id("rounds/01")
 
 
 def test_build_verification_readme_lists_default_exports() -> None:
-    readme = build_verification_readme("round_01", "baseline_repair", "shakepay")
+    readme = _build_verification_readme("round_01", "baseline_repair", "shakepay")
 
-    for export_name in DEFAULT_VERIFICATION_EXPORTS:
+    for export_name in _DEFAULT_VERIFICATION_EXPORTS:
         assert f"- {export_name}" in readme
     assert "round_01" in readme
 
 
 def test_create_round_log_entry_uses_phase_specific_goal() -> None:
-    entry = create_round_log_entry(
+    entry = _create_round_log_entry(
         RoundScaffoldRequest(
             workspace_root=Path("/repo"),
             round_id="round_02",
