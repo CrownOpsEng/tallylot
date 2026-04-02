@@ -15,6 +15,9 @@ automatically.
 
 - Keep adapter metadata, code, and tests together.
 - Implement the `SourceAdapter` or `OutputAdapter` port only.
+- Keep the concrete adapter implementation class private inside `adapter.py` or
+  `stub.py`, and publish the runtime entry point as the module-level `ADAPTER`
+  instance from that implementation module.
 - Keep adapters pure with respect to filesystem layout except for reading their
   assigned input paths.
 - Treat source adapters as translation adapters, not orchestration centers.
@@ -95,6 +98,8 @@ Working source adapters should follow four steps:
 The default source adapter package should keep:
 
 - `adapter.py` for the thin port implementation and manifest
+- a docstring-only package `__init__.py`; do not re-export `ADAPTER` from the
+  package root
 - `translation.py` for provider-local file-family or row translation registries
 - optional provider-local parser modules and wallet-evidence modules
 
@@ -135,10 +140,10 @@ Known current adapter workaround:
   - `platforms/` for exchange or custodial platform exports
   - `stubs/` for reserved non-runtime entry points
 - Output adapters live under `tallylot.adapters.outputs`.
-- Discovery scans category namespaces and adapter package entry points
-  recursively.
-- Package-style adapters should expose `ADAPTER` from `__init__.py` or
-  `adapter.py`.
+- Discovery scans category namespaces recursively and loads package
+  implementation modules named `adapter.py` or `stub.py`.
+- Package-style adapters should expose `ADAPTER` from `adapter.py` or `stub.py`,
+  not from package `__init__.py` re-export shims.
 - Package-local helpers, fixtures, and tests are intentionally ignored by
   discovery.
 - Discovery loads `ADAPTER` objects and validates their manifests.
@@ -154,6 +159,10 @@ Known current adapter workaround:
 - Keep adapter-owned unit coverage beside the adapter package. Shared registry,
   service, or tooling coverage that is not owned by one adapter should live
   under the repo-level `tests/` tree instead.
+- Adapter-local tests that need implementation internals should import private
+  adapter classes or helpers directly from `adapter.py`, `stub.py`, or the
+  provider-local module under test. Do not add package-root re-export shims or
+  widen production visibility for tests.
 - When an adapter becomes materially more complex, add golden fixtures that
   assert transaction facts, balances, issues, and rendered outputs.
 - Adapters must continue to pass both strict type checkers. Do not rely on
@@ -166,6 +175,10 @@ Known current adapter workaround:
   or `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter output <module_name> "<Display Name>"`.
 - Source scaffolds must include the category path so new adapters land in the
   correct namespace from the start.
+- Scaffolds generate a private adapter implementation class, a module-level
+  `ADAPTER` instance in `adapter.py`, a docstring-only package `__init__.py`,
+  and package-local tests that import the private class directly from
+  `adapter.py`.
 - The scaffold tool refreshes `pyrightconfig.tests.json` so package-local
   adapter tests remain under the centralized test-private checker policy.
 - Source scaffolds now generate `translation.py` with a provider-local
