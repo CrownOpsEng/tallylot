@@ -7,16 +7,13 @@ from pathlib import Path
 
 from crypto_reconciliation.adapters.support.drafts import (
     EconomicActivityDraft,
-    normalization_result_from_drafts,
+    translation_batch_from_drafts,
 )
 from crypto_reconciliation.adapters.support.issues import IssueSpec, issue_record
-from crypto_reconciliation.domain.models import (
-    IssueRecord,
-    NormalizationReviewRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.domain.issues import IssueRecord, NormalizationReviewRecord
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
+from crypto_reconciliation.ports.source_profiles import SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 from .contracts import REQUIRED_HEADER, TRANSACTIONS_FILENAME
 from .feedback import StructuredCsvFeedbackFactory
@@ -24,19 +21,19 @@ from .translation import translate_row
 from .validation import StructuredCsvRowValidator
 
 
-def normalize_structured_csv(
+def translate_structured_csv(
     profile: SourceProfile,
     raw_dir: Path,
     *,
     adapter_id: str,
-) -> NormalizationResult:
+) -> SourceTranslationBatch:
     path = raw_dir / TRANSACTIONS_FILENAME
     feedback = StructuredCsvFeedbackFactory(profile=profile, adapter_id=adapter_id)
     validator = StructuredCsvRowValidator(feedback=feedback)
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         if tuple(reader.fieldnames or ()) != REQUIRED_HEADER:
-            return normalization_result_from_drafts(
+            return translation_batch_from_drafts(
                 issues=(
                     issue_record(
                         IssueSpec(
@@ -60,7 +57,7 @@ def _normalized_result(
     reader: csv.DictReader[str],
     feedback: StructuredCsvFeedbackFactory,
     validator: StructuredCsvRowValidator,
-) -> NormalizationResult:
+) -> SourceTranslationBatch:
     drafts: list[EconomicActivityDraft] = []
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
@@ -85,7 +82,7 @@ def _normalized_result(
             row["wallet"].strip(),
         )
     reviews.extend(_dataset_reviews(feedback, has_transactions=bool(drafts)))
-    return normalization_result_from_drafts(
+    return translation_batch_from_drafts(
         drafts,
         issues=_issues_with_no_valid_rows(
             profile,

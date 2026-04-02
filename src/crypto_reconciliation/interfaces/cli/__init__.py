@@ -1,17 +1,12 @@
 """CLI entrypoints."""
 
-from . import baseline, batch, output, rounds, source, supporting, verification, wallet, workspace
+from . import checkpoint, output, source, workspace
 from .apps import app
 
 REGISTERED_COMMAND_MODULES = (
-    baseline,
-    batch,
+    checkpoint,
     output,
-    rounds,
     source,
-    supporting,
-    verification,
-    wallet,
     workspace,
 )
 

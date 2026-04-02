@@ -6,7 +6,7 @@ from crypto_reconciliation.adapters.sources.platforms.binance.adapter import Bin
 from crypto_reconciliation.adapters.sources.platforms.binance.csv_rows import is_no_data_row
 from crypto_reconciliation.adapters.sources.platforms.binance.matching import SPOT_HEADER
 from crypto_reconciliation.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
-from crypto_reconciliation.domain.models import FileInventoryEntry
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry
 from tests.support.services import build_source_profile
 
 

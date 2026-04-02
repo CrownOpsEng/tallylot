@@ -11,7 +11,7 @@ from crypto_reconciliation.adapters.support.rows import (
     matching_file_paths,
     read_csv_rows,
 )
-from crypto_reconciliation.domain.models import IssueRecord
+from crypto_reconciliation.domain.issues import IssueRecord
 
 
 def test_matching_file_paths_returns_sorted_matches(tmp_path: Path) -> None:

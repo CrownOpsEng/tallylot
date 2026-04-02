@@ -11,12 +11,12 @@ def test_wealthsimple_fixture_exercises_supported_and_unsupported_rows() -> None
     raw_dir = fixture_raw_dir("wealthsimple", "mixed_activity_review")
 
     profile, adapter = profile_and_adapter("WealthSimple", raw_dir)
-    result = adapter.normalize(profile, raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "wealthsimple"
-    assert len(result.transactions) == 1
-    assert result.transactions[0].category == "trade"
-    assert str(result.transactions[0].timestamp) == "2023-09-22 00:00:00"
+    assert len(result.facts) == 1
+    assert result.facts[0].category == "trade"
+    assert str(result.facts[0].timestamp) == "2023-09-22 00:00:00"
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
     assert "Staking/REWARD" in result.issues[0].message
@@ -26,11 +26,11 @@ def test_wealthsimple_adapter_uses_broker_activity_family_without_filename_depen
     raw_dir = fixture_raw_dir("wealthsimple", "broker_trade")
 
     profile, adapter = profile_and_adapter("Future Broker", raw_dir)
-    result = adapter.normalize(profile, raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "wealthsimple"
-    assert len(result.transactions) == 1
-    assert result.transactions[0].raw_file == "broker-export.csv"
+    assert len(result.facts) == 1
+    assert result.facts[0].raw_file == "broker-export.csv"
     assert not result.issues
 
 
@@ -60,10 +60,10 @@ def test_wealthsimple_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> 
     )
     (raw_dir / "other.csv").write_text("a,b,c\nbad,row,data\n", encoding="utf-8")
 
-    result = WealthsimpleAdapter().normalize(
+    result = WealthsimpleAdapter().translate(
         build_source_profile(adapter_id="wealthsimple", raw_dir=str(raw_dir), source="Wealthsimple"),
         raw_dir,
     )
 
-    assert len(result.transactions) == 1
+    assert len(result.facts) == 1
     assert not result.issues

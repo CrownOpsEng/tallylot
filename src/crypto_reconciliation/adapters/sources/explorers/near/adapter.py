@@ -11,19 +11,15 @@ from crypto_reconciliation.adapters.support import (
     passed_timezone_summary,
     wallet_record,
 )
-from crypto_reconciliation.adapters.support.drafts import normalization_result_from_drafts
+from crypto_reconciliation.adapters.support.drafts import translation_batch_from_drafts
 from crypto_reconciliation.adapters.support.wallets import WalletRecordSpec
-from crypto_reconciliation.domain.models import (
-    AdapterCapability,
-    AdapterManifest,
-    FileInventoryEntry,
-    IssueRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 
 class NearAdapter:
@@ -32,7 +28,7 @@ class NearAdapter:
         display_name="NEAR",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
         ),
         description="Normalizes NEAR transaction exports and extracts wallet identifiers.",
     )
@@ -84,10 +80,10 @@ class NearAdapter:
             )
         return tuple(evidence), ()
 
-    def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
+    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         drafts, issues = translate_transactions(profile, raw_dir)
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
-        return normalization_result_from_drafts(
+        return translation_batch_from_drafts(
             drafts,
             issues=issues,
             wallet_inventory=wallet_inventory,

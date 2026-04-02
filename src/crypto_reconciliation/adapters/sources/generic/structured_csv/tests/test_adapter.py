@@ -6,9 +6,9 @@ from pathlib import Path
 from crypto_reconciliation.adapters.sources.generic.structured_csv import StructuredCsvSourceAdapter
 from crypto_reconciliation.adapters.sources.generic.structured_csv.contracts import REQUIRED_HEADER
 from crypto_reconciliation.adapters.sources.generic.structured_csv.feedback import StructuredCsvFeedbackFactory
-from crypto_reconciliation.adapters.sources.generic.structured_csv.normalization import normalize_structured_csv
+from crypto_reconciliation.adapters.sources.generic.structured_csv.normalization import translate_structured_csv
 from crypto_reconciliation.adapters.sources.generic.structured_csv.validation import StructuredCsvRowValidator
-from crypto_reconciliation.domain.models import FileInventoryEntry
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry
 from tests.support.services import build_source_profile
 
 
@@ -76,7 +76,7 @@ def test_structured_csv_validator_canonicalizes_negative_outbound_amounts() -> N
     assert review.normalized_value == "10"
 
 
-def test_normalize_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None:
+def test_translate_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "transactions.csv").write_text(
@@ -84,13 +84,13 @@ def test_normalize_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
         encoding="utf-8",
     )
 
-    result = normalize_structured_csv(
+    result = translate_structured_csv(
         build_source_profile(adapter_id="structured_csv", raw_dir=str(raw_dir), source="Structured Example"),
         raw_dir,
         adapter_id="structured_csv",
     )
 
-    assert not result.transactions
+    assert not result.facts
     assert not result.balance_evidence
     assert len(result.issues) == 1
     assert result.issues[0].kind == "invalid_schema"

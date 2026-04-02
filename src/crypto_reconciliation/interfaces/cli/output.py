@@ -7,23 +7,23 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.models.output import RenderOutputRequest
+from crypto_reconciliation.application.outputs.contracts import RenderOutputRequest
+from crypto_reconciliation.infrastructure.composition.runtime import render_output_use_case
 
 from .apps import output_render_app
-from .runtime import render_service
 from .shared import emit_response
 
 
 @output_render_app.command("file")
 def render_output_file(
     output_adapter: Annotated[str, typer.Option()],
-    transactions: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    facts: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
-    response = render_service().execute(
+    response = render_output_use_case().execute(
         RenderOutputRequest(
             output_adapter=output_adapter,
-            transactions_path=transactions,
+            facts_path=facts,
             output_path=output,
         )
     )

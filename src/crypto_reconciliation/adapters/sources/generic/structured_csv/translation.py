@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import cast
-
 from crypto_reconciliation.adapters.support.drafts import (
     ActivityClassification,
     EconomicActivityDraft,
@@ -12,12 +10,14 @@ from crypto_reconciliation.adapters.support.drafts import (
     economic_leg,
     fee_leg,
 )
-from crypto_reconciliation.domain.models import NormalizationReviewRecord, SourceProfile
-from crypto_reconciliation.domain.models.transactions import TransactionCategory
+from crypto_reconciliation.domain.issues import NormalizationReviewRecord
 from crypto_reconciliation.domain.value_objects import parse_decimal, parse_timestamp
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 from .contracts import TRANSACTIONS_FILENAME
 from .validation import StructuredCsvRowValidator
+
+type StructuredCategory = str
 
 
 def translate_row(
@@ -40,7 +40,7 @@ def translate_row(
     fee_legs = (
         (fee_leg(asset=row["fee_asset"], amount=fee_amount),) if row["fee_asset"] and fee_amount is not None else ()
     )
-    category = cast(TransactionCategory, row["category"])
+    category = row["category"]
     return EconomicActivityDraft(
         activity_id=f"{profile.source}:{index}",
         source=str(profile.source),
@@ -59,7 +59,7 @@ def translate_row(
     ), reviews
 
 
-def classification_for_category(category: TransactionCategory) -> ActivityClassification:
+def classification_for_category(category: StructuredCategory) -> ActivityClassification:
     mapping: dict[str, tuple[str, str, str, str]] = {
         "trade": ("spot_trade", "Trade", "asset_exchange", "capital_exchange"),
         "deposit": ("asset_deposit", "Deposit", "funding_inflow", "non_taxable_transfer_in"),

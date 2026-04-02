@@ -52,20 +52,14 @@ uv run crypto-reconciliation workspace init
 
 ```bash
 uv run crypto-reconciliation workspace init
-uv run crypto-reconciliation baseline validate --export-dir <path> --output-dir <path>
 uv run crypto-reconciliation source manifest --source-dir <path> --output <path>
 uv run crypto-reconciliation source intake plan --incoming-dir <path> --report-dir <path>
 uv run crypto-reconciliation source intake apply --incoming-dir <path> --report-dir <path>
 uv run crypto-reconciliation source profile --source <name> --raw-dir <path> --output-dir <path>
 uv run crypto-reconciliation source normalize --source <name> --raw-dir <path> --output-dir <path>
-uv run crypto-reconciliation source diff --candidate <path> --reference <path> --output-dir <path>
-uv run crypto-reconciliation wallet inventory rebuild --normalized-root <path> --output <path>
-uv run crypto-reconciliation output render file --output-adapter cointracking_csv --transactions <path> --output <path>
-uv run crypto-reconciliation verification compare --previous-dir <path> --current-dir <path> --output-dir <path>
-uv run crypto-reconciliation batch screen --candidate <path> --baseline-export-dir <path> --output-dir <path>
-uv run crypto-reconciliation batch stage --candidate <path> --baseline-export-dir <path> --output-dir <path>
-uv run crypto-reconciliation round scaffold --round-id <id> --phase <phase> --source <source>
-uv run crypto-reconciliation supporting extract-pdf-balances --pdf <path> --output <path> --statement-kind <kind>
+uv run crypto-reconciliation checkpoint rebuild-wallet-inventory --normalized-root <path> --output <path>
+uv run crypto-reconciliation checkpoint extract-pdf-balances --pdf <path> --output <path> --statement-kind <kind>
+uv run crypto-reconciliation output render file --output-adapter cointracking_csv --facts <path> --output <path>
 ```
 
 ## Development

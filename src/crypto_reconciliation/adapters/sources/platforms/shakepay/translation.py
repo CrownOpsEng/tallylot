@@ -8,8 +8,9 @@ from zoneinfo import ZoneInfo
 
 from crypto_reconciliation.adapters.support import CsvRowContext, IssueSpec, issue_record
 from crypto_reconciliation.adapters.support.drafts import EconomicActivityDraft, classification, economic_leg
-from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.value_objects import parse_decimal
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 TORONTO = ZoneInfo("America/Toronto")
 

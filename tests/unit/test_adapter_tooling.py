@@ -69,7 +69,7 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
         / "translation.py"
     )
     assert "class ExampleExchangeSourceAdapter" in adapter_py.read_text(encoding="utf-8")
-    assert "normalize_source_drafts" in adapter_py.read_text(encoding="utf-8")
+    assert "translate_source_batches" in adapter_py.read_text(encoding="utf-8")
     assert "FILE_TRANSLATION_RULES" in translation_py.read_text(encoding="utf-8")
 
 

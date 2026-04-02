@@ -5,19 +5,14 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from crypto_reconciliation.application.models.source import NormalizeRequest
-from crypto_reconciliation.application.services.normalize import (
-    NormalizationDependencies,
-    NormalizationService,
-)
-from crypto_reconciliation.application.services.profile import ProfileService
+from crypto_reconciliation.application.normalization import NormalizeRequest
+from crypto_reconciliation.infrastructure.composition import build_profile_use_case, normalize_source_use_case
 from crypto_reconciliation.infrastructure.discovery.adapters import build_registry
 from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.storage.filesystem import FilesystemStorage
 from tools.adapter_packs import DEFAULT_PACK_ROOT, AdapterPack, select_adapter_packs
 
 EXPECTED_NORMALIZATION_ARTIFACTS = (
-    "transactions",
+    "facts",
     "balances",
     "balance_evidence",
     "exceptions",
@@ -74,16 +69,9 @@ def _build_argument_parser() -> argparse.ArgumentParser:
 def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
     registry = build_registry()
     artifacts = FilesystemArtifactStore()
-    profile_service = ProfileService(registry, artifacts)
-    normalization_service = NormalizationService(
-        NormalizationDependencies(
-            source_registry=registry,
-            profile_service=profile_service,
-            storage=FilesystemStorage(),
-            artifacts=artifacts,
-        )
-    )
-    profile = profile_service.create_profile(pack.source, pack.raw_dir)
+    profile_use_case = build_profile_use_case()
+    normalization_use_case = normalize_source_use_case()
+    profile = profile_use_case.create_profile(pack.source, pack.raw_dir)
     adapter = registry.source_adapter(str(profile.adapter_id))
     wallet_inventory, wallet_issues = adapter.extract_wallet_inventory(pack.source, pack.raw_dir, profile)
     payloads: dict[str, object] = {
@@ -93,7 +81,7 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
     with TemporaryDirectory(prefix="crypto-recon-pack-refresh-") as temp_dir_name:
         if pack.supports("normalize"):
             output_dir = Path(temp_dir_name) / "normalized"
-            normalization_service.execute(
+            normalization_use_case.execute(
                 NormalizeRequest(
                     source=pack.source,
                     raw_dir=pack.raw_dir,
@@ -102,7 +90,7 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
             )
             payloads.update(
                 {
-                    "transactions": artifacts.read_rows(output_dir / "transactions.csv"),
+                    "facts": artifacts.read_rows(output_dir / "facts.csv"),
                     "balances": artifacts.read_rows(output_dir / "balances.csv"),
                     "balance_evidence": artifacts.read_rows(output_dir / "balance_evidence.csv"),
                     "exceptions": artifacts.read_rows(output_dir / "exceptions.csv"),

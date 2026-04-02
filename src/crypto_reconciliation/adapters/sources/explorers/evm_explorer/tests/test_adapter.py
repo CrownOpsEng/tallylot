@@ -81,14 +81,14 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(tmp_path: 
         encoding="utf-8",
     )
 
-    result = EvmExplorerAdapter().normalize(
+    result = EvmExplorerAdapter().translate(
         build_source_profile(adapter_id="evm_explorer", source="ethereum-wallet", raw_dir=str(raw_dir)),
         raw_dir,
     )
 
-    assert len(result.transactions) == 1
-    assert result.transactions[0].category == "deposit"
-    assert str(result.transactions[0].amount_in) == "1.50000000"
+    assert len(result.facts) == 1
+    assert result.facts[0].category == "deposit"
+    assert str(result.facts[0].amount_in) == "1.50000000"
     assert not result.issues
 
 
@@ -105,12 +105,12 @@ def test_evm_explorer_adapter_surfaces_suspicious_nft_airdrops_for_review(tmp_pa
         encoding="utf-8",
     )
 
-    result = EvmExplorerAdapter().normalize(
+    result = EvmExplorerAdapter().translate(
         build_source_profile(adapter_id="evm_explorer", source="ethereum-wallet", raw_dir=str(raw_dir)),
         raw_dir,
     )
 
-    assert not result.transactions
+    assert not result.facts
     assert len(result.issues) == 1
     assert result.issues[0].kind == "review_required"
     assert "$SCAM AIRDROP" in result.issues[0].message
@@ -147,16 +147,16 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames() -> None:
     raw_dir = fixture_raw_dir("evm_explorer", "chain_scoped_deposit")
 
     profile, adapter = profile_and_adapter("bsc-wallet", raw_dir)
-    result = adapter.normalize(profile, raw_dir)
+    result = adapter.translate(profile, raw_dir)
     evidence, issues = adapter.extract_wallet_inventory("bsc-wallet", raw_dir, profile)
 
     assert str(profile.adapter_id) == "evm_explorer"
     assert issues == ()
     assert [row.wallet_id for row in evidence] == ["evm_address:0x1111111111111111111111111111111111111111"]
-    assert len(result.transactions) == 1
-    assert result.transactions[0].category == "deposit"
-    assert str(result.transactions[0].asset_in) == "BNB"
-    assert str(result.transactions[0].amount_in) == "1.50000000"
+    assert len(result.facts) == 1
+    assert result.facts[0].category == "deposit"
+    assert str(result.facts[0].asset_in) == "BNB"
+    assert str(result.facts[0].amount_in) == "1.50000000"
 
 
 def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_path: Path) -> None:
@@ -166,20 +166,20 @@ def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_pa
     (nested / "transactions.csv").write_text(source_path.read_text(encoding="utf-8"), encoding="utf-8")
 
     profile, adapter = profile_and_adapter("bsc-wallet", tmp_path / "raw")
-    result = adapter.normalize(profile, tmp_path / "raw")
+    result = adapter.translate(profile, tmp_path / "raw")
 
     assert str(profile.adapter_id) == "evm_explorer"
-    assert len(result.transactions) == 1
-    assert result.transactions[0].category == "deposit"
+    assert len(result.facts) == 1
+    assert result.facts[0].category == "deposit"
 
 
 def test_evm_explorer_suspicious_nft_fixture_surfaces_review_without_auto_import() -> None:
     raw_dir = fixture_raw_dir("evm_explorer", "suspicious_nft_review")
 
     profile, adapter = profile_and_adapter("bsc-wallet", raw_dir)
-    result = adapter.normalize(profile, raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
-    assert result.transactions == ()
+    assert result.facts == ()
     assert len(result.issues) == 1
     assert result.issues[0].kind == "review_required"
     assert "suspicious NFT airdrop" in result.issues[0].message

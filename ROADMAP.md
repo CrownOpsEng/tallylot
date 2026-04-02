@@ -11,10 +11,9 @@ decisions that should not be rediscovered from scratch.
 - CLI and library runtime only
 - Filesystem-backed operational storage
 - CoinTracking CSV as the only implemented output adapter
-- Normalization writes `transactions.csv`, `balances.csv`, and
-  `balance_evidence.csv` as the active bridge artifacts; CoinTracking CSV
-  exports run as explicit adapter projections with no repo-level compatibility
-  aliases
+- Normalization writes `facts.csv`, `balances.csv`, and
+  `balance_evidence.csv` as active runtime artifacts; CoinTracking CSV exports
+  run as explicit output adapters with no repo-level compatibility aliases
 - Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds
@@ -26,11 +25,8 @@ decisions that should not be rediscovered from scratch.
   boundary, not a hard checkpoint.
 - Treat CoinTracking as an adapter-only oracle and projection layer, not as the
   central business model.
-- Keep CoinTracking compatibility behavior behind shared projection contracts.
-  During the current bridge phase, adapters publish layered classification
-  hints in shared drafts and shared compiler code owns the compatibility
-  category mapping plus the compiled artifact. Provider modules must not own
-  standalone CoinTracking mapping tables or rendering logic.
+- Keep CoinTracking rendering isolated to output-adapter packages and keep
+  oracle comparison code outside `src/crypto_reconciliation/`.
 - Build shared adapter-layer support for stable translation chores such as file
   traversal, file-family dispatch, row-context handling, draft compilation, and
   wallet evidence construction so provider adapters stay thin.
@@ -51,6 +47,16 @@ decisions that should not be rediscovered from scratch.
 - Introduce a provider-neutral transaction fact model as the new system of
   record. Replace the current normalized transaction shape directly instead of
   carrying forward compatibility wrappers or parallel legacy names.
+- Keep the production layer roots explicit:
+  - `domain/`
+  - `application/`
+  - `ports/`
+  - `adapters/sources/`
+  - `adapters/outputs/`
+  - `infrastructure/`
+  - `interfaces/`
+- Keep `application/` capability-first rather than bucketed by generic role
+  names such as `services` or `models`.
 - Keep classification layered:
   - provider-neutral economic kind
   - compatibility projection type
@@ -85,16 +91,16 @@ decisions that should not be rediscovered from scratch.
 
 ### HTTP And API Runtime
 
-- Add a thin HTTP layer only over the existing application services.
+- Add a thin HTTP layer only over the existing application capabilities and
+  typed use-case contracts.
 - Do not let HTTP handlers own business rules, serialization policy, or adapter
   orchestration.
 - Keep CLI and API requests on the same service contracts.
 
 ### Database Adoption
 
-- Replace filesystem-backed normalized transaction storage with a real
-  SQLite-backed
-  implementation behind `StoragePort`.
+- Replace filesystem-backed fact and evidence storage with a real SQLite-backed
+  implementation behind typed repository ports.
 - Keep raw evidence as files even after database adoption.
 - Add migrations only when the SQLite implementation becomes active.
 
@@ -189,12 +195,12 @@ decisions that should not be rediscovered from scratch.
   would otherwise be added. Keep at most two tightly related flat siblings for
   one capability before regrouping.
 - Keep the shared-surface package seams intact now that they have been split:
-  `domain/models/`, `interfaces/cli/`, and
+  `domain/transactions/`, `interfaces/cli/`, and
   `infrastructure/discovery/adapters/` should keep bounded submodules instead
   of growing back into single-file hubs.
 - Preserve the newer workflow seams as packages as they grow:
-  `application/services/profile/` and
-  `application/services/intake/plan/` should absorb future helpers instead of
+  `application/profiling/` and `application/intake/plan/` should absorb future
+  helpers instead of
   pushing flat `profile_*` or `plan_*` modules back into sibling directories.
 - The repo-local operational dataset was migrated to the external workspace on
   2026-03-26. Use this mapping for any future manual recovery or audit work:
@@ -210,19 +216,11 @@ decisions that should not be rediscovered from scratch.
 
 ## Near-Term Enhancements
 
-- Add richer baseline reconciliation artifacts.
 - Add dedicated CoinTracking oracle readers for `Trade Table`, `Trade List`,
   `Double-entry`, `Roll Forward in CAD`, `Realized Gain or Loss in CAD`, and
   `Average Purchase Price`.
 - Add explicit runtime-boundary, classification-matrix, and migration-sequence
   docs so future work does not drift back into CoinTracking-centric design.
-- Add a provider-neutral transaction fact model and replace the current
-  normalized-transaction workflow directly once the fact model is ready. Do not
-  keep parallel compatibility aliases or dual-write wrappers.
-- Keep the interim adapter seam fact-aligned by translating provider exports
-  into adapter drafts first, constructing provider-neutral transaction facts at
-  the shared seam, and compiling the temporary normalized transaction artifact
-  from that same shared seam in one place.
 - Add deterministic checkpoint assembly and continuity validation centered on
   the best-evidenced balance date around `2026-03-23`.
 - Add a journal renderer port and Ledger CLI implementation for hard-gate

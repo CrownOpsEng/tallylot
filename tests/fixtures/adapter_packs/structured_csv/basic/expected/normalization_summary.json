@@ -2,6 +2,8 @@
   "adapter_id": "structured_csv",
   "balance_count": 3,
   "balance_evidence_count": 0,
+  "fact_count": 2,
+  "facts_outside_normalization_window": 0,
   "issue_count": 0,
   "issues_outside_normalization_window": 0,
   "normalization_window_end": "",
@@ -19,7 +21,5 @@
     }
   ],
   "source": "Structured Example",
-  "transaction_count": 2,
-  "transactions_outside_normalization_window": 0,
   "wallet_count": 1
 }

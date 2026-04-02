@@ -19,7 +19,8 @@ from crypto_reconciliation.adapters.support.drafts import (
     classification,
     economic_leg,
 )
-from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
+from crypto_reconciliation.domain.issues import IssueRecord
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 
 def translate_transactions(

@@ -10,22 +10,18 @@ from crypto_reconciliation.adapters.support import (
     no_intake_route,
     reviewed_timezone_summary,
 )
-from crypto_reconciliation.domain.models import (
-    AdapterCapability,
-    AdapterManifest,
-    FileInventoryEntry,
-    IssueRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 from .matching import match_binance_inventory
 from .pdf_balances import extract_pdf_balances as _extract_pdf_balances
 from .pdf_balances import match_pdf_statement as _match_pdf_statement
-from .translation import normalize_binance_exports
+from .translation import translate_binance_exports
 
 
 class BinanceAdapter:
@@ -33,7 +29,7 @@ class BinanceAdapter:
         adapter_id=AdapterId("binance"),
         display_name="Binance",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.INTAKE_ROUTE}),
+        capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.INTAKE_ROUTE}),
         description="Normalizes Binance deposit, withdrawal, spot, and transaction-history exports.",
     )
 
@@ -84,8 +80,8 @@ class BinanceAdapter:
     def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
         return _extract_pdf_balances(text, pdf_path.name)
 
-    def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        return normalize_binance_exports(profile, raw_dir)
+    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+        return translate_binance_exports(profile, raw_dir)
 
 
 ADAPTER = BinanceAdapter()

@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
-from crypto_reconciliation.domain.models import FileInventoryEntry
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry
 
 RETAIL_HEADER = (
     "ID",

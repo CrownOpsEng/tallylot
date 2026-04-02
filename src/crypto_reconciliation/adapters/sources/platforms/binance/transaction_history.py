@@ -13,8 +13,9 @@ from crypto_reconciliation.adapters.support.drafts import (
     classification,
     economic_leg,
 )
-from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.value_objects import parse_decimal, parse_timestamp
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 from .csv_rows import is_no_data_row, read_rows
 from .field_parsing import row_change

@@ -10,11 +10,11 @@ from crypto_reconciliation.adapters.support.drafts import (
     classification,
     compile_activity_draft,
     economic_leg,
-    normalization_result_from_drafts,
     transaction_fact_from_draft,
+    translation_batch_from_drafts,
 )
 from crypto_reconciliation.adapters.support.wallets import normalized_identifier, wallet_identifier_kind
-from crypto_reconciliation.domain.models import IssueRecord
+from crypto_reconciliation.domain.issues import IssueRecord
 from tests.support.services import build_source_profile
 
 
@@ -78,8 +78,8 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
     assert fact.legs[1].asset == "CAD"
 
 
-def test_normalization_result_from_drafts_compiles_transactions_and_preserves_side_channels() -> None:
-    result = normalization_result_from_drafts(
+def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_channels() -> None:
+    result = translation_batch_from_drafts(
         (
             EconomicActivityDraft(
                 activity_id="txn-1",
@@ -104,8 +104,8 @@ def test_normalization_result_from_drafts_compiles_transactions_and_preserves_si
         wallet_inventory=(),
     )
 
-    assert len(result.transactions) == 1
-    assert result.transactions[0].projection_type == "Deposit"
+    assert len(result.facts) == 1
+    assert result.facts[0].projection_type == "Deposit"
     assert not result.issues
 
 

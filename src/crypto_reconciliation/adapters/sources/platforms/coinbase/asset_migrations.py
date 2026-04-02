@@ -9,8 +9,8 @@ from crypto_reconciliation.adapters.support.drafts import (
     classification,
     economic_leg,
 )
-from crypto_reconciliation.domain.models import SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 from .timestamps import parse_retail_timestamp
 

@@ -1,6 +1,6 @@
 """Storage implementations."""
 
-from .filesystem import FilesystemStorage
+from .filesystem import FilesystemEvidenceRepository, FilesystemFactRepository
 from .sqlite_stub import SqliteStorageStub
 
-__all__ = ["FilesystemStorage", "SqliteStorageStub"]
+__all__ = ["FilesystemEvidenceRepository", "FilesystemFactRepository", "SqliteStorageStub"]

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest
 from crypto_reconciliation.domain.types import AdapterId
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
 
 
 class AdapterManifestModel(BaseModel):
@@ -19,8 +19,8 @@ class AdapterManifestModel(BaseModel):
     description: str = ""
 
 
-def validated_manifest(raw_manifest: AdapterManifest) -> AdapterManifest:
-    validated = AdapterManifestModel.model_validate(raw_manifest.__dict__)
+def validated_manifest(raw_manifest: object) -> AdapterManifest:
+    validated = AdapterManifestModel.model_validate(vars(raw_manifest))
     return AdapterManifest(
         adapter_id=AdapterId(validated.adapter_id),
         display_name=validated.display_name,

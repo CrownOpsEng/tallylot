@@ -7,20 +7,22 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.models.source import (
+from crypto_reconciliation.application.intake.contracts import (
     IntakeApplyRequest,
     IntakePlanRequest,
     ManifestRequest,
-    NormalizeRequest,
-    ProfileRequest,
-    SourceDiffRequest,
 )
-from crypto_reconciliation.application.services import ManifestService, SourceDiffService, SourceIntakeService
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
+from crypto_reconciliation.application.normalization.contracts import NormalizeRequest
+from crypto_reconciliation.application.profiling.contracts import ProfileRequest
+from crypto_reconciliation.infrastructure.composition.runtime import (
+    apply_intake_use_case,
+    build_manifest_use_case,
+    build_profile_use_case,
+    normalize_source_use_case,
+    plan_intake_use_case,
+)
 
 from .apps import source_app, source_intake_app
-from .runtime import normalization_service, profile_service
 from .shared import emit_response
 
 
@@ -30,7 +32,7 @@ def source_manifest(
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
-    response = ManifestService(FilesystemArtifactStore()).execute(
+    response = build_manifest_use_case().execute(
         ManifestRequest(source_dir=source_dir, output_path=output, inspect_archives=inspect_archives)
     )
     emit_response(response.__dict__)
@@ -43,7 +45,7 @@ def source_profile(
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
-    response = profile_service().execute(
+    response = build_profile_use_case().execute(
         ProfileRequest(source=source, raw_dir=raw_dir, output_dir=output_dir, inspect_archives=inspect_archives),
     )
     emit_response(response.__dict__)
@@ -59,7 +61,7 @@ def source_normalize(
     window_end: Annotated[str | None, typer.Option()] = None,
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
-    response = normalization_service().execute(
+    response = normalize_source_use_case().execute(
         NormalizeRequest(
             source=source,
             raw_dir=raw_dir,
@@ -79,7 +81,7 @@ def source_intake_plan(
     report_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
-    response = SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
+    response = plan_intake_use_case().execute(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -97,24 +99,12 @@ def source_intake_apply(
     report_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
-    response = SourceIntakeService(build_registry(), FilesystemArtifactStore()).apply(
+    response = apply_intake_use_case().execute(
         IntakeApplyRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
             report_dir=report_dir,
             inspect_archives=inspect_archives,
         )
-    )
-    emit_response(response.__dict__)
-
-
-@source_app.command("diff")
-def source_diff(
-    candidate: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
-    reference: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
-    output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
-) -> None:
-    response = SourceDiffService(FilesystemArtifactStore()).execute(
-        SourceDiffRequest(candidate_path=candidate, reference_path=reference, output_dir=output_dir)
     )
     emit_response(response.__dict__)

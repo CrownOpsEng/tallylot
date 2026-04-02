@@ -6,7 +6,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
+from crypto_reconciliation.domain.issues import IssueRecord
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 from .drafts import EconomicActivityDraft
 from .issues import IssueSpec, issue_record

@@ -13,7 +13,7 @@ from crypto_reconciliation.adapters.sources.wallets.evm_wallet.adapter import (
     _object_map,
     _wallet_state_root,
 )
-from crypto_reconciliation.domain.models import FileInventoryEntry
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -118,12 +118,12 @@ def test_evm_wallet_adapter_normalize_returns_wallet_inventory_and_missing_ident
     raw_dir.mkdir()
     (raw_dir / "wallet-state.json").write_text(json.dumps({"wallet_state": {}}), encoding="utf-8")
 
-    result = EvmWalletAdapter().normalize(
+    result = EvmWalletAdapter().translate(
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
         raw_dir,
     )
 
-    assert not result.transactions
+    assert not result.facts
     assert not result.wallet_inventory
     assert len(result.issues) == 1
     assert result.issues[0].kind == "missing_identifier"

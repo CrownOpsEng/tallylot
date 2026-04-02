@@ -1,0 +1,34 @@
+"""Output adapter ports."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Protocol
+
+from crypto_reconciliation.domain.transactions import TransactionFact
+from crypto_reconciliation.ports.adapter_contracts import AdapterManifest
+
+
+@dataclass(frozen=True)
+class RenderedArtifact:
+    path: Path
+    row_count: int
+    metadata: dict[str, str]
+
+
+class OutputAdapter(Protocol):
+    manifest: AdapterManifest
+
+    def render(
+        self,
+        facts: tuple[TransactionFact, ...],
+        output_path: Path,
+    ) -> RenderedArtifact: ...
+
+
+class OutputAdapterRegistryPort(Protocol):
+    @property
+    def output_adapters(self) -> tuple[OutputAdapter, ...]: ...
+
+    def output_adapter(self, adapter_id: str) -> OutputAdapter: ...

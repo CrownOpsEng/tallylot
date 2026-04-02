@@ -21,20 +21,16 @@ from crypto_reconciliation.adapters.support.drafts import (
     classification,
     economic_leg,
     fee_leg,
-    normalization_result_from_drafts,
+    translation_batch_from_drafts,
 )
-from crypto_reconciliation.domain.models import (
-    AdapterCapability,
-    AdapterManifest,
-    FileInventoryEntry,
-    IssueRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.domain.value_objects import parse_decimal
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 BROKER_HEADER = (
     "transaction_date",
@@ -73,7 +69,7 @@ class WealthsimpleAdapter:
         adapter_id=AdapterId("wealthsimple"),
         display_name="Wealthsimple",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.INTAKE_ROUTE}),
+        capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.INTAKE_ROUTE}),
         description="Normalizes Wealthsimple crypto activity exports.",
     )
 
@@ -111,13 +107,13 @@ class WealthsimpleAdapter:
         del source, raw_dir, profile
         return (), ()
 
-    def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
+    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         drafts, issues = collect_csv_row_results(
             raw_dir,
             lambda row_context: _normalize_row(profile, row_context),
             skip_file=_skip_unrecognized_csv,
         )
-        return normalization_result_from_drafts(
+        return translation_batch_from_drafts(
             drafts,
             issues=issues,
         )

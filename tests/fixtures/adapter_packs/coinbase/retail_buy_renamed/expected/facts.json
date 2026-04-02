@@ -1,0 +1,24 @@
+[
+  {
+    "account": "Coinbase",
+    "adapter_id": "coinbase",
+    "confidence": "high",
+    "description": "Bought 0.01 BTC for $610 CAD",
+    "economic_kind": "spot_trade",
+    "fact_id": "coinbase-retail-tx-1",
+    "fee_legs": "out:CAD:10::",
+    "journal_intent": "asset_exchange",
+    "legs": "in:BTC:0.01::|out:CAD:610::",
+    "operation_group_id": "",
+    "projection_type": "Trade",
+    "provider_operation_key": "buy",
+    "raw_file": "retail-export.csv",
+    "raw_row_ref": "tx-1",
+    "source": "Future Exchange",
+    "status": "mapped",
+    "tax_treatment_code": "capital_exchange",
+    "timestamp": "2024-02-08 16:31:22",
+    "tx_hash": "coinbase-retail-tx-1",
+    "wallet": "Coinbase"
+  }
+]

@@ -11,10 +11,10 @@ def test_gtrade_adapter_surfaces_report_limits_without_guessing() -> None:
     raw_dir = fixture_raw_dir("gtrade", "realized_pnl_alias")
 
     profile, adapter = profile_and_adapter("GTrade 1CT", raw_dir)
-    result = adapter.normalize(profile, raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "gtrade"
-    assert [event.category for event in result.transactions] == [
+    assert [event.category for event in result.facts] == [
         "derivatives_profit",
         "derivatives_loss",
     ]
@@ -40,11 +40,11 @@ def test_gtrade_adapter_surfaces_invalid_rows_without_crashing(tmp_path: Path) -
         encoding="utf-8",
     )
 
-    result = GTradeAdapter().normalize(
+    result = GTradeAdapter().translate(
         build_source_profile(adapter_id="gtrade", raw_dir=str(raw_dir), source="GTrade"),
         raw_dir,
     )
 
-    assert not result.transactions
+    assert not result.facts
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 
-from crypto_reconciliation.domain.models import IssueRecord, NormalizationReviewRecord
+from crypto_reconciliation.domain.issues import IssueRecord, NormalizationReviewRecord
 from crypto_reconciliation.domain.value_objects import format_decimal, parse_decimal, parse_timestamp
 
 from .contracts import ReviewSpec, ReviewValues

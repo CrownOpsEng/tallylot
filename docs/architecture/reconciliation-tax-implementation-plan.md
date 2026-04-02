@@ -27,7 +27,8 @@ Normal runtime operation must stay platform-agnostic:
 
 - raw source exports, wallet statements, and checkpoint evidence are the normal
   reconstruction inputs
-- CoinTracking adapters are optional compatibility inputs and projections
+- CoinTracking is one ordinary output adapter and one optional oracle family
+  for dev-only comparison workflows
 - CoinTracking tax and accounting reports are oracle-only support artifacts for
   comparison and regression, not normal runtime dependencies
 
@@ -44,16 +45,17 @@ Reason:
 - tax computation is not trustworthy until the fact set lands on a confirmed
   checkpoint
 
-### 2. Keep CoinTracking As A Compatibility And Oracle Layer
+### 2. Keep CoinTracking At The Edge
 
 CoinTracking remains useful for:
 
-- historical regression
-- report comparison
-- import/export compatibility
+- one concrete CSV output adapter
+- historical regression through dev-only oracle tooling
 
-CoinTracking must not remain the core ledger model.
-CoinTracking tax outputs must not become required operational inputs.
+CoinTracking must not remain the core ledger model, core schema vocabulary, or
+required runtime input surface. Production code may render CoinTracking CSV,
+but report readers, comparison tolerances, and oracle heuristics must stay
+outside `src/crypto_reconciliation/`.
 
 ### 3. Replace The Current Transaction Center With A Richer Fact Model
 
@@ -119,31 +121,37 @@ rules remain explicit and tool-friendly.
 - `domain/tax/`
   - tax records, pool state, policy contracts, unsupported tax items
 
-### Application Services
+### Application Capabilities
 
-- `application/services/normalize/`
-  - orchestrate source normalization into fact artifacts
-- transitional rule: normalization must not auto-render CoinTracking
-  compatibility outputs
-- `application/services/reconciliation/`
-  - transfer linking, oracle comparison, drift detection, issue assembly
-- reserve this package for fact and checkpoint workflows, not candidate versus
-  reference CSV diffs
-- `application/services/checkpoints/`
-  - build and validate source-backed checkpoints
-- `application/services/accounting/`
-  - journal assembly, ledger validation, accounting summaries
-- `application/services/tax/`
-  - policy application, ACB updates, disposition and income outputs
-- `application/services/projections/`
-  - CoinTracking CSV projection and compatibility rendering
+- `application/intake/`
+  - manifest generation plus intake planning and apply workflows
+- `application/profiling/`
+  - source profile construction, inventory inspection, and timezone review
+- `application/normalization/`
+  - orchestrate source translation into fact artifacts and source-backed
+    evidence
+- `application/reconciliation/`
+  - reserve for transfer linking, checkpoint continuity, and fact-level drift
+    detection
+- `application/checkpoints/`
+  - build source-backed checkpoint evidence and checkpoint-supporting wallet
+    aggregates
+- `application/accounting/`
+  - journal assembly, ledger validation, and accounting summaries
+- `application/tax/`
+  - policy application, ACB updates, and disposition or income outputs
+- `application/outputs/`
+  - render external artifacts from facts, journals, or tax results
 
 ### Ports
 
-- `JournalRendererPort`
-- `TaxPolicyPort`
-- `CheckpointEvidencePort`
-- `OracleReviewPort`
+- typed source translation contracts under `ports/source_translation.py`
+- typed fact and evidence repositories under `ports/facts.py` and
+  `ports/evidence.py`
+- typed adapter contracts under `ports/source_adapters.py`,
+  `ports/output_adapters.py`, and `ports/adapter_contracts.py`
+- future journal, checkpoint, and tax ports by capability instead of generic
+  catch-all storage contracts
 
 ### Adapter Responsibilities
 
@@ -151,11 +159,11 @@ rules remain explicit and tool-friendly.
   surface explicit issues or reviews
 - output adapters render facts into CoinTracking, Ledger CLI, and report
   artifacts
-- while the full fact model is still landing, source adapters compile through a
-  shared `EconomicActivityDraft` seam into the temporary normalized artifact
+- source adapters return `SourceTranslationBatch`; they do not emit output
+  rows, checkpoint decisions, or tax policy decisions directly
 - CoinTracking-specific column defaults, `Tx-ID` behavior, and row-shape
-  compatibility metadata stay in shared projection contracts rather than in
-  provider-local adapter code
+  metadata stay inside the CoinTracking output adapter package rather than in
+  provider-local source code
 - adapters do not own tax logic, checkpoint policy, or reconciliation rules
 - adapters should stay focused on source/output translation. Core data
   manipulation, verification, and workflow policy belong in application and
@@ -179,7 +187,7 @@ computation:
 - deterministic checkpoint packages intentionally created by this system
 - opening-state imports intentionally adopted as checkpoints
 
-### Optional Compatibility Inputs
+### Optional External Input Formats
 
 These may be supported through adapters, but the system must not require them
 for normal operation:
@@ -199,7 +207,8 @@ These are comparison inputs only:
 - historical CoinTracking tax reports
 
 Do not wire business logic so these artifacts are required to reconstruct facts,
-balances, journal entries, or tax state.
+balances, journal entries, or tax state. Keep oracle code outside
+`src/crypto_reconciliation/`, preferably under `tools/oracles/`.
 
 ### Boundary Rule
 
@@ -580,7 +589,7 @@ Do not:
 Perform only the refactors required to support the new architecture:
 
 - split new domain concepts into dedicated packages rather than expanding
-  `domain/models/`
+  `domain/transactions/` or sibling domain capability packages
 - promote workflow helper clusters into a package once a third related sibling
   would otherwise be added; do not let facts, checkpoints, or tax policy land
   in new flat prefix piles

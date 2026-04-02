@@ -11,8 +11,8 @@ from crypto_reconciliation.adapters.support.drafts import (
     economic_leg,
     fee_leg,
 )
-from crypto_reconciliation.domain.models import SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 from .csv_rows import read_rows
 from .timestamps import parse_export_timestamp

@@ -7,14 +7,14 @@ def test_ledger_live_adapter_normalizes_grouped_trade_rows() -> None:
     raw_dir = fixture_raw_dir("ledger_live", "grouped_swap")
 
     profile, adapter = profile_and_adapter("ledger-live-main", raw_dir)
-    result = adapter.normalize(profile, raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "ledger_live"
-    assert len(result.transactions) == 1
-    assert result.transactions[0].category == "trade"
-    assert str(result.transactions[0].amount_in) == "0.01000000"
-    assert str(result.transactions[0].asset_out) == "ETH"
-    assert str(result.transactions[0].fee_amount) == "0.01000000"
+    assert len(result.facts) == 1
+    assert result.facts[0].category == "trade"
+    assert str(result.facts[0].amount_in) == "0.01000000"
+    assert str(result.facts[0].asset_out) == "ETH"
+    assert str(result.facts[0].fee_amount) == "0.01000000"
     assert result.issues == ()
 
 

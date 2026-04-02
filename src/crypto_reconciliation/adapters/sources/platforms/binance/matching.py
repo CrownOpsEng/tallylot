@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from crypto_reconciliation.domain.models import FileInventoryEntry
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry
 
 SPOT_HEADER = ("Time", "Pair", "Side", "Price", "Executed", "Amount", "Fee")
 DEPOSIT_HEADER = ("Time", "Coin", "Network", "Amount", "Address", "TXID", "Status")

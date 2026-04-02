@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from crypto_reconciliation.ports.adapters import OutputAdapter, SourceAdapter
+from crypto_reconciliation.ports.output_adapters import OutputAdapter
+from crypto_reconciliation.ports.source_adapters import SourceAdapter
 
 from .contracts import validate_output_adapter_contract, validate_source_adapter_contract, validate_unique_ids
 from .modules import iter_discoverable_modules

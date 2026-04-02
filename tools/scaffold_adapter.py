@@ -131,7 +131,7 @@ def _adapter_template(
     capability_block = (
         "        capabilities=frozenset(\n"
         "            {\n"
-        "                AdapterCapability.NORMALIZE,\n"
+        "                AdapterCapability.SOURCE_TRANSLATE,\n"
         "                AdapterCapability.WALLET_INVENTORY,\n"
         "            }\n"
         "        ),\n"
@@ -147,28 +147,22 @@ def _adapter_template(
 
             from pathlib import Path
 
-            from crypto_reconciliation.domain.models import (
-                AdapterCapability,
-                AdapterManifest,
-                FileInventoryEntry,
-                IssueRecord,
-                SourceProfile,
-                WalletInventoryRecord,
-            )
+            from crypto_reconciliation.domain.issues import IssueRecord
+            from crypto_reconciliation.domain.transactions import TransactionFact
             from crypto_reconciliation.domain.types import AdapterId, JsonValue
+            from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+            from crypto_reconciliation.ports.evidence import WalletInventoryRecord
             from crypto_reconciliation.ports.intake_routing import (
                 IntakeFileFacts,
                 IntakeRoute,
                 IntakeRoutingRequest,
             )
+            from crypto_reconciliation.ports.output_adapters import RenderedArtifact
+            from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
+            from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
             """
         )
-        + (
-            "from crypto_reconciliation.ports.adapters import NormalizationResult\n"
-            "from .translation import normalize_source_drafts\n\n"
-            if spec.kind == "source"
-            else "from crypto_reconciliation.ports.adapters import RenderedArtifact\n\n"
-        )
+        + ("from .translation import translate_source_batches\n\n" if spec.kind == "source" else "\n")
         + dedent(
             f"""
 
@@ -226,12 +220,12 @@ def _adapter_template(
                     del source, raw_dir, profile
                     return (), ()
 
-                def normalize(
+                def translate(
                     self,
                     profile: SourceProfile,
                     raw_dir: Path,
-                ) -> NormalizationResult:
-                    return normalize_source_drafts(profile, raw_dir)
+                ) -> SourceTranslationBatch:
+                    return translate_source_batches(profile, raw_dir)
             """
         )
     else:
@@ -239,10 +233,10 @@ def _adapter_template(
             """
                 def render(
                     self,
-                    events: tuple[object, ...],
+                    facts: tuple[TransactionFact, ...],
                     output_path: Path,
                 ) -> RenderedArtifact:
-                    del events, output_path
+                    del facts, output_path
                     raise NotImplementedError(
                         "Implement output rendering before enabling this adapter."
                     )
@@ -275,10 +269,11 @@ def _source_translation_template(*, adapter_name: str) -> str:
         )
         from crypto_reconciliation.adapters.support.drafts import (
             EconomicActivityDraft,
-            normalization_result_from_drafts,
+            translation_batch_from_drafts,
         )
-        from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
-        from crypto_reconciliation.ports.adapters import NormalizationResult
+        from crypto_reconciliation.domain.issues import IssueRecord
+        from crypto_reconciliation.ports.source_profiles import SourceProfile
+        from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
         FILE_TRANSLATION_RULES = (
             FileTranslationRule(
@@ -289,16 +284,16 @@ def _source_translation_template(*, adapter_name: str) -> str:
         )
 
 
-        def normalize_source_drafts(
+        def translate_source_batches(
             profile: SourceProfile,
             raw_dir: Path,
-        ) -> NormalizationResult:
+        ) -> SourceTranslationBatch:
             translation = translate_file_families(
                 raw_dir,
                 profile=profile,
                 rules=FILE_TRANSLATION_RULES,
             )
-            return normalization_result_from_drafts(
+            return translation_batch_from_drafts(
                 translation.drafts,
                 issues=translation.issues,
             )

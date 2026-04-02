@@ -33,14 +33,14 @@ def test_binance_adapter_handles_supported_and_review_required_rows(tmp_path: Pa
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().normalize(
+    result = BinanceAdapter().translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
 
-    assert len(result.transactions) == 5
+    assert len(result.facts) == 5
     assert len(result.issues) == 3
-    kinds = [row.category for row in result.transactions]
+    kinds = [row.category for row in result.facts]
     assert "trade" in kinds
     assert "deposit" in kinds
     assert "withdrawal" in kinds
@@ -60,12 +60,12 @@ def test_binance_convert_date_updated_covers_transaction_history_one_second_skew
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().normalize(
+    result = BinanceAdapter().translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
 
-    assert len(result.transactions) == 1
+    assert len(result.facts) == 1
     assert len(result.issues) == 0
 
 
@@ -82,13 +82,13 @@ def test_binance_transaction_history_skips_p2p_rows_when_c2c_history_exists(tmp_
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().normalize(
+    result = BinanceAdapter().translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
 
-    assert len(result.transactions) == 1
-    assert result.transactions[0].category == "trade"
+    assert len(result.facts) == 1
+    assert result.facts[0].category == "trade"
     assert len(result.issues) == 0
 
 
@@ -107,13 +107,13 @@ def test_binance_adapter_reads_nested_bundle_paths(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().normalize(
+    result = BinanceAdapter().translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
 
-    assert len(result.transactions) == 1
-    assert result.transactions[0].category == "trade"
+    assert len(result.facts) == 1
+    assert result.facts[0].category == "trade"
     assert not result.issues
 
 
@@ -133,12 +133,12 @@ def test_binance_translation_priority_is_not_path_order_dependent(tmp_path: Path
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().normalize(
+    result = BinanceAdapter().translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
 
-    assert len(result.transactions) == 1
+    assert len(result.facts) == 1
     assert not result.issues
 
 
@@ -149,11 +149,11 @@ def test_binance_adapter_surfaces_unmatched_export_files(tmp_path: Path) -> None
         encoding="utf-8",
     )
 
-    result = BinanceAdapter().normalize(
+    result = BinanceAdapter().translate(
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
 
-    assert not result.transactions
+    assert not result.facts
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_file"

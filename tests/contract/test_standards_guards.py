@@ -25,7 +25,6 @@ def test_repo_has_no_type_ignore_comments() -> None:
 
 def test_markdownlint_only_disables_md013() -> None:
     config = json.loads((REPO_ROOT / ".markdownlint.json").read_text(encoding="utf-8"))
-
     assert config == {"default": True, "MD013": False}
 
 
@@ -55,17 +54,31 @@ def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:
         assert not offenders, f"{directory} has flat same-prefix clusters that should be packaged: {offenders}"
 
 
-def test_application_service_helpers_stay_with_their_feature_packages() -> None:
-    services_root = REPO_ROOT / "src" / "crypto_reconciliation" / "application" / "services"
+def test_retired_bucket_directories_do_not_exist() -> None:
+    src_root = REPO_ROOT / "src" / "crypto_reconciliation"
 
-    assert (services_root / "verification").is_dir()
-    assert not (services_root / "verification_compare").exists()
-    assert not (services_root / "verification.py").exists()
+    assert not (src_root / "application" / "services").exists()
+    assert not (src_root / "application" / "models").exists()
+    assert not (src_root / "domain" / "models").exists()
+    assert not (src_root / "ports" / "adapters.py").exists()
+    assert not (src_root / "ports" / "storage.py").exists()
+    assert not (src_root / "ports" / "output_workflows.py").exists()
 
-    assert (services_root / "normalize" / "window.py").is_file()
-    assert (services_root / "normalize" / "balances.py").is_file()
-    assert not (services_root / "normalization_window.py").exists()
-    assert not (services_root / "balance_snapshots.py").exists()
+
+def test_oracle_code_is_not_in_production_package() -> None:
+    src_root = REPO_ROOT / "src" / "crypto_reconciliation"
+    forbidden = (
+        src_root / "application" / "oracle_review",
+        src_root / "adapters" / "oracles",
+    )
+    for path in forbidden:
+        assert not path.exists()
+
+    for path in sorted(src_root.rglob("*.py")):
+        text = path.read_text(encoding="utf-8").lower()
+        assert "oracle review" not in text
+        assert "baseline validation" not in text
+        assert "verification compare" not in text
 
 
 def test_typecheck_configs_remain_strict() -> None:

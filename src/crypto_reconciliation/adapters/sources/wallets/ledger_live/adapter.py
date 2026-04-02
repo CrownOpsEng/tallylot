@@ -22,20 +22,16 @@ from crypto_reconciliation.adapters.support.drafts import (
     classification,
     economic_leg,
     fee_leg,
-    normalization_result_from_drafts,
+    translation_batch_from_drafts,
 )
 from crypto_reconciliation.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
-from crypto_reconciliation.domain.models import (
-    AdapterCapability,
-    AdapterManifest,
-    FileInventoryEntry,
-    IssueRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 HEADER_FIELDS = {"Account Name", "Account xpub", "Operation Date"}
 SUPPORTED_OPERATION_GROUPS = frozenset({"IN+OUT", "IN+OUT+FEES"})
@@ -47,7 +43,7 @@ class LedgerLiveAdapter:
         display_name="Ledger Live",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
         ),
         description="Normalizes Ledger Live operations and extracts wallet identifiers.",
     )
@@ -133,7 +129,7 @@ class LedgerLiveAdapter:
             )
         return tuple(evidence), tuple(issues)
 
-    def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
+    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         drafts: list[EconomicActivityDraft] = []
         operations_by_hash: dict[str, list[tuple[str, dict[str, str]]]] = defaultdict(list)
         for path in matching_file_paths(raw_dir):
@@ -195,7 +191,7 @@ class LedgerLiveAdapter:
                 )
             )
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
-        return normalization_result_from_drafts(
+        return translation_batch_from_drafts(
             drafts,
             wallet_inventory=wallet_inventory,
         )

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from crypto_reconciliation.domain.models import IssueRecord, WalletInventoryRecord
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.wallet_identifiers import (
     BTC_ADDRESS_PATTERN,
     EVM_ADDRESS_PATTERN,
@@ -13,6 +13,7 @@ from crypto_reconciliation.domain.wallet_identifiers import (
     normalized_identifier,
     wallet_identifier_kind,
 )
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
 
 __all__ = (
     "BTC_ADDRESS_PATTERN",

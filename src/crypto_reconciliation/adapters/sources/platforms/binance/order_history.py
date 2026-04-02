@@ -10,8 +10,8 @@ from crypto_reconciliation.adapters.support.drafts import (
     classification,
     economic_leg,
 )
-from crypto_reconciliation.domain.models import SourceProfile
 from crypto_reconciliation.domain.value_objects import parse_decimal
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 from .csv_rows import read_rows
 from .field_parsing import amount_with_asset

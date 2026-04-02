@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from crypto_reconciliation.domain.models.transactions import NormalizedTransaction
+from crypto_reconciliation.domain.transactions import TransactionFact
 from crypto_reconciliation.domain.value_objects import format_decimal, format_timestamp
 
 
-def cointracking_row(transaction: NormalizedTransaction) -> dict[str, str]:
+def cointracking_row(transaction: TransactionFact) -> dict[str, str]:
     if not transaction.projection_type:
-        raise ValueError(f"transaction {transaction.transaction_id} is missing CoinTracking projection metadata")
+        raise ValueError(f"fact {transaction.fact_id} is missing CoinTracking projection metadata")
     return {
         "Type": transaction.projection_type.value,
         "Buy": format_decimal(transaction.amount_in),
@@ -21,5 +21,5 @@ def cointracking_row(transaction: NormalizedTransaction) -> dict[str, str]:
         "Group": transaction.operation_group_id,
         "Comment": transaction.description,
         "Date": format_timestamp(transaction.timestamp),
-        "Tx-ID": transaction.tx_hash or str(transaction.transaction_id),
+        "Tx-ID": transaction.tx_hash or str(transaction.fact_id),
     }

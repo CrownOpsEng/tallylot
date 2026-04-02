@@ -15,19 +15,15 @@ from crypto_reconciliation.adapters.support import (
     wallet_issue,
     wallet_record,
 )
-from crypto_reconciliation.adapters.support.drafts import normalization_result_from_drafts
+from crypto_reconciliation.adapters.support.drafts import translation_batch_from_drafts
 from crypto_reconciliation.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
-from crypto_reconciliation.domain.models import (
-    AdapterCapability,
-    AdapterManifest,
-    FileInventoryEntry,
-    IssueRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 TRANSACTION_HEADER_FIELDS = {"Transaction Hash", "DateTime (UTC)"}
 
@@ -38,7 +34,7 @@ class EvmExplorerAdapter:
         display_name="EVM Explorer",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
         ),
         description="Normalizes EVM explorer exports and extracts owned EVM addresses.",
     )
@@ -119,10 +115,10 @@ class EvmExplorerAdapter:
         )
         return evidence, tuple(issues)
 
-    def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
+    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         wallet_inventory, wallet_issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         drafts, issues = translate_transactions(profile, raw_dir, owned_addresses=_owned_addresses(raw_dir))
-        return normalization_result_from_drafts(
+        return translation_batch_from_drafts(
             drafts,
             issues=(*issues, *wallet_issues),
             wallet_inventory=wallet_inventory,

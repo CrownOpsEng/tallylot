@@ -1,0 +1,24 @@
+[
+  {
+    "account": "Bitcoin 1",
+    "adapter_id": "ledger_live",
+    "confidence": "high",
+    "description": "Bitcoin 1",
+    "economic_kind": "asset_swap",
+    "fact_id": "ledger_live:ledgerlive-operations.csv:op-1",
+    "fee_legs": "out:ETH:0.01::",
+    "journal_intent": "asset_exchange",
+    "legs": "in:BTC:0.01::|out:ETH:0.5::",
+    "operation_group_id": "op-1",
+    "projection_type": "Trade",
+    "provider_operation_key": "ledger_live_swap",
+    "raw_file": "ledgerlive-operations.csv",
+    "raw_row_ref": "ledgerlive-operations.csv:row:2;ledgerlive-operations.csv:row:3;ledgerlive-operations.csv:row:4",
+    "source": "ledger-live-main",
+    "status": "mapped",
+    "tax_treatment_code": "capital_exchange",
+    "timestamp": "2026-03-23 10:11:12",
+    "tx_hash": "op-1",
+    "wallet": "Bitcoin 1"
+  }
+]

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from crypto_reconciliation.domain.models import IssueRecord, NormalizationReviewRecord, SourceProfile
+from crypto_reconciliation.domain.issues import IssueRecord, NormalizationReviewRecord
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 from .contracts import TRANSACTIONS_FILENAME, ReviewSpec
 

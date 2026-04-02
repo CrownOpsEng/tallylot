@@ -11,10 +11,11 @@ from crypto_reconciliation.adapters.support import (
     FileTranslationRule,
     translate_file_families,
 )
-from crypto_reconciliation.adapters.support.drafts import normalization_result_from_drafts
+from crypto_reconciliation.adapters.support.drafts import translation_batch_from_drafts
 from crypto_reconciliation.adapters.support.drafts.models import EconomicActivityDraft
-from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.domain.issues import IssueRecord
+from crypto_reconciliation.ports.source_profiles import SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 from .funding_history import normalize_deposit_rows as _normalize_deposit_rows
 from .funding_history import normalize_withdraw_rows as _normalize_withdraw_rows
@@ -129,14 +130,14 @@ BINANCE_FILE_TRANSLATION_RULES = (
 )
 
 
-def normalize_binance_exports(profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
+def translate_binance_exports(profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
     translation = translate_file_families(
         raw_dir,
         profile=profile,
         rules=BINANCE_FILE_TRANSLATION_RULES,
         state={"convert_match_times": set(), "p2p_match_times": set()},
     )
-    return normalization_result_from_drafts(
+    return translation_batch_from_drafts(
         translation.drafts,
         issues=translation.issues,
     )

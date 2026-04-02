@@ -5,20 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
-from crypto_reconciliation.domain.models import (
-    AdapterCapability,
-    AdapterManifest,
-    FileInventoryEntry,
-    IssueRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 from .contracts import REQUIRED_HEADER
-from .normalization import normalize_structured_csv
+from .normalization import translate_structured_csv
 
 
 class StructuredCsvSourceAdapter:
@@ -26,7 +22,7 @@ class StructuredCsvSourceAdapter:
         adapter_id=AdapterId("structured_csv"),
         display_name="Structured CSV",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY}),
+        capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.WALLET_INVENTORY}),
         description="Normalizes a strongly typed structured CSV source capture.",
     )
 
@@ -65,11 +61,11 @@ class StructuredCsvSourceAdapter:
         profile: SourceProfile,
     ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del source, raw_dir
-        result = self.normalize(profile, Path(profile.raw_dir))
+        result = self.translate(profile, Path(profile.raw_dir))
         return result.wallet_inventory, ()
 
-    def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        return normalize_structured_csv(
+    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+        return translate_structured_csv(
             profile,
             raw_dir,
             adapter_id=str(self.manifest.adapter_id),

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from crypto_reconciliation.domain.models import IssueRecord, NormalizationReviewRecord
+from crypto_reconciliation.domain.issues import IssueRecord, NormalizationReviewRecord
 
 
 @dataclass(frozen=True)

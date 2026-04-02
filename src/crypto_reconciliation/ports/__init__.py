@@ -1,38 +1,49 @@
 """Port definitions."""
 
-from .adapters import (
-    NormalizationResult,
-    OutputAdapter,
-    OutputAdapterRegistryPort,
-    RenderedArtifact,
-    SourceAdapter,
-    SourceAdapterRegistryPort,
-)
+from .adapter_contracts import AdapterCapability, AdapterManifest
 from .ai import ModelGateway, ReviewRequest, ReviewResponse
 from .artifacts import ArtifactStorePort
+from .evidence import EvidenceRepositoryPort, WalletInventoryRecord
+from .facts import FactRepositoryPort
 from .intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from .output_workflows import BaselineArtifacts, OverlapResult, ScreeningResult
-from .storage import StoragePort
+from .output_adapters import OutputAdapter, OutputAdapterRegistryPort, RenderedArtifact
+from .source_adapters import SourceAdapter, SourceAdapterRegistryPort
+from .source_profiles import FileInventoryEntry, SourceProfile, VerificationExportSet
+from .source_translation import (
+    ActivityClassification,
+    ActivityDraftSeed,
+    EconomicActivityDraft,
+    EconomicLegDraft,
+    SourceTranslationBatch,
+)
 from .workspace import WorkspaceLocator, WorkspaceRepository
 
 __all__ = [
+    "ActivityClassification",
+    "ActivityDraftSeed",
+    "AdapterCapability",
+    "AdapterManifest",
     "ArtifactStorePort",
-    "BaselineArtifacts",
+    "EconomicActivityDraft",
+    "EconomicLegDraft",
+    "EvidenceRepositoryPort",
+    "FactRepositoryPort",
+    "FileInventoryEntry",
     "IntakeFileFacts",
     "IntakeRoute",
     "IntakeRoutingRequest",
     "ModelGateway",
-    "NormalizationResult",
     "OutputAdapter",
     "OutputAdapterRegistryPort",
-    "OverlapResult",
     "RenderedArtifact",
     "ReviewRequest",
     "ReviewResponse",
-    "ScreeningResult",
     "SourceAdapter",
     "SourceAdapterRegistryPort",
-    "StoragePort",
+    "SourceProfile",
+    "SourceTranslationBatch",
+    "VerificationExportSet",
+    "WalletInventoryRecord",
     "WorkspaceLocator",
     "WorkspaceRepository",
 ]

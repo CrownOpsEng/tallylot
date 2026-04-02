@@ -7,12 +7,12 @@ from tests.support.services import build_source_profile
 
 
 def test_coinbase_adapter_reports_missing_retail_csv_as_explicit_issue(tmp_path: Path) -> None:
-    result = CoinbaseAdapter().normalize(
+    result = CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(tmp_path)),
         tmp_path,
     )
 
-    assert not result.transactions
+    assert not result.facts
     assert result.issues[0].kind == "missing_required_input"
     assert "retail all-time CSV" in result.issues[0].message
 
@@ -30,14 +30,14 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: 
         encoding="utf-8",
     )
 
-    result = CoinbaseAdapter().normalize(
+    result = CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
 
-    event = result.transactions[0]
+    event = result.facts[0]
 
-    assert len(result.transactions) == 1
+    assert len(result.facts) == 1
     assert event.category == "trade"
     assert str(event.asset_in) == "BTC"
     assert str(event.asset_out) == "CAD"
@@ -62,14 +62,14 @@ def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) 
         encoding="utf-8",
     )
 
-    result = CoinbaseAdapter().normalize(
+    result = CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
 
-    sell_event, send_event, receive_event = result.transactions
+    sell_event, send_event, receive_event = result.facts
 
-    assert len(result.transactions) == 3
+    assert len(result.facts) == 3
     assert sell_event.category == "trade"
     assert str(sell_event.asset_in) == "CAD"
     assert str(sell_event.asset_out) == "BTC"
@@ -95,13 +95,13 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
         encoding="utf-8",
     )
 
-    result = CoinbaseAdapter().normalize(
+    result = CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
 
-    assert len(result.transactions) == 1
-    assert result.transactions[0].category == "trade"
+    assert len(result.facts) == 1
+    assert result.facts[0].category == "trade"
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
 
@@ -121,14 +121,14 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_
         encoding="utf-8",
     )
 
-    result = CoinbaseAdapter().normalize(
+    result = CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
 
-    reward_event, migration_event = result.transactions
+    reward_event, migration_event = result.facts
 
-    assert len(result.transactions) == 2
+    assert len(result.facts) == 2
     assert reward_event.category == "interest_income"
     assert str(reward_event.asset_in) == "ADA"
     assert migration_event.category == "swap"

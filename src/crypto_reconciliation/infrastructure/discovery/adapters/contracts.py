@@ -6,8 +6,9 @@ from collections.abc import Iterable
 from types import ModuleType
 from typing import cast
 
-from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest
-from crypto_reconciliation.ports.adapters import OutputAdapter, SourceAdapter
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from crypto_reconciliation.ports.output_adapters import OutputAdapter
+from crypto_reconciliation.ports.source_adapters import SourceAdapter
 
 from .manifest import validated_manifest
 
@@ -16,12 +17,12 @@ def validate_source_adapter_contract(adapter: object, module: ModuleType) -> Sou
     manifest = validated_manifest(manifest_from_adapter(adapter, module))
     source_capabilities = {
         AdapterCapability.INTAKE_ROUTE,
-        AdapterCapability.NORMALIZE,
+        AdapterCapability.SOURCE_TRANSLATE,
         AdapterCapability.WALLET_INVENTORY,
     }
     if not manifest.capabilities.intersection(source_capabilities):
         raise ValueError(
-            f"{module.__name__} adapter {manifest.adapter_id} must declare intake route, normalize, "
+            f"{module.__name__} adapter {manifest.adapter_id} must declare intake route, source translation, "
             "or wallet inventory capability"
         )
     if AdapterCapability.OUTPUT_RENDER in manifest.capabilities:
@@ -32,7 +33,7 @@ def validate_source_adapter_contract(adapter: object, module: ModuleType) -> Sou
         "route_intake",
         "validate_profile_timezones",
         "extract_wallet_inventory",
-        "normalize",
+        "translate",
     )
     if not all(has_callable(adapter, method_name) for method_name in required_methods):
         raise TypeError(f"{module.__name__} ADAPTER does not implement the source adapter contract")
@@ -44,7 +45,7 @@ def validate_output_adapter_contract(adapter: object, module: ModuleType) -> Out
     if AdapterCapability.OUTPUT_RENDER not in manifest.capabilities:
         raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} must declare output render capability")
     forbidden_capabilities = {
-        AdapterCapability.NORMALIZE,
+        AdapterCapability.SOURCE_TRANSLATE,
         AdapterCapability.WALLET_INVENTORY,
     }
     if manifest.capabilities.intersection(forbidden_capabilities):
@@ -56,9 +57,9 @@ def validate_output_adapter_contract(adapter: object, module: ModuleType) -> Out
 
 def manifest_from_adapter(adapter: object, module: ModuleType) -> AdapterManifest:
     manifest = getattr(adapter, "manifest", None)
-    if not isinstance(manifest, AdapterManifest):
+    if manifest is None or not hasattr(manifest, "adapter_id") or not hasattr(manifest, "capabilities"):
         raise TypeError(f"{module.__name__} ADAPTER is missing a valid AdapterManifest")
-    return manifest
+    return validated_manifest(manifest)
 
 
 def has_callable(adapter: object, attribute: str) -> bool:

@@ -5,8 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import cast
 
-from crypto_reconciliation.domain.models import IssueRecord, SourceProfile
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.types import JsonValue
+from crypto_reconciliation.ports.source_profiles import SourceProfile
 
 from .issues import IssueSpec, issue_record
 

@@ -5,18 +5,18 @@ from pathlib import Path
 from crypto_reconciliation.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
 from crypto_reconciliation.adapters.sources.platforms.coinbase.matching import RETAIL_HEADER
 from crypto_reconciliation.adapters.sources.platforms.coinbase.timestamps import parse_retail_timestamp
-from crypto_reconciliation.application.services.profile import ProfileService
-from crypto_reconciliation.domain.models import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.application.profiling import BuildProfileUseCase
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.ports.adapters import SourceAdapter
+from crypto_reconciliation.ports.source_adapters import SourceAdapter
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
 
 FIXTURE_ROOT = Path(__file__).resolve().parents[7] / "tests" / "fixtures" / "adapter_packs"
 
 
 def _profile_and_adapter(source: str, raw_dir: Path) -> tuple[SourceProfile, SourceAdapter]:
     registry = build_registry()
-    profile = ProfileService(registry, FilesystemArtifactStore()).create_profile(source, raw_dir)
+    profile = BuildProfileUseCase(registry, FilesystemArtifactStore()).create_profile(source, raw_dir)
     return profile, registry.source_adapter(str(profile.adapter_id))
 
 
@@ -44,10 +44,10 @@ def test_coinbase_adapter_uses_retail_family_without_filename_dependency() -> No
     raw_dir = FIXTURE_ROOT / "coinbase" / "retail_buy_renamed" / "raw"
 
     profile, adapter = _profile_and_adapter("Future Exchange", raw_dir)
-    result = adapter.normalize(profile, raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "coinbase"
-    assert len(result.transactions) == 1
-    assert result.transactions[0].raw_file == "retail-export.csv"
-    assert result.transactions[0].category == "trade"
+    assert len(result.facts) == 1
+    assert result.facts[0].raw_file == "retail-export.csv"
+    assert result.facts[0].category == "trade"
     assert result.issues == ()

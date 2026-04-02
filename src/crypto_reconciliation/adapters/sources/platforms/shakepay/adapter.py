@@ -17,18 +17,14 @@ from crypto_reconciliation.adapters.support import (
     no_intake_route,
     passed_timezone_summary,
 )
-from crypto_reconciliation.adapters.support.drafts import normalization_result_from_drafts
-from crypto_reconciliation.domain.models import (
-    AdapterCapability,
-    AdapterManifest,
-    FileInventoryEntry,
-    IssueRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
+from crypto_reconciliation.adapters.support.drafts import translation_batch_from_drafts
+from crypto_reconciliation.domain.issues import IssueRecord
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
-from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from crypto_reconciliation.ports.evidence import WalletInventoryRecord
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
+from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
 
 
 class ShakepayAdapter:
@@ -36,7 +32,7 @@ class ShakepayAdapter:
         adapter_id=AdapterId("shakepay"),
         display_name="Shakepay",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.INTAKE_ROUTE}),
+        capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.INTAKE_ROUTE}),
         description="Normalizes Shakepay cash and crypto export summaries.",
     )
 
@@ -79,9 +75,9 @@ class ShakepayAdapter:
     def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
         return _extract_pdf_balances(text, pdf_path.name)
 
-    def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
+    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         drafts, issues = collect_csv_row_results(raw_dir, lambda row_context: translate_row(profile, row_context))
-        return normalization_result_from_drafts(
+        return translation_batch_from_drafts(
             drafts,
             issues=issues,
         )

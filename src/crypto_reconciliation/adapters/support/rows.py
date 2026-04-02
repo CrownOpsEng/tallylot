@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeVar
 
-from crypto_reconciliation.domain.models import IssueRecord
+from crypto_reconciliation.domain.issues import IssueRecord
 
 from .drafts import EconomicActivityDraft
 

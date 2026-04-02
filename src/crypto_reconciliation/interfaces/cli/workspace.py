@@ -7,12 +7,13 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.application.models.workspace import WorkspaceInitRequest
-from crypto_reconciliation.application.services import WorkspaceInitializationService
-from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
+from crypto_reconciliation.application.workspace.contracts import WorkspaceInitRequest
+from crypto_reconciliation.infrastructure.composition.runtime import (
+    configured_workspace_root,
+    initialize_workspace_use_case,
+)
 
 from .apps import workspace_app
-from .runtime import configured_workspace_root
 from .shared import emit_response
 
 
@@ -24,9 +25,7 @@ def workspace_init(
     ] = None,
 ) -> None:
     resolved_root = workspace_root or configured_workspace_root()
-    response = WorkspaceInitializationService(FilesystemWorkspaceRepository()).execute(
-        WorkspaceInitRequest(workspace_root=resolved_root)
-    )
+    response = initialize_workspace_use_case().execute(WorkspaceInitRequest(workspace_root=resolved_root))
     emit_response(
         {
             "workspace_root": str(response.workspace_root),
