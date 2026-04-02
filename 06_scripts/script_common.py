@@ -178,6 +178,22 @@ def source_timezone_from_filename(filename: str) -> tzinfo | None:
     return parse_utc_offset_label(match.group("offset"))
 
 
+def tzinfo_label(value: tzinfo | None) -> str:
+    if value is None:
+        return ""
+    zone_key = getattr(value, "key", "")
+    if zone_key:
+        return str(zone_key)
+    offset = value.utcoffset(datetime(2000, 1, 1))
+    if offset is None or offset == timedelta(0):
+        return "UTC"
+    total_minutes = int(offset.total_seconds() // 60)
+    sign = "+" if total_minutes >= 0 else "-"
+    total_minutes = abs(total_minutes)
+    hours, minutes = divmod(total_minutes, 60)
+    return f"UTC{sign}{hours:02d}:{minutes:02d}"
+
+
 def coerce_datetime_to_utc_naive(value: datetime, *, source_timezone: tzinfo | None = None) -> datetime:
     if value.tzinfo is None:
         if source_timezone is None:

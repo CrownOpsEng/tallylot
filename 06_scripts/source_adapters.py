@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import timezone, tzinfo
 from decimal import Decimal
@@ -60,6 +60,57 @@ class AdapterNormalizationResult:
     exceptions: list[dict[str, str]]
 
 
+@dataclass(frozen=True)
+class TimezonePolicy:
+    name: str
+    allowed_modes: frozenset[str]
+    expected_timezone: str
+    note: str
+
+
+STRICT_EXPLICIT_UTC_POLICY = TimezonePolicy(
+    name="explicit_utc",
+    allowed_modes=frozenset({"header_utc", "value_utc"}),
+    expected_timezone="UTC",
+    note="Source exports must declare UTC in the header or encoded timestamp values.",
+)
+
+EXPLICIT_OR_OFFSET_POLICY = TimezonePolicy(
+    name="explicit_or_filename_offset",
+    allowed_modes=frozenset({"header_utc", "value_utc", "filename_offset"}),
+    expected_timezone="UTC or exported filename offset",
+    note="Source exports must either declare UTC in the file itself or embed the export offset in the filename.",
+)
+
+SHAKEPAY_SOURCE_LOCAL_POLICY = TimezonePolicy(
+    name="source_local_toronto",
+    allowed_modes=frozenset({"naive"}),
+    expected_timezone=SHAKEPAY_SOURCE_TIMEZONE.key,
+    note="Shakepay CSV summaries are normalized using the source-local Canada/Eastern account time.",
+)
+
+WEALTHSIMPLE_DATE_ONLY_POLICY = TimezonePolicy(
+    name="date_only",
+    allowed_modes=frozenset({"date_only"}),
+    expected_timezone="date-only",
+    note="Wealthsimple activities exports are treated as date-only records and matched with a full-day tolerance.",
+)
+
+ASSUMED_UTC_NAIVE_POLICY = TimezonePolicy(
+    name="assumed_utc_naive",
+    allowed_modes=frozenset({"naive"}),
+    expected_timezone="UTC",
+    note="This export family emits naive timestamps and the adapter treats them as UTC based on the platform export.",
+)
+
+GTRADE_DATE_ONLY_POLICY = TimezonePolicy(
+    name="date_only",
+    allowed_modes=frozenset({"date_only"}),
+    expected_timezone="date-only",
+    note="The GTrade report only publishes trade dates, not times.",
+)
+
+
 def default_exception_row(
     *,
     manifest_fingerprint: str,
@@ -86,6 +137,75 @@ def default_exception_row(
         "resolution_status": resolution_status,
         "resolution_note": resolution_note,
     }
+
+
+def timezone_issue_row(row: dict[str, str], issue_kind: str, message: str) -> dict[str, str]:
+    return {
+        "filename": row.get("filename", ""),
+        "family": row.get("family", ""),
+        "date_field": row.get("date_field", ""),
+        "timestamp_resolution": row.get("timestamp_resolution", ""),
+        "timezone_mode": row.get("timezone_mode", ""),
+        "timezone_value": row.get("timezone_value", ""),
+        "issue_kind": issue_kind,
+        "message": message,
+    }
+
+
+def summarize_timezone_validation(
+    *,
+    profile: SourceProfile,
+    policy_for_row,
+) -> tuple[dict[str, object], list[dict[str, str]]]:
+    issues: list[dict[str, str]] = []
+    mode_counts: Counter[str] = Counter()
+    rows_with_dates = 0
+
+    for row in profile.file_inventory:
+        if not row.get("date_field"):
+            continue
+        rows_with_dates += 1
+        timezone_mode = row.get("timezone_mode", "")
+        mode_counts[timezone_mode or "blank"] += 1
+        if row.get("timezone_conflict") == "yes":
+            issues.append(
+                timezone_issue_row(
+                    row,
+                    "timezone_conflict",
+                    "Conflicting timezone hints were detected for the same file.",
+                )
+            )
+            continue
+        policy = policy_for_row(row)
+        if policy is None:
+            if timezone_mode in {"", "naive", "date_only", "source_timezone"}:
+                issues.append(
+                    timezone_issue_row(
+                        row,
+                        "timezone_unresolved",
+                        "No adapter timezone policy covers this dated file.",
+                    )
+                )
+            continue
+        if timezone_mode not in policy.allowed_modes:
+            issues.append(
+                timezone_issue_row(
+                    row,
+                    "unexpected_timezone_mode",
+                    (
+                        f"Observed timezone mode {timezone_mode or 'blank'} is not allowed by "
+                        f"{policy.name}; expected {policy.expected_timezone}. {policy.note}"
+                    ),
+                )
+            )
+
+    summary = {
+        "status": "passed" if not issues else "failed",
+        "issue_count": len(issues),
+        "rows_with_dates": rows_with_dates,
+        "mode_counts": dict(sorted(mode_counts.items())),
+    }
+    return summary, issues
 
 
 def ct_row_to_canonical_event(row: dict[str, str], adapter_name: str, source_name: str) -> dict[str, str]:
@@ -187,6 +307,11 @@ def canonical_event(
     tx_hash: str = "",
     render_group: str = "",
     render_notes: str = "",
+    render_match_window_seconds: str = "0",
+    render_fee_tolerance: str = "0.00000000",
+    render_comment_mode: str = "exact",
+    render_tx_id_mode: str = "exact",
+    render_allowed_types: str | None = None,
 ) -> dict[str, str]:
     return {
         "event_id": event_id,
@@ -212,12 +337,12 @@ def canonical_event(
         "render_exchange": source,
         "render_group": render_group,
         "render_comment": description,
-        "render_comment_mode": "exact",
+        "render_comment_mode": render_comment_mode,
         "render_tx_id": tx_hash,
-        "render_tx_id_mode": "exact" if tx_hash else "ignore",
-        "render_allowed_types": event_kind,
-        "render_match_window_seconds": "0",
-        "render_fee_tolerance": "0.00000000",
+        "render_tx_id_mode": render_tx_id_mode if tx_hash else "ignore",
+        "render_allowed_types": render_allowed_types or event_kind,
+        "render_match_window_seconds": render_match_window_seconds,
+        "render_fee_tolerance": render_fee_tolerance,
         "render_notes": render_notes,
     }
 
@@ -337,6 +462,14 @@ class SourceAdapter:
         slug = source.strip().lower()
         return slug == self.name or slug in self.aliases
 
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return STRICT_EXPLICIT_UTC_POLICY
+
+    def validate_profile_timezones(self, profile: SourceProfile) -> tuple[dict[str, object], list[dict[str, str]]]:
+        return summarize_timezone_validation(profile=profile, policy_for_row=self.timezone_policy_for_row)
+
     def normalize(
         self,
         raw_dir: Path,
@@ -364,6 +497,11 @@ class CoinbaseAdapter(SourceAdapter):
     name = "coinbase"
     aliases = ("coinbase",)
     supported = True
+
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return STRICT_EXPLICIT_UTC_POLICY
 
     def normalize(
         self,
@@ -424,6 +562,11 @@ class WealthsimpleAdapter(SourceAdapter):
     name = "wealthsimple"
     aliases = ("wealthsimple", "wealthsimple crypto")
     supported = True
+
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return WEALTHSIMPLE_DATE_ONLY_POLICY
 
     def normalize(
         self,
@@ -493,6 +636,7 @@ class WealthsimpleAdapter(SourceAdapter):
                                 asset_out=currency,
                                 fee_amount=decimal_text(commission),
                                 fee_asset=currency,
+                                render_match_window_seconds="86399",
                                 render_notes=description,
                             )
                         )
@@ -516,6 +660,7 @@ class WealthsimpleAdapter(SourceAdapter):
                                 asset_out=symbol,
                                 fee_amount=decimal_text(commission),
                                 fee_asset=currency,
+                                render_match_window_seconds="86399",
                                 render_notes=description,
                             )
                         )
@@ -537,6 +682,7 @@ class WealthsimpleAdapter(SourceAdapter):
                                 description=f"Wealthsimple money movement {activity_sub_type or 'credit'}",
                                 amount_in=decimal_text(abs(quantity)),
                                 asset_in=currency,
+                                render_match_window_seconds="86399",
                                 render_notes=description,
                             )
                         )
@@ -555,6 +701,7 @@ class WealthsimpleAdapter(SourceAdapter):
                                 description=f"Wealthsimple money movement {activity_sub_type or 'debit'}",
                                 amount_out=decimal_text(abs(quantity)),
                                 asset_out=currency,
+                                render_match_window_seconds="86399",
                                 render_notes=description,
                             )
                         )
@@ -580,6 +727,14 @@ class BinanceAdapter(SourceAdapter):
     name = "binance"
     aliases = ("binance",)
     supported = True
+
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        header_preview = (row.get("header_preview") or "").lower()
+        if "utc_time" in header_preview:
+            return STRICT_EXPLICIT_UTC_POLICY
+        return EXPLICIT_OR_OFFSET_POLICY
 
     _trade_operations = {
         "Buy",
@@ -1394,6 +1549,11 @@ class CryptoComAdapter(SourceAdapter):
     aliases = ("crypto.com", "crypto com", "cryptocom")
     supported = True
 
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return STRICT_EXPLICIT_UTC_POLICY
+
     def normalize(
         self,
         raw_dir: Path,
@@ -1538,6 +1698,11 @@ class EvmExplorerAdapter(SourceAdapter):
         "metamask - polygon",
     )
     supported = True
+
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return STRICT_EXPLICIT_UTC_POLICY
 
     _scope_prefixes = (
         ("bsc", "Account1-bsc"),
@@ -2182,6 +2347,11 @@ class ShakepayAdapter(SourceAdapter):
     aliases = ("shakepay",)
     supported = True
 
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return SHAKEPAY_SOURCE_LOCAL_POLICY
+
     def normalize(
         self,
         raw_dir: Path,
@@ -2429,6 +2599,11 @@ class LedgerLiveAdapter(SourceAdapter):
     aliases = ("ledger live", "ada ledger")
     supported = True
 
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return STRICT_EXPLICIT_UTC_POLICY
+
     def normalize(
         self,
         raw_dir: Path,
@@ -2631,6 +2806,11 @@ class NearAdapter(SourceAdapter):
     aliases = ("near", "near wallet", "near wallet - staking")
     supported = True
 
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return ASSUMED_UTC_NAIVE_POLICY
+
     def normalize(
         self,
         raw_dir: Path,
@@ -2820,6 +3000,11 @@ class GTradeAdapter(SourceAdapter):
     aliases = ("gtrade", "gtrade 1ct")
     supported = True
 
+    def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
+        if not row.get("date_field"):
+            return None
+        return GTRADE_DATE_ONLY_POLICY
+
     def normalize(
         self,
         raw_dir: Path,
@@ -2866,6 +3051,7 @@ class GTradeAdapter(SourceAdapter):
                         "event_kind": event_kind,
                         "description": description,
                         "tx_hash": event_id,
+                        "render_match_window_seconds": "86399",
                         "render_notes": f"{row.get('PAIR', '')}:{row.get('TYPE', '')}:{row.get('DIR', '')}",
                     }
                     if pnl > 0:

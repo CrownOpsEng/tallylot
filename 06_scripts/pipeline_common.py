@@ -20,6 +20,7 @@ from script_common import (
     require_directory,
     require_file,
     source_timezone_from_filename,
+    tzinfo_label,
     write_csv_rows,
     write_json,
 )
@@ -98,6 +99,10 @@ PROFILE_INVENTORY_HEADERS = (
     "date_field",
     "min_timestamp",
     "max_timestamp",
+    "timestamp_resolution",
+    "timezone_mode",
+    "timezone_value",
+    "timezone_conflict",
 )
 
 DATE_FIELD_PATTERN = ("date", "time", "timestamp", "created at", "operation date", "settlement_date", "transaction_date")
@@ -114,6 +119,17 @@ DATE_FORMATS = (
     "%d.%m.%Y %H:%M:%S",
 )
 
+TIMEZONE_ISSUE_HEADERS = (
+    "filename",
+    "family",
+    "date_field",
+    "timestamp_resolution",
+    "timezone_mode",
+    "timezone_value",
+    "issue_kind",
+    "message",
+)
+
 
 @dataclass(frozen=True)
 class SourceProfile:
@@ -125,6 +141,17 @@ class SourceProfile:
     adapter: str
     adapter_supported: bool
     file_inventory: list[dict[str, str]]
+    timezone_summary: dict[str, object] | None = None
+    timezone_issues: list[dict[str, str]] | None = None
+
+
+@dataclass(frozen=True)
+class TimestampEvidence:
+    value: datetime
+    fmt: str
+    resolution: str
+    timezone_mode: str
+    timezone_value: str
 
 
 def source_slug(value: str) -> str:
@@ -253,21 +280,99 @@ def classify_file_family(path: Path, header: Sequence[str]) -> str:
 
 
 def parse_candidate_timestamp(value: str, *, source_timezone: tzinfo | None = None) -> datetime | None:
+    evidence = parse_candidate_timestamp_evidence(value, source_timezone=source_timezone)
+    return evidence.value if evidence is not None else None
+
+
+def _header_timezone_hint(header: Sequence[str], date_field: str) -> tuple[str, str]:
+    joined = " | ".join(column.strip().lower() for column in header)
+    field = date_field.strip().lower()
+    if "utc" in field or "utc" in joined:
+        return "header_utc", "UTC"
+    return "", ""
+
+
+def _timestamp_resolution_for_format(fmt: str) -> str:
+    if "%H" not in fmt and "%I" not in fmt:
+        return "date_only"
+    if "%f" in fmt:
+        return "subsecond"
+    return "second"
+
+
+def _timezone_evidence_for_format(
+    fmt: str,
+    parsed: datetime,
+    *,
+    source_timezone: tzinfo | None = None,
+) -> tuple[str, str]:
+    if "%z" in fmt:
+        return "value_offset", tzinfo_label(parsed.tzinfo)
+    if "UTC" in fmt or fmt.endswith("Z"):
+        return "value_utc", "UTC"
+    if _timestamp_resolution_for_format(fmt) == "date_only":
+        return "date_only", ""
+    if source_timezone is not None:
+        return "source_timezone", tzinfo_label(source_timezone)
+    return "naive", ""
+
+
+def parse_candidate_timestamp_evidence(value: str, *, source_timezone: tzinfo | None = None) -> TimestampEvidence | None:
     text = value.strip()
     if not text:
         return None
     for fmt in DATE_FORMATS:
         try:
-            return parse_datetime_to_utc_naive(text, (fmt,), source_timezone=source_timezone)
+            parsed = parse_datetime(text, (fmt,))
         except ValueError:
             continue
+        timezone_mode, timezone_value = _timezone_evidence_for_format(fmt, parsed, source_timezone=source_timezone)
+        return TimestampEvidence(
+            value=parse_datetime_to_utc_naive(text, (fmt,), source_timezone=source_timezone),
+            fmt=fmt,
+            resolution=_timestamp_resolution_for_format(fmt),
+            timezone_mode=timezone_mode,
+            timezone_value=timezone_value,
+        )
     return None
 
 
-def detect_date_span_from_csv(path: Path) -> tuple[str, str, str, int]:
+def _finalize_timezone_metadata(
+    *,
+    filename: str,
+    header: Sequence[str],
+    date_field: str,
+    parsed_values: Sequence[TimestampEvidence],
+) -> tuple[str, str, str, str]:
+    if not parsed_values:
+        return "", "", "", ""
+
+    resolution = parsed_values[0].resolution if len({item.resolution for item in parsed_values}) == 1 else "mixed"
+    header_mode, header_value = _header_timezone_hint(header, date_field)
+    filename_timezone = source_timezone_from_filename(filename)
+    filename_mode = "filename_offset" if filename_timezone is not None else ""
+    filename_value = tzinfo_label(filename_timezone)
+    evidence_mode = parsed_values[0].timezone_mode if len({item.timezone_mode for item in parsed_values}) == 1 else "mixed"
+    evidence_value = parsed_values[0].timezone_value if len({item.timezone_value for item in parsed_values}) == 1 else "mixed"
+
+    hints = [(mode, value) for mode, value in ((header_mode, header_value), (filename_mode, filename_value), (evidence_mode, evidence_value)) if mode]
+    distinct_values = {value for _, value in hints if value}
+    if len(distinct_values) > 1:
+        return resolution, "conflict", " | ".join(sorted(distinct_values)), "yes"
+
+    if evidence_mode in {"value_utc", "value_offset"}:
+        return resolution, evidence_mode, evidence_value, ""
+    if filename_mode:
+        return resolution, filename_mode, filename_value, ""
+    if header_mode:
+        return resolution, header_mode, header_value, ""
+    return resolution, evidence_mode, evidence_value, ""
+
+
+def detect_date_span_from_csv(path: Path) -> tuple[str, str, str, int, str, str, str, str]:
     header, header_index = detect_csv_header(path)
     if header_index == -1 or not header:
-        return "", "", "", 0
+        return "", "", "", 0, "", "", "", ""
 
     with path.open(newline="", encoding="utf-8-sig") as handle:
         reader = csv.reader(handle)
@@ -277,15 +382,16 @@ def detect_date_span_from_csv(path: Path) -> tuple[str, str, str, int]:
         {header[index]: (row[index] if index < len(row) else "") for index in range(len(header))}
         for row in payload
         if any(cell.strip() for cell in row)
+        and not (len(row) == 1 and row[0].strip().lower() == "no data matches the criteria.")
     ]
     date_field = ""
-    parsed_values: list[datetime] = []
+    parsed_values: list[TimestampEvidence] = []
     candidates = [field for field in header if any(token in field.lower() for token in DATE_FIELD_PATTERN)]
     best_count = -1
     source_timezone = source_timezone_from_filename(path.name)
     for field in candidates:
         current = [
-            parse_candidate_timestamp((row.get(field) or "").strip(), source_timezone=source_timezone)
+            parse_candidate_timestamp_evidence((row.get(field) or "").strip(), source_timezone=source_timezone)
             for row in normalized_rows
         ]
         parsed = [value for value in current if value is not None]
@@ -294,12 +400,24 @@ def detect_date_span_from_csv(path: Path) -> tuple[str, str, str, int]:
             parsed_values = parsed
             date_field = field
     if not parsed_values:
-        return date_field, "", "", len(normalized_rows)
+        if not normalized_rows:
+            return "", "", "", 0, "", "", "", ""
+        return date_field, "", "", len(normalized_rows), "", "", "", ""
+    resolution, timezone_mode, timezone_value, timezone_conflict = _finalize_timezone_metadata(
+        filename=path.name,
+        header=header,
+        date_field=date_field,
+        parsed_values=parsed_values,
+    )
     return (
         date_field,
-        min(parsed_values).strftime("%Y-%m-%d %H:%M:%S"),
-        max(parsed_values).strftime("%Y-%m-%d %H:%M:%S"),
+        min(item.value for item in parsed_values).strftime("%Y-%m-%d %H:%M:%S"),
+        max(item.value for item in parsed_values).strftime("%Y-%m-%d %H:%M:%S"),
         len(normalized_rows),
+        resolution,
+        timezone_mode,
+        timezone_value,
+        timezone_conflict,
     )
 
 
@@ -314,11 +432,24 @@ def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
         date_field = ""
         min_timestamp = ""
         max_timestamp = ""
+        timestamp_resolution = ""
+        timezone_mode = ""
+        timezone_value = ""
+        timezone_conflict = ""
         if suffix == ".csv":
             header, _ = detect_csv_header(path)
             header_preview = " | ".join(header[:8])
             family = classify_file_family(path, header)
-            date_field, min_timestamp, max_timestamp, row_count = detect_date_span_from_csv(path)
+            (
+                date_field,
+                min_timestamp,
+                max_timestamp,
+                row_count,
+                timestamp_resolution,
+                timezone_mode,
+                timezone_value,
+                timezone_conflict,
+            ) = detect_date_span_from_csv(path)
             data_rows = str(row_count)
         elif suffix == ".pdf":
             family = classify_file_family(path, ())
@@ -332,6 +463,10 @@ def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
                 "date_field": date_field,
                 "min_timestamp": min_timestamp,
                 "max_timestamp": max_timestamp,
+                "timestamp_resolution": timestamp_resolution,
+                "timezone_mode": timezone_mode,
+                "timezone_value": timezone_value,
+                "timezone_conflict": timezone_conflict,
             }
         )
     return rows
@@ -366,6 +501,9 @@ def write_profile_artifacts(out_dir: Path, profile: SourceProfile) -> tuple[Path
     out_dir.mkdir(parents=True, exist_ok=True)
     profile_json = out_dir / "profile.json"
     inventory_csv = out_dir / "profile_inventory.csv"
+    timezone_issues_csv = out_dir / "timezone_issues.csv"
+    timezone_summary = profile.timezone_summary or {"status": "not_checked", "issue_count": 0}
+    timezone_issues = profile.timezone_issues or []
     write_json(
         profile_json,
         {
@@ -379,9 +517,13 @@ def write_profile_artifacts(out_dir: Path, profile: SourceProfile) -> tuple[Path
             "file_count": len(profile.file_inventory),
             "file_inventory": profile.file_inventory,
             "family_counts": summarize_family_counts(profile.file_inventory),
+            "timezone_summary": timezone_summary,
+            "timezone_issue_count": len(timezone_issues),
+            "timezone_issues_path": str(timezone_issues_csv),
         },
     )
     write_csv_rows(inventory_csv, list(PROFILE_INVENTORY_HEADERS), profile.file_inventory)
+    write_csv_rows(timezone_issues_csv, list(TIMEZONE_ISSUE_HEADERS), timezone_issues)
     return profile_json, inventory_csv
 
 

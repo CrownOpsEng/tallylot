@@ -88,6 +88,7 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertEqual([], result.exceptions)
         self.assertEqual("Withdrawal", result.canonical_events[0]["event_kind"])
         self.assertEqual("Trade", result.canonical_events[2]["event_kind"])
+        self.assertTrue(all(row["render_match_window_seconds"] == "86399" for row in result.canonical_events))
 
     def test_crypto_com_adapter_normalizes_repo_exports(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "crypto.com" / "raw"
@@ -368,6 +369,47 @@ class SourceAdapterTests(unittest.TestCase):
                 )
                 self.assertTrue(profile.file_inventory)
                 self.assertTrue(profile.manifest_fingerprint)
+
+    def test_timezone_validation_passes_for_repo_supported_sources(self) -> None:
+        cases = [
+            ("Coinbase", REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"),
+            ("WealthSimple", REPO_ROOT / "01_raw_exports" / "external" / "wealthsimple" / "raw"),
+            ("Binance", REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"),
+            ("BSC MetaMask Wallet", REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"),
+            ("Crypto.com", REPO_ROOT / "01_raw_exports" / "external" / "crypto.com" / "raw"),
+            ("Shakepay", REPO_ROOT / "01_raw_exports" / "external" / "shakepay" / "raw"),
+            ("Ledger Live", REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"),
+            ("NEAR Wallet", REPO_ROOT / "01_raw_exports" / "external" / "near" / "raw"),
+            ("GTrade 1CT", REPO_ROOT / "01_raw_exports" / "external" / "gtrade" / "raw"),
+        ]
+
+        for source, raw_dir in cases:
+            with self.subTest(source=source):
+                adapter = source_adapters.get_adapter(source)
+                profile = pipeline_common.build_source_profile(
+                    source=source,
+                    raw_dir=raw_dir,
+                    adapter_name=adapter.name,
+                    adapter_supported=adapter.supported,
+                )
+                summary, issues = adapter.validate_profile_timezones(profile)
+                self.assertEqual("passed", summary["status"])
+                self.assertEqual([], issues)
+
+    def test_normalize_source_rejects_ambiguous_timezone_inventory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir) / "binance" / "raw"
+            raw_dir.mkdir(parents=True)
+            (raw_dir / "Binance-Spot-Trade-History.csv").write_text(
+                (
+                    "Time,Pair,Side,Price,Executed,Amount,Fee\n"
+                    "23-09-20 18:20:55,ALGOUSDT,SELL,0.0997,103ALGO,10.2691USDT,0.00003593BNB\n"
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "Timezone validation failed"):
+                normalize_source.normalize_source("Binance", raw_dir, Path(tmpdir) / "normalized")
 
     def test_normalize_source_cache_invalidates_when_exception_decisions_change(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

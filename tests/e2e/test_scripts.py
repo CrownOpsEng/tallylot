@@ -269,8 +269,11 @@ class ScriptEndToEndTests(unittest.TestCase):
 
         self.assertEqual("coinbase", summary["adapter"])
         self.assertTrue(summary["adapter_supported"])
+        self.assertEqual("passed", summary["timezone_status"])
+        self.assertEqual(0, summary["timezone_issue_count"])
         self.assertEqual(summary["files_profiled"], len(inventory))
         self.assertIn("manifest_fingerprint", profile)
+        self.assertEqual("passed", profile["timezone_summary"]["status"])
 
     def test_normalize_source_cli_supports_wealthsimple_repo_raw_dir(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "wealthsimple" / "raw"
@@ -293,6 +296,8 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual("ready", summary["status"])
         self.assertEqual("UTC", summary["canonical_timezone"])
         self.assertEqual("UTC", summary["cointracking_import_timezone"])
+        self.assertEqual("passed", summary["timezone_status"])
+        self.assertEqual(0, summary["timezone_issue_count"])
         self.assertEqual(26, summary["canonical_events"])
         self.assertEqual(0, summary["exceptions"])
         self.assertEqual(26, len(events))

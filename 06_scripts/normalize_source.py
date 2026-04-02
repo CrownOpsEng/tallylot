@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import json
 from pathlib import Path
 from typing import Sequence
@@ -68,6 +69,13 @@ def normalize_source(
         adapter_name=adapter.name,
         adapter_supported=adapter.supported,
     )
+    timezone_summary, timezone_issues = adapter.validate_profile_timezones(profile)
+    profile = replace(profile, timezone_summary=timezone_summary, timezone_issues=timezone_issues)
+    if timezone_issues:
+        raise ValueError(
+            f"Timezone validation failed for {source}: {len(timezone_issues)} issue(s). "
+            "Run profile_source.py and review timezone_issues.csv before normalization."
+        )
     decisions = load_exception_decisions(exception_decisions, profile.manifest_fingerprint)
     decisions_digest = decisions_fingerprint(decisions)
 
@@ -96,6 +104,8 @@ def normalize_source(
                 "manifest_fingerprint": manifest_fingerprint,
                 "canonical_timezone": CANONICAL_TIMEZONE,
                 "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+                "timezone_status": str(existing.get("timezone_status", "not_checked")),
+                "timezone_issue_count": int(existing.get("timezone_issue_count", 0)),
                 "status": "cached",
                 "canonical_events": int(existing.get("canonical_events", 0)),
                 "exceptions": int(existing.get("exceptions", 0)),
@@ -121,6 +131,8 @@ def normalize_source(
         "manifest_fingerprint": profile.manifest_fingerprint,
         "canonical_timezone": CANONICAL_TIMEZONE,
         "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+        "timezone_status": timezone_summary["status"],
+        "timezone_issue_count": timezone_summary["issue_count"],
         "canonical_events": len(result.canonical_events),
         "canonical_balances": len(result.canonical_balances),
         "exceptions": len(result.exceptions),
