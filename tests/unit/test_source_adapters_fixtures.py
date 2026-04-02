@@ -8,14 +8,14 @@ import wallet_inventory
 
 
 def _build_profile(source: str, raw_dir: Path) -> tuple[object, pipeline_common.SourceProfile]:
-    adapter = source_adapters.get_adapter(source)
+    initial_adapter = source_adapters.get_adapter(source)
     profile = pipeline_common.build_source_profile(
         source=source,
         raw_dir=raw_dir,
-        adapter_name=adapter.name,
-        adapter_supported=adapter.supported,
+        adapter_name=initial_adapter.name,
+        adapter_supported=initial_adapter.supported,
     )
-    return adapter, profile
+    return source_adapters.get_adapter(source, profile), profile
 
 
 def test_coinbase_adapter_requires_retail_csv(tmp_path: Path) -> None:
@@ -79,6 +79,40 @@ def test_metamask_empty_state_fixture_reports_missing_identifier(copy_fixture_tr
     assert any(issue["issue_kind"] == "missing_identifier" for issue in issues)
 
 
+def test_metamask_wallet_inventory_uses_renamed_state_file_without_filename_dependency(copy_fixture_tree) -> None:
+    raw_dir = copy_fixture_tree("raw_sources/metamask_renamed/raw")
+
+    evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("MetaMask app", raw_dir)
+    adapter = source_adapters.get_adapter(
+        "Unknown Wallet",
+        pipeline_common.build_source_profile(
+            source="Unknown Wallet",
+            raw_dir=raw_dir,
+            adapter_name="generic",
+            adapter_supported=False,
+        ),
+    )
+
+    assert summary["adapter"] == "metamask_app"
+    assert summary["status"] == "passed"
+    assert issues == []
+    assert [row["wallet_id"] for row in evidence] == ["evm_address:0x1111111111111111111111111111111111111111"]
+    assert adapter.name == "metamask_app"
+
+
+def test_coinbase_adapter_uses_retail_family_without_filename_dependency(copy_fixture_tree) -> None:
+    raw_dir = copy_fixture_tree("raw_sources/coinbase_renamed/raw")
+    adapter, profile = _build_profile("Future Exchange", raw_dir)
+
+    result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+    assert adapter.name == "coinbase"
+    assert len(result.canonical_events) == 1
+    assert result.canonical_events[0]["raw_file"] == "retail-export.csv"
+    assert result.canonical_events[0]["event_kind"] == "Trade"
+    assert result.exceptions == []
+
+
 def test_evm_explorer_fixture_reports_multiple_primary_identifiers(copy_fixture_tree) -> None:
     raw_dir = copy_fixture_tree("raw_sources/evm_explorer_multi/raw", destination_name="bsc_wallet_capture")
 
@@ -116,3 +150,40 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames(tmp_path: P
     assert result.canonical_events[0]["event_kind"] == "Deposit"
     assert result.canonical_events[0]["asset_in"] == "BNB"
     assert result.canonical_events[0]["amount_in"] == "1.50000000"
+
+
+def test_evm_explorer_suspicious_nft_fixture_surfaces_review_without_auto_import(copy_fixture_tree) -> None:
+    raw_dir = copy_fixture_tree("raw_sources/evm_explorer_suspicious_nft/raw", destination_name="bsc_wallet_capture")
+    adapter, profile = _build_profile("bsc-wallet", raw_dir)
+
+    result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+    assert result.canonical_events == []
+    assert len(result.exceptions) == 1
+    assert result.exceptions[0]["exception_kind"] == "review_required"
+    assert "suspicious NFT airdrop" in result.exceptions[0]["message"]
+
+
+def test_wealthsimple_adapter_uses_broker_activity_family_without_filename_dependency(copy_fixture_tree) -> None:
+    raw_dir = copy_fixture_tree("raw_sources/wealthsimple_renamed/raw")
+    adapter, profile = _build_profile("Future Broker", raw_dir)
+
+    result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+    assert adapter.name == "wealthsimple"
+    assert len(result.canonical_events) == 1
+    assert result.canonical_events[0]["raw_file"] == "broker-export.csv"
+    assert result.canonical_events[0]["render_match_window_seconds"] == "86399"
+    assert result.exceptions == []
+
+
+def test_crypto_com_adapter_uses_transaction_kinds_without_filename_dependency(copy_fixture_tree) -> None:
+    raw_dir = copy_fixture_tree("raw_sources/crypto_com_renamed/raw")
+    adapter, profile = _build_profile("Future Card", raw_dir)
+
+    result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+    assert adapter.name == "crypto_com"
+    assert [row["event_kind"] for row in result.canonical_events] == ["Deposit", "Trade", "Withdrawal"]
+    assert {row["raw_file"] for row in result.canonical_events} == {"records-a.csv", "records-b.csv"}
+    assert result.exceptions == []

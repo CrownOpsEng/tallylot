@@ -552,6 +552,25 @@ def profile_has_row(
     return False
 
 
+def first_matching_json_file(raw_dir: Path, *, predicate) -> Path | None:
+    for path in sorted(raw_dir.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if predicate(payload):
+            return path
+    return None
+
+
+def csv_contains_transaction_kind(path: Path, expected_kinds: set[str]) -> bool:
+    for row in read_csv_rows(path):
+        kind = (row.get("Transaction Kind") or "").strip().lower()
+        if kind in expected_kinds:
+            return True
+    return False
+
+
 class SourceAdapter:
     name = "base"
     aliases: tuple[str, ...] = ()
@@ -615,7 +634,7 @@ class MetamaskAppAdapter(SourceAdapter):
     supported = False
 
     def matches_profile(self, profile: SourceProfile) -> bool:
-        return any(row.get("filename") == "MetaMask state logs.json" for row in profile.file_inventory)
+        return profile_has_row(profile, families={"metamask_state_json"})
 
     def extract_wallet_identifiers(
         self,
@@ -623,15 +642,18 @@ class MetamaskAppAdapter(SourceAdapter):
         raw_dir: Path,
         profile: SourceProfile,
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-        state_path = raw_dir / "MetaMask state logs.json"
-        if not state_path.exists():
+        state_path = first_matching_json_file(
+            raw_dir,
+            predicate=lambda payload: isinstance(payload, dict) and isinstance(payload.get("metamask"), dict),
+        )
+        if state_path is None:
             return [], [
                 wallet_issue_row(
                     source=source,
                     raw_dir=raw_dir,
                     wallet_id="",
                     issue_kind="missing_identifier",
-                    message="MetaMask state logs were not found.",
+                    message="MetaMask app state JSON was not found.",
                 )
             ]
 
@@ -708,9 +730,9 @@ class CoinbaseAdapter(SourceAdapter):
     supported = True
 
     def matches_profile(self, profile: SourceProfile) -> bool:
-        return profile_has_row(profile, filename_contains="statement - all time") or profile_has_row(
+        return profile_has_row(
             profile,
-            filename_contains="coinbase pro - statement",
+            families={"custodial_all_time_csv", "transfer_statement_csv", "fills_csv"},
         )
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
@@ -730,7 +752,6 @@ class CoinbaseAdapter(SourceAdapter):
             profile,
             families={"custodial_all_time_csv"},
             suffixes={".csv"},
-            predicate=lambda path, _: "statement - all time" in path.name.lower(),
         )
         retail_path = retail_candidates[-1] if retail_candidates else None
         pro_statement_paths = profile_paths(
@@ -738,14 +759,12 @@ class CoinbaseAdapter(SourceAdapter):
             profile,
             families={"transfer_statement_csv"},
             suffixes={".csv"},
-            predicate=lambda path, _: "coinbase pro - statement" in path.name.lower(),
         )
         pro_fill_paths = profile_paths(
             raw_dir,
             profile,
             families={"fills_csv"},
             suffixes={".csv"},
-            predicate=lambda path, _: "coinbase pro - fills" in path.name.lower(),
         )
         pdf_paths = profile_paths(raw_dir, profile, families={"statement_balance_pdf"}, suffixes={".pdf"})
 
@@ -785,7 +804,7 @@ class WealthsimpleAdapter(SourceAdapter):
     supported = True
 
     def matches_profile(self, profile: SourceProfile) -> bool:
-        return profile_has_row(profile, filename_contains="activities-export")
+        return profile_has_row(profile, families={"broker_activity_csv"})
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -804,7 +823,6 @@ class WealthsimpleAdapter(SourceAdapter):
             profile,
             families={"broker_activity_csv"},
             suffixes={".csv"},
-            predicate=lambda path, _: path.name.lower().startswith("activities-export"),
         )
         exceptions: list[dict[str, str]] = []
         if not activity_paths:
@@ -1814,16 +1832,16 @@ class CryptoComAdapter(SourceAdapter):
             profile,
             families={"custodial_transaction_csv"},
             suffixes={".csv"},
-            predicate=lambda path, row: path.name.lower().startswith("cash_transactions_")
-            and "timestamp (utc)" in row.get("header_preview", "").lower(),
+            predicate=lambda path, row: "timestamp (utc)" in row.get("header_preview", "").lower()
+            and csv_contains_transaction_kind(path, {"viban_deposit"}),
         )
         crypto_paths = profile_paths(
             raw_dir,
             profile,
             families={"custodial_transaction_csv"},
             suffixes={".csv"},
-            predicate=lambda path, row: path.name.lower().startswith("crypto_transactions_")
-            and "timestamp (utc)" in row.get("header_preview", "").lower(),
+            predicate=lambda path, row: "timestamp (utc)" in row.get("header_preview", "").lower()
+            and csv_contains_transaction_kind(path, {"viban_purchase", "crypto_withdrawal"}),
         )
         exceptions: list[dict[str, str]] = []
         if not cash_paths and not crypto_paths:

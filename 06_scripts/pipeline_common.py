@@ -311,6 +311,19 @@ def classify_file_family(path: Path, header: Sequence[str]) -> str:
     return "unknown"
 
 
+def inspect_json_payload(path: Path) -> tuple[str, str]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "json", ""
+    if isinstance(payload, dict):
+        header_preview = " | ".join(str(key) for key in list(payload.keys())[:8])
+        if isinstance(payload.get("metamask"), dict):
+            return "metamask_state_json", header_preview
+        return "json", header_preview
+    return "json", type(payload).__name__
+
+
 def parse_candidate_timestamp(value: str, *, source_timezone: tzinfo | None = None) -> datetime | None:
     evidence = parse_candidate_timestamp_evidence(value, source_timezone=source_timezone)
     return evidence.value if evidence is not None else None
@@ -485,6 +498,8 @@ def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
             data_rows = str(row_count)
         elif suffix == ".pdf":
             family = classify_file_family(path, ())
+        elif suffix == ".json":
+            family, header_preview = inspect_json_payload(path)
         rows.append(
             {
                 "filename": path.name,
