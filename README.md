@@ -23,9 +23,11 @@ in the external workspace.
 - filesystem-backed operational storage
 - CoinTracking CSV as the implemented output target
 - archive-aware source scanning and intake planning/apply
-- structured CSV as the implemented source adapter in this package
+- restored real source adapters for Coinbase, Wealthsimple, Binance,
+  Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
+  wallet-state, and the generic structured CSV adapter
 - blockchain, platform API, SQLite, and provider-backed AI remain stubbed
-- broader `master` source-adapter parity is tracked in `docs/MASTER_PARITY_LEDGER.md`
+- restored `master` parity status is tracked in `docs/MASTER_PARITY_LEDGER.md`
 
 ## Workspace Model
 

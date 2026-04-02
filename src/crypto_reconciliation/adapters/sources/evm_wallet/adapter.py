@@ -39,8 +39,6 @@ class EvmWalletAdapter:
         lower_source = source.lower()
         if "evm wallet" in lower_source or "wallet state" in lower_source:
             return 100
-        if "metamask" in lower_source:
-            return 90
         if any(
             item.relative_path.lower().endswith(".json") and "state" in item.relative_path.lower() for item in inventory
         ):
@@ -91,14 +89,10 @@ class EvmWalletAdapter:
 
 
 def _account_records(source: str, evidence_path: str, payload: object) -> list[WalletInventoryRecord]:
-    if not isinstance(payload, dict):
+    state_root = _wallet_state_root(payload)
+    if state_root is None:
         return []
-    payload_dict = cast(dict[str, object], payload)
-    metamask = payload_dict.get("metamask")
-    if not isinstance(metamask, dict):
-        return []
-    metamask_dict = cast(dict[str, object], metamask)
-    internal_accounts = metamask_dict.get("internalAccounts")
+    internal_accounts = state_root.get("internalAccounts")
     if not isinstance(internal_accounts, dict):
         return []
     internal_accounts_dict = cast(dict[str, object], internal_accounts)
@@ -136,14 +130,10 @@ def _account_records(source: str, evidence_path: str, payload: object) -> list[W
 
 
 def _identity_records(source: str, evidence_path: str, payload: object) -> list[WalletInventoryRecord]:
-    if not isinstance(payload, dict):
+    state_root = _wallet_state_root(payload)
+    if state_root is None:
         return []
-    payload_dict = cast(dict[str, object], payload)
-    metamask = payload_dict.get("metamask")
-    if not isinstance(metamask, dict):
-        return []
-    metamask_dict = cast(dict[str, object], metamask)
-    identities = metamask_dict.get("identities")
+    identities = state_root.get("identities")
     if not isinstance(identities, dict):
         return []
     records: list[WalletInventoryRecord] = []
@@ -188,6 +178,17 @@ def _object_map(value: object) -> dict[str, object]:
     if isinstance(value, dict):
         return cast(dict[str, object], value)
     return {}
+
+
+def _wallet_state_root(payload: object) -> dict[str, object] | None:
+    if not isinstance(payload, dict):
+        return None
+    payload_dict = cast(dict[str, object], payload)
+    for key in ("wallet_state", "metamask"):
+        candidate = payload_dict.get(key)
+        if isinstance(candidate, dict):
+            return cast(dict[str, object], candidate)
+    return None
 
 
 ADAPTER = EvmWalletAdapter()

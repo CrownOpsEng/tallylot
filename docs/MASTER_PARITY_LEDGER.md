@@ -30,17 +30,12 @@ This ledger tracks the typed replacement status for workflows that existed on
 | Archive safety limits | `restored` | Enforces max archive size, expanded size, member size/count, and nesting depth |
 | Archive issue surfacing | `restored` | Unsafe paths, encrypted members, unsupported compression, symlinks, and unsupported archive types emit explicit issues |
 | `source intake plan` | `restored` | Typed intake planning with archive-aware inventory and reports |
-| `source intake apply` | `restored` | Typed intake apply path for loose-file copies plus archive inspection-only reporting |
+| `source intake apply` | `restored` | Typed intake apply now writes capture manifests, bundle-aware copies, and archive member placement |
+| Real source adapter breadth | `restored` | Coinbase, Wealthsimple, Binance, Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, and EVM wallet-state adapters are active |
+| Intake/package resolution intelligence | `restored` | Typed intake now restores repo-manifest overlap review, raw-capture overlap review, same-cycle merges, mixed-cycle review, and inventory-backed routing |
+| Adapter-pack coverage breadth | `restored` | Contract and golden-pack coverage now spans the restored real source adapters |
 | Adapter-pack golden refresh tooling | `restored` | `tools.refresh_adapter_goldens` runs the typed services and refreshes JSON goldens |
 | Adapter scaffold tooling | `restored` | `tools.scaffold_adapter` seeds package-style adapter modules with colocated tests and fixtures |
-
-## Still Narrower Than Master
-
-| Capability | Current State | Required Follow-up |
-| ---- | ---- | ---- |
-| Real source adapter breadth | Only `structured_csv` is fully implemented | Recover typed adapters for Coinbase, Wealthsimple, Binance, Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, and MetaMask/state logs |
-| Intake/package resolution intelligence | Generic typed routing exists | Port source-aware duplicate resolution, same-cycle merges, mixed-cycle review, and supporting-artifact classification into typed intake services |
-| Adapter-pack coverage breadth | Golden-pack workflow exists for `structured_csv` | Add pack fixtures and contract coverage for every restored real source adapter |
 
 ## Rules
 
