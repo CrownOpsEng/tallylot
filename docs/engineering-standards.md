@@ -80,6 +80,39 @@ Mirror that structure in tests:
 - prefer `tests/unit/application/services/intake/...` over scattering
   `test_intake_*` files across unrelated directories
 
+### Package Escalation Rules
+
+Do not keep flattening files forever once a feature package exists.
+
+- Use a feature package when a flat layer directory would otherwise collect
+  more than 3 same-prefix files for one capability.
+- Inside an existing feature package, create a nested subpackage when one
+  bounded sub-capability meets any of these conditions:
+  - 4 or more files share the same concept or repeated prefix
+  - the cluster has its own models, decision rules, and entry point
+  - the tests naturally group under that sub-capability rather than under the
+    parent feature as a whole
+- Do not create a nested package on the first split. Keep 2 or 3 tightly
+  related files flat unless they already represent a stable subdomain.
+- Prefer one clear level of nesting over long flat prefixes. `intake/packages/`
+  is better than `intake/package_*.py` once the package-rule cluster becomes a
+  subsystem.
+- Prefer at most 2 package levels below the layer root unless a deeper tree is
+  clearly justified by external contracts or provider boundaries.
+
+Current application of this rule:
+
+- `application/services/intake/` is the correct top-level feature package for
+  intake.
+- The `package_*` cluster inside intake is now large enough to deserve its own
+  nested package on the next refactor pass.
+- The `archive_*` cluster is borderline. It is acceptable as a flat cluster for
+  now because it still presents one public scan seam, but it should become
+  `intake/archive/` if it grows further or starts carrying multiple public
+  surfaces.
+- The plan-building support files should stay flat until they form a clearer
+  subdomain than “helpers used by the intake service”.
+
 ## Naming Rules
 
 - Name modules after the bounded responsibility they own.
@@ -93,8 +126,10 @@ Mirror that structure in tests:
 
 Split these modules before adding materially new behavior:
 
-- `src/crypto_reconciliation/application/services/intake.py`
-- `src/crypto_reconciliation/application/services/intake_packages.py`
+- `src/crypto_reconciliation/application/services/intake/file_facts.py`
+- `src/crypto_reconciliation/application/services/intake/routing.py`
+- `src/crypto_reconciliation/application/services/intake/package_resolution.py`
+- `src/crypto_reconciliation/application/services/intake/archive_zip.py`
 - `src/crypto_reconciliation/adapters/sources/binance/adapter.py`
 - `src/crypto_reconciliation/adapters/sources/coinbase/adapter.py`
 - `src/crypto_reconciliation/domain/models.py`
