@@ -673,6 +673,59 @@ def test_scaffold_workspace_doc_infers_reference_and_both(
     assert frontmatter["audience"] == "both"
 
 
+def test_scaffold_rejects_repo_escape_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    override_active_roots(monkeypatch, tmp_path)
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--path",
+            "../escape.md",
+            "--title",
+            "Escape",
+            "--summary",
+            "Escape summary.",
+            "--doc-type",
+            "reference",
+            "--audience",
+            "human",
+        ]
+    )
+
+    assert exit_code == 1
+    assert not (tmp_path.parent / "escape.md").exists()
+
+
+def test_scaffold_rejects_absolute_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    override_active_roots(monkeypatch, tmp_path)
+    absolute_path = tmp_path / "outside.md"
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--path",
+            str(absolute_path),
+            "--title",
+            "Absolute",
+            "--summary",
+            "Absolute summary.",
+            "--doc-type",
+            "reference",
+            "--audience",
+            "human",
+        ]
+    )
+
+    assert exit_code == 1
+    assert not absolute_path.exists()
+
+
 def test_scaffold_agents_doc_requires_explicit_doc_type(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

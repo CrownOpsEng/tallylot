@@ -199,7 +199,14 @@ def default_audience(path: Path, section: str | None) -> str:
 
 def scaffold_path(*, section: str | None, slug: str | None, path_argument: str | None) -> Path:
     if path_argument is not None:
-        path = repo_root() / path_argument
+        supplied = Path(path_argument)
+        if supplied.is_absolute():
+            raise ValueError("--path must be repo-relative")
+        path = (repo_root() / supplied).resolve()
+        try:
+            relative_path(path)
+        except ValueError as error:
+            raise ValueError("--path must stay inside the repo") from error
     elif section is not None and slug is not None:
         path = agents_root() / f"{slug}.md" if section == "agents" else docs_root() / section / f"{slug}.md"
     else:
