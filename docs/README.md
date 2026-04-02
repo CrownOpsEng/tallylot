@@ -7,8 +7,8 @@ owner: repo
 status: active
 ---
 
-This docs set covers the typed runtime, operator workflows, workspace model,
-artifact contracts, and repo standards.
+The TallyLot docs cover the typed runtime, operator workflows, workspace
+model, artifact contracts, and repo standards.
 
 ## How Docs Are Organized
 
@@ -43,8 +43,14 @@ Agent-specific routing and repo execution rules live in
 
 ## Common Tasks
 
+Use the quickstart for the shortest session path, then use the task guides
+below when you need the detailed procedure for one stage of the workflow.
+
 <!-- docs-maintenance:start guides -->
 - [Operator Quickstart](guides/operator-quickstart.md): Shortest safe path through intake, normalization, staging, and verification.
+- [Source Intake](guides/source-intake.md): Detailed procedure for planning, applying, manifesting, and profiling a settled source capture.
+- [Normalize, Screen, And Stage](guides/normalize-screen-stage.md): Detailed procedure for normalization review, candidate rendering, oracle screening, and staging.
+- [Verify A Round](guides/verify-a-round.md): Detailed procedure for scaffolding, exporting, comparing, and closing a verification round.
 - [Full Operator Workflow](guides/full-operator-workflow.md): Long-form runbook for the current operator workflow and round-close process.
 - [Write An Adapter](guides/write-an-adapter.md): Rules, shape, testing, and tooling guidance for source and output adapters.
 <!-- docs-maintenance:end guides -->

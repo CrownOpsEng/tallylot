@@ -8,132 +8,46 @@ status: active
 ---
 
 Use this file for the shortest safe path through a normal operator session.
-Use `docs/guides/full-operator-workflow.md` when you need the long-form procedure or
-supporting detail.
+Use the linked task guides when you need the detailed procedure for one stage.
 
 ## Start Of Session
 
-1. Confirm the current runtime surface in `docs/status/current-state.md`
-   if the repo has changed since the last session.
+1. Confirm the current runtime surface in `docs/status/current-state.md`.
 2. Confirm the baseline contract in `docs/reference/baseline-validation-contract.md`.
-3. Review `analysis/issues/issue_log.csv` and
-   `analysis/issues/source_inventory.csv`.
-4. Review the latest baseline reconciliation package under
-   `analysis/reconciliation/`.
-5. Confirm the current baseline export path and cutoff before touching a
+3. Review `analysis/issues/issue_log.csv`,
+   `analysis/issues/source_inventory.csv`, and the latest baseline
+   reconciliation package under `analysis/reconciliation/`.
+4. Confirm the current baseline export path and cutoff before touching a
    source or staging a candidate.
 
 ## Intake A Source
 
-1. Start from an untouched incoming dump when the capture is not already in the
-   workspace.
-2. Plan the intake first:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake plan \
-     --incoming-dir <incoming_dump> \
-     --workspace-root <workspace> \
-     --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
-   ```
-
-3. Review `intake_plan.csv`, `intake_issues.csv`, and `intake_summary.json`.
-4. Apply the intake only after the plan looks correct:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake apply \
-     --incoming-dir <incoming_dump> \
-     --workspace-root <workspace> \
-     --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
-   ```
-
-5. If the capture is already settled in `evidence/raw/source/<source>/<capture_id>/`,
-   build the capture manifest:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source manifest \
-     --source-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
-     --output <workspace>/evidence/raw/source/<source>/<capture_id>/manifest.csv
-   ```
-
-6. Profile the capture:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source profile \
-     --source <source> \
-     --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
-     --output-dir <workspace>/working/normalized/<source>
-   ```
-
-7. Review `profile.json`, `profile_inventory.csv`, and `timezone_issues.csv`.
+1. Start from an untouched incoming dump or a settled raw capture under
+   `evidence/raw/source/<source>/<capture_id>/`.
+2. Run `source intake plan` before touching the workspace.
+3. Run `source intake apply` only after the plan artifacts look correct.
+4. Run `source manifest` and `source profile` for the settled capture.
+5. Use [Source Intake](source-intake.md) for the detailed commands, review
+   points, and artifact expectations.
 
 ## Normalize, Screen, And Stage
 
-1. Normalize the capture:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize \
-     --source <source> \
-     --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
-     --output-dir <workspace>/working/normalized/<source>
-   ```
-
-2. Review:
-   - `facts.csv`
-   - `fact_annotations.json`
-   - `balances.csv`
-   - `balance_evidence.csv`
-   - `exceptions.csv`
-   - `normalization_reviews.csv`
-   - `normalization_summary.json`
-
-3. Render the current candidate file when needed:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot output render file \
-     --output-adapter cointracking_csv \
-     --facts <workspace>/working/normalized/<source>/facts.csv \
-     --output <workspace>/working/normalized/<source>/cointracking_candidate.csv
-   ```
-
-4. Screen that candidate against the historical baseline:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen \
-     --candidate <workspace>/working/normalized/<source>/cointracking_candidate.csv \
-     --baseline-export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
-     --output-dir <workspace>/working/import_batches/<source>
-   ```
-
-5. If the screen passes, stage the same candidate with
-   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch stage`.
-6. If it blocks, review `stage_issues.csv` and `stage_summary.json` before
-   changing anything manually.
-7. Use `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli source diff` when the candidate
-   needs a direct row diff against a reference export before import.
+1. Run `source normalize` for the settled capture.
+2. Review the normalization artifacts and issues before rendering a candidate.
+3. Run `output render file` only when the round needs
+   `cointracking_candidate.csv`.
+4. Run `batch screen`, then `batch stage` only after the screen passes.
+5. Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the
+   detailed command flow, artifact review, and stop conditions.
 
 ## Seed And Verify A Round
 
-1. Seed the round:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli round scaffold \
-     --round-id <round_id> \
-     --phase <phase> \
-     --source <source>
-   ```
-
-2. Make the manual change or import in the external verification tool.
-3. Save the fresh verification export set under `working/verification/<round_id>/`.
-   Use the report set in `docs/reference/export-checklist.md`.
-4. Compare against the prior verified state:
-
-   ```bash
-   UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli verification compare \
-     --previous-dir <prior_verification_dir> \
-     --current-dir <workspace>/working/verification/<round_id> \
-     --output-dir <workspace>/working/verification/<round_id>/comparison
-   ```
-
-5. Update `analysis/issues/issue_log.csv`, `analysis/issues/source_inventory.csv`
-   when relevant, and `outputs/logs/round_log.csv`.
-6. Do not advance to the next source until the current round is verified.
+1. Run `round scaffold` before the manual repair or import step.
+2. Save the fresh verification export set under
+   `working/verification/<round_id>/`.
+3. Run `verification compare` and review the comparison package.
+4. Update issue, source, and round-log records before moving to the next
+   source.
+5. Use [Verify A Round](verify-a-round.md) for the detailed procedure and
+   [Export Checklist](../reference/export-checklist.md) for the verification
+   export set.
