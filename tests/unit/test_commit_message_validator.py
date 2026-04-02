@@ -92,6 +92,35 @@ Included checkpoints:
     assert not errors
 
 
+def test_squash_merge_commit_message_allows_wrapped_bullet_lines() -> None:
+    message = """\
+feat(docs): reshape repo docs and harden maintenance workflow (#14)
+
+Why:
+- reshape the repo docs into a cleaner human-first structure without
+losing agent routing or mirrored workspace guidance
+- make the public and internal entrypoints easier to navigate and keep
+aligned with the actual TallyLot product surface
+
+What:
+- rewrite the public README, docs homepage, agent routing, and
+supporting standards around the new concepts, guides, reference,
+standards, and status model
+
+Checks:
+- `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest
+tests/unit/test_docs_maintenance.py
+tests/unit/test_docs_runtime_parity.py -q --no-cov`
+
+Included checkpoints:
+- `docs(roadmap): clarify planning and state docs`
+"""
+
+    errors = validate_commit_message_text(message)
+
+    assert not errors
+
+
 def test_invalid_type_is_rejected() -> None:
     errors = validate_commit_message_text(
         """\
