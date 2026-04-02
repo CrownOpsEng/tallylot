@@ -1,21 +1,37 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Iterator
 from pathlib import Path
 from textwrap import dedent
 
 import pytest
 
+from repo_support import paths as repo_paths
 from tools import docs_maintenance
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-ENTRYPOINT_PATHS = (
-    REPO_ROOT / "README.md",
-    REPO_ROOT / "AGENTS.md",
-    REPO_ROOT / "ROADMAP.md",
-    REPO_ROOT / "CHANGELOG.md",
-    *sorted((REPO_ROOT / ".claude" / "commands").glob("*.md")),
-)
+
+def repo_root() -> Path:
+    return repo_paths.repo_root()
+
+
+def entrypoint_paths() -> tuple[Path, ...]:
+    return (
+        repo_root() / "README.md",
+        repo_root() / "AGENTS.md",
+        repo_root() / "ROADMAP.md",
+        repo_root() / "CHANGELOG.md",
+        *sorted((repo_root() / ".claude" / "commands").glob("*.md")),
+    )
+
+
+@pytest.fixture(autouse=True)
+def reset_repo_root_state() -> Iterator[None]:
+    repo_paths.reset_repo_root()
+    try:
+        yield
+    finally:
+        repo_paths.reset_repo_root()
 
 
 def override_active_roots(
@@ -24,10 +40,12 @@ def override_active_roots(
     *,
     docs_root: Path | None = None,
 ) -> None:
+    del monkeypatch
     resolved_docs_root = docs_root or root / "docs"
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", root)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", resolved_docs_root)
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", root / "agents")
+    expected_docs_root = root.resolve() / "docs"
+    if resolved_docs_root.resolve() != expected_docs_root:
+        raise AssertionError(f"docs root must resolve under the repo root: {resolved_docs_root}")
+    repo_paths.set_repo_root(root)
 
 
 def test_docs_maintenance_sync_check_passes() -> None:
@@ -35,7 +53,7 @@ def test_docs_maintenance_sync_check_passes() -> None:
 
 
 def test_parse_frontmatter_supports_optional_fields() -> None:
-    path = REPO_ROOT / "docs" / "reference" / "example.md"
+    path = repo_root() / "docs" / "reference" / "example.md"
     text = dedent(
         """\
         ---
@@ -66,7 +84,7 @@ def test_parse_frontmatter_supports_optional_fields() -> None:
 
 
 def test_parse_frontmatter_rejects_missing_related_target() -> None:
-    path = REPO_ROOT / "docs" / "reference" / "example.md"
+    path = repo_root() / "docs" / "reference" / "example.md"
     text = dedent(
         """\
         ---
@@ -91,7 +109,7 @@ def test_parse_frontmatter_rejects_missing_related_target() -> None:
 
 
 def test_parse_frontmatter_rejects_missing_related_anchor() -> None:
-    path = REPO_ROOT / "docs" / "reference" / "example.md"
+    path = repo_root() / "docs" / "reference" / "example.md"
     text = dedent(
         """\
         ---
@@ -116,7 +134,7 @@ def test_parse_frontmatter_rejects_missing_related_anchor() -> None:
 
 
 def test_parse_frontmatter_supports_nav_order() -> None:
-    path = REPO_ROOT / "docs" / "guides" / "example.md"
+    path = repo_root() / "docs" / "guides" / "example.md"
     text = dedent(
         """\
         ---
@@ -140,7 +158,7 @@ def test_parse_frontmatter_supports_nav_order() -> None:
 
 
 def test_parse_frontmatter_rejects_invalid_nav_order() -> None:
-    path = REPO_ROOT / "docs" / "guides" / "example.md"
+    path = repo_root() / "docs" / "guides" / "example.md"
     text = dedent(
         """\
         ---
@@ -164,7 +182,7 @@ def test_parse_frontmatter_rejects_invalid_nav_order() -> None:
 
 
 def test_parse_frontmatter_wraps_yaml_errors() -> None:
-    path = REPO_ROOT / "docs" / "guides" / "example.md"
+    path = repo_root() / "docs" / "guides" / "example.md"
     text = dedent(
         """\
         ---
@@ -184,8 +202,8 @@ def test_parse_frontmatter_wraps_yaml_errors() -> None:
 
 def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
     paths = (
-        *sorted((REPO_ROOT / "docs").rglob("*.md")),
-        *sorted((REPO_ROOT / "agents").rglob("*.md")),
+        *sorted((repo_root() / "docs").rglob("*.md")),
+        *sorted((repo_root() / "agents").rglob("*.md")),
     )
     documents = docs_maintenance.validate_documents()
 
@@ -195,8 +213,8 @@ def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
 def test_repo_markdown_paths_include_root_repo_docs() -> None:
     repo_paths = set(docs_maintenance.repo_markdown_paths())
 
-    assert REPO_ROOT / "ROADMAP.md" in repo_paths
-    assert REPO_ROOT / "CHANGELOG.md" in repo_paths
+    assert repo_root() / "ROADMAP.md" in repo_paths
+    assert repo_root() / "CHANGELOG.md" in repo_paths
 
 
 def test_root_consumers_use_state_getters_instead_of_root_constants() -> None:
@@ -206,7 +224,7 @@ def test_root_consumers_use_state_getters_instead_of_root_constants() -> None:
         "tools/docs_maintenance/links.py",
         "tools/docs_maintenance/metadata.py",
     ):
-        module_path = REPO_ROOT / relative
+        module_path = repo_root() / relative
         tree = ast.parse(module_path.read_text(encoding="utf-8"), filename=str(module_path))
         imported_names = {
             alias.name
@@ -265,11 +283,11 @@ def test_docs_maintenance_root_exports_follow_active_state_roots(
 
 
 def test_entrypoints_do_not_reference_retired_docs_paths() -> None:
-    for path in ENTRYPOINT_PATHS:
+    for path in entrypoint_paths():
         text = path.read_text(encoding="utf-8")
         for retired_reference in docs_maintenance.RETIRED_REFERENCES:
             assert retired_reference not in text, (
-                f"{path.relative_to(REPO_ROOT)} still references retired path {retired_reference}"
+                f"{path.relative_to(repo_root())} still references retired path {retired_reference}"
             )
 
 

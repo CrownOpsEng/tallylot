@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from . import state
@@ -36,9 +37,9 @@ def __getattr__(name: str) -> object:
 
 
 if TYPE_CHECKING:
-    REPO_ROOT = state.REPO_ROOT
-    DOCS_ROOT = state.DOCS_ROOT
-    AGENTS_ROOT = state.AGENTS_ROOT
+    REPO_ROOT: Path
+    DOCS_ROOT: Path
+    AGENTS_ROOT: Path
 
 
 __all__ = [

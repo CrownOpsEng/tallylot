@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
 
-from tools.adapter_packs import REPO_ROOT
+from repo_support.paths import repo_root
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -24,7 +24,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("display_name")
     parser.add_argument("--description", default="")
     parser.add_argument("--version", default="0.1.0")
-    parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
+    parser.add_argument("--repo-root", type=Path, default=None)
     parser.add_argument(
         "--force",
         action="store_true",
@@ -336,9 +336,10 @@ def _write_file(path: Path, content: str, *, force: bool) -> Path:
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_argument_parser().parse_args(argv)
+    resolved_repo_root = repo_root() if args.repo_root is None else args.repo_root.resolve()
     created = scaffold_adapter(
         spec=AdapterScaffoldSpec(
-            repo_root=args.repo_root.resolve(),
+            repo_root=resolved_repo_root,
             kind=args.kind,
             module_name=args.module_name,
             display_name=args.display_name,
@@ -348,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
         force=args.force,
     )
     for path in created:
-        print(path.relative_to(args.repo_root.resolve()))
+        print(path.relative_to(resolved_repo_root))
     return 0
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
+from repo_support.paths import adapter_packs_root
 from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
 from tallylot.adapters.sources.platforms.coinbase.matching import RETAIL_HEADER
 from tallylot.adapters.sources.platforms.coinbase.timestamps import parse_retail_timestamp
@@ -13,8 +14,6 @@ from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.source_adapters import SourceAdapter
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
-
-FIXTURE_ROOT = Path(__file__).resolve().parents[7] / "tests" / "fixtures" / "adapter_packs"
 
 
 def _profile_and_adapter(source: str, raw_dir: Path) -> tuple[SourceProfile, SourceAdapter]:
@@ -50,7 +49,7 @@ def test_coinbase_adapter_matches_retail_header_without_source_label(tmp_path: P
 
 
 def test_coinbase_adapter_uses_retail_family_without_filename_dependency() -> None:
-    raw_dir = FIXTURE_ROOT / "coinbase" / "retail_buy_renamed" / "raw"
+    raw_dir = adapter_packs_root() / "coinbase" / "retail_buy_renamed" / "raw"
 
     profile, adapter = _profile_and_adapter("Future Exchange", raw_dir)
     result = adapter.translate(profile, raw_dir)

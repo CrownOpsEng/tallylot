@@ -5,10 +5,10 @@ from pathlib import Path
 import pytest
 from pytest import Item
 
+from repo_support.paths import fixtures_root, src_root
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 
-REPO_ROOT = Path(__file__).resolve().parent
-ADAPTER_ROOT = REPO_ROOT / "src" / "tallylot" / "adapters"
+ADAPTER_ROOT = src_root() / "tallylot" / "adapters"
 ADAPTER_TEST_DIRS = tuple(sorted(path.resolve() for path in ADAPTER_ROOT.glob("**/tests")))
 ADAPTER_TEST_ANCESTORS = frozenset(
     {
@@ -27,22 +27,22 @@ MARKERS_BY_TEST_DIR = {
 
 @pytest.fixture
 def structured_source_dir() -> Path:
-    return REPO_ROOT / "tests" / "fixtures" / "structured_csv_source" / "raw"
+    return fixtures_root() / "structured_csv_source" / "raw"
 
 
 @pytest.fixture
 def baseline_export_dir() -> Path:
-    return REPO_ROOT / "tests" / "fixtures" / "baseline_exports"
+    return fixtures_root() / "baseline_exports"
 
 
 @pytest.fixture
 def verification_previous_dir() -> Path:
-    return REPO_ROOT / "tests" / "fixtures" / "verification" / "previous"
+    return fixtures_root() / "verification" / "previous"
 
 
 @pytest.fixture
 def verification_current_dir() -> Path:
-    return REPO_ROOT / "tests" / "fixtures" / "verification" / "current"
+    return fixtures_root() / "verification" / "current"
 
 
 @pytest.fixture
