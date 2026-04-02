@@ -1,3 +1,5 @@
+# pyright: reportPrivateUsage=false
+
 from __future__ import annotations
 
 import json
@@ -56,7 +58,7 @@ def test_candidate_validation_accepts_legacy_duplicate_currency_headers(tmp_path
 
     issues, candidate_rows, valid_rows = candidate_validation_issues(candidate_path)
 
-    assert issues == []
+    assert not issues
     assert candidate_rows == 1
     assert valid_rows[0]["Cur..1"] == "CAD"
     assert valid_rows[0]["Cur..2"] == "CAD"

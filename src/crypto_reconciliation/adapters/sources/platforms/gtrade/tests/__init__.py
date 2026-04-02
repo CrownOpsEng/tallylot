@@ -1,0 +1,1 @@
+"""GTrade adapter tests."""

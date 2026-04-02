@@ -38,11 +38,16 @@ automatically.
 - Package-local helpers, fixtures, and tests are intentionally ignored by
   discovery.
 - Discovery loads `ADAPTER` objects and validates their manifests.
+- `pytest` should collect adapter-local tests from package-local `tests/`
+  directories under `src/crypto_reconciliation/adapters/...`.
 
 ## Testing
 
 - Each working adapter should have contract tests.
 - High-risk mapping logic should have unit coverage.
+- Keep adapter-owned unit coverage beside the adapter package. Shared registry,
+  service, or tooling coverage that is not owned by one adapter should live
+  under the repo-level `tests/` tree instead.
 - When an adapter becomes materially more complex, add golden fixtures that
   assert normalized events, balances, issues, and rendered outputs.
 - Adapters must continue to pass both strict type checkers. Do not rely on

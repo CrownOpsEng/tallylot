@@ -15,7 +15,7 @@ class PylintTarget:
 TARGETS = (
     PylintTarget(
         name="src-tools",
-        command=(sys.executable, "-m", "pylint", "src", "tools"),
+        command=(sys.executable, "-m", "pylint", "src", "tools", "conftest.py"),
     ),
     PylintTarget(
         name="tests",

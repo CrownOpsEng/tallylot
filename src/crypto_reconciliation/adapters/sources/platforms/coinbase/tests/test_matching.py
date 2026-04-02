@@ -11,7 +11,7 @@ from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.ports.adapters import SourceAdapter
 
-FIXTURE_ROOT = Path(__file__).resolve().parents[3] / "fixtures" / "adapter_packs"
+FIXTURE_ROOT = Path(__file__).resolve().parents[7] / "tests" / "fixtures" / "adapter_packs"
 
 
 def _profile_and_adapter(source: str, raw_dir: Path) -> tuple[SourceProfile, SourceAdapter]:

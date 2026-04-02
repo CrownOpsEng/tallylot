@@ -8,6 +8,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 def test_repo_has_no_type_ignore_comments() -> None:
     python_files = (
+        REPO_ROOT / "conftest.py",
         *sorted((REPO_ROOT / "src").rglob("*.py")),
         *sorted((REPO_ROOT / "tests").rglob("*.py")),
         *sorted((REPO_ROOT / "tools").rglob("*.py")),

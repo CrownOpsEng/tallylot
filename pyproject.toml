@@ -56,7 +56,7 @@ addopts = [
     "-ra",
 ]
 pythonpath = ["src", "."]
-testpaths = ["tests"]
+testpaths = ["tests", "src/crypto_reconciliation/adapters"]
 markers = [
     "unit: fast unit-level coverage.",
     "e2e: end-to-end CLI and service coverage.",

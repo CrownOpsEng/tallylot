@@ -108,4 +108,4 @@ def test_compare_transactions_accepts_exchange_aliases() -> None:
     )
 
     assert len(results["matched"]) == 1
-    assert results["missing"] == []
+    assert not results["missing"]
