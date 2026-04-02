@@ -7,7 +7,10 @@ command, artifact, or agent route.
 
 | If you need to... | Use this |
 | ---- | ---- |
+| plan the remaining work | `ROADMAP.md` |
+| review completed milestones | `CHANGELOG.md` |
 | understand the current implemented surface | `docs/operations/project-state.md` |
+| understand doc ownership and routing | `docs/README.md` |
 | make a code or architecture change | `docs/architecture/engineering-standards.md` |
 | follow repo coding discipline while implementing | `docs/architecture/implementation-working-agreement.md` |
 | work on reconciliation, checkpoints, journaling, or tax | `docs/architecture/reconciliation-tax-implementation-plan.md` |
@@ -17,6 +20,8 @@ command, artifact, or agent route.
 | author or repair a source or output adapter | `docs/architecture/adapter-authoring.md` |
 | follow the short operator workflow | `docs/operations/operations-quickstart.md` |
 | follow the detailed operator workflow | `docs/operations/mop.md` |
+| understand external workspace layout | `docs/operations/workspace-layout.md` |
+| understand repo-owned workspace guides | `docs/workspace/README.md` |
 | review baseline artifact expectations | `docs/operations/baseline-validation.md` |
 | review location inventory outputs | `docs/operations/wallet-inventory.md` |
 | review timezone provenance outputs | `docs/operations/timezone-validation.md` |

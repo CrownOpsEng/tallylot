@@ -3,6 +3,9 @@
 Use this index to find the smallest useful document instead of browsing the
 whole folder.
 
+This file routes by document ownership first. Use it when you need to know
+which document owns which concern before reading further.
+
 Naming convention:
 
 - top-level docs and section docs use lowercase kebab-case
@@ -12,19 +15,40 @@ Naming convention:
 
 ## Start Here
 
+- Remaining planned work: [../ROADMAP.md](../ROADMAP.md)
+- Completed milestones: [../CHANGELOG.md](../CHANGELOG.md)
+- Current implemented runtime surface:
+  [operations/project-state.md](operations/project-state.md)
 - Coding or architecture work: start with [AGENTS.md](../AGENTS.md), then use
   [architecture/README.md](architecture/README.md)
 - Manual or operator workflow: use
   [operations/README.md](operations/README.md)
 - Tax, oracle, or historical reference material: use
   [reference/README.md](reference/README.md)
+- Repo-owned workspace subtree guidance: use
+  [workspace/README.md](workspace/README.md)
 - Need a specific command, artifact, or route quickly: use
   [file-map.md](file-map.md)
+
+## Ownership Map
+
+- `ROADMAP.md`: remaining planned work, phase order, and delivery gates
+- `CHANGELOG.md`: completed milestones and mainline history summaries
+- `docs/architecture/`: design contracts, migration rules, and coding
+  discipline
+- `docs/operations/`: current runtime behavior, operator workflow, and
+  artifact contracts
+- `docs/reference/`: reference material that is not a runtime contract by
+  default
+- `docs/workspace/`: repo-owned guidance and templates for the external
+  workspace structure
+- `docs/file-map.md`: shortest route by task, command, artifact, or agent
+  entrypoint
 
 ## Build And Architecture
 
 - [`architecture/README.md`](architecture/README.md): route through the build
-  and architecture docs
+  and architecture docs by concern
 - [`architecture/engineering-standards.md`](architecture/engineering-standards.md):
   code placement, typing, modularization, and naming
 - [`architecture/implementation-working-agreement.md`](architecture/implementation-working-agreement.md):
@@ -84,7 +108,7 @@ Naming convention:
 - [`workspace/README.md`](workspace/README.md): repo-owned guidance and
   templates for workspace subtrees
 - [`operations/workspace-layout.md`](operations/workspace-layout.md): external
-  workspace shape and seeded files
+  workspace shape, seeded files, and migration mapping
 
 ## Agent Routes
 
