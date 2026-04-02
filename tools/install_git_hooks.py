@@ -31,6 +31,40 @@ else
 fi
 """
 
+COMMIT_MSG_HOOK_TEMPLATE = """#!/usr/bin/env bash
+set -euo pipefail
+
+HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
+cd "$REPO_ROOT"
+
+PROJECT_ENVIRONMENT={project_environment}
+if [ -n "$PROJECT_ENVIRONMENT" ]; then
+    export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"
+fi
+
+PYTHON={python}
+if [ -x "$PYTHON" ]; then
+    exec "$PYTHON" -m pre_commit hook-impl \
+        --config=.pre-commit-config.yaml \
+        --hook-type=commit-msg \
+        --hook-dir "$HOOK_DIR" -- "$@"
+elif command -v uv > /dev/null; then
+    exec uv run python -m pre_commit hook-impl \
+        --config=.pre-commit-config.yaml \
+        --hook-type=commit-msg \
+        --hook-dir "$HOOK_DIR" -- "$@"
+elif command -v pre-commit > /dev/null; then
+    exec pre-commit hook-impl \
+        --config=.pre-commit-config.yaml \
+        --hook-type=commit-msg \
+        --hook-dir "$HOOK_DIR" -- "$@"
+else
+    echo '`pre-commit` not found. Did you forget to activate your virtualenv?' 1>&2
+    exit 1
+fi
+"""
+
 
 def _installed_project_environment() -> str | None:
     if sys.prefix == sys.base_prefix:
@@ -59,15 +93,22 @@ def install_hooks(repo_root: Path) -> None:
         check=True,
         cwd=repo_root,
     )
+    hook_format_args = {
+        "project_environment": shlex.quote(_installed_project_environment() or ""),
+        "python": shlex.quote(sys.executable),
+    }
     hook_path = repo_root / ".git/hooks/pre-commit"
     hook_path.write_text(
-        HOOK_TEMPLATE.format(
-            project_environment=shlex.quote(_installed_project_environment() or ""),
-            python=shlex.quote(sys.executable),
-        ),
+        HOOK_TEMPLATE.format(**hook_format_args),
         encoding="utf-8",
     )
     hook_path.chmod(hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    commit_msg_hook_path = repo_root / ".git/hooks/commit-msg"
+    commit_msg_hook_path.write_text(
+        COMMIT_MSG_HOOK_TEMPLATE.format(**hook_format_args),
+        encoding="utf-8",
+    )
+    commit_msg_hook_path.chmod(commit_msg_hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def main() -> int:

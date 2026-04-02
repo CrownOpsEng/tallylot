@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 import tools.install_git_hooks
-from tools.install_git_hooks import HOOK_TEMPLATE
+from tools.install_git_hooks import COMMIT_MSG_HOOK_TEMPLATE, HOOK_TEMPLATE
 from tools.pre_commit_hook import _format_candidates, _skip_value
 
 
@@ -37,6 +37,7 @@ def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:
     assert "-m tools.pre_commit_hook" in HOOK_TEMPLATE
     assert 'REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"' in HOOK_TEMPLATE
     assert 'export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"' in HOOK_TEMPLATE
+    assert "--hook-type=commit-msg" in COMMIT_MSG_HOOK_TEMPLATE
 
 
 def test_install_hooks_uses_pre_commit_overwrite_mode(
@@ -53,6 +54,8 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
     hook_path = tmp_path / ".git" / "hooks" / "pre-commit"
     hook_path.parent.mkdir(parents=True)
     hook_path.write_text("", encoding="utf-8")
+    commit_msg_hook_path = tmp_path / ".git" / "hooks" / "commit-msg"
+    commit_msg_hook_path.write_text("", encoding="utf-8")
 
     environment_root = tmp_path / "external-env"
     (environment_root / "bin").mkdir(parents=True)
@@ -83,3 +86,6 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
     hook_text = hook_path.read_text(encoding="utf-8")
     assert f"PROJECT_ENVIRONMENT={environment_root}" in hook_text
     assert f"PYTHON={environment_root / 'bin/python3'}" in hook_text
+    commit_msg_hook_text = commit_msg_hook_path.read_text(encoding="utf-8")
+    assert f"PROJECT_ENVIRONMENT={environment_root}" in commit_msg_hook_text
+    assert "--hook-type=commit-msg" in commit_msg_hook_text
