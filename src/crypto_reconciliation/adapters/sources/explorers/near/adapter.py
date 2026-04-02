@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import csv
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths, read_csv_rows
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import WalletRecordSpec, wallet_record
 from crypto_reconciliation.domain.models import (
@@ -88,10 +88,10 @@ class NearAdapter:
         return tuple(evidence), ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[NormalizedTransaction] = []
+        transactions: list[NormalizedTransaction] = []
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
-        for path in sorted(raw_dir.glob("*_transactions.csv")):
-            for index, row in enumerate(_read_rows(path), start=2):
+        for path in matching_file_paths(raw_dir, pattern="*_transactions.csv"):
+            for index, row in enumerate(read_csv_rows(path), start=2):
                 timestamp = _parse_timestamp(_row_value(row, "Time", "Block Time"))
                 tx_hash = _row_value(row, "Txn Hash")
                 method = _row_value(row, "Method").lower()
@@ -99,7 +99,7 @@ class NearAdapter:
                 fee = Decimal(_row_value(row, "Txn Fee", default="0"))
                 raw_row_ref = f"row:{index}"
                 if method == "transfer":
-                    events.append(
+                    transactions.append(
                         NormalizedTransaction(
                             transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}"),
                             source=profile.source,
@@ -118,7 +118,7 @@ class NearAdapter:
                     )
                 elif method == "deposit_and_stake":
                     description = f"Stake NEAR - {tx_hash}"
-                    events.append(
+                    transactions.append(
                         NormalizedTransaction(
                             transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}:wallet"),
                             source=profile.source,
@@ -138,7 +138,7 @@ class NearAdapter:
                         )
                     )
                     staking_source = f"{profile.source} - Staking"
-                    events.append(
+                    transactions.append(
                         NormalizedTransaction(
                             transaction_id=TransactionId(f"near:{path.name}:{raw_row_ref}:staking"),
                             source=SourceId(staking_source),
@@ -156,17 +156,12 @@ class NearAdapter:
                         )
                     )
         return NormalizationResult(
-            transactions=tuple(events),
+            transactions=tuple(transactions),
             balances=(),
             issues=(),
             reviews=(),
             wallet_inventory=wallet_inventory,
         )
-
-
-def _read_rows(path: Path) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        return list(csv.DictReader(handle))
 
 
 def _row_value(row: dict[str, str], key: str, fallback: str = "", *, default: str = "") -> str:

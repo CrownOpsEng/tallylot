@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import csv
 from collections import defaultdict
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths, read_csv_rows
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import (
     AdapterIssueSpec,
@@ -79,8 +79,8 @@ class LedgerLiveAdapter:
         evidence: list[WalletInventoryRecord] = []
         issues: list[IssueRecord] = []
         identifiers_by_account: dict[str, set[str]] = defaultdict(set)
-        for path in _csv_paths(raw_dir):
-            for row in _read_rows(path):
+        for path in matching_file_paths(raw_dir):
+            for row in read_csv_rows(path):
                 account_label = (row.get("Account Name") or "").strip()
                 identifier_value = (row.get("Account xpub") or "").strip()
                 account_type = (row.get("Account Type") or "").strip().lower()
@@ -131,10 +131,10 @@ class LedgerLiveAdapter:
         return tuple(evidence), tuple(issues)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[NormalizedTransaction] = []
+        transactions: list[NormalizedTransaction] = []
         operations_by_hash: dict[str, list[tuple[str, dict[str, str]]]] = defaultdict(list)
-        for path in _csv_paths(raw_dir):
-            for index, row in enumerate(_read_rows(path), start=2):
+        for path in matching_file_paths(raw_dir):
+            for index, row in enumerate(read_csv_rows(path), start=2):
                 operation_hash = (row.get("Operation Hash") or row.get("Transaction ID") or "").strip()
                 if not operation_hash:
                     continue
@@ -153,7 +153,7 @@ class LedgerLiveAdapter:
             raw_row_ref = ";".join(f"{raw_file}:{ref.split(':', maxsplit=1)[1]}" for ref, _ in grouped_rows)
             fee_amount = Decimal((fee_row or {}).get("Operation Amount") or "0")
             fee_asset = (fee_row or outbound).get("Currency Ticker") or ""
-            events.append(
+            transactions.append(
                 NormalizedTransaction(
                     transaction_id=TransactionId(f"ledger_live:{raw_file}:{operation_hash}"),
                     source=SourceId(str(profile.source)),
@@ -176,21 +176,12 @@ class LedgerLiveAdapter:
             )
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         return NormalizationResult(
-            transactions=tuple(events),
+            transactions=tuple(transactions),
             balances=(),
             issues=(),
             reviews=(),
             wallet_inventory=wallet_inventory,
         )
-
-
-def _csv_paths(raw_dir: Path) -> tuple[Path, ...]:
-    return tuple(sorted(raw_dir.rglob("*.csv")))
-
-
-def _read_rows(path: Path) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        return list(csv.DictReader(handle))
 
 
 def _ledger_identifier_kind(identifier_value: str, account_type: str) -> str:

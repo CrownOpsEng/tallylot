@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import csv
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from crypto_reconciliation.adapters.sources.csv_support import CsvRowContext, collect_row_normalization
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
     MappedTransactionSpec,
@@ -94,39 +94,26 @@ class ShakepayAdapter:
         return _extract_pdf_balances(text, pdf_path.name)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        transactions: list[NormalizedTransaction] = []
-        issues: list[IssueRecord] = []
-        for path in sorted(raw_dir.rglob("*.csv")):
-            for index, row in enumerate(_read_rows(path), start=2):
-                parsed = _normalize_row(profile, path.name, index, row)
-                if isinstance(parsed, IssueRecord):
-                    issues.append(parsed)
-                    continue
-                if parsed is not None:
-                    transactions.append(parsed)
+        transactions, issues = collect_row_normalization(
+            raw_dir,
+            lambda row_context: _normalize_row(profile, row_context),
+        )
         return NormalizationResult(
-            transactions=tuple(transactions),
+            transactions=transactions,
             balances=(),
-            issues=tuple(issues),
+            issues=issues,
             reviews=(),
             wallet_inventory=(),
         )
 
 
-def _read_rows(path: Path) -> tuple[dict[str, str], ...]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        return tuple(csv.DictReader(handle))
-
-
 def _normalize_row(
     profile: SourceProfile,
-    raw_file: str,
-    index: int,
-    row: dict[str, str],
+    row_context: CsvRowContext,
 ) -> NormalizedTransaction | IssueRecord | None:
-    row_ref = f"row:{index}"
+    row = row_context.row
     timestamp = _parse_local_timestamp((row.get("Date") or "").strip())
-    if raw_file == "cash_transactions_summary.csv":
+    if row_context.raw_file == "cash_transactions_summary.csv":
         debit = parse_decimal((row.get("Debit") or "").strip())
         credit = parse_decimal((row.get("Credit") or "").strip())
         description = (row.get("Description") or "").strip()
@@ -148,7 +135,7 @@ def _normalize_row(
             return None
         return mapped_transaction(
             MappedTransactionSpec(
-                transaction_id=f"shakepay:{raw_file}:{row_ref}",
+                transaction_id=f"shakepay:{row_context.raw_file}:{row_context.raw_row_ref}",
                 source=str(profile.source),
                 adapter_id="shakepay",
                 account="Shakepay",
@@ -156,13 +143,13 @@ def _normalize_row(
                 timestamp=timestamp,
                 category=category,
                 description=description,
-                raw_file=raw_file,
-                raw_row_ref=row_ref,
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
                 asset_in=asset_in,
                 amount_in=amount_in,
                 asset_out=asset_out,
                 amount_out=amount_out,
-                tx_hash=f"shakepay:{raw_file}:{row_ref}",
+                tx_hash=f"shakepay:{row_context.raw_file}:{row_context.raw_row_ref}",
             )
         )
     debited_amount = parse_decimal((row.get("Amount Debited") or "").strip())
@@ -171,7 +158,7 @@ def _normalize_row(
     credited_asset = (row.get("Asset Credited") or "").strip().upper()
     description = (row.get("Description") or "").strip().lower()
     row_type = (row.get("Type") or "").strip()
-    transaction_id = f"shakepay:{raw_file}:{row_ref}"
+    transaction_id = f"shakepay:{row_context.raw_file}:{row_context.raw_row_ref}"
     if row_type == "Reward" and credited_amount is not None and credited_asset:
         spec = MappedTransactionSpec(
             transaction_id=transaction_id,
@@ -182,8 +169,8 @@ def _normalize_row(
             timestamp=timestamp,
             category="reward",
             description=description,
-            raw_file=raw_file,
-            raw_row_ref=row_ref,
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
             asset_in=credited_asset,
             amount_in=credited_amount,
             tx_hash=transaction_id,
@@ -199,8 +186,8 @@ def _normalize_row(
             timestamp=timestamp,
             category="trade",
             description=(row.get("Description") or "").strip(),
-            raw_file=raw_file,
-            raw_row_ref=row_ref,
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
             asset_in=credited_asset,
             amount_in=credited_amount,
             asset_out=debited_asset,
@@ -218,8 +205,8 @@ def _normalize_row(
             timestamp=timestamp,
             category="withdrawal",
             description=(row.get("Description") or "").strip(),
-            raw_file=raw_file,
-            raw_row_ref=row_ref,
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
             asset_out=debited_asset,
             amount_out=debited_amount,
             tx_hash=transaction_id,
@@ -232,8 +219,8 @@ def _normalize_row(
             issue_id=transaction_id,
             kind="unsupported_row",
             message=f"Unsupported Shakepay row type: {row_type}",
-            raw_file=raw_file,
-            raw_row_ref=row_ref,
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
         )
     )
 

@@ -27,6 +27,9 @@ decisions that should not be rediscovered from scratch.
   central business model.
 - Keep CoinTracking-specific rendering metadata out of core normalized models
   and behind projection adapters.
+- Build shared adapter-layer support for stable translation chores such as file
+  traversal, row-context handling, mapped transaction assembly, and wallet
+  evidence construction so provider adapters stay thin.
 - Keep the core runtime platform-agnostic: normal reconstruction, checkpoint,
   accounting, and tax workflows must run from source evidence and intentional
   checkpoints without requiring CoinTracking tax or accounting outputs.

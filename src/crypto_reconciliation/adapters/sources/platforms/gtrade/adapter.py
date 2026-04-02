@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import csv
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths, read_csv_rows
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import (
     AdapterIssueSpec,
@@ -79,8 +79,8 @@ class GTradeAdapter:
         del profile
         evidence: list[WalletInventoryRecord] = []
         issues: list[IssueRecord] = []
-        for path in sorted(raw_dir.rglob("*.csv")):
-            for row in _read_rows(path):
+        for path in matching_file_paths(raw_dir):
+            for row in read_csv_rows(path):
                 alias = (row.get("ADDR") or "").strip().lower()
                 if not alias:
                     continue
@@ -133,8 +133,8 @@ class GTradeAdapter:
         transactions: list[NormalizedTransaction] = []
         issues: list[IssueRecord] = []
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
-        for path in sorted(raw_dir.rglob("*.csv")):
-            for index, row in enumerate(_read_rows(path), start=2):
+        for path in matching_file_paths(raw_dir):
+            for index, row in enumerate(read_csv_rows(path), start=2):
                 pnl = Decimal((row.get("PNL") or "0").strip())
                 if pnl == Decimal("0"):
                     issues.append(
@@ -183,11 +183,6 @@ class GTradeAdapter:
             reviews=(),
             wallet_inventory=wallet_inventory,
         )
-
-
-def _read_rows(path: Path) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        return list(csv.DictReader(handle))
 
 
 def _parse_report_date(value: str) -> datetime:

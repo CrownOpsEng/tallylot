@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import csv
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.csv_support import CsvRowContext, collect_row_normalization
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.mapped_transaction_support import (
     MappedTransactionSpec,
@@ -88,41 +88,29 @@ class CryptoComAdapter:
         return (), ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        events: list[NormalizedTransaction] = []
-        issues: list[IssueRecord] = []
-        for path in sorted(raw_dir.rglob("*.csv")):
-            for index, row in enumerate(_read_rows(path), start=2):
-                parsed = _normalize_row(profile, path.name, index, row)
-                if isinstance(parsed, IssueRecord):
-                    issues.append(parsed)
-                    continue
-                events.append(parsed)
+        transactions, issues = collect_row_normalization(
+            raw_dir,
+            lambda row_context: _normalize_row(profile, row_context),
+        )
         return NormalizationResult(
-            transactions=tuple(events),
+            transactions=transactions,
             balances=(),
-            issues=tuple(issues),
+            issues=issues,
             reviews=(),
             wallet_inventory=(),
         )
 
 
-def _read_rows(path: Path) -> tuple[dict[str, str], ...]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        return tuple(csv.DictReader(handle))
-
-
 def _normalize_row(
     profile: SourceProfile,
-    raw_file: str,
-    index: int,
-    row: dict[str, str],
+    row_context: CsvRowContext,
 ) -> NormalizedTransaction | IssueRecord:
+    row = row_context.row
     timestamp = (
         datetime.strptime((row.get("Timestamp (UTC)") or "").strip(), "%Y-%m-%d %H:%M:%S")
         .replace(tzinfo=UTC)
         .replace(tzinfo=None)
     )
-    row_ref = f"row:{index}"
     description = (row.get("Transaction Description") or "").strip()
     kind = (row.get("Transaction Kind") or "").strip()
     tx_hash = (row.get("Transaction Hash") or "").strip()
@@ -133,7 +121,7 @@ def _normalize_row(
     if kind == "viban_deposit" and amount is not None and amount > Decimal("0"):
         return mapped_transaction(
             MappedTransactionSpec(
-                transaction_id=f"crypto_com:{raw_file}:{row_ref}",
+                transaction_id=f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}",
                 source=str(profile.source),
                 adapter_id="crypto_com",
                 account=str(profile.source),
@@ -141,8 +129,8 @@ def _normalize_row(
                 timestamp=timestamp,
                 category="deposit",
                 description=description,
-                raw_file=raw_file,
-                raw_row_ref=row_ref,
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
                 asset_in=currency,
                 amount_in=amount,
                 tx_hash=tx_hash,
@@ -151,7 +139,7 @@ def _normalize_row(
     if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
         return mapped_transaction(
             MappedTransactionSpec(
-                transaction_id=f"crypto_com:{raw_file}:{row_ref}",
+                transaction_id=f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}",
                 source=str(profile.source),
                 adapter_id="crypto_com",
                 account=str(profile.source),
@@ -159,8 +147,8 @@ def _normalize_row(
                 timestamp=timestamp,
                 category="trade",
                 description=f"{currency} -> {to_currency}",
-                raw_file=raw_file,
-                raw_row_ref=row_ref,
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
                 asset_in=to_currency,
                 amount_in=to_amount,
                 asset_out=currency,
@@ -171,7 +159,7 @@ def _normalize_row(
     if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
         return mapped_transaction(
             MappedTransactionSpec(
-                transaction_id=f"crypto_com:{raw_file}:{row_ref}",
+                transaction_id=f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}",
                 source=str(profile.source),
                 adapter_id="crypto_com",
                 account=str(profile.source),
@@ -179,8 +167,8 @@ def _normalize_row(
                 timestamp=timestamp,
                 category="withdrawal",
                 description=description,
-                raw_file=raw_file,
-                raw_row_ref=row_ref,
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
                 asset_out=currency,
                 amount_out=abs(amount),
                 tx_hash=tx_hash,
@@ -190,11 +178,11 @@ def _normalize_row(
         NormalizationIssueSpec(
             source=str(profile.source),
             adapter_id="crypto_com",
-            issue_id=f"crypto_com:{raw_file}:{row_ref}",
+            issue_id=f"crypto_com:{row_context.raw_file}:{row_context.raw_row_ref}",
             kind="unsupported_row",
             message=f"Unsupported Crypto.com transaction kind: {kind}",
-            raw_file=raw_file,
-            raw_row_ref=row_ref,
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
         )
     )
 

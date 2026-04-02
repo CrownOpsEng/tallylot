@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import cast
 
+from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import (
     AdapterIssueSpec,
@@ -72,7 +73,7 @@ class EvmWalletAdapter:
     ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
         evidence: list[WalletInventoryRecord] = []
-        for path in sorted(raw_dir.rglob("*.json")):
+        for path in matching_file_paths(raw_dir, pattern="*.json"):
             payload = json.loads(path.read_text(encoding="utf-8"))
             evidence.extend(_account_records(source, path.name, payload))
             evidence.extend(_identity_records(source, path.name, payload))

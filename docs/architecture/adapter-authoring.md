@@ -9,11 +9,15 @@ automatically.
 - Implement the `SourceAdapter` or `OutputAdapter` port only.
 - Keep adapters pure with respect to filesystem layout except for reading their
   assigned input paths.
+- Prefer existing adapter support seams for stable cross-provider work such as
+  CSV traversal, mapped transaction assembly, and wallet-record construction so
+  new adapters stay thin.
 - Keep adapter entry points small. If parsing, mapping, issue handling, or
   rendering logic starts to crowd a single file, convert the adapter into a
   package-style module and split those responsibilities explicitly.
-- Do not hide adapter complexity in generic helper modules. Use adapter-local
-  names that reflect the real job being done.
+- Do not hide adapter complexity in generic helper modules. Shared support must
+  live behind a specific adapter-layer seam, and provider-specific behavior
+  must keep provider-local names that reflect the real job being done.
 - Surface unsupported or ambiguous rows as issues rather than guessing.
 - Use typed domain models as the adapter output contract.
 - Normalize source-specific sign conventions at the adapter edge. Normalized

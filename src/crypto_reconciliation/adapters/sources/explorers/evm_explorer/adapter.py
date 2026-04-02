@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import csv
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.csv_support import matching_file_paths, read_csv_rows
 from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import (
     EVM_ADDRESS_PATTERN,
@@ -126,14 +126,14 @@ class EvmExplorerAdapter:
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         issues: list[IssueRecord] = []
-        events: list[NormalizedTransaction] = []
+        transactions: list[NormalizedTransaction] = []
         wallet_inventory, wallet_issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         owned_addresses = _owned_addresses(raw_dir)
         suspicious_hashes = _suspicious_nft_hashes(raw_dir, owned_addresses)
-        for path in sorted(raw_dir.rglob("*.csv")):
+        for path in matching_file_paths(raw_dir):
             if "nft" in path.name.lower():
                 continue
-            for index, row in enumerate(_read_rows(path), start=2):
+            for index, row in enumerate(read_csv_rows(path), start=2):
                 tx_hash = (row.get("Transaction Hash") or "").strip()
                 if not tx_hash:
                     continue
@@ -160,7 +160,7 @@ class EvmExplorerAdapter:
                 if amount_in <= Decimal("0"):
                     continue
                 timestamp = _parse_utc_timestamp((row.get("DateTime (UTC)") or "").strip())
-                events.append(
+                transactions.append(
                     NormalizedTransaction(
                         transaction_id=TransactionId(f"evm_explorer:{path.name}:{tx_hash}"),
                         source=profile.source,
@@ -178,7 +178,7 @@ class EvmExplorerAdapter:
                     )
                 )
         return NormalizationResult(
-            transactions=tuple(events),
+            transactions=tuple(transactions),
             balances=(),
             issues=(*issues, *wallet_issues),
             reviews=(),
@@ -186,20 +186,15 @@ class EvmExplorerAdapter:
         )
 
 
-def _read_rows(path: Path) -> list[dict[str, str]]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        return list(csv.DictReader(handle))
-
-
 def _owned_addresses(raw_dir: Path) -> set[str]:
     addresses: set[str] = set()
-    for path in sorted(raw_dir.rglob("*.csv")):
+    for path in matching_file_paths(raw_dir):
         for match in EVM_ADDRESS_PATTERN.finditer(path.name):
             addresses.add(match.group(0).lower())
     if addresses:
         return addresses
-    for path in sorted(raw_dir.rglob("*.csv")):
-        rows = _read_rows(path)
+    for path in matching_file_paths(raw_dir):
+        rows = read_csv_rows(path)
         to_addresses = {
             (row.get("To") or "").strip().lower()
             for row in rows
@@ -222,17 +217,17 @@ def _network_scope(source: str) -> str:
 
 
 def _evidence_filename(raw_dir: Path, address: str) -> str:
-    for path in sorted(raw_dir.rglob("*.csv")):
+    for path in matching_file_paths(raw_dir):
         if address in path.name.lower():
             return path.name
-    first = sorted(raw_dir.rglob("*.csv"))
+    first = matching_file_paths(raw_dir)
     return first[0].name if first else ""
 
 
 def _suspicious_nft_hashes(raw_dir: Path, owned_addresses: set[str]) -> dict[str, str]:
     suspicious: dict[str, str] = {}
-    for path in sorted(raw_dir.rglob("*nft*.csv")):
-        for index, row in enumerate(_read_rows(path), start=2):
+    for path in matching_file_paths(raw_dir, pattern="*nft*.csv"):
+        for index, row in enumerate(read_csv_rows(path), start=2):
             to_address = (row.get("To") or "").strip().lower()
             token_name = (row.get("TokenName") or "").strip()
             tx_hash = (row.get("Transaction Hash") or "").strip()
