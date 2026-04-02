@@ -22,6 +22,7 @@ from .metadata import (
 from .state import agents_root, docs_root, relative_path, repo_root
 
 SYNCED_SECTIONS = ("concepts", "guides", "reference", "status", "standards")
+SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 RETIRED_REFERENCES = (
     "docs/file-map.md",
     "docs/architecture/README.md",
@@ -213,6 +214,8 @@ def scaffold_path(*, section: str | None, slug: str | None, path_argument: str |
         slug_path = Path(slug)
         if slug_path.parent != Path() or slug_path.name != slug:
             raise ValueError("--slug must be a single filename segment")
+        if not SLUG_PATTERN.fullmatch(slug):
+            raise ValueError("--slug must be kebab-case")
         path = agents_root() / f"{slug}.md" if section == "agents" else docs_root() / section / f"{slug}.md"
     else:
         raise ValueError("Provide either --path or both --section and --slug")

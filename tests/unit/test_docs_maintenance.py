@@ -753,6 +753,32 @@ def test_scaffold_rejects_slug_traversal(
     assert not (tmp_path / "escape.md").exists()
 
 
+def test_scaffold_rejects_non_kebab_case_slug(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    override_active_roots(monkeypatch, tmp_path)
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--section",
+            "guides",
+            "--slug",
+            "Bad Slug",
+            "--title",
+            "Bad Slug",
+            "--summary",
+            "Bad slug summary.",
+            "--nav-order",
+            "10",
+        ]
+    )
+
+    assert exit_code == 1
+    assert not (tmp_path / "docs" / "guides" / "Bad Slug.md").exists()
+
+
 def test_scaffold_agents_doc_requires_explicit_doc_type(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
