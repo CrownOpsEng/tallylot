@@ -4,6 +4,7 @@ from pathlib import Path
 import zipfile
 
 import inspection
+import pytest
 
 
 def test_detect_csv_header_supports_semicolon_delimited_rows(tmp_path: Path) -> None:
@@ -101,3 +102,52 @@ def test_inspect_file_identifies_crypto_archive_contents(tmp_path: Path) -> None
     assert row["family"] == "binance_margin_trade_csv"
     assert row["archive_detected_source"] == "Binance"
     assert row["archive_contains_crypto_records"] == "yes"
+
+
+def test_inspect_file_prefers_content_scope_tokens_over_filename_labels(tmp_path: Path) -> None:
+    path = tmp_path / "account-main-report.csv"
+    path.write_text(
+        "Address,Date(UTC),Pair,Side,Price,Executed,Amount,Fee\n"
+        "0x1111111111111111111111111111111111111111,2022-03-28 13:01:36,SOLBUSD,SELL,110.03,0.1800000000SOL,19.8054BUSD,0.0198054BUSD\n",
+        encoding="utf-8",
+    )
+
+    row = inspection.inspect_file(path)
+
+    assert row["content_scope_tokens"] == "evm:0x1111111111111111111111111111111111111111"
+    assert row["path_scope_tokens"] == "account:main"
+    assert row["scope_tokens"] == "evm:0x1111111111111111111111111111111111111111"
+
+
+def test_inspect_file_extracts_explorer_scope_from_single_owned_to_column(tmp_path: Path) -> None:
+    path = tmp_path / "explorer-export.csv"
+    path.write_text(
+        "Transaction Hash,Blockno,UnixTimestamp,DateTime (UTC),TokenValue,TokenSymbol,From,To\n"
+        "0xabc,1,1710000000,2024-03-09 09:41:37,1,GALA,0x0,0x2222222222222222222222222222222222222222\n",
+        encoding="utf-8",
+    )
+
+    row = inspection.inspect_file(path)
+
+    assert row["content_scope_tokens"] == "evm:0x2222222222222222222222222222222222222222"
+
+
+@pytest.mark.parametrize(
+    ("header", "value", "expected_token"),
+    [
+        ("Address", "bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "btc:bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+        ("Address", "TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "tron:TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
+        ("Public Key", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "cardano:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+    ],
+)
+def test_inspect_file_extracts_non_evm_wallet_scope_tokens_from_content(tmp_path: Path, header: str, value: str, expected_token: str) -> None:
+    path = tmp_path / "wallet.csv"
+    path.write_text(
+        f"{header},Date(UTC),Pair,Side,Price,Executed,Amount,Fee\n"
+        f"{value},2022-03-28 13:01:36,SOLBUSD,SELL,110.03,0.1800000000SOL,19.8054BUSD,0.0198054BUSD\n",
+        encoding="utf-8",
+    )
+
+    row = inspection.inspect_file(path)
+
+    assert row["content_scope_tokens"] == expected_token

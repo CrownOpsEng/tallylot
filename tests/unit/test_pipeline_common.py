@@ -78,6 +78,10 @@ def test_build_file_inventory_classifies_metamask_state_json_without_filename_de
             "bundle_relative_path": "wallet-state-backup.json",
             "alias_group": "",
             "collision_status": "",
+            "path_scope_tokens": "",
+            "content_scope_tokens": "",
+            "scope_tokens": "",
+            "scope_preview": "",
         }
     ]
 

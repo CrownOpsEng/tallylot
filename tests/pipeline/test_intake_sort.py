@@ -293,3 +293,87 @@ def test_plan_intake_dump_marks_mixed_cycle_bundle_for_review_but_still_places_f
     assert all("package_cycle_mixed" in row["review_codes"] for row in mixed_rows)
     assert all(row["placement_status"] == "placed_primary" for row in mixed_rows)
     assert len(manifest_rows) == 2
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_uses_inventory_labels_in_scope_conflict_review(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    wallet_inventory = repo_root / "03_analysis" / "inventory" / "wallet_inventory.csv"
+    wallet_inventory.parent.mkdir(parents=True, exist_ok=True)
+    wallet_inventory.write_text(
+        "wallet_id,identifier_kind,normalized_identifier,display_identifier,network_scopes,source_labels,controller_labels,account_labels,evidence_count,primary_evidence_path,status,notes\n"
+        "evm_address:0x1111111111111111111111111111111111111111,evm_address,0x1111111111111111111111111111111111111111,0x1111111111111111111111111111111111111111,bsc,bsc-metamask1,Explorer export,Account 1,1,/tmp/a,ready,\n"
+        "evm_address:0x1111111111111111111111111111111111111111,evm_address,0x1111111111111111111111111111111111111111,0x1111111111111111111111111111111111111111,bsc,bsc-metamask2,Explorer export,Account 2,1,/tmp/b,ready,\n",
+        encoding="utf-8",
+    )
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    first = incoming / "2021" / "Binance" / "202203291730-export"
+    second = incoming / "2021" / "Binance" / "202203291830-export"
+    first.mkdir(parents=True)
+    second.mkdir(parents=True)
+    shared_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    account_header = "Address,Date(UTC),Pair,Side,Price,Executed,Amount,Fee\n"
+    first_scope_payload = account_header + "0x1111111111111111111111111111111111111111,2021-05-25 12:53:03,ADAUSDT,SELL,1.5,1ADA,1.5USDT,0.001BNB\n"
+    second_scope_payload = account_header + "0x1111111111111111111111111111111111111111,2021-05-25 12:53:03,ADAUSDT,SELL,1.5,1ADA,1.5USDT,0.001BNB\n"
+    (first / "borrow.csv").write_text(shared_payload, encoding="utf-8")
+    (first / "account.csv").write_text(first_scope_payload, encoding="utf-8")
+    (second / "borrow.csv").write_text(shared_payload, encoding="utf-8")
+    (second / "account.csv").write_text(second_scope_payload, encoding="utf-8")
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    pipeline.plan_intake_dump(
+        repo_root=repo_root,
+        incoming_dir=incoming,
+        report_dir=report_dir,
+        apply=False,
+    )
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    review_row = next(row for row in rows if "/202203291730-export/borrow.csv" in row["source_path"])
+
+    assert review_row["package_scope_status"] == "incompatible_scope"
+    assert "Account 1" in review_row["review_reason"]
+    assert "Account 2" in review_row["review_reason"]
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_routes_wallet_export_to_existing_inventory_source(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    source_inventory = repo_root / "03_analysis" / "issues" / "source_inventory.csv"
+    source_inventory.parent.mkdir(parents=True, exist_ok=True)
+    source_inventory.write_text(
+        "source,activity_after_cutoff,first_post_cutoff_tx,export_window_start,export_window_end,import_order,status,capture_path,profile_status,adapter,normalization_status,exception_count,candidate_path,notes\n"
+        "eth-gala1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,1,capture_complete,01_raw_exports/external/eth-gala1/2026-03,profiled,evm_explorer,ready,0,,\n",
+        encoding="utf-8",
+    )
+    wallet_evidence = repo_root / "03_analysis" / "inventory" / "wallet_inventory_evidence.csv"
+    wallet_evidence.parent.mkdir(parents=True, exist_ok=True)
+    wallet_evidence.write_text(
+        "source,raw_dir,wallet_id,identifier_kind,normalized_identifier,display_identifier,network_scope,controller,account_label,evidence_kind,evidence_path,confidence,note\n"
+        "eth-gala1,/tmp/capture,evm_address:0x2222222222222222222222222222222222222222,evm_address,0x2222222222222222222222222222222222222222,0x2222222222222222222222222222222222222222,ethereum,Explorer export,Account 2,filename,/tmp/evidence.csv,high,\n",
+        encoding="utf-8",
+    )
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    export_path = incoming / "Account1-bsc export-address-token.csv"
+    export_path.parent.mkdir(parents=True, exist_ok=True)
+    export_path.write_text(
+        "Transaction Hash,Blockno,UnixTimestamp,DateTime (UTC),TokenValue,TokenSymbol,From,To\n"
+        "0xabc,1,1710000000,2024-03-09 09:41:37,1,GALA,0x0,0x2222222222222222222222222222222222222222\n",
+        encoding="utf-8",
+    )
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    pipeline.plan_intake_dump(
+        repo_root=repo_root,
+        incoming_dir=incoming,
+        report_dir=report_dir,
+        apply=False,
+    )
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    row = next(item for item in rows if item["archive_source_path"] == "")
+
+    assert row["source_folder"] == "eth-gala1"
+    assert row["source_label"] == "eth-gala1"
+    assert row["inventory_match_status"] == "inventory_source_match"
+    assert row["review_required"] == "no"

@@ -34,6 +34,7 @@ from pipeline_common import (
 )
 from render_cointracking import RENDER_METADATA_HEADERS, render_cointracking_rows
 from routing import resolve_routing_decision
+from scope_identity import describe_scope_tokens, row_scope_tokens
 from script_common import (
     CANONICAL_TIMEZONE,
     COINTRACKING_IMPORT_TIMEZONE,
@@ -738,7 +739,13 @@ def plan_intake_dump(
                 "review_reason": decision.review_reason,
                 "review_codes": ";".join(review_codes),
                 "merge_recommendation": decision.merge_recommendation,
+                "inventory_match_status": decision.inventory_match_status,
+                "inventory_match_reason": decision.inventory_match_reason,
+                "suggested_source_label": decision.suggested_source_label,
+                "suggested_source_folder": decision.suggested_source_folder,
                 "inspection_family": inspection_row.get("family", ""),
+                "inspection_scope_tokens": inspection_row.get("scope_tokens", ""),
+                "inspection_scope_preview": inspection_row.get("scope_preview", ""),
                 "inspection_min_timestamp": inspection_row.get("min_timestamp", ""),
                 "inspection_max_timestamp": inspection_row.get("max_timestamp", ""),
                 "overlap_reasons": overlap_row.get("reasons", ""),
@@ -780,7 +787,13 @@ def plan_intake_dump(
                     "review_reason": "",
                     "review_codes": "",
                     "merge_recommendation": decision.merge_recommendation,
+                    "inventory_match_status": decision.inventory_match_status,
+                    "inventory_match_reason": decision.inventory_match_reason,
+                    "suggested_source_label": decision.suggested_source_label,
+                    "suggested_source_folder": decision.suggested_source_folder,
                     "inspection_family": member.get("family", ""),
+                    "inspection_scope_tokens": member.get("scope_tokens", ""),
+                    "inspection_scope_preview": member.get("scope_preview", ""),
                     "inspection_min_timestamp": member.get("min_timestamp", ""),
                     "inspection_max_timestamp": member.get("max_timestamp", ""),
                     "overlap_reasons": "",
@@ -794,6 +807,10 @@ def plan_intake_dump(
             )
 
     package_resolution = resolve_bundle_packages(planned_rows)
+    bundle_scope_tokens: dict[tuple[str, str, str, str], frozenset[str]] = defaultdict(frozenset)
+    for row in planned_rows:
+        package_key = (row["role"], row["source_folder"], row["capture_id"], row["bundle_id"])
+        bundle_scope_tokens[package_key] = frozenset(set(bundle_scope_tokens.get(package_key, frozenset())) | set(row_scope_tokens(row)))
     duplicate_packages: set[tuple[str, str, str, str]] = set()
     merged_packages: set[tuple[str, str, str, str]] = set()
     merge_primary_packages: set[tuple[str, str, str, str]] = set()
@@ -814,6 +831,9 @@ def plan_intake_dump(
         row["package_primary_bundle_id"] = package_decision["package_primary_bundle_id"]
         row["package_related_bundles"] = package_decision["package_related_bundles"]
         row["package_cycle_status"] = package_decision["package_cycle_status"]
+        row["package_scope_status"] = package_decision.get("package_scope_status", "")
+        row["package_decision_reason"] = package_decision.get("package_decision_reason", "")
+        row["package_scope_preview"] = describe_scope_tokens(bundle_scope_tokens.get(package_key, frozenset()), repo_root)
         if package_decision["package_status"].startswith("duplicate_package"):
             duplicate_packages.add(package_key)
             row["placement_status"] = "package_duplicate_skip"
@@ -823,16 +843,33 @@ def plan_intake_dump(
             merge_primary_packages.add(package_key)
         elif package_decision["package_status"] == "overlap_partial_review":
             overlap_packages.add(package_key)
+            related_bundle_ids = [item.strip() for item in row["package_related_bundles"].split(";") if item.strip()]
+            scope_note = ""
+            if row["package_scope_status"] == "incompatible_scope" and related_bundle_ids:
+                own_scope = row["package_scope_preview"]
+                related_key = (row["role"], row["source_folder"], row["capture_id"], related_bundle_ids[0])
+                related_scope = describe_scope_tokens(bundle_scope_tokens.get(related_key, frozenset()), repo_root)
+                if own_scope or related_scope:
+                    scope_note = f"Scope mismatch ({own_scope or 'unknown'} vs {related_scope or 'unknown'})."
             row["review_required"] = "yes"
             row["review_reason"] = "; ".join(
-                part for part in [row["review_reason"], f"Package overlap with {package_decision['package_related_bundles']}"] if part
+                part
+                for part in [
+                    row["review_reason"],
+                    f"Package overlap with {package_decision['package_related_bundles']}",
+                    row["package_decision_reason"],
+                    scope_note,
+                ]
+                if part
             )
             row["review_codes"] = ";".join(sorted(set(filter(None, (row["review_codes"] + ";package_overlap_review").split(";")))))
         elif package_decision["package_status"] == "mixed_cycle_review":
             mixed_cycle_packages.add(package_key)
             row["review_required"] = "yes"
             row["review_reason"] = "; ".join(
-                part for part in [row["review_reason"], "Bundle appears to mix files from multiple export-cycle days."] if part
+                part
+                for part in [row["review_reason"], "Bundle appears to mix files from multiple export-cycle days.", row["package_decision_reason"]]
+                if part
             )
             row["review_codes"] = ";".join(sorted(set(filter(None, (row["review_codes"] + ";package_cycle_mixed").split(";")))))
 
@@ -959,13 +996,22 @@ def plan_intake_dump(
             "package_primary_bundle_id",
             "package_related_bundles",
             "package_cycle_status",
+            "package_scope_status",
+            "package_scope_preview",
+            "package_decision_reason",
             "package_row_status",
             "confidence",
             "review_required",
             "review_reason",
             "review_codes",
             "merge_recommendation",
+            "inventory_match_status",
+            "inventory_match_reason",
+            "suggested_source_label",
+            "suggested_source_folder",
             "inspection_family",
+            "inspection_scope_tokens",
+            "inspection_scope_preview",
             "inspection_min_timestamp",
             "inspection_max_timestamp",
             "overlap_reasons",

@@ -32,6 +32,7 @@ Use this skill for the deterministic front half of source prep.
 - Prefer deterministic evidence over interpretation.
 - Do not send full raw exports to an LLM when profile artifacts are enough.
 - Intake must never hand-edit raw files or silently guess placement. Physical file contents remain unchanged.
+- Content-derived wallet scope is stronger than filename or folder labels. Use existing `wallet_inventory_evidence.csv`, `wallet_inventory.csv`, and `source_inventory.csv` when the scope matches a known repo source, and only fall back to generic deterministic wallet naming when the inventory cannot justify a known name.
 - Intake is bundle-aware. Keep files from the same raw export together when the bundle relationship is explicit from folders, archives, HTML sidecars, or approved companion-set rules.
 - Package consolidation is allowed only at the bundle/package level when it is deterministic:
   - if one package is a strict superset of another, the subset package may be marked `package_duplicate_skip`
@@ -46,6 +47,7 @@ Use this skill for the deterministic front half of source prep.
 - Historical capture IDs must come from defensible historical evidence, never from the arrival date of the dump.
 - Archives are handled by dedicated archive-inspection code, not mixed ad-hoc into general routing.
 - Preserve the original archive, extract positively identified crypto-report members into the same canonical bundle, and flag ambiguous archives with their content findings.
+- Do not invent user-friendly wallet names for unknown scopes. If the inventory does not already justify a known source/account label, keep the route generic and deterministic, surface the content-derived identifier in the intake report, and let the later workflow confirm any alias.
 - Use `profile_inventory.csv` as the normalization file inventory contract. Adapters should not rely on top-level `glob("*.csv")` style assumptions.
 - If file families are unknown or the adapter is unsupported, mark normalization as pending and route to `07_skills/adapter-authoring/` after profiling is complete.
 - If normalization is `ready`, that still means "candidate staged for human review", not "safe to import without checking overlap and verification gates".
@@ -63,6 +65,7 @@ Use this skill for the deterministic front half of source prep.
 - `overlap_partial_review` means there is shared content across packages, but neither package is a strict superset; do not auto-consolidate.
 - `mixed_cycle_review` means the bundle itself appears to contain files from multiple export-cycle days; keep it separate and review before treating it as a coherent export package.
 - `review_required=yes` means review metadata is needed before trusting the classification, not that the planner is allowed to handwave or mutate the evidence.
+- `inventory_match_status` tells you whether a wallet-style route reused an existing repo source, stayed generic because the scope was unknown, or stayed generic because multiple existing sources matched the same identifier without enough evidence to choose one.
 
 ## Commands
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from inventory_resolution import resolve_inventory_route
 from inspection import HistoricalDateDecision, HistoricalDatePolicy, infer_historical_date
 from pipeline_common import source_slug
 
@@ -30,6 +31,7 @@ class RouteTarget:
     confidence: str
     review_codes: tuple[str, ...]
     review_reason: str = ""
+    generic_wallet_routing: bool = False
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,10 @@ class RoutingDecision:
     review_reason: str
     review_codes: tuple[str, ...]
     merge_recommendation: str
+    inventory_match_status: str
+    inventory_match_reason: str
+    suggested_source_label: str
+    suggested_source_folder: str
     bundle_id: str
     bundle_type: str
     bundle_relative_path: str
@@ -150,7 +156,11 @@ def classify_route(path: Path, inspection_row: dict[str, str]) -> RouteTarget:
     if "shakepay" in text:
         return RouteTarget("source_raw", "Shakepay", "shakepay", "", "high", ())
     if "bsc wallet export" in name or family.startswith("explorer_"):
-        return RouteTarget("source_raw", "BSC MetaMask Wallet", "bsc-metamask1", "", "high", ())
+        return RouteTarget("source_raw", "Wallet Export", "wallet-export", "", "medium", (), generic_wallet_routing=True)
+    if family.startswith("near_"):
+        return RouteTarget("source_raw", "Wallet Export", "wallet-export", "", "medium", (), generic_wallet_routing=True)
+    if family == "derivatives_report_csv" or "gtrade" in text:
+        return RouteTarget("source_raw", "GTrade 1CT", "gtrade", "", "high", ())
     if "binance" in text or family.startswith("binance_margin_") or family == "binance_archive_bundle" or name in BINANCE_ROOT_COMPANION_NAMES:
         return RouteTarget("source_raw", "Binance", "binance", "", "high", ())
     if "isolated" in text and family.endswith("_bundle"):
@@ -207,6 +217,24 @@ def resolve_routing_decision(
 ) -> RoutingDecision:
     relative_path = path.resolve().relative_to(incoming_root.resolve())
     target = classify_route(relative_path, inspection_row)
+    inventory_resolution = resolve_inventory_route(
+        repo_root=repo_root,
+        relative_path=relative_path,
+        inspection_row=inspection_row,
+        default_source_label=target.source_label,
+        default_source_folder=target.source_folder,
+        generic_wallet_routing=target.generic_wallet_routing,
+    )
+    target = RouteTarget(
+        role=target.role,
+        source_label=inventory_resolution.source_label,
+        source_folder=inventory_resolution.source_folder,
+        system_label=target.system_label,
+        confidence=inventory_resolution.confidence if target.generic_wallet_routing else target.confidence,
+        review_codes=tuple(dict.fromkeys((*target.review_codes, *inventory_resolution.review_codes))),
+        review_reason="; ".join(part for part in [target.review_reason, inventory_resolution.review_reason] if part),
+        generic_wallet_routing=target.generic_wallet_routing,
+    )
     bundle = _bundle_for_path(relative_path, target, inspection_row)
     capture_folder, date_policy, historical, merge_recommendation = infer_capture_folder_name(
         repo_root=repo_root,
@@ -243,6 +271,10 @@ def resolve_routing_decision(
         review_reason=review_reason,
         review_codes=tuple(dict.fromkeys(review_codes)),
         merge_recommendation=merge_recommendation,
+        inventory_match_status=inventory_resolution.match_status,
+        inventory_match_reason=inventory_resolution.review_reason,
+        suggested_source_label=inventory_resolution.suggested_source_label,
+        suggested_source_folder=inventory_resolution.suggested_source_folder,
         bundle_id=bundle.bundle_id,
         bundle_type=bundle.bundle_type,
         bundle_relative_path=bundle.bundle_relative_path,

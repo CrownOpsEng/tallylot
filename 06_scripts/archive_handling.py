@@ -73,6 +73,14 @@ def summarize_archive_members(
     members = inspect_archive_members(path, inspect_file)
     preview = " | ".join(member["member_name"] for member in members[:8])
     families = sorted({member.get("family", "") for member in members if member.get("family")})
+    scope_tokens = sorted(
+        {
+            token
+            for member in members
+            for token in (member.get("scope_tokens", "") or "").split(";")
+            if token
+        }
+    )
     source_candidates: set[str] = set()
     for member in members:
         family = member.get("family", "")
@@ -110,6 +118,7 @@ def summarize_archive_members(
         "archive_member_count": str(len(members)),
         "archive_member_preview": preview,
         "archive_member_families": ";".join(families),
+        "archive_scope_tokens": ";".join(scope_tokens),
         "archive_detected_source": archive_detected_source,
         "archive_contains_crypto_records": crypto_detected,
         "archive_inspection_status": status,

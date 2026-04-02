@@ -12,6 +12,7 @@ def make_row(
     role: str = "source_raw",
     source_folder: str = "binance",
     capture_id: str = "2021-05",
+    inspection_scope_tokens: str = "",
 ) -> dict[str, str]:
     return {
         "role": role,
@@ -23,6 +24,7 @@ def make_row(
         "source_path": source_path,
         "archive_source_path": "",
         "path": source_path,
+        "inspection_scope_tokens": inspection_scope_tokens,
     }
 
 
@@ -35,6 +37,7 @@ def make_archive_row(
     role: str = "source_raw",
     source_folder: str = "binance",
     capture_id: str = "2021-05",
+    inspection_scope_tokens: str = "",
 ) -> dict[str, str]:
     return {
         "role": role,
@@ -46,6 +49,7 @@ def make_archive_row(
         "source_path": archive_source_path,
         "archive_source_path": "",
         "path": archive_source_path,
+        "inspection_scope_tokens": inspection_scope_tokens,
     }
 
 
@@ -58,6 +62,7 @@ def make_archive_content_row(
     role: str = "source_raw",
     source_folder: str = "binance",
     capture_id: str = "2021-05",
+    inspection_scope_tokens: str = "",
 ) -> dict[str, str]:
     return {
         "role": role,
@@ -69,6 +74,7 @@ def make_archive_content_row(
         "source_path": f"{archive_source_path}::{member_name}",
         "archive_source_path": archive_source_path,
         "path": f"{archive_source_path}::{member_name}",
+        "inspection_scope_tokens": inspection_scope_tokens,
     }
 
 
@@ -426,4 +432,85 @@ def test_resolve_bundle_packages_does_not_merge_packages_for_different_account_l
     newer_key = ("source_raw", "binance", "2021-05", "202203291830-export")
     older_key = ("source_raw", "binance", "2021-05", "202203291730-export")
     assert resolution.package_decisions[newer_key]["package_status"] == "overlap_partial_review"
+    assert resolution.package_decisions[older_key]["package_status"] == "overlap_partial_review"
+
+
+def test_resolve_bundle_packages_prefers_content_scope_over_conflicting_path_labels() -> None:
+    rows = [
+        make_row(
+            bundle_id="202203291830-export",
+            bundle_relative_path="borrow.csv",
+            sha256="shared",
+            source_path="/incoming/account-main/202203291830-export/borrow.csv",
+            inspection_scope_tokens="evm:0x1111111111111111111111111111111111111111",
+        ),
+        make_row(
+            bundle_id="202203291830-export",
+            bundle_relative_path="repay.csv",
+            sha256="repay",
+            source_path="/incoming/account-main/202203291830-export/repay.csv",
+            inspection_scope_tokens="evm:0x1111111111111111111111111111111111111111",
+        ),
+        make_row(
+            bundle_id="202203291730-export",
+            bundle_relative_path="borrow.csv",
+            sha256="shared",
+            source_path="/incoming/account-alt/202203291730-export/borrow.csv",
+            inspection_scope_tokens="evm:0x1111111111111111111111111111111111111111",
+        ),
+        make_row(
+            bundle_id="202203291730-export",
+            bundle_relative_path="interest.csv",
+            sha256="interest",
+            source_path="/incoming/account-alt/202203291730-export/interest.csv",
+            inspection_scope_tokens="evm:0x1111111111111111111111111111111111111111",
+        ),
+    ]
+
+    resolution = package_resolution.resolve_bundle_packages(rows)
+
+    newer_key = ("source_raw", "binance", "2021-05", "202203291830-export")
+    older_key = ("source_raw", "binance", "2021-05", "202203291730-export")
+    assert resolution.package_decisions[newer_key]["package_status"] == "merge_primary"
+    assert resolution.package_decisions[older_key]["package_status"] == "merge_member"
+
+
+def test_resolve_bundle_packages_blocks_merge_when_content_scope_conflicts_even_if_labels_match() -> None:
+    rows = [
+        make_row(
+            bundle_id="202203291830-export",
+            bundle_relative_path="borrow.csv",
+            sha256="shared",
+            source_path="/incoming/account-main/202203291830-export/borrow.csv",
+            inspection_scope_tokens="evm:0x1111111111111111111111111111111111111111",
+        ),
+        make_row(
+            bundle_id="202203291830-export",
+            bundle_relative_path="repay.csv",
+            sha256="repay",
+            source_path="/incoming/account-main/202203291830-export/repay.csv",
+            inspection_scope_tokens="evm:0x1111111111111111111111111111111111111111",
+        ),
+        make_row(
+            bundle_id="202203291730-export",
+            bundle_relative_path="borrow.csv",
+            sha256="shared",
+            source_path="/incoming/account-main/202203291730-export/borrow.csv",
+            inspection_scope_tokens="evm:0x2222222222222222222222222222222222222222",
+        ),
+        make_row(
+            bundle_id="202203291730-export",
+            bundle_relative_path="interest.csv",
+            sha256="interest",
+            source_path="/incoming/account-main/202203291730-export/interest.csv",
+            inspection_scope_tokens="evm:0x2222222222222222222222222222222222222222",
+        ),
+    ]
+
+    resolution = package_resolution.resolve_bundle_packages(rows)
+
+    newer_key = ("source_raw", "binance", "2021-05", "202203291830-export")
+    older_key = ("source_raw", "binance", "2021-05", "202203291730-export")
+    assert resolution.package_decisions[newer_key]["package_status"] == "overlap_partial_review"
+    assert resolution.package_decisions[newer_key]["package_scope_status"] == "incompatible_scope"
     assert resolution.package_decisions[older_key]["package_status"] == "overlap_partial_review"

@@ -11,15 +11,14 @@ from pathlib import PurePosixPath
 import re
 from typing import Sequence
 
+from scope_identity import row_scope_tokens
+
 
 PACKAGE_KEY = tuple[str, str, str, str]
 
 COMPACT_TIMESTAMP_14 = re.compile(r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)")
 COMPACT_TIMESTAMP_12 = re.compile(r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)")
 DASHED_DATE = re.compile(r"(?<!\d)(20\d{2})[-_](\d{2})[-_](\d{2})(?!\d)")
-EVM_ADDRESS = re.compile(r"0x[a-fA-F0-9]{8,40}")
-NAMED_SCOPE = re.compile(r"(?:^|[/_. -])(account|wallet|address)[_ -]*([a-zA-Z0-9]{3,})(?=$|[/_. -])", re.IGNORECASE)
-GENERIC_SCOPE_IDENTIFIERS = {"capture", "export", "history", "incoming", "raw", "files", "report", "reports", "data"}
 
 
 @dataclass(frozen=True)
@@ -94,18 +93,6 @@ def _extract_datetimes(text: str) -> list[datetime]:
     return values
 
 
-def _extract_scope_tokens(text: str) -> set[str]:
-    tokens: set[str] = set()
-    for match in EVM_ADDRESS.finditer(text):
-        tokens.add(f"evm:{match.group(0).lower()}")
-    for scope_kind, identifier in NAMED_SCOPE.findall(text):
-        normalized_identifier = identifier.lower()
-        if normalized_identifier in GENERIC_SCOPE_IDENTIFIERS:
-            continue
-        tokens.add(f"{scope_kind.lower()}:{normalized_identifier}")
-    return tokens
-
-
 def _row_marker(row: dict[str, str]) -> datetime | None:
     markers: list[datetime] = []
     for field in ("source_path", "archive_source_path", "path", "bundle_id"):
@@ -113,17 +100,6 @@ def _row_marker(row: dict[str, str]) -> datetime | None:
         if value:
             markers.extend(_extract_datetimes(value))
     return max(markers) if markers else None
-
-
-def _row_scope_tokens(row: dict[str, str]) -> set[str]:
-    tokens: set[str] = set()
-    for field in ("source_path", "archive_source_path", "bundle_id"):
-        value = row.get(field, "")
-        if value:
-            tokens.update(_extract_scope_tokens(value))
-    return tokens
-
-
 def _build_package(rows: Sequence[dict[str, str]], group_key: tuple[str, str, str], bundle_id: str, indexes: Sequence[int]) -> BundlePackage:
     material_indexes = _material_indexes(rows, indexes)
     logical_hashes: dict[str, Counter[str]] = defaultdict(Counter)
@@ -134,7 +110,7 @@ def _build_package(rows: Sequence[dict[str, str]], group_key: tuple[str, str, st
         marker = _row_marker(rows[index])
         if marker is not None:
             markers.append(marker)
-        scope_tokens.update(_row_scope_tokens(rows[index]))
+        scope_tokens.update(row_scope_tokens(rows[index]))
     for index in material_indexes:
         key = _logical_key(rows[index])
         logical_hashes[key][rows[index]["sha256"]] += 1
@@ -217,6 +193,14 @@ def _evaluate_merge(primary: BundlePackage, candidate: BundlePackage, component_
     return True, superseded_indexes, kept_hashes, dict(kept_logical_hashes)
 
 
+def _scope_status(primary: BundlePackage, candidate: BundlePackage) -> str:
+    if primary.scope_tokens and candidate.scope_tokens:
+        return "matched_scope" if primary.scope_tokens & candidate.scope_tokens else "incompatible_scope"
+    if primary.scope_tokens or candidate.scope_tokens:
+        return "partial_scope"
+    return "scope_unknown"
+
+
 def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
     grouped_indexes: dict[PACKAGE_KEY, list[int]] = defaultdict(list)
     for index, row in enumerate(rows):
@@ -261,6 +245,8 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
                 "package_primary_bundle_id": primary.bundle_id,
                 "package_related_bundles": primary.bundle_id,
                 "package_cycle_status": "mixed_cycle" if package.mixed_cycle else ("single_cycle" if package.cycle_day else "cycle_unknown"),
+                "package_scope_status": _scope_status(package, primary),
+                "package_decision_reason": "deterministic superset duplicate",
             }
             duplicate_keys.add(package_key)
             for index in package.row_indexes:
@@ -306,6 +292,8 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
                     "package_primary_bundle_id": primary.bundle_id,
                     "package_related_bundles": "; ".join(sorted(member.bundle_id for member in merged_members)),
                     "package_cycle_status": "single_cycle" if primary.cycle_day else "cycle_unknown",
+                    "package_scope_status": "matched_scope" if primary.scope_tokens else "scope_unknown",
+                    "package_decision_reason": "same-cycle additive package merge",
                 }
                 for member in merged_members:
                     member_key = group_key + (member.bundle_id,)
@@ -314,6 +302,8 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
                         "package_primary_bundle_id": primary.bundle_id,
                         "package_related_bundles": primary.bundle_id,
                         "package_cycle_status": "single_cycle" if member.cycle_day else "cycle_unknown",
+                        "package_scope_status": _scope_status(member, primary),
+                        "package_decision_reason": "same-cycle additive package merge member",
                     }
 
         for package in ordered:
@@ -326,6 +316,8 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
                     "package_primary_bundle_id": package.bundle_id,
                     "package_related_bundles": "",
                     "package_cycle_status": "mixed_cycle",
+                    "package_scope_status": "scope_unknown" if not package.scope_tokens else "single_scope_present",
+                    "package_decision_reason": "bundle contains files from multiple export-cycle days",
                 }
             else:
                 package_decisions[package_key] = {
@@ -333,6 +325,8 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
                     "package_primary_bundle_id": package.bundle_id,
                     "package_related_bundles": "",
                     "package_cycle_status": "single_cycle" if package.cycle_day else "cycle_unknown",
+                    "package_scope_status": "scope_unknown" if not package.scope_tokens else "single_scope_present",
+                    "package_decision_reason": "kept primary package",
                 }
 
         unresolved = [package for package in ordered if package_decisions[group_key + (package.bundle_id,)]["package_status"] == "primary"]
@@ -345,11 +339,19 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
                 if not (left.material_hashes & right.material_hashes):
                     continue
                 if package_decisions[left_key]["package_status"] == "primary":
+                    scope_status = _scope_status(left, right)
+                    reason = (
+                        "shared material but explicit scope identifiers differ"
+                        if scope_status == "incompatible_scope"
+                        else "shared material but export-cycle markers or contents do not justify merge"
+                    )
                     package_decisions[left_key] = {
                         "package_status": "overlap_partial_review",
                         "package_primary_bundle_id": left.bundle_id,
                         "package_related_bundles": right.bundle_id,
                         "package_cycle_status": "single_cycle" if left.cycle_day else "cycle_unknown",
+                        "package_scope_status": scope_status,
+                        "package_decision_reason": reason,
                     }
                 else:
                     package_decisions[left_key]["package_related_bundles"] = _merge_related_bundles(
@@ -357,11 +359,19 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
                         right.bundle_id,
                     )
                 if package_decisions[right_key]["package_status"] == "primary":
+                    scope_status = _scope_status(right, left)
+                    reason = (
+                        "shared material but explicit scope identifiers differ"
+                        if scope_status == "incompatible_scope"
+                        else "shared material but export-cycle markers or contents do not justify merge"
+                    )
                     package_decisions[right_key] = {
                         "package_status": "overlap_partial_review",
                         "package_primary_bundle_id": right.bundle_id,
                         "package_related_bundles": left.bundle_id,
                         "package_cycle_status": "single_cycle" if right.cycle_day else "cycle_unknown",
+                        "package_scope_status": scope_status,
+                        "package_decision_reason": reason,
                     }
                 else:
                     package_decisions[right_key]["package_related_bundles"] = _merge_related_bundles(

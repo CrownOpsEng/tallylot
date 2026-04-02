@@ -3,7 +3,7 @@
     "adapter": "evm_explorer",
     "event_id": "evm_explorer:explorer-transactions-0x1111111111111111111111111111111111111111.csv:0xabc",
     "exception_kind": "review_required",
-    "manifest_fingerprint": "17623e1a79069f331264cb6b880185747509ae8e1b6b8f9b441f4632b99b464d",
+    "manifest_fingerprint": "e29d30aa40c2f705cf25fbfbffd2a7328f52fa4d6ca5dd2bacd709dffc3aec15",
     "message": "bsc-wallet received suspicious NFT airdrop $Airdrop Pass in tx 0xabc; keep it in review instead of auto-importing it as an economic deposit.",
     "raw_file": "explorer-transactions-0x1111111111111111111111111111111111111111.csv",
     "raw_row_ref": "explorer-transactions-0x1111111111111111111111111111111111111111.csv:row:2;explorer-nft-transfers-0x1111111111111111111111111111111111111111.csv:row:2",

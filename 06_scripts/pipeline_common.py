@@ -107,6 +107,10 @@ PROFILE_INVENTORY_HEADERS = (
     "bundle_relative_path",
     "alias_group",
     "collision_status",
+    "path_scope_tokens",
+    "content_scope_tokens",
+    "scope_tokens",
+    "scope_preview",
     "suffix",
     "family",
     "header_preview",
@@ -187,6 +191,30 @@ def manifest_fingerprint_from_rows(rows: list[dict[str, str]]) -> str:
                 "filename": row.get("filename", ""),
                 "size_bytes": row.get("size_bytes", ""),
                 "sha256": row.get("sha256", ""),
+            }
+            for row in rows
+        ),
+        key=lambda item: item["filename"],
+    )
+    return stable_hash_rows(ordered)
+
+
+def inventory_fingerprint_from_rows(rows: list[dict[str, str]]) -> str:
+    ordered = sorted(
+        (
+            {
+                "filename": row.get("filename", ""),
+                "suffix": row.get("suffix", ""),
+                "family": row.get("family", ""),
+                "header_preview": row.get("header_preview", ""),
+                "data_rows": row.get("data_rows", ""),
+                "date_field": row.get("date_field", ""),
+                "min_timestamp": row.get("min_timestamp", ""),
+                "max_timestamp": row.get("max_timestamp", ""),
+                "timestamp_resolution": row.get("timestamp_resolution", ""),
+                "timezone_mode": row.get("timezone_mode", ""),
+                "timezone_value": row.get("timezone_value", ""),
+                "timezone_conflict": row.get("timezone_conflict", ""),
             }
             for row in rows
         ),
@@ -332,7 +360,7 @@ def build_source_profile(
         row["bundle_relative_path"] = manifest_row.get("bundle_relative_path", "") or row.get("bundle_relative_path", "")
         row["alias_group"] = manifest_row.get("alias_group", "") or row.get("alias_group", "")
         row["collision_status"] = manifest_row.get("collision_status", "") or row.get("collision_status", "")
-    fingerprint = manifest_fingerprint_from_rows(manifest_rows) if manifest_rows else stable_hash_rows(file_inventory)
+    fingerprint = manifest_fingerprint_from_rows(manifest_rows) if manifest_rows else inventory_fingerprint_from_rows(file_inventory)
     merged_hints = repo_normalization_hints_for_source(source, raw_dir)
     if normalization_hints:
         merged_hints.update(normalization_hints)

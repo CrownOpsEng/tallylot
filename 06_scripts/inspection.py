@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Iterable, Sequence
 
 from archive_handling import summarize_archive_members
+from scope_identity import csv_scope_tokens, describe_scope_tokens, extract_scope_tokens, json_scope_tokens, token_from_header_value
 from script_common import parse_datetime, parse_datetime_to_utc_naive, sniff_csv_dialect, source_timezone_from_filename, tzinfo_label
 
 
@@ -249,6 +250,14 @@ def inspect_json_payload(path: Path) -> tuple[str, str]:
     return "json", type(payload).__name__
 
 
+def inspect_json_scope_tokens(path: Path) -> frozenset[str]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return frozenset()
+    return json_scope_tokens(payload)
+
+
 def inspect_archive_payload(path: Path) -> tuple[str, str, dict[str, str]]:
     summary = summarize_archive_members(path, inspect_file)
     preview = summary.get("archive_member_preview", "")
@@ -479,6 +488,43 @@ def analyze_csv(path: Path) -> tuple[list[str], int, str, str, str, int, str, st
     )
 
 
+def inspect_csv_scope_tokens(path: Path, *, max_rows: int = 100) -> frozenset[str]:
+    try:
+        header, header_index = detect_csv_header(path)
+    except OSError:
+        return frozenset()
+    if header_index < 0 or not header:
+        return frozenset()
+    family = classify_file_family(path, header)
+    rows: list[dict[str, str]] = []
+    try:
+        with path.open(newline="", encoding="utf-8-sig") as handle:
+            reader = csv.reader(handle, dialect=sniff_csv_dialect(path))
+            for index, row in enumerate(reader):
+                if index <= header_index:
+                    continue
+                if not any(cell.strip() for cell in row):
+                    continue
+                if len(row) == 1 and row[0].strip().lower() == "no data matches the criteria.":
+                    continue
+                rows.append({header[column]: (row[column] if column < len(row) else "") for column in range(len(header))})
+                if len(rows) >= max_rows:
+                    break
+    except OSError:
+        return frozenset()
+    tokens = set(csv_scope_tokens(rows))
+    if family.startswith("explorer_"):
+        for header_name in header:
+            normalized_header = " ".join(header_name.strip().lower().split())
+            if normalized_header not in {"from", "to", "addr", "address", "owner", "wallet"}:
+                continue
+            values = {row.get(header_name, "").strip() for row in rows if row.get(header_name, "").strip()}
+            if len(values) != 1:
+                continue
+            tokens.update(token_from_header_value(header_name, next(iter(values))))
+    return frozenset(tokens)
+
+
 def detect_date_span_from_csv(path: Path) -> tuple[str, str, str, int, str, str, str, str]:
     (
         _header,
@@ -508,6 +554,8 @@ def inspect_file(path: Path) -> dict[str, str]:
     timezone_value = ""
     timezone_conflict = ""
     archive_summary: dict[str, str] = {}
+    path_scope_tokens = extract_scope_tokens(str(path))
+    content_scope_tokens: set[str] = set()
     if suffix == ".csv":
         (
             header,
@@ -524,12 +572,16 @@ def inspect_file(path: Path) -> dict[str, str]:
         header_preview = " | ".join(header[:8])
         family = classify_file_family(path, header)
         data_rows = str(row_count)
+        content_scope_tokens.update(inspect_csv_scope_tokens(path))
     elif suffix == ".pdf":
         family = classify_file_family(path, ())
     elif suffix == ".json":
         family, header_preview = inspect_json_payload(path)
+        content_scope_tokens.update(inspect_json_scope_tokens(path))
     elif suffix in {".zip", ".tar"} or path.name.lower().endswith((".tar.gz", ".tgz")):
         family, header_preview, archive_summary = inspect_archive_payload(path)
+        content_scope_tokens.update(extract_scope_tokens(archive_summary.get("archive_scope_tokens", "")))
+    scope_tokens = content_scope_tokens or path_scope_tokens
     return {
         "filename": path.name,
         "suffix": suffix,
@@ -543,6 +595,10 @@ def inspect_file(path: Path) -> dict[str, str]:
         "timezone_mode": timezone_mode,
         "timezone_value": timezone_value,
         "timezone_conflict": timezone_conflict,
+        "path_scope_tokens": ";".join(sorted(path_scope_tokens)),
+        "content_scope_tokens": ";".join(sorted(content_scope_tokens)),
+        "scope_tokens": ";".join(sorted(scope_tokens)),
+        "scope_preview": describe_scope_tokens(scope_tokens),
         **archive_summary,
     }
 
