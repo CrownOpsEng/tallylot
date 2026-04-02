@@ -93,11 +93,37 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
     adapter_py = (
         repo_root / "src" / "tallylot" / "adapters" / "sources" / "platforms" / "example_exchange" / "adapter.py"
     )
+    package_init = (
+        repo_root
+        / "src"
+        / "tallylot"
+        / "adapters"
+        / "sources"
+        / "platforms"
+        / "example_exchange"
+        / "__init__.py"
+    )
+    test_contract = (
+        repo_root
+        / "src"
+        / "tallylot"
+        / "adapters"
+        / "sources"
+        / "platforms"
+        / "example_exchange"
+        / "tests"
+        / "test_contract.py"
+    )
     translation_py = (
         repo_root / "src" / "tallylot" / "adapters" / "sources" / "platforms" / "example_exchange" / "translation.py"
     )
+    assert package_init.read_text(encoding="utf-8") == '"""Example Exchange source adapter package."""\n'
     assert "class _ExampleExchangeSourceAdapter" in adapter_py.read_text(encoding="utf-8")
     assert "translate_source_batches" in adapter_py.read_text(encoding="utf-8")
+    assert (
+        "from tallylot.adapters.sources.platforms.example_exchange.adapter "
+        "import _ExampleExchangeSourceAdapter"
+    ) in test_contract.read_text(encoding="utf-8")
     assert "FILE_TRANSLATION_RULES" in translation_py.read_text(encoding="utf-8")
     assert {
         environment["root"]

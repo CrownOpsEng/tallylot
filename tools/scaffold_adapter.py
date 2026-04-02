@@ -77,7 +77,7 @@ def _scaffold_adapter(
     created = (
         _write_file(
             adapter_root / "__init__.py",
-            'from .adapter import ADAPTER\n\n__all__ = ["ADAPTER"]\n',
+            f'"""{spec.display_name} {spec.kind} adapter package."""\n',
             force=force,
         ),
         _write_file(
@@ -316,16 +316,17 @@ def _source_translation_template(*, adapter_name: str) -> str:
 def _contract_test_template(*, kind: str, module_parts: tuple[str, ...]) -> str:
     namespace = "sources" if kind == "source" else "outputs"
     module_name = ".".join(module_parts)
+    adapter_class_name = f"_{_camel_case(module_parts[-1])}{kind.title()}Adapter"
     adapter_id = module_parts[-1]
     return dedent(
         f"""
         from __future__ import annotations
 
-        from tallylot.adapters.{namespace}.{module_name} import ADAPTER
+        from tallylot.adapters.{namespace}.{module_name}.adapter import {adapter_class_name}
 
 
         def test_manifest_adapter_id_matches_package_name() -> None:
-            assert str(ADAPTER.manifest.adapter_id) == "{adapter_id}"
+            assert str({adapter_class_name}().manifest.adapter_id) == "{adapter_id}"
         """
     )
 
