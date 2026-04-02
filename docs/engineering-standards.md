@@ -126,6 +126,10 @@ Split these modules before adding materially new behavior:
 - `src/crypto_reconciliation/application/services/intake/packages/resolution.py`
 - `src/crypto_reconciliation/adapters/sources/binance/adapter.py`
 - `src/crypto_reconciliation/adapters/sources/coinbase/adapter.py`
-- `src/crypto_reconciliation/domain/models.py`
-- `src/crypto_reconciliation/interfaces/cli.py`
-- `src/crypto_reconciliation/infrastructure/discovery/adapters.py`
+
+Preserve these shared-surface package seams instead of collapsing them back
+into single modules:
+
+- `src/crypto_reconciliation/domain/models/`
+- `src/crypto_reconciliation/interfaces/cli/`
+- `src/crypto_reconciliation/infrastructure/discovery/adapters/`

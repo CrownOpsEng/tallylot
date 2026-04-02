@@ -50,3 +50,17 @@ def test_canonical_event_rejects_non_positive_amounts() -> None:
 
     with pytest.raises(ValueError, match="fee_amount must be greater than zero"):
         replace(_valid_canonical_event(), fee_asset=AssetSymbol("CAD"), fee_amount=Decimal("0"))
+
+
+def test_canonical_event_to_row_formats_canonical_fields() -> None:
+    row = replace(
+        _valid_canonical_event(),
+        fee_asset=AssetSymbol("CAD"),
+        fee_amount=Decimal("0.10000000"),
+        render_exchange="Fixture",
+    ).to_row()
+
+    assert row["timestamp"] == "2023-08-06 10:00:00"
+    assert row["amount_in"] == "1"
+    assert row["fee_amount"] == "0.1"
+    assert row["render_exchange"] == "Fixture"

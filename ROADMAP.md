@@ -108,9 +108,10 @@ decisions that should not be rediscovered from scratch.
 - Keep adapter discovery narrow: discover only top-level adapter modules and
   package entry points so adapter-local tests and helpers can live beside the
   adapter without affecting runtime registration.
-- Refactor large modules before extending them materially. The current
-  refactor-first hotspots are `domain/models.py`, `interfaces/cli.py`, and
-  `infrastructure/discovery/adapters.py`.
+- Keep the shared-surface package seams intact now that they have been split:
+  `domain/models/`, `interfaces/cli/`, and
+  `infrastructure/discovery/adapters/` should keep bounded submodules instead
+  of growing back into single-file hubs.
 - The repo-local operational dataset was migrated to the external workspace on
   2026-03-26. Use this mapping for any future manual recovery or audit work:
   `00_docs -> docs`, `01_raw_exports/source -> evidence/raw/source`,
