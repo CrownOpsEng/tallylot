@@ -83,3 +83,10 @@ def test_checked_in_pyright_test_config_matches_discovered_adapter_tests() -> No
     pyright_config = json.loads(config_path.read_text(encoding="utf-8"))
 
     assert pyright_config.get("executionEnvironments") == expected_execution_environments()
+
+
+def test_repo_pyright_config_inherits_generated_test_config_without_inline_test_policy() -> None:
+    pyright_config = json.loads((repo_root() / "pyrightconfig.json").read_text(encoding="utf-8"))
+
+    assert pyright_config.get("extends") == f"./{PYRIGHT_GENERATED_TEST_CONFIG_NAME}"
+    assert "executionEnvironments" not in pyright_config
