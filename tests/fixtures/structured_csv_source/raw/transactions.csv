@@ -1,0 +1,3 @@
+timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,fee_asset,fee_amount,tx_hash,description,account,wallet
+2023-08-06 10:00:00,Trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-structured-1,BTC buy,Fixture Exchange,Primary
+2023-08-07 15:00:00,Income,ETH,0.5,,,,,tx-structured-2,ETH reward,Fixture Exchange,Primary

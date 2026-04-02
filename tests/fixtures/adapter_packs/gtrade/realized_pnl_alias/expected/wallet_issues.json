@@ -1,8 +1,0 @@
-[
-  {
-    "issue_kind": "partial_identifier_only",
-    "message": "GTrade evidence exposes only a truncated address alias; keep companion explorer evidence linked in the canonical wallet inventory.",
-    "source": "GTrade 1CT",
-    "wallet_id": "address_alias:bb4d"
-  }
-]

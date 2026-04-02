@@ -1,2 +1,0 @@
-Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash
-2024-01-02 03:04:05,Cash deposit,CAD,500,,,CAD,500,500,viban_deposit,dep-1

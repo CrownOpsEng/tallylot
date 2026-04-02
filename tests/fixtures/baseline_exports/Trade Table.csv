@@ -1,0 +1,2 @@
+Type,Buy,Cur.,Sell,Cur..1,Fee,Cur..2,Exchange,Group,Comment,Date,Tx-ID
+Trade,1.0,BTC,10.0,CAD,0.1,CAD,Fixture,,baseline,2023-08-05 08:34:04,tx-1
