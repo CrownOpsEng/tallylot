@@ -95,9 +95,16 @@ Default rule:
      --out-dir 02_working/normalized/<source>
    ```
 
-   Review `wallet_inventory.csv` and `wallet_inventory_issues.csv` in the same output folder when the source is wallet-scoped. If the output lives inside this repo, the repo-wide `03_analysis/inventory/wallet_inventory.csv` is refreshed automatically.
+6. Refresh wallet inventory explicitly when the source is wallet-scoped or when new wallet evidence was added:
 
-6. Normalize the source into canonical outputs and a rendered candidate:
+   ```bash
+   python3 06_scripts/wallet_inventory.py \
+     --repo-root .
+   ```
+
+   Review `03_analysis/inventory/wallet_inventory.csv` and `03_analysis/inventory/wallet_inventory_issues.csv` before treating newly discovered identifiers as import-ready evidence.
+
+7. Normalize the source into canonical outputs and a rendered candidate:
 
    ```bash
    python3 06_scripts/normalize_source.py \
@@ -107,7 +114,7 @@ Default rule:
      --profile-json 02_working/normalized/<source>/profile.json
    ```
 
-7. Stage the candidate into `02_working/import_batches/<source>/` only after overlap screening passes:
+8. Stage the candidate into `02_working/import_batches/<source>/` only after overlap screening passes:
 
    ```bash
    python3 06_scripts/stage_import_batch.py \

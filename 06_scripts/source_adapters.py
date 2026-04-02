@@ -22,7 +22,7 @@ from coinbase_common import (
     retail_csv_rows,
 )
 from pdf_balance_extract import binance_balance_rows_from_text, shakepay_balance_rows_from_text
-from pipeline_common import CANONICAL_BALANCE_HEADERS, CANONICAL_EVENT_HEADERS, EXCEPTION_HEADERS, SourceProfile
+from pipeline_common import CANONICAL_BALANCE_HEADERS, CANONICAL_EVENT_HEADERS, EXCEPTION_HEADERS, SourceProfile, source_slug
 from script_common import (
     decimal_or_zero,
     decimal_text,
@@ -453,14 +453,63 @@ def build_balance_row(
     }
 
 
+def profile_paths(
+    raw_dir: Path,
+    profile: SourceProfile,
+    *,
+    families: set[str] | None = None,
+    suffixes: set[str] | None = None,
+    predicate=None,
+) -> list[Path]:
+    paths: list[Path] = []
+    for row in profile.file_inventory:
+        if families is not None and row.get("family") not in families:
+            continue
+        if suffixes is not None and row.get("suffix") not in suffixes:
+            continue
+        path = raw_dir / row["filename"]
+        if predicate is not None and not predicate(path, row):
+            continue
+        if path.exists() and path.is_file():
+            paths.append(path)
+    return sorted(paths)
+
+
+def profile_has_row(
+    profile: SourceProfile,
+    *,
+    families: set[str] | None = None,
+    filename_contains: str | None = None,
+    header_contains: str | None = None,
+) -> bool:
+    for row in profile.file_inventory:
+        if families is not None and row.get("family") not in families:
+            continue
+        if filename_contains is not None and filename_contains.lower() not in row.get("filename", "").lower():
+            continue
+        if header_contains is not None and header_contains.lower() not in row.get("header_preview", "").lower():
+            continue
+        return True
+    return False
+
+
 class SourceAdapter:
     name = "base"
     aliases: tuple[str, ...] = ()
     supported = False
 
-    def matches(self, source: str) -> bool:
-        slug = source.strip().lower()
-        return slug == self.name or slug in self.aliases
+    def matches_source(self, source_name: str) -> bool:
+        slug = source_slug(source_name)
+        alias_slugs = {source_slug(alias) for alias in self.aliases}
+        return slug == self.name or slug in alias_slugs
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return False
+
+    def matches(self, source: str, profile: SourceProfile | None = None) -> bool:
+        if profile is not None and self.matches_profile(profile):
+            return True
+        return self.matches_source(source)
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -498,6 +547,12 @@ class CoinbaseAdapter(SourceAdapter):
     aliases = ("coinbase",)
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, filename_contains="statement - all time") or profile_has_row(
+            profile,
+            filename_contains="coinbase pro - statement",
+        )
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -510,23 +565,28 @@ class CoinbaseAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        retail_path = None
-        pro_statement_paths: list[Path] = []
-        pro_fill_paths: list[Path] = []
-        pdf_paths: list[Path] = []
-
-        for path in sorted(raw_dir.iterdir()):
-            if not path.is_file():
-                continue
-            name = path.name
-            if "Statement - All Time" in name and path.suffix.lower() == ".csv":
-                retail_path = path
-            elif "Coinbase Pro - Statement" in name and path.suffix.lower() == ".csv":
-                pro_statement_paths.append(path)
-            elif "Coinbase Pro - Fills" in name and path.suffix.lower() == ".csv":
-                pro_fill_paths.append(path)
-            elif path.suffix.lower() == ".pdf":
-                pdf_paths.append(path)
+        retail_candidates = profile_paths(
+            raw_dir,
+            profile,
+            families={"custodial_all_time_csv"},
+            suffixes={".csv"},
+        )
+        retail_path = retail_candidates[0] if retail_candidates else None
+        pro_statement_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"transfer_statement_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, _: "coinbase pro - statement" in path.name.lower(),
+        )
+        pro_fill_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"fills_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, _: "coinbase pro - fills" in path.name.lower(),
+        )
+        pdf_paths = profile_paths(raw_dir, profile, families={"statement_balance_pdf"}, suffixes={".pdf"})
 
         exceptions: list[dict[str, str]] = []
         if retail_path is None:
@@ -563,6 +623,9 @@ class WealthsimpleAdapter(SourceAdapter):
     aliases = ("wealthsimple", "wealthsimple crypto")
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, filename_contains="activities-export")
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -575,7 +638,13 @@ class WealthsimpleAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        activity_paths = sorted(path for path in raw_dir.glob("activities-export*.csv") if path.is_file())
+        activity_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"broker_activity_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, _: path.name.lower().startswith("activities-export"),
+        )
         exceptions: list[dict[str, str]] = []
         if not activity_paths:
             maybe_append_exception(
@@ -727,6 +796,9 @@ class BinanceAdapter(SourceAdapter):
     name = "binance"
     aliases = ("binance",)
     supported = True
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return any(row.get("filename", "").lower().startswith("binance") for row in profile.file_inventory)
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -1549,6 +1621,9 @@ class CryptoComAdapter(SourceAdapter):
     aliases = ("crypto.com", "crypto com", "cryptocom")
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, header_contains="timestamp (utc)")
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -1561,8 +1636,20 @@ class CryptoComAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        cash_paths = sorted(path for path in raw_dir.glob("cash_transactions*.csv") if path.is_file())
-        crypto_paths = sorted(path for path in raw_dir.glob("crypto_transactions*.csv") if path.is_file())
+        cash_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"fiat_transaction_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, row: "timestamp (utc)" in row.get("header_preview", "").lower(),
+        )
+        crypto_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"custodial_transaction_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, row: "timestamp (utc)" in row.get("header_preview", "").lower(),
+        )
         exceptions: list[dict[str, str]] = []
         if not cash_paths and not crypto_paths:
             maybe_append_exception(
@@ -1704,21 +1791,31 @@ class EvmExplorerAdapter(SourceAdapter):
             return None
         return STRICT_EXPLICIT_UTC_POLICY
 
-    _scope_prefixes = (
-        ("bsc", "Account1-bsc"),
-        ("polygon", "Account1-polygon"),
-        ("eth_gala", "Account2-eth"),
-        ("eth", "Account1-eth"),
-    )
     _native_asset_by_scope = {
         "bsc": "BNB",
         "polygon": "MATIC",
-        "eth_gala": "ETH",
         "eth": "ETH",
     }
     _token_symbol_overrides = {
         "0x7ddee176f665cd201f93eede625770e2fd911990": "GALA",
     }
+
+    def matches_source(self, source_name: str) -> bool:
+        if super().matches_source(source_name):
+            return True
+        slug = source_slug(source_name)
+        return slug.startswith(("bsc_", "eth_", "polygon_"))
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return any(
+            row.get("family") in {
+                "explorer_transaction_csv",
+                "explorer_token_transfer_csv",
+                "explorer_internal_transaction_csv",
+                "explorer_nft_transfer_csv",
+            }
+            for row in profile.file_inventory
+        )
 
     def normalize(
         self,
@@ -1727,12 +1824,8 @@ class EvmExplorerAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        scope_key, prefix = self._scope_for_source(profile.source)
-        selected_paths = sorted(
-            path
-            for path in raw_dir.glob("*.csv")
-            if path.is_file() and (prefix in path.name or (scope_key == "eth" and path.name.startswith("Account1-eth ")))
-        )
+        scope_key = self._scope_for_profile(profile)
+        selected_paths = self._selected_paths(raw_dir, profile, scope_key)
         exceptions: list[dict[str, str]] = []
         if not selected_paths:
             maybe_append_exception(
@@ -1759,7 +1852,8 @@ class EvmExplorerAdapter(SourceAdapter):
             lambda: {"normal": [], "token": [], "internal": [], "nft": []}
         )
         for path in selected_paths:
-            family = self._family_for_path(path)
+            profile_row = next((row for row in profile.file_inventory if row.get("filename") == path.name), {})
+            family = self._family_for_profile_row(profile_row)
             if family is None:
                 continue
             for index, row in enumerate(read_csv_rows(path), start=2):
@@ -1784,25 +1878,59 @@ class EvmExplorerAdapter(SourceAdapter):
 
         return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
 
-    def _scope_for_source(self, source: str) -> tuple[str, str]:
-        label = source.strip().lower()
-        if "polygon" in label:
-            return "polygon", "Account1-polygon"
-        if "gala" in label:
-            return "eth_gala", "Account2-eth"
-        if "eth" in label:
-            return "eth", "Account1-eth"
-        return "bsc", "Account1-bsc"
+    def _scope_for_profile(self, profile: SourceProfile) -> str:
+        context_parts = [source_slug(profile.source)]
+        context_parts.extend(source_slug(part) for part in profile.raw_dir.parts[-3:])
+        context = " ".join(part for part in context_parts if part)
+        if "polygon" in context:
+            return "polygon"
+        if "bsc" in context or "bnb" in context:
+            return "bsc"
+        return "eth"
 
-    def _family_for_path(self, path: Path) -> str | None:
-        name = path.name.lower()
-        if "export-address-token" in name:
+    def _selected_paths(self, raw_dir: Path, profile: SourceProfile, scope_key: str) -> list[Path]:
+        candidates = profile_paths(
+            raw_dir,
+            profile,
+            families={
+                "explorer_transaction_csv",
+                "explorer_token_transfer_csv",
+                "explorer_internal_transaction_csv",
+                "explorer_nft_transfer_csv",
+            },
+            suffixes={".csv"},
+            predicate=lambda path, row: self._family_for_profile_row(row) is not None,
+        )
+        if self._is_chain_scoped_capture(profile.raw_dir):
+            return candidates
+        scoped = [path for path in candidates if self._path_matches_scope(path, scope_key)]
+        source_context = source_slug(profile.source)
+        if scope_key == "eth" and "gala" in source_context:
+            return [path for path in scoped if "account2-eth" in path.name.lower()]
+        if scope_key == "eth" and any(token in source_context for token in ("metamask", "ledger")):
+            return [path for path in scoped if "account1-eth" in path.name.lower()]
+        return scoped
+
+    def _is_chain_scoped_capture(self, raw_dir: Path) -> bool:
+        return any(source_slug(part).startswith(("bsc_", "eth_", "polygon_")) for part in raw_dir.parts)
+
+    def _path_matches_scope(self, path: Path, scope_key: str) -> bool:
+        lowered = path.name.lower()
+        if scope_key == "polygon":
+            return "polygon" in lowered
+        if scope_key == "bsc":
+            return "bsc" in lowered or "bnb" in lowered
+        return "-eth" in lowered or "_eth" in lowered or " eth" in lowered or lowered.startswith("eth")
+
+    def _family_for_profile_row(self, row: dict[str, str]) -> str | None:
+        family = row.get("family", "")
+        if family == "explorer_token_transfer_csv":
             return "token"
-        if "export-internal-tx" in name:
+        if family == "explorer_internal_transaction_csv":
             return "internal"
-        if "export-address-nfts" in name:
+        if family == "explorer_nft_transfer_csv":
             return "nft"
-        if " export-" in name:
+        if family == "explorer_transaction_csv":
             return "normal"
         return None
 
@@ -2347,6 +2475,9 @@ class ShakepayAdapter(SourceAdapter):
     aliases = ("shakepay",)
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, header_contains="credit") and profile_has_row(profile, header_contains="debit")
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -2359,9 +2490,27 @@ class ShakepayAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        cash_paths = sorted(path for path in raw_dir.glob("cash_transactions*.csv") if path.is_file())
-        crypto_paths = sorted(path for path in raw_dir.glob("crypto_transactions*.csv") if path.is_file())
-        pdf_paths = sorted(path for path in raw_dir.glob("shakepay_*Performance report*.pdf") if path.is_file())
+        cash_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"fiat_transaction_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, row: "credit" in row.get("header_preview", "").lower(),
+        )
+        crypto_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"custodial_transaction_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, row: "amount credited" in row.get("header_preview", "").lower(),
+        )
+        pdf_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"statement_balance_pdf"},
+            suffixes={".pdf"},
+            predicate=lambda path, _: "performance report" in path.name.lower(),
+        )
         exceptions: list[dict[str, str]] = []
         if not cash_paths and not crypto_paths:
             maybe_append_exception(
@@ -2596,8 +2745,14 @@ class ShakepayAdapter(SourceAdapter):
 
 class LedgerLiveAdapter(SourceAdapter):
     name = "ledger_live"
-    aliases = ("ledger live", "ada ledger")
+    aliases = ("ledger live", "ada ledger", "ledger-live-main")
     supported = True
+
+    def matches_source(self, source_name: str) -> bool:
+        return super().matches_source(source_name) or source_slug(source_name).startswith("ledger_live")
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, families={"wallet_operation_csv"}, header_contains="account xpub")
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -2611,7 +2766,7 @@ class LedgerLiveAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        paths = sorted(path for path in raw_dir.glob("ledgerlive-operations-*.csv") if path.is_file())
+        paths = profile_paths(raw_dir, profile, families={"wallet_operation_csv"}, suffixes={".csv"})
         exceptions: list[dict[str, str]] = []
         if not paths:
             maybe_append_exception(
@@ -2806,6 +2961,12 @@ class NearAdapter(SourceAdapter):
     aliases = ("near", "near wallet", "near wallet - staking")
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return any(
+            row.get("family") in {"near_transaction_csv", "near_ft_transaction_csv", "near_nft_transaction_csv", "near_receipt_csv"}
+            for row in profile.file_inventory
+        )
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -2818,9 +2979,9 @@ class NearAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        tx_paths = sorted(path for path in raw_dir.glob("*transactions*.csv") if "ft_" not in path.name and "nft_" not in path.name)
-        ft_paths = sorted(path for path in raw_dir.glob("*ft_transactions*.csv"))
-        nft_paths = sorted(path for path in raw_dir.glob("*nft_transactions*.csv"))
+        tx_paths = profile_paths(raw_dir, profile, families={"near_transaction_csv"}, suffixes={".csv"})
+        ft_paths = profile_paths(raw_dir, profile, families={"near_ft_transaction_csv"}, suffixes={".csv"})
+        nft_paths = profile_paths(raw_dir, profile, families={"near_nft_transaction_csv"}, suffixes={".csv"})
         exceptions: list[dict[str, str]] = []
         if not tx_paths and not ft_paths and not nft_paths:
             maybe_append_exception(
@@ -2838,6 +2999,7 @@ class NearAdapter(SourceAdapter):
             return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
 
         events: list[dict[str, str]] = []
+        owned_accounts = self._owned_accounts(profile, raw_dir)
         seen_tx_hashes: set[str] = set()
         for path in tx_paths:
             for index, row in enumerate(read_csv_rows(path), start=2):
@@ -2846,7 +3008,7 @@ class NearAdapter(SourceAdapter):
                     continue
                 seen_tx_hashes.add(tx_hash)
                 method = (row.get("Method") or "").strip()
-                if method == "TRANSFER" and (row.get("To") or "").strip() == self._wallet_id():
+                if method == "TRANSFER" and (row.get("To") or "").strip().lower() in owned_accounts:
                     events.append(self._near_deposit_event(path, profile.source, index, row))
                     continue
                 if method == "deposit_and_stake":
@@ -2917,8 +3079,21 @@ class NearAdapter(SourceAdapter):
 
         return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
 
-    def _wallet_id(self) -> str:
-        return "example.near"
+    def _owned_accounts(self, profile: SourceProfile, raw_dir: Path) -> set[str]:
+        accounts = {
+            match.group(0).lower()
+            for row in profile.file_inventory
+            for match in re.finditer(r"[a-f0-9]{64}", row.get("filename", "").lower())
+        }
+        if accounts:
+            return accounts
+        for path in profile_paths(raw_dir, profile, families={"near_transaction_csv", "near_receipt_csv"}, suffixes={".csv"}):
+            for row in read_csv_rows(path):
+                for field in ("To", "Affected", "Involved"):
+                    value = (row.get(field) or "").strip().lower()
+                    if re.fullmatch(r"[a-f0-9]{64}", value):
+                        accounts.add(value)
+        return accounts
 
     def _near_deposit_event(self, path: Path, source: str, index: int, row: dict[str, str]) -> dict[str, str]:
         raw_row_ref = f"row:{index}"
@@ -3000,6 +3175,9 @@ class GTradeAdapter(SourceAdapter):
     aliases = ("gtrade", "gtrade 1ct")
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, families={"derivatives_report_csv"})
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -3012,7 +3190,7 @@ class GTradeAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        report_paths = sorted(path for path in raw_dir.glob("*My_Trading_History_Report.csv") if path.is_file())
+        report_paths = profile_paths(raw_dir, profile, families={"derivatives_report_csv"}, suffixes={".csv"})
         exceptions: list[dict[str, str]] = []
         if not report_paths:
             maybe_append_exception(
@@ -3090,9 +3268,18 @@ ADAPTERS: tuple[SourceAdapter, ...] = (
 )
 
 
-def get_adapter(source: str) -> SourceAdapter:
+def get_adapter(source: str, profile: SourceProfile | None = None) -> SourceAdapter:
+    if profile is not None:
+        profile_matches = [adapter for adapter in ADAPTERS if adapter.matches_profile(profile)]
+        if len(profile_matches) == 1:
+            return profile_matches[0]
+        for adapter in profile_matches:
+            if adapter.matches_source(source):
+                return adapter
+        if profile_matches:
+            return profile_matches[0]
     for adapter in ADAPTERS:
-        if adapter.matches(source):
+        if adapter.matches_source(source):
             return adapter
     fallback = SourceAdapter()
     fallback.name = "generic"

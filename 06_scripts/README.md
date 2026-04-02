@@ -51,12 +51,15 @@ The preferred prep flow is now:
 
 1. `source_manifest.py`
 2. `profile_source.py`
-3. `normalize_source.py`
-4. `render_cointracking.py` only when a separate render step is needed
-5. `stage_import_batch.py`
-6. `reconcile_source.py`
+3. `wallet_inventory.py` when wallet evidence changed
+4. `normalize_source.py`
+5. `render_cointracking.py` only when a separate render step is needed
+6. `stage_import_batch.py`
+7. `reconcile_source.py`
 
 `coinbase_normalize.py` and `coinbase_check.py` remain as Coinbase-specific reference tooling while the universal pipeline reaches parity on the remaining sources.
+
+`profile_source.py` no longer refreshes repo-wide wallet inventory as a side effect. Wallet inventory remains required repo workflow state, but it is now refreshed explicitly through `wallet_inventory.py`.
 
 ## Tests
 

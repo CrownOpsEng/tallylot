@@ -13,7 +13,7 @@ class WalletInventoryTests(unittest.TestCase):
     def test_profile_wallet_identifiers_extracts_ledger_live_accounts(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"
 
-        evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("Ledger Live", raw_dir)
+        evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("ledger-live-main", raw_dir, adapter_name="ledger_live")
 
         wallet_ids = {row["wallet_id"] for row in evidence}
         self.assertIn(
@@ -91,7 +91,7 @@ class WalletInventoryTests(unittest.TestCase):
             raw_dir = Path(tmpdir)
             write_csv(raw_dir / "export-empty.csv", ["Transaction Hash", "DateTime (UTC)"], [])
 
-            evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("ETH MetaMask Wallet", raw_dir)
+            evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("eth-metamask1", raw_dir, adapter_name="evm_explorer")
 
         self.assertEqual([], evidence)
         self.assertEqual("needs_review", summary["status"])

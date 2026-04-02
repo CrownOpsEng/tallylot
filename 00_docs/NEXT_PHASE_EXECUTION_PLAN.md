@@ -27,8 +27,8 @@ The project still follows the canonical cutoff:
 | --- | --- | --- | --- | --- |
 | 1 | Coinbase | `raw_export_captured` | Verify whether the Coinbase all-time export fully subsumes historical Coinbase Pro coverage, then build the post-cutoff candidate | `post_import_coinbase_01` |
 | 2 | WealthSimple | `raw_export_captured` | Trim to the project window, normalize for CoinTracking, and overlap-screen | `post_import_wealthsimple_01` |
-| 3 | ADA Ledger | `confirmed_active_pending_export` | Pull the post-cutoff raw export, manifest it, then prepare the candidate | `post_import_ada_ledger_01` |
-| 4 | BSC MetaMask Wallet | `confirmed_active_pending_export` | Confirm the full post-cutoff wallet export set is present, then normalize and overlap-screen | `post_import_bsc_metamask_wallet_01` |
+| 3 | ledger-live-main | `confirmed_active_pending_export` | Pull the post-cutoff raw export, manifest it, then prepare the candidate | `post_import_ledger_live_main_01` |
+| 4 | bsc-metamask1 | `confirmed_active_pending_export` | Confirm the full post-cutoff wallet export set is present, then normalize and overlap-screen | `post_import_bsc_metamask1_01` |
 | 5 | Ledger Live | `raw_export_captured` | Determine which post-cutoff records are not already represented by prior imports, then prepare the smallest safe candidate | `post_import_ledger_live_01` |
 | 6 | Binance | `raw_export_captured` | Classify the residual WBETH dust treatment, trim all candidates to `<= 2025-12-31`, then overlap-screen | `post_import_binance_01` |
 | 7 | Shakepay | `raw_export_captured` | Prepare the final import tranche and keep it last per project procedure | `post_import_shakepay_01` |

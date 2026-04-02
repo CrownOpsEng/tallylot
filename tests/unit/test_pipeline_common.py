@@ -20,6 +20,17 @@ class PipelineCommonTests(unittest.TestCase):
             pipeline_common.manifest_fingerprint_from_rows(rows_b),
         )
 
+    def test_find_manifest_for_raw_dir_supports_capture_local_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir) / "bsc-metamask1" / "2026-03"
+            raw_dir.mkdir(parents=True)
+            capture_manifest = raw_dir / "manifest.csv"
+            capture_manifest.write_text("filename,size_bytes,sha256\n", encoding="utf-8")
+
+            found = pipeline_common.find_manifest_for_raw_dir(raw_dir)
+
+        self.assertEqual(capture_manifest, found)
+
     def test_build_file_inventory_classifies_known_csv_families(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             raw_dir = Path(tmpdir)

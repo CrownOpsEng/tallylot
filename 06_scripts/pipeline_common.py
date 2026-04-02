@@ -143,9 +143,6 @@ class SourceProfile:
     file_inventory: list[dict[str, str]]
     timezone_summary: dict[str, object] | None = None
     timezone_issues: list[dict[str, str]] | None = None
-    wallet_inventory: list[dict[str, str]] | None = None
-    wallet_issues: list[dict[str, str]] | None = None
-    wallet_summary: dict[str, object] | None = None
 
 
 @dataclass(frozen=True)
@@ -187,8 +184,14 @@ def manifest_fingerprint_from_rows(rows: list[dict[str, str]]) -> str:
 
 
 def find_manifest_for_raw_dir(raw_dir: Path) -> Path | None:
-    candidate = raw_dir.parent / "manifest.csv"
-    return candidate if candidate.exists() else None
+    candidates = (
+        raw_dir / "manifest.csv",
+        raw_dir.parent / "manifest.csv",
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def first_non_empty_csv_row(path: Path) -> list[str]:
@@ -227,7 +230,7 @@ def classify_file_family(path: Path, header: Sequence[str]) -> str:
         return "transfer_statement_csv"
     if "statement - all time" in name:
         return "custodial_all_time_csv"
-    if "activity" in name and "export" in name:
+    if ("activity" in name or "activities" in name) and "export" in name:
         return "broker_activity_csv"
     if "monthly-statement-transactions" in name:
         return "statement_transaction_csv"
@@ -267,6 +270,26 @@ def classify_file_family(path: Path, header: Sequence[str]) -> str:
         return "fiat_transaction_csv"
     if "crypto_transactions" in name:
         return "custodial_transaction_csv"
+    if name.endswith("my_trading_history_report.csv"):
+        return "derivatives_report_csv"
+    if "_ft_transactions_" in name:
+        return "near_ft_transaction_csv"
+    if "_nft_transactions_" in name:
+        return "near_nft_transaction_csv"
+    if "_receipts_" in name:
+        return "near_receipt_csv"
+    if "_transactions_" in name and "ft_" not in name and "nft_" not in name:
+        return "near_transaction_csv"
+    if {"date", "pair", "addr"}.issubset(set(header_lower)):
+        return "derivatives_report_csv"
+    if "receipt" in header_lower and "deposit value" in header_lower:
+        return "near_receipt_csv"
+    if "txn hash" in header_lower and "direction" in header_lower and "token id" in header_lower:
+        return "near_nft_transaction_csv"
+    if "txn hash" in header_lower and "direction" in header_lower and "token" in header_lower:
+        return "near_ft_transaction_csv"
+    if "txn hash" in header_lower and "method" in header_lower and "deposit value" in header_lower:
+        return "near_transaction_csv"
     if "statement" in header_lower and "time" in header_lower:
         return "transfer_statement_csv"
     if "trade id" in header_lower and "product" in header_lower:
@@ -507,11 +530,6 @@ def write_profile_artifacts(out_dir: Path, profile: SourceProfile) -> tuple[Path
     timezone_issues_csv = out_dir / "timezone_issues.csv"
     timezone_summary = profile.timezone_summary or {"status": "not_checked", "issue_count": 0}
     timezone_issues = profile.timezone_issues or []
-    wallet_inventory_csv = out_dir / "wallet_inventory.csv"
-    wallet_issues_csv = out_dir / "wallet_inventory_issues.csv"
-    wallet_summary = profile.wallet_summary or {"status": "not_checked", "wallet_count": 0, "issue_count": 0}
-    wallet_inventory = profile.wallet_inventory or []
-    wallet_issues = profile.wallet_issues or []
     write_json(
         profile_json,
         {
@@ -528,45 +546,10 @@ def write_profile_artifacts(out_dir: Path, profile: SourceProfile) -> tuple[Path
             "timezone_summary": timezone_summary,
             "timezone_issue_count": len(timezone_issues),
             "timezone_issues_path": str(timezone_issues_csv),
-            "wallet_summary": wallet_summary,
-            "wallet_count": len(wallet_inventory),
-            "wallet_inventory_path": str(wallet_inventory_csv),
-            "wallet_issue_count": len(wallet_issues),
-            "wallet_issues_path": str(wallet_issues_csv),
         },
     )
     write_csv_rows(inventory_csv, list(PROFILE_INVENTORY_HEADERS), profile.file_inventory)
     write_csv_rows(timezone_issues_csv, list(TIMEZONE_ISSUE_HEADERS), timezone_issues)
-    if wallet_inventory:
-        write_csv_rows(wallet_inventory_csv, list(wallet_inventory[0].keys()), wallet_inventory)
-    else:
-        write_csv_rows(
-            wallet_inventory_csv,
-            [
-                "source",
-                "raw_dir",
-                "wallet_id",
-                "identifier_kind",
-                "normalized_identifier",
-                "display_identifier",
-                "network_scope",
-                "controller",
-                "account_label",
-                "evidence_kind",
-                "evidence_path",
-                "confidence",
-                "note",
-            ],
-            [],
-        )
-    if wallet_issues:
-        write_csv_rows(wallet_issues_csv, list(wallet_issues[0].keys()), wallet_issues)
-    else:
-        write_csv_rows(
-            wallet_issues_csv,
-            ["source", "raw_dir", "wallet_id", "issue_kind", "message", "evidence_path"],
-            [],
-        )
     return profile_json, inventory_csv
 
 

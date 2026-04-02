@@ -108,6 +108,15 @@ def load_source_inventory(path: Path) -> list[dict[str, str]]:
     ]
 
 
+def slugify(value: str) -> str:
+    text = value.strip().lower().replace("&", " and ")
+    chars = [char if char.isalnum() else "_" for char in text]
+    slug = "".join(chars)
+    while "__" in slug:
+        slug = slug.replace("__", "_")
+    return slug.strip("_")
+
+
 def infer_identifier_kind(value: str) -> str:
     text = value.strip()
     lower = text.lower()
@@ -139,18 +148,18 @@ def normalize_identifier(identifier_kind: str, value: str) -> str:
 
 def infer_network_scope(identifier_kind: str, source: str, raw_dir: Path, account_label: str = "") -> str:
     source_lower = source.strip().lower()
-    path_lower = str(raw_dir).lower()
+    context = " ".join(filter(None, [slugify(source), *(slugify(part) for part in raw_dir.parts[-3:])]))
     account_lower = account_label.strip().lower()
     if identifier_kind == "address_alias":
-        if "gtrade" in source_lower or "/gtrade/" in path_lower:
+        if "gtrade" in context:
             return "polygon"
         return ""
     if identifier_kind == "evm_address":
-        if "polygon" in source_lower or "polygon" in path_lower:
+        if "polygon" in context:
             return "polygon"
-        if "bsc" in source_lower or "bsc" in path_lower or "bnb" in path_lower:
+        if "bsc" in context or "bnb" in context:
             return "bsc"
-        if "ronin" in source_lower or "ronin" in path_lower:
+        if "ronin" in context:
             return "ronin"
         return "ethereum"
     if identifier_kind in {"btc_xpub", "btc_address"} or "btc" in account_lower or "bitcoin" in account_lower:
@@ -525,21 +534,25 @@ def extract_metamask_app_wallets(source: str, raw_dir: Path) -> tuple[list[dict[
     return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
 
 
-def profile_wallet_identifiers(source: str, raw_dir: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, object]]:
+def profile_wallet_identifiers(
+    source: str,
+    raw_dir: Path,
+    adapter_name: str = "",
+) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, object]]:
     raw_dir = require_directory(raw_dir.resolve(), "Raw source directory")
-    source_lower = source.strip().lower()
-    path_lower = str(raw_dir).lower()
-    if source_lower == "metamask app" or "app-metamask" in path_lower:
+    source_slug = slugify(source)
+    raw_slug = " ".join(slugify(part) for part in raw_dir.parts[-3:])
+    if source_slug == "metamask_app" or "app_metamask" in raw_slug:
         evidence, issues = extract_metamask_app_wallets(source, raw_dir)
-    elif "ledger live" in source_lower or "ledger live" in path_lower:
+    elif adapter_name == "ledger_live" or source_slug.startswith("ledger_live"):
         evidence, issues = extract_ledger_live_wallets(source, raw_dir)
-    elif "near" in source_lower or "/near/" in path_lower:
+    elif adapter_name == "near" or source_slug.startswith("near"):
         evidence, issues = extract_near_wallets(source, raw_dir)
-    elif "ronin" in source_lower or "/ronin/" in path_lower:
+    elif "ronin" in raw_slug or source_slug.startswith("ronin"):
         evidence, issues = extract_ronin_wallets(source, raw_dir)
-    elif "gtrade" in source_lower or "/gtrade/" in path_lower:
+    elif adapter_name == "gtrade" or source_slug.startswith("gtrade"):
         evidence, issues = extract_gtrade_identifiers(source, raw_dir)
-    elif any(token in source_lower or token in path_lower for token in ("metamask", "eth-", "bsc-", "polygon-", "eth-gala", "eth-ledger")):
+    elif adapter_name == "evm_explorer" or source_slug.startswith(("bsc_", "eth_", "polygon_")) or "metamask" in source_slug:
         evidence, issues = extract_evm_wallets(source, raw_dir)
     else:
         evidence, issues = [], []
@@ -614,33 +627,14 @@ def summarize_wallet_inventory(evidence_rows: Sequence[dict[str, str]], issue_ro
     return inventory_rows, summary
 
 
-def supplemental_wallet_sources(repo_root: Path) -> list[dict[str, str]]:
-    extra: list[dict[str, str]] = []
-    for source, raw_folder in (
-        ("MetaMask app", "01_raw_exports/external/app-metamask/2026-03"),
-        ("ETH Ledger 1 capture", "01_raw_exports/external/eth-ledger1/2026-03"),
-        ("Ronin", "01_raw_exports/external/ronin/raw"),
-    ):
-        raw_dir = repo_root / raw_folder
-        if raw_dir.exists():
-            extra.append(
-                {
-                    "source": source,
-                    "raw_folder": raw_folder,
-                }
-            )
-    return extra
-
-
 def build_wallet_inventory(repo_root: Path) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]], dict[str, object]]:
     repo_root = require_directory(repo_root.resolve(), "Repo root")
     source_inventory_rows = load_source_inventory(repo_root / "03_analysis" / "issues" / "source_inventory.csv")
     source_specs = [
-        {"source": row["source"], "raw_folder": row["raw_folder"]}
+        {"source": row["source"], "raw_folder": row["raw_folder"], "adapter": row["adapter"]}
         for row in source_inventory_rows
         if row.get("raw_folder")
     ]
-    source_specs.extend(supplemental_wallet_sources(repo_root))
 
     evidence_rows: list[dict[str, str]] = []
     issue_rows: list[dict[str, str]] = []
@@ -662,7 +656,11 @@ def build_wallet_inventory(repo_root: Path) -> tuple[list[dict[str, str]], list[
                 )
             )
             continue
-        source_evidence, source_issues, _ = profile_wallet_identifiers(spec["source"], raw_dir)
+        source_evidence, source_issues, _ = profile_wallet_identifiers(
+            spec["source"],
+            raw_dir,
+            adapter_name=spec.get("adapter", ""),
+        )
         evidence_rows.extend(source_evidence)
         issue_rows.extend(source_issues)
 

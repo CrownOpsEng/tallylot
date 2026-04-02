@@ -266,19 +266,15 @@ class ScriptEndToEndTests(unittest.TestCase):
             summary = json.loads(result.stdout)
             profile = read_json(out_dir / "profile.json")
             inventory = read_dict_rows(out_dir / "profile_inventory.csv")
-            wallet_inventory = read_dict_rows(out_dir / "wallet_inventory.csv")
 
         self.assertEqual("coinbase", summary["adapter"])
         self.assertTrue(summary["adapter_supported"])
         self.assertEqual("passed", summary["timezone_status"])
         self.assertEqual(0, summary["timezone_issue_count"])
-        self.assertEqual("passed", summary["wallet_status"])
-        self.assertEqual(0, summary["wallet_issue_count"])
         self.assertEqual(summary["files_profiled"], len(inventory))
         self.assertIn("manifest_fingerprint", profile)
         self.assertEqual("passed", profile["timezone_summary"]["status"])
-        self.assertEqual("passed", profile["wallet_summary"]["status"])
-        self.assertEqual([], wallet_inventory)
+        self.assertNotIn("wallet_summary", profile)
 
     def test_wallet_inventory_cli_builds_repo_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -299,7 +295,7 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(summary["wallet_count"], len(inventory_rows))
         self.assertTrue(any(row["wallet_id"] == "evm_address:0x1111111111111111111111111111111111111111" for row in inventory_rows))
         self.assertTrue(any(row["wallet_id"] == "btc_xpub:xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" for row in inventory_rows))
-        self.assertTrue(any(row["source"] == "Ledger Live" for row in evidence_rows))
+        self.assertTrue(any(row["source"] == "ledger-live-main" for row in evidence_rows))
         self.assertTrue(any(row["issue_kind"] == "partial_identifier_only" for row in issue_rows))
 
     def test_normalize_source_cli_supports_wealthsimple_repo_raw_dir(self) -> None:
@@ -363,7 +359,7 @@ class ScriptEndToEndTests(unittest.TestCase):
             result = run_script(
                 "normalize_source.py",
                 "--source",
-                "Ledger Live",
+                "ledger-live-main",
                 "--raw-dir",
                 str(raw_dir),
                 "--out-dir",
@@ -417,9 +413,9 @@ class ScriptEndToEndTests(unittest.TestCase):
             events = read_dict_rows(out_dir / "canonical_events.csv")
 
         self.assertEqual("ready", summary["status"])
-        self.assertEqual(14, summary["canonical_events"])
+        self.assertEqual(10, summary["canonical_events"])
         self.assertEqual(0, summary["exceptions"])
-        self.assertEqual(14, len(events))
+        self.assertEqual(10, len(events))
 
     def test_normalize_source_cli_supports_bsc_explorer_repo_raw_dir(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
@@ -429,7 +425,7 @@ class ScriptEndToEndTests(unittest.TestCase):
             result = run_script(
                 "normalize_source.py",
                 "--source",
-                "BSC MetaMask Wallet",
+                "bsc-metamask1",
                 "--raw-dir",
                 str(raw_dir),
                 "--out-dir",
@@ -452,7 +448,7 @@ class ScriptEndToEndTests(unittest.TestCase):
             result = run_script(
                 "normalize_source.py",
                 "--source",
-                "MetaMask - Polygon",
+                "polygon-metamask1",
                 "--raw-dir",
                 str(raw_dir),
                 "--out-dir",
@@ -477,7 +473,7 @@ class ScriptEndToEndTests(unittest.TestCase):
             result = run_script(
                 "normalize_source.py",
                 "--source",
-                "ETH GalaGames Wallet",
+                "eth-gala1",
                 "--raw-dir",
                 str(raw_dir),
                 "--out-dir",
