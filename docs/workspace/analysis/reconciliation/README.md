@@ -14,7 +14,7 @@ Current baseline package:
 
 Notes:
 
-- `baseline_exchange_reconciliation.csv` is an internal CoinTracking cross-check between `Current Balance` and `Balance by Exchange`.
+- `baseline_exchange_reconciliation.csv` is an internal portfolio-tracker cross-check between `Current Balance` and `Balance by Exchange`.
 - It does not prove that each external exchange or wallet was fully synced to the same cutoff.
 - `baseline_source_activity.csv` records the first and last baseline transaction timestamp seen for each source plus whether that source still has balances in `Balance by Exchange`.
 

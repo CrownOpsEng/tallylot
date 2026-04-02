@@ -10,10 +10,9 @@ decisions that should not be rediscovered from scratch.
 - External workspace model only
 - CLI and library runtime only
 - Filesystem-backed operational storage
-- CoinTracking CSV as the only implemented output adapter
+- One concrete CoinTracking CSV edge adapter is implemented today
 - Normalization writes `facts.csv`, `balances.csv`, and
-  `balance_evidence.csv` as active runtime artifacts; CoinTracking CSV exports
-  run as explicit output adapters with no repo-level legacy aliases
+  `balance_evidence.csv` as active runtime artifacts
 - Dev-only oracle workflows run through `uv run python -m tools.oracles.cli`
   and stay outside the production package and production CLI surface
 - Archive-aware source scanning and intake plan/apply workflows

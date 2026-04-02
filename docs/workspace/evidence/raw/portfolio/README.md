@@ -1,7 +1,8 @@
 # Portfolio Exports
 
-Store portfolio-system exports and tracker captures here. In the current
-operator workflow this mostly means CoinTracking export bundles.
+Store portfolio-system exports and tracker captures here. The current
+historical baseline and most saved bundles happen to live under the
+`cointracking/` subtree.
 
 This branch is separate from `evidence/raw/source/` on purpose:
 

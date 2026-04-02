@@ -49,7 +49,8 @@ available.
 CoinTracking support is intentionally narrow:
 
 - CoinTracking import/export shapes may be supported as adapters.
-- CoinTracking transaction types may be represented in output projection metadata.
+- CoinTracking row types may be targeted by adapter-local renderer mappings
+  when producing that export surface.
 - CoinTracking reports may be parsed for comparison by dev-only tooling.
 - CoinTracking tax outputs may be used as black-box oracles during validation.
 

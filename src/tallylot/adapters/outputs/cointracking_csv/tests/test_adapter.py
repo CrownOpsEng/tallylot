@@ -3,11 +3,17 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
+from tallylot.adapters.outputs.cointracking_csv.projection import COINTRACKING_TYPE_LABELS
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.outputs import RenderOutputRequest
+from tallylot.domain.transactions import ProjectionType
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service, build_render_service
+
+
+def test_cointracking_projection_mapping_covers_every_runtime_projection_type() -> None:
+    assert set(COINTRACKING_TYPE_LABELS) == set(ProjectionType)
 
 
 def test_cointracking_output_matches_expected_schema_and_projection_mapping(

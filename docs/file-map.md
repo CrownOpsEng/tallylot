@@ -23,7 +23,7 @@ command, artifact, or agent route.
 | check export and verification hygiene | `docs/operations/export-checklist.md` |
 | check commit format and checkpoint rules | `docs/architecture/commit-standards.md` |
 | load a compact repo-specific agent prompt | `docs/operations/ai-session-prompt.md` |
-| inspect supported CoinTracking oracle artifact families | `docs/reference/cointracking-oracle-artifacts.md` |
+| inspect supported historical oracle artifact families | `docs/reference/cointracking-oracle-artifacts.md` |
 
 ## Workspace Artifacts
 

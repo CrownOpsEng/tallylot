@@ -17,7 +17,7 @@ uv run python -m tools.oracles.cli baseline validate \
 - run `source profile`
 - run `source normalize`
 - review `timezone_issues.csv`, `exceptions.csv`, and `normalization_reviews.csv`
-- run `output render file` if you need a CoinTracking output candidate
+- run `output render file` if you need the current tracker-import candidate
 
 ## Batch Gate
 

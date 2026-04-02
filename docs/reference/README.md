@@ -14,6 +14,7 @@ contain personal export inventories or captured report bundles.
 ## Contents
 
 - [`canadian-cryptocurrency-taxation-guide.md`](canadian-cryptocurrency-taxation-guide.md)
-- [`cointracking-oracle-artifacts.md`](cointracking-oracle-artifacts.md)
+- [`cointracking-oracle-artifacts.md`](cointracking-oracle-artifacts.md):
+  historical portfolio-tracker oracle artifact families
 - [`tax-reference-map.md`](tax-reference-map.md)
 - [`test-suite-followups.md`](test-suite-followups.md)

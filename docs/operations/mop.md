@@ -8,13 +8,13 @@ supporting detail.
 
 Use this runbook for the current operator workflow. The typed package manages
 evidence, normalization, staging, verification, and review artifacts in the
-external workspace, while manual CoinTracking steps still remain part of the
-current round-close process.
+external workspace, while manual tracker-import and verification steps still
+remain part of the current round-close process.
 
 ## Working Principles
 
-- CoinTracking remains part of the current operator workflow for repairs and
-  imports, but it is not the long-term architecture center.
+- The current operator workflow still includes manual tracker repair and import
+  steps, but those are not the long-term architecture center.
 - Raw exports are immutable.
 - One source at a time. No multi-source imports before verification.
 - The typed package should do the mechanical work; ambiguous cases stay visible
@@ -26,7 +26,7 @@ current round-close process.
 ### 1. Lock The Baseline
 
 Run `uv run python -m tools.oracles.cli baseline validate` against the oracle
-CoinTracking export folder and review the generated reconciliation package.
+baseline export folder and review the generated reconciliation package.
 
 ### 2. Capture Raw Evidence
 
@@ -53,7 +53,7 @@ CoinTracking export folder and review the generated reconciliation package.
 ### 5. Seed And Execute The Round
 
 - run `uv run python -m tools.oracles.cli round scaffold`
-- make the manual CoinTracking repair or import
+- make the manual tracker repair or import
 - save the fresh verification export set in `working/verification/<round_id>/`
 
 ### 6. Verify

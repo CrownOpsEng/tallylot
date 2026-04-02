@@ -4,8 +4,8 @@ This tree holds derived files used to prepare import batches and verify
 round-close changes.
 
 In the current operator workflow, some verification folders still contain
-CoinTracking exports. That is a workflow detail, not the definition of the
-tree itself.
+tracker export sets. That is a workflow detail, not the definition of the tree
+itself.
 
 Subfolders:
 

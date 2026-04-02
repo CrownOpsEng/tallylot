@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import re
 import tomllib
@@ -9,14 +10,52 @@ from pathlib import Path
 from tallylot.domain.transactions import ProjectionType, TransactionFact
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+CLASSIFICATION_KEYWORDS = frozenset(
+    {
+        "economic_kind",
+        "projection_type",
+        "journal_intent",
+        "tax_treatment_code",
+    }
+)
+LEGACY_PROJECTION_LABELS = frozenset(
+    {
+        "Deposit",
+        "Trade",
+        "Withdrawal",
+        "Interest Income",
+        "Reward / Bonus",
+        "Expense (non taxable)",
+        "Swap (non taxable)",
+        "Staking",
+        "Derivatives / Futures Profit",
+        "Derivatives / Futures Loss",
+    }
+)
+
+
+def _module(path: Path) -> ast.Module:
+    return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+
+def _python_files(root: Path) -> tuple[Path, ...]:
+    return tuple(sorted(root.rglob("*.py")))
+
+
+def _is_named_call(node: ast.expr, name: str) -> bool:
+    if isinstance(node, ast.Name):
+        return node.id == name
+    if isinstance(node, ast.Attribute):
+        return node.attr == name
+    return False
 
 
 def test_repo_has_no_type_ignore_comments() -> None:
     python_files = (
         REPO_ROOT / "conftest.py",
-        *sorted((REPO_ROOT / "src").rglob("*.py")),
-        *sorted((REPO_ROOT / "tests").rglob("*.py")),
-        *sorted((REPO_ROOT / "tools").rglob("*.py")),
+        *_python_files(REPO_ROOT / "src"),
+        *_python_files(REPO_ROOT / "tests"),
+        *_python_files(REPO_ROOT / "tools"),
     )
     forbidden = ("type:" + " ignore", "pyright:" + " ignore")
 
@@ -136,11 +175,18 @@ def test_typecheck_configs_remain_strict() -> None:
 def test_application_modules_do_not_import_infrastructure() -> None:
     application_root = REPO_ROOT / "src" / "tallylot" / "application"
 
-    for path in sorted(application_root.rglob("*.py")):
-        text = path.read_text(encoding="utf-8")
-        assert re.search(r"(^|\n)(from|import)\s+tallylot\.infrastructure\b", text) is None, (
-            f"{path} imports infrastructure from the application layer"
-        )
+    for path in _python_files(application_root):
+        module = _module(path)
+        for node in ast.walk(module):
+            if isinstance(node, ast.ImportFrom) and node.module is not None:
+                assert not (
+                    node.module == "tallylot.infrastructure" or node.module.startswith("tallylot.infrastructure.")
+                ), f"{path} imports infrastructure from the application layer"
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert not (
+                        alias.name == "tallylot.infrastructure" or alias.name.startswith("tallylot.infrastructure.")
+                    ), f"{path} imports infrastructure from the application layer"
 
 
 def test_transaction_fact_category_bridge_is_removed() -> None:
@@ -149,43 +195,57 @@ def test_transaction_fact_category_bridge_is_removed() -> None:
 
 def test_repo_does_not_reference_fact_category_attribute() -> None:
     guarded_roots = (
-        REPO_ROOT / "src" / "tallylot" / "adapters" / "sources",
+        REPO_ROOT / "src" / "tallylot" / "adapters",
+        REPO_ROOT / "src" / "tallylot" / "application" / "outputs",
+        REPO_ROOT / "src" / "tallylot" / "infrastructure" / "storage",
         REPO_ROOT / "src" / "tallylot" / "adapters" / "support",
         REPO_ROOT / "tests" / "unit" / "domain",
+        REPO_ROOT / "tests" / "unit" / "application" / "outputs",
+        REPO_ROOT / "tests" / "contract",
     )
 
     for root in guarded_roots:
-        for path in sorted(root.rglob("*.py")):
-            text = path.read_text(encoding="utf-8")
-            assert re.search(r"\.category\b", text) is None, f"{path} references removed fact category attribute"
+        for path in _python_files(root):
+            for node in ast.walk(_module(path)):
+                if isinstance(node, ast.Attribute):
+                    assert node.attr != "category", f"{path} references removed fact category attribute"
 
 
-def test_source_adapters_do_not_emit_cointracking_projection_labels() -> None:
+def test_source_adapters_do_not_embed_legacy_projection_labels_in_classification_calls() -> None:
     adapters_root = REPO_ROOT / "src" / "tallylot" / "adapters" / "sources"
-    forbidden_pattern = re.compile(
-        r'projection_type\s*=\s*"(Deposit|Trade|Withdrawal|Interest Income|Reward / Bonus|'
-        r"Expense \(non taxable\)|Swap \(non taxable\)|Staking|"
-        r'Derivatives / Futures Profit|Derivatives / Futures Loss)"'
-    )
 
-    for path in sorted(adapters_root.rglob("*.py")):
-        text = path.read_text(encoding="utf-8")
-        assert forbidden_pattern.search(text) is None, f"{path} embeds CoinTracking projection labels"
+    for path in _python_files(adapters_root):
+        for node in ast.walk(_module(path)):
+            if not isinstance(node, ast.Call):
+                continue
+            if not _is_named_call(node.func, "classification"):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg != "projection_type":
+                    continue
+                if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
+                    assert keyword.value.value not in LEGACY_PROJECTION_LABELS, (
+                        f"{path} embeds CoinTracking projection label {keyword.value.value!r}"
+                    )
 
 
 def test_source_adapters_do_not_pass_string_classification_values() -> None:
     adapters_root = REPO_ROOT / "src" / "tallylot" / "adapters" / "sources"
-    forbidden_literals = (
-        'economic_kind="',
-        'projection_type="',
-        'journal_intent="',
-        'tax_treatment_code="',
-    )
 
-    for path in sorted(adapters_root.rglob("*.py")):
-        text = path.read_text(encoding="utf-8")
-        for literal in forbidden_literals:
-            assert literal not in text, f"{path} passes string classification values through shared draft helpers"
+    for path in _python_files(adapters_root):
+        for node in ast.walk(_module(path)):
+            if not isinstance(node, ast.Call):
+                continue
+            if not _is_named_call(node.func, "classification"):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg not in CLASSIFICATION_KEYWORDS:
+                    continue
+                if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
+                    raise AssertionError(
+                        f"{path} passes string classification value {keyword.arg}={keyword.value.value!r} "
+                        "through shared draft helpers"
+                    )
 
 
 def test_projection_type_runtime_values_remain_machine_oriented() -> None:

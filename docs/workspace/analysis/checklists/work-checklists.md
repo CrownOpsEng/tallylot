@@ -29,7 +29,7 @@
 - [ ] Generate or refresh `evidence/raw/source/<source>/<capture_id>/manifest.csv`
 - [ ] Run `source profile` and review timezone artifacts
 - [ ] Run `source normalize` and review exception and review artifacts
-- [ ] Run `uv run python -m tools.oracles.cli batch screen` on the CoinTracking-ready candidate and review the output
+- [ ] Run `uv run python -m tools.oracles.cli batch screen` on the candidate CSV and review the output
 - [ ] Run `uv run python -m tools.oracles.cli batch stage` only after the screen passes
 - [ ] Run `uv run python -m tools.oracles.cli round scaffold`
 - [ ] Import exactly one source into CoinTracking

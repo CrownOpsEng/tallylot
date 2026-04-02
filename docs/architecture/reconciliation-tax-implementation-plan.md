@@ -1,8 +1,8 @@
 # Reconciliation And Tax Implementation Plan
 
 This document is the implementation anchor for evolving the repo from a
-CoinTracking-centered reconciliation workflow into an independent
-reconciliation, accounting, and Canadian tax computation system.
+tracker-dependent historical workflows into an independent reconciliation,
+accounting, and Canadian tax computation system.
 
 Use this plan when making structural decisions that affect normalization,
 checkpointing, journaling, or tax computation. Treat it as a design contract,
@@ -10,9 +10,9 @@ not as a loose idea list.
 
 ## Objective
 
-Deliver a filing-ready `2023` to `2025` workflow without relying on CoinTracking
-as the central runtime ledger, while preserving the repo's current typing,
-layering, and evidence discipline.
+Deliver a filing-ready `2023` to `2025` workflow without treating CoinTracking
+as a required runtime ledger or organizing model, while preserving the repo's
+current typing, layering, and evidence discipline.
 
 The system must:
 
@@ -49,7 +49,7 @@ Reason:
 
 ### 2. Keep CoinTracking At The Edge
 
-CoinTracking remains useful for:
+CoinTracking remains supported for:
 
 - one concrete CSV output adapter
 - historical regression through dev-only oracle tooling
@@ -345,12 +345,12 @@ Lock these early:
 - `TaxTreatmentCode`
 - `JournalIntent`
 
-## CoinTracking Output Contract
+## Current CoinTracking Adapter Contract
 
 ### Full Type Surface
 
-Lock the full CoinTracking output taxonomy now so the projection metadata used
-by the output adapter does not churn later.
+Lock the current CoinTracking output taxonomy now so the projection metadata
+used by that adapter does not churn later.
 
 Trade types:
 
