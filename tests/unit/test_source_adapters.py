@@ -225,10 +225,12 @@ class SourceAdapterTests(unittest.TestCase):
 
         result = adapter.normalize(raw_dir, profile, exception_decisions={})
 
-        self.assertEqual(41, len(result.canonical_events))
+        self.assertEqual(31, len(result.canonical_events))
         self.assertEqual([], result.exceptions)
         self.assertTrue(any(row["event_kind"] == "Trade" for row in result.canonical_events))
         self.assertTrue(any(row["event_kind"] == "Staking" for row in result.canonical_events))
+        self.assertTrue(any(row["fee_amount"] for row in result.canonical_events))
+        self.assertLess(sum(1 for row in result.canonical_events if row["event_kind"] == "Other Fee"), 10)
 
     def test_evm_explorer_adapter_surfaces_polygon_review_rows_without_importing_them(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "polygon-metamask1" / "2026-03"
@@ -242,10 +244,11 @@ class SourceAdapterTests(unittest.TestCase):
 
         result = adapter.normalize(raw_dir, profile, exception_decisions={})
 
-        self.assertEqual(20, len(result.canonical_events))
+        self.assertEqual(17, len(result.canonical_events))
         self.assertEqual(5, len(result.exceptions))
         self.assertTrue(all(row["exception_kind"] == "review_required" for row in result.exceptions))
         self.assertTrue(any("suspicious NFT airdrop" in row["message"] for row in result.exceptions))
+        self.assertTrue(any(row["fee_amount"] for row in result.canonical_events))
 
     def test_evm_explorer_adapter_surfaces_eth_gala_review_rows_without_importing_them(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "eth-gala1" / "2026-03"
@@ -259,10 +262,11 @@ class SourceAdapterTests(unittest.TestCase):
 
         result = adapter.normalize(raw_dir, profile, exception_decisions={})
 
-        self.assertEqual(14, len(result.canonical_events))
+        self.assertEqual(11, len(result.canonical_events))
         self.assertEqual(3, len(result.exceptions))
         self.assertTrue(all(row["exception_kind"] == "review_required" for row in result.exceptions))
         self.assertTrue(any("suspicious NFT airdrop" in row["message"] for row in result.exceptions))
+        self.assertTrue(any(row["fee_amount"] for row in result.canonical_events))
 
     def test_gtrade_adapter_surfaces_report_limits_without_guessing(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "gtrade" / "raw"

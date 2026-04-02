@@ -23,7 +23,7 @@ Use this skill only after deterministic profiling and normalization have run.
 2. If it is a data exception, prepare a compact decision artifact keyed by:
    - `manifest_fingerprint`
    - `event_id`
-3. If it is an adapter bug, draft a durable repair:
+3. If it is an adapter bug, switch to `07_skills/adapter-authoring/` and draft a durable repair:
    - minimal fixture
    - adapter patch
    - regression test

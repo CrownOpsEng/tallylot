@@ -15,8 +15,9 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 - a populated issue log for known baseline exceptions
 - an active source inventory and structured round log
 - a universal source-intake pipeline for profiling, canonical normalization, CoinTracking rendering, and reconciliation
+- shared normalization helpers for fee-aware canonical events and output rendering
 - lightweight helper scripts for baseline checks, raw-source manifests, overlap screening, and verification comparison
-- repo-local AI skills under `07_skills/` for source intake, normalization exceptions, and round verification
+- repo-local AI skills under `07_skills/` for source intake, adapter authoring, normalization exceptions, round verification, and wallet inventory
 
 ## Start here
 

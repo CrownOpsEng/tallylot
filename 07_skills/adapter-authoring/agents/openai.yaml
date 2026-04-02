@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adapter Authoring"
+  short_description: "Create or repair normalization adapters"
+  default_prompt: "Use $adapter-authoring to build or repair this source adapter using the shared canonical normalization contract."

@@ -21,6 +21,7 @@ from coinbase_common import (
     normalize_coinbase_transactions,
     retail_csv_rows,
 )
+from normalization_common import attach_fee_to_event, attach_fee_to_event_list
 from pdf_balance_extract import binance_balance_rows_from_text, shakepay_balance_rows_from_text
 from pipeline_common import CANONICAL_BALANCE_HEADERS, CANONICAL_EVENT_HEADERS, EXCEPTION_HEADERS, SourceProfile, source_slug
 from script_common import (
@@ -2217,36 +2218,30 @@ class EvmExplorerAdapter(SourceAdapter):
                     render_notes="evm_claim",
                 )
             ]
-            if fee_paid > 0:
-                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method))
-            return events, None
+            return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset), None
 
         if incoming and (outgoing or native_out > 0):
             asset_out, amount_out = outgoing[0] if outgoing else (native_asset, native_out)
             asset_in, amount_in = incoming[0]
-            events = [
-                canonical_event(
-                    event_id=event_id,
-                    source=profile.source,
-                    adapter=self.name,
-                    account=profile.source,
-                    wallet=profile.source,
-                    raw_file=raw_file,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind="Trade",
-                    description=f"{method} - {tx_hash}",
-                    amount_in=decimal_text(amount_in),
-                    asset_in=asset_in,
-                    amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
-                    asset_out=asset_out,
-                    tx_hash=tx_hash,
-                    render_notes="evm_trade",
-                )
-            ]
-            if fee_paid > 0:
-                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method))
-            return events, None
+            trade_event = canonical_event(
+                event_id=event_id,
+                source=profile.source,
+                adapter=self.name,
+                account=profile.source,
+                wallet=profile.source,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Trade",
+                description=f"{method} - {tx_hash}",
+                amount_in=decimal_text(amount_in),
+                asset_in=asset_in,
+                amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
+                asset_out=asset_out,
+                tx_hash=tx_hash,
+                render_notes="evm_trade",
+            )
+            return [attach_fee_to_event(trade_event, fee_amount=fee_paid, fee_asset=native_asset)], None
 
         if suspicious_nft_assets and not incoming and not outgoing and native_in <= 0 and native_out <= 0:
             decision = exception_decisions.get(event_id, {})
@@ -2269,47 +2264,45 @@ class EvmExplorerAdapter(SourceAdapter):
 
         if outgoing:
             asset_out, amount_out = outgoing[0]
-            events = [
-                canonical_event(
-                    event_id=event_id,
-                    source=profile.source,
-                    adapter=self.name,
-                    account=profile.source,
-                    wallet=profile.source,
-                    raw_file=raw_file,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind="Withdrawal",
-                    description=f"{method or 'Transfer out'} - {tx_hash}",
-                    amount_out=decimal_text(amount_out),
-                    asset_out=asset_out,
-                    tx_hash=tx_hash,
-                    render_notes="evm_out",
-                )
-            ]
-            if fee_paid > 0:
-                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method or "Transfer"))
-            return events, None
+            withdrawal_event = canonical_event(
+                event_id=event_id,
+                source=profile.source,
+                adapter=self.name,
+                account=profile.source,
+                wallet=profile.source,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Withdrawal",
+                description=f"{method or 'Transfer out'} - {tx_hash}",
+                amount_out=decimal_text(amount_out),
+                asset_out=asset_out,
+                tx_hash=tx_hash,
+                render_notes="evm_out",
+            )
+            return [attach_fee_to_event(withdrawal_event, fee_amount=fee_paid, fee_asset=native_asset)], None
 
         if native_out > 0:
             return [
-                canonical_event(
-                    event_id=event_id,
-                    source=profile.source,
-                    adapter=self.name,
-                    account=profile.source,
-                    wallet=profile.source,
-                    raw_file=raw_file,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind="Withdrawal",
-                    description=f"{method or 'Transfer out'} - {tx_hash}",
-                    amount_out=decimal_text(native_out + fee_paid),
-                    asset_out=native_asset,
-                    fee_amount=decimal_text(fee_paid) if fee_paid > 0 else "",
-                    fee_asset=native_asset if fee_paid > 0 else "",
-                    tx_hash=tx_hash,
-                    render_notes="evm_native_out",
+                attach_fee_to_event(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=raw_file,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=timestamp,
+                        event_kind="Withdrawal",
+                        description=f"{method or 'Transfer out'} - {tx_hash}",
+                        amount_out=decimal_text(native_out),
+                        asset_out=native_asset,
+                        tx_hash=tx_hash,
+                        render_notes="evm_native_out",
+                    ),
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
                 )
             ], None
 
@@ -2317,28 +2310,56 @@ class EvmExplorerAdapter(SourceAdapter):
             asset_in, amount_in = incoming[0]
             event_kind = "Airdrop" if inbound_is_airdrop else "Deposit"
             return [
-                canonical_event(
-                    event_id=event_id,
-                    source=profile.source,
-                    adapter=self.name,
-                    account=profile.source,
-                    wallet=profile.source,
-                    raw_file=raw_file,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind=event_kind,
-                    description=f"{method or event_kind} - {tx_hash}",
-                    amount_in=decimal_text(amount_in),
-                    asset_in=asset_in,
-                    tx_hash=tx_hash,
-                    render_notes="evm_in",
+                attach_fee_to_event(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=raw_file,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=timestamp,
+                        event_kind=event_kind,
+                        description=f"{method or event_kind} - {tx_hash}",
+                        amount_in=decimal_text(amount_in),
+                        asset_in=asset_in,
+                        tx_hash=tx_hash,
+                        render_notes="evm_in",
+                    ),
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
                 )
             ], None
 
         if native_in > 0:
             return [
+                attach_fee_to_event(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=raw_file,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=timestamp,
+                        event_kind="Deposit",
+                        description=f"{method or 'Transfer in'} - {tx_hash}",
+                        amount_in=decimal_text(native_in),
+                        asset_in=native_asset,
+                        tx_hash=tx_hash,
+                        render_notes="evm_native_in",
+                    ),
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                )
+            ], None
+
+        if fee_paid > 0:
+            return [
                 canonical_event(
-                    event_id=event_id,
+                    event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
                     source=profile.source,
                     adapter=self.name,
                     account=profile.source,
@@ -2346,17 +2367,14 @@ class EvmExplorerAdapter(SourceAdapter):
                     raw_file=raw_file,
                     raw_row_ref=raw_row_ref,
                     timestamp=timestamp,
-                    event_kind="Deposit",
-                    description=f"{method or 'Transfer in'} - {tx_hash}",
-                    amount_in=decimal_text(native_in),
-                    asset_in=native_asset,
+                    event_kind="Other Fee",
+                    description=f"{method or 'Explorer tx'} - {tx_hash}",
+                    amount_out=decimal_text(fee_paid),
+                    asset_out=native_asset,
                     tx_hash=tx_hash,
-                    render_notes="evm_native_in",
+                    render_notes="evm_fee_only",
                 )
             ], None
-
-        if fee_paid > 0:
-            return [self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method or "Explorer tx")], None
         return [], None
 
     def _group_raw_file(self, group: dict[str, list[tuple[Path, int, dict[str, str]]]]) -> str:
@@ -2506,34 +2524,6 @@ class EvmExplorerAdapter(SourceAdapter):
                 return value
         return ""
 
-    def _fee_event(
-        self,
-        source: str,
-        raw_file: str,
-        raw_row_ref: str,
-        timestamp: str,
-        tx_hash: str,
-        fee_paid: Decimal,
-        native_asset: str,
-        method: str,
-    ) -> dict[str, str]:
-        return canonical_event(
-            event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
-            source=source,
-            adapter=self.name,
-            account=source,
-            wallet=source,
-            raw_file=raw_file,
-            raw_row_ref=raw_row_ref,
-            timestamp=timestamp,
-            event_kind="Other Fee",
-            description=f"{method} - {tx_hash}",
-            amount_out=decimal_text(fee_paid),
-            asset_out=native_asset,
-            tx_hash=tx_hash,
-            render_notes="evm_fee",
-        )
-
     def _stake_events(
         self,
         source: str,
@@ -2581,9 +2571,7 @@ class EvmExplorerAdapter(SourceAdapter):
                 render_notes="evm_stake_in",
             ),
         ]
-        if fee_paid > 0:
-            events.append(self._fee_event(source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, "Stake"))
-        return events
+        return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset)
 
     def _unstake_events(
         self,
@@ -2632,9 +2620,7 @@ class EvmExplorerAdapter(SourceAdapter):
                 render_notes="evm_unstake_out",
             ),
         ]
-        if fee_paid > 0:
-            events.append(self._fee_event(source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, "Unstake"))
-        return events
+        return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset)
 
 
 class ShakepayAdapter(SourceAdapter):

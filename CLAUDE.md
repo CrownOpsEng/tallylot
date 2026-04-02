@@ -2,7 +2,7 @@
 
 Authoritative repo instructions live in `AGENTS.md`.
 
-Repo-local workflow prompts for Claude are exposed through `.claude/commands/`.
+Repo-local workflow prompts for Claude are exposed through `.claude/commands/`, including the adapter-authoring wrapper that points back to the Codex skill.
 
 When wallet identity or source ownership is relevant, start with:
 

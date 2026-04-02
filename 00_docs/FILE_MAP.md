@@ -71,11 +71,10 @@ Loose exports outside the canonical full export folder are not part of the worki
 | `06_scripts/baseline_check.py` | Rebuild the durable baseline validation artifact package |
 | `06_scripts/profile_source.py` | Profile raw source folders into file-family inventory and manifest-backed adapter metadata |
 | `06_scripts/normalize_source.py` | Normalize raw evidence into canonical events, canonical balances, exceptions, and cached CoinTracking candidates |
+| `06_scripts/normalization_common.py` | Shared canonical normalization helpers such as attached-fee behavior |
 | `06_scripts/render_cointracking.py` | Render canonical events into CoinTracking CSV output with reconciliation metadata |
 | `06_scripts/stage_import_batch.py` | Move only overlap-cleared candidates into the reviewed import-batch workflow |
 | `06_scripts/reconcile_source.py` | Compare canonical source outputs against CoinTracking ledger slices and optional balance evidence |
-| `06_scripts/coinbase_normalize.py` | Convert Coinbase raw CSV and statement-PDF evidence into CoinTracking-schema normalized transaction and balance files |
-| `06_scripts/coinbase_check.py` | Validate CoinTracking Coinbase rows against normalized Coinbase evidence and optional balance rows |
 | `06_scripts/pdf_balance_extract.py` | Extract deterministic balance rows from supported statement PDFs such as Coinbase Binance and Shakepay |
 | `06_scripts/source_manifest.py` | Hash raw external evidence folders into deterministic manifests |
 | `06_scripts/wallet_inventory.py` | Build the canonical wallet inventory plus evidence and issue artifacts from raw captures |
@@ -88,6 +87,7 @@ Loose exports outside the canonical full export folder are not part of the worki
 | Path | Purpose |
 | ---- | ------- |
 | `07_skills/source-intake/` | Deterministic raw-source intake, profiling, and queue-state guidance |
+| `07_skills/adapter-authoring/` | Canonical adapter design, repair, and shared normalization guidance |
 | `07_skills/normalization-exceptions/` | Exception-only AI workflow for unresolved normalization rows and adapter repair loops |
 | `07_skills/round-verification/` | Exact post-import and post-repair verification, issue logging, and gate handling |
 | `07_skills/wallet-inventory/` | Canonical wallet-identifier lookup, refresh, and issue-review workflow |

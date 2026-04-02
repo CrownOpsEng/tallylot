@@ -60,23 +60,14 @@ class SourceManifestTests(unittest.TestCase):
             with self.assertRaises(FileNotFoundError):
                 source_manifest.build_manifest_rows(source_dir, output)
 
-    def test_build_manifest_rows_rejects_non_raw_directory_by_default(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            source_dir = Path(tmpdir) / "source"
-            source_dir.mkdir()
-            output = Path(tmpdir) / "manifest.csv"
-
-            with self.assertRaisesRegex(ValueError, "raw export folder"):
-                source_manifest.build_manifest_rows(source_dir, output)
-
-    def test_build_manifest_rows_allows_non_raw_directory_with_override(self) -> None:
+    def test_build_manifest_rows_accepts_capture_directory(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             source_dir = Path(tmpdir) / "source"
             source_dir.mkdir()
             (source_dir / "payload.csv").write_text("a,b\n1,2\n", encoding="utf-8")
             output = Path(tmpdir) / "manifest.csv"
 
-            rows = source_manifest.build_manifest_rows(source_dir, output, allow_non_raw_dir=True)
+            rows = source_manifest.build_manifest_rows(source_dir, output)
 
         self.assertEqual("payload.csv", rows[0]["filename"])
 
@@ -92,7 +83,6 @@ class SourceManifestTests(unittest.TestCase):
 
         self.assertEqual(Path("source"), args.source_dir)
         self.assertEqual(Path("manifest.csv"), args.output)
-        self.assertFalse(args.allow_non_raw_dir)
 
     def test_main_writes_manifest_and_prints_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

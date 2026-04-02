@@ -51,9 +51,9 @@ After export:
 
 Always:
 
-- save untouched files into `01_raw_exports/external/<source>/raw/`
-- run `06_scripts/source_manifest.py` against `01_raw_exports/external/<source>/raw/`
-- store the manifest at `01_raw_exports/external/<source>/manifest.csv`
+- save untouched files into `01_raw_exports/external/<source>/<capture_id>/`
+- run `06_scripts/source_manifest.py` against `01_raw_exports/external/<source>/<capture_id>/`
+- store the manifest at `01_raw_exports/external/<source>/<capture_id>/manifest.csv`
 - update `03_analysis/issues/source_inventory.csv`
 
 Before copying an approved import file to `04_import_ready/`:

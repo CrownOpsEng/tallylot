@@ -47,7 +47,7 @@ Use this checklist for every source in the queue:
 
 1. Confirm the source row in `03_analysis/issues/source_inventory.csv` is current.
 2. Confirm the candidate window starts strictly after `2023-08-05 08:34:04`.
-3. Capture raw files in `01_raw_exports/external/<source>/<capture_id>/` when possible and keep `manifest.csv` inside that capture folder. The legacy `raw/` layout still works for older sources.
+3. Capture raw files in `01_raw_exports/external/<source>/<capture_id>/` and keep `manifest.csv` inside that capture folder.
 4. Run `06_scripts/source_manifest.py` against the capture folder.
 5. Prepare the working import file in `02_working/import_batches/<source>/`.
 6. Run `06_scripts/overlap_check.py` against the CoinTracking-ready candidate.

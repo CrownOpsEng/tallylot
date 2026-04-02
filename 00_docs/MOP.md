@@ -33,8 +33,8 @@ This repo is the evidence, staging, and verification workspace for that process.
 ### Raw data
 
 - `01_raw_exports/cointracking/2023-08-05_full_export/` → canonical CoinTracking baseline export
-- `01_raw_exports/external/<source>/raw/` → untouched external source exports
-- `01_raw_exports/external/<source>/manifest.csv` → file manifest for the raw source folder
+- `01_raw_exports/external/<source>/<capture_id>/` → untouched external source capture
+- `01_raw_exports/external/<source>/<capture_id>/manifest.csv` → file manifest for that source capture
 
 ### Working area
 
@@ -107,8 +107,8 @@ Purpose: clear or classify baseline exceptions before delta imports.
 Use:
 
 - `03_analysis/issues/issue_log.csv`
-- `01_raw_exports/external/<source>/raw/`
-- `01_raw_exports/external/<source>/manifest.csv`
+- `01_raw_exports/external/<source>/<capture_id>/`
+- `01_raw_exports/external/<source>/<capture_id>/manifest.csv`
 - `Validate Transactions`
 - `Missing Transactions` reviewed with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
 - `Trade Table`
@@ -117,7 +117,7 @@ Do:
 
 1. Review all open P1 issues first.
 2. Pull the exact external evidence needed for each item, including fiat deposit, withdrawal, bank, or e-transfer evidence for **FIAT-001**.
-3. Save raw files into `01_raw_exports/external/<source>/raw/`.
+3. Save raw files into `01_raw_exports/external/<source>/<capture_id>/`.
 4. Run `06_scripts/source_manifest.py` to capture a manifest for each new raw source folder.
 5. Update `proof_path` and `proof_summary` in the issue log before changing CoinTracking.
 
@@ -200,7 +200,7 @@ Target window:
 Do:
 
 1. Export raw activity for one source at a time.
-2. Save untouched files into `01_raw_exports/external/<source>/raw/`.
+2. Save untouched files into `01_raw_exports/external/<source>/<capture_id>/`.
 3. Run `06_scripts/source_manifest.py`.
 4. Update `source_inventory.csv` with the export window and raw folder.
 5. Do not import yet.

@@ -35,8 +35,8 @@
 ## Universal intake capability status
 
 - As of **2026-03-24**, deterministic universal normalization is ready for `coinbase`, `wealthsimple`, `binance`, `shakepay`, `ledger_live`, `crypto_com`, `near`, and the shared `evm_explorer` adapter on the active capture-local source folders.
-- The shared `ledger_live` adapter now covers the active capture label `ledger-live-main`; the older CoinTracking labels remain compatibility-only aliases and are no longer repo-facing workflow names.
-- The shared `near` adapter now uses the active capture label `near-main`; the historical `NEAR Wallet` labels remain compatibility-only aliases.
+- The shared `ledger_live` adapter uses the active capture label `ledger-live-main` for repo workflow and normalization output.
+- The shared `near` adapter uses the active capture label `near-main` for repo workflow and normalization output.
 - The shared `evm_explorer` adapter now uses chain-first workflow names such as `bsc-metamask1`, `eth-metamask1`, `polygon-metamask1`, and `eth-gala1`, each backed by a chain-scoped capture folder with a local manifest.
 - The newly added Polygon token and internal-tx files closed the prior Exact Input gap, but `polygon-metamask1` still remains `needs_review`: the current raw set now reaches **2023-12-22 01:51:13** and includes five suspicious post-cutoff NFT airdrops that are intentionally held in `exceptions.csv` instead of being auto-imported as deposits.
 - `eth-gala1` also remains `needs_review`: the current raw set reaches **2025-03-24 22:55:59** and includes three suspicious post-cutoff ERC-1155 NFT rows that are intentionally held in `exceptions.csv` instead of being auto-imported as deposits.

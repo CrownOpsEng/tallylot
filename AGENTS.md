@@ -76,6 +76,7 @@ AI should not:
 ## Repo-local AI workflows
 
 - `07_skills/source-intake/`
+- `07_skills/adapter-authoring/`
 - `07_skills/normalization-exceptions/`
 - `07_skills/round-verification/`
 - `07_skills/wallet-inventory/`
