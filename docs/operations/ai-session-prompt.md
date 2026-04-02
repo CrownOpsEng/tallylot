@@ -1,13 +1,11 @@
 # AI Session Working Prompt
 
 Use this repo as the typed evidence, reconciliation, checkpoint, accounting,
-and tax-computation toolchain. Treat CoinTracking as an output adapter and
-historical oracle layer, not as the live ledger target for new architecture
-work.
+and tax-computation toolchain.
 
-Anchor to these facts first:
+Start with these facts:
 
-1. Oracle baseline folder:
+1. Historical baseline folder:
    `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
 2. Authoritative cutoff timestamp: `2023-08-05 08:34:04`
 3. Delta work begins strictly after that timestamp unless a new baseline is
@@ -18,11 +16,13 @@ Anchor to these facts first:
    `2026-03-23`
 6. The implementation anchor is
    `docs/architecture/reconciliation-tax-implementation-plan.md`
-7. CoinTracking tax and accounting reports are oracle-only support artifacts,
-   not normal runtime inputs
-8. follow `docs/architecture/implementation-working-agreement.md` for execution discipline
+7. The only implemented file output adapter today is `cointracking_csv`
+8. CoinTracking tax and accounting reports stay in comparison tooling; they are
+   not runtime inputs
+9. Follow `docs/architecture/implementation-working-agreement.md` for execution
+   discipline
 
-Priority artifacts:
+Check these artifacts first:
 
 1. baseline validation package under `analysis/reconciliation/`
 2. `analysis/issues/issue_log.csv`
@@ -32,22 +32,20 @@ Priority artifacts:
 6. `working/import_batches/`
 7. raw captures under `evidence/raw/source/`
 
-Operational rules:
+Working rules:
 
-1. prefer the typed CLI commands over manual file shaping
-2. do not stage or import a source while `timezone_issues.csv`, `exceptions.csv`,
-   or `stage_summary.json` show unresolved blockers
-3. update the round log after each seeded round and verification cycle
-4. use `uv run python -m tools.oracles.cli source diff` when a candidate or
-   reference slice needs a deterministic row comparison
-5. for new architecture work, build reconciliation before tax computation
-6. keep the system centered on provider-neutral transaction facts, not the
-   current normalized transaction shape
-7. keep journaling behind a renderer port and tax behavior behind a policy port
-8. expand `pydantic` only at repo boundaries, not through the core domain
-9. do not silently suppress unsupported or ambiguous facts; log them as issues
-10. refactor obvious shared seams instead of duplicating logic in place
-11. create or update tests alongside new behavior and structure
-12. make stable checkpoint commits without waiting for user reminders
-13. keep normal runtime workflows reconstructable from source evidence and
-    intentional checkpoints without requiring CoinTracking tax outputs
+1. Prefer the typed CLI commands over manual file shaping.
+2. Stop before staging or importing when `timezone_issues.csv`,
+   `exceptions.csv`, or `stage_summary.json` still show blockers.
+3. Update the round log after each seeded round and verification cycle.
+4. Use `uv run python -m tools.oracles.cli source diff` when a candidate or
+   reference slice needs a deterministic row comparison.
+5. Build reconciliation before tax computation.
+6. Keep the core centered on provider-neutral transaction facts.
+7. Keep journaling behind a renderer port and tax behavior behind a policy
+   port.
+8. Keep `pydantic` at repo boundaries, not in the core domain.
+9. Surface unsupported or ambiguous facts as issues.
+10. Refactor obvious shared seams instead of duplicating logic.
+11. Add or update tests with new behavior.
+12. Make stable checkpoint commits without waiting for reminders.

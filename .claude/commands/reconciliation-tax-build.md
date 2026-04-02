@@ -18,14 +18,13 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - CoinTracking oracle parsing
 4. If the task changes architecture or sequencing decisions, update
    `ROADMAP.md` in the same checkpoint.
-5. Keep the build direction:
-   - reconciliation before tax
-   - provider-neutral facts before compatibility projections
-   - CoinTracking as oracle and compatibility layer only
-   - CoinTracking tax and accounting reports are oracle-only, not normal
-     runtime inputs
-   - Ledger CLI behind a renderer port
-   - tax policy behind a policy port
+5. Keep these boundaries:
+   - build reconciliation before tax
+   - keep facts provider-neutral before rendering compatibility outputs
+   - keep CoinTracking-specific parsing and rendering in adapter or oracle code
+   - keep CoinTracking tax and accounting reports out of runtime state
+   - keep Ledger CLI behind a renderer port
+   - keep tax policy behind a policy port
 6. Keep `pydantic` at boundaries only:
    - config
    - row parsing
@@ -37,8 +36,7 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - reconciliation behavior
    - journal validation
    - tax outputs
-9. Do not close work with silent unsupported behavior. Emit explicit issues and
-   update roadmap follow-ups when the task reveals deferred cases.
-10. Do not wait for the user to remind you to refactor an obvious shared seam,
-    create structure before more feature code piles in, add tests for new
-    behavior, or commit a stable verified checkpoint.
+9. Emit explicit issues when the task uncovers unsupported behavior or deferred
+   cases.
+10. Refactor obvious shared seams, add tests for new behavior, and commit a
+    verified checkpoint before closing the task.
