@@ -8,6 +8,7 @@ from reportlab.pdfgen import canvas
 from crypto_reconciliation.application.dtos import PdfBalanceExtractRequest, SourceReconcileRequest
 from crypto_reconciliation.application.services.pdf_extract import PdfBalanceExtractionService
 from crypto_reconciliation.application.services.reconcile import SourceReconciliationService
+from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -58,7 +59,7 @@ def test_pdf_balance_extraction_service_extracts_supported_statement_rows(tmp_pa
     pdf.drawString(72, 705, "ETH 2.5000 N/A 3000.00 CAD/ETH 7500.00 CAD")
     pdf.save()
 
-    response = PdfBalanceExtractionService(FilesystemArtifactStore()).execute(
+    response = PdfBalanceExtractionService(build_registry(), FilesystemArtifactStore()).execute(
         PdfBalanceExtractRequest(pdf_path=pdf_path, output_path=output_path)
     )
 

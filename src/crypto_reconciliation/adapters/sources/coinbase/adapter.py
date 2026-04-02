@@ -20,6 +20,8 @@ from crypto_reconciliation.ports.adapters import NormalizationResult
 from .asset_migrations import normalize_asset_migration as _normalize_asset_migration
 from .matching import match_coinbase_inventory
 from .matching import retail_path as _retail_path
+from .pdf_balances import extract_pdf_balances as _extract_pdf_balances
+from .pdf_balances import match_pdf_statement as _match_pdf_statement
 from .retail_csv import read_retail_rows as _read_retail_rows
 from .retail_rows import normalize_retail_row as _normalize_row
 
@@ -56,6 +58,12 @@ class CoinbaseAdapter:
     ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del source, raw_dir, profile
         return (), ()
+
+    def match_pdf_statement(self, pdf_path: Path, text: str) -> int:
+        return _match_pdf_statement(pdf_path, text)
+
+    def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
+        return _extract_pdf_balances(text, pdf_path.name)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         retail_path = _retail_path(raw_dir)

@@ -353,7 +353,7 @@ def extract_pdf_balances(
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     statement_kind: Annotated[str | None, typer.Option()] = None,
 ) -> None:
-    response = PdfBalanceExtractionService(FilesystemArtifactStore()).execute(
+    response = PdfBalanceExtractionService(build_registry(), FilesystemArtifactStore()).execute(
         PdfBalanceExtractRequest(pdf_path=pdf, output_path=output, statement_kind=statement_kind)
     )
     _emit_response(response.__dict__)

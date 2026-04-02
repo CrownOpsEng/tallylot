@@ -130,3 +130,15 @@ decisions that should not be rediscovered from scratch.
 - Expand source profiling to include richer file-family inspection.
 - Decompose the current hotspot modules into smaller, bounded packages or
   modules before they accumulate more responsibilities.
+- Complete the adapter-boundary refactor for behavior that still leaks provider
+  or output-format details into `application/`:
+  - move source-family intake classification and portfolio-capture routing
+    rules out of `application/services/intake/` and into source-adapter-owned
+    manifests or adapter-local intake classifiers
+  - generalize output rendering so application services do not hardcode
+    `cointracking_csv`, `cointracking_candidate.csv`, or CoinTracking-named
+    DTOs and services
+  - move CoinTracking-specific candidate validation, overlap comparison, and
+    baseline export parsing behind output-adapter-owned contracts so staging,
+    reconciliation, and baseline workflows operate on generic internal schemas
+    plus adapter capabilities rather than embedded CoinTracking column rules

@@ -23,6 +23,8 @@ from .funding_history import normalize_withdraw_rows as _normalize_withdraw_rows
 from .matching import match_binance_inventory
 from .order_history import normalize_c2c_order_rows as _normalize_c2c_order_rows
 from .order_history import normalize_convert_order_rows as _normalize_convert_order_rows
+from .pdf_balances import extract_pdf_balances as _extract_pdf_balances
+from .pdf_balances import match_pdf_statement as _match_pdf_statement
 from .spot_trades import normalize_spot_rows as _normalize_spot_rows
 from .transaction_history import normalize_transaction_rows as _normalize_transaction_rows
 
@@ -80,6 +82,12 @@ class BinanceAdapter:
     ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del source, raw_dir, profile
         return (), ()
+
+    def match_pdf_statement(self, pdf_path: Path, text: str) -> int:
+        return _match_pdf_statement(pdf_path, text)
+
+    def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
+        return _extract_pdf_balances(text, pdf_path.name)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         events: list[CanonicalEvent] = []
