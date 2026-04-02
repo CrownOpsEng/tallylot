@@ -14,7 +14,7 @@ repo-local agent entrypoint.
 | `docs/TIMEZONE_VALIDATION.md` | Timezone provenance and review contract |
 | `docs/EXPORT_CHECKLIST.md` | Verification export and staging checklist |
 | `docs/PROJECT_STATE.md` | Current implemented runtime surface |
-| `docs/MASTER_PARITY_LEDGER.md` | `master` parity ledger and remaining recovery gaps |
+| `docs/MASTER_PARITY_LEDGER.md` | Sole behavior-level `master` parity ledger and recovery map |
 | `docs/AI_SESSION_PROMPT.md` | Compact agent context |
 
 ## Active Workspace Artifacts

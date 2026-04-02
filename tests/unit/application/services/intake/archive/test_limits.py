@@ -6,8 +6,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 
-from crypto_reconciliation.application.services.intake import archive_scan
-from crypto_reconciliation.application.services.intake.archive_scan import scanned_tree_files
+from crypto_reconciliation.application.services.intake.archive import scan as archive_scan
+from crypto_reconciliation.application.services.intake.archive import scanned_tree_files
 
 
 def test_scanned_tree_files_surfaces_oversized_archive_members(

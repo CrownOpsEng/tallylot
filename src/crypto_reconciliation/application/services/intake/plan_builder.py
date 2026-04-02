@@ -5,7 +5,7 @@ from __future__ import annotations
 from crypto_reconciliation.application.dtos import IntakePlanRequest
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
-from .archive_scan import ScannedFile
+from .archive import ScannedFile
 from .file_facts import inspect_intake_file
 from .inventory import resolve_inventory_route
 from .overlap import IntakeOverlapRequest, resolve_overlap_review

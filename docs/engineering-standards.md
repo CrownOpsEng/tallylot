@@ -104,12 +104,9 @@ Current application of this rule:
 
 - `application/services/intake/` is the correct top-level feature package for
   intake.
-- The `package_*` cluster inside intake is now large enough to deserve its own
-  nested package on the next refactor pass.
-- The `archive_*` cluster is borderline. It is acceptable as a flat cluster for
-  now because it still presents one public scan seam, but it should become
-  `intake/archive/` if it grows further or starts carrying multiple public
-  surfaces.
+- `intake/packages/`, `intake/archive/`, `intake/file_facts/`, and
+  `intake/routing/` are the correct nested packages for the intake subdomains
+  that now own their own models, rules, and entry points.
 - The plan-building support files should stay flat until they form a clearer
   subdomain than “helpers used by the intake service”.
 
@@ -126,10 +123,7 @@ Current application of this rule:
 
 Split these modules before adding materially new behavior:
 
-- `src/crypto_reconciliation/application/services/intake/file_facts.py`
-- `src/crypto_reconciliation/application/services/intake/routing.py`
 - `src/crypto_reconciliation/application/services/intake/packages/resolution.py`
-- `src/crypto_reconciliation/application/services/intake/archive_zip.py`
 - `src/crypto_reconciliation/adapters/sources/binance/adapter.py`
 - `src/crypto_reconciliation/adapters/sources/coinbase/adapter.py`
 - `src/crypto_reconciliation/domain/models.py`

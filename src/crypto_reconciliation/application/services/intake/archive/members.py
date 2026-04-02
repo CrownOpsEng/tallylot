@@ -5,8 +5,8 @@ from __future__ import annotations
 from stat import S_ISLNK
 from zipfile import ZipInfo
 
-from .archive_models import ArchiveMemberContext, ResolvedArchiveMember, ScannedFile
-from .archive_support import sanitize_archive_member_path, sha256sum_bytes, write_extracted_file
+from .models import ArchiveMemberContext, ResolvedArchiveMember, ScannedFile
+from .support import sanitize_archive_member_path, sha256sum_bytes, write_extracted_file
 
 
 def resolve_archive_member(

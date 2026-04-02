@@ -1,6 +1,6 @@
 """Intake workflow services and intake-local helper seams."""
 
-from .archive_scan import ScanIssue, ScannedFile, ScannedTree, scanned_tree_files
+from .archive import ScanIssue, ScannedFile, ScannedTree, scanned_tree_files
 from .file_facts import IntakeFileFacts, detect_capture_id, inspect_intake_file
 from .inventory import resolve_inventory_route
 from .packages import PackageRuleSummary, PlannedPackageItem, apply_package_rules

@@ -5,7 +5,7 @@ from __future__ import annotations
 from hashlib import sha256
 from pathlib import Path, PurePosixPath
 
-from .archive_models import ArchiveScanSettings, ArchiveScanState, ScannedFile
+from .models import ArchiveScanSettings, ArchiveScanState, ScannedFile
 
 
 def filesystem_file(path: Path, *, relative_path: str) -> ScannedFile:

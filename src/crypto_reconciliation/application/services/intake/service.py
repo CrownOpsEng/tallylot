@@ -12,7 +12,7 @@ from crypto_reconciliation.application.dtos import (
 )
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
-from .archive_scan import scanned_tree_files
+from .archive import scanned_tree_files
 from .plan_builder import build_planned_items
 from .plan_models import PlannedItem
 from .plan_reports import write_capture_manifests, write_reports

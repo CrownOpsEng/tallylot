@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile, ZipInfo
 
-from .archive_members import handle_archive_member_limits, record_archive_member, resolve_archive_member
-from .archive_models import ArchiveMemberContext, ArchiveScanState, ResolvedArchiveMember
-from .archive_support import write_extracted_file
+from .members import handle_archive_member_limits, record_archive_member, resolve_archive_member
+from .models import ArchiveMemberContext, ArchiveScanState, ResolvedArchiveMember
+from .support import write_extracted_file
 
 
 def scan_zip_file(
