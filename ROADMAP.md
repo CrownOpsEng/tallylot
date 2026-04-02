@@ -6,7 +6,7 @@ decisions that should not be rediscovered from scratch.
 
 ## Current Phase
 
-- Single-package Python architecture under `src/crypto_reconciliation/`
+- Single-package Python architecture under `src/tallylot/`
 - External workspace model only
 - CLI and library runtime only
 - Filesystem-backed operational storage
@@ -28,7 +28,7 @@ decisions that should not be rediscovered from scratch.
 - Treat CoinTracking as one ordinary output adapter plus one dev-only oracle
   family, not as the central business model.
 - Keep CoinTracking rendering isolated to output-adapter packages and keep
-  oracle comparison code outside `src/crypto_reconciliation/`.
+  oracle comparison code outside `src/tallylot/`.
 - Build shared adapter-layer support for stable translation chores such as file
   traversal, file-family dispatch, row-context handling, draft compilation, and
   wallet evidence construction so provider adapters stay thin.
@@ -161,7 +161,7 @@ decisions that should not be rediscovered from scratch.
 - Keep raw-evidence protections strict. Profiling and normalization outputs must
   not be written inside raw evidence trees.
 - Keep packaging release-safe: wheels should ship only the
-  `src/crypto_reconciliation/` package, source distributions must remain
+  `src/tallylot/` package, source distributions must remain
   buildable from a clean checkout, and CI should continue verifying the build
   plus an installable CLI entry point.
 - Do not bypass `Decimal` with float-based financial calculations.

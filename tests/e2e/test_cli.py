@@ -6,8 +6,8 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 from typer.testing import CliRunner
 
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.interfaces.cli import app
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.interfaces.cli import app
 
 runner = CliRunner()
 

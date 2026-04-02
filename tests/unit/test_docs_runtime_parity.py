@@ -9,7 +9,7 @@ from typing import cast
 from typer.main import Typer
 from typer.models import CommandInfo
 
-from crypto_reconciliation.interfaces.cli import app
+from tallylot.interfaces.cli import app
 from tools.oracles.cli import app as oracle_app
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -43,7 +43,7 @@ ARCHITECTURE_DOC_PATHS = [
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
 ]
 PRODUCTION_COMMAND_ROUTE_PATTERN = re.compile(
-    r"uv run crypto-reconciliation "
+    r"uv run tallylot "
     r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
 )
 ORACLE_COMMAND_ROUTE_PATTERN = re.compile(
@@ -213,13 +213,13 @@ def test_docs_use_lowercase_filenames_except_readmes() -> None:
 def test_repo_docs_do_not_reference_personal_workspace_roots() -> None:
     forbidden = (
         "/home/user/",
-        "Documents/CryptoLedgerWorkspaces/crypto-reconciliation-2025",
-        "~/Documents/CryptoLedgerWorkspaces/crypto-reconciliation-2025",
+        "Documents/",
+        "~/Documents/",
     )
     paths = (
         REPO_ROOT / "README.md",
         REPO_ROOT / "AGENTS.md",
-        REPO_ROOT / "crypto-reconciliation.toml",
+        REPO_ROOT / "tallylot.toml",
         *sorted((REPO_ROOT / "docs").rglob("*.md")),
         *sorted((REPO_ROOT / ".claude").rglob("*.md")),
     )
@@ -255,7 +255,7 @@ def test_reference_docs_do_not_check_in_oracle_data_files() -> None:
 
 
 def test_adapter_pack_goldens_do_not_embed_absolute_home_paths() -> None:
-    forbidden = ("/home/user/", "CoinTracking.info/crypto-reconciliation-2025")
+    forbidden = ("/home/user/", "CoinTracking.info/tallylot-2025")
 
     for path in sorted((REPO_ROOT / "tests" / "fixtures" / "adapter_packs").rglob("*.json")):
         text = path.read_text(encoding="utf-8")

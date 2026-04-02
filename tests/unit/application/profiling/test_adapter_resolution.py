@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.profiling import BuildProfileUseCase
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.profiling import BuildProfileUseCase
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 @pytest.mark.parametrize(

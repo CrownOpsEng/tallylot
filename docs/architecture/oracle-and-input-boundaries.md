@@ -104,7 +104,7 @@ Those artifacts may support comparison, but not checkpoint existence.
 ## Architecture Guardrails
 
 - Keep oracle parsing and comparison under `tools/oracles/`, not under
-  `src/crypto_reconciliation/`.
+  `src/tallylot/`.
 - Keep import-shape parsing behind adapter boundaries.
 - Keep domain services unaware of CoinTracking report schemas.
 - Keep tax policy operating on reconciled facts and checkpoint state only.

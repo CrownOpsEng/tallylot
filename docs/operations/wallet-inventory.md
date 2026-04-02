@@ -15,7 +15,7 @@ artifacts.
 ## Rebuild
 
 ```bash
-uv run crypto-reconciliation checkpoint rebuild-wallet-inventory \
+uv run tallylot checkpoint rebuild-wallet-inventory \
   --normalized-root <workspace>/working/normalized \
   --output <workspace>/analysis/inventory/wallet_inventory.csv
 ```

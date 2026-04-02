@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.infrastructure.serialization.csv_io import write_rows
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tools.oracles.contracts import ScreenBatchRequest
 from tools.oracles.staging import BatchScreeningService
 

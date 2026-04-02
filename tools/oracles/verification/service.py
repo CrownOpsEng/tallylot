@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.domain.types import JsonValue
-from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from tallylot.domain.types import JsonValue
+from tallylot.ports.artifacts import ArtifactStorePort
 from tools.oracles.contracts import VerificationCompareRequest, VerificationCompareResponse
 
 from .summary import summarize_verification_exports

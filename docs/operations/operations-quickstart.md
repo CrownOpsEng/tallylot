@@ -23,7 +23,7 @@ supporting detail.
 2. Plan the intake first:
 
    ```bash
-   uv run crypto-reconciliation source intake plan \
+   uv run tallylot source intake plan \
      --incoming-dir <incoming_dump> \
      --workspace-root <workspace> \
      --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
@@ -33,7 +33,7 @@ supporting detail.
 4. Apply the intake only after the plan looks correct:
 
    ```bash
-   uv run crypto-reconciliation source intake apply \
+   uv run tallylot source intake apply \
      --incoming-dir <incoming_dump> \
      --workspace-root <workspace> \
      --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
@@ -43,7 +43,7 @@ supporting detail.
    build the capture manifest:
 
    ```bash
-   uv run crypto-reconciliation source manifest \
+   uv run tallylot source manifest \
      --source-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
      --output <workspace>/evidence/raw/source/<source>/<capture_id>/manifest.csv
    ```
@@ -51,7 +51,7 @@ supporting detail.
 6. Profile the capture:
 
    ```bash
-   uv run crypto-reconciliation source profile \
+   uv run tallylot source profile \
      --source <source> \
      --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
      --output-dir <workspace>/working/normalized/<source>
@@ -64,7 +64,7 @@ supporting detail.
 1. Normalize the capture:
 
    ```bash
-   uv run crypto-reconciliation source normalize \
+   uv run tallylot source normalize \
      --source <source> \
      --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
      --output-dir <workspace>/working/normalized/<source>
@@ -81,7 +81,7 @@ supporting detail.
 3. Render a CoinTracking candidate when needed:
 
    ```bash
-   uv run crypto-reconciliation output render file \
+   uv run tallylot output render file \
      --output-adapter cointracking_csv \
      --facts <workspace>/working/normalized/<source>/facts.csv \
      --output <workspace>/working/normalized/<source>/cointracking_candidate.csv

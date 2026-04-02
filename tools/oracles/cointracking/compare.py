@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 
-from crypto_reconciliation.domain.value_objects import parse_timestamp
+from tallylot.domain.value_objects import parse_timestamp
 
 
 def compare_transactions(

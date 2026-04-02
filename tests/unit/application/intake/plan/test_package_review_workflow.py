@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.application.intake import IntakePlanRequest, PlanIntakeUseCase
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.intake import IntakePlanRequest, PlanIntakeUseCase
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_source_intake_service_skips_subset_duplicate_packages(tmp_path: Path) -> None:

@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from crypto_reconciliation.application.intake import IntakePlanRequest, PlanIntakeUseCase
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.intake import IntakePlanRequest, PlanIntakeUseCase
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_source_intake_service_plans_archive_members_without_copying_them(tmp_path: Path) -> None:

@@ -4,11 +4,12 @@ import argparse
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import cast
 
-from crypto_reconciliation.application.normalization import NormalizeRequest
-from crypto_reconciliation.infrastructure.composition import build_profile_use_case, normalize_source_use_case
-from crypto_reconciliation.infrastructure.discovery.adapters import build_registry
-from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
+from tallylot.application.normalization import NormalizeRequest
+from tallylot.infrastructure.composition import build_profile_use_case, normalize_source_use_case
+from tallylot.infrastructure.discovery.adapters import build_registry
+from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tools.adapter_packs import DEFAULT_PACK_ROOT, AdapterPack, select_adapter_packs
 
 EXPECTED_NORMALIZATION_ARTIFACTS = (
@@ -30,9 +31,14 @@ def _sanitize_public_fixture_payload(payload: object, *, raw_dir: Path) -> objec
     raw_dir_text = str(raw_dir)
 
     if isinstance(payload, dict):
-        return {key: _sanitize_public_fixture_payload(value, raw_dir=raw_dir) for key, value in payload.items()}
+        payload_dict = cast(dict[object, object], payload)
+        return {
+            key: _sanitize_public_fixture_payload(value, raw_dir=raw_dir)
+            for key, value in payload_dict.items()
+        }
     if isinstance(payload, list):
-        return [_sanitize_public_fixture_payload(item, raw_dir=raw_dir) for item in payload]
+        payload_list = cast(list[object], payload)
+        return [_sanitize_public_fixture_payload(item, raw_dir=raw_dir) for item in payload_list]
     if isinstance(payload, str):
         if payload == raw_dir_text:
             return "<fixture-raw-dir>"

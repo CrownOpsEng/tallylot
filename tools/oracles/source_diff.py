@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 
-from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from tallylot.ports.artifacts import ArtifactStorePort
 from tools.oracles.contracts import SourceDiffRequest, SourceDiffResponse
 
 

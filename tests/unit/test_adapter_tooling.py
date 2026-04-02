@@ -41,32 +41,18 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
 
     created_paths = {path.relative_to(repo_root) for path in created}
     assert created_paths == {
-        Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/__init__.py"),
-        Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/adapter.py"),
-        Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/translation.py"),
-        Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/tests/__init__.py"),
-        Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/tests/test_contract.py"),
-        Path("src/crypto_reconciliation/adapters/sources/platforms/example_exchange/fixtures/.gitkeep"),
+        Path("src/tallylot/adapters/sources/platforms/example_exchange/__init__.py"),
+        Path("src/tallylot/adapters/sources/platforms/example_exchange/adapter.py"),
+        Path("src/tallylot/adapters/sources/platforms/example_exchange/translation.py"),
+        Path("src/tallylot/adapters/sources/platforms/example_exchange/tests/__init__.py"),
+        Path("src/tallylot/adapters/sources/platforms/example_exchange/tests/test_contract.py"),
+        Path("src/tallylot/adapters/sources/platforms/example_exchange/fixtures/.gitkeep"),
     }
     adapter_py = (
-        repo_root
-        / "src"
-        / "crypto_reconciliation"
-        / "adapters"
-        / "sources"
-        / "platforms"
-        / "example_exchange"
-        / "adapter.py"
+        repo_root / "src" / "tallylot" / "adapters" / "sources" / "platforms" / "example_exchange" / "adapter.py"
     )
     translation_py = (
-        repo_root
-        / "src"
-        / "crypto_reconciliation"
-        / "adapters"
-        / "sources"
-        / "platforms"
-        / "example_exchange"
-        / "translation.py"
+        repo_root / "src" / "tallylot" / "adapters" / "sources" / "platforms" / "example_exchange" / "translation.py"
     )
     assert "class ExampleExchangeSourceAdapter" in adapter_py.read_text(encoding="utf-8")
     assert "translate_source_batches" in adapter_py.read_text(encoding="utf-8")

@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.infrastructure.workspace import FilesystemWorkspaceRepository
 from tools.oracles.contracts import RoundScaffoldRequest
 from tools.oracles.rounds import (
     DEFAULT_VERIFICATION_EXPORTS,

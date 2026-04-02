@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.normalization.issue_context import enrich_issue_context_timestamps
-from crypto_reconciliation.domain.issues import IssueRecord
-from crypto_reconciliation.ports.source_profiles import FileInventoryEntry
+from tallylot.application.normalization.issue_context import enrich_issue_context_timestamps
+from tallylot.domain.issues import IssueRecord
+from tallylot.ports.source_profiles import FileInventoryEntry
 
 
 def test_enrich_issue_context_timestamps_uses_profiled_row_reference(tmp_path: Path) -> None:

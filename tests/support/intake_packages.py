@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from crypto_reconciliation.application.intake import PlannedPackageItem
+from tallylot.application.intake import PlannedPackageItem
 
 
 @dataclass(frozen=True)

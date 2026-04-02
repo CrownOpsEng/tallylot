@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.outputs import RenderOutputRequest, RenderOutputUseCase
-from crypto_reconciliation.domain.transactions import (
+from tallylot.application.outputs import RenderOutputRequest, RenderOutputUseCase
+from tallylot.domain.transactions import (
     EconomicKind,
     EconomicLeg,
     FactClassification,
@@ -17,10 +17,10 @@ from crypto_reconciliation.domain.transactions import (
     TaxTreatmentCode,
     TransactionFact,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
-from crypto_reconciliation.infrastructure.storage import FilesystemFactRepository
-from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from crypto_reconciliation.ports.output_adapters import OutputAdapter, RenderedArtifact
+from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.infrastructure.storage import FilesystemFactRepository
+from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from tallylot.ports.output_adapters import OutputAdapter, RenderedArtifact
 
 
 @dataclass(frozen=True)

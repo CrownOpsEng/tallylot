@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.profiling import BuildProfileUseCase
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
-from crypto_reconciliation.ports.source_adapters import SourceAdapter
-from crypto_reconciliation.ports.source_profiles import SourceProfile
+from tallylot.application.profiling import BuildProfileUseCase
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization import FilesystemArtifactStore
+from tallylot.ports.source_adapters import SourceAdapter
+from tallylot.ports.source_profiles import SourceProfile
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_ROOT = REPO_ROOT / "tests" / "fixtures" / "adapter_packs"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
+from tallylot.infrastructure.workspace import FilesystemWorkspaceRepository
 
 
 def test_workspace_repository_initializes_seed_files(tmp_path: Path) -> None:

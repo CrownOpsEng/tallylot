@@ -67,7 +67,7 @@ jobs:
       - name: Verify built wheel entry point
         run: |
           set -eu
-          rm -rf /tmp/crypto-reconciliation-wheel-test
-          python3.12 -m venv /tmp/crypto-reconciliation-wheel-test
-          /tmp/crypto-reconciliation-wheel-test/bin/pip install dist/*.whl
-          /tmp/crypto-reconciliation-wheel-test/bin/crypto-reconciliation --help >/dev/null
+          rm -rf /tmp/tallylot-wheel-test
+          python3.12 -m venv /tmp/tallylot-wheel-test
+          /tmp/tallylot-wheel-test/bin/pip install dist/*.whl
+          /tmp/tallylot-wheel-test/bin/tallylot --help >/dev/null

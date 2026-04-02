@@ -3,19 +3,19 @@ from __future__ import annotations
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZIP_STORED, ZipInfo
 
-from crypto_reconciliation.application.intake.archive.members import (
+from tallylot.application.intake.archive.members import (
     handle_archive_member_limits,
     record_archive_member,
     resolve_archive_member,
 )
-from crypto_reconciliation.application.intake.archive.models import (
+from tallylot.application.intake.archive.models import (
     ArchiveBudget,
     ArchiveMemberContext,
     ArchiveScanSettings,
     ArchiveScanState,
     ResolvedArchiveMember,
 )
-from crypto_reconciliation.application.intake.archive.support import (
+from tallylot.application.intake.archive.support import (
     add_unsupported_archive_issue,
     filesystem_file,
     has_unsupported_archive_suffix,
@@ -58,9 +58,9 @@ def test_archive_support_helpers_normalize_paths_and_persist_extracted_payloads(
 
 def test_sha256sum_path_hashes_file_contents(tmp_path: Path) -> None:
     path = tmp_path / "fixture.txt"
-    path.write_text("crypto-reconciliation\n", encoding="utf-8")
+    path.write_text("tallylot\n", encoding="utf-8")
 
-    assert sha256sum_path(path) == "f2dac28b97116f7ef4ff40232dd22fc6bb0623a3978b824e4ca541a3548c0803"
+    assert sha256sum_path(path) == "16efcbae8e8a960455cc5c2e1b24382e77ac932460fda23fdc1c0e8688dbee9e"
 
 
 def test_resolve_archive_member_reports_unsafe_and_duplicate_paths(tmp_path: Path) -> None:

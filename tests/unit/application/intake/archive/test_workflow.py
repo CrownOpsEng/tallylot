@@ -4,10 +4,10 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
-from crypto_reconciliation.application.intake import ManifestRequest
-from crypto_reconciliation.application.intake.archive import scanned_tree_files
-from crypto_reconciliation.application.intake.build_manifest import BuildManifestUseCase
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.intake import ManifestRequest
+from tallylot.application.intake.archive import scanned_tree_files
+from tallylot.application.intake.build_manifest import BuildManifestUseCase
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_scanned_tree_files_inspects_nested_zip_members(tmp_path: Path) -> None:

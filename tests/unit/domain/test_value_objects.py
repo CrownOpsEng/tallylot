@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from crypto_reconciliation.domain.value_objects import format_decimal, format_timestamp, parse_decimal, parse_timestamp
+from tallylot.domain.value_objects import format_decimal, format_timestamp, parse_decimal, parse_timestamp
 
 
 def test_parse_decimal_preserves_precision_without_float_rounding() -> None:

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.checkpoints import RebuildWalletInventoryUseCase, WalletInventoryRequest
-from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.checkpoints import RebuildWalletInventoryUseCase, WalletInventoryRequest
+from tallylot.infrastructure.serialization.csv_io import write_rows
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def _wallet_inventory_header() -> tuple[str, ...]:

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.intake.inventory import resolve_inventory_route
-from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
-from crypto_reconciliation.ports.intake_routing import IntakeFileFacts
+from tallylot.application.intake.inventory import resolve_inventory_route
+from tallylot.infrastructure.serialization import FilesystemArtifactStore
+from tallylot.ports.intake_routing import IntakeFileFacts
 
 
 def test_resolve_inventory_route_returns_unmatched_without_identifiers(tmp_path: Path) -> None:

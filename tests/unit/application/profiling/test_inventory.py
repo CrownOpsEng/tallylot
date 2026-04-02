@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.profiling.inventory import inventory_file_details
+from tallylot.application.profiling.inventory import inventory_file_details
 
 
 def test_inventory_file_details_applies_binance_filename_offset_to_min_and_max(tmp_path: Path) -> None:

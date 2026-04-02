@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.domain.value_objects import parse_timestamp
-from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from tallylot.domain.value_objects import parse_timestamp
+from tallylot.ports.artifacts import ArtifactStorePort
 from tools.oracles.contracts import ScreeningResult
 
 from .screening_columns import build_cointracking_column_map as _build_cointracking_column_map

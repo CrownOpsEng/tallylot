@@ -7,8 +7,8 @@ from typing import Protocol, cast
 import pytest
 from typer.testing import CliRunner
 
-from crypto_reconciliation.interfaces.cli import app
-from crypto_reconciliation.interfaces.cli import workspace as cli_workspace
+from tallylot.interfaces.cli import app
+from tallylot.interfaces.cli import workspace as cli_workspace
 
 runner = CliRunner()
 

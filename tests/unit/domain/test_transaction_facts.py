@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 
-from crypto_reconciliation.domain.transactions import (
+from tallylot.domain.transactions import (
     EconomicKind,
     EconomicLeg,
     FactClassification,
@@ -14,8 +14,8 @@ from crypto_reconciliation.domain.transactions import (
     TaxTreatmentCode,
     TransactionFact,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
-from crypto_reconciliation.domain.value_objects import parse_timestamp
+from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.value_objects import parse_timestamp
 
 
 def _build_fact(*, legs: tuple[EconomicLeg, ...], fee_legs: tuple[EconomicLeg, ...] = ()) -> TransactionFact:

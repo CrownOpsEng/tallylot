@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.domain.value_objects import format_timestamp
-from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from tallylot.domain.value_objects import format_timestamp
+from tallylot.ports.artifacts import ArtifactStorePort
 from tools.oracles.contracts import BaselineArtifacts
 
 from .baseline_exports import find_required_baseline_exports, match_baseline_exports

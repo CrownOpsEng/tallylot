@@ -5,10 +5,10 @@ from pathlib import Path
 import pytest
 from pytest import Item
 
-from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
+from tallylot.infrastructure.serialization import FilesystemArtifactStore
 
 REPO_ROOT = Path(__file__).resolve().parent
-ADAPTER_ROOT = REPO_ROOT / "src" / "crypto_reconciliation" / "adapters"
+ADAPTER_ROOT = REPO_ROOT / "src" / "tallylot" / "adapters"
 ADAPTER_TEST_DIRS = tuple(sorted(path.resolve() for path in ADAPTER_ROOT.glob("**/tests")))
 ADAPTER_TEST_ANCESTORS = frozenset(
     {

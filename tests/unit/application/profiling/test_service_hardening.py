@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.profiling import BuildProfileUseCase, ProfileRequest
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.profiling import BuildProfileUseCase, ProfileRequest
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import FakeSourceRegistry, MatchingSourceAdapter
 
 

@@ -7,8 +7,8 @@ from decimal import Decimal
 from pathlib import Path
 from typing import cast
 
-from crypto_reconciliation.domain.types import JsonValue
-from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from tallylot.domain.types import JsonValue
+from tallylot.ports.artifacts import ArtifactStorePort
 
 from .balances import (
     build_balance_map,

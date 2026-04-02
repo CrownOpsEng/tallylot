@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.normalization import NormalizeRequest
-from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.normalization import NormalizeRequest
+from tallylot.infrastructure.serialization.csv_io import read_rows
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service
 
 

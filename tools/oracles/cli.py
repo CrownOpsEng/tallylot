@@ -8,8 +8,8 @@ from typing import Annotated
 
 import typer
 
-from crypto_reconciliation.infrastructure.composition.runtime import configured_workspace_root
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.infrastructure.composition.runtime import configured_workspace_root
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 from .baseline import BaselineValidationService
 from .contracts import (

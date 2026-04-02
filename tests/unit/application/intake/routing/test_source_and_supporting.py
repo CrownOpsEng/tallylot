@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.intake import ScannedFile
-from crypto_reconciliation.application.intake.file_facts import IntakeFileFacts
-from crypto_reconciliation.application.intake.routing import route_intake_file
-from crypto_reconciliation.infrastructure.discovery import build_registry
+from tallylot.application.intake import ScannedFile
+from tallylot.application.intake.file_facts import IntakeFileFacts
+from tallylot.application.intake.routing import route_intake_file
+from tallylot.infrastructure.discovery import build_registry
 
 
 def test_route_intake_file_routes_archive_members_under_contents_tree(tmp_path: Path) -> None:

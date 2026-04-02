@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.intake.file_facts import (
+from tallylot.application.intake.file_facts import (
     IntakeFileFacts,
     detect_capture_id,
     inspect_intake_file,
 )
-from crypto_reconciliation.application.intake.routing import detect_source_folder
-from crypto_reconciliation.infrastructure.discovery import build_registry
+from tallylot.application.intake.routing import detect_source_folder
+from tallylot.infrastructure.discovery import build_registry
 
 
 def test_inspect_intake_file_extracts_timestamps_scope_tokens_and_network_hints(tmp_path: Path) -> None:

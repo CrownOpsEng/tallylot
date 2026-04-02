@@ -55,7 +55,7 @@ CoinTracking remains useful for:
 CoinTracking must not remain the core ledger model, core schema vocabulary, or
 required runtime input surface. Production code may render CoinTracking CSV,
 but report readers, comparison tolerances, and oracle heuristics must stay
-outside `src/crypto_reconciliation/`.
+outside `src/tallylot/`.
 
 ### 3. Replace The Current Transaction Center With A Richer Fact Model
 
@@ -208,7 +208,7 @@ These are comparison inputs only:
 
 Do not wire business logic so these artifacts are required to reconstruct facts,
 balances, journal entries, or tax state. Keep oracle code outside
-`src/crypto_reconciliation/`, preferably under `tools/oracles/`.
+`src/tallylot/`, preferably under `tools/oracles/`.
 
 ### Boundary Rule
 

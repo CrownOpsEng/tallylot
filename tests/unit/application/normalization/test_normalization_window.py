@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from crypto_reconciliation.application.normalization import (
+from tallylot.application.normalization import (
     filter_facts_by_window,
     filter_issues_by_window,
 )
-from crypto_reconciliation.domain.issues import IssueRecord
-from crypto_reconciliation.domain.transactions import (
+from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import (
     EconomicKind,
     EconomicLeg,
     FactClassification,
@@ -17,7 +17,7 @@ from crypto_reconciliation.domain.transactions import (
     TaxTreatmentCode,
     TransactionFact,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 
 
 def test_filter_facts_by_window_returns_original_events_without_bounds() -> None:

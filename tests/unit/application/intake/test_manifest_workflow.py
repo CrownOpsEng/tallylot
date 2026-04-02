@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.intake import ManifestRequest
-from crypto_reconciliation.application.intake.build_manifest import BuildManifestUseCase
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.intake import ManifestRequest
+from tallylot.application.intake.build_manifest import BuildManifestUseCase
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_manifest_service_writes_manifest(structured_source_dir: Path, tmp_path: Path) -> None:

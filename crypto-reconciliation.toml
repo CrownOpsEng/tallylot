@@ -1,6 +1,0 @@
-[project]
-name = "crypto-reconciliation"
-python = "3.12"
-
-[workspace]
-# root = "~/crypto-reconciliation-workspace"

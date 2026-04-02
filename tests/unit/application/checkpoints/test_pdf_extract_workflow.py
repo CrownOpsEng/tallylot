@@ -4,9 +4,9 @@ from pathlib import Path
 
 from reportlab.pdfgen import canvas
 
-from crypto_reconciliation.application.checkpoints import ExtractPdfBalancesUseCase, PdfBalanceExtractRequest
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.checkpoints import ExtractPdfBalancesUseCase, PdfBalanceExtractRequest
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_pdf_balance_extraction_service_extracts_supported_statement_rows(tmp_path: Path) -> None:

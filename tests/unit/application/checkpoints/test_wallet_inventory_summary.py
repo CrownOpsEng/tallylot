@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from crypto_reconciliation.application.checkpoints.wallet_inventory_summary import summarize_wallet_inventory
+from tallylot.application.checkpoints.wallet_inventory_summary import summarize_wallet_inventory
 
 
 def test_wallet_inventory_summary_marks_alias_rows_for_linked_evidence() -> None:

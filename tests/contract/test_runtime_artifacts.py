@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.application.checkpoints import RebuildWalletInventoryUseCase, WalletInventoryRequest
-from crypto_reconciliation.application.normalization import NormalizeRequest
-from crypto_reconciliation.application.profiling import BuildProfileUseCase, ProfileRequest
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.checkpoints import RebuildWalletInventoryUseCase, WalletInventoryRequest
+from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.profiling import BuildProfileUseCase, ProfileRequest
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service
 
 

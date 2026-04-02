@@ -40,7 +40,7 @@ def test_module_size_policy_remains_aligned() -> None:
 
 
 def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:
-    source_root = REPO_ROOT / "src" / "crypto_reconciliation"
+    source_root = REPO_ROOT / "src" / "tallylot"
 
     for directory in sorted({path.parent for path in source_root.rglob("*.py")}):
         prefix_groups: dict[str, list[str]] = defaultdict(list)
@@ -56,7 +56,7 @@ def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:
 
 
 def test_retired_bucket_directories_do_not_exist() -> None:
-    src_root = REPO_ROOT / "src" / "crypto_reconciliation"
+    src_root = REPO_ROOT / "src" / "tallylot"
 
     assert not (src_root / "application" / "services").exists()
     assert not (src_root / "application" / "models").exists()
@@ -67,7 +67,7 @@ def test_retired_bucket_directories_do_not_exist() -> None:
 
 
 def test_oracle_code_is_not_in_production_package() -> None:
-    src_root = REPO_ROOT / "src" / "crypto_reconciliation"
+    src_root = REPO_ROOT / "src" / "tallylot"
     forbidden = (
         src_root / "application" / "oracle_review",
         src_root / "adapters" / "oracles",
@@ -83,7 +83,7 @@ def test_oracle_code_is_not_in_production_package() -> None:
 
 
 def test_future_capability_roots_remain_available_for_next_phase() -> None:
-    src_root = REPO_ROOT / "src" / "crypto_reconciliation"
+    src_root = REPO_ROOT / "src" / "tallylot"
 
     required_packages = (
         src_root / "application" / "reconciliation",
@@ -116,8 +116,8 @@ def test_production_packaging_excludes_dev_only_oracle_tooling() -> None:
     scripts = pyproject["project"]["scripts"]
     wheel_packages = pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"]
 
-    assert scripts == {"crypto-reconciliation": "crypto_reconciliation.interfaces.cli:app"}
-    assert wheel_packages == ["src/crypto_reconciliation"]
+    assert scripts == {"tallylot": "tallylot.interfaces.cli:app"}
+    assert wheel_packages == ["src/tallylot"]
     assert all("tools.oracles" not in target for target in scripts.values())
 
 

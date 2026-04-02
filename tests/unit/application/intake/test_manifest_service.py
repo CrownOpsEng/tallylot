@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from crypto_reconciliation.application.intake import ManifestRequest
-from crypto_reconciliation.application.intake.build_manifest import BuildManifestUseCase, _sha256sum_from_text
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.intake import ManifestRequest
+from tallylot.application.intake.build_manifest import BuildManifestUseCase, _sha256sum_from_text
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_sha256sum_from_text_matches_hashlib_stability() -> None:

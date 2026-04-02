@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from tallylot.ports.artifacts import ArtifactStorePort
 from tools.oracles.cointracking.screening import screen_candidate
 from tools.oracles.contracts import ScreenBatchRequest, ScreenBatchResponse, ScreeningResult
 

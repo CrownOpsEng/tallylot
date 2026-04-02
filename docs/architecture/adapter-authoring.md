@@ -54,7 +54,7 @@ from the adapter package itself, not from a support-layer provider table.
 
 ## Discovery
 
-- Source adapters live under `crypto_reconciliation.adapters.sources`.
+- Source adapters live under `tallylot.adapters.sources`.
 - Group source adapters by source kind first:
   - `generic/` for reusable source contracts such as structured CSV
   - `portfolio/` for portfolio-import surfaces such as CoinTracking exports
@@ -62,7 +62,7 @@ from the adapter package itself, not from a support-layer provider table.
   - `wallets/` for wallet-state and wallet-owned exports
   - `platforms/` for exchange or custodial platform exports
   - `stubs/` for reserved non-runtime entry points
-- Output adapters live under `crypto_reconciliation.adapters.outputs`.
+- Output adapters live under `tallylot.adapters.outputs`.
 - Discovery scans category namespaces and adapter package entry points
   recursively.
 - Package-style adapters should expose `ADAPTER` from `__init__.py` or
@@ -71,7 +71,7 @@ from the adapter package itself, not from a support-layer provider table.
   discovery.
 - Discovery loads `ADAPTER` objects and validates their manifests.
 - `pytest` should collect adapter-local tests from package-local `tests/`
-  directories under `src/crypto_reconciliation/adapters/...`.
+  directories under `src/tallylot/adapters/...`.
 
 ## Testing
 

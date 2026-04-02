@@ -8,7 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 from typing import cast
 
-from crypto_reconciliation.domain.value_objects import parse_timestamp
+from tallylot.domain.value_objects import parse_timestamp
 from tools.oracles.export_files import find_required_csv_export
 
 DEFAULT_NORMALIZATION_WINDOW_END = "2025-12-31 23:59:59"

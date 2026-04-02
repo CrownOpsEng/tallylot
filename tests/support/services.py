@@ -4,20 +4,20 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from crypto_reconciliation.application.normalization import NormalizationDependencies, NormalizeSourceUseCase
-from crypto_reconciliation.application.outputs import RenderOutputUseCase
-from crypto_reconciliation.application.profiling import BuildProfileUseCase
-from crypto_reconciliation.domain.issues import IssueRecord
-from crypto_reconciliation.domain.types import AdapterId, JsonValue, SourceId
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.storage import FilesystemEvidenceRepository, FilesystemFactRepository
-from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from crypto_reconciliation.ports.evidence import WalletInventoryRecord
-from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from crypto_reconciliation.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
-from crypto_reconciliation.ports.source_profiles import SourceProfile
-from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
+from tallylot.application.normalization import NormalizationDependencies, NormalizeSourceUseCase
+from tallylot.application.outputs import RenderOutputUseCase
+from tallylot.application.profiling import BuildProfileUseCase
+from tallylot.domain.issues import IssueRecord
+from tallylot.domain.types import AdapterId, JsonValue, SourceId
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization import FilesystemArtifactStore
+from tallylot.infrastructure.storage import FilesystemEvidenceRepository, FilesystemFactRepository
+from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
+from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_translation import SourceTranslationBatch
 
 
 def build_source_profile(

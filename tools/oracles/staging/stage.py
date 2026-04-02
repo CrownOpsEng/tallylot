@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 from typing import cast
 
-from crypto_reconciliation.domain.types import JsonValue
+from tallylot.domain.types import JsonValue
 from tools.oracles.contracts import ScreenBatchRequest, StageBatchRequest, StageBatchResponse
 
 from .constants import NORMALIZED_TIMEZONE, OUTPUT_IMPORT_TIMEZONE

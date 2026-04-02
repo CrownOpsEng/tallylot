@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.intake.file_facts import IntakeFileFacts
-from crypto_reconciliation.application.intake.inventory import resolve_inventory_route
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
+from tallylot.application.intake.file_facts import IntakeFileFacts
+from tallylot.application.intake.inventory import resolve_inventory_route
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.infrastructure.workspace import FilesystemWorkspaceRepository
 
 
 def test_resolve_inventory_route_skips_non_wallet_sources(tmp_path: Path) -> None:

@@ -8,13 +8,13 @@ from typing import override
 
 import pytest
 
-from crypto_reconciliation.application.normalization import NormalizeRequest
-from crypto_reconciliation.domain.checkpoints import BalanceEvidence
-from crypto_reconciliation.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
-from crypto_reconciliation.domain.types import AssetSymbol, SourceId
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.storage import FilesystemFactRepository
-from crypto_reconciliation.ports.source_translation import (
+from tallylot.application.normalization import NormalizeRequest
+from tallylot.domain.checkpoints import BalanceEvidence
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.types import AssetSymbol, SourceId
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.infrastructure.storage import FilesystemFactRepository
+from tallylot.ports.source_translation import (
     EconomicActivityDraft,
     SourceTranslationBatch,
     classification,

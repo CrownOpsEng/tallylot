@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
-from crypto_reconciliation.infrastructure.serialization.json_io import write_json
+from tallylot.infrastructure.serialization.csv_io import write_rows
+from tallylot.infrastructure.serialization.json_io import write_json
 from tools.oracles.cointracking.screening import (
     _build_cointracking_column_map,
     _find_trade_table,

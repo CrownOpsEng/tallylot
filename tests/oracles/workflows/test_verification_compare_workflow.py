@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.verification import VerificationFixtureSet, write_verification_set
 from tools.oracles.contracts import VerificationCompareRequest
 from tools.oracles.verification import VerificationCompareService

@@ -5,16 +5,16 @@ from pathlib import Path
 import pytest
 from reportlab.pdfgen import canvas
 
-from crypto_reconciliation.application.checkpoints import ExtractPdfBalancesUseCase, PdfBalanceExtractRequest
-from crypto_reconciliation.domain.issues import IssueRecord
-from crypto_reconciliation.domain.types import AdapterId, JsonValue
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.ports.adapter_contracts import AdapterManifest
-from crypto_reconciliation.ports.evidence import WalletInventoryRecord
-from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from crypto_reconciliation.ports.source_adapters import SourceAdapter
-from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
-from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
+from tallylot.application.checkpoints import ExtractPdfBalancesUseCase, PdfBalanceExtractRequest
+from tallylot.domain.issues import IssueRecord
+from tallylot.domain.types import AdapterId, JsonValue
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.ports.adapter_contracts import AdapterManifest
+from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from tallylot.ports.source_adapters import SourceAdapter
+from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_translation import SourceTranslationBatch
 
 
 class StubPdfAdapter:

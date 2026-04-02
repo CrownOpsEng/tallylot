@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from crypto_reconciliation.domain.issues import IssueRecord
-from crypto_reconciliation.domain.types import JsonValue
+from tallylot.domain.issues import IssueRecord
+from tallylot.domain.types import JsonValue
 
 
 @dataclass(frozen=True)

@@ -119,7 +119,7 @@ def scaffold_adapter(
 
 def _adapter_root(repo_root: Path, kind: str, module_parts: tuple[str, ...]) -> Path:
     namespace = "sources" if kind == "source" else "outputs"
-    return repo_root / "src" / "crypto_reconciliation" / "adapters" / namespace / Path(*module_parts)
+    return repo_root / "src" / "tallylot" / "adapters" / namespace / Path(*module_parts)
 
 
 def _adapter_template(
@@ -147,19 +147,19 @@ def _adapter_template(
 
             from pathlib import Path
 
-            from crypto_reconciliation.domain.issues import IssueRecord
-            from crypto_reconciliation.domain.transactions import TransactionFact
-            from crypto_reconciliation.domain.types import AdapterId, JsonValue
-            from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
-            from crypto_reconciliation.ports.evidence import WalletInventoryRecord
-            from crypto_reconciliation.ports.intake_routing import (
+            from tallylot.domain.issues import IssueRecord
+            from tallylot.domain.transactions import TransactionFact
+            from tallylot.domain.types import AdapterId, JsonValue
+            from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
+            from tallylot.ports.evidence import WalletInventoryRecord
+            from tallylot.ports.intake_routing import (
                 IntakeFileFacts,
                 IntakeRoute,
                 IntakeRoutingRequest,
             )
-            from crypto_reconciliation.ports.output_adapters import RenderedArtifact
-            from crypto_reconciliation.ports.source_profiles import FileInventoryEntry, SourceProfile
-            from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
+            from tallylot.ports.output_adapters import RenderedArtifact
+            from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+            from tallylot.ports.source_translation import SourceTranslationBatch
             """
         )
         + ("from .translation import translate_source_batches\n\n" if spec.kind == "source" else "\n")
@@ -262,18 +262,18 @@ def _source_translation_template(*, adapter_name: str) -> str:
 
         from pathlib import Path
 
-        from crypto_reconciliation.adapters.support import (
+        from tallylot.adapters.support import (
             FileTranslationContext,
             FileTranslationRule,
             translate_file_families,
         )
-        from crypto_reconciliation.adapters.support.drafts import (
+        from tallylot.adapters.support.drafts import (
             EconomicActivityDraft,
             translation_batch_from_drafts,
         )
-        from crypto_reconciliation.domain.issues import IssueRecord
-        from crypto_reconciliation.ports.source_profiles import SourceProfile
-        from crypto_reconciliation.ports.source_translation import SourceTranslationBatch
+        from tallylot.domain.issues import IssueRecord
+        from tallylot.ports.source_profiles import SourceProfile
+        from tallylot.ports.source_translation import SourceTranslationBatch
 
         FILE_TRANSLATION_RULES = (
             FileTranslationRule(
@@ -318,7 +318,7 @@ def _contract_test_template(*, kind: str, module_parts: tuple[str, ...]) -> str:
         f"""
         from __future__ import annotations
 
-        from crypto_reconciliation.adapters.{namespace}.{module_name} import ADAPTER
+        from tallylot.adapters.{namespace}.{module_name} import ADAPTER
 
 
         def test_manifest_adapter_id_matches_package_name() -> None:

@@ -3,7 +3,7 @@
 ## Objective
 
 Work in the rebuilt typed application architecture under
-`src/crypto_reconciliation/`. Treat the repo as code, tests, docs, templates,
+`src/tallylot/`. Treat the repo as code, tests, docs, templates,
 and automation. Treat the live workspace as external to the repo.
 
 ## Invariants
@@ -72,8 +72,8 @@ Do not pre-load every repo doc by default.
 Workspace resolution order:
 
 1. `CRYPTO_RECON_WORKSPACE_ROOT`
-2. repo config in `crypto-reconciliation.toml`
-3. default `~/crypto-reconciliation-workspace`
+2. repo config in `tallylot.toml`
+3. default `~/tallylot-workspace`
 
 ## Current Runtime
 

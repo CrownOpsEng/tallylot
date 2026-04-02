@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
+from tallylot.infrastructure.serialization.csv_io import write_rows
 from tools.oracles.staging.windows import count_candidate_rows_outside_window, resolve_normalization_window
 
 

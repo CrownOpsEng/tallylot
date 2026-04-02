@@ -4,15 +4,15 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.adapters.outputs.cointracking_api import CoinTrackingApiStubAdapter
-from crypto_reconciliation.adapters.outputs.generic_http import GenericHttpOutputStubAdapter
-from crypto_reconciliation.adapters.sources.stubs.blockchain.stub import BlockchainSourceStubAdapter
-from crypto_reconciliation.adapters.sources.stubs.platform_api.stub import PlatformApiSourceStubAdapter
-from crypto_reconciliation.domain.types import AdapterId, SourceId
-from crypto_reconciliation.infrastructure.ai import LocalStubModelGateway, NullModelGateway
-from crypto_reconciliation.infrastructure.storage.sqlite_stub import SqliteStorageStub
-from crypto_reconciliation.ports.ai import ReviewRequest
-from crypto_reconciliation.ports.source_profiles import SourceProfile
+from tallylot.adapters.outputs.cointracking_api import CoinTrackingApiStubAdapter
+from tallylot.adapters.outputs.generic_http import GenericHttpOutputStubAdapter
+from tallylot.adapters.sources.stubs.blockchain.stub import BlockchainSourceStubAdapter
+from tallylot.adapters.sources.stubs.platform_api.stub import PlatformApiSourceStubAdapter
+from tallylot.domain.types import AdapterId, SourceId
+from tallylot.infrastructure.ai import LocalStubModelGateway, NullModelGateway
+from tallylot.infrastructure.storage.sqlite_stub import SqliteStorageStub
+from tallylot.ports.ai import ReviewRequest
+from tallylot.ports.source_profiles import SourceProfile
 
 
 def _stub_profile() -> SourceProfile:

@@ -8,9 +8,9 @@ from typing import cast
 
 import pytest
 
-from crypto_reconciliation.domain.types import AdapterId
-from crypto_reconciliation.infrastructure.discovery.adapters import modules, registry
-from crypto_reconciliation.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from tallylot.domain.types import AdapterId
+from tallylot.infrastructure.discovery.adapters import modules, registry
+from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 
 
 class AdapterModule(ModuleType):

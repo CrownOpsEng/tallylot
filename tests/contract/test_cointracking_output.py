@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
-from crypto_reconciliation.application.normalization import NormalizeRequest
-from crypto_reconciliation.application.outputs import RenderOutputRequest
-from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
+from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.outputs import RenderOutputRequest
+from tallylot.infrastructure.serialization.csv_io import read_rows
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service, build_render_service
 
 

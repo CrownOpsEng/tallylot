@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
-from crypto_reconciliation.domain.types import JsonValue
+from tallylot.domain.types import JsonValue
 from tools.oracles.contracts import OverlapResult
 
 from .screening_columns import (

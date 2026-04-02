@@ -124,7 +124,7 @@ Current application of this rule:
   `application/normalization/` rather than as nearby flat siblings.
 - Output rendering belongs under `application/outputs/`; CoinTracking is one
   output adapter, not an application-center compatibility lane.
-- Dev-only oracle tooling must live outside `src/crypto_reconciliation/`.
+- Dev-only oracle tooling must live outside `src/tallylot/`.
 
 ## Naming Rules
 
@@ -142,13 +142,13 @@ Current application of this rule:
 
 Split these modules before adding materially new behavior:
 
-- `src/crypto_reconciliation/application/intake/packages/resolution.py`
-- `src/crypto_reconciliation/adapters/sources/platforms/binance/adapter.py`
-- `src/crypto_reconciliation/adapters/sources/platforms/coinbase/adapter.py`
+- `src/tallylot/application/intake/packages/resolution.py`
+- `src/tallylot/adapters/sources/platforms/binance/adapter.py`
+- `src/tallylot/adapters/sources/platforms/coinbase/adapter.py`
 
 Preserve these shared-surface package seams instead of collapsing them back
 into single modules:
 
-- `src/crypto_reconciliation/domain/transactions/`
-- `src/crypto_reconciliation/interfaces/cli/`
-- `src/crypto_reconciliation/infrastructure/discovery/adapters/`
+- `src/tallylot/domain/transactions/`
+- `src/tallylot/interfaces/cli/`
+- `src/tallylot/infrastructure/discovery/adapters/`

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.domain.issues import IssueRecord
-from crypto_reconciliation.domain.value_objects import parse_timestamp
-from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from tallylot.domain.issues import IssueRecord
+from tallylot.domain.value_objects import parse_timestamp
+from tallylot.ports.artifacts import ArtifactStorePort
 
 from .schema import COINTRACKING_HEADER
 from .screening_columns import cell, load_cointracking_rows

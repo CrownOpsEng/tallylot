@@ -2,7 +2,7 @@
 
 ## Current Runtime
 
-- Typed single-package architecture under `src/crypto_reconciliation/`
+- Typed single-package architecture under `src/tallylot/`
 - External workspace model only
 - CLI and library interfaces only
 - Filesystem-backed storage implementation

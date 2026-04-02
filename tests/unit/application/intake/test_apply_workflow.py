@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from crypto_reconciliation.application.intake import ApplyIntakeUseCase, IntakeApplyRequest
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.application.intake import ApplyIntakeUseCase, IntakeApplyRequest
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_source_intake_service_applies_loose_files_into_workspace(tmp_path: Path) -> None:

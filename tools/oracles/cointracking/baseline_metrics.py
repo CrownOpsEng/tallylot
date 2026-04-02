@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 from decimal import Decimal
 
-from crypto_reconciliation.domain.value_objects import format_timestamp, parse_timestamp
+from tallylot.domain.value_objects import format_timestamp, parse_timestamp
 
 
 def decimal_text(value: Decimal) -> str:

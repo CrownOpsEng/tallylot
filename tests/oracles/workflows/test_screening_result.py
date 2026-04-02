@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from crypto_reconciliation.domain.issues import IssueRecord
+from tallylot.domain.issues import IssueRecord
 from tools.oracles.contracts import OverlapResult, ScreeningResult
 
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
-from crypto_reconciliation.domain.types import JsonValue
+from tallylot.domain.types import JsonValue
 from tools.oracles.contracts import OverlapResult
 
 from .constants import OVERLAP_FLAGGED_HEADER
