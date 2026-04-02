@@ -57,11 +57,14 @@ def normalize_source(
     profile = replace(profile, adapter=adapter.name, adapter_supported=adapter.supported)
     if profile_json is not None and profile_json.exists():
         profile_payload = read_profile(profile_json)
-        manifest_fingerprint = str(profile_payload["manifest_fingerprint"])
-        adapter_name = adapter.name
-    else:
-        manifest_fingerprint = profile.manifest_fingerprint
-        adapter_name = adapter.name
+        profile_hints = profile_payload.get("normalization_hints")
+        if isinstance(profile_hints, dict):
+            profile = replace(
+                profile,
+                normalization_hints={**(profile.normalization_hints or {}), **profile_hints},
+            )
+    manifest_fingerprint = profile.manifest_fingerprint
+    adapter_name = adapter.name
     timezone_summary, timezone_issues = adapter.validate_profile_timezones(profile)
     profile = replace(profile, timezone_summary=timezone_summary, timezone_issues=timezone_issues)
     if timezone_issues:

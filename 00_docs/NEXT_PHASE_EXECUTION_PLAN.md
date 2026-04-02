@@ -25,12 +25,12 @@ The project still follows the canonical cutoff:
 
 | Order | Source | Current status | Next concrete action | Round target |
 | --- | --- | --- | --- | --- |
-| 1 | Coinbase | `raw_export_captured` | Verify whether the Coinbase all-time export fully subsumes historical Coinbase Pro coverage, then build the post-cutoff candidate | `post_import_coinbase_01` |
-| 2 | WealthSimple | `raw_export_captured` | Trim to the project window, normalize for CoinTracking, and overlap-screen | `post_import_wealthsimple_01` |
-| 3 | ledger-live-main | `confirmed_active_pending_export` | Pull the post-cutoff raw export, manifest it, then prepare the candidate | `post_import_ledger_live_main_01` |
-| 4 | bsc-metamask1 | `confirmed_active_pending_export` | Confirm the full post-cutoff wallet export set is present, then normalize and overlap-screen | `post_import_bsc_metamask1_01` |
-| 5 | Binance | `raw_export_captured` | Classify the residual WBETH dust treatment, trim all candidates to `<= 2025-12-31`, then overlap-screen | `post_import_binance_01` |
-| 6 | Shakepay | `raw_export_captured` | Prepare the final import tranche and keep it last per project procedure | `post_import_shakepay_01` |
+| 1 | Coinbase | `capture_complete` | Verify whether the Coinbase all-time export fully subsumes historical Coinbase Pro coverage, then build the post-cutoff candidate | `post_import_coinbase_01` |
+| 2 | WealthSimple | `capture_complete` | Trim to the project window, normalize for CoinTracking, and overlap-screen | `post_import_wealthsimple_01` |
+| 3 | ledger-live-main | `capture_complete` | Normalize the capture-local Ledger Live files and overlap-screen the candidate | `post_import_ledger_live_main_01` |
+| 4 | bsc-metamask1 | `capture_complete` | Normalize the capture-local explorer files and overlap-screen the candidate | `post_import_bsc_metamask1_01` |
+| 5 | Binance | `capture_complete` | Classify the residual WBETH dust treatment, trim all candidates to `<= 2025-12-31`, then overlap-screen | `post_import_binance_01` |
+| 6 | Shakepay | `capture_complete` | Prepare the final import tranche and keep it last per project procedure | `post_import_shakepay_01` |
 
 ## Open Follow-Ups
 

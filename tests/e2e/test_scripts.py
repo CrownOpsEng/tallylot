@@ -214,6 +214,24 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual("passed", profile["timezone_summary"]["status"])
         self.assertNotIn("wallet_summary", profile)
 
+    def test_profile_source_cli_records_repo_context_for_binance_capture(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "binance"
+            run_script(
+                "profile_source.py",
+                "--source",
+                "Binance",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            profile = read_json(out_dir / "profile.json")
+
+        self.assertEqual("2023-08-05 08:34:04", profile["normalization_hints"]["project_baseline_cutoff_timestamp"])
+
     def test_wallet_inventory_cli_builds_repo_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             out_dir = Path(tmpdir) / "inventory"

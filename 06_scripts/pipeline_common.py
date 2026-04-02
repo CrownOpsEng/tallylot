@@ -10,10 +10,12 @@ import json
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, tzinfo
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Sequence
 
 from script_common import (
+    find_required_csv_exports,
     parse_datetime,
     parse_datetime_to_utc_naive,
     read_csv_rows,
@@ -130,6 +132,11 @@ TIMEZONE_ISSUE_HEADERS = (
     "message",
 )
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_INVENTORY_PATH = REPO_ROOT / "03_analysis" / "issues" / "source_inventory.csv"
+CANONICAL_BASELINE_EXPORT_DIR = REPO_ROOT / "01_raw_exports" / "cointracking" / "2023-08-05_full_export"
+CANONICAL_BASELINE_REQUIRED_FILES = {"trade_table": "Trade Table"}
+
 
 @dataclass(frozen=True)
 class SourceProfile:
@@ -141,6 +148,7 @@ class SourceProfile:
     adapter: str
     adapter_supported: bool
     file_inventory: list[dict[str, str]]
+    normalization_hints: dict[str, object] | None = None
     timezone_summary: dict[str, object] | None = None
     timezone_issues: list[dict[str, str]] | None = None
 
@@ -482,6 +490,61 @@ def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
     return rows
 
 
+@lru_cache(maxsize=1)
+def repo_source_inventory_rows() -> tuple[dict[str, str], ...]:
+    if not SOURCE_INVENTORY_PATH.exists():
+        return ()
+    return tuple(read_csv_rows(SOURCE_INVENTORY_PATH))
+
+
+@lru_cache(maxsize=1)
+def repo_baseline_cutoff_timestamp() -> str:
+    if not CANONICAL_BASELINE_EXPORT_DIR.exists():
+        return ""
+    try:
+        trade_table = find_required_csv_exports(
+            CANONICAL_BASELINE_EXPORT_DIR,
+            CANONICAL_BASELINE_REQUIRED_FILES,
+            "Canonical baseline export directory",
+        )["trade_table"]
+    except (FileNotFoundError, ValueError):
+        return ""
+    dated_rows = [row["Date"] for row in read_csv_rows(trade_table) if row.get("Date")]
+    if not dated_rows:
+        return ""
+    return max(datetime.strptime(value, "%Y-%m-%d %H:%M:%S") for value in dated_rows).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def repo_source_inventory_row(source: str, raw_dir: Path) -> dict[str, str] | None:
+    target_dir = raw_dir.resolve()
+    target_slug = source_slug(source)
+    for row in repo_source_inventory_rows():
+        capture_path = (row.get("capture_path") or "").strip()
+        if not capture_path or source_slug(row.get("source", "")) != target_slug:
+            continue
+        if (REPO_ROOT / capture_path).resolve() == target_dir:
+            return row
+    return None
+
+
+def repo_normalization_hints_for_source(source: str, raw_dir: Path) -> dict[str, object]:
+    row = repo_source_inventory_row(source, raw_dir)
+    if row is None:
+        return {}
+
+    hints: dict[str, object] = {}
+    if row.get("capture_path"):
+        hints["repo_capture_path"] = row["capture_path"]
+    if row.get("export_window_start"):
+        hints["project_window_start"] = row["export_window_start"]
+    if row.get("export_window_end"):
+        hints["project_window_end"] = row["export_window_end"]
+    baseline_cutoff = repo_baseline_cutoff_timestamp()
+    if baseline_cutoff:
+        hints["project_baseline_cutoff_timestamp"] = baseline_cutoff
+    return hints
+
+
 def build_source_profile(
     *,
     source: str,
@@ -489,11 +552,15 @@ def build_source_profile(
     adapter_name: str,
     adapter_supported: bool,
     manifest_path: Path | None = None,
+    normalization_hints: dict[str, object] | None = None,
 ) -> SourceProfile:
     raw_dir = require_directory(raw_dir.resolve(), "Raw source directory")
     manifest_path = manifest_path.resolve() if manifest_path is not None else find_manifest_for_raw_dir(raw_dir)
     manifest_rows = read_csv_rows(manifest_path) if manifest_path is not None and manifest_path.exists() else []
     fingerprint = manifest_fingerprint_from_rows(manifest_rows) if manifest_rows else stable_hash_rows(build_file_inventory(raw_dir))
+    merged_hints = repo_normalization_hints_for_source(source, raw_dir)
+    if normalization_hints:
+        merged_hints.update(normalization_hints)
     return SourceProfile(
         source=source,
         source_slug=source_slug(source),
@@ -503,6 +570,7 @@ def build_source_profile(
         adapter=adapter_name,
         adapter_supported=adapter_supported,
         file_inventory=build_file_inventory(raw_dir),
+        normalization_hints=merged_hints,
     )
 
 
@@ -527,6 +595,7 @@ def write_profile_artifacts(out_dir: Path, profile: SourceProfile) -> tuple[Path
             "file_count": len(profile.file_inventory),
             "file_inventory": profile.file_inventory,
             "family_counts": summarize_family_counts(profile.file_inventory),
+            "normalization_hints": profile.normalization_hints or {},
             "timezone_summary": timezone_summary,
             "timezone_issue_count": len(timezone_issues),
             "timezone_issues_path": str(timezone_issues_csv),

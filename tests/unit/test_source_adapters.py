@@ -390,6 +390,40 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertIn("Staking", kinds)
         self.assertTrue(any("Transfer Between Spot Account and UM Futures Account" in row["message"] for row in result.exceptions))
 
+    def test_binance_historical_ignore_list_only_applies_when_profile_supplies_cutoff_hint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
+                (
+                    "User ID,Time,Account,Operation,Coin,Change,Remark\n"
+                    "1,23-08-05 08:34:04,Funding,Transfer Between Main and Funding Wallet,USDT,-10,\n"
+                    "1,23-08-05 08:34:04,Spot,Transfer Between Main and Funding Wallet,USDT,10,\n"
+                ),
+                encoding="utf-8",
+            )
+
+            adapter = source_adapters.get_adapter("Binance")
+            profile_without_cutoff = pipeline_common.build_source_profile(
+                source="Binance",
+                raw_dir=raw_dir,
+                adapter_name=adapter.name,
+                adapter_supported=adapter.supported,
+            )
+            profile_with_cutoff = pipeline_common.build_source_profile(
+                source="Binance",
+                raw_dir=raw_dir,
+                adapter_name=adapter.name,
+                adapter_supported=adapter.supported,
+                normalization_hints={"project_baseline_cutoff_timestamp": "2023-08-05 08:34:04"},
+            )
+
+            without_cutoff = adapter.normalize(raw_dir, profile_without_cutoff, exception_decisions={})
+            with_cutoff = adapter.normalize(raw_dir, profile_with_cutoff, exception_decisions={})
+
+        self.assertEqual(2, len(without_cutoff.exceptions))
+        self.assertEqual([], with_cutoff.exceptions)
+        self.assertEqual([], with_cutoff.canonical_events)
+
     def test_binance_transaction_history_skips_p2p_rows_when_c2c_history_exists(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             raw_dir = Path(tmpdir)
@@ -580,3 +614,4 @@ class SourceAdapterTests(unittest.TestCase):
 
         self.assertTrue(summary["adapter_supported"])
         self.assertEqual("ready", summary["status"])
+        self.assertNotEqual("stale", summary["manifest_fingerprint"])
