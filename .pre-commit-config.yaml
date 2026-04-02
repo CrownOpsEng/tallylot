@@ -27,8 +27,13 @@ repos:
         entry: uv run pyright
         language: system
         pass_filenames: false
+      - id: pylint
+        name: pylint
+        entry: uv run pylint src tests tools
+        language: system
+        pass_filenames: false
       - id: pytest
-        name: pytest
-        entry: uv run pytest
+        name: pytest-fast
+        entry: uv run pytest -m "unit and not slow" --no-cov -q
         language: system
         pass_filenames: false

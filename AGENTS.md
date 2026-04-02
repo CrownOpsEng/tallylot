@@ -45,6 +45,10 @@ Do not pre-load every repo doc by default.
   - `git config --local commit.template .gitmessage.txt`
   - `uv run pre-commit install --hook-type pre-commit --hook-type commit-msg`
   - `uv run pre-commit run --all-files`
+- The commit-time `pytest` hook is intentionally fast:
+  - `unit and not slow`
+  - no coverage
+  - run full `uv run pytest` before closing substantial work
 - Treat commits as stable checkpoints by default:
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value

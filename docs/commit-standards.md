@@ -112,3 +112,27 @@ Validate messages directly when needed:
 uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
 uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
 ```
+
+## Commit-Time Test Policy
+
+The `pre-commit` `pytest` hook is intentionally scoped to fast unit coverage:
+
+```bash
+uv run pytest -m "unit and not slow" --no-cov -q
+```
+
+That hook is meant to protect local commits without paying the cost of
+coverage, contract tests, or end-to-end CLI flows on every commit. Full
+verification still means running:
+
+```bash
+uv run pre-commit run --all-files
+uv run pytest
+```
+
+Re-benchmark suite segments before broadening or shrinking the fast test slice:
+
+```bash
+uv run python -m tools.benchmark_tests
+uv run python -m tools.benchmark_tests --parallel
+```

@@ -81,6 +81,17 @@ uv run pytest
 `markdownlint`, `ruff`, `mypy`, `pyright`, `pylint`, and `pytest` are all part
 of the expected quality baseline.
 
+Commit-time `pytest` hooks intentionally run only `unit and not slow` without
+coverage so local commits stay responsive. Use the full `uv run pytest` command
+for complete verification.
+
+Benchmark test segments with:
+
+```bash
+uv run python -m tools.benchmark_tests
+uv run python -m tools.benchmark_tests --parallel
+```
+
 ## Docs
 
 Start with [AGENTS.md](AGENTS.md) for task routing, then use the repo-owned

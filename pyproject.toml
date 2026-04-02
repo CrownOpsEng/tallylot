@@ -32,6 +32,7 @@ dev = [
     "pyright>=1.1.399,<2.0.0",
     "pytest>=8.3.5,<9.0.0",
     "pytest-cov>=6.0.0,<7.0.0",
+    "pytest-xdist>=3.6.1,<4.0.0",
     "reportlab>=4.4.0,<5.0.0",
     "ruff>=0.11.2,<0.12.0",
 ]
@@ -57,8 +58,10 @@ addopts = [
 pythonpath = ["src", "."]
 testpaths = ["tests"]
 markers = [
+    "unit: fast unit-level coverage.",
     "e2e: end-to-end CLI and service coverage.",
     "contract: adapter and output contract coverage.",
+    "slow: comparatively expensive tests kept out of commit-time pytest hooks.",
 ]
 
 [tool.coverage.run]
