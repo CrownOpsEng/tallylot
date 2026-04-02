@@ -131,7 +131,7 @@ def test_iter_modules_supports_package_style_adapters_without_loading_tests(
     (categorized / "__init__.py").write_text("", encoding="utf-8")
     packaged = categorized / "packaged_adapter"
     packaged.mkdir()
-    (packaged / "__init__.py").write_text("", encoding="utf-8")
+    (packaged / "__init__.py").write_text("ADAPTER = object()\n", encoding="utf-8")
     (packaged / "adapter.py").write_text("ADAPTER = object()\n", encoding="utf-8")
     (packaged / "tests.py").write_text("raise RuntimeError('should not import tests')\n", encoding="utf-8")
     (package_root / "_helper.py").write_text("raise RuntimeError('should not import helpers')\n", encoding="utf-8")
