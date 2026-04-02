@@ -128,7 +128,7 @@ Split these modules before adding materially new behavior:
 
 - `src/crypto_reconciliation/application/services/intake/file_facts.py`
 - `src/crypto_reconciliation/application/services/intake/routing.py`
-- `src/crypto_reconciliation/application/services/intake/package_resolution.py`
+- `src/crypto_reconciliation/application/services/intake/packages/resolution.py`
 - `src/crypto_reconciliation/application/services/intake/archive_zip.py`
 - `src/crypto_reconciliation/adapters/sources/binance/adapter.py`
 - `src/crypto_reconciliation/adapters/sources/coinbase/adapter.py`

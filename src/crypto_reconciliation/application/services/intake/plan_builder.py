@@ -9,8 +9,7 @@ from .archive_scan import ScannedFile
 from .file_facts import inspect_intake_file
 from .inventory import resolve_inventory_route
 from .overlap import IntakeOverlapRequest, resolve_overlap_review
-from .package_models import PlannedPackageItem
-from .packages import apply_package_rules
+from .packages import PlannedPackageItem, apply_package_rules
 from .path_rules import (
     bundle_id,
     bundle_relative_path,

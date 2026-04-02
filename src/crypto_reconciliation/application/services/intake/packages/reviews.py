@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .package_models import BundlePackage, package_key
-from .package_scope import overlap_reason, scope_status
+from .models import BundlePackage, package_key
+from .scope import overlap_reason, scope_status
 
 
 def apply_default_decisions(

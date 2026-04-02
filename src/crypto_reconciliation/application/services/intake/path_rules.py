@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .archive_scan import ScannedFile
-from .package_models import PlannedPackageItem
+from .packages import PlannedPackageItem
 from .plan_models import PlannedItem
 
 

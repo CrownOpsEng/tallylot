@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from crypto_reconciliation.application.services.intake import apply_package_rules
+from crypto_reconciliation.application.services.intake.packages import apply_package_rules
 from tests.support.intake_packages import PackageContext, package_item
 
 

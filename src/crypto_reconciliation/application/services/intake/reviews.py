@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .package_models import PlannedPackageItem
+from .packages import PlannedPackageItem
 from .plan_models import PlannedItem
 
 
