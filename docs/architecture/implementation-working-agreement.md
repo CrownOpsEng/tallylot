@@ -147,6 +147,9 @@ Expected behavior:
 - do not bundle unrelated fixes
 - do not wait for the user to remind you to commit once the task has reached a
   real checkpoint
+- when opening a PR, use a Conventional Commit title and the structured PR body
+  defined in `docs/architecture/commit-standards.md` because that metadata
+  becomes the squash commit on `main`
 - before closing a non-trivial task, ensure the commit already exists rather
   than leaving commit creation as follow-up work
 

@@ -70,6 +70,50 @@ Checks:
 
 Standard footers are allowed, including `BREAKING CHANGE:`.
 
+## Pull Request And Squash Merge Standard
+
+`main` uses squash merges. Treat the pull request title and description as the
+canonical source for the commit that lands on `main`.
+
+PR title rules:
+
+- use the same Conventional Commit subject format required for authored commits
+- keep the title history-ready on its own because the squash subject becomes
+  `<pr title> (#<pr number>)`
+- do not use generic titles such as `update branch`, `cleanup`, or `misc fixes`
+
+PR body rules:
+
+- include these sections in this exact order:
+  - `Why:`
+  - `What:`
+  - `Checks:`
+  - `Included checkpoints:`
+- use flat `- ` bullets under every section
+- keep `Included checkpoints:` in chronological order using the exact
+  checkpoint subjects from the branch
+- describe the engineering outcome and reviewable behavior, not branch
+  choreography or replay mechanics
+- for a one-commit PR, still list that single checkpoint under
+  `Included checkpoints:`
+
+Preferred PR body template:
+
+```text
+Why:
+- explain the problem or constraint this PR resolves
+
+What:
+- summarize the engineering changes that matter for review
+
+Checks:
+- list the verification you actually ran
+
+Included checkpoints:
+- `refactor(example): first checkpoint subject`
+- `fix(example): second checkpoint subject`
+```
+
 ## Stable Checkpoint Commits
 
 Commit at stable checkpoints by default. In this repo that is an expected

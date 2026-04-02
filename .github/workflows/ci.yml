@@ -37,6 +37,12 @@ jobs:
             RANGE="$BEFORE_SHA..$CURRENT_SHA"
           fi
           uv run python -m tools.validate_commit_message --rev-range "$RANGE"
+      - name: Validate PR metadata
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: uv run python -m tools.validate_pr_metadata --title "$PR_TITLE" --body "$PR_BODY"
 
   quality:
     needs: commit-messages

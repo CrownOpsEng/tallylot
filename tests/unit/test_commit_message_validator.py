@@ -4,13 +4,39 @@ from tools.validate_commit_message import validate_commit_message_text
 
 
 def test_commit_message_without_scope_is_valid() -> None:
-    errors = validate_commit_message_text("docs: route agents to narrow standards\n")
+    message = """\
+docs: route agents to narrow standards
+
+Why:
+- keep routing guidance explicit
+
+What:
+- point agents to the narrowest applicable standards doc
+
+Checks:
+- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+"""
+
+    errors = validate_commit_message_text(message)
 
     assert not errors
 
 
 def test_commit_message_with_scope_is_valid() -> None:
-    errors = validate_commit_message_text("refactor(adapters): split structured CSV parsing\n")
+    message = """\
+refactor(adapters): split structured CSV parsing
+
+Why:
+- keep adapter parsing seams reviewable
+
+What:
+- move structured CSV parsing into bounded helpers
+
+Checks:
+- uv run pytest tests/unit/test_commit_message_validator.py
+"""
+
+    errors = validate_commit_message_text(message)
 
     assert not errors
 
@@ -44,7 +70,20 @@ def test_merge_commit_message_is_allowed() -> None:
 
 
 def test_invalid_type_is_rejected() -> None:
-    errors = validate_commit_message_text("update: change commit docs\n")
+    errors = validate_commit_message_text(
+        """\
+update: change commit docs
+
+Why:
+- tighten docs
+
+What:
+- rewrite the standard
+
+Checks:
+- uv run pytest
+"""
+    )
 
     assert errors == (
         "subject must match `type(scope): imperative summary` or "
@@ -54,7 +93,20 @@ def test_invalid_type_is_rejected() -> None:
 
 
 def test_missing_summary_is_rejected() -> None:
-    errors = validate_commit_message_text("docs(scope): \n")
+    errors = validate_commit_message_text(
+        """\
+docs(scope): 
+
+Why:
+- tighten docs
+
+What:
+- rewrite the standard
+
+Checks:
+- uv run pytest
+"""
+    )
 
     assert errors == (
         "subject must match `type(scope): imperative summary` or "
@@ -65,23 +117,66 @@ def test_missing_summary_is_rejected() -> None:
 
 def test_subject_over_72_characters_is_rejected() -> None:
     errors = validate_commit_message_text(
-        "refactor(adapters): split structured CSV normalization into smaller modules today\n"
+        """\
+refactor(adapters): split structured CSV normalization into smaller modules today
+
+Why:
+- keep adapter seams small
+
+What:
+- split the parser
+
+Checks:
+- uv run pytest
+"""
     )
 
     assert errors == ("subject must be 72 characters or fewer",)
 
 
 def test_trailing_period_is_rejected() -> None:
-    errors = validate_commit_message_text("docs: update commit guidance.\n")
+    errors = validate_commit_message_text(
+        """\
+docs: update commit guidance.
+
+Why:
+- tighten docs
+
+What:
+- rewrite the standard
+
+Checks:
+- uv run pytest
+"""
+    )
 
     assert errors == ("subject must not end with a period",)
 
 
 def test_malformed_scope_is_rejected() -> None:
-    errors = validate_commit_message_text("docs(agent_router): tighten commit rules\n")
+    errors = validate_commit_message_text(
+        """\
+docs(agent_router): tighten commit rules
+
+Why:
+- tighten docs
+
+What:
+- rewrite the standard
+
+Checks:
+- uv run pytest
+"""
+    )
 
     assert errors == (
         "subject must match `type(scope): imperative summary` or "
         "`type: imperative summary` using one of: feat, fix, refactor, docs, "
         "test, chore, build, ci, perf, revert",
     )
+
+
+def test_missing_structured_body_is_rejected() -> None:
+    errors = validate_commit_message_text("docs: route agents to narrow standards\n")
+
+    assert errors == ("commit message body is required with `Why:`, `What:`, `Checks:` sections",)
