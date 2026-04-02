@@ -2002,13 +2002,9 @@ class EvmExplorerAdapter(SourceAdapter):
         issues: list[dict[str, str]] = []
         scope_key = self._scope_for_profile(profile)
         selected_paths = self._selected_paths(raw_dir, profile, scope_key)
-        addresses = {
-            match.group(0)
-            for path in selected_paths
-            for match in EVM_ADDRESS_PATTERN.finditer(path.name)
-        }
+        addresses = self._owned_addresses_for_selected_paths(selected_paths, profile)
         for address in sorted(addresses, key=str.lower):
-            path = next(path for path in selected_paths if address.lower() in path.name.lower())
+            path = next((path for path in selected_paths if address.lower() in path.name.lower()), selected_paths[0])
             evidence.append(
                 wallet_evidence_row(
                     source=source,
@@ -2071,11 +2067,7 @@ class EvmExplorerAdapter(SourceAdapter):
             )
             return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
 
-        owned_addresses = {
-            match.group(0).lower()
-            for path in selected_paths
-            for match in re.finditer(r"0x[a-fA-F0-9]{40}", path.name)
-        }
+        owned_addresses = {address.lower() for address in self._owned_addresses_for_selected_paths(selected_paths, profile)}
         native_asset = self._native_asset_by_scope[scope_key]
         grouped: dict[str, dict[str, list[tuple[Path, int, dict[str, str]]]]] = defaultdict(
             lambda: {"normal": [], "token": [], "internal": [], "nft": []}
@@ -2162,6 +2154,84 @@ class EvmExplorerAdapter(SourceAdapter):
         if family == "explorer_transaction_csv":
             return "normal"
         return None
+
+    def _owned_addresses_for_selected_paths(
+        self,
+        selected_paths: Sequence[Path],
+        profile: SourceProfile,
+    ) -> set[str]:
+        addresses = {
+            match.group(0)
+            for path in selected_paths
+            for match in EVM_ADDRESS_PATTERN.finditer(path.name)
+        }
+        if addresses or not self._is_chain_scoped_capture(profile.raw_dir):
+            return addresses
+        inferred = self._infer_chain_scoped_owned_addresses(selected_paths)
+        return inferred
+
+    def _infer_chain_scoped_owned_addresses(self, selected_paths: Sequence[Path]) -> set[str]:
+        directional_row_count = 0
+        directional_counts: Counter[str] = Counter()
+        row_count = 0
+        address_row_counts: Counter[str] = Counter()
+        for path in selected_paths:
+            for row in read_csv_rows(path):
+                directional_candidate = self._directional_owner_candidate(row)
+                if directional_candidate:
+                    directional_row_count += 1
+                    directional_counts[directional_candidate.lower()] += 1
+                row_addresses = {
+                    address.lower()
+                    for address in self._ownership_candidate_addresses(row)
+                }
+                if not row_addresses:
+                    continue
+                row_count += 1
+                address_row_counts.update(row_addresses)
+        if directional_row_count > 0:
+            directional_candidates = {
+                address
+                for address, count in directional_counts.items()
+                if count == directional_row_count
+            }
+            if len(directional_candidates) == 1:
+                return directional_candidates
+        if row_count == 0:
+            return set()
+        candidates = {
+            address
+            for address, count in address_row_counts.items()
+            if count == row_count
+        }
+        return candidates if len(candidates) == 1 else set()
+
+    def _ownership_candidate_addresses(self, row: dict[str, str]) -> set[str]:
+        candidates: set[str] = set()
+        for field in ("From", "To", "ParentTxFrom", "ParentTxTo"):
+            value = (row.get(field) or "").strip()
+            if not value:
+                continue
+            match = EVM_ADDRESS_PATTERN.search(value)
+            if match is not None:
+                candidates.add(match.group(0))
+        return candidates
+
+    def _directional_owner_candidate(self, row: dict[str, str]) -> str:
+        value_in = decimal_or_zero(self._value_in(row))
+        value_out = decimal_or_zero(self._value_out(row))
+        if value_in > 0 and value_out == 0:
+            return self._address_from_field(row, "To")
+        if value_out > 0 and value_in == 0:
+            return self._address_from_field(row, "From")
+        return ""
+
+    def _address_from_field(self, row: dict[str, str], field: str) -> str:
+        value = (row.get(field) or "").strip()
+        if not value:
+            return ""
+        match = EVM_ADDRESS_PATTERN.search(value)
+        return match.group(0) if match is not None else ""
 
     def _group_timestamp(self, group: dict[str, list[tuple[Path, int, dict[str, str]]]]) -> str:
         timestamps = [
@@ -3039,7 +3109,6 @@ class LedgerLiveAdapter(SourceAdapter):
                         evidence_kind="csv_row",
                         evidence_path=path,
                         confidence="high",
-                        identifier_kind=self._wallet_identifier_kind(identifier_value, account_label),
                     )
                 )
 
@@ -3289,12 +3358,6 @@ class LedgerLiveAdapter(SourceAdapter):
             return "cardano"
         return ""
 
-    def _wallet_identifier_kind(self, identifier_value: str, account_label: str) -> str | None:
-        account = account_label.lower()
-        if "cardano" in account or "ada" in account:
-            return "cardano_account_key"
-        return None
-
 
 class NearAdapter(SourceAdapter):
     name = "near"
@@ -3464,17 +3527,12 @@ class NearAdapter(SourceAdapter):
             filename = row.get("filename", "")
             for match in re.finditer(r"[a-f0-9]{64}", filename.lower()):
                 account_paths.setdefault(match.group(0), raw_dir / filename)
-            near_match = re.search(r"([a-z0-9._-]+\.near)(?:_|\.csv)", filename.lower())
-            if near_match:
-                account_paths.setdefault(near_match.group(1), raw_dir / filename)
         if account_paths:
             return sorted(account_paths.items())
         for path in profile_paths(raw_dir, profile, families={"near_transaction_csv", "near_receipt_csv"}, suffixes={".csv"}):
             for row in read_csv_rows(path):
                 for field in ("To", "Affected", "Involved"):
                     value = (row.get(field) or "").strip().lower()
-                    if value.endswith(".near"):
-                        account_paths.setdefault(value, path)
                     if re.fullmatch(r"[a-f0-9]{64}", value):
                         account_paths.setdefault(value, path)
         return sorted(account_paths.items())

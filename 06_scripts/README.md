@@ -66,7 +66,7 @@ The preferred prep flow is now:
 Run the script suite from the repo root:
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m pytest
 ```
 
 Coverage is split into:
@@ -74,6 +74,13 @@ Coverage is split into:
 - `tests/unit/` for individual helper and script-function behavior
 - `tests/e2e/` for CLI-level script execution
 - `tests/support/` for shared test helpers
+
+The suite now uses `pytest` as the primary runner, even though some legacy modules still use `unittest.TestCase`. Use markers when you want faster feedback:
+
+- `python3 -m pytest -m "not slow"` for the fast local loop
+- `python3 -m pytest -m e2e` for the repo-backed CLI coverage
+
+Open follow-up items that are intentionally out of scope for the current test-strengthening branch are tracked in [00_docs/TEST_SUITE_FOLLOWUPS.md](../00_docs/TEST_SUITE_FOLLOWUPS.md).
 
 ## Timezone Integrity
 
