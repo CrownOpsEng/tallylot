@@ -1,7 +1,7 @@
 # AI Session Working Prompt
 
 Use this repo as the typed evidence, reconciliation, checkpoint, accounting,
-and tax-computation toolchain. Treat CoinTracking as a compatibility and
+and tax-computation toolchain. Treat CoinTracking as an output adapter and
 historical oracle layer, not as the live ledger target for new architecture
 work.
 
@@ -38,8 +38,8 @@ Operational rules:
 2. do not stage or import a source while `timezone_issues.csv`, `exceptions.csv`,
    or `stage_summary.json` show unresolved blockers
 3. update the round log after each seeded round and verification cycle
-4. use `source diff` when a candidate or reference slice needs a
-   deterministic row comparison
+4. use `uv run python -m tools.oracles.cli source diff` when a candidate or
+   reference slice needs a deterministic row comparison
 5. for new architecture work, build reconciliation before tax computation
 6. keep the system centered on provider-neutral transaction facts, not the
    current normalized transaction shape

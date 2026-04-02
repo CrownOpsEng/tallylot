@@ -71,7 +71,7 @@ supporting detail.
    ```
 
 2. Review:
-   - `transactions.csv`
+   - `facts.csv`
    - `balances.csv`
    - `balance_evidence.csv`
    - `exceptions.csv`
@@ -83,31 +83,32 @@ supporting detail.
    ```bash
    uv run crypto-reconciliation output render file \
      --output-adapter cointracking_csv \
-     --transactions <workspace>/working/normalized/<source>/transactions.csv \
+     --facts <workspace>/working/normalized/<source>/facts.csv \
      --output <workspace>/working/normalized/<source>/cointracking_candidate.csv
    ```
 
 4. Screen the candidate:
 
    ```bash
-   uv run crypto-reconciliation batch screen \
+   uv run python -m tools.oracles.cli batch screen \
      --candidate <workspace>/working/normalized/<source>/cointracking_candidate.csv \
      --baseline-export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
      --output-dir <workspace>/working/import_batches/<source>
    ```
 
-5. If the screen passes, stage the same candidate with `batch stage`.
+5. If the screen passes, stage the same candidate with
+   `uv run python -m tools.oracles.cli batch stage`.
 6. If it blocks, review `stage_issues.csv` and `stage_summary.json` before
    changing anything manually.
-7. Use `source diff` when the candidate needs a direct row diff against a
-   reference export before import.
+7. Use `uv run python -m tools.oracles.cli source diff` when the candidate
+   needs a direct row diff against a reference export before import.
 
 ## Seed And Verify A Round
 
 1. Seed the round:
 
    ```bash
-   uv run crypto-reconciliation round scaffold \
+   uv run python -m tools.oracles.cli round scaffold \
      --round-id <round_id> \
      --phase <phase> \
      --source <source>
@@ -118,7 +119,7 @@ supporting detail.
 4. Compare against the prior verified state:
 
    ```bash
-   uv run crypto-reconciliation verification compare \
+   uv run python -m tools.oracles.cli verification compare \
      --previous-dir <prior_verification_dir> \
      --current-dir <workspace>/working/verification/<round_id> \
      --output-dir <workspace>/working/verification/<round_id>/comparison

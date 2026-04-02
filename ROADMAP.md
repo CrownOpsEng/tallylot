@@ -14,6 +14,8 @@ decisions that should not be rediscovered from scratch.
 - Normalization writes `facts.csv`, `balances.csv`, and
   `balance_evidence.csv` as active runtime artifacts; CoinTracking CSV exports
   run as explicit output adapters with no repo-level legacy aliases
+- Dev-only oracle workflows run through `uv run python -m tools.oracles.cli`
+  and stay outside the production package and production CLI surface
 - Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds

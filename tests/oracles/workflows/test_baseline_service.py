@@ -28,3 +28,22 @@ def test_baseline_validation_service_writes_relocation_safe_artifacts(
     assert "max_asset_difference" in summary
     assert "ending_cad_balance" in summary
     assert output_dir.joinpath("baseline_source_activity.csv").exists()
+
+
+def test_baseline_validation_emits_documented_artifact_package(
+    baseline_export_dir: Path,
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "baseline"
+
+    BaselineValidationService(FilesystemArtifactStore()).execute(
+        BaselineValidateRequest(export_dir=baseline_export_dir, output_dir=output_dir)
+    )
+
+    assert (output_dir / "baseline_asset_snapshot.csv").exists()
+    assert (output_dir / "baseline_exchange_reconciliation.csv").exists()
+    assert (output_dir / "baseline_negative_balances.csv").exists()
+    assert (output_dir / "baseline_source_activity.csv").exists()
+    assert (output_dir / "baseline_cad_flow_by_type.csv").exists()
+    assert (output_dir / "baseline_cad_balance_by_exchange.csv").exists()
+    assert (output_dir / "baseline_summary.json").exists()

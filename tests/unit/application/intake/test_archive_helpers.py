@@ -22,6 +22,7 @@ from crypto_reconciliation.application.intake.archive.support import (
     resolve_path,
     sanitize_archive_member_path,
     sha256sum_bytes,
+    sha256sum_path,
     write_extracted_file,
 )
 
@@ -53,6 +54,13 @@ def test_archive_support_helpers_normalize_paths_and_persist_extracted_payloads(
     assert extracted.read_bytes() == payload
     assert has_unsupported_archive_suffix("bundle.rar", _settings())
     assert resolve_path(Path("~")).is_absolute()
+
+
+def test_sha256sum_path_hashes_file_contents(tmp_path: Path) -> None:
+    path = tmp_path / "fixture.txt"
+    path.write_text("crypto-reconciliation\n", encoding="utf-8")
+
+    assert sha256sum_path(path) == "f2dac28b97116f7ef4ff40232dd22fc6bb0623a3978b824e4ca541a3548c0803"
 
 
 def test_resolve_archive_member_reports_unsafe_and_duplicate_paths(tmp_path: Path) -> None:

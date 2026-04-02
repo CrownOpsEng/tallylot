@@ -22,17 +22,17 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - source manifesting
 - source intake planning and apply with archive-aware reports
 - source profiling with timezone provenance
-- source normalization with explicit bridge artifacts, balance evidence, and
+- source normalization with explicit fact artifacts, balance evidence, and
   archive member provenance
-- wallet inventory rebuild with evidence, issues, and summary artifacts
-- baseline validation with the documented artifact package
-- batch screening and staging with explicit issues, overlap summaries, and
-  normalization window enforcement
-- verification comparison
-- round scaffolding and round-log seeding
-- source reconciliation
-- supported PDF balance extraction for Coinbase, Binance, and Shakepay style
-  statements
+- checkpoint wallet inventory rebuild with evidence, issues, and summary
+  artifacts
+- checkpoint PDF balance extraction for supported statement families
+- dev-only oracle baseline validation with the documented artifact package
+- dev-only oracle batch screening and staging with explicit issues, overlap
+  summaries, and normalization window enforcement
+- dev-only oracle verification comparison
+- dev-only oracle round scaffolding and round-log seeding
+- dev-only oracle source diff
 
 ## Current Hard Rules
 
@@ -40,8 +40,8 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - Profiling and normalization outputs must not be written inside raw evidence
   trees.
 - ZIP inspection is on by default unless a command explicitly opts out.
-- Batch screening and staging are blocking gates. A blocked run still writes
-  artifacts for review.
+- Dev-only oracle batch screening and staging are blocking gates. A blocked run
+  still writes artifacts for review.
 - Repo docs and repo-local agent entrypoints must describe only implemented
   commands and artifacts.
 

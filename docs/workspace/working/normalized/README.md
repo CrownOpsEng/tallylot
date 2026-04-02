@@ -9,7 +9,7 @@ Per-source folders should use the typed pipeline artifact set:
 - `profile.json`
 - `profile_inventory.csv`
 - `timezone_issues.csv`
-- `transactions.csv`
+- `facts.csv`
 - `balances.csv`
 - `balance_evidence.csv`
 - `exceptions.csv`
@@ -17,9 +17,9 @@ Per-source folders should use the typed pipeline artifact set:
 - `wallet_inventory.csv`
 - `normalization_summary.json`
 
-`balances.csv` contains application-derived balances from the normalized bridge
-transactions. `balance_evidence.csv` contains source-backed checkpoint evidence
-when the adapter actually provides it.
+`balances.csv` contains application-derived balances from transaction facts.
+`balance_evidence.csv` contains source-backed checkpoint evidence when the
+adapter actually provides it.
 
 `cointracking_candidate.csv` is optional. Create it with `output render file`
 when you need a CoinTracking adapter export, and keep it beside the normalized

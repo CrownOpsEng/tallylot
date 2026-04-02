@@ -4,8 +4,8 @@ Review these artifacts after `source normalize`:
 
 - `exceptions.csv` for blocking or unsupported rows
 - `normalization_reviews.csv` for explicit assumptions and canonicalizations
-- `transactions.csv` for the internal normalized bridge transaction set
+- `facts.csv` for the internal fact artifact set
 
 If the issue is a candidate-shape or overlap problem, render a candidate with
-`output render file` and continue with `batch screen` rather than editing the
-candidate blindly.
+`output render file` and continue with `uv run python -m tools.oracles.cli batch screen`
+rather than editing the candidate blindly.

@@ -35,8 +35,8 @@ command, artifact, or agent route.
 | `analysis/inventory/wallet_inventory_evidence.csv` | Evidence rows for wallet identifiers |
 | `analysis/inventory/wallet_inventory_issues.csv` | Deterministic wallet review issues |
 | `analysis/inventory/wallet_inventory_summary.json` | Wallet inventory counts |
-| `analysis/reconciliation/` | Baseline validation outputs |
-| `outputs/logs/round_log.csv` | Round log seeded by `round scaffold` |
+| `analysis/reconciliation/` | Baseline oracle validation outputs |
+| `outputs/logs/round_log.csv` | Round log seeded by the dev-only oracle `round scaffold` workflow |
 | `working/normalized/<source>/` | Profile, normalization, timezone, and candidate artifacts |
 | `working/import_batches/<source>/` | Batch screening and staged import artifacts |
 | `working/supporting_artifacts/intake/<capture>/` | Intake-copied supporting artifacts for a capture |
@@ -51,16 +51,16 @@ command, artifact, or agent route.
 | `source intake apply` | Copy loose evidence into workspace capture paths and write intake reports |
 | `source manifest` | Build a deterministic capture manifest |
 | `source profile` | Build file inventory plus timezone provenance |
-| `source normalize` | Produce normalized transaction artifacts |
-| `output render file` | Render an output-adapter artifact from normalized transactions |
-| `batch screen` | Validate and screen a candidate without copying it |
-| `batch stage` | Screen and copy a passing candidate |
-| `baseline validate` | Produce the full baseline reconciliation package |
-| `verification compare` | Compare two verification export sets |
-| `round scaffold` | Create a round folder and seed the round log |
-| `source diff` | Compare candidate and reference ledger slices |
-| `wallet inventory rebuild` | Aggregate wallet inventory artifacts |
-| `supporting extract-pdf-balances` | Extract balances from supported PDF statements |
+| `source normalize` | Produce fact, balance, and evidence artifacts |
+| `output render file` | Render an output-adapter artifact from facts |
+| `checkpoint rebuild-wallet-inventory` | Aggregate wallet inventory artifacts |
+| `checkpoint extract-pdf-balances` | Extract balances from supported PDF statements |
+| `python -m tools.oracles.cli batch screen` | Validate and screen a candidate without copying it |
+| `python -m tools.oracles.cli batch stage` | Screen and copy a passing candidate |
+| `python -m tools.oracles.cli baseline validate` | Produce the full baseline oracle package |
+| `python -m tools.oracles.cli verification compare` | Compare two verification export sets |
+| `python -m tools.oracles.cli round scaffold` | Create a round folder and seed the round log |
+| `python -m tools.oracles.cli source diff` | Compare candidate and reference ledger slices |
 
 ## Repo Tools
 
@@ -73,12 +73,12 @@ command, artifact, or agent route.
 
 | Path | Purpose |
 | ---- | ------- |
-| `.claude/commands/source-intake.md` | Profile, normalize, render, screen, stage, and diff a source |
-| `.claude/commands/round-verification.md` | Verification compare and round-close workflow |
-| `.claude/commands/wallet-inventory.md` | Wallet inventory rebuild workflow |
+| `.claude/commands/source-intake.md` | Intake, profile, normalize, checkpoint, and render a source |
+| `.claude/commands/round-verification.md` | Dev-only oracle verification compare and round-close workflow |
+| `.claude/commands/wallet-inventory.md` | Checkpoint wallet inventory rebuild workflow |
 | `.claude/commands/normalization-exceptions.md` | Review normalization exceptions and reviews |
-| `.claude/commands/source-diff.md` | Candidate-versus-reference diff workflow |
+| `.claude/commands/source-diff.md` | Dev-only oracle candidate-versus-reference diff workflow |
 | `.claude/commands/reconciliation-tax-build.md` | Architecture and implementation route for reconciliation, checkpointing, accounting, and tax |
 | `.claude/commands/implementation-checkpoint.md` | Final implementation review, verification, and commit route |
-| `.claude/commands/supporting-artifacts.md` | PDF balance extraction and supporting evidence workflow |
+| `.claude/commands/supporting-artifacts.md` | Checkpoint PDF balance extraction and supporting evidence workflow |
 | `.claude/commands/adapter-authoring.md` | Adapter authoring and repair route |
