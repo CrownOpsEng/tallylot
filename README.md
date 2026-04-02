@@ -81,6 +81,11 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv sync --python 3.12
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
 ```
 
+If you keep the environment outside the repo, export
+`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"` in the shells where you
+run `uv` commands so `uv run`, `uv sync`, and related tooling keep using the
+external environment instead of recreating `.venv`.
+
 After syncing an external environment, select its interpreter in your editor,
 for example `~/.venvs/tallylot-py312/bin/python` in VS Code.
 

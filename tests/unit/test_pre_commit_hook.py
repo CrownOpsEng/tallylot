@@ -36,6 +36,7 @@ def test_skip_value_appends_formatter_hooks_once() -> None:
 def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:
     assert "-m tools.pre_commit_hook" in HOOK_TEMPLATE
     assert 'REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"' in HOOK_TEMPLATE
+    assert 'export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"' in HOOK_TEMPLATE
 
 
 def test_install_hooks_uses_pre_commit_overwrite_mode(
@@ -53,6 +54,11 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
     hook_path.parent.mkdir(parents=True)
     hook_path.write_text("", encoding="utf-8")
 
+    environment_root = tmp_path / "external-env"
+    (environment_root / "bin").mkdir(parents=True)
+    monkeypatch.setattr("tools.install_git_hooks.sys.executable", str(environment_root / "bin/python3"))
+    monkeypatch.setattr("tools.install_git_hooks.sys.prefix", str(environment_root))
+    monkeypatch.setattr("tools.install_git_hooks.sys.base_prefix", "/usr")
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     tools.install_git_hooks.install_hooks(tmp_path)
@@ -74,3 +80,6 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
             tmp_path,
         ),
     ]
+    hook_text = hook_path.read_text(encoding="utf-8")
+    assert f"PROJECT_ENVIRONMENT={environment_root}" in hook_text
+    assert f"PYTHON={environment_root / 'bin/python3'}" in hook_text

@@ -13,6 +13,11 @@ HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 cd "$REPO_ROOT"
 
+PROJECT_ENVIRONMENT={project_environment}
+if [ -n "$PROJECT_ENVIRONMENT" ]; then
+    export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"
+fi
+
 PYTHON={python}
 if [ -x "$PYTHON" ]; then
     exec "$PYTHON" -m tools.pre_commit_hook "$@"
@@ -25,6 +30,12 @@ else
     exit 1
 fi
 """
+
+
+def _installed_project_environment() -> str | None:
+    if sys.prefix == sys.base_prefix:
+        return None
+    return str(Path(sys.executable).parent.parent)
 
 
 def install_hooks(repo_root: Path) -> None:
@@ -50,7 +61,10 @@ def install_hooks(repo_root: Path) -> None:
     )
     hook_path = repo_root / ".git/hooks/pre-commit"
     hook_path.write_text(
-        HOOK_TEMPLATE.format(python=shlex.quote(sys.executable)),
+        HOOK_TEMPLATE.format(
+            project_environment=shlex.quote(_installed_project_environment() or ""),
+            python=shlex.quote(sys.executable),
+        ),
         encoding="utf-8",
     )
     hook_path.chmod(hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
