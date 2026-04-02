@@ -3,11 +3,9 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.platforms.crypto_com.adapter import CryptoComAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
-from tests.support.services import build_source_profile
 
 
 def test_crypto_com_adapter_uses_transaction_kinds_without_filename_dependency() -> None:
@@ -58,10 +56,8 @@ def test_crypto_com_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> No
         encoding="utf-8",
     )
 
-    result = CryptoComAdapter().translate(
-        build_source_profile(adapter_id="crypto_com", raw_dir=str(raw_dir), source="Crypto.com"),
-        raw_dir,
-    )
+    profile, adapter = profile_and_adapter("Future Card", raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
     assert [event.projection_hint for event in compile_activity_drafts(result.drafts)] == [ProjectionHint.DEPOSIT]
     assert not result.issues

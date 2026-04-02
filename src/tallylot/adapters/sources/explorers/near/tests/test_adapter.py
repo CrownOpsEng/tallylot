@@ -23,9 +23,9 @@ def test_near_adapter_extracts_location_inventory_and_staking_split_events(tmp_p
     )
 
     adapter = NearAdapter()
-    profile = build_source_profile(adapter_id="near", source="near-main", raw_dir=str(raw_dir))
+    profile = build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir))
 
-    location_inventory, location_issues = adapter.extract_location_inventory("near-main", raw_dir, profile)
+    location_inventory, location_issues = adapter.extract_location_inventory("wallet-a", raw_dir, profile)
     result = adapter.translate(profile, raw_dir)
     facts = compile_activity_drafts(result.drafts)
 
@@ -47,7 +47,7 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
     )
 
     result = NearAdapter().translate(
-        build_source_profile(adapter_id="near", source="near-main", raw_dir=str(raw_dir)),
+        build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)),
         raw_dir,
     )
     facts = compile_activity_drafts(result.drafts)
@@ -120,7 +120,7 @@ def test_near_adapter_surfaces_unsupported_methods_without_crashing(tmp_path: Pa
     )
 
     result = NearAdapter().translate(
-        build_source_profile(adapter_id="near", source="near-main", raw_dir=str(raw_dir)),
+        build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)),
         raw_dir,
     )
 

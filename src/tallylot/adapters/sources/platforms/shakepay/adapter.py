@@ -16,6 +16,7 @@ from tallylot.adapters.support import (
     match_intake_by_path_or_header,
     no_intake_route,
     passed_timezone_summary,
+    skip_files_outside_profile_families,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.domain.issues import IssueRecord
@@ -104,7 +105,15 @@ class ShakepayAdapter:
         return _extract_pdf_balances(text, pdf_path.name)
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
-        drafts, issues = collect_csv_row_results(raw_dir, lambda row_context: translate_row(profile, row_context))
+        drafts, issues = collect_csv_row_results(
+            raw_dir,
+            lambda row_context: translate_row(profile, row_context),
+            skip_file=skip_files_outside_profile_families(
+                raw_dir,
+                profile,
+                family_ids=("cash_summary", "crypto_summary"),
+            ),
+        )
         return translation_batch_from_drafts(
             drafts,
             issues=issues,

@@ -4,12 +4,10 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.platforms.wealthsimple.adapter import WealthsimpleAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
-from tests.support.services import build_source_profile
 
 
 def test_wealthsimple_fixture_exercises_supported_and_unsupported_rows() -> None:
@@ -95,10 +93,8 @@ def test_wealthsimple_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> 
     )
     (raw_dir / "other.csv").write_text("a,b,c\nbad,row,data\n", encoding="utf-8")
 
-    result = WealthsimpleAdapter().translate(
-        build_source_profile(adapter_id="wealthsimple", raw_dir=str(raw_dir), source="Wealthsimple"),
-        raw_dir,
-    )
+    profile, adapter = profile_and_adapter("Future Broker", raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
     facts = compile_activity_drafts(result.drafts)
     assert len(facts) == 1
@@ -131,10 +127,8 @@ def test_wealthsimple_adapter_normalizes_sell_rows_with_negative_source_quantity
         encoding="utf-8",
     )
 
-    result = WealthsimpleAdapter().translate(
-        build_source_profile(adapter_id="wealthsimple", raw_dir=str(raw_dir), source="Wealthsimple"),
-        raw_dir,
-    )
+    profile, adapter = profile_and_adapter("Future Broker", raw_dir)
+    result = adapter.translate(profile, raw_dir)
 
     facts = compile_activity_drafts(result.drafts)
 

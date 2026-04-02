@@ -25,6 +25,7 @@ from .rows import (
     matching_file_paths,
     read_csv_header,
     read_csv_rows,
+    skip_files_outside_profile_families,
 )
 from .timezones import TimezoneReviewPolicy, passed_timezone_summary, reviewed_timezone_summary
 from .translation import FileTranslationContext, FileTranslationResult, FileTranslationRule, translate_file_families
@@ -62,5 +63,6 @@ __all__ = [
     "read_csv_rows",
     "review_record",
     "reviewed_timezone_summary",
+    "skip_files_outside_profile_families",
     "translate_file_families",
 ]

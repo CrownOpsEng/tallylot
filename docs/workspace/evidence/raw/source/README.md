@@ -15,6 +15,12 @@ Preferred structure for new intake:
 - `evidence/raw/source/<source>/<capture_id>/`
 - `evidence/raw/source/<source>/<capture_id>/manifest.csv`
 
+`<source>` is an operator-managed stable label, not an adapter contract. Use a
+name that is consistent and meaningful in the workspace, but do not rename a
+capture folder just to satisfy one adapter. Adapter resolution should come from
+file families and content signatures first, with source labels used only as
+low-confidence hints when content is insufficient.
+
 Bundle-aware intake may create nested bundle paths inside a capture, for example:
 
 - `evidence/raw/source/<source>/<capture_id>/<bundle_id>/archive/...`

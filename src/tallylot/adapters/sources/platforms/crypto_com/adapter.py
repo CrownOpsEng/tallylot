@@ -15,6 +15,7 @@ from tallylot.adapters.support import (
     no_intake_route,
     passed_timezone_summary,
     read_csv_header,
+    skip_files_outside_profile_families,
 )
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -116,7 +117,12 @@ class CryptoComAdapter:
         drafts, issues = collect_csv_row_results(
             raw_dir,
             lambda row_context: _normalize_row(profile, row_context),
-            skip_file=_skip_unrecognized_csv,
+            skip_file=skip_files_outside_profile_families(
+                raw_dir,
+                profile,
+                family_ids=("transaction_export",),
+                extra_skip=_skip_unrecognized_csv,
+            ),
         )
         return translation_batch_from_drafts(
             drafts,

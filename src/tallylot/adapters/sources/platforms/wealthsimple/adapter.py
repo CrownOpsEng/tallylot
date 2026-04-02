@@ -15,6 +15,7 @@ from tallylot.adapters.support import (
     match_intake_by_path_or_header,
     no_intake_route,
     passed_timezone_summary,
+    skip_files_outside_profile_families,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.domain.issues import IssueRecord
@@ -90,7 +91,12 @@ class WealthsimpleAdapter:
         drafts, issues = collect_csv_row_results(
             raw_dir,
             lambda row_context: normalize_row(profile, row_context),
-            skip_file=skip_unrecognized_csv,
+            skip_file=skip_files_outside_profile_families(
+                raw_dir,
+                profile,
+                family_ids=("broker_activity", "wallet_activity"),
+                extra_skip=skip_unrecognized_csv,
+            ),
         )
         return translation_batch_from_drafts(
             drafts,
