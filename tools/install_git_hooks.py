@@ -30,7 +30,17 @@ def install_hooks(repo_root: Path) -> None:
         cwd=repo_root,
     )
     subprocess.run(
-        ["uv", "run", "pre-commit", "install", "--hook-type", "pre-commit", "--hook-type", "commit-msg"],
+        [
+            "uv",
+            "run",
+            "pre-commit",
+            "install",
+            "--overwrite",
+            "--hook-type",
+            "pre-commit",
+            "--hook-type",
+            "commit-msg",
+        ],
         check=True,
         cwd=repo_root,
     )
