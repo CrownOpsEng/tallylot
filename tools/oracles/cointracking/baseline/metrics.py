@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from decimal import Decimal
 
@@ -29,7 +30,7 @@ def parse_trade_table_row(
     )
 
 
-def latest_trade_timestamp(trade_rows: list[dict[str, str]]) -> datetime:
+def latest_trade_timestamp(trade_rows: Sequence[Mapping[str, str]]) -> datetime:
     dated_rows: list[datetime] = []
     for row in trade_rows:
         date_value = (row.get("Date") or "").strip()
@@ -42,8 +43,8 @@ def latest_trade_timestamp(trade_rows: list[dict[str, str]]) -> datetime:
 
 
 def build_asset_snapshot(
-    current_rows: list[dict[str, str]],
-    exchange_rows: list[dict[str, str]],
+    current_rows: Sequence[Mapping[str, str]],
+    exchange_rows: Sequence[Mapping[str, str]],
 ) -> tuple[list[dict[str, str]], dict[str, Decimal], list[dict[str, str]]]:
     exchange_totals = _exchange_totals_by_asset(exchange_rows)
     current_by_ticker = {
@@ -78,7 +79,7 @@ def build_asset_snapshot(
 
 def build_exchange_reconciliation(
     current_by_ticker: dict[str, Decimal],
-    exchange_rows: list[dict[str, str]],
+    exchange_rows: Sequence[Mapping[str, str]],
 ) -> tuple[list[dict[str, str]], list[dict[str, str]], Decimal, str]:
     exchange_totals = _exchange_totals_by_asset(exchange_rows)
     reconciliation_rows: list[dict[str, str]] = []
@@ -113,8 +114,8 @@ def build_exchange_reconciliation(
 
 
 def build_source_activity(
-    trade_rows: list[dict[str, str]],
-    exchange_rows: list[dict[str, str]],
+    trade_rows: Sequence[Mapping[str, str]],
+    exchange_rows: Sequence[Mapping[str, str]],
 ) -> list[dict[str, str]]:
     trade_dates_by_source: dict[str, list[datetime]] = defaultdict(list)
     trade_row_counts: dict[str, int] = defaultdict(int)
@@ -159,7 +160,7 @@ def build_source_activity(
 
 
 def build_cad_flow_summary(
-    trade_rows: list[dict[str, str]],
+    trade_rows: Sequence[Mapping[str, str]],
 ) -> tuple[list[dict[str, str]], Decimal, Decimal, Decimal]:
     totals: dict[str, dict[str, Decimal]] = defaultdict(
         lambda: {
@@ -209,7 +210,7 @@ def _decimal_or_zero(value: str | Decimal) -> Decimal:
 
 
 def _exchange_totals_by_asset(
-    exchange_rows: list[dict[str, str]],
+    exchange_rows: Sequence[Mapping[str, str]],
 ) -> dict[str, Decimal]:
     totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
     for row in exchange_rows:

@@ -19,6 +19,8 @@ class BaselineRowModel(BaseModel):
     _integer_fields: ClassVar[tuple[str, ...]] = ()
     _timestamp_fields: ClassVar[tuple[str, ...]] = ()
     _required_text_fields: ClassVar[tuple[str, ...]] = ()
+    _required_decimal_fields: ClassVar[tuple[str, ...]] = ()
+    _required_positive_integer_fields: ClassVar[tuple[str, ...]] = ()
 
     @field_validator("*", mode="before")
     @classmethod
@@ -36,14 +38,26 @@ class BaselineRowModel(BaseModel):
             return text
         if field_name in cls._decimal_fields:
             if value is None:
+                if field_name in cls._required_decimal_fields:
+                    raise ValueError(f"{field_name} must not be blank")
                 return Decimal("0")
             if isinstance(value, Decimal):
                 return value
             text = str(value).strip()
+            if field_name in cls._required_decimal_fields and not text:
+                raise ValueError(f"{field_name} must not be blank")
             return Decimal("0") if not text else Decimal(text)
         if field_name in cls._integer_fields:
             text = "" if value is None else str(value).strip()
-            return 0 if not text else int(text)
+            if field_name in cls._required_positive_integer_fields and not text:
+                raise ValueError(f"{field_name} must not be blank")
+            integer_value = 0 if not text else int(text)
+            if (
+                field_name in cls._required_positive_integer_fields
+                and integer_value <= 0
+            ):
+                raise ValueError(f"{field_name} must be positive")
+            return integer_value
         return value
 
     def to_row(self) -> dict[str, str]:
@@ -87,6 +101,7 @@ class CurrentBalanceRowModel(BaselineRowModel):
     _text_fields = ("ticker", "name", "asset_type")
     _decimal_fields = ("amount", "value_cad")
     _required_text_fields = ("ticker", "asset_type")
+    _required_decimal_fields = ("amount", "value_cad")
 
     ticker: str = Field(alias="Ticker")
     name: str = Field(alias="Name")
@@ -99,6 +114,7 @@ class BalanceByExchangeRowModel(BaselineRowModel):
     _text_fields = ("currency", "exchange")
     _decimal_fields = ("amount", "current_value_cad", "current_value_btc")
     _required_text_fields = ("currency", "exchange")
+    _required_decimal_fields = ("amount", "current_value_cad", "current_value_btc")
 
     amount: Decimal = Field(alias="Amount")
     currency: str = Field(alias="Currency")
@@ -128,6 +144,7 @@ class MissingTransactionsRowModel(BaselineRowModel):
     _decimal_fields = ("amount", "fee_amount", "value_cad")
     _timestamp_fields = ("date",)
     _required_text_fields = ("missing_type", "exchange")
+    _required_decimal_fields = ("amount", "value_cad")
 
     missing_type: str = Field(alias="Type")
     amount: Decimal = Field(alias="Amount")
@@ -157,6 +174,7 @@ class DuplicateTransactionsRowModel(BaselineRowModel):
     _integer_fields = ("duplicate_count",)
     _timestamp_fields = ("transaction_date",)
     _required_text_fields = ("duplicate_type", "exchange")
+    _required_positive_integer_fields = ("duplicate_count",)
 
     duplicate_count: int = Field(alias="# of duplicates")
     duplicate_type: str = Field(alias="Type")

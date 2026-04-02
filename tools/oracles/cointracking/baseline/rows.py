@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 from pathlib import Path
+
 from tallylot.ports.artifacts import ArtifactStorePort
+
 from .row_models import (
     BalanceByExchangeRowModel,
     BaselineRowModel,
@@ -29,12 +32,12 @@ _BASELINE_ROW_MODELS: dict[str, type[BaselineRowModel]] = {
 
 @dataclass(frozen=True)
 class BaselineExportRows:
-    trade_rows: list[dict[str, str]]
-    current_rows: list[dict[str, str]]
-    exchange_rows: list[dict[str, str]]
-    validate_rows: list[dict[str, str]]
-    missing_rows: list[dict[str, str]]
-    duplicate_rows: list[dict[str, str]]
+    trade_rows: tuple[Mapping[str, str], ...]
+    current_rows: tuple[Mapping[str, str], ...]
+    exchange_rows: tuple[Mapping[str, str], ...]
+    validate_rows: tuple[Mapping[str, str], ...]
+    missing_rows: tuple[Mapping[str, str], ...]
+    duplicate_rows: tuple[Mapping[str, str], ...]
 
 
 def read_baseline_export_rows(
@@ -69,13 +72,16 @@ def read_baseline_export_rows(
 
 def parse_baseline_export_rows(
     stem: str, rows: Iterable[dict[str, str]]
-) -> list[dict[str, str]]:
+) -> tuple[Mapping[str, str], ...]:
     row_model = _BASELINE_ROW_MODELS.get(stem)
     if row_model is None:
         raise ValueError(f"Unsupported CoinTracking baseline export family: {stem}")
-    return [
-        row_model.model_validate(_normalize_blank_header(row)).to_row() for row in rows
-    ]
+    return tuple(
+        MappingProxyType(
+            row_model.model_validate(_normalize_blank_header(row)).to_row()
+        )
+        for row in rows
+    )
 
 
 def _normalize_blank_header(row: dict[str, str]) -> dict[str, str]:

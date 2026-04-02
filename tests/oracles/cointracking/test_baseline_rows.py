@@ -20,7 +20,7 @@ def test_read_baseline_export_rows_parses_fixture_exports() -> None:
         FilesystemArtifactStore(),
     )
 
-    assert rows.trade_rows == [
+    assert rows.trade_rows == (
         {
             "Type": "Trade",
             "Buy": "1.0",
@@ -34,8 +34,8 @@ def test_read_baseline_export_rows_parses_fixture_exports() -> None:
             "Comment": "baseline",
             "Date": "2023-08-05 08:34:04",
             "Tx-ID": "tx-1",
-        }
-    ]
+        },
+    )
     assert not rows.validate_rows
 
 
@@ -63,6 +63,25 @@ def test_parse_baseline_export_rows_ignores_blank_unnamed_trailing_column() -> N
 
     assert rows[0]["Fee"] == "0"
     assert "" not in rows[0]
+
+
+def test_parse_baseline_export_rows_returns_immutable_rows() -> None:
+    rows = parse_baseline_export_rows(
+        "Current Balance",
+        [
+            {
+                "Ticker": "BTC",
+                "Name": "Bitcoin",
+                "Type": "Coin",
+                "Amount": "1",
+                "Value in CAD": "100",
+            }
+        ],
+    )
+
+    assert isinstance(rows, tuple)
+    with pytest.raises(TypeError):
+        rows[0]["Ticker"] = "ETH"  # type: ignore[index]
 
 
 def test_parse_baseline_export_rows_rejects_malformed_timestamps() -> None:
@@ -139,6 +158,42 @@ def test_parse_baseline_export_rows_rejects_blank_required_identifiers() -> None
                     "Type": "Coin",
                     "Amount": "1",
                     "Value in CAD": "100",
+                }
+            ],
+        )
+
+
+def test_parse_baseline_export_rows_rejects_blank_required_amounts() -> None:
+    with pytest.raises(ValidationError, match="amount must not be blank"):
+        parse_baseline_export_rows(
+            "Current Balance",
+            [
+                {
+                    "Ticker": "BTC",
+                    "Name": "Bitcoin",
+                    "Type": "Coin",
+                    "Amount": "",
+                    "Value in CAD": "100",
+                }
+            ],
+        )
+
+
+def test_parse_baseline_export_rows_rejects_non_positive_duplicate_counts() -> None:
+    with pytest.raises(ValidationError, match="duplicate_count must be positive"):
+        parse_baseline_export_rows(
+            "Duplicate Transactions",
+            [
+                {
+                    "# of duplicates": "0",
+                    "Type": "Trade",
+                    "Exchange": "Fixture",
+                    "Exchange ID": "fixture",
+                    "Buy": "1 BTC",
+                    "Sell": "10 CAD",
+                    "Trade Group": "",
+                    "Tx ID": "tx-1",
+                    "Tx Date": "2023-08-05 08:34:04",
                 }
             ],
         )
