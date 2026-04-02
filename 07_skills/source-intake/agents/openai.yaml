@@ -1,4 +1,0 @@
-interface:
-  display_name: "Source Intake"
-  short_description: "Profile and classify raw source captures"
-  default_prompt: "Use $source-intake to review this raw source capture and decide whether it is importable, evidence-only, or blocked."

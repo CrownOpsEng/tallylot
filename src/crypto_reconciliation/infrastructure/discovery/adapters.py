@@ -1,0 +1,105 @@
+"""Auto-discovery for source and output adapters."""
+
+from __future__ import annotations
+
+import importlib
+import pkgutil
+from collections.abc import Iterable
+from dataclasses import dataclass
+from types import ModuleType
+
+from pydantic import BaseModel, ConfigDict
+
+from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest
+from crypto_reconciliation.domain.types import AdapterId
+from crypto_reconciliation.ports.adapters import OutputAdapter, SourceAdapter
+
+
+class AdapterManifestModel(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    adapter_id: str
+    display_name: str
+    version: str
+    capabilities: frozenset[AdapterCapability]
+    supported: bool = True
+    description: str = ""
+
+
+@dataclass(frozen=True)
+class AdapterRegistry:
+    source_adapters: tuple[SourceAdapter, ...]
+    output_adapters: tuple[OutputAdapter, ...]
+
+    def source_adapter(self, adapter_id: str) -> SourceAdapter:
+        for adapter in self.source_adapters:
+            if str(adapter.manifest.adapter_id) == adapter_id:
+                return adapter
+        raise KeyError(f"unknown source adapter: {adapter_id}")
+
+    def output_adapter(self, adapter_id: str) -> OutputAdapter:
+        for adapter in self.output_adapters:
+            if str(adapter.manifest.adapter_id) == adapter_id:
+                return adapter
+        raise KeyError(f"unknown output adapter: {adapter_id}")
+
+
+def _iter_modules(package_name: str) -> tuple[ModuleType, ...]:
+    package = importlib.import_module(package_name)
+    modules: list[ModuleType] = []
+    for package_info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
+        module = importlib.import_module(package_info.name)
+        modules.append(module)
+    return tuple(modules)
+
+
+def _collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
+    discovered: list[SourceAdapter] = []
+    for module in _iter_modules(package_name):
+        adapter = getattr(module, "ADAPTER", None)
+        if adapter is None:
+            continue
+        _validated_manifest(adapter.manifest)
+        discovered.append(adapter)
+    _validate_unique_ids(discovered)
+    return tuple(sorted(discovered, key=lambda item: str(item.manifest.adapter_id)))
+
+
+def _collect_output_adapters(package_name: str) -> tuple[OutputAdapter, ...]:
+    discovered: list[OutputAdapter] = []
+    for module in _iter_modules(package_name):
+        adapter = getattr(module, "ADAPTER", None)
+        if adapter is None:
+            continue
+        _validated_manifest(adapter.manifest)
+        discovered.append(adapter)
+    _validate_unique_ids(discovered)
+    return tuple(sorted(discovered, key=lambda item: str(item.manifest.adapter_id)))
+
+
+def _validated_manifest(raw_manifest: AdapterManifest) -> AdapterManifest:
+    validated = AdapterManifestModel.model_validate(raw_manifest.__dict__)
+    return AdapterManifest(
+        adapter_id=AdapterId(validated.adapter_id),
+        display_name=validated.display_name,
+        version=validated.version,
+        capabilities=validated.capabilities,
+        supported=validated.supported,
+        description=validated.description,
+    )
+
+
+def _validate_unique_ids(adapters: Iterable[SourceAdapter | OutputAdapter]) -> None:
+    seen: set[str] = set()
+    for adapter in adapters:
+        adapter_id = str(adapter.manifest.adapter_id)
+        if adapter_id in seen:
+            raise ValueError(f"duplicate adapter_id discovered: {adapter_id}")
+        seen.add(adapter_id)
+
+
+def build_registry() -> AdapterRegistry:
+    return AdapterRegistry(
+        source_adapters=_collect_source_adapters("crypto_reconciliation.adapters.sources"),
+        output_adapters=_collect_output_adapters("crypto_reconciliation.adapters.outputs"),
+    )

@@ -1,0 +1,1 @@
+"""Blockchain source adapter stubs."""
