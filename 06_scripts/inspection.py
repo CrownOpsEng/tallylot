@@ -30,7 +30,6 @@ DAY_MONTH_YEAR_PATTERN = re.compile(r"(?<!\d)(?P<first>\d{2})-(?P<second>\d{2})-
 COMPACT_TIMESTAMP_PATTERN = re.compile(r"(?<!\d)(?P<timestamp>\d{12}|\d{14})(?!\d)")
 YEAR_MONTH_PATTERN = re.compile(r"(?P<year>20\d{2})[-_.](?P<month>\d{2})")
 YEAR_PATTERN = re.compile(r"(?<!\d)(?P<year>20\d{2})(?!\d)")
-IGNORED_INVENTORY_NAMES = {"README.md", ".gitkeep"}
 
 @dataclass(frozen=True)
 class HistoricalDateDecision:
@@ -324,9 +323,7 @@ def inspect_file(path: Path) -> dict[str, str]:
 
 def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    for path in sorted(
-        file for file in raw_dir.rglob("*") if file.is_file() and file.name not in IGNORED_INVENTORY_NAMES
-    ):
+    for path in sorted(file for file in raw_dir.rglob("*") if file.is_file()):
         row = inspect_file(path)
         relative = str(path.relative_to(raw_dir))
         parts = path.relative_to(raw_dir).parts

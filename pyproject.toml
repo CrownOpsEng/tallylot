@@ -1,0 +1,109 @@
+[project]
+name = "crypto-reconciliation"
+version = "0.1.0"
+description = "Typed crypto ledger reconciliation tooling with an external workspace architecture."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.11.0,<3.0.0",
+    "typer>=0.15.2,<1.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0,<2.0.0",
+    "pre-commit>=4.2.0,<5.0.0",
+    "pylint>=3.3.6,<4.0.0",
+    "pyright>=1.1.399,<2.0.0",
+    "pytest>=8.3.5,<9.0.0",
+    "pytest-cov>=6.0.0,<7.0.0",
+    "ruff>=0.11.2,<0.12.0",
+]
+
+[project.scripts]
+crypto-reconciliation = "crypto_reconciliation.interfaces.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/crypto_reconciliation"]
+include = ["src/crypto_reconciliation/py.typed"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/crypto_reconciliation/py.typed"]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+    "--cov=crypto_reconciliation",
+    "--cov-report=term-missing",
+    "-ra",
+]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "e2e: end-to-end CLI and service coverage.",
+    "contract: adapter and output contract coverage.",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/crypto_reconciliation"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unreachable = true
+show_error_codes = true
+pretty = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_untyped_decorators = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "C4", "DTZ", "PIE", "RET", "RUF", "SIM", "PTH"]
+
+[tool.pylint.main]
+py-version = "3.12"
+ignore = [".venv", "__pycache__", ".git"]
+
+[tool.pylint.messages_control]
+disable = [
+    "missing-module-docstring",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "too-few-public-methods",
+    "duplicate-code",
+    "too-many-instance-attributes",
+    "too-many-locals",
+]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.uv]
+default-groups = ["dev"]

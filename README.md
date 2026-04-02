@@ -1,78 +1,84 @@
-# Crypto Ledger Reconciliation Workspace
+# Crypto Reconciliation
 
-This repo is a bounded working package for repairing and extending a CoinTracking.info ledger through `2025-12-31` in a way that supports CRA-aligned Canadian tax reporting.
+Typed crypto ledger reconciliation tooling with a strict layered architecture
+and an external workspace model.
 
-## Canonical baseline
+## Principles
 
-- baseline export folder: `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
-- authoritative cutoff from Trade Table: `2023-08-05 08:34:04`
-- delta window starts strictly after that timestamp unless a newer baseline is intentionally adopted
+- The repo contains application code, tests, docs, templates, and contracts.
+- Live evidence and operational artifacts live in a configured external
+  workspace, not inside the repo.
+- The architecture is intentionally agent-friendly, but programmatic services
+  remain the primary execution path.
+- Financial records are handled with explicit types, `Decimal`, conservative
+  defaults, and visible exception paths.
 
-## Raw export branches
+## Runtime Model
 
-- `01_raw_exports/source/` holds external exchange, wallet, explorer, and bot evidence
-- `01_raw_exports/portfolio/` holds CoinTracking portfolio-system exports and saved report bundles
-- the two branches are siblings on purpose; portfolio outputs are not source evidence and must not be mixed into source intake
+- Python `3.12`
+- `uv` for environment and command execution
+- `src/crypto_reconciliation/` as the single package root
+- CLI and library interfaces only in this phase
 
-## What this package includes
+## Package Layout
 
-- the canonical CoinTracking full export and manifest
-- a documented baseline validation package
-- a populated issue log for known baseline exceptions
-- an active source inventory and structured round log
-- a universal source-intake pipeline for profiling, canonical normalization, CoinTracking rendering, and reconciliation
-- shared inspection, archive handling, routing, overlap, and orchestration modules used across intake, profiling, normalization, staging, and verification
-- content-first scope identification and inventory-backed source resolution so wallet exports reuse existing repo source/account naming when the evidence matches, and fall back to generic address-based naming when it does not
-- shared package-resolution logic that handles strict duplicate bundles, same-cycle near-duplicate merges, and mixed-cycle review without duplicating those rules across scripts
-- source-aware supporting-artifact routing so screenshots, scratch sheets, mixed user workbooks, and unsupported documents are kept out of raw evidence while still staying attached to the right source and historical bundle context
-- lightweight helper scripts for baseline checks, raw-source manifests, intake sorting, overlap screening, fixture scaffolding, golden refresh, and verification comparison
-- repo-local AI skills under `07_skills/` for source intake, adapter authoring, normalization exceptions, round verification, and wallet inventory
-
-## Start here
-
-- `00_docs/CANADIAN_CRYPTOCURRENCY_TAXATION_GUIDE.md`
-- `00_docs/TAX_REFERENCE_MAP.md`
-- `00_docs/OPERATIONS_QUICKSTART.md`
-- `00_docs/MOP.md`
-- `00_docs/BASELINE_VALIDATION.md`
-- `00_docs/NEXT_PHASE_EXECUTION_PLAN.md`
-- `00_docs/PROJECT_STATE.md`
-- `03_analysis/issues/issue_log.csv`
-- `03_analysis/issues/source_inventory.csv`
-- `05_outputs/logs/round_log.csv`
-
-## Core workflow
-
-1. validate and lock the baseline
-2. resolve or document baseline exceptions with evidence
-3. inventory post-cutoff sources
-4. sort mixed dumps into canonical historical capture folders and archive bundles
-   The intake report also consolidates fully redundant package copies when one bundle is a strict superset of another, and only merges near-duplicate bundles when the package-resolution engine can justify that they are from the same export cycle.
-   Wallet-style exports are resolved from contents before labels. Existing wallet inventory and source inventory entries win when the scope matches; otherwise intake keeps a generic deterministic wallet folder instead of inventing a user-facing alias.
-   Saved HTML export sidecars inherit the parent export timestamp, and supporting artifacts are routed beside the source rather than left in raw evidence.
-5. profile one raw source capture at a time
-6. normalize into canonical events and balances
-7. stage and overlap-screen one CoinTracking candidate at a time
-8. import one source at a time into CoinTracking
-9. capture fresh verification exports after each round
-10. stop on unexplained drift and close out at `2025-12-31`
-
-## Testing
-
-Run the full script test suite with:
-
-```bash
-python3 -m pytest
+```text
+src/crypto_reconciliation/
+  domain/
+  application/
+  ports/
+  infrastructure/
+  adapters/
+  interfaces/
 ```
 
-The suite is structured as:
+## Workspace Model
 
-- `tests/adapters/` for adapter-boundary and adapter-pack expectations
-- `tests/pipeline/` for orchestration and intake coverage
-- `tests/unit/` for helper-level behavior
-- `tests/e2e/` for CLI execution against real script entrypoints
-- `tests/support/` for shared test harness utilities
+The default workspace root is:
 
-## Repo intent
+```text
+~/Documents/CryptoLedgerWorkspaces/crypto-reconciliation-2025
+```
 
-This is not a general tax engine. It is a controlled evidence and verification workspace for a one-time historical reconciliation and closeout.
+Override order:
+
+1. `CRYPTO_RECON_WORKSPACE_ROOT`
+2. `crypto-reconciliation.toml` `[workspace].root`
+3. built-in default
+
+Initialize a workspace with:
+
+```bash
+uv run crypto-reconciliation workspace init
+```
+
+## Commands
+
+```bash
+uv run crypto-reconciliation workspace init
+uv run crypto-reconciliation baseline validate --export-dir <path> --output-dir <path>
+uv run crypto-reconciliation source manifest --source-dir <path> --output <path>
+uv run crypto-reconciliation source profile --source <name> --raw-dir <path> --output-dir <path>
+uv run crypto-reconciliation source normalize --source <name> --raw-dir <path> --output-dir <path>
+uv run crypto-reconciliation wallet inventory rebuild --normalized-root <path> --output <path>
+uv run crypto-reconciliation output render cointracking --canonical-events <path> --output <path>
+uv run crypto-reconciliation verification compare --previous-dir <path> --current-dir <path> --output-dir <path>
+uv run crypto-reconciliation batch stage --candidate <path> --baseline-export-dir <path> --output-dir <path>
+```
+
+## Development
+
+```bash
+uv sync --python 3.12
+uv run ruff check .
+uv run mypy
+uv run pyright
+uv run pylint src tests
+uv run pytest
+```
+
+## Docs
+
+- [ROADMAP.md](ROADMAP.md)
+- [docs/workspace-layout.md](docs/workspace-layout.md)
+- [docs/adapter-authoring.md](docs/adapter-authoring.md)

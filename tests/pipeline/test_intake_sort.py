@@ -384,7 +384,7 @@ def test_plan_intake_dump_uses_inventory_labels_in_scope_conflict_review(tmp_pat
     wallet_inventory.write_text(
         "wallet_id,identifier_kind,normalized_identifier,display_identifier,network_scopes,source_labels,controller_labels,account_labels,evidence_count,primary_evidence_path,status,notes\n"
         "evm_address:0x1111111111111111111111111111111111111111,evm_address,0x1111111111111111111111111111111111111111,0x1111111111111111111111111111111111111111,bsc,bsc-metamask1,Explorer export,Account 1,1,/tmp/a,ready,\n"
-        "evm_address:0x2222222222222222222222222222222222222222,evm_address,0x2222222222222222222222222222222222222222,0x2222222222222222222222222222222222222222,bsc,bsc-metamask2,Explorer export,Account 2,1,/tmp/b,ready,\n",
+        "evm_address:0x1111111111111111111111111111111111111111,evm_address,0x1111111111111111111111111111111111111111,0x1111111111111111111111111111111111111111,bsc,bsc-metamask2,Explorer export,Account 2,1,/tmp/b,ready,\n",
         encoding="utf-8",
     )
     incoming = repo_root / "01_raw_exports" / "incoming"
@@ -395,7 +395,7 @@ def test_plan_intake_dump_uses_inventory_labels_in_scope_conflict_review(tmp_pat
     shared_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
     account_header = "Address,Date(UTC),Pair,Side,Price,Executed,Amount,Fee\n"
     first_scope_payload = account_header + "0x1111111111111111111111111111111111111111,2021-05-25 12:53:03,ADAUSDT,SELL,1.5,1ADA,1.5USDT,0.001BNB\n"
-    second_scope_payload = account_header + "0x2222222222222222222222222222222222222222,2021-05-25 12:53:03,ADAUSDT,SELL,1.5,1ADA,1.5USDT,0.001BNB\n"
+    second_scope_payload = account_header + "0x1111111111111111111111111111111111111111,2021-05-25 12:53:03,ADAUSDT,SELL,1.5,1ADA,1.5USDT,0.001BNB\n"
     (first / "borrow.csv").write_text(shared_payload, encoding="utf-8")
     (first / "account.csv").write_text(first_scope_payload, encoding="utf-8")
     (second / "borrow.csv").write_text(shared_payload, encoding="utf-8")
