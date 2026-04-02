@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import (
     AdapterIssueSpec,
     WalletRecordSpec,
@@ -24,6 +25,7 @@ from crypto_reconciliation.domain.models import (
 )
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 
 class GTradeAdapter:
@@ -31,7 +33,9 @@ class GTradeAdapter:
         adapter_id=AdapterId("gtrade"),
         display_name="GTrade",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY}),
+        capabilities=frozenset(
+            {AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+        ),
         description="Normalizes GTrade realized PnL reports and extracts trader aliases.",
     )
 
@@ -42,6 +46,16 @@ class GTradeAdapter:
         if any(item.header[:3] == ("DATE", "PAIR", "ADDR") for item in inventory if item.header):
             return 100
         return 0
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        return match_intake_by_path_or_header(
+            relative_path,
+            facts,
+            path_hints=("gtrade",),
+        )
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        return no_intake_route(request)
 
     def validate_profile_timezones(
         self,

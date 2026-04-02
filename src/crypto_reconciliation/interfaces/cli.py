@@ -193,7 +193,7 @@ def source_intake_plan(
     report_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
-    response = SourceIntakeService(FilesystemArtifactStore()).plan(
+    response = SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -211,7 +211,7 @@ def source_intake_apply(
     report_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
-    response = SourceIntakeService(FilesystemArtifactStore()).apply(
+    response = SourceIntakeService(build_registry(), FilesystemArtifactStore()).apply(
         IntakeApplyRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,

@@ -117,12 +117,19 @@ def _adapter_template(
                 AdapterCapability,
                 AdapterManifest,
                 FileInventoryEntry,
+                IssueRecord,
                 SourceProfile,
+                WalletInventoryRecord,
             )
-            from crypto_reconciliation.domain.types import AdapterId
+            from crypto_reconciliation.domain.types import AdapterId, JsonValue
             from crypto_reconciliation.ports.adapters import (
                 NormalizationResult,
                 RenderedArtifact,
+            )
+            from crypto_reconciliation.ports.intake_routing import (
+                IntakeFileFacts,
+                IntakeRoute,
+                IntakeRoutingRequest,
             )
 
 
@@ -154,6 +161,30 @@ def _adapter_template(
                 ) -> int:
                     del source, raw_dir, inventory
                     return 0
+
+                def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+                    del relative_path, facts
+                    return 0
+
+                def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+                    del request
+                    return None
+
+                def validate_profile_timezones(
+                    self,
+                    profile: SourceProfile,
+                ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
+                    del profile
+                    return {{"status": "passed", "issue_count": 0, "rows_with_dates": 0, "mode_counts": {{}}}}, ()
+
+                def extract_wallet_inventory(
+                    self,
+                    source: str,
+                    raw_dir: Path,
+                    profile: SourceProfile,
+                ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+                    del source, raw_dir, profile
+                    return (), ()
 
                 def normalize(
                     self,

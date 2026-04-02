@@ -5,6 +5,7 @@ from pathlib import Path
 
 from crypto_reconciliation.application.dtos import IntakePlanRequest
 from crypto_reconciliation.application.services.intake import SourceIntakeService
+from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
@@ -24,7 +25,7 @@ def test_source_intake_service_skips_subset_duplicate_packages(tmp_path: Path) -
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).plan(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -77,7 +78,7 @@ def test_source_intake_service_flags_repo_manifest_overlap_for_review(tmp_path: 
     incoming_file.write_text(payload, encoding="utf-8")
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).plan(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -109,7 +110,7 @@ def test_source_intake_service_flags_existing_capture_window_overlap_for_review(
     incoming_file.write_text(existing_file.read_text(encoding="utf-8"), encoding="utf-8")
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).plan(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -146,7 +147,7 @@ def test_source_intake_service_keeps_different_cycle_packages_in_overlap_review(
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).plan(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,

@@ -1,9 +1,8 @@
-"""Stub platform API adapter entry point."""
+"""CoinTracking portfolio intake adapter entry point."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast
 
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
@@ -17,15 +16,17 @@ from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
 from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
+from .routing import match_intake as match_portfolio_intake
+from .routing import route_intake as route_portfolio_intake
 
-class PlatformApiSourceStubAdapter:
+
+class CoinTrackingPortfolioAdapter:
     manifest = AdapterManifest(
-        adapter_id=AdapterId("platform_api_stub"),
-        display_name="Platform API Stub",
-        version="0.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE}),
-        supported=False,
-        description="Reserved entry point for platform API source adapters.",
+        adapter_id=AdapterId("cointracking_portfolio"),
+        display_name="CoinTracking Portfolio",
+        version="1.0.0",
+        capabilities=frozenset({AdapterCapability.INTAKE_ROUTE}),
+        description="Routes CoinTracking HTML, PDF, and sidecar portfolio exports during intake.",
     )
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
@@ -33,12 +34,11 @@ class PlatformApiSourceStubAdapter:
         return 0
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
-        del relative_path, facts
-        return 0
+        del facts
+        return match_portfolio_intake(relative_path)
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
-        del request
-        return cast(IntakeRoute | None, None)
+        return route_portfolio_intake(request)
 
     def validate_profile_timezones(
         self,
@@ -58,9 +58,7 @@ class PlatformApiSourceStubAdapter:
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         del profile, raw_dir
-        raise NotImplementedError(
-            "Platform API source adapters are intentionally stubbed in this phase.",
-        )
+        raise NotImplementedError("CoinTracking portfolio intake is intentionally intake-only in this phase.")
 
 
-ADAPTER = PlatformApiSourceStubAdapter()
+ADAPTER = CoinTrackingPortfolioAdapter()

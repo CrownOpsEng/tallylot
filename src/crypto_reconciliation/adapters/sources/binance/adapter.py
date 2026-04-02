@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import cast
 
+from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
@@ -17,6 +18,7 @@ from crypto_reconciliation.domain.models import (
 )
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 from .funding_history import normalize_deposit_rows as _normalize_deposit_rows
 from .funding_history import normalize_withdraw_rows as _normalize_withdraw_rows
@@ -34,13 +36,28 @@ class BinanceAdapter:
         adapter_id=AdapterId("binance"),
         display_name="Binance",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE}),
+        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.INTAKE_ROUTE}),
         description="Normalizes Binance deposit, withdrawal, spot, and transaction-history exports.",
     )
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
         del raw_dir
         return match_binance_inventory(source, inventory)
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        return match_intake_by_path_or_header(
+            relative_path,
+            facts,
+            path_hints=("binance",),
+            header_hints=(
+                "pair,coin,date,amount,type,status",
+                "pair,coin,amount,time,interest type",
+                "date(utc),pair,side,price,executed,amount,fee",
+            ),
+        )
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        return no_intake_route(request)
 
     def validate_profile_timezones(
         self,

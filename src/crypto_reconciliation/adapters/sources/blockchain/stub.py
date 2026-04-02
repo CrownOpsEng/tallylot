@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
@@ -14,6 +15,7 @@ from crypto_reconciliation.domain.models import (
 )
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 
 class BlockchainSourceStubAdapter:
@@ -29,6 +31,14 @@ class BlockchainSourceStubAdapter:
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
         del source, raw_dir, inventory
         return 0
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        del relative_path, facts
+        return 0
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        del request
+        return cast(IntakeRoute | None, None)
 
     def validate_profile_timezones(
         self,

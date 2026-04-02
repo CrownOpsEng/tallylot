@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.mapped_event_support import NormalizationIssueSpec, normalization_issue
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
@@ -16,6 +17,7 @@ from crypto_reconciliation.domain.models import (
 )
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 from .asset_migrations import normalize_asset_migration as _normalize_asset_migration
 from .matching import match_coinbase_inventory
@@ -31,12 +33,23 @@ class CoinbaseAdapter:
         adapter_id=AdapterId("coinbase"),
         display_name="Coinbase",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE}),
+        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.INTAKE_ROUTE}),
         description="Normalizes Coinbase retail all-time exports.",
     )
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
         return match_coinbase_inventory(source, raw_dir, inventory)
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        return match_intake_by_path_or_header(
+            relative_path,
+            facts,
+            path_hints=("coinbase",),
+            header_hints=("portfolio,type,time,amount,balance,amount/balance unit",),
+        )
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        return no_intake_route(request)
 
     def validate_profile_timezones(
         self,

@@ -5,6 +5,7 @@ from pathlib import Path
 from crypto_reconciliation.application.services.intake import ScannedFile
 from crypto_reconciliation.application.services.intake.file_facts import IntakeFileFacts
 from crypto_reconciliation.application.services.intake.routing import route_intake_file
+from crypto_reconciliation.infrastructure.discovery import build_registry
 
 
 def test_route_intake_file_routes_archive_members_under_contents_tree(tmp_path: Path) -> None:
@@ -23,6 +24,7 @@ def test_route_intake_file_routes_archive_members_under_contents_tree(tmp_path: 
             archive_source_path="bundle.zip",
             archive_member_path="inner.csv",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(header=("Timestamp",)),
@@ -47,6 +49,7 @@ def test_route_intake_file_routes_working_derivatives_to_supporting_artifacts(tm
             size_bytes=derivative_path.stat().st_size,
             sha256="fixture",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(),
@@ -76,6 +79,7 @@ def test_route_intake_file_routes_generic_supporting_artifacts_when_suffix_is_no
             size_bytes=note_path.stat().st_size,
             sha256="fixture",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(),
@@ -103,6 +107,7 @@ def test_route_intake_file_uses_header_hints_for_loose_source_exports(tmp_path: 
             size_bytes=export_path.stat().st_size,
             sha256="fixture",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(
@@ -131,6 +136,7 @@ def test_route_intake_file_routes_zip_archives_under_archive_tree(tmp_path: Path
             size_bytes=archive_path.stat().st_size,
             sha256="fixture",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(header=("Date(UTC)", "Pair", "Side", "Price", "Executed", "Amount", "Fee")),

@@ -16,6 +16,7 @@ class AdapterCapability(StrEnum):
     WALLET_INVENTORY = "wallet_inventory"
     OUTPUT_RENDER = "output_render"
     REVIEW = "review"
+    INTAKE_ROUTE = "intake_route"
 
 
 def _empty_metadata() -> dict[str, str]:

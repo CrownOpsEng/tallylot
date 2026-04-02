@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import cast
 
+from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import (
     AdapterIssueSpec,
     WalletRecordSpec,
@@ -23,6 +24,7 @@ from crypto_reconciliation.domain.models import (
 )
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 
 class EvmWalletAdapter:
@@ -30,7 +32,7 @@ class EvmWalletAdapter:
         adapter_id=AdapterId("evm_wallet"),
         display_name="EVM Wallet",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.WALLET_INVENTORY}),
+        capabilities=frozenset({AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}),
         description="Extracts wallet identifiers from EVM wallet state exports.",
     )
 
@@ -44,6 +46,16 @@ class EvmWalletAdapter:
         ):
             return 80
         return 0
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        return match_intake_by_path_or_header(
+            relative_path,
+            facts,
+            path_hints=("state logs", "wallet state"),
+        )
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        return no_intake_route(request)
 
     def validate_profile_timezones(
         self,

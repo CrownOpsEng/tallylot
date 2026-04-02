@@ -36,6 +36,7 @@ def test_adapter_registry_discovers_expected_adapters() -> None:
     assert "evm_explorer" in source_ids
     assert "evm_wallet" in source_ids
     assert "blockchain_stub" in source_ids
+    assert "cointracking_portfolio" in source_ids
     assert "platform_api_stub" in source_ids
     assert "cointracking_csv" in output_ids
     assert "cointracking_api" in output_ids
@@ -66,7 +67,7 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
 
     monkeypatch.setattr(discovery_adapters, "_iter_discoverable_modules", fake_iter_modules)
 
-    with pytest.raises(ValueError, match="must declare normalize or wallet inventory capability"):
+    with pytest.raises(ValueError, match="must declare intake route, normalize, or wallet inventory capability"):
         discovery_adapters.build_registry()
 
 
@@ -85,6 +86,14 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
         def match(self, source: str, raw_dir: object, inventory: tuple[object, ...]) -> int:
             del source, raw_dir, inventory
             return 100
+
+        def match_intake(self, relative_path: str, facts: object) -> int:
+            del relative_path, facts
+            return 0
+
+        def route_intake(self, request: object) -> object | None:
+            del request
+            return None
 
         def validate_profile_timezones(self, profile: object) -> tuple[dict[str, object], tuple[object, ...]]:
             del profile

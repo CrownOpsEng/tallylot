@@ -118,17 +118,21 @@ def _validated_manifest(raw_manifest: AdapterManifest) -> AdapterManifest:
 def _validate_source_adapter_contract(adapter: object, module: ModuleType) -> SourceAdapter:
     manifest = _validated_manifest(_manifest_from_adapter(adapter, module))
     source_capabilities = {
+        AdapterCapability.INTAKE_ROUTE,
         AdapterCapability.NORMALIZE,
         AdapterCapability.WALLET_INVENTORY,
     }
     if not manifest.capabilities.intersection(source_capabilities):
         raise ValueError(
-            f"{module.__name__} adapter {manifest.adapter_id} must declare normalize or wallet inventory capability"
+            f"{module.__name__} adapter {manifest.adapter_id} must declare intake route, normalize, "
+            "or wallet inventory capability"
         )
     if AdapterCapability.OUTPUT_RENDER in manifest.capabilities:
         raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} cannot declare output render capability")
     required_methods = (
         "match",
+        "match_intake",
+        "route_intake",
         "validate_profile_timezones",
         "extract_wallet_inventory",
         "normalize",

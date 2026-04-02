@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import (
     EVM_ADDRESS_PATTERN,
     AdapterIssueSpec,
@@ -25,6 +26,7 @@ from crypto_reconciliation.domain.models import (
 )
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, JsonValue
 from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 TRANSACTION_HEADER_FIELDS = {"Transaction Hash", "DateTime (UTC)"}
 
@@ -34,7 +36,9 @@ class EvmExplorerAdapter:
         adapter_id=AdapterId("evm_explorer"),
         display_name="EVM Explorer",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY}),
+        capabilities=frozenset(
+            {AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+        ),
         description="Normalizes EVM explorer exports and extracts owned EVM addresses.",
     )
 
@@ -48,6 +52,16 @@ class EvmExplorerAdapter:
         if any("explorer" in item.relative_path.lower() for item in inventory):
             return 75
         return 0
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        return match_intake_by_path_or_header(
+            relative_path,
+            facts,
+            path_hints=("etherscan", "arbiscan", "polygonscan", "bsc", "evm"),
+        )
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        return no_intake_route(request)
 
     def validate_profile_timezones(
         self,

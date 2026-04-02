@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.wallet_record_support import WalletRecordSpec, wallet_record
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
@@ -19,6 +20,7 @@ from crypto_reconciliation.domain.models import (
 )
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, JsonValue, SourceId
 from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 
 class NearAdapter:
@@ -26,7 +28,9 @@ class NearAdapter:
         adapter_id=AdapterId("near"),
         display_name="NEAR",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY}),
+        capabilities=frozenset(
+            {AdapterCapability.NORMALIZE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+        ),
         description="Normalizes NEAR transaction exports and extracts wallet identifiers.",
     )
 
@@ -37,6 +41,12 @@ class NearAdapter:
         if any(item.relative_path.endswith("_transactions.csv") for item in inventory):
             return 100
         return 0
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        return match_intake_by_path_or_header(relative_path, facts, path_hints=("near",))
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        return no_intake_route(request)
 
     def validate_profile_timezones(
         self,

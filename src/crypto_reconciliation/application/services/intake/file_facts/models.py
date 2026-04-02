@@ -1,14 +1,7 @@
-"""File-fact models for intake inspection."""
+"""File-fact model aliases for intake inspection."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts
 
-
-@dataclass(frozen=True)
-class IntakeFileFacts:
-    header: tuple[str, ...] = ()
-    min_timestamp: str = ""
-    max_timestamp: str = ""
-    scope_tokens: tuple[str, ...] = ()
-    network_hints: tuple[str, ...] = ()
+__all__ = ["IntakeFileFacts"]

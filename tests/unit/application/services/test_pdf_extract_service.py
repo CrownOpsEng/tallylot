@@ -17,6 +17,7 @@ from crypto_reconciliation.domain.models import (
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.ports.adapters import NormalizationResult, SourceAdapter
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 
 class StubPdfAdapter:
@@ -33,6 +34,14 @@ class StubPdfAdapter:
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
         del source, raw_dir, inventory
         return 0
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        del relative_path, facts
+        return 0
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        del request
+        return None
 
     def validate_profile_timezones(
         self,

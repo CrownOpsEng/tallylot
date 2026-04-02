@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from crypto_reconciliation.application.dtos import IntakePlanRequest
+from crypto_reconciliation.ports.adapters import SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 from .archive import ScannedFile
@@ -31,6 +32,7 @@ from .routing import route_intake_file
 
 def build_planned_items(
     files: tuple[ScannedFile, ...],
+    registry: SourceAdapterRegistryPort,
     artifacts: ArtifactStorePort,
     request: IntakePlanRequest,
 ) -> list[PlannedItem]:
@@ -40,6 +42,7 @@ def build_planned_items(
         facts = inspect_intake_file(entry.file_path, relative_path=relative_path)
         route = route_intake_file(
             entry,
+            registry=registry,
             incoming_dir=request.incoming_dir,
             workspace_root=request.workspace_root,
             facts=facts,

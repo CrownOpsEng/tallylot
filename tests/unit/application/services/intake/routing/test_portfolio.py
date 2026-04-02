@@ -5,6 +5,7 @@ from pathlib import Path
 from crypto_reconciliation.application.services.intake import ScannedFile
 from crypto_reconciliation.application.services.intake.file_facts import IntakeFileFacts
 from crypto_reconciliation.application.services.intake.routing import route_intake_file
+from crypto_reconciliation.infrastructure.discovery import build_registry
 
 
 def test_route_intake_file_routes_cointracking_pdf_to_portfolio_capture(tmp_path: Path) -> None:
@@ -21,6 +22,7 @@ def test_route_intake_file_routes_cointracking_pdf_to_portfolio_capture(tmp_path
             size_bytes=pdf_path.stat().st_size,
             sha256="fixture",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(),
@@ -54,6 +56,7 @@ def test_route_intake_file_routes_cointracking_sidecar_by_html_export_timestamp(
             size_bytes=sidecar_path.stat().st_size,
             sha256="fixture",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(),
@@ -82,6 +85,7 @@ def test_route_intake_file_routes_cointracking_sidecar_to_unknown_capture_withou
             size_bytes=sidecar_path.stat().st_size,
             sha256="fixture",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(),
@@ -107,6 +111,7 @@ def test_route_intake_file_routes_archive_sidecar_by_archive_capture_id(tmp_path
             archive_source_path="CoinTracking-202203.zip",
             archive_member_path="CoinTracking Export_files/style.min.css",
         ),
+        registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
         facts=IntakeFileFacts(),

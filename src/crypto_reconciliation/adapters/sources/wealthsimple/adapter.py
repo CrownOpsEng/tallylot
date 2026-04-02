@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.intake_support import match_intake_by_path_or_header, no_intake_route
 from crypto_reconciliation.adapters.sources.mapped_event_support import (
     MappedEventSpec,
     NormalizationIssueSpec,
@@ -25,6 +26,7 @@ from crypto_reconciliation.domain.models import (
 from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.domain.value_objects import parse_decimal
 from crypto_reconciliation.ports.adapters import NormalizationResult
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 BROKER_HEADER = (
     "transaction_date",
@@ -62,7 +64,7 @@ class WealthsimpleAdapter:
         adapter_id=AdapterId("wealthsimple"),
         display_name="Wealthsimple",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.NORMALIZE}),
+        capabilities=frozenset({AdapterCapability.NORMALIZE, AdapterCapability.INTAKE_ROUTE}),
         description="Normalizes Wealthsimple crypto activity exports.",
     )
 
@@ -73,6 +75,17 @@ class WealthsimpleAdapter:
         if any(item.header in {BROKER_HEADER, ACTIVITY_HEADER} for item in inventory):
             return 100
         return 0
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        return match_intake_by_path_or_header(
+            relative_path,
+            facts,
+            path_hints=("wealthsimple",),
+            header_hints=(",".join(BROKER_HEADER).lower(), ",".join(ACTIVITY_HEADER).lower()),
+        )
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        return no_intake_route(request)
 
     def validate_profile_timezones(
         self,
