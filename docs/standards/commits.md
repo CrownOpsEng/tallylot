@@ -169,6 +169,9 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.inst
 The installed `pre-commit` hook formats safe staged Python files with Ruff
 before running the remaining hooks once. It skips auto-restaging for partially
 staged Python files so unrelated unstaged hunks are not accidentally committed.
+It also refuses to run when the sibling `commit-msg` validator hook is missing
+or stale, so clone-local hook drift cannot silently bypass commit-message
+validation.
 
 Validate messages directly when needed:
 
