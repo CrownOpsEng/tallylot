@@ -65,6 +65,7 @@ def test_profile_normalize_and_render_cli(structured_source_dir: Path, tmp_path:
     assert normalize_result.exit_code == 0
     assert render_result.exit_code == 0
     assert rendered_path.exists()
+    assert (normalized_dir / "normalization_reviews.csv").exists()
 
 
 def test_baseline_validate_cli(baseline_export_dir: Path, tmp_path: Path) -> None:

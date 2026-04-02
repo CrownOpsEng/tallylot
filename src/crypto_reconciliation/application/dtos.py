@@ -59,6 +59,7 @@ class NormalizeResponse:
     event_count: int
     balance_count: int
     issue_count: int
+    review_count: int
 
 
 @dataclass(frozen=True)

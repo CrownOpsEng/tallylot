@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.domain.models import CanonicalBalance, CanonicalEvent, IssueRecord
+from crypto_reconciliation.domain.models import (
+    CanonicalBalance,
+    CanonicalEvent,
+    IssueRecord,
+    NormalizationReviewRecord,
+)
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 
 
@@ -62,4 +67,28 @@ class FilesystemStorage:
                 "status",
             ),
             (issue.to_row() for issue in issues),
+        )
+
+    def write_review_records(
+        self,
+        path: Path,
+        reviews: tuple[NormalizationReviewRecord, ...],
+    ) -> None:
+        write_rows(
+            path,
+            (
+                "review_id",
+                "source",
+                "adapter_id",
+                "scope",
+                "kind",
+                "message",
+                "raw_file",
+                "raw_row_ref",
+                "field_name",
+                "original_value",
+                "normalized_value",
+                "status",
+            ),
+            (review.to_row() for review in reviews),
         )

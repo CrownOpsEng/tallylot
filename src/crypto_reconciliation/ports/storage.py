@@ -5,7 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol
 
-from crypto_reconciliation.domain.models import CanonicalBalance, CanonicalEvent, IssueRecord
+from crypto_reconciliation.domain.models import (
+    CanonicalBalance,
+    CanonicalEvent,
+    IssueRecord,
+    NormalizationReviewRecord,
+)
 
 
 class StoragePort(Protocol):
@@ -16,4 +21,11 @@ class StoragePort(Protocol):
         ...
 
     def write_issue_records(self, path: Path, issues: tuple[IssueRecord, ...]) -> None:
+        ...
+
+    def write_review_records(
+        self,
+        path: Path,
+        reviews: tuple[NormalizationReviewRecord, ...],
+    ) -> None:
         ...

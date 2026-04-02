@@ -12,6 +12,7 @@ from crypto_reconciliation.domain.models import (
     CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizationReviewRecord,
     SourceProfile,
     WalletInventoryRecord,
 )
@@ -22,6 +23,7 @@ class NormalizationResult:
     canonical_events: tuple[CanonicalEvent, ...]
     canonical_balances: tuple[CanonicalBalance, ...]
     issues: tuple[IssueRecord, ...]
+    reviews: tuple[NormalizationReviewRecord, ...]
     wallet_inventory: tuple[WalletInventoryRecord, ...]
 
 

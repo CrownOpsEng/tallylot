@@ -14,11 +14,12 @@ from crypto_reconciliation.domain.models import (
     CanonicalEvent,
     FileInventoryEntry,
     IssueRecord,
+    NormalizationReviewRecord,
     SourceProfile,
     WalletInventoryRecord,
 )
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
-from crypto_reconciliation.domain.value_objects import parse_decimal, parse_timestamp
+from crypto_reconciliation.domain.value_objects import format_decimal, parse_decimal, parse_timestamp
 from crypto_reconciliation.ports.adapters import NormalizationResult
 
 REQUIRED_HEADER = (
@@ -57,6 +58,7 @@ class StructuredCsvSourceAdapter:
         path = raw_dir / "transactions.csv"
         events: list[CanonicalEvent] = []
         issues: list[IssueRecord] = []
+        reviews: list[NormalizationReviewRecord] = []
         balances: dict[tuple[str, str, str], Decimal] = {}
         wallet_rows: dict[str, WalletInventoryRecord] = {}
         with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -76,6 +78,7 @@ class StructuredCsvSourceAdapter:
                             raw_file="transactions.csv",
                         ),
                     ),
+                    reviews=(),
                     wallet_inventory=(),
                 )
             for index, row in enumerate(reader, start=2):
@@ -86,10 +89,24 @@ class StructuredCsvSourceAdapter:
 
                 timestamp = parse_timestamp(row["timestamp"])
                 amount_in = parse_decimal(row["amount_in"])
-                amount_out = self._canonicalize_outbound_amount(parse_decimal(row["amount_out"]))
-                fee_amount = self._canonicalize_outbound_amount(parse_decimal(row["fee_amount"]))
+                amount_out, amount_out_review = self._canonicalize_outbound_amount(
+                    profile,
+                    index,
+                    "amount_out",
+                    row["amount_out"],
+                )
+                fee_amount, fee_amount_review = self._canonicalize_outbound_amount(
+                    profile,
+                    index,
+                    "fee_amount",
+                    row["fee_amount"],
+                )
                 account = row["account"].strip()
                 wallet = row["wallet"].strip()
+                if amount_out_review is not None:
+                    reviews.append(amount_out_review)
+                if fee_amount_review is not None:
+                    reviews.append(fee_amount_review)
                 events.append(
                     CanonicalEvent(
                         event_id=EventId(f"{profile.source}:{index}"),
@@ -134,6 +151,29 @@ class StructuredCsvSourceAdapter:
                     identifier_value=f"{account}:{wallet}",
                 )
 
+        if events:
+            reviews.extend(
+                (
+                    self._dataset_review(
+                        profile,
+                        "timestamp_timezone_assumed_utc",
+                        (
+                            "Structured CSV timestamps are timezone-naive; normalization assigns UTC "
+                            "and those timestamps should be validated against the source system."
+                        ),
+                    ),
+                    self._dataset_review(
+                        profile,
+                        "default_render_mapping",
+                        (
+                            "Structured CSV normalization defaults CoinTracking render fields to "
+                            "render_type<-event_kind, render_exchange<-account, and "
+                            "render_comment<-description; validate those mappings before import."
+                        ),
+                    ),
+                )
+            )
+
         as_of = max(event.timestamp for event in events) if events else datetime.now(UTC)
         balance_rows = tuple(
             CanonicalBalance(
@@ -163,6 +203,7 @@ class StructuredCsvSourceAdapter:
                     )
                 ]
             ),
+            reviews=tuple(reviews),
             wallet_inventory=tuple(wallet_rows.values()),
         )
 
@@ -293,11 +334,30 @@ class StructuredCsvSourceAdapter:
 
         return None
 
-    @staticmethod
-    def _canonicalize_outbound_amount(value: Decimal | None) -> Decimal | None:
+    def _canonicalize_outbound_amount(
+        self,
+        profile: SourceProfile,
+        index: int,
+        field_name: str,
+        raw_value: str | None,
+    ) -> tuple[Decimal | None, NormalizationReviewRecord | None]:
+        value = parse_decimal(raw_value)
         if value is None:
-            return None
-        return value.copy_abs()
+            return None, None
+        if value < Decimal("0"):
+            canonical = value.copy_abs()
+            return canonical, self._review(
+                profile,
+                index=index,
+                kind="outbound_amount_sign_canonicalized",
+                message=(
+                    f"{field_name} was negative and was canonicalized to a positive outbound value."
+                ),
+                field_name=field_name,
+                original_value=(raw_value or "").strip(),
+                normalized_value=format_decimal(canonical),
+            )
+        return value, None
 
     def _issue(
         self,
@@ -315,6 +375,44 @@ class StructuredCsvSourceAdapter:
             message=message,
             raw_file="transactions.csv",
             raw_row_ref=str(index),
+        )
+
+    def _dataset_review(
+        self,
+        profile: SourceProfile,
+        kind: str,
+        message: str,
+    ) -> NormalizationReviewRecord:
+        return self._review(profile, index=None, kind=kind, message=message)
+
+    def _review(
+        self,
+        profile: SourceProfile,
+        *,
+        index: int | None,
+        kind: str,
+        message: str,
+        field_name: str = "",
+        original_value: str = "",
+        normalized_value: str = "",
+    ) -> NormalizationReviewRecord:
+        review_id = (
+            f"{profile.source}:{index}:{kind}"
+            if index is not None
+            else f"{profile.source}:dataset:{kind}"
+        )
+        return NormalizationReviewRecord(
+            review_id=review_id,
+            source=str(profile.source),
+            adapter_id=str(self.manifest.adapter_id),
+            scope="row" if index is not None else "dataset",
+            kind=kind,
+            message=message,
+            raw_file="transactions.csv",
+            raw_row_ref="" if index is None else str(index),
+            field_name=field_name,
+            original_value=original_value,
+            normalized_value=normalized_value,
         )
 
 

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from collections import Counter
+
 from crypto_reconciliation.application.dtos import NormalizeRequest, NormalizeResponse
 from crypto_reconciliation.application.services.common import ensure_directory
 from crypto_reconciliation.application.services.profile import ProfileService
+from crypto_reconciliation.domain.models import NormalizationReviewRecord
 from crypto_reconciliation.ports.adapters import SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 from crypto_reconciliation.ports.storage import StoragePort
@@ -43,6 +46,10 @@ class NormalizationService:
             result.canonical_balances,
         )
         self._storage.write_issue_records(request.output_dir / "exceptions.csv", result.issues)
+        self._storage.write_review_records(
+            request.output_dir / "normalization_reviews.csv",
+            result.reviews,
+        )
         self._artifacts.write_rows(
             request.output_dir / "wallet_inventory.csv",
             (
@@ -65,6 +72,8 @@ class NormalizationService:
                 "event_count": len(result.canonical_events),
                 "balance_count": len(result.canonical_balances),
                 "issue_count": len(result.issues),
+                "review_count": len(result.reviews),
+                "review_summary": self._review_summary(result.reviews),
                 "wallet_count": len(result.wallet_inventory),
             },
         )
@@ -74,4 +83,33 @@ class NormalizationService:
             event_count=len(result.canonical_events),
             balance_count=len(result.canonical_balances),
             issue_count=len(result.issues),
+            review_count=len(result.reviews),
         )
+
+    @staticmethod
+    def _review_summary(
+        reviews: tuple[NormalizationReviewRecord, ...],
+    ) -> list[dict[str, object]]:
+        counts = Counter((review.scope, review.kind) for review in reviews)
+        return [
+            {
+                "scope": scope,
+                "kind": kind,
+                "count": count,
+                "field_names": sorted(
+                    {
+                        review.field_name
+                        for review in reviews
+                        if review.scope == scope and review.kind == kind and review.field_name
+                    }
+                ),
+                "messages": sorted(
+                    {
+                        review.message
+                        for review in reviews
+                        if review.scope == scope and review.kind == kind
+                    }
+                ),
+            }
+            for (scope, kind), count in sorted(counts.items())
+        ]
