@@ -4,6 +4,8 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
+import pytest
+
 from tallylot.application.intake import ManifestRequest
 from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.intake.build_manifest import BuildManifestUseCase
@@ -100,7 +102,8 @@ def test_scanned_tree_files_skips_duplicate_archive_member_paths(tmp_path: Path)
     archive_path = source_dir / "bundle.zip"
     with ZipFile(archive_path, "w", compression=ZIP_DEFLATED) as archive:
         archive.writestr("inner.csv", "a,b\n1,2\n")
-        archive.writestr("inner.csv", "a,b\n3,4\n")
+        with pytest.warns(UserWarning, match="Duplicate name: 'inner.csv'"):
+            archive.writestr("inner.csv", "a,b\n3,4\n")
 
     with scanned_tree_files(source_dir) as scanned_tree:
         issue_kinds = {issue.kind for issue in scanned_tree.issues}
