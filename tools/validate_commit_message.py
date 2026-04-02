@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 from collections.abc import Sequence
@@ -8,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tools.message_standards import MERGE_SUBJECT_PATTERN, validate_structured_sections, validate_subject_line
+
+SQUASH_PR_SUBJECT_PATTERN = re.compile(r" \(\#\d+\)$")
 
 
 @dataclass(frozen=True)
@@ -38,11 +41,14 @@ def validate_commit_message_text(message: str) -> tuple[str, ...]:
     if MERGE_SUBJECT_PATTERN.match(subject):
         return ()
 
+    optional_sections = ("Included checkpoints",) if SQUASH_PR_SUBJECT_PATTERN.search(subject) else ()
+
     return (
         *validate_subject_line(subject),
         *validate_structured_sections(
             lines,
             required_sections=("Why", "What", "Checks"),
+            optional_sections=optional_sections,
             require_body=True,
             label="commit message",
             allow_footers=True,

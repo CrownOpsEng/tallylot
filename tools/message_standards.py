@@ -105,10 +105,12 @@ def _validate_trailing_lines(
     return tuple(errors)
 
 
+# pylint: disable=too-many-arguments
 def validate_structured_sections(
     lines: tuple[str, ...],
     *,
     required_sections: tuple[str, ...],
+    optional_sections: tuple[str, ...] = (),
     require_body: bool,
     label: str,
     allow_footers: bool,
@@ -125,6 +127,17 @@ def validate_structured_sections(
 
     for section in required_sections:
         index, section_errors = _validate_required_section(lines, section=section, start_index=index)
+        errors.extend(section_errors)
+
+    for section in optional_sections:
+        section_start = _skip_blank_lines(lines, index)
+        if section_start >= len(lines) or lines[section_start] != f"{section}:":
+            continue
+        index, section_errors = _validate_section_bullets(
+            lines,
+            section=section,
+            start_index=section_start + 1,
+        )
         errors.extend(section_errors)
 
     errors.extend(_validate_trailing_lines(lines, start_index=index, allow_footers=allow_footers))

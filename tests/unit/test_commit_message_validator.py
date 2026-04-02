@@ -69,6 +69,29 @@ def test_merge_commit_message_is_allowed() -> None:
     assert not errors
 
 
+def test_squash_merge_commit_message_with_included_checkpoints_is_valid() -> None:
+    message = """\
+refactor: source verification and routing (#11)
+
+Why:
+- keep the squash-merge record reviewable on main
+
+What:
+- preserve the validated pull request summary
+
+Checks:
+- GitHub Actions `ci` workflow on this PR
+
+Included checkpoints:
+- `fix(sources): harden live export parsing and verification`
+- `refactor(sources): harden on-chain ids and family routing`
+"""
+
+    errors = validate_commit_message_text(message)
+
+    assert not errors
+
+
 def test_invalid_type_is_rejected() -> None:
     errors = validate_commit_message_text(
         """\
@@ -180,3 +203,28 @@ def test_missing_structured_body_is_rejected() -> None:
     errors = validate_commit_message_text("docs: route agents to narrow standards\n")
 
     assert errors == ("commit message body is required with `Why:`, `What:`, `Checks:` sections",)
+
+
+def test_authored_commit_message_rejects_included_checkpoints_section() -> None:
+    errors = validate_commit_message_text(
+        """\
+docs: route agents to narrow standards
+
+Why:
+- keep routing guidance explicit
+
+What:
+- point agents to the narrowest applicable standards doc
+
+Checks:
+- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+
+Included checkpoints:
+- `docs: route agents to narrow standards`
+"""
+    )
+
+    assert errors == (
+        "unsupported structured label: Included checkpoints:",
+        "unexpected trailing content: - `docs: route agents to narrow standards`",
+    )

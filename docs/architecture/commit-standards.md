@@ -99,6 +99,11 @@ PR body rules:
 - for a one-commit PR, still list that single checkpoint under
   `Included checkpoints:`
 
+The GitHub-generated squash commit on `main` may retain the validated
+`Included checkpoints:` section from the PR body. Treat that as allowed for the
+generated mainline commit record, even though authored checkpoint commits
+should only use `Why:`, `What:`, and `Checks:` sections.
+
 Preferred PR body template:
 
 ```text
@@ -195,7 +200,9 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_
 Use `tools.run_quality_gates --full-tests` as the default final local
 verification command. Use `tools.run_ci_parity_checks` only when changing CI,
 packaging, release, or other workflow surfaces where exact local parity with
-GitHub Actions is worth the extra time.
+GitHub Actions is worth the extra time. Add `--include-commit-messages` when
+you also want the parity run to validate the current branch commit-message
+range before running the full quality and build path.
 Do not run `tools.run_quality_gates --full-tests` immediately before
 `tools.run_ci_parity_checks`; the parity runner already includes the full
 quality gate pass.

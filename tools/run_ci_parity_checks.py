@@ -18,8 +18,44 @@ class ParityStep:
     command: tuple[str, ...]
 
 
+def _git_stdout(*args: str) -> str:
+    result = subprocess.run(
+        ("git", *args),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _default_branch_ref() -> str:
+    try:
+        return _git_stdout("symbolic-ref", "--short", "refs/remotes/origin/HEAD")
+    except subprocess.CalledProcessError:
+        return "origin/main"
+
+
+def _commit_message_range() -> str:
+    default_branch = _default_branch_ref()
+    try:
+        merge_base = _git_stdout("merge-base", "HEAD", default_branch)
+    except subprocess.CalledProcessError:
+        return "HEAD^!"
+
+    head_sha = _git_stdout("rev-parse", "HEAD")
+    if merge_base == head_sha:
+        return "HEAD^!"
+    return f"{merge_base}..{head_sha}"
+
+
 def _build_argument_parser() -> argparse.ArgumentParser:
-    return argparse.ArgumentParser(description="Run local checks that mirror the GitHub Actions CI workflow.")
+    parser = argparse.ArgumentParser(description="Run local checks that mirror the GitHub Actions CI workflow.")
+    parser.add_argument(
+        "--include-commit-messages",
+        action="store_true",
+        help="Also validate the current branch commit-message range before running quality and build checks.",
+    )
+    return parser
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -73,13 +109,29 @@ def _run_step(step: ParityStep) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    _parse_args(argv)
+    args = _parse_args(argv)
 
-    steps = (
+    steps: list[ParityStep] = []
+    if args.include_commit_messages:
+        steps.append(
+            ParityStep(
+                name="commit-messages",
+                command=(
+                    "uv",
+                    "run",
+                    "python",
+                    "-m",
+                    "tools.validate_commit_message",
+                    "--rev-range",
+                    _commit_message_range(),
+                ),
+            )
+        )
+    steps.append(
         ParityStep(
             name="quality",
             command=("uv", "run", "python", "-m", "tools.run_quality_gates", "--full-tests"),
-        ),
+        )
     )
 
     for step in steps:
