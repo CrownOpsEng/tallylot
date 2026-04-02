@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from . import state
 from .cli import (
     RETIRED_REFERENCES,
@@ -22,9 +24,22 @@ from .metadata import (
     validate_related_target,
 )
 
-REPO_ROOT = state.REPO_ROOT
-DOCS_ROOT = state.DOCS_ROOT
-AGENTS_ROOT = state.AGENTS_ROOT
+
+def __getattr__(name: str) -> object:
+    if name == "REPO_ROOT":
+        return state.repo_root()
+    if name == "DOCS_ROOT":
+        return state.docs_root()
+    if name == "AGENTS_ROOT":
+        return state.agents_root()
+    raise AttributeError(name)
+
+
+if TYPE_CHECKING:
+    REPO_ROOT = state.REPO_ROOT
+    DOCS_ROOT = state.DOCS_ROOT
+    AGENTS_ROOT = state.AGENTS_ROOT
+
 
 __all__ = [
     "AGENTS_ROOT",

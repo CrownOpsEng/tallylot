@@ -232,6 +232,19 @@ def test_repo_markdown_paths_follow_active_state_roots(
     }
 
 
+def test_docs_maintenance_root_exports_follow_active_state_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    agents_root = tmp_path / "agents"
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
+
+    assert tmp_path == docs_maintenance.REPO_ROOT
+    assert docs_root == docs_maintenance.DOCS_ROOT
+    assert agents_root == docs_maintenance.AGENTS_ROOT
+
+
 def test_entrypoints_do_not_reference_retired_docs_paths() -> None:
     for path in ENTRYPOINT_PATHS:
         text = path.read_text(encoding="utf-8")
