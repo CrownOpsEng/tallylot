@@ -27,18 +27,18 @@ def cointracking_row(transaction: TransactionFact) -> dict[str, str]:
             f"fact {transaction.fact_id} has unsupported CoinTracking projection shape: "
             "expected at least one primary leg"
         )
-    inbound_leg = _single_primary_leg(transaction, direction="in")
-    outbound_leg = _single_primary_leg(transaction, direction="out")
+    inbound_leg = _single_primary_leg(transaction, positive=True)
+    outbound_leg = _single_primary_leg(transaction, positive=False)
     charge_leg = _single_charge_leg(transaction)
     _reject_other_non_primary_legs(transaction)
     return {
         "Type": COINTRACKING_TYPE_LABELS[transaction.projection_hint],
-        "Buy": format_decimal(None if inbound_leg is None else inbound_leg.amount),
-        "Cur.": "" if inbound_leg is None else str(inbound_leg.asset),
-        "Sell": format_decimal(None if outbound_leg is None else outbound_leg.amount),
-        "Cur..1": "" if outbound_leg is None else str(outbound_leg.asset),
-        "Fee": format_decimal(None if charge_leg is None else charge_leg.amount),
-        "Cur..2": "" if charge_leg is None else str(charge_leg.asset),
+        "Buy": format_decimal(None if inbound_leg is None else inbound_leg.quantity),
+        "Cur.": "" if inbound_leg is None else str(inbound_leg.instrument_id),
+        "Sell": format_decimal(None if outbound_leg is None else abs(outbound_leg.quantity)),
+        "Cur..1": "" if outbound_leg is None else str(outbound_leg.instrument_id),
+        "Fee": format_decimal(None if charge_leg is None else abs(charge_leg.quantity)),
+        "Cur..2": "" if charge_leg is None else str(charge_leg.instrument_id),
         "Exchange": str(transaction.location_id),
         "Group": transaction.operation_group_id,
         "Comment": transaction.description,
@@ -47,21 +47,23 @@ def cointracking_row(transaction: TransactionFact) -> dict[str, str]:
     }
 
 
-def _single_primary_leg(transaction: TransactionFact, *, direction: str) -> EconomicLeg | None:
-    matching_legs = tuple(leg for leg in transaction.legs if leg.kind is LegKind.PRIMARY and leg.direction == direction)
+def _single_primary_leg(transaction: TransactionFact, *, positive: bool) -> EconomicLeg | None:
+    matching_legs = tuple(
+        leg for leg in transaction.legs if leg.kind is LegKind.PRIMARY and (leg.quantity > 0) is positive
+    )
     if len(matching_legs) > 1:
         raise ValueError(
             f"fact {transaction.fact_id} has unsupported CoinTracking projection shape: "
-            f"expected at most one {direction}bound primary leg"
+            f"expected at most one {'positive' if positive else 'negative'} primary leg"
         )
     return None if not matching_legs else matching_legs[0]
 
 
 def _single_charge_leg(transaction: TransactionFact) -> EconomicLeg | None:
     matching_legs = tuple(leg for leg in transaction.legs if leg.kind is LegKind.CHARGE)
-    if any(leg.direction != "out" for leg in matching_legs):
+    if any(leg.quantity >= 0 for leg in matching_legs):
         raise ValueError(
-            f"fact {transaction.fact_id} has unsupported CoinTracking projection shape: charge legs must be outbound"
+            f"fact {transaction.fact_id} has unsupported CoinTracking projection shape: charge legs must be negative"
         )
     if len(matching_legs) > 1:
         raise ValueError(

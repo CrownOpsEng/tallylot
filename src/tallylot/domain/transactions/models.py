@@ -8,23 +8,30 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Literal
 
-from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
-from tallylot.domain.value_objects import format_decimal, format_timestamp, require_utc_datetime
+from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.temporal import TemporalPrecision
+from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
+from tallylot.domain.value_objects import (
+    format_decimal,
+    format_temporal_value,
+    format_timestamp,
+    require_temporal_datetime,
+    require_utc_datetime,
+)
 
 from .classification import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from .validation import (
     fact_leg_counts,
-    validate_directional_counts,
     validate_fact_counts,
-    validate_fact_direction,
     validate_fact_leg_attribution,
+    validate_leg_shape_counts,
     validate_non_negative_count,
 )
 
-FactDirection = Literal["in", "out"]
+FACT_SCHEMA_VERSION = 2
 _LEG_SUBTYPE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
+_LEG_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 class LegKind(StrEnum):
@@ -43,17 +50,17 @@ class LegShapeLimit:
     kind: LegKind
     max_count: int
     min_count: int = 0
-    max_in_count: int | None = None
-    min_in_count: int | None = None
-    max_out_count: int | None = None
-    min_out_count: int | None = None
+    max_positive_count: int | None = None
+    min_positive_count: int | None = None
+    max_negative_count: int | None = None
+    min_negative_count: int | None = None
 
     def __post_init__(self) -> None:
         validate_non_negative_count(self.min_count, label="min_count")
         validate_non_negative_count(self.max_count, label="max_count")
         if self.min_count > self.max_count:
             raise ValueError("leg shape limit min_count must not exceed max_count")
-        validate_directional_counts(self)
+        validate_leg_shape_counts(self)
 
 
 @dataclass(frozen=True)
@@ -86,25 +93,24 @@ class FactSemantics:
 
 @dataclass(frozen=True)
 class EconomicLeg:
-    direction: FactDirection
+    leg_id: str
     kind: LegKind
-    asset: AssetSymbol
-    amount: Decimal
+    instrument_id: InstrumentId
+    quantity: Decimal
     subtype: str | None = None
-    attributed_to_direction: FactDirection | None = None
+    attributed_to_leg_id: str | None = None
     location_id: LocationId | None = None
 
     def __post_init__(self) -> None:
-        validate_fact_direction(self.direction, label="fact leg direction")
-        if self.amount <= Decimal("0"):
-            raise ValueError("fact leg amount must be greater than zero")
-        if self.kind is LegKind.PRIMARY and self.attributed_to_direction is not None:
-            raise ValueError("primary legs must not declare attributed_to_direction")
-        if self.attributed_to_direction is not None:
-            validate_fact_direction(
-                self.attributed_to_direction,
-                label="fact leg attributed_to_direction",
-            )
+        _validate_leg_id(self.leg_id, label="fact leg_id")
+        if not str(self.instrument_id):
+            raise ValueError("fact leg instrument_id must not be blank")
+        if self.quantity == Decimal("0"):
+            raise ValueError("fact leg quantity must not be zero")
+        if self.kind is LegKind.PRIMARY and self.attributed_to_leg_id is not None:
+            raise ValueError("primary legs must not declare attributed_to_leg_id")
+        if self.attributed_to_leg_id is not None:
+            _validate_leg_id(self.attributed_to_leg_id, label="fact leg attributed_to_leg_id")
         if self.subtype is not None and not _LEG_SUBTYPE_PATTERN.fullmatch(self.subtype):
             raise ValueError("fact leg subtype must be lowercase snake_case")
 
@@ -127,6 +133,8 @@ class TransactionFact:
     raw_row_ref: str = ""
     confidence: str = "high"
     status: str = "mapped"
+    effective_at: datetime | None = None
+    effective_precision: TemporalPrecision | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -134,11 +142,26 @@ class TransactionFact:
             "timestamp",
             require_utc_datetime(self.timestamp, label="transaction fact timestamp"),
         )
+        if self.effective_at is None:
+            if self.effective_precision is not None:
+                raise ValueError("transaction fact effective_precision requires effective_at")
+        else:
+            if self.effective_precision is None:
+                raise ValueError("transaction fact effective_at requires effective_precision")
+            object.__setattr__(
+                self,
+                "effective_at",
+                require_temporal_datetime(
+                    self.effective_at,
+                    precision=self.effective_precision,
+                    label="transaction fact effective_at",
+                ),
+            )
         if not self.legs:
             raise ValueError("transaction fact must include at least one leg")
-        counts_by_kind, directional_counts, primary_legs_by_direction = fact_leg_counts(self.legs, self.leg_policy)
-        validate_fact_counts(self.leg_policy, counts_by_kind, directional_counts)
-        validate_fact_leg_attribution(self.legs, primary_legs_by_direction)
+        counts_by_kind, signed_counts, leg_ids_by_kind = fact_leg_counts(self.legs, self.leg_policy)
+        validate_fact_counts(self.leg_policy, counts_by_kind, signed_counts)
+        validate_fact_leg_attribution(self.legs, leg_ids_by_kind)
 
     @property
     def economic_kind(self) -> EconomicKind:
@@ -158,10 +181,21 @@ class TransactionFact:
 
     def to_row(self) -> dict[str, str]:
         return {
+            "schema_version": str(FACT_SCHEMA_VERSION),
             "fact_id": str(self.fact_id),
             "source": str(self.source),
             "adapter_id": str(self.adapter_id),
             "timestamp": format_timestamp(self.timestamp),
+            "effective_at": (
+                ""
+                if self.effective_at is None or self.effective_precision is None
+                else format_temporal_value(
+                    self.effective_at,
+                    precision=self.effective_precision,
+                    label="transaction fact effective_at",
+                )
+            ),
+            "effective_precision": "" if self.effective_precision is None else self.effective_precision.value,
             "location_id": str(self.location_id),
             "economic_kind": self.economic_kind.value,
             "projection_hint": "" if self.projection_hint is None else self.projection_hint.value,
@@ -183,12 +217,12 @@ class TransactionFact:
 def _legs_json(legs: tuple[EconomicLeg, ...]) -> list[dict[str, object]]:
     return [
         {
-            "direction": leg.direction,
+            "leg_id": leg.leg_id,
             "kind": leg.kind.value,
             "subtype": "" if leg.subtype is None else leg.subtype,
-            "asset": str(leg.asset),
-            "amount": format_decimal(leg.amount),
-            "attributed_to_direction": "" if leg.attributed_to_direction is None else leg.attributed_to_direction,
+            "instrument_id": str(leg.instrument_id),
+            "quantity": format_decimal(leg.quantity),
+            "attributed_to_leg_id": "" if leg.attributed_to_leg_id is None else leg.attributed_to_leg_id,
             "location_id": "" if leg.location_id is None else str(leg.location_id),
         }
         for leg in legs
@@ -201,10 +235,10 @@ def _leg_policy_json(policy: FactLegPolicy) -> list[dict[str, object]]:
             "kind": limit.kind.value,
             "min_count": limit.min_count,
             "max_count": limit.max_count,
-            "min_in_count": limit.min_in_count,
-            "max_in_count": limit.max_in_count,
-            "min_out_count": limit.min_out_count,
-            "max_out_count": limit.max_out_count,
+            "min_positive_count": limit.min_positive_count,
+            "max_positive_count": limit.max_positive_count,
+            "min_negative_count": limit.min_negative_count,
+            "max_negative_count": limit.max_negative_count,
         }
         for limit in sorted(policy.limits, key=lambda item: item.kind.value)
     ]
@@ -212,3 +246,8 @@ def _leg_policy_json(policy: FactLegPolicy) -> list[dict[str, object]]:
 
 def _json_text(payload: list[dict[str, object]]) -> str:
     return json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+
+
+def _validate_leg_id(value: str, *, label: str) -> None:
+    if not _LEG_ID_PATTERN.fullmatch(value):
+        raise ValueError(f"{label} must be lowercase snake_case")

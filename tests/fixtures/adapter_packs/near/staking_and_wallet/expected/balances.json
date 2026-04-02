@@ -1,17 +1,19 @@
 [
   {
-    "as_of": "2024-01-02 00:00:00",
-    "asset": "NEAR",
+    "as_of_at": "2024-01-02 00:00:00",
+    "as_of_precision": "timestamp",
     "balance_kind": "available",
+    "instrument_id": "symbol:NEAR@near",
     "location_id": "capture_near",
     "notes": "",
     "quantity": "-1.11",
     "source": "capture-near"
   },
   {
-    "as_of": "2024-01-02 00:00:00",
-    "asset": "NEAR",
+    "as_of_at": "2024-01-02 00:00:00",
+    "as_of_precision": "timestamp",
     "balance_kind": "available",
+    "instrument_id": "symbol:NEAR@near",
     "location_id": "capture_near_staking",
     "notes": "",
     "quantity": "2",

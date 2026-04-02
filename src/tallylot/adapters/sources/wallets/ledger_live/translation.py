@@ -17,6 +17,7 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
@@ -92,18 +93,24 @@ def translate_operations(
                 operation_group_id=operation_hash,
                 legs=(
                     economic_leg(
-                        direction="in",
+                        leg_id="primary_in",
                         kind=LegKind.PRIMARY,
-                        asset=(inbound.get("Currency Ticker") or "").strip().upper(),
-                        amount=Decimal((inbound.get("Operation Amount") or "0").strip()),
+                        quantity=Decimal((inbound.get("Operation Amount") or "0").strip()),
+                        instrument=symbol_claim(
+                            (inbound.get("Currency Ticker") or "").strip().upper(),
+                            venue="ledger_live",
+                        ),
                     ),
                     economic_leg(
-                        direction="out",
+                        leg_id="primary_out",
                         kind=LegKind.PRIMARY,
-                        asset=(outbound.get("Currency Ticker") or "").strip().upper(),
-                        amount=Decimal((outbound.get("Operation Amount") or "0").strip()),
+                        quantity=-Decimal((outbound.get("Operation Amount") or "0").strip()),
+                        instrument=symbol_claim(
+                            (outbound.get("Currency Ticker") or "").strip().upper(),
+                            venue="ledger_live",
+                        ),
                     ),
-                    *_charge_legs(fee_amount, fee_asset),
+                    *_charge_legs(fee_amount, fee_asset, attributed_to_leg_id="primary_out"),
                 ),
             )
         )
@@ -120,16 +127,16 @@ def _swap_policy(fee_amount: Decimal, fee_asset: str) -> FactLegPolicy:
     return TWO_SIDED_PRIMARY_EXCHANGE_POLICY
 
 
-def _charge_legs(fee_amount: Decimal, fee_asset: str) -> tuple[EconomicLegDraft, ...]:
+def _charge_legs(fee_amount: Decimal, fee_asset: str, *, attributed_to_leg_id: str) -> tuple[EconomicLegDraft, ...]:
     if fee_amount <= Decimal("0") or not fee_asset:
         return ()
     return (
         economic_leg(
-            direction="out",
+            leg_id="charge",
             kind=LegKind.CHARGE,
-            asset=fee_asset.strip().upper(),
-            amount=fee_amount,
+            quantity=-fee_amount,
+            instrument=symbol_claim(fee_asset.strip().upper(), venue="ledger_live"),
             subtype="network_fee",
-            attributed_to_direction="out",
+            attributed_to_leg_id=attributed_to_leg_id,
         ),
     )

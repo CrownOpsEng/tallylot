@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.support.drafts import compile_activity_drafts
@@ -21,12 +22,15 @@ def test_ledger_live_adapter_normalizes_grouped_trade_rows() -> None:
     assert facts[0].projection_hint == ProjectionHint.TRADE
     assert facts[0].accounting_intent_hint == AccountingIntentHint.ASSET_EXCHANGE
     assert facts[0].tax_treatment_hint == TaxTreatmentHint.CAPITAL_EXCHANGE
-    assert facts[0].legs[0].direction == "in"
-    assert facts[0].legs[1].direction == "out"
-    assert str(facts[0].legs[0].amount) == "0.01000000"
-    assert str(facts[0].legs[1].asset) == "ETH"
+    assert facts[0].legs[0].leg_id == "primary_in"
+    assert facts[0].legs[0].quantity == Decimal("0.01000000")
+    assert str(facts[0].legs[0].instrument_id) == "symbol:BTC@ledger_live"
+    assert facts[0].legs[1].leg_id == "primary_out"
+    assert facts[0].legs[1].quantity == Decimal("-0.50000000")
+    assert str(facts[0].legs[1].instrument_id) == "symbol:ETH@ledger_live"
     charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
-    assert str(charge_legs[0].amount) == "0.01000000"
+    assert charge_legs[0].leg_id == "charge"
+    assert charge_legs[0].quantity == Decimal("-0.01")
     assert result.issues == ()
 
 

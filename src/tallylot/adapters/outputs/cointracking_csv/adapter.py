@@ -28,8 +28,14 @@ class CoinTrackingCsvAdapter:
     render_policy = OutputRenderPolicy(
         shape_policy=FactLegPolicy(
             limits=(
-                LegShapeLimit(kind=LegKind.PRIMARY, min_count=1, max_count=2, max_in_count=1, max_out_count=1),
-                LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+                LegShapeLimit(
+                    kind=LegKind.PRIMARY,
+                    min_count=1,
+                    max_count=2,
+                    max_positive_count=1,
+                    max_negative_count=1,
+                ),
+                LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
             )
         ),
         requires_projection_hint=True,

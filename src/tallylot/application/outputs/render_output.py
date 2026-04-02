@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from tallylot.application.outputs.contracts import RenderOutputRequest, RenderOutputResponse
 from tallylot.application.resource_refs import path_from_ref, to_resource_ref
 from tallylot.domain.transactions import LegKind, LegShapeLimit, TransactionFact
@@ -34,17 +36,17 @@ def _validate_render_policy(facts: tuple[TransactionFact, ...], *, adapter: Outp
         if policy.requires_projection_hint and fact.projection_hint is None:
             raise ValueError(f"fact {fact.fact_id} is missing required {adapter_id} projection metadata")
         counts_by_kind: dict[LegKind, int] = {}
-        directional_counts: dict[tuple[LegKind, str], int] = {}
+        signed_counts: dict[tuple[LegKind, str], int] = {}
         for leg in fact.legs:
             counts_by_kind[leg.kind] = counts_by_kind.get(leg.kind, 0) + 1
-            directional_key = (leg.kind, leg.direction)
-            directional_counts[directional_key] = directional_counts.get(directional_key, 0) + 1
+            sign_key = "positive" if leg.quantity > Decimal("0") else "negative"
+            signed_counts[(leg.kind, sign_key)] = signed_counts.get((leg.kind, sign_key), 0) + 1
         _validate_fact_shape(
             fact=fact,
             policy=policy,
             adapter_id=adapter_id,
             counts_by_kind=counts_by_kind,
-            directional_counts=directional_counts,
+            signed_counts=signed_counts,
         )
 
 
@@ -54,7 +56,7 @@ def _validate_fact_shape(
     policy: OutputRenderPolicy,
     adapter_id: str,
     counts_by_kind: dict[LegKind, int],
-    directional_counts: dict[tuple[LegKind, str], int],
+    signed_counts: dict[tuple[LegKind, str], int],
 ) -> None:
     for kind in counts_by_kind:
         if policy.shape_policy.limit_for(kind) is None:
@@ -70,19 +72,19 @@ def _validate_fact_shape(
             total_count=counts_by_kind.get(kind, 0),
             limit=limit,
         )
-        _validate_render_directional_count(
+        _validate_render_signed_count(
             fact=fact,
             adapter_id=adapter_id,
             limit=limit,
-            direction="in",
-            count=directional_counts.get((kind, "in"), 0),
+            sign="positive",
+            count=signed_counts.get((kind, "positive"), 0),
         )
-        _validate_render_directional_count(
+        _validate_render_signed_count(
             fact=fact,
             adapter_id=adapter_id,
             limit=limit,
-            direction="out",
-            count=directional_counts.get((kind, "out"), 0),
+            sign="negative",
+            count=signed_counts.get((kind, "negative"), 0),
         )
     for limit in policy.shape_policy.limits:
         _validate_absent_render_kind(
@@ -107,24 +109,24 @@ def _validate_render_total_count(
         raise ValueError(f"fact {fact.fact_id} exceeds {adapter_id} render policy for {kind.value} legs")
 
 
-def _validate_render_directional_count(
+def _validate_render_signed_count(
     *,
     fact: TransactionFact,
     adapter_id: str,
     limit: LegShapeLimit,
-    direction: str,
+    sign: str,
     count: int,
 ) -> None:
-    direction_label = "inbound" if direction == "in" else "outbound"
-    minimum = limit.min_in_count if direction == "in" else limit.min_out_count
-    maximum = limit.max_in_count if direction == "in" else limit.max_out_count
+    sign_label = "positive" if sign == "positive" else "negative"
+    minimum = limit.min_positive_count if sign == "positive" else limit.min_negative_count
+    maximum = limit.max_positive_count if sign == "positive" else limit.max_negative_count
     if minimum is not None and count < minimum:
         raise ValueError(
-            f"fact {fact.fact_id} falls below {adapter_id} render policy for {direction_label} {limit.kind.value} legs"
+            f"fact {fact.fact_id} falls below {adapter_id} render policy for {sign_label} {limit.kind.value} legs"
         )
     if maximum is not None and count > maximum:
         raise ValueError(
-            f"fact {fact.fact_id} exceeds {adapter_id} render policy for {direction_label} {limit.kind.value} legs"
+            f"fact {fact.fact_id} exceeds {adapter_id} render policy for {sign_label} {limit.kind.value} legs"
         )
 
 
@@ -139,11 +141,11 @@ def _validate_absent_render_kind(
         return
     if limit.min_count > 0:
         raise ValueError(f"fact {fact.fact_id} falls below {adapter_id} render policy for {limit.kind.value} legs")
-    if limit.min_in_count not in (None, 0):
+    if limit.min_positive_count not in (None, 0):
         raise ValueError(
-            f"fact {fact.fact_id} falls below {adapter_id} render policy for inbound {limit.kind.value} legs"
+            f"fact {fact.fact_id} falls below {adapter_id} render policy for positive {limit.kind.value} legs"
         )
-    if limit.min_out_count not in (None, 0):
+    if limit.min_negative_count not in (None, 0):
         raise ValueError(
-            f"fact {fact.fact_id} falls below {adapter_id} render policy for outbound {limit.kind.value} legs"
+            f"fact {fact.fact_id} falls below {adapter_id} render policy for negative {limit.kind.value} legs"
         )

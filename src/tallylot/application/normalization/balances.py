@@ -7,8 +7,10 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from tallylot.domain.checkpoints import BalanceSnapshot
+from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import TransactionFact
-from tallylot.domain.types import AssetSymbol, LocationId, SourceId
+from tallylot.domain.types import LocationId, SourceId
 
 
 def derive_balance_snapshots(
@@ -24,20 +26,21 @@ def derive_balance_snapshots(
                 key=(
                     str(fact.source),
                     str(leg.location_id or fact.location_id),
-                    str(leg.asset),
+                    str(leg.instrument_id),
                 ),
-                quantity=leg.amount if leg.direction == "in" else -leg.amount,
+                quantity=leg.quantity,
             )
     as_of = latest_timestamp if latest_timestamp is not None else datetime.now(UTC)
     return tuple(
         BalanceSnapshot(
             source=SourceId(source),
             location_id=LocationId(location_id),
-            asset=AssetSymbol(asset),
+            instrument_id=InstrumentId(instrument_id),
             quantity=quantity,
-            as_of=as_of,
+            as_of_at=as_of,
+            as_of_precision=TemporalPrecision.TIMESTAMP,
         )
-        for (source, location_id, asset), quantity in sorted(balances.items())
+        for (source, location_id, instrument_id), quantity in sorted(balances.items())
     )
 
 

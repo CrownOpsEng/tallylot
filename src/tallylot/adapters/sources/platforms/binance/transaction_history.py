@@ -15,6 +15,7 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
@@ -98,7 +99,14 @@ def normalize_transaction_rows(
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
                     provider_operation_key=operation,
-                    legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=coin, amount=change),),
+                    legs=(
+                        economic_leg(
+                            leg_id="primary_in",
+                            kind=LegKind.PRIMARY,
+                            quantity=change,
+                            instrument=symbol_claim(coin, venue="binance"),
+                        ),
+                    ),
                 )
             )
             continue
@@ -131,16 +139,16 @@ def normalize_transaction_rows(
                     provider_operation_key=operation,
                     legs=(
                         economic_leg(
-                            direction="in",
+                            leg_id="primary_in",
                             kind=LegKind.PRIMARY,
-                            asset=(pos.get("Coin") or "").strip().upper(),
-                            amount=pos_change,
+                            quantity=pos_change,
+                            instrument=symbol_claim((pos.get("Coin") or "").strip().upper(), venue="binance"),
                         ),
                         economic_leg(
-                            direction="out",
+                            leg_id="primary_out",
                             kind=LegKind.PRIMARY,
-                            asset=(neg.get("Coin") or "").strip().upper(),
-                            amount=abs(neg_change),
+                            quantity=-abs(neg_change),
+                            instrument=symbol_claim((neg.get("Coin") or "").strip().upper(), venue="binance"),
                         ),
                     ),
                 )

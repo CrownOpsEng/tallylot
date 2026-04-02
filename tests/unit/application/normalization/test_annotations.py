@@ -31,7 +31,14 @@ def test_annotation_records_preserve_draft_provenance_and_review_markers() -> No
                     accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
                     tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                 ),
-                legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1")),),
+                legs=(
+                    economic_leg(
+                        leg_id="primary_btc",
+                        kind=LegKind.PRIMARY,
+                        instrument="BTC",
+                        quantity=Decimal("1"),
+                    ),
+                ),
                 leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                 provenance_refs=("file:row:2", "statement:page:1"),
                 review_markers=("normalized_negative_fee",),

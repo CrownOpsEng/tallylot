@@ -12,6 +12,7 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal
@@ -59,8 +60,18 @@ def normalize_convert_order_rows(
                 raw_row_ref=f"row:{index}",
                 provider_operation_key="order_history:convert",
                 legs=(
-                    economic_leg(direction="in", kind=LegKind.PRIMARY, asset=buy_asset, amount=buy_amount),
-                    economic_leg(direction="out", kind=LegKind.PRIMARY, asset=sell_asset, amount=sell_amount),
+                    economic_leg(
+                        leg_id="primary_in",
+                        kind=LegKind.PRIMARY,
+                        quantity=buy_amount,
+                        instrument=symbol_claim(buy_asset, venue="binance"),
+                    ),
+                    economic_leg(
+                        leg_id="primary_out",
+                        kind=LegKind.PRIMARY,
+                        quantity=-sell_amount,
+                        instrument=symbol_claim(sell_asset, venue="binance"),
+                    ),
                 ),
             )
         )
@@ -87,13 +98,33 @@ def normalize_c2c_order_rows(
         matched_times.add(parse_transaction_history_timestamp(created_time))
         if order_type == "SELL":
             legs = (
-                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=fiat, amount=total_price),
-                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=asset, amount=quantity),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=total_price,
+                    instrument=symbol_claim(fiat, venue="binance"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-quantity,
+                    instrument=symbol_claim(asset, venue="binance"),
+                ),
             )
         else:
             legs = (
-                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=asset, amount=quantity),
-                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=fiat, amount=total_price),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=quantity,
+                    instrument=symbol_claim(asset, venue="binance"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-total_price,
+                    instrument=symbol_claim(fiat, venue="binance"),
+                ),
             )
         drafts.append(
             EconomicActivityDraft(

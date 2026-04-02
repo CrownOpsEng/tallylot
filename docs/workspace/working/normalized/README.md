@@ -21,9 +21,15 @@ Per-source folders should use the typed pipeline artifact set:
 `fact_annotations.json` preserves fact-keyed provenance references and
 review markers that originate on drafts.
 
-`balances.csv` contains application-derived balances from transaction facts.
+`facts.csv` is schema-versioned and stores canonical signed legs keyed by
+`instrument_id`.
+
+`balances.csv` contains application-derived balances from transaction facts and
+persists `instrument_id`, `as_of_at`, and `as_of_precision`.
+
 `balance_evidence.csv` contains source-backed checkpoint evidence when the
-adapter actually provides it.
+adapter actually provides it, using the same `instrument_id` and temporal
+precision fields as `balances.csv`.
 
 `cointracking_candidate.csv` is optional. Create it with `output render file`
 when the round needs it, and keep it beside the

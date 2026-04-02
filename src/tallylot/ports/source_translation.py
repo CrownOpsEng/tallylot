@@ -5,16 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
 
+from tallylot.domain.instruments import InstrumentId, InstrumentIdentityClaim, InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind, LocationRecord
 from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
     AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactDirection,
     FactLegPolicy,
     FactSemantics,
     LegKind,
@@ -22,12 +22,10 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
-from tallylot.domain.value_objects import require_utc_datetime
+from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
+from tallylot.domain.value_objects import require_temporal_datetime, require_utc_datetime
 from tallylot.ports.annotations import AdapterMetadata
 from tallylot.ports.evidence import LocationInventoryRecord
-
-DraftDirection = Literal["in", "out"]
 
 
 @dataclass(frozen=True)
@@ -43,6 +41,8 @@ class ActivityDraftSeed:
     activity_id: str
     timestamp: datetime
     leg_policy: FactLegPolicy
+    effective_at: datetime | None = None
+    effective_precision: TemporalPrecision | None = None
     description: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
@@ -61,26 +61,43 @@ class ActivityDraftSeed:
             "timestamp",
             require_utc_datetime(self.timestamp, label="activity draft seed timestamp"),
         )
+        if self.effective_at is None:
+            if self.effective_precision is not None:
+                raise ValueError("activity draft seed effective_precision requires effective_at")
+        else:
+            if self.effective_precision is None:
+                raise ValueError("activity draft seed effective_at requires effective_precision")
+            object.__setattr__(
+                self,
+                "effective_at",
+                require_temporal_datetime(
+                    self.effective_at,
+                    precision=self.effective_precision,
+                    label="activity draft seed effective_at",
+                ),
+            )
 
 
 @dataclass(frozen=True)
 class EconomicLegDraft:
-    direction: DraftDirection
+    leg_id: str
     kind: LegKind
-    asset: str
-    amount: Decimal
+    instrument_identity_claims: tuple[InstrumentIdentityClaim, ...]
+    quantity: Decimal
     subtype: str | None = None
-    attributed_to_direction: FactDirection | None = None
+    attributed_to_leg_id: str | None = None
     location_id: LocationId | None = None
 
     def __post_init__(self) -> None:
+        if not self.instrument_identity_claims:
+            raise ValueError("draft leg must include at least one instrument identity claim")
         EconomicLeg(
-            direction=self.direction,
+            leg_id=self.leg_id,
             kind=self.kind,
-            asset=AssetSymbol(self.asset),
-            amount=self.amount,
+            instrument_id=InstrumentId("draft:placeholder"),
+            quantity=self.quantity,
             subtype=self.subtype,
-            attributed_to_direction=self.attributed_to_direction,
+            attributed_to_leg_id=self.attributed_to_leg_id,
             location_id=self.location_id,
         )
 
@@ -95,6 +112,8 @@ class EconomicActivityDraft:
     classification: ActivityClassification
     legs: tuple[EconomicLegDraft, ...]
     leg_policy: FactLegPolicy
+    effective_at: datetime | None = None
+    effective_precision: TemporalPrecision | None = None
     description: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
@@ -113,6 +132,21 @@ class EconomicActivityDraft:
             "timestamp",
             require_utc_datetime(self.timestamp, label="economic activity draft timestamp"),
         )
+        if self.effective_at is None:
+            if self.effective_precision is not None:
+                raise ValueError("economic activity draft effective_precision requires effective_at")
+        else:
+            if self.effective_precision is None:
+                raise ValueError("economic activity draft effective_at requires effective_precision")
+            object.__setattr__(
+                self,
+                "effective_at",
+                require_temporal_datetime(
+                    self.effective_at,
+                    precision=self.effective_precision,
+                    label="economic activity draft effective_at",
+                ),
+            )
         if not self.legs:
             raise ValueError("draft must include at least one leg")
         _validated_transaction_fact(self)
@@ -162,21 +196,21 @@ def classification(
 
 def economic_leg(  # pylint: disable=too-many-arguments
     *,
-    direction: DraftDirection,
+    leg_id: str,
     kind: LegKind,
-    asset: str,
-    amount: Decimal,
+    quantity: Decimal,
+    instrument: str | InstrumentIdentityClaim | tuple[InstrumentIdentityClaim, ...],
     subtype: str | None = None,
-    attributed_to_direction: FactDirection | None = None,
+    attributed_to_leg_id: str | None = None,
     location_id: LocationId | None = None,
 ) -> EconomicLegDraft:
     return EconomicLegDraft(
-        direction=direction,
+        leg_id=leg_id,
         kind=kind,
-        asset=asset,
-        amount=amount,
+        instrument_identity_claims=_identity_claims(instrument),
+        quantity=quantity,
         subtype=subtype,
-        attributed_to_direction=attributed_to_direction,
+        attributed_to_leg_id=attributed_to_leg_id,
         location_id=location_id,
     )
 
@@ -187,6 +221,8 @@ def _validated_transaction_fact(draft: EconomicActivityDraft) -> TransactionFact
         source=SourceId(draft.source),
         adapter_id=AdapterId(draft.adapter_id),
         timestamp=draft.timestamp,
+        effective_at=draft.effective_at,
+        effective_precision=draft.effective_precision,
         location_id=draft.location_id,
         semantics=FactSemantics(
             economic_kind=draft.classification.economic_kind,
@@ -196,12 +232,12 @@ def _validated_transaction_fact(draft: EconomicActivityDraft) -> TransactionFact
         ),
         legs=tuple(
             EconomicLeg(
-                direction=leg.direction,
+                leg_id=leg.leg_id,
                 kind=leg.kind,
-                asset=AssetSymbol(leg.asset),
-                amount=leg.amount,
+                instrument_id=InstrumentId("draft:placeholder"),
+                quantity=leg.quantity,
                 subtype=leg.subtype,
-                attributed_to_direction=leg.attributed_to_direction,
+                attributed_to_leg_id=leg.attributed_to_leg_id,
                 location_id=leg.location_id,
             )
             for leg in draft.legs
@@ -216,3 +252,31 @@ def _validated_transaction_fact(draft: EconomicActivityDraft) -> TransactionFact
         confidence=draft.confidence,
         status=draft.status,
     )
+
+
+def symbol_claim(
+    value: str,
+    *,
+    display_name: str = "",
+    kind_hint: InstrumentKind = InstrumentKind.UNKNOWN,
+    precision_hint: int | None = None,
+    venue: str | None = None,
+) -> InstrumentIdentityClaim:
+    return InstrumentIdentityClaim(
+        scheme="symbol",
+        value=value,
+        venue=venue,
+        kind_hint=kind_hint,
+        display_name=display_name,
+        precision_hint=precision_hint,
+    )
+
+
+def _identity_claims(
+    instrument: str | InstrumentIdentityClaim | tuple[InstrumentIdentityClaim, ...],
+) -> tuple[InstrumentIdentityClaim, ...]:
+    if isinstance(instrument, tuple):
+        return instrument
+    if isinstance(instrument, InstrumentIdentityClaim):
+        return (instrument,)
+    return (symbol_claim(instrument),)

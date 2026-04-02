@@ -21,6 +21,7 @@ from tallylot.ports.source_translation import (
     LocationDraft,
     classification,
     economic_leg,
+    symbol_claim,
 )
 
 __all__ = [
@@ -43,4 +44,5 @@ __all__ = [
     "TaxTreatmentHint",
     "classification",
     "economic_leg",
+    "symbol_claim",
 ]

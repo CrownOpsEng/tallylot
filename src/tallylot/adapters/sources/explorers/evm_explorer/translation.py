@@ -19,6 +19,7 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
@@ -84,7 +85,14 @@ def translate_transactions(
                     raw_row_ref=f"{path.name}:row:{index}",
                     tx_hash=tx_hash,
                     provider_operation_key="explorer_transfer_in",
-                    legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BNB", amount=amount_in),),
+                    legs=(
+                        economic_leg(
+                            leg_id="primary_in",
+                            kind=LegKind.PRIMARY,
+                            quantity=amount_in,
+                            instrument=symbol_claim("BNB", venue="evm_explorer"),
+                        ),
+                    ),
                 )
             )
     return tuple(drafts), tuple(issues)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.gtrade.adapter import GTradeAdapter
@@ -33,6 +34,8 @@ def test_gtrade_adapter_surfaces_report_limits_without_guessing() -> None:
         TaxTreatmentHint.DERIVATIVE_REALIZED_GAIN,
         TaxTreatmentHint.DERIVATIVE_REALIZED_LOSS,
     ]
+    assert facts[0].legs[0].quantity == Decimal("10")
+    assert facts[1].legs[0].quantity == Decimal("-5")
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
 

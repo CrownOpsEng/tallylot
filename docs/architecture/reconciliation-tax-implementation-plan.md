@@ -337,6 +337,12 @@ The only lost capability should be comparison against the external oracle.
 - Fields that may be date-only or exact-time persist both `*_at` and
   `*_precision` so exact midnight timestamps remain distinguishable from
   date-only values.
+- `facts.csv` is schema-versioned and readers fail fast on unexpected
+  `schema_version` values; rebuilding from raw evidence is the supported
+  recovery path after fact-shape breaks.
+- `balances.csv` and `balance_evidence.csv` persist canonical `instrument_id`
+  values and use `as_of_at` plus `as_of_precision` rather than bare symbol or
+  timestamp columns.
 - Windowed normalization applies to:
   - `facts.csv`
   - `fact_annotations.json`

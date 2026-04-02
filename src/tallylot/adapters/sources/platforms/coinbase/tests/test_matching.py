@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
@@ -55,6 +56,13 @@ def test_coinbase_adapter_uses_retail_family_without_filename_dependency() -> No
     assert facts[0].projection_hint == ProjectionHint.TRADE
     primary_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.PRIMARY)
     charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
-    assert primary_legs[1].amount == 600
-    assert charge_legs[0].amount == 10
+    assert primary_legs[0].leg_id == "primary_in"
+    assert primary_legs[0].quantity == Decimal("0.01")
+    assert str(primary_legs[0].instrument_id) == "symbol:BTC@coinbase"
+    assert primary_legs[1].leg_id == "primary_out"
+    assert primary_legs[1].quantity == Decimal("-600")
+    assert str(primary_legs[1].instrument_id) == "symbol:CAD@coinbase"
+    assert charge_legs[0].leg_id == "fee"
+    assert charge_legs[0].quantity == Decimal("-10")
+    assert str(charge_legs[0].instrument_id) == "symbol:CAD@coinbase"
     assert result.issues == ()

@@ -42,6 +42,10 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
         TaxTreatmentHint.ORDINARY_INCOME,
         TaxTreatmentHint.CAPITAL_EXCHANGE,
     }
+    trade_event = next(event for event in facts if event.projection_hint == ProjectionHint.TRADE)
+    primary_legs = tuple(leg for leg in trade_event.legs if leg.kind.value == "primary")
+    assert primary_legs[0].quantity > 0
+    assert primary_legs[1].quantity < 0
     assert any(event.description == "shakingsats" for event in facts)
     assert result.balance_evidence == ()
     assert result.issues == ()

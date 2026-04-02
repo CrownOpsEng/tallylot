@@ -14,11 +14,11 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.transactions import (
     AccountingIntentHint,
     EconomicKind,
-    FactDirection,
     ProjectionHint,
     TaxTreatmentHint,
 )
@@ -64,14 +64,19 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                     raw_row_ref=f"row:{index}",
                     provider_operation_key=f"spot:{side}",
                     legs=(
-                        economic_leg(direction="in", kind=LegKind.PRIMARY, asset=quote_asset, amount=quote_amount),
                         economic_leg(
-                            direction="out",
+                            leg_id="primary_out",
                             kind=LegKind.PRIMARY,
-                            asset=base_asset or executed_asset,
-                            amount=executed_amount,
+                            quantity=-executed_amount,
+                            instrument=symbol_claim(base_asset or executed_asset, venue="binance"),
                         ),
-                        *_charge_legs(fee_amount, fee_asset, attributed_to_direction="in"),
+                        economic_leg(
+                            leg_id="primary_in",
+                            kind=LegKind.PRIMARY,
+                            quantity=quote_amount,
+                            instrument=symbol_claim(quote_asset, venue="binance"),
+                        ),
+                        *_charge_legs(fee_amount, fee_asset, attributed_to_leg_id="primary_in"),
                     ),
                 )
             )
@@ -96,13 +101,18 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                     provider_operation_key=f"spot:{side}",
                     legs=(
                         economic_leg(
-                            direction="in",
+                            leg_id="primary_in",
                             kind=LegKind.PRIMARY,
-                            asset=base_asset or executed_asset,
-                            amount=executed_amount,
+                            quantity=executed_amount,
+                            instrument=symbol_claim(base_asset or executed_asset, venue="binance"),
                         ),
-                        economic_leg(direction="out", kind=LegKind.PRIMARY, asset=quote_asset, amount=quote_amount),
-                        *_charge_legs(fee_amount, fee_asset, attributed_to_direction="out"),
+                        economic_leg(
+                            leg_id="primary_out",
+                            kind=LegKind.PRIMARY,
+                            quantity=-quote_amount,
+                            instrument=symbol_claim(quote_asset, venue="binance"),
+                        ),
+                        *_charge_legs(fee_amount, fee_asset, attributed_to_leg_id="primary_out"),
                     ),
                 )
             )
@@ -119,17 +129,17 @@ def _charge_legs(
     fee_amount: Decimal | None,
     fee_asset: str | None,
     *,
-    attributed_to_direction: FactDirection,
+    attributed_to_leg_id: str,
 ) -> tuple[EconomicLegDraft, ...]:
     if fee_amount is None or not fee_asset:
         return ()
     return (
         economic_leg(
-            direction="out",
+            leg_id="charge",
             kind=LegKind.CHARGE,
-            asset=fee_asset,
-            amount=fee_amount,
+            quantity=-fee_amount,
+            instrument=symbol_claim(fee_asset, venue="binance"),
             subtype="trading_fee",
-            attributed_to_direction=attributed_to_direction,
+            attributed_to_leg_id=attributed_to_leg_id,
         ),
     )

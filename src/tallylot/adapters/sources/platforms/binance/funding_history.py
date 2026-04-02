@@ -14,6 +14,7 @@ from tallylot.adapters.support.drafts import (
     LegShapeLimit,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal
@@ -55,10 +56,10 @@ def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[EconomicA
                 provider_operation_key="funding:deposit",
                 legs=(
                     economic_leg(
-                        direction="in",
+                        leg_id="primary_in",
                         kind=LegKind.PRIMARY,
-                        asset=(row.get("Coin") or "").strip().upper(),
-                        amount=amount,
+                        quantity=amount,
+                        instrument=symbol_claim((row.get("Coin") or "").strip().upper(), venue="binance"),
                     ),
                 ),
             )
@@ -96,8 +97,13 @@ def normalize_withdraw_rows(profile: SourceProfile, path: Path) -> list[Economic
                 tx_hash=(row.get("TXID") or "").strip(),
                 provider_operation_key="funding:withdrawal",
                 legs=(
-                    economic_leg(direction="out", kind=LegKind.PRIMARY, asset=coin, amount=amount),
-                    *_charge_legs(fee, coin),
+                    economic_leg(
+                        leg_id="primary_out",
+                        kind=LegKind.PRIMARY,
+                        quantity=-amount,
+                        instrument=symbol_claim(coin, venue="binance"),
+                    ),
+                    *_charge_legs(fee, coin, attributed_to_leg_id="primary_out"),
                 ),
             )
         )
@@ -109,22 +115,22 @@ def _withdrawal_policy(fee: Decimal | None) -> FactLegPolicy:
         return SINGLE_PRIMARY_ACTIVITY_POLICY
     return FactLegPolicy(
         limits=(
-            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_in_count=1, max_out_count=1),
-            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1, max_negative_count=1),
+            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
         )
     )
 
 
-def _charge_legs(fee: Decimal | None, coin: str) -> tuple[EconomicLegDraft, ...]:
+def _charge_legs(fee: Decimal | None, coin: str, *, attributed_to_leg_id: str) -> tuple[EconomicLegDraft, ...]:
     if fee is None or fee <= Decimal("0"):
         return ()
     return (
         economic_leg(
-            direction="out",
+            leg_id="charge",
             kind=LegKind.CHARGE,
-            asset=coin,
-            amount=fee,
+            quantity=-fee,
+            instrument=symbol_claim(coin, venue="binance"),
             subtype="network_fee",
-            attributed_to_direction="out",
+            attributed_to_leg_id=attributed_to_leg_id,
         ),
     )

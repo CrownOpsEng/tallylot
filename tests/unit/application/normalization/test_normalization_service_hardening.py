@@ -10,7 +10,9 @@ import pytest
 
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
+from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     AccountingIntentHint,
@@ -19,7 +21,7 @@ from tallylot.domain.transactions import (
     ProjectionHint,
     TaxTreatmentHint,
 )
-from tallylot.domain.types import AssetSymbol, LocationId, SourceId
+from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemFactRepository
 from tallylot.ports.source_translation import (
@@ -161,10 +163,10 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
     summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
 
-    assert facts[0].legs[0].amount == Decimal("1.5")
-    assert facts[0].legs[1].amount == Decimal("10")
+    assert facts[0].legs[0].quantity == Decimal("1.5")
+    assert facts[0].legs[1].quantity == Decimal("-10")
     charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
-    assert charge_legs[0].amount == Decimal("0.1")
+    assert charge_legs[0].quantity == Decimal("-0.1")
     assert fact_annotations == [
         {
             "fact_id": str(facts[0].fact_id),
@@ -294,7 +296,14 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
                         accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
                         tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                     ),
-                    legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),),
+                    legs=(
+                        economic_leg(
+                            leg_id="primary_btc",
+                            kind=LegKind.PRIMARY,
+                            instrument="BTC",
+                            quantity=Decimal("1.5"),
+                        ),
+                    ),
                     leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     tx_hash="tx-1",
                 ),
@@ -303,9 +312,10 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
                 BalanceEvidence(
                     source=SourceId("fixture"),
                     location_id=LocationId("fixture:primary"),
-                    asset=AssetSymbol("BTC"),
+                    instrument_id=InstrumentId("symbol:BTC"),
                     quantity=Decimal("2.5"),
-                    as_of=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
+                    as_of_at=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
+                    as_of_precision=TemporalPrecision.TIMESTAMP,
                     evidence_ref="statement:page:1",
                 ),
             ),
@@ -340,9 +350,10 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
         {
             "source": "fixture",
             "location_id": "fixture:primary",
-            "asset": "BTC",
+            "instrument_id": "symbol:BTC",
             "quantity": "1.5",
-            "as_of": "2023-08-06 10:00:00",
+            "as_of_at": "2023-08-06 10:00:00",
+            "as_of_precision": "timestamp",
             "balance_kind": "available",
             "notes": "",
         }
@@ -351,9 +362,10 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
         {
             "source": "fixture",
             "location_id": "fixture:primary",
-            "asset": "BTC",
+            "instrument_id": "symbol:BTC",
             "quantity": "2.5",
-            "as_of": "2023-08-06 12:00:00",
+            "as_of_at": "2023-08-06 12:00:00",
+            "as_of_precision": "timestamp",
             "balance_kind": "available",
             "evidence_ref": "statement:page:1",
             "notes": "",

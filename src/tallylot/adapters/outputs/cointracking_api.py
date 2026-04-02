@@ -21,7 +21,7 @@ class CoinTrackingApiStubAdapter:
     )
     render_policy = OutputRenderPolicy(
         shape_policy=FactLegPolicy(
-            limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_in_count=0, max_out_count=0),)
+            limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_positive_count=0, max_negative_count=0),)
         ),
         requires_projection_hint=False,
     )

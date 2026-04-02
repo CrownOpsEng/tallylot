@@ -16,12 +16,13 @@ from tallylot.adapters.support.drafts import (
     LegShapeLimit,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
     AccountingIntentHint,
     EconomicKind,
-    FactDirection,
     ProjectionHint,
     TaxTreatmentHint,
 )
@@ -69,6 +70,7 @@ class _TradeDraftContext:
     commission: Decimal | None
     net_cash_amount: Decimal
     timestamp: datetime
+    effective_at: datetime | None
     provider_operation_key: str
 
 
@@ -81,7 +83,9 @@ def normalize_row(
         return None
     activity_type = (row.get("activity_type") or "").strip()
     activity_sub_type = (row.get("activity_sub_type") or "").strip()
-    timestamp = _parse_date((row.get("settlement_date") or row.get("transaction_date") or "").strip())
+    transaction_date = _parse_date((row.get("transaction_date") or "").strip())
+    settlement_date = _parse_date((row.get("settlement_date") or "").strip())
+    timestamp = transaction_date or settlement_date
     if timestamp is None:
         return issue_record(
             IssueSpec(
@@ -126,6 +130,7 @@ def normalize_row(
                 commission=commission,
                 net_cash_amount=net_cash_amount,
                 timestamp=timestamp,
+                effective_at=settlement_date,
                 provider_operation_key=provider_operation_key,
             ),
         )
@@ -150,18 +155,19 @@ def _charge_legs(
     commission: Decimal | None,
     currency: str,
     *,
-    attributed_to_direction: FactDirection,
+    attributed_to_leg_id: str,
+    leg_id: str,
 ) -> tuple[EconomicLegDraft, ...]:
     if commission is None or commission <= Decimal("0"):
         return ()
     return (
         economic_leg(
-            direction="out",
+            leg_id=leg_id,
             kind=LegKind.CHARGE,
-            asset=currency,
-            amount=commission,
+            quantity=-commission,
+            instrument=symbol_claim(currency, venue="wealthsimple"),
             subtype="commission",
-            attributed_to_direction=attributed_to_direction,
+            attributed_to_leg_id=attributed_to_leg_id,
         ),
     )
 
@@ -206,6 +212,8 @@ def _trade_draft_or_issue(
             accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
             tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
         ),
+        effective_at=context.effective_at,
+        effective_precision=TemporalPrecision.DATE if context.effective_at is not None else None,
         leg_policy=_trade_policy(context.commission),
         description=f"Wealthsimple Crypto {trade_side_lower}",
         raw_file=row_context.raw_file,
@@ -213,21 +221,22 @@ def _trade_draft_or_issue(
         provider_operation_key=context.provider_operation_key,
         legs=(
             economic_leg(
-                direction="in" if trade_side == "BUY" else "out",
+                leg_id="primary_in" if trade_side == "BUY" else "primary_out",
                 kind=LegKind.PRIMARY,
-                asset=context.symbol,
-                amount=context.quantity,
+                quantity=context.quantity if trade_side == "BUY" else -context.quantity,
+                instrument=symbol_claim(context.symbol, venue="wealthsimple"),
             ),
             economic_leg(
-                direction="out" if trade_side == "BUY" else "in",
+                leg_id="primary_out" if trade_side == "BUY" else "primary_in",
                 kind=LegKind.PRIMARY,
-                asset=context.currency,
-                amount=cash_amount,
+                quantity=-cash_amount if trade_side == "BUY" else cash_amount,
+                instrument=symbol_claim(context.currency, venue="wealthsimple"),
             ),
             *_charge_legs(
                 context.commission,
                 context.currency,
-                attributed_to_direction="out" if trade_side == "BUY" else "in",
+                attributed_to_leg_id="primary_out" if trade_side == "BUY" else "primary_in",
+                leg_id="charge",
             ),
         ),
     )
@@ -254,7 +263,17 @@ def _trade_policy(commission: Decimal | None) -> FactLegPolicy:
     if commission is not None and commission > Decimal("0"):
         return TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY
     return FactLegPolicy(
-        limits=(LegShapeLimit(kind=LegKind.PRIMARY, min_count=2, max_count=2, max_in_count=1, max_out_count=1),)
+        limits=(
+            LegShapeLimit(
+                kind=LegKind.PRIMARY,
+                min_count=2,
+                max_count=2,
+                min_positive_count=1,
+                max_positive_count=1,
+                min_negative_count=1,
+                max_negative_count=1,
+            ),
+        )
     )
 
 

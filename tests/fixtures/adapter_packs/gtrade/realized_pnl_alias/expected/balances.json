@@ -1,8 +1,9 @@
 [
   {
-    "as_of": "2023-05-07 00:00:00",
-    "asset": "DAI",
+    "as_of_at": "2023-05-07 00:00:00",
+    "as_of_precision": "timestamp",
     "balance_kind": "available",
+    "instrument_id": "symbol:DAI@gtrade",
     "location_id": "gtrade_1ct",
     "notes": "",
     "quantity": "5",

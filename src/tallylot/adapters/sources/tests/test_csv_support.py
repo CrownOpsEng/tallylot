@@ -68,7 +68,7 @@ def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) ->
             ),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
-            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1")),),
+            legs=(economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1")),),
             leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
         )
 

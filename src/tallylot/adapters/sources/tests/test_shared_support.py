@@ -46,7 +46,7 @@ def test_draft_compiler_preserves_internal_fields() -> None:
             description="Fixture deposit",
             raw_file="fixture.csv",
             raw_row_ref="row:2",
-            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),),
+            legs=(economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),),
             leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
         )
     )
@@ -56,7 +56,7 @@ def test_draft_compiler_preserves_internal_fields() -> None:
     assert event.accounting_intent_hint == AccountingIntentHint.FUNDING_INFLOW
     assert event.tax_treatment_hint == TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN
     assert event.description == "Fixture deposit"
-    assert str(event.legs[0].asset) == "BTC"
+    assert str(event.legs[0].instrument_id) == "symbol:BTC"
 
 
 def test_location_identifier_helpers_normalize_evm_and_classify_near_accounts() -> None:
@@ -79,8 +79,8 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
                 tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
             ),
             legs=(
-                economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),
-                economic_leg(direction="out", kind=LegKind.PRIMARY, asset="CAD", amount=Decimal("10")),
+                economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),
+                economic_leg(leg_id="primary_out", kind=LegKind.PRIMARY, instrument="CAD", quantity=Decimal("-10")),
             ),
             leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
         )
@@ -92,10 +92,10 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
     assert fact.tax_treatment_hint == TaxTreatmentHint.CAPITAL_EXCHANGE
     assert fact.leg_policy == TWO_SIDED_PRIMARY_EXCHANGE_POLICY
     assert len(fact.legs) == 2
-    assert str(fact.legs[0].asset) == "BTC"
-    assert str(fact.legs[1].asset) == "CAD"
-    assert fact.legs[0].direction == "in"
-    assert fact.legs[1].direction == "out"
+    assert str(fact.legs[0].instrument_id) == "symbol:BTC"
+    assert str(fact.legs[1].instrument_id) == "symbol:CAD"
+    assert fact.legs[0].quantity == Decimal("1.5")
+    assert fact.legs[1].quantity == Decimal("-10")
 
 
 def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_channels() -> None:
@@ -115,7 +115,9 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
                 ),
                 raw_file="fixture.csv",
                 raw_row_ref="row:2",
-                legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1.5")),),
+                legs=(
+                    economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),
+                ),
                 leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             ),
         ),

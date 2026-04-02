@@ -27,6 +27,7 @@ from .source_translation import (
     EconomicLegDraft,
     LocationDraft,
     SourceTranslationBatch,
+    symbol_claim,
 )
 from .workspace import WorkspaceLocator, WorkspaceRepository
 
@@ -67,4 +68,5 @@ __all__ = [
     "SourceTranslationBatch",
     "WorkspaceLocator",
     "WorkspaceRepository",
+    "symbol_claim",
 ]

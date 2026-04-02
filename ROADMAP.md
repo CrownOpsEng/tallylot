@@ -17,6 +17,11 @@ decisions that should not be rediscovered from scratch.
 - Normalization writes `facts.csv`, `fact_annotations.json`, `balances.csv`,
   `balance_evidence.csv`, `exceptions.csv`, and
   `normalization_reviews.csv` as active runtime artifacts
+- `facts.csv` now requires `schema_version`, persists signed leg quantities plus
+  `instrument_id`, and treats regeneration from raw evidence as the recovery
+  path after schema breaks
+- `balances.csv` and `balance_evidence.csv` now persist `instrument_id` plus
+  `as_of_at` and `as_of_precision`
 - Dev-only oracle workflows run through `uv run python -m tools.oracles.cli`
   and stay outside the production package and production CLI surface
 - Archive-aware source scanning and intake plan/apply workflows

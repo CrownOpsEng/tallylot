@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Literal, Protocol, TypeGuard, cast, get_args
-
-FactDirection = Literal["in", "out"]
+from decimal import Decimal
+from typing import Protocol
 
 
 class _KindLike(Protocol):
@@ -23,16 +22,16 @@ class _LegShapeLimitLike(Protocol):
     def min_count(self) -> int: ...
 
     @property
-    def max_in_count(self) -> int | None: ...
+    def max_positive_count(self) -> int | None: ...
 
     @property
-    def min_in_count(self) -> int | None: ...
+    def min_positive_count(self) -> int | None: ...
 
     @property
-    def max_out_count(self) -> int | None: ...
+    def max_negative_count(self) -> int | None: ...
 
     @property
-    def min_out_count(self) -> int | None: ...
+    def min_negative_count(self) -> int | None: ...
 
 
 class _FactLegPolicyLike(Protocol):
@@ -42,16 +41,16 @@ class _FactLegPolicyLike(Protocol):
 
 class _EconomicLegLike(Protocol):
     @property
-    def direction(self) -> FactDirection: ...
+    def leg_id(self) -> str: ...
 
     @property
     def kind(self) -> _KindLike: ...
 
     @property
-    def attributed_to_direction(self) -> FactDirection | None: ...
+    def quantity(self) -> Decimal: ...
 
-
-_FACT_DIRECTIONS = cast(tuple[FactDirection, ...], get_args(FactDirection))
+    @property
+    def attributed_to_leg_id(self) -> str | None: ...
 
 
 def validate_non_negative_count(value: int, *, label: str) -> None:
@@ -85,31 +84,31 @@ def _validate_optional_min_max(
         raise ValueError(f"leg shape limit {min_label} must not exceed {max_label}")
 
 
-def validate_directional_counts(limit: _LegShapeLimitLike) -> None:
-    _validate_optional_non_negative_count(limit.min_in_count, label="min_in_count")
-    _validate_optional_non_negative_count(limit.max_in_count, label="max_in_count")
-    _validate_optional_non_negative_count(limit.min_out_count, label="min_out_count")
-    _validate_optional_non_negative_count(limit.max_out_count, label="max_out_count")
-    _validate_optional_within_max(limit.min_in_count, label="min_in_count", max_count=limit.max_count)
-    _validate_optional_within_max(limit.max_in_count, label="max_in_count", max_count=limit.max_count)
-    _validate_optional_within_max(limit.min_out_count, label="min_out_count", max_count=limit.max_count)
-    _validate_optional_within_max(limit.max_out_count, label="max_out_count", max_count=limit.max_count)
+def validate_leg_shape_counts(limit: _LegShapeLimitLike) -> None:
+    _validate_optional_non_negative_count(limit.min_positive_count, label="min_positive_count")
+    _validate_optional_non_negative_count(limit.max_positive_count, label="max_positive_count")
+    _validate_optional_non_negative_count(limit.min_negative_count, label="min_negative_count")
+    _validate_optional_non_negative_count(limit.max_negative_count, label="max_negative_count")
+    _validate_optional_within_max(limit.min_positive_count, label="min_positive_count", max_count=limit.max_count)
+    _validate_optional_within_max(limit.max_positive_count, label="max_positive_count", max_count=limit.max_count)
+    _validate_optional_within_max(limit.min_negative_count, label="min_negative_count", max_count=limit.max_count)
+    _validate_optional_within_max(limit.max_negative_count, label="max_negative_count", max_count=limit.max_count)
     _validate_optional_min_max(
-        limit.min_in_count,
-        limit.max_in_count,
-        min_label="min_in_count",
-        max_label="max_in_count",
+        limit.min_positive_count,
+        limit.max_positive_count,
+        min_label="min_positive_count",
+        max_label="max_positive_count",
     )
     _validate_optional_min_max(
-        limit.min_out_count,
-        limit.max_out_count,
-        min_label="min_out_count",
-        max_label="max_out_count",
+        limit.min_negative_count,
+        limit.max_negative_count,
+        min_label="min_negative_count",
+        max_label="max_negative_count",
     )
-    if limit.min_in_count is None or limit.min_out_count is None:
+    if limit.min_positive_count is None or limit.min_negative_count is None:
         return
-    if limit.min_in_count + limit.min_out_count > limit.max_count:
-        raise ValueError("leg shape limit directional minimum counts must not exceed max_count")
+    if limit.min_positive_count + limit.min_negative_count > limit.max_count:
+        raise ValueError("leg shape limit signed minimum counts must not exceed max_count")
 
 
 def fact_leg_counts(
@@ -117,21 +116,26 @@ def fact_leg_counts(
     policy: _FactLegPolicyLike,
 ) -> tuple[
     dict[str, int],
-    dict[tuple[str, FactDirection], int],
-    dict[FactDirection, int],
+    dict[tuple[str, str], int],
+    dict[str, str],
 ]:
     counts_by_kind: dict[str, int] = {}
-    directional_counts: dict[tuple[str, FactDirection], int] = {}
-    primary_legs_by_direction: dict[FactDirection, int] = {"in": 0, "out": 0}
+    signed_counts: dict[tuple[str, str], int] = {}
+    leg_ids_by_kind: dict[str, str] = {}
+    seen_leg_ids: set[str] = set()
     for leg in legs:
         kind_key = leg.kind.value
         _validate_policy_kind_allowed(policy, kind_key)
+        if leg.leg_id in seen_leg_ids:
+            raise ValueError(f"transaction fact duplicates leg_id {leg.leg_id}")
+        seen_leg_ids.add(leg.leg_id)
         counts_by_kind[kind_key] = counts_by_kind.get(kind_key, 0) + 1
-        directional_key = (kind_key, leg.direction)
-        directional_counts[directional_key] = directional_counts.get(directional_key, 0) + 1
+        sign_key = "positive" if leg.quantity > Decimal("0") else "negative"
+        signed_count_key = (kind_key, sign_key)
+        signed_counts[signed_count_key] = signed_counts.get(signed_count_key, 0) + 1
         if kind_key == "primary":
-            primary_legs_by_direction[leg.direction] += 1
-    return counts_by_kind, directional_counts, primary_legs_by_direction
+            leg_ids_by_kind[leg.leg_id] = kind_key
+    return counts_by_kind, signed_counts, leg_ids_by_kind
 
 
 def _validate_policy_kind_allowed(policy: _FactLegPolicyLike, kind_value: str) -> None:
@@ -143,13 +147,13 @@ def _validate_policy_kind_allowed(policy: _FactLegPolicyLike, kind_value: str) -
 def validate_fact_counts(
     policy: _FactLegPolicyLike,
     counts_by_kind: dict[str, int],
-    directional_counts: dict[tuple[str, FactDirection], int],
+    signed_counts: dict[tuple[str, str], int],
 ) -> None:
     for limit in policy.limits:
         kind_key = limit.kind.value
         _validate_fact_total_count(limit, counts_by_kind.get(kind_key, 0))
-        _validate_fact_directional_count(limit, "in", directional_counts.get((kind_key, "in"), 0))
-        _validate_fact_directional_count(limit, "out", directional_counts.get((kind_key, "out"), 0))
+        _validate_fact_signed_count(limit, "positive", signed_counts.get((kind_key, "positive"), 0))
+        _validate_fact_signed_count(limit, "negative", signed_counts.get((kind_key, "negative"), 0))
 
 
 def _validate_fact_total_count(limit: _LegShapeLimitLike, total_count: int) -> None:
@@ -159,34 +163,22 @@ def _validate_fact_total_count(limit: _LegShapeLimitLike, total_count: int) -> N
         raise ValueError(f"transaction fact {limit.kind.value} legs exceed declared leg policy")
 
 
-def _validate_fact_directional_count(limit: _LegShapeLimitLike, direction: FactDirection, count: int) -> None:
-    min_count = limit.min_in_count if direction == "in" else limit.min_out_count
-    max_count = limit.max_in_count if direction == "in" else limit.max_out_count
-    direction_label = "inbound" if direction == "in" else "outbound"
+def _validate_fact_signed_count(limit: _LegShapeLimitLike, sign: str, count: int) -> None:
+    min_count = limit.min_positive_count if sign == "positive" else limit.min_negative_count
+    max_count = limit.max_positive_count if sign == "positive" else limit.max_negative_count
+    sign_label = "positive" if sign == "positive" else "negative"
     if min_count is not None and count < min_count:
-        raise ValueError(f"transaction fact {direction_label} {limit.kind.value} legs fall below declared leg policy")
+        raise ValueError(f"transaction fact {sign_label} {limit.kind.value} legs fall below declared leg policy")
     if max_count is not None and count > max_count:
-        raise ValueError(f"transaction fact {direction_label} {limit.kind.value} legs exceed declared leg policy")
+        raise ValueError(f"transaction fact {sign_label} {limit.kind.value} legs exceed declared leg policy")
 
 
 def validate_fact_leg_attribution(
     legs: tuple[_EconomicLegLike, ...],
-    primary_legs_by_direction: dict[FactDirection, int],
+    leg_ids_by_kind: dict[str, str],
 ) -> None:
     for leg in legs:
-        if leg.attributed_to_direction is None:
+        if leg.attributed_to_leg_id is None:
             continue
-        if primary_legs_by_direction[leg.attributed_to_direction] != 1:
-            raise ValueError(
-                "transaction fact attributed_to_direction must reference exactly one primary leg on that side"
-            )
-
-
-def validate_fact_direction(value: str, *, label: str) -> FactDirection:
-    if not _is_fact_direction(value):
-        raise ValueError(f"unsupported {label}: {value}")
-    return value
-
-
-def _is_fact_direction(value: str) -> TypeGuard[FactDirection]:
-    return value in _FACT_DIRECTIONS
+        if leg.attributed_to_leg_id not in leg_ids_by_kind:
+            raise ValueError("transaction fact attributed_to_leg_id must reference one primary leg in the same fact")

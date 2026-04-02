@@ -1,17 +1,19 @@
 [
   {
-    "as_of": "2026-03-23 10:11:12",
-    "asset": "BTC",
+    "as_of_at": "2026-03-23 10:11:12",
+    "as_of_precision": "timestamp",
     "balance_kind": "available",
+    "instrument_id": "symbol:BTC@ledger_live",
     "location_id": "ledger_live_main:bitcoin_1",
     "notes": "",
     "quantity": "0.01",
     "source": "ledger-live-main"
   },
   {
-    "as_of": "2026-03-23 10:11:12",
-    "asset": "ETH",
+    "as_of_at": "2026-03-23 10:11:12",
+    "as_of_precision": "timestamp",
     "balance_kind": "available",
+    "instrument_id": "symbol:ETH@ledger_live",
     "location_id": "ledger_live_main:bitcoin_1",
     "notes": "",
     "quantity": "-0.51",

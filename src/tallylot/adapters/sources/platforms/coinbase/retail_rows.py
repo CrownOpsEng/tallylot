@@ -15,11 +15,11 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.transactions import (
     AccountingIntentHint,
     EconomicKind,
-    FactDirection,
     ProjectionHint,
     TaxTreatmentHint,
 )
@@ -66,9 +66,24 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             ),
             tx_type=tx_type,
             legs=(
-                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=asset, amount=quantity),
-                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=price_currency, amount=cash_amount),
-                *_charge_legs(fee_amount, price_currency, attributed_to_direction="out"),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=quantity,
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-cash_amount,
+                    instrument=symbol_claim(price_currency, venue="coinbase"),
+                ),
+                *_charge_legs(
+                    fee_amount,
+                    price_currency,
+                    attributed_to_leg_id="primary_out",
+                    leg_id="fee",
+                ),
             ),
         )
     if (
@@ -90,9 +105,24 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             ),
             tx_type=tx_type,
             legs=(
-                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=price_currency, amount=cash_amount),
-                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=asset, amount=quantity),
-                *_charge_legs(fee_amount, price_currency, attributed_to_direction="in"),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=cash_amount,
+                    instrument=symbol_claim(price_currency, venue="coinbase"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-quantity,
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+                *_charge_legs(
+                    fee_amount,
+                    price_currency,
+                    attributed_to_leg_id="primary_in",
+                    leg_id="fee",
+                ),
             ),
         )
     if tx_type == "reward income" and quantity is not None:
@@ -109,7 +139,14 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 provider_operation_key=tx_type,
             ),
             tx_type=tx_type,
-            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=asset, amount=abs(quantity)),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=abs(quantity),
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+            ),
         )
     if tx_type in {"receive", "deposit"} and quantity is not None:
         return _draft(
@@ -125,7 +162,14 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 provider_operation_key=tx_type,
             ),
             tx_type=tx_type,
-            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=asset, amount=quantity),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=quantity,
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+            ),
         )
     if tx_type in {"send", "withdrawal", "withdraw"} and quantity is not None:
         return _draft(
@@ -141,7 +185,14 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 provider_operation_key=tx_type,
             ),
             tx_type=tx_type,
-            legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset=asset, amount=abs(quantity)),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-abs(quantity),
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+            ),
         )
     raise ValueError(f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}")
 
@@ -179,18 +230,19 @@ def _charge_legs(
     fee_amount: Decimal | None,
     fee_asset: str,
     *,
-    attributed_to_direction: FactDirection,
+    attributed_to_leg_id: str,
+    leg_id: str,
 ) -> tuple[EconomicLegDraft, ...]:
     if fee_amount is None or fee_amount <= Decimal("0") or not fee_asset:
         return ()
     return (
         economic_leg(
-            direction="out",
+            leg_id=leg_id,
             kind=LegKind.CHARGE,
-            asset=fee_asset,
-            amount=fee_amount,
+            quantity=-fee_amount,
+            instrument=symbol_claim(fee_asset, venue="coinbase"),
             subtype="trading_fee",
-            attributed_to_direction=attributed_to_direction,
+            attributed_to_leg_id=attributed_to_leg_id,
         ),
     )
 

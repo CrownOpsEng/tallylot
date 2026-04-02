@@ -52,14 +52,33 @@ class FilesystemEvidenceRepository:
     def write_balance_snapshots(self, path: Path, balances: tuple[BalanceSnapshot, ...]) -> None:
         write_rows(
             path,
-            ("source", "location_id", "asset", "quantity", "as_of", "balance_kind", "notes"),
+            (
+                "source",
+                "location_id",
+                "instrument_id",
+                "quantity",
+                "as_of_at",
+                "as_of_precision",
+                "balance_kind",
+                "notes",
+            ),
             (balance.to_row() for balance in balances),
         )
 
     def write_balance_evidence(self, path: Path, evidence: tuple[BalanceEvidence, ...]) -> None:
         write_rows(
             path,
-            ("source", "location_id", "asset", "quantity", "as_of", "balance_kind", "evidence_ref", "notes"),
+            (
+                "source",
+                "location_id",
+                "instrument_id",
+                "quantity",
+                "as_of_at",
+                "as_of_precision",
+                "balance_kind",
+                "evidence_ref",
+                "notes",
+            ),
             (record.to_row() for record in evidence),
         )
 

@@ -23,6 +23,7 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
     translation_batch_from_drafts,
 )
 from tallylot.domain.issues import IssueRecord
@@ -151,7 +152,14 @@ def _normalize_row(
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=tx_hash,
             provider_operation_key=kind,
-            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=currency, amount=amount),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=amount,
+                    instrument=symbol_claim(currency, venue="crypto_com"),
+                ),
+            ),
         )
     if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
         return EconomicActivityDraft(
@@ -173,8 +181,18 @@ def _normalize_row(
             tx_hash=tx_hash,
             provider_operation_key=kind,
             legs=(
-                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=to_currency, amount=to_amount),
-                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=currency, amount=abs(amount)),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=to_amount,
+                    instrument=symbol_claim(to_currency, venue="crypto_com"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-abs(amount),
+                    instrument=symbol_claim(currency, venue="crypto_com"),
+                ),
             ),
         )
     if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
@@ -196,7 +214,14 @@ def _normalize_row(
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=tx_hash,
             provider_operation_key=kind,
-            legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset=currency, amount=abs(amount)),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-abs(amount),
+                    instrument=symbol_claim(currency, venue="crypto_com"),
+                ),
+            ),
         )
     return issue_record(
         IssueSpec(

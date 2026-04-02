@@ -15,12 +15,12 @@ from tallylot.adapters.support.drafts import (
     LegShapeLimit,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import NormalizationReviewRecord
 from tallylot.domain.transactions import (
     AccountingIntentHint,
     EconomicKind,
-    FactDirection,
     ProjectionHint,
     TaxTreatmentHint,
 )
@@ -51,27 +51,41 @@ def translate_row(
     wallet = row["wallet"].strip()
     legs: list[EconomicLegDraft] = []
     if row["asset_in"] and (amount_in := parse_decimal(row["amount_in"])) is not None:
-        legs.append(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=row["asset_in"], amount=amount_in))
+        legs.append(
+            economic_leg(
+                leg_id="primary_in",
+                kind=LegKind.PRIMARY,
+                quantity=amount_in,
+                instrument=symbol_claim(row["asset_in"]),
+            )
+        )
     if row["asset_out"] and amount_out is not None:
-        legs.append(economic_leg(direction="out", kind=LegKind.PRIMARY, asset=row["asset_out"], amount=amount_out))
+        legs.append(
+            economic_leg(
+                leg_id="primary_out",
+                kind=LegKind.PRIMARY,
+                quantity=-amount_out,
+                instrument=symbol_claim(row["asset_out"]),
+            )
+        )
     if row["charge_asset"] and charge_amount is not None:
         legs.append(
             economic_leg(
-                direction="out",
+                leg_id="charge",
                 kind=LegKind.CHARGE,
-                asset=row["charge_asset"],
-                amount=charge_amount,
-                attributed_to_direction=_side_value(row["charge_side"]),
+                quantity=-charge_amount,
+                instrument=symbol_claim(row["charge_asset"]),
+                attributed_to_leg_id=_side_value(row["charge_side"]),
             )
         )
     if row["rebate_asset"] and (rebate_amount := parse_decimal(row["rebate_amount"])) is not None:
         legs.append(
             economic_leg(
-                direction="in",
+                leg_id="rebate",
                 kind=LegKind.REBATE,
-                asset=row["rebate_asset"],
-                amount=rebate_amount,
-                attributed_to_direction=_side_value(row["rebate_side"]),
+                quantity=rebate_amount,
+                instrument=symbol_claim(row["rebate_asset"]),
+                attributed_to_leg_id=_side_value(row["rebate_side"]),
             )
         )
     category = row["category"]
@@ -104,20 +118,20 @@ def policy_for_row(row: dict[str, str]) -> FactLegPolicy:
     if (has_in ^ has_out) and not has_charge and not has_rebate:
         return SINGLE_PRIMARY_ACTIVITY_POLICY
 
-    limits = [LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_in_count=1, max_out_count=1)]
+    limits = [LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_positive_count=1, max_negative_count=1)]
     if has_charge:
-        limits.append(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1))
+        limits.append(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1))
     if has_rebate:
-        limits.append(LegShapeLimit(kind=LegKind.REBATE, max_count=1, max_in_count=1, max_out_count=0))
+        limits.append(LegShapeLimit(kind=LegKind.REBATE, max_count=1, max_positive_count=1, max_negative_count=0))
     return FactLegPolicy(limits=tuple(limits))
 
 
-def _side_value(raw_value: str) -> FactDirection | None:
+def _side_value(raw_value: str) -> str | None:
     stripped = raw_value.strip()
     if stripped == "in":
-        return "in"
+        return "primary_in"
     if stripped == "out":
-        return "out"
+        return "primary_out"
     return None
 
 

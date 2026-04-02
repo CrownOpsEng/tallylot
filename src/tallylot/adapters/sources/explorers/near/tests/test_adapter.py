@@ -88,8 +88,11 @@ def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
         TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
     ]
     transfer_charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
-    assert facts[0].legs[0].amount == Decimal("1")
-    assert transfer_charge_legs[0].amount == Decimal("0.01")
+    assert facts[0].legs[0].leg_id == "primary_in"
+    assert facts[0].legs[0].quantity == Decimal("1")
+    assert str(facts[0].legs[0].instrument_id) == "symbol:NEAR@near"
+    assert transfer_charge_legs[0].leg_id == "charge"
+    assert transfer_charge_legs[0].quantity == Decimal("-0.01")
     assert any(str(event.source).endswith("Staking") for event in facts)
     assert result.issues == ()
 

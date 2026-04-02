@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
@@ -45,10 +46,15 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: 
     assert event.projection_hint == ProjectionHint.TRADE
     assert event.accounting_intent_hint == AccountingIntentHint.ASSET_EXCHANGE
     assert event.tax_treatment_hint == TaxTreatmentHint.CAPITAL_EXCHANGE
-    assert str(event.legs[0].asset) == "BTC"
-    assert str(event.legs[1].asset) == "CAD"
-    assert str(event.legs[0].amount) == "0.01"
-    assert event.legs[1].amount == 600
+    assert event.legs[0].leg_id == "primary_in"
+    assert event.legs[0].quantity == Decimal("0.01")
+    assert str(event.legs[0].instrument_id) == "symbol:BTC@coinbase"
+    assert event.legs[1].leg_id == "primary_out"
+    assert event.legs[1].quantity == Decimal("-600")
+    assert str(event.legs[1].instrument_id) == "symbol:CAD@coinbase"
+    assert event.legs[2].leg_id == "fee"
+    assert event.legs[2].quantity == Decimal("-10")
+    assert str(event.legs[2].instrument_id) == "symbol:CAD@coinbase"
 
 
 def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) -> None:
@@ -79,14 +85,24 @@ def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) 
     assert len(facts) == 3
     assert sell_event.economic_kind == EconomicKind.SPOT_TRADE
     assert sell_event.projection_hint == ProjectionHint.TRADE
-    assert str(sell_event.legs[0].asset) == "CAD"
-    assert str(sell_event.legs[1].asset) == "BTC"
+    assert sell_event.legs[0].leg_id == "primary_in"
+    assert sell_event.legs[0].quantity == Decimal("600")
+    assert str(sell_event.legs[0].instrument_id) == "symbol:CAD@coinbase"
+    assert sell_event.legs[1].leg_id == "primary_out"
+    assert sell_event.legs[1].quantity == Decimal("-0.01")
+    assert str(sell_event.legs[1].instrument_id) == "symbol:BTC@coinbase"
+    assert sell_event.legs[2].leg_id == "fee"
+    assert sell_event.legs[2].quantity == Decimal("-10")
     assert send_event.economic_kind == EconomicKind.ASSET_WITHDRAWAL
     assert send_event.projection_hint == ProjectionHint.WITHDRAWAL
-    assert str(send_event.legs[0].asset) == "ETH"
+    assert send_event.legs[0].leg_id == "primary_out"
+    assert send_event.legs[0].quantity == Decimal("-0.5")
+    assert str(send_event.legs[0].instrument_id) == "symbol:ETH@coinbase"
     assert receive_event.economic_kind == EconomicKind.ASSET_DEPOSIT
     assert receive_event.projection_hint == ProjectionHint.DEPOSIT
-    assert str(receive_event.legs[0].asset) == "ETH"
+    assert receive_event.legs[0].leg_id == "primary_in"
+    assert receive_event.legs[0].quantity == Decimal("1.5")
+    assert str(receive_event.legs[0].instrument_id) == "symbol:ETH@coinbase"
     assert not result.issues
 
 
@@ -143,10 +159,16 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_
     assert len(facts) == 2
     assert reward_event.economic_kind == EconomicKind.INTEREST_INCOME
     assert reward_event.projection_hint == ProjectionHint.INTEREST_INCOME
-    assert str(reward_event.legs[0].asset) == "ADA"
+    assert reward_event.legs[0].leg_id == "primary_in"
+    assert reward_event.legs[0].quantity == Decimal("0.000021")
+    assert str(reward_event.legs[0].instrument_id) == "symbol:ADA@coinbase"
     assert migration_event.economic_kind == EconomicKind.ASSET_MIGRATION
     assert migration_event.projection_hint == ProjectionHint.SWAP_NON_TAXABLE
     assert migration_event.description == "Coinbase Asset Migration"
-    assert str(migration_event.legs[0].asset) == "POL"
-    assert str(migration_event.legs[1].asset) == "MATIC"
+    assert migration_event.legs[0].leg_id == "asset_in"
+    assert migration_event.legs[0].quantity == Decimal("1.65526374")
+    assert str(migration_event.legs[0].instrument_id) == "symbol:POL@coinbase"
+    assert migration_event.legs[1].leg_id == "asset_out"
+    assert migration_event.legs[1].quantity == Decimal("-1.65526374")
+    assert str(migration_event.legs[1].instrument_id) == "symbol:MATIC@coinbase"
     assert not result.issues

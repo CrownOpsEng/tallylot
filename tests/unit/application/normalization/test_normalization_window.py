@@ -9,6 +9,7 @@ from tallylot.application.normalization import (
     filter_issues_by_window,
     filter_reviews_by_window,
 )
+from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -21,7 +22,7 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
 from tallylot.ports.source_translation import EconomicActivityDraft, classification, economic_leg
 
 
@@ -244,7 +245,14 @@ def _transaction(transaction_id: str, timestamp: str) -> TransactionFact:
             tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
             projection_hint=ProjectionHint.DEPOSIT,
         ),
-        legs=(EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),),
+        legs=(
+            EconomicLeg(
+                leg_id="primary_btc",
+                kind=LegKind.PRIMARY,
+                instrument_id=InstrumentId("symbol:BTC"),
+                quantity=Decimal("1"),
+            ),
+        ),
         leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
     )
 
@@ -262,6 +270,6 @@ def _draft(transaction_id: str, timestamp: str) -> EconomicActivityDraft:
             tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
             projection_hint=ProjectionHint.DEPOSIT,
         ),
-        legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="BTC", amount=Decimal("1")),),
+        legs=(economic_leg(leg_id="primary_btc", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1")),),
         leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
     )

@@ -1,8 +1,9 @@
 [
   {
-    "as_of": "2023-11-14 12:00:00",
-    "asset": "BNB",
+    "as_of_at": "2023-11-14 12:00:00",
+    "as_of_precision": "timestamp",
     "balance_kind": "available",
+    "instrument_id": "symbol:BNB@evm_explorer",
     "location_id": "bsc_wallet",
     "notes": "",
     "quantity": "1.5",

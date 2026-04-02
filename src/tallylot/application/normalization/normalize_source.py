@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from tallylot.adapters.support.drafts import compile_activity_drafts
+from tallylot.adapters.support.drafts import compile_activity_drafts_with_feedback
 from tallylot.application.normalization.contracts import NormalizeRequest, NormalizeResponse
 from tallylot.application.normalization.issue_context import (
     enrich_issue_context_timestamps,
@@ -72,9 +72,10 @@ class NormalizeSourceUseCase:
             window_start=request.window_start,
             window_end=request.window_end,
         )
-        facts = compile_activity_drafts(drafts)
+        compiled = compile_activity_drafts_with_feedback(drafts)
+        facts = compiled.facts
         enriched_issues = enrich_issue_context_timestamps(
-            result.issues,
+            result.issues + compiled.issues,
             raw_dir=raw_dir,
             inventory=profile.file_inventory,
         )
@@ -84,7 +85,7 @@ class NormalizeSourceUseCase:
             window_end=request.window_end,
         )
         enriched_reviews = enrich_review_context_timestamps(
-            result.reviews,
+            result.reviews + compiled.reviews,
             raw_dir=raw_dir,
             inventory=profile.file_inventory,
         )

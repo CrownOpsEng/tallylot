@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.explorers.evm_explorer.adapter import EvmExplorerAdapter
@@ -98,8 +99,9 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(tmp_path: 
     assert facts[0].projection_hint == ProjectionHint.DEPOSIT
     assert facts[0].accounting_intent_hint == AccountingIntentHint.FUNDING_INFLOW
     assert facts[0].tax_treatment_hint == TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN
-    assert facts[0].legs[0].direction == "in"
-    assert str(facts[0].legs[0].amount) == "1.50000000"
+    assert facts[0].legs[0].leg_id == "primary_in"
+    assert facts[0].legs[0].quantity == Decimal("1.50000000")
+    assert str(facts[0].legs[0].instrument_id) == "symbol:BNB@evm_explorer"
     assert not result.issues
 
 
@@ -170,8 +172,9 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames() -> None:
     assert len(facts) == 1
     assert facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
     assert facts[0].projection_hint == ProjectionHint.DEPOSIT
-    assert str(facts[0].legs[0].asset) == "BNB"
-    assert str(facts[0].legs[0].amount) == "1.50000000"
+    assert facts[0].legs[0].leg_id == "primary_in"
+    assert facts[0].legs[0].quantity == Decimal("1.50000000")
+    assert str(facts[0].legs[0].instrument_id) == "symbol:BNB@evm_explorer"
 
 
 def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_path: Path) -> None:

@@ -156,7 +156,7 @@ def test_translate_structured_csv_maps_charge_and_rebate_legs(tmp_path: Path) ->
     assert len(facts) == 1
     charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
     rebate_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.REBATE)
-    assert charge_legs[0].amount == Decimal("1.0")
-    assert charge_legs[0].attributed_to_direction == "out"
-    assert rebate_legs[0].amount == Decimal("0.01")
-    assert rebate_legs[0].attributed_to_direction == "in"
+    assert charge_legs[0].quantity == Decimal("-1.0")
+    assert charge_legs[0].attributed_to_leg_id == "primary_out"
+    assert rebate_legs[0].quantity == Decimal("0.01")
+    assert rebate_legs[0].attributed_to_leg_id == "primary_in"

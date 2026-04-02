@@ -9,6 +9,7 @@ import pytest
 
 from tallylot.application.outputs import RenderOutputRequest, RenderOutputUseCase
 from tallylot.application.resource_refs import to_resource_ref
+from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.transactions import (
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     AccountingIntentHint,
@@ -22,7 +23,7 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, LocationId, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
 from tallylot.infrastructure.storage import FilesystemFactRepository
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.output_adapters import OutputAdapter, OutputRenderPolicy, RenderedArtifact
@@ -54,8 +55,8 @@ class FakeOutputAdapter:
         self.render_policy = OutputRenderPolicy(
             shape_policy=FactLegPolicy(
                 limits=(
-                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_in_count=0, max_out_count=0),
-                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_positive_count=0, max_negative_count=0),
+                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
                 )
             ),
             requires_projection_hint=False,
@@ -147,14 +148,24 @@ def _write_facts(tmp_path: Path) -> Path:
             projection_hint=ProjectionHint.TRADE,
         ),
         legs=(
-            EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("1")),
-            EconomicLeg(direction="out", kind=LegKind.PRIMARY, asset=AssetSymbol("CAD"), amount=Decimal("10")),
             EconomicLeg(
-                direction="out",
+                leg_id="primary_btc",
+                kind=LegKind.PRIMARY,
+                instrument_id=InstrumentId("symbol:BTC"),
+                quantity=Decimal("1"),
+            ),
+            EconomicLeg(
+                leg_id="primary_cad",
+                kind=LegKind.PRIMARY,
+                instrument_id=InstrumentId("symbol:CAD"),
+                quantity=Decimal("-10"),
+            ),
+            EconomicLeg(
+                leg_id="fee_cad",
                 kind=LegKind.CHARGE,
-                asset=AssetSymbol("CAD"),
-                amount=Decimal("0.1"),
-                attributed_to_direction="out",
+                instrument_id=InstrumentId("symbol:CAD"),
+                quantity=Decimal("-0.1"),
+                attributed_to_leg_id="primary_cad",
             ),
         ),
         leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,

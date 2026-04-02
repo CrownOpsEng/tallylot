@@ -6,7 +6,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+from .temporal import TemporalPrecision
+
 CANONICAL_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+CANONICAL_DATE_FORMAT = "%Y-%m-%d"
 
 
 def quantize_decimal(value: Decimal) -> Decimal:
@@ -44,6 +47,32 @@ def format_timestamp(value: datetime) -> str:
 
 def parse_timestamp(value: str) -> datetime:
     return datetime.strptime(value.strip(), CANONICAL_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+
+
+def require_temporal_datetime(
+    value: datetime,
+    *,
+    precision: TemporalPrecision,
+    label: str,
+) -> datetime:
+    normalized = require_utc_datetime(value, label=label)
+    if precision is TemporalPrecision.DATE and normalized.time() != datetime.min.time():
+        raise ValueError(f"{label} with date precision must be midnight UTC")
+    return normalized
+
+
+def format_temporal_value(value: datetime, *, precision: TemporalPrecision, label: str) -> str:
+    normalized = require_temporal_datetime(value, precision=precision, label=label)
+    if precision is TemporalPrecision.TIMESTAMP:
+        return normalized.strftime(CANONICAL_TIMESTAMP_FORMAT)
+    return normalized.strftime(CANONICAL_DATE_FORMAT)
+
+
+def parse_temporal_value(value: str, *, precision: TemporalPrecision) -> datetime:
+    text = value.strip()
+    if precision is TemporalPrecision.TIMESTAMP:
+        return parse_timestamp(text)
+    return datetime.strptime(text, CANONICAL_DATE_FORMAT).replace(tzinfo=UTC)
 
 
 @dataclass(frozen=True)

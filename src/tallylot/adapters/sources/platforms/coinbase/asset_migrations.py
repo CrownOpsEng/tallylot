@@ -11,6 +11,7 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal
@@ -63,16 +64,16 @@ def normalize_asset_migration(
         provider_operation_key="asset_migration",
         legs=(
             economic_leg(
-                direction="in",
+                leg_id="asset_in",
                 kind=LegKind.PRIMARY,
-                asset=(bought_row.get("Asset") or "").strip().upper(),
-                amount=bought_quantity,
+                quantity=bought_quantity,
+                instrument=symbol_claim((bought_row.get("Asset") or "").strip().upper(), venue="coinbase"),
             ),
             economic_leg(
-                direction="out",
+                leg_id="asset_out",
                 kind=LegKind.PRIMARY,
-                asset=(sold_row.get("Asset") or "").strip().upper(),
-                amount=sold_quantity,
+                quantity=-sold_quantity,
+                instrument=symbol_claim((sold_row.get("Asset") or "").strip().upper(), venue="coinbase"),
             ),
         ),
     )

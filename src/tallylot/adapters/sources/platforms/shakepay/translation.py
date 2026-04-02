@@ -66,7 +66,14 @@ def _normalize_cash_row(
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type or "cash_credit",
-            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="CAD", amount=credit),),
+            legs=(
+                economic_leg(
+                    leg_id="cash_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=credit,
+                    instrument="CAD",
+                ),
+            ),
         )
     if debit is None or debit <= Decimal("0"):
         return None
@@ -89,7 +96,14 @@ def _normalize_cash_row(
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset="CAD", amount=debit),),
+            legs=(
+                economic_leg(
+                    leg_id="cash_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-debit,
+                    instrument="CAD",
+                ),
+            ),
         )
     return EconomicActivityDraft(
         activity_id=transaction_id,
@@ -109,7 +123,14 @@ def _normalize_cash_row(
         raw_row_ref=row_context.raw_row_ref,
         tx_hash=transaction_id,
         provider_operation_key=row_type or "cash_debit",
-        legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset="CAD", amount=debit),),
+        legs=(
+            economic_leg(
+                leg_id="cash_out",
+                kind=LegKind.PRIMARY,
+                quantity=-debit,
+                instrument="CAD",
+            ),
+        ),
     )
 
 
@@ -145,7 +166,14 @@ def _normalize_crypto_row(
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset=credited_asset, amount=credited_amount),),
+            legs=(
+                economic_leg(
+                    leg_id="reward_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=credited_amount,
+                    instrument=credited_asset,
+                ),
+            ),
         )
     if row_type == "Buy" and debited_amount is not None and credited_amount is not None:
         return EconomicActivityDraft(
@@ -167,8 +195,18 @@ def _normalize_crypto_row(
             tx_hash=transaction_id,
             provider_operation_key=row_type,
             legs=(
-                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=credited_asset, amount=credited_amount),
-                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=debited_asset, amount=debited_amount),
+                economic_leg(
+                    leg_id="asset_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=credited_amount,
+                    instrument=credited_asset,
+                ),
+                economic_leg(
+                    leg_id="asset_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-debited_amount,
+                    instrument=debited_asset,
+                ),
             ),
         )
     if row_type == "Send" and debited_amount is not None and debited_asset:
@@ -190,7 +228,14 @@ def _normalize_crypto_row(
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="out", kind=LegKind.PRIMARY, asset=debited_asset, amount=debited_amount),),
+            legs=(
+                economic_leg(
+                    leg_id="asset_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-debited_amount,
+                    instrument=debited_asset,
+                ),
+            ),
         )
     return issue_record(
         IssueSpec(

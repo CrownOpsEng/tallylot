@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.crypto_com.adapter import CryptoComAdapter
@@ -37,6 +38,10 @@ def test_crypto_com_adapter_uses_transaction_kinds_without_filename_dependency()
         TaxTreatmentHint.CAPITAL_EXCHANGE,
         TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
     ]
+    assert facts[0].legs[0].quantity == Decimal("500")
+    assert facts[1].legs[0].quantity > 0
+    assert facts[1].legs[1].quantity < 0
+    assert facts[2].legs[0].quantity < 0
     assert {event.raw_file for event in facts} == {"records-a.csv", "records-b.csv"}
     assert not result.issues
 

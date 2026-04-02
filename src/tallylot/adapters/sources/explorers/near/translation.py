@@ -21,12 +21,12 @@ from tallylot.adapters.support.drafts import (
     LegShapeLimit,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import (
     AccountingIntentHint,
     EconomicKind,
-    FactDirection,
     ProjectionHint,
     TaxTreatmentHint,
 )
@@ -92,8 +92,13 @@ def translate_transactions(
                         tx_hash=tx_hash,
                         provider_operation_key=method,
                         legs=(
-                            economic_leg(direction="in", kind=LegKind.PRIMARY, asset="NEAR", amount=amount),
-                            *_charge_legs(fee, attributed_to_direction="in"),
+                            economic_leg(
+                                leg_id="primary_in",
+                                kind=LegKind.PRIMARY,
+                                quantity=amount,
+                                instrument=symbol_claim("NEAR", venue="near"),
+                            ),
+                            *_charge_legs(fee, attributed_to_leg_id="primary_in"),
                         ),
                     )
                 )
@@ -121,8 +126,13 @@ def translate_transactions(
                             tx_hash=tx_hash,
                             provider_operation_key=method,
                             legs=(
-                                economic_leg(direction="out", kind=LegKind.PRIMARY, asset="NEAR", amount=amount),
-                                *_charge_legs(fee, attributed_to_direction="out"),
+                                economic_leg(
+                                    leg_id="primary_out",
+                                    kind=LegKind.PRIMARY,
+                                    quantity=-amount,
+                                    instrument=symbol_claim("NEAR", venue="near"),
+                                ),
+                                *_charge_legs(fee, attributed_to_leg_id="primary_out"),
                             ),
                         ),
                         EconomicActivityDraft(
@@ -143,7 +153,14 @@ def translate_transactions(
                             raw_row_ref=raw_row_ref,
                             tx_hash=tx_hash,
                             provider_operation_key=method,
-                            legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="NEAR", amount=amount),),
+                            legs=(
+                                economic_leg(
+                                    leg_id="primary_in",
+                                    kind=LegKind.PRIMARY,
+                                    quantity=amount,
+                                    instrument=symbol_claim("NEAR", venue="near"),
+                                ),
+                            ),
                         ),
                     )
                 )
@@ -173,23 +190,23 @@ def _single_primary_with_optional_charge_policy(fee: Decimal) -> FactLegPolicy:
         return SINGLE_PRIMARY_ACTIVITY_POLICY
     return FactLegPolicy(
         limits=(
-            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_in_count=1, max_out_count=1),
-            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=0, max_out_count=1),
+            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1, max_negative_count=1),
+            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
         )
     )
 
 
-def _charge_legs(fee: Decimal, *, attributed_to_direction: FactDirection) -> tuple[EconomicLegDraft, ...]:
+def _charge_legs(fee: Decimal, *, attributed_to_leg_id: str) -> tuple[EconomicLegDraft, ...]:
     if fee <= Decimal("0"):
         return ()
     return (
         economic_leg(
-            direction="out",
+            leg_id="charge",
             kind=LegKind.CHARGE,
-            asset="NEAR",
-            amount=fee,
+            quantity=-fee,
+            instrument=symbol_claim("NEAR", venue="near"),
             subtype="network_fee",
-            attributed_to_direction=attributed_to_direction,
+            attributed_to_leg_id=attributed_to_leg_id,
         ),
     )
 

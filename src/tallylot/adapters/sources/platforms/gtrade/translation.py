@@ -21,6 +21,7 @@ from tallylot.adapters.support.drafts import (
     LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
@@ -109,9 +110,23 @@ def translate_transactions(
                     tx_hash=f"gtrade:{path.name}:row:{index}",
                     provider_operation_key="realized_pnl",
                     legs=(
-                        (economic_leg(direction="in", kind=LegKind.PRIMARY, asset="DAI", amount=pnl),)
+                        (
+                            economic_leg(
+                                leg_id="primary_in",
+                                kind=LegKind.PRIMARY,
+                                quantity=pnl,
+                                instrument=symbol_claim("DAI", venue="gtrade"),
+                            ),
+                        )
                         if pnl > 0
-                        else (economic_leg(direction="out", kind=LegKind.PRIMARY, asset="DAI", amount=abs(pnl)),)
+                        else (
+                            economic_leg(
+                                leg_id="primary_out",
+                                kind=LegKind.PRIMARY,
+                                quantity=-abs(pnl),
+                                instrument=symbol_claim("DAI", venue="gtrade"),
+                            ),
+                        )
                     ),
                 )
             )

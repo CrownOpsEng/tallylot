@@ -34,8 +34,12 @@ def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambigu
     assert len(events) == 1
     assert events[0].economic_kind == EconomicKind.ASSET_CONVERSION
     assert events[0].projection_hint == ProjectionHint.TRADE
-    assert str(events[0].legs[0].asset) == "BNB"
-    assert str(events[0].legs[1].asset) == "ADA"
+    assert events[0].legs[0].leg_id == "primary_in"
+    assert events[0].legs[0].quantity == Decimal("0.1")
+    assert str(events[0].legs[0].instrument_id) == "symbol:BNB@binance"
+    assert events[0].legs[1].leg_id == "primary_out"
+    assert events[0].legs[1].quantity == Decimal("-10")
+    assert str(events[0].legs[1].instrument_id) == "symbol:ADA@binance"
     assert len(issues) == 1
     assert issues[0].kind == "ambiguous_group"
 
@@ -58,7 +62,9 @@ def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewar
     assert len(events) == 1
     assert events[0].economic_kind == EconomicKind.STAKING_REWARD
     assert events[0].projection_hint == ProjectionHint.STAKING
-    assert str(events[0].legs[0].asset) == "ETH"
+    assert events[0].legs[0].leg_id == "primary_in"
+    assert events[0].legs[0].quantity == Decimal("0.005")
+    assert str(events[0].legs[0].instrument_id) == "symbol:ETH@binance"
     assert not issues
 
 

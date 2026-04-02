@@ -7,11 +7,14 @@ from tallylot.ports.source_translation import (
     EconomicLegDraft,
     classification,
     economic_leg,
+    symbol_claim,
 )
 
 from .compiler import (
+    DraftCompilationResult,
     compile_activity_draft,
     compile_activity_drafts,
+    compile_activity_drafts_with_feedback,
     transaction_fact_from_draft,
     transaction_facts_from_drafts,
     translation_batch_from_drafts,
@@ -31,6 +34,7 @@ __all__ = [
     "TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY",
     "ActivityClassification",
     "ActivityDraftSeed",
+    "DraftCompilationResult",
     "EconomicActivityDraft",
     "EconomicLegDraft",
     "FactLegPolicy",
@@ -39,7 +43,9 @@ __all__ = [
     "classification",
     "compile_activity_draft",
     "compile_activity_drafts",
+    "compile_activity_drafts_with_feedback",
     "economic_leg",
+    "symbol_claim",
     "transaction_fact_from_draft",
     "transaction_facts_from_drafts",
     "translation_batch_from_drafts",
