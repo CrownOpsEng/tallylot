@@ -131,7 +131,7 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
     assert wallet_rows[0]["evidence_path"] == "transactions.csv"
 
 
-def test_structured_csv_normalization_rejects_non_positive_amounts(tmp_path: Path) -> None:
+def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
@@ -161,4 +161,75 @@ def test_structured_csv_normalization_rejects_non_positive_amounts(tmp_path: Pat
 
     exception_rows = artifacts.read_rows(output_dir / "exceptions.csv")
 
-    assert [row["kind"] for row in exception_rows] == ["non_positive_amount", "no_valid_rows"]
+    assert [row["kind"] for row in exception_rows] == ["zero_amount", "no_valid_rows"]
+
+
+def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    header = (
+        "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+    )
+    (raw_dir / "transactions.csv").write_text(
+        header + "2023-08-06 10:00:00,Trade,BTC,1.5,CAD,-10.0,CAD,-0.1,tx-1,BTC buy,Fixture,Primary\n",
+        encoding="utf-8",
+    )
+    registry = build_registry()
+    artifacts = FilesystemArtifactStore()
+    service = NormalizationService(
+        registry,
+        ProfileService(registry, artifacts),
+        FilesystemStorage(),
+        artifacts,
+    )
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir)
+    )
+
+    assert response.event_count == 1
+    assert response.issue_count == 0
+
+    canonical_rows = artifacts.read_rows(output_dir / "canonical_events.csv")
+
+    assert canonical_rows[0]["amount_in"] == "1.5"
+    assert canonical_rows[0]["amount_out"] == "10"
+    assert canonical_rows[0]["fee_amount"] == "0.1"
+
+
+def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    header = (
+        "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+    )
+    (raw_dir / "transactions.csv").write_text(
+        header + "2023-08-06 10:00:00,Trade,BTC,-1.5,,,,,tx-1,BTC transfer,Fixture,Primary\n",
+        encoding="utf-8",
+    )
+    registry = build_registry()
+    artifacts = FilesystemArtifactStore()
+    service = NormalizationService(
+        registry,
+        ProfileService(registry, artifacts),
+        FilesystemStorage(),
+        artifacts,
+    )
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir)
+    )
+
+    assert response.event_count == 0
+    assert response.issue_count == 2
+
+    exception_rows = artifacts.read_rows(output_dir / "exceptions.csv")
+
+    assert [row["kind"] for row in exception_rows] == [
+        "conflicting_amount_sign",
+        "no_valid_rows",
+    ]

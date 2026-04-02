@@ -11,6 +11,9 @@ automatically.
   assigned input paths.
 - Surface unsupported or ambiguous rows as issues rather than guessing.
 - Use typed domain models as the adapter output contract.
+- Normalize source-specific sign conventions at the adapter edge. Canonical
+  `CanonicalEvent` amounts stay positive; direction belongs in the mapped
+  fields, not signed magnitudes.
 
 ## Discovery
 

@@ -86,8 +86,8 @@ class StructuredCsvSourceAdapter:
 
                 timestamp = parse_timestamp(row["timestamp"])
                 amount_in = parse_decimal(row["amount_in"])
-                amount_out = parse_decimal(row["amount_out"])
-                fee_amount = parse_decimal(row["fee_amount"])
+                amount_out = self._canonicalize_outbound_amount(parse_decimal(row["amount_out"]))
+                fee_amount = self._canonicalize_outbound_amount(parse_decimal(row["fee_amount"]))
                 account = row["account"].strip()
                 wallet = row["wallet"].strip()
                 events.append(
@@ -276,15 +276,28 @@ class StructuredCsvSourceAdapter:
                     "Unsupported decimal value for "
                     f"{field_name}: {(row.get(field_name) or '').strip()!r}.",
                 )
-            if parsed_value is not None and parsed_value <= Decimal("0"):
+            if parsed_value == Decimal("0"):
                 return self._issue(
                     profile,
                     index,
-                    "non_positive_amount",
+                    "zero_amount",
                     f"{field_name} must be greater than zero when present.",
+                )
+            if field_name == "amount_in" and parsed_value is not None and parsed_value < Decimal("0"):
+                return self._issue(
+                    profile,
+                    index,
+                    "conflicting_amount_sign",
+                    "amount_in cannot be negative; use amount_out for outbound value flows.",
                 )
 
         return None
+
+    @staticmethod
+    def _canonicalize_outbound_amount(value: Decimal | None) -> Decimal | None:
+        if value is None:
+            return None
+        return value.copy_abs()
 
     def _issue(
         self,

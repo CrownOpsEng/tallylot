@@ -55,6 +55,9 @@ decisions that should not be rediscovered from scratch.
 - Keep canonical events structurally strict: asset/amount pairs must be
   complete, and amounts must remain positive because direction is modeled by
   the `in`/`out` fields rather than signed numbers.
+- Normalize raw sign conventions inside adapters when direction is otherwise
+  explicit. If the sign is the only direction signal or it conflicts with other
+  fields, surface an issue instead of guessing.
 - Do not allow AI providers to mutate ledger records directly.
 - Keep normalized evidence references portable by storing source-relative paths
   instead of machine-local absolute paths.
