@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import normalize_source
 import pipeline_common
 import source_adapters
 from tests.support.helpers import REPO_ROOT
@@ -72,3 +73,41 @@ class SourceAdapterTests(unittest.TestCase):
                 self.assertTrue(profile.file_inventory)
                 self.assertTrue(profile.manifest_fingerprint)
 
+    def test_normalize_source_cache_invalidates_when_exception_decisions_change(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            raw_dir = root / "wealthsimple" / "raw"
+            raw_dir.mkdir(parents=True)
+            (raw_dir / "activities.csv").write_text(
+                "transaction_date,settlement_date,account_id,activity_type\n2024-01-01,2024-01-02,acct,deposit\n",
+                encoding="utf-8",
+            )
+            out_dir = root / "normalized"
+
+            first = normalize_source.normalize_source("WealthSimple", raw_dir, out_dir)
+            summary_path = out_dir / "normalization_summary.json"
+            first_summary = pipeline_common.read_profile(summary_path)
+            manifest_fingerprint = str(first_summary["manifest_fingerprint"])
+            decisions_path = root / "exception_decisions.csv"
+            decisions_path.write_text(
+                (
+                    "manifest_fingerprint,event_id,resolution_status,resolution_note\n"
+                    f"{manifest_fingerprint},wealthsimple:adapter_not_implemented,accepted,known gap\n"
+                ),
+                encoding="utf-8",
+            )
+
+            second = normalize_source.normalize_source(
+                "WealthSimple",
+                raw_dir,
+                out_dir,
+                exception_decisions=decisions_path,
+            )
+            second_summary = pipeline_common.read_profile(summary_path)
+
+        self.assertEqual(1, first["exceptions"])
+        self.assertEqual(0, second["exceptions"])
+        self.assertNotEqual(
+            first_summary["exception_decisions_fingerprint"],
+            second_summary["exception_decisions_fingerprint"],
+        )

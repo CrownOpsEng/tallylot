@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable, Sequence
+import json
 
 from coinbase_common import (
     coinbase_balance_rows_from_text,
@@ -119,6 +120,18 @@ def load_exception_decisions(path: Path | None, manifest_fingerprint: str) -> di
                 "resolution_note": row.get("resolution_note", ""),
             }
     return decisions
+
+
+def decisions_fingerprint(decisions: dict[str, dict[str, str]]) -> str:
+    payload = [
+        {
+            "event_id": event_id,
+            "resolution_status": values.get("resolution_status", ""),
+            "resolution_note": values.get("resolution_note", ""),
+        }
+        for event_id, values in sorted(decisions.items())
+    ]
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
 class SourceAdapter:
@@ -275,4 +288,3 @@ def available_adapter_rows() -> list[dict[str, str]]:
         }
         for adapter in ADAPTERS
     ]
-

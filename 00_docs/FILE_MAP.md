@@ -68,6 +68,7 @@ Loose exports outside the canonical full export folder are not part of the worki
 | `06_scripts/profile_source.py` | Profile raw source folders into file-family inventory and manifest-backed adapter metadata |
 | `06_scripts/normalize_source.py` | Normalize raw evidence into canonical events, canonical balances, exceptions, and cached CoinTracking candidates |
 | `06_scripts/render_cointracking.py` | Render canonical events into CoinTracking CSV output with reconciliation metadata |
+| `06_scripts/stage_import_batch.py` | Move only overlap-cleared candidates into the reviewed import-batch workflow |
 | `06_scripts/reconcile_source.py` | Compare canonical source outputs against CoinTracking ledger slices and optional balance evidence |
 | `06_scripts/coinbase_normalize.py` | Convert Coinbase raw CSV and statement-PDF evidence into CoinTracking-schema normalized transaction and balance files |
 | `06_scripts/coinbase_check.py` | Validate CoinTracking Coinbase rows against normalized Coinbase evidence and optional balance rows |

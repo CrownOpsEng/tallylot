@@ -19,7 +19,7 @@ from pipeline_common import (
     write_json,
 )
 from render_cointracking import render_cointracking_rows
-from source_adapters import get_adapter, load_exception_decisions
+from source_adapters import decisions_fingerprint, get_adapter, load_exception_decisions
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -62,6 +62,16 @@ def normalize_source(
         adapter_name = profile.adapter
         adapter_supported = profile.adapter_supported
 
+    profile = build_source_profile(
+        source=source,
+        raw_dir=raw_dir,
+        manifest_path=manifest,
+        adapter_name=adapter.name,
+        adapter_supported=adapter.supported,
+    )
+    decisions = load_exception_decisions(exception_decisions, profile.manifest_fingerprint)
+    decisions_digest = decisions_fingerprint(decisions)
+
     out_dir = out_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     summary_path = out_dir / "normalization_summary.json"
@@ -75,6 +85,7 @@ def normalize_source(
         if (
             existing.get("manifest_fingerprint") == manifest_fingerprint
             and existing.get("adapter") == adapter_name
+            and existing.get("exception_decisions_fingerprint") == decisions_digest
             and events_path.exists()
             and exceptions_path.exists()
         ):
@@ -89,14 +100,6 @@ def normalize_source(
                 "summary_path": str(summary_path),
             }
 
-    profile = build_source_profile(
-        source=source,
-        raw_dir=raw_dir,
-        manifest_path=manifest,
-        adapter_name=adapter.name,
-        adapter_supported=adapter.supported,
-    )
-    decisions = load_exception_decisions(exception_decisions, profile.manifest_fingerprint)
     result = adapter.normalize(raw_dir.resolve(), profile, exception_decisions=decisions)
 
     write_csv_rows(events_path, list(CANONICAL_EVENT_HEADERS), result.canonical_events)
@@ -116,6 +119,7 @@ def normalize_source(
         "canonical_events": len(result.canonical_events),
         "canonical_balances": len(result.canonical_balances),
         "exceptions": len(result.exceptions),
+        "exception_decisions_fingerprint": decisions_digest,
         "cointracking_rows": len(rendered_rows),
         "skipped_non_mapped_rows": len(skipped_rows),
         "status": (
@@ -151,4 +155,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

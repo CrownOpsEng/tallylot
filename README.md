@@ -38,7 +38,7 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 3. inventory post-cutoff sources
 4. profile one raw source at a time
 5. normalize into canonical events and balances
-6. render and overlap-screen one CoinTracking candidate at a time
+6. stage and overlap-screen one CoinTracking candidate at a time
 7. import one source at a time into CoinTracking
 8. capture fresh verification exports after each round
 9. stop on unexplained drift and close out at `2025-12-31`

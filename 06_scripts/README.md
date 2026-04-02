@@ -8,6 +8,7 @@ Current helpers:
 - `profile_source.py` → inspect a raw source folder, classify file families, and write `profile.json` plus `profile_inventory.csv`
 - `normalize_source.py` → convert a raw source folder into canonical events, canonical balances, exceptions, and a cached CoinTracking candidate
 - `render_cointracking.py` → translate canonical events into a CoinTracking-ready CSV with reconciliation metadata
+- `stage_import_batch.py` → enforce overlap-screen approval before copying a candidate into `02_working/import_batches/` and optional `04_import_ready/`
 - `reconcile_source.py` → compare canonical source outputs against a CoinTracking Trade Table slice and optional Balance by Exchange slice
 - `coinbase_normalize.py` → normalize Coinbase retail and Coinbase Pro raw exports into CoinTracking-schema transaction rows plus Coinbase PDF balance rows
 - `coinbase_check.py` → compare CoinTracking Coinbase rows against normalized Coinbase exports and optional balance evidence
@@ -27,7 +28,7 @@ The preferred prep flow is now:
 2. `profile_source.py`
 3. `normalize_source.py`
 4. `render_cointracking.py` only when a separate render step is needed
-5. `overlap_check.py`
+5. `stage_import_batch.py`
 6. `reconcile_source.py`
 
 `coinbase_normalize.py` and `coinbase_check.py` remain as Coinbase-specific reference tooling while the universal pipeline reaches parity.
