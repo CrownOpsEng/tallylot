@@ -17,6 +17,7 @@ BARE_UV_LINE_PATTERN = re.compile(r"^uv (run|sync)\b")
 BARE_UV_INLINE_PATTERN = re.compile(r"`(uv (?:run|sync)\b[^`]*)`")
 FENCE_PATTERN = re.compile(r"^\s{0,3}([`~]{3,})(.*)$")
 BLOCKQUOTE_PREFIX_PATTERN = re.compile(r"^(?:\s{0,3}>\s?)+")
+HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->", re.DOTALL)
 
 
 def repo_markdown_paths() -> tuple[Path, ...]:
@@ -61,7 +62,7 @@ def text_without_fenced_code(text: str) -> str:
             continue
         lines.append(line)
         previous_non_fence_blank = not line.strip()
-    return "\n".join(lines)
+    return HTML_COMMENT_PATTERN.sub("", "\n".join(lines))
 
 
 def normalize_anchor(heading: str) -> str:

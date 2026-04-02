@@ -1256,6 +1256,27 @@ def test_blockquoted_fenced_code_blocks_are_ignored_for_uv_and_link_validation(t
     docs_maintenance.validate_markdown_links([page, guide])
 
 
+def test_html_comments_are_ignored_for_uv_and_link_validation(tmp_path: Path) -> None:
+    guide = tmp_path / "docs" / "guides" / "sample.md"
+    guide.parent.mkdir(parents=True)
+    guide.write_text("# Sample\n", encoding="utf-8")
+    page = tmp_path / "README.md"
+    page.write_text(
+        dedent(
+            """\
+            <!--
+            uv run python -m tools.docs_maintenance sync --check
+            [Guide](docs/guides/missing.md)
+            -->
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    docs_maintenance.validate_uv_examples([page])
+    docs_maintenance.validate_markdown_links([page, guide])
+
+
 def test_indented_code_blocks_are_ignored_for_uv_and_link_validation(tmp_path: Path) -> None:
     guide = tmp_path / "docs" / "guides" / "sample.md"
     guide.parent.mkdir(parents=True)
