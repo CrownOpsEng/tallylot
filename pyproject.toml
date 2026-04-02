@@ -52,7 +52,7 @@ addopts = [
     "--strict-config",
     "--strict-markers",
     "--cov=crypto_reconciliation",
-    "--cov-report=term-missing",
+    "--cov-report=term",
     "-ra",
 ]
 pythonpath = ["src", "."]

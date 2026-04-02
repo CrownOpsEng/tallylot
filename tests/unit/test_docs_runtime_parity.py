@@ -2,7 +2,14 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
+
+from typer.main import Typer
+from typer.models import CommandInfo
+
+from crypto_reconciliation.interfaces.cli import app
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DOC_PATHS = [
@@ -24,6 +31,30 @@ def _documented_cli_routes() -> set[str]:
         for match in DOC_COMMAND_ROUTE_PATTERN.finditer(text):
             routes.add(match.group("route"))
 
+    return routes
+
+
+def _registered_cli_routes() -> set[str]:
+    routes: set[str] = set()
+
+    def command_name(command: CommandInfo) -> str:
+        if command.name is not None:
+            return command.name
+        callback = cast(Callable[..., object], command.callback)
+        return callback.__name__.replace("_", "-")
+
+    def walk(typer_app: Typer, prefix: tuple[str, ...] = ()) -> None:
+        for command in typer_app.registered_commands:
+            command_name_value = command_name(command)
+            routes.add(" ".join((*prefix, command_name_value)))
+
+        for group in typer_app.registered_groups:
+            group_name = cast(str, group.name)
+            if group.typer_instance is None:
+                continue
+            walk(group.typer_instance, (*prefix, group_name))
+
+    walk(app)
     return routes
 
 
@@ -87,17 +118,12 @@ def test_supporting_route_mentions_pdf_balance_extraction_command() -> None:
 
 
 def test_documented_cli_routes_exist() -> None:
-    for route in sorted(_documented_cli_routes()):
-        result = subprocess.run(
-            ("uv", "run", "crypto-reconciliation", *route.split(), "--help"),
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        assert result.returncode == 0, (
-            f"documented CLI route does not exist: {route}\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
-        )
+    documented_routes = _documented_cli_routes()
+    registered_routes = _registered_cli_routes()
+
+    missing_routes = sorted(documented_routes - registered_routes)
+
+    assert not missing_routes, f"documented CLI routes do not exist: {missing_routes}"
 
 
 def test_docs_use_lowercase_filenames_except_readmes() -> None:
