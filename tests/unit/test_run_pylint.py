@@ -13,7 +13,7 @@ def test_pylint_targets_split_repo_code_from_tests() -> None:
         ),
         PylintTarget(
             name="tests",
-            command=(sys.executable, "-m", "pylint", "--disable=protected-access", "tests"),
+            command=(sys.executable, "-m", "pylint", "--rcfile=.pylintrc-tests", "tests"),
         ),
     )
 

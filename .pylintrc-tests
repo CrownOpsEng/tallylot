@@ -1,0 +1,19 @@
+[MAIN]
+py-version = 3.12
+ignore = .venv,__pycache__,.git
+source-roots = src,.
+
+[MESSAGES CONTROL]
+disable =
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    duplicate-code,
+    too-many-instance-attributes,
+    too-many-locals,
+    protected-access
+
+[FORMAT]
+max-line-length = 120
+max-module-lines = 450
