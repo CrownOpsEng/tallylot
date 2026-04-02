@@ -55,6 +55,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=tuple(sorted(ALLOWED_AUDIENCES)),
         help="Explicit audience. Defaults from the section or path.",
     )
+    scaffold.add_argument(
+        "--nav-order",
+        type=int,
+        help="Optional nav_order for sync-managed human docs.",
+    )
 
     sync = subparsers.add_parser("sync", help="Validate docs metadata and refresh generated docs index sections.")
     sync.add_argument("--check", action="store_true", help="Fail instead of writing files when sync is needed.")
@@ -79,7 +84,9 @@ def collect_documents() -> list[Document]:
 
 
 def validate_documents() -> list[Document]:
-    return collect_documents()
+    documents = collect_documents()
+    validate_nav_order_uniqueness(documents)
+    return documents
 
 
 def section_documents(documents: list[Document], section: str) -> list[Document]:
@@ -108,11 +115,29 @@ def render_section(documents: list[Document]) -> str:
     return "\n".join(lines)
 
 
+def validate_nav_order_uniqueness(documents: list[Document]) -> None:
+    for section in SYNCED_SECTIONS:
+        used: dict[int, str] = {}
+        prefix = f"docs/{section}/"
+        for document in documents:
+            if not document.relative_path.startswith(prefix):
+                continue
+            nav_order = document.frontmatter.get("nav_order")
+            if not isinstance(nav_order, int):
+                continue
+            previous = used.get(nav_order)
+            if previous is not None:
+                raise ValueError(
+                    f"duplicate nav_order {nav_order} in docs/{section}: {previous} and {document.relative_path}"
+                )
+            used[nav_order] = document.relative_path
+
+
 def replace_marker_block(text: str, marker: str, replacement: str) -> str:
     start_marker = f"<!-- docs-maintenance:start {marker} -->"
     end_marker = f"<!-- docs-maintenance:end {marker} -->"
     pattern = re.compile(
-        rf"{re.escape(start_marker)}\n.*?\n{re.escape(end_marker)}",
+        rf"{re.escape(start_marker)}\n(?:.*?\n)?{re.escape(end_marker)}",
         re.DOTALL,
     )
     new_block = f"{start_marker}\n{replacement}\n{end_marker}"
@@ -193,6 +218,12 @@ def write_scaffold(args: argparse.Namespace) -> int:
 
     doc_type = args.doc_type or default_doc_type(path, args.section)
     audience = args.audience or default_audience(path, args.section)
+    relative = relative_path(path)
+    nav_order_allowed = relative.startswith(
+        ("docs/concepts/", "docs/guides/", "docs/reference/", "docs/status/", "docs/standards/")
+    )
+    if args.nav_order is not None and not nav_order_allowed:
+        raise ValueError("--nav-order is only valid for sync-managed human docs")
     frontmatter = (
         "---\n"
         f'title: "{args.title}"\n'
@@ -201,12 +232,14 @@ def write_scaffold(args: argparse.Namespace) -> int:
         f"audience: {audience}\n"
         "owner: repo\n"
         "status: active\n"
-        "---\n\n"
     )
+    if args.nav_order is not None:
+        frontmatter += f"nav_order: {args.nav_order}\n"
+    frontmatter += "---\n\n"
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(frontmatter + starter_body(doc_type, args.title), encoding="utf-8")
-    print(relative_path(path))
+    print(relative)
 
     sync_prefixes = (
         "docs/concepts/",
@@ -222,7 +255,7 @@ def write_scaffold(args: argparse.Namespace) -> int:
 
 
 def run_sync(*, check: bool) -> int:
-    documents = collect_documents()
+    documents = validate_documents()
     validate_markdown_links(repo_markdown_paths())
     validate_uv_examples(repo_markdown_paths())
     check_retired_references()

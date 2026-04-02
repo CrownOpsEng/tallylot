@@ -52,6 +52,56 @@ def test_parse_frontmatter_supports_optional_fields() -> None:
     ]
 
 
+def test_parse_frontmatter_rejects_missing_related_target() -> None:
+    path = REPO_ROOT / "docs" / "reference" / "example.md"
+    text = dedent(
+        """\
+        ---
+        title: "Example"
+        summary: "Example summary."
+        doc_type: reference
+        audience: human
+        owner: repo
+        status: active
+        related:
+          - docs/does-not-exist.md
+        ---
+
+        Example body.
+        """
+    )
+
+    frontmatter = docs_maintenance.parse_frontmatter(text, path)
+
+    with pytest.raises(ValueError, match="uses missing related target docs/does-not-exist.md"):
+        docs_maintenance.validate_frontmatter(path, frontmatter)
+
+
+def test_parse_frontmatter_rejects_missing_related_anchor() -> None:
+    path = REPO_ROOT / "docs" / "reference" / "example.md"
+    text = dedent(
+        """\
+        ---
+        title: "Example"
+        summary: "Example summary."
+        doc_type: reference
+        audience: human
+        owner: repo
+        status: active
+        related:
+          - docs/guides/operator-quickstart.md#missing-anchor
+        ---
+
+        Example body.
+        """
+    )
+
+    frontmatter = docs_maintenance.parse_frontmatter(text, path)
+
+    with pytest.raises(ValueError, match="uses missing related anchor #missing-anchor"):
+        docs_maintenance.validate_frontmatter(path, frontmatter)
+
+
 def test_parse_frontmatter_supports_nav_order() -> None:
     path = REPO_ROOT / "docs" / "guides" / "example.md"
     text = dedent(
@@ -361,6 +411,159 @@ def test_scaffold_agents_doc_accepts_explicit_doc_type(
 
     assert frontmatter["doc_type"] == "standard"
     assert frontmatter["audience"] == "agent"
+
+
+def test_scaffold_sync_managed_doc_accepts_nav_order(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
+    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
+    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+
+    (tmp_path / "agents").mkdir()
+    docs_root = tmp_path / "docs"
+    (docs_root / "concepts").mkdir(parents=True)
+    (docs_root / "guides").mkdir(parents=True)
+    (docs_root / "reference").mkdir(parents=True)
+    (docs_root / "status").mkdir(parents=True)
+    (docs_root / "standards").mkdir(parents=True)
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--section",
+            "guides",
+            "--slug",
+            "example-guide",
+            "--title",
+            "Example Guide",
+            "--summary",
+            "Example guide summary.",
+            "--nav-order",
+            "70",
+        ]
+    )
+
+    assert exit_code == 0
+
+    created = tmp_path / "docs" / "guides" / "example-guide.md"
+    frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
+
+    assert frontmatter["nav_order"] == 70
+
+
+def test_scaffold_rejects_nav_order_outside_sync_managed_docs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
+    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
+    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--section",
+            "agents",
+            "--slug",
+            "example-agent",
+            "--title",
+            "Example Agent",
+            "--summary",
+            "Example agent guidance.",
+            "--doc-type",
+            "standard",
+            "--nav-order",
+            "10",
+        ]
+    )
+
+    assert exit_code == 1
+
+
+def test_validate_documents_rejects_duplicate_nav_order(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    (docs_root / "guides").mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", docs_root)
+    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", docs_root)
+    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+
+    for name in ("one", "two"):
+        (docs_root / "guides" / f"{name}.md").write_text(
+            dedent(
+                f"""\
+                ---
+                title: "{name.title()}"
+                summary: "{name.title()} summary."
+                doc_type: guide
+                audience: human
+                owner: repo
+                status: active
+                nav_order: 10
+                ---
+
+                ## {name.title()}
+                """
+            ),
+            encoding="utf-8",
+        )
+
+    with pytest.raises(ValueError, match="duplicate nav_order 10 in docs/guides"):
+        docs_maintenance.validate_documents()
 
 
 def test_validate_uv_examples_rejects_bare_uv_examples(tmp_path: Path) -> None:

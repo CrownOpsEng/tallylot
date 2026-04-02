@@ -11,6 +11,7 @@ from .cli import (
     section_documents,
     sync_docs_homepage,
     validate_documents,
+    validate_nav_order_uniqueness,
     write_scaffold,
 )
 from .links import bare_uv_examples, repo_markdown_paths, validate_markdown_links, validate_uv_examples
@@ -18,6 +19,7 @@ from .metadata import (
     Document,
     parse_frontmatter,
     validate_frontmatter,
+    validate_related_target,
 )
 
 REPO_ROOT = state.REPO_ROOT
@@ -45,6 +47,8 @@ __all__ = [
     "validate_documents",
     "validate_frontmatter",
     "validate_markdown_links",
+    "validate_nav_order_uniqueness",
+    "validate_related_target",
     "validate_uv_examples",
     "write_scaffold",
 ]

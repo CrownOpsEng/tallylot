@@ -5,10 +5,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
+from urllib.parse import urlparse
 
 import yaml
 
-from .state import relative_path
+from .links import heading_anchors
+from .state import REPO_ROOT, relative_path
 
 REQUIRED_FRONTMATTER_FIELDS = (
     "title",
@@ -35,6 +37,34 @@ class Document:
     path: Path
     relative_path: str
     frontmatter: dict[str, object]
+
+
+def validate_related_target(path: Path, target: str) -> None:
+    parsed = urlparse(target)
+    if parsed.scheme or parsed.netloc:
+        raise ValueError(f"{path} must use repo-relative related targets, got {target!r}")
+
+    target_path_text, anchor = target, None
+    if "#" in target:
+        target_path_text, anchor = target.split("#", 1)
+
+    resolved = path if not target_path_text else (REPO_ROOT / target_path_text).resolve()
+    try:
+        relative_path(resolved)
+    except ValueError as error:
+        raise ValueError(f"{path} related target must stay inside the repo: {target}") from error
+
+    if not resolved.exists():
+        raise ValueError(f"{path} uses missing related target {target_path_text}")
+
+    if anchor is None:
+        return
+
+    if resolved.suffix != ".md":
+        raise ValueError(f"{path} must use Markdown anchors only on Markdown related targets: {target}")
+
+    if anchor not in heading_anchors(resolved):
+        raise ValueError(f"{path} uses missing related anchor #{anchor} in {target_path_text or relative_path(path)}")
 
 
 def parse_frontmatter(text: str, path: Path) -> dict[str, object]:
@@ -142,3 +172,6 @@ def validate_frontmatter(path: Path, frontmatter: dict[str, object]) -> None:
         related_items is None or not all(isinstance(item, str) and item.strip() for item in related_items)
     ):
         raise ValueError(f"{path} must use a list of non-empty strings for related")
+    if related_items is not None:
+        for item in cast(list[str], related_items):
+            validate_related_target(path, item)
