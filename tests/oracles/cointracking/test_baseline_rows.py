@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import pytest
 from pydantic import ValidationError
@@ -81,7 +82,7 @@ def test_parse_baseline_export_rows_returns_immutable_rows() -> None:
 
     assert isinstance(rows, tuple)
     with pytest.raises(TypeError):
-        rows[0]["Ticker"] = "ETH"  # type: ignore[index]
+        cast(dict[str, str], rows[0])["Ticker"] = "ETH"
 
 
 def test_parse_baseline_export_rows_rejects_malformed_timestamps() -> None:
