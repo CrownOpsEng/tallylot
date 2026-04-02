@@ -118,7 +118,7 @@ Checks:
 def test_missing_summary_is_rejected() -> None:
     errors = validate_commit_message_text(
         """\
-docs(scope): 
+docs(scope):
 
 Why:
 - tighten docs
