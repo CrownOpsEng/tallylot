@@ -29,6 +29,7 @@ Do not pre-load every repo doc by default.
 | ---- | ---- |
 | Code placement, typing, modularization, naming | `docs/standards/engineering.md` |
 | Active implementation execution discipline | `docs/standards/implementation.md`, `docs/standards/commits.md` |
+| Planning sequence, delivery slices, or rollout checkpoints | `ROADMAP.md` |
 | Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
 | Source or output adapter work | `docs/guides/write-an-adapter.md` |
