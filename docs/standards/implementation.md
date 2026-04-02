@@ -51,6 +51,13 @@ Prefer the repo's built-in tooling before inventing local workflows:
 Do not replace these with ad hoc shell habits when the repo already has a
 supported path.
 
+When repo-native tooling and tests need shared support:
+
+- keep production/runtime concerns out of `tools/` and `repo_support/`
+- keep shared repo-only support in `repo_support/`, not in ad hoc duplicated
+  test helpers or tool-local path constants
+- keep `tools/` focused on entry points and task-specific dev modules
+
 ## Default Coding Posture
 
 Agents should assume all of these are expected unless the task explicitly says
@@ -117,6 +124,14 @@ Avoid generic sinks:
 - `utils.py`
 - `common.py`
 - broad cross-layer convenience modules
+
+For repo-native tooling and test support:
+
+- use `repo_support/` only for narrow shared seams that are reused by multiple
+  repo-native surfaces
+- do not create generic `repo_support/helpers.py` or `repo_support/utils.py`
+- if only one tool owns the logic, keep it local to that tool instead of
+  promoting it into `repo_support/`
 
 Shared components must stay owned by one layer and one concept.
 
