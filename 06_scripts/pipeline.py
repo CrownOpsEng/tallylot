@@ -32,7 +32,7 @@ from pipeline_common import (
     source_slug,
     write_profile_artifacts,
 )
-from raw_layout import cointracking_baseline_dir
+from raw_layout import cointracking_baseline_dir, source_capture_root
 from render_cointracking import RENDER_METADATA_HEADERS, render_cointracking_rows
 from routing import resolve_routing_decision
 from scope_identity import describe_scope_tokens, row_scope_tokens
@@ -662,7 +662,7 @@ def _capture_window_inventory(capture_dir: Path) -> tuple[tuple[str, str, str], 
 def _existing_capture_window_hits(repo_root: Path, decision_row: dict[str, str]) -> list[str]:
     if decision_row["role"] != "source_raw":
         return []
-    existing_capture = repo_root / "01_raw_exports" / "external" / decision_row["source_folder"] / decision_row["capture_id"]
+    existing_capture = source_capture_root(repo_root, decision_row["source_folder"]) / decision_row["capture_id"]
     if not existing_capture.exists():
         return []
     candidate_start = decision_row.get("inspection_min_timestamp", "")
@@ -676,6 +676,28 @@ def _existing_capture_window_hits(repo_root: Path, decision_row: dict[str, str])
             if len(hits) >= 5:
                 break
     return hits
+
+
+def _add_review_flag(row: dict[str, str], *, code: str, reason: str) -> None:
+    row["review_required"] = "yes"
+    row["review_reason"] = "; ".join(part for part in [row["review_reason"], reason] if part)
+    row["review_codes"] = ";".join(sorted(set(filter(None, (row["review_codes"] + f";{code}").split(";")))))
+
+
+def _apply_overlap_review_signals(row: dict[str, str]) -> None:
+    overlap_reasons = {item for item in row.get("overlap_reasons", "").split(";") if item}
+    if "incoming_duplicate" in overlap_reasons and row.get("overlap_incoming_match"):
+        _add_review_flag(
+            row,
+            code="incoming_duplicate_overlap",
+            reason=f"Duplicate content also appears elsewhere in the incoming batch: {row['overlap_incoming_match']}",
+        )
+    if "repo_manifest_match" in overlap_reasons and row.get("overlap_repo_matches"):
+        _add_review_flag(
+            row,
+            code="repo_manifest_overlap",
+            reason=f"File already exists in a repo manifest: {row['overlap_repo_matches']}",
+        )
 
 
 def _archive_members_for_plan(path: Path, inspection_row: dict[str, str]) -> list[dict[str, str]]:
@@ -758,6 +780,7 @@ def plan_intake_dump(
                 "size_bytes": str(path.stat().st_size),
             }
         )
+        _apply_overlap_review_signals(planned_rows[-1])
         for member in _archive_members_for_plan(path, inspection_row):
             member_name = member["member_name"]
             planned_rows.append(
@@ -947,6 +970,12 @@ def plan_intake_dump(
         raw_hits = _existing_capture_window_hits(repo_root, row)
         row["raw_overlap_status"] = "capture_window_overlap" if raw_hits else ""
         row["raw_overlap_targets"] = "; ".join(raw_hits)
+        if raw_hits:
+            _add_review_flag(
+                row,
+                code="raw_capture_overlap",
+                reason=f"Existing raw capture for {row['source_folder']}/{row['capture_id']} has overlapping activity: {row['raw_overlap_targets']}",
+            )
     review_count = sum(1 for row in planned_rows if row["review_required"] == "yes")
 
     if apply:

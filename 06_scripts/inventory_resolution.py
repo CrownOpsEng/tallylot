@@ -42,14 +42,29 @@ def _read_csv_rows(path: Path) -> tuple[dict[str, str], ...]:
         return tuple(dict(row) for row in csv.DictReader(handle))
 
 
-@lru_cache(maxsize=8)
+def _file_cache_key(path: Path) -> tuple[str, int, int]:
+    resolved = path.resolve()
+    try:
+        stat = resolved.stat()
+    except FileNotFoundError:
+        return str(resolved), -1, -1
+    return str(resolved), stat.st_mtime_ns, stat.st_size
+
+
+@lru_cache(maxsize=32)
+def _read_csv_rows_cached(path_str: str, mtime_ns: int, size_bytes: int) -> tuple[dict[str, str], ...]:
+    del mtime_ns, size_bytes
+    return _read_csv_rows(Path(path_str))
+
+
 def _wallet_inventory_evidence_rows(repo_root: str) -> tuple[dict[str, str], ...]:
-    return _read_csv_rows(Path(repo_root) / "03_analysis" / "inventory" / "wallet_inventory_evidence.csv")
+    path = Path(repo_root) / "03_analysis" / "inventory" / "wallet_inventory_evidence.csv"
+    return _read_csv_rows_cached(*_file_cache_key(path))
 
 
-@lru_cache(maxsize=8)
 def _source_inventory_rows(repo_root: str) -> tuple[dict[str, str], ...]:
-    return _read_csv_rows(Path(repo_root) / "03_analysis" / "issues" / "source_inventory.csv")
+    path = Path(repo_root) / "03_analysis" / "issues" / "source_inventory.csv"
+    return _read_csv_rows_cached(*_file_cache_key(path))
 
 
 def _source_folder_from_capture_path(capture_path: str) -> str:
@@ -59,7 +74,6 @@ def _source_folder_from_capture_path(capture_path: str) -> str:
     return parsed.source_folder
 
 
-@lru_cache(maxsize=8)
 def _source_inventory_by_slug(repo_root: str) -> dict[str, dict[str, str]]:
     rows = _source_inventory_rows(repo_root)
     results: dict[str, dict[str, str]] = {}

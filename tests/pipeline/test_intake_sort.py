@@ -156,6 +156,80 @@ def test_plan_intake_dump_skips_subset_duplicate_packages(tmp_path: Path) -> Non
 
 
 @pytest.mark.pipeline
+def test_plan_intake_dump_flags_repo_manifest_duplicates_for_review(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    existing_capture = repo_root / "01_raw_exports" / "source" / "coinbase" / "2021-05"
+    existing_capture.mkdir(parents=True, exist_ok=True)
+    existing_file = existing_capture / "Coinbase Pro - Fills.csv"
+    payload = "portfolio,type,time,amount,balance,amount/balance unit,transfer id,trade id,order id\n"
+    existing_file.write_text(payload, encoding="utf-8")
+    with (existing_capture / "manifest.csv").open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(
+            ["filename", "bundle_id", "bundle_type", "bundle_relative_path", "source_paths", "alias_group", "collision_status", "size_bytes", "sha256"]
+        )
+        writer.writerow(
+            [
+                existing_file.name,
+                "",
+                "",
+                existing_file.name,
+                "",
+                "",
+                "",
+                existing_file.stat().st_size,
+                pipeline.sha256sum(existing_file),
+            ]
+        )
+
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    incoming.mkdir(parents=True, exist_ok=True)
+    incoming_file = incoming / "2021" / "Coinbase" / "Coinbase Pro Trades 2018.01.01 - 2021.08.14.csv"
+    incoming_file.parent.mkdir(parents=True, exist_ok=True)
+    incoming_file.write_text(payload, encoding="utf-8")
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    pipeline.plan_intake_dump(repo_root=repo_root, incoming_dir=incoming, report_dir=report_dir, apply=False)
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    row = next(item for item in rows if item["archive_source_path"] == "")
+
+    assert "repo_manifest_match" in row["overlap_reasons"]
+    assert row["review_required"] == "yes"
+    assert "repo_manifest_overlap" in row["review_codes"]
+    assert "01_raw_exports/source/coinbase/2021-05" in row["review_reason"]
+
+
+@pytest.mark.pipeline
+def test_plan_intake_dump_flags_existing_capture_window_overlap_for_review(tmp_path: Path) -> None:
+    repo_root = tmp_path / "repo"
+    existing_capture = repo_root / "01_raw_exports" / "source" / "binance" / "2021-05" / "existing"
+    existing_capture.mkdir(parents=True, exist_ok=True)
+    (existing_capture / "borrow.csv").write_text(
+        "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n",
+        encoding="utf-8",
+    )
+
+    incoming = repo_root / "01_raw_exports" / "incoming"
+    incoming.mkdir(parents=True, exist_ok=True)
+    (incoming / "borrow.csv").write_text(
+        "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n",
+        encoding="utf-8",
+    )
+    report_dir = repo_root / "02_working" / "intake_reports" / "run_01"
+
+    pipeline.plan_intake_dump(repo_root=repo_root, incoming_dir=incoming, report_dir=report_dir, apply=False)
+
+    rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
+    row = next(item for item in rows if item["archive_source_path"] == "")
+
+    assert row["raw_overlap_status"] == "capture_window_overlap"
+    assert row["review_required"] == "yes"
+    assert "raw_capture_overlap" in row["review_codes"]
+    assert "01_raw_exports/source/binance/2021-05" in row["raw_overlap_targets"]
+
+
+@pytest.mark.pipeline
 def test_plan_intake_dump_merges_same_cycle_near_duplicate_packages(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     incoming = repo_root / "01_raw_exports" / "incoming"

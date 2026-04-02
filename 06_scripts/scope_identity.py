@@ -142,6 +142,10 @@ def row_scope_tokens(row: dict[str, str], *, extra_fields: Iterable[str] = ()) -
 
 def inventory_scope_labels(repo_root: Path) -> dict[str, str]:
     wallet_inventory = repo_root / "03_analysis" / "inventory" / "wallet_inventory.csv"
+    return inventory_scope_labels_from_path(wallet_inventory)
+
+
+def inventory_scope_labels_from_path(wallet_inventory: Path) -> dict[str, str]:
     if not wallet_inventory.exists():
         return {}
     labels: dict[str, str] = {}
@@ -180,15 +184,25 @@ def inventory_scope_labels(repo_root: Path) -> dict[str, str]:
     return labels
 
 
-@lru_cache(maxsize=8)
-def _cached_inventory_scope_labels(repo_root: str) -> dict[str, str]:
-    return inventory_scope_labels(Path(repo_root))
+def _inventory_label_cache_key(repo_root: str) -> tuple[str, int, int]:
+    path = (Path(repo_root) / "03_analysis" / "inventory" / "wallet_inventory.csv").resolve()
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return str(path), -1, -1
+    return str(path), stat.st_mtime_ns, stat.st_size
+
+
+@lru_cache(maxsize=32)
+def _cached_inventory_scope_labels(path_str: str, mtime_ns: int, size_bytes: int) -> dict[str, str]:
+    del mtime_ns, size_bytes
+    return inventory_scope_labels_from_path(Path(path_str))
 
 
 def describe_scope_tokens(tokens: Iterable[str], repo_root: Path | None = None) -> str:
     unique = sorted(set(tokens))
     if not unique:
         return ""
-    labels = _cached_inventory_scope_labels(str(repo_root.resolve())) if repo_root is not None else {}
+    labels = _cached_inventory_scope_labels(*_inventory_label_cache_key(str(repo_root.resolve()))) if repo_root is not None else {}
     rendered = [labels.get(token, token) for token in unique]
     return "; ".join(rendered)

@@ -237,11 +237,26 @@ def find_manifest_for_raw_dir(raw_dir: Path) -> Path | None:
     return candidate if candidate.exists() else None
 
 
-@lru_cache(maxsize=1)
-def repo_source_inventory_rows() -> tuple[dict[str, str], ...]:
-    if not SOURCE_INVENTORY_PATH.exists():
+def _file_cache_key(path: Path) -> tuple[str, int, int]:
+    resolved = path.resolve()
+    try:
+        stat = resolved.stat()
+    except FileNotFoundError:
+        return str(resolved), -1, -1
+    return str(resolved), stat.st_mtime_ns, stat.st_size
+
+
+@lru_cache(maxsize=8)
+def _read_source_inventory_rows_cached(path_str: str, mtime_ns: int, size_bytes: int) -> tuple[dict[str, str], ...]:
+    del mtime_ns, size_bytes
+    path = Path(path_str)
+    if not path.exists():
         return ()
-    return tuple(read_csv_rows(SOURCE_INVENTORY_PATH))
+    return tuple(read_csv_rows(path))
+
+
+def repo_source_inventory_rows() -> tuple[dict[str, str], ...]:
+    return _read_source_inventory_rows_cached(*_file_cache_key(SOURCE_INVENTORY_PATH))
 
 
 @lru_cache(maxsize=1)
