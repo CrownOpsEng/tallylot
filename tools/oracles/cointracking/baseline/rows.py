@@ -9,30 +9,35 @@ from decimal import Decimal
 from pathlib import Path
 from typing import ClassVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
-from tallylot.domain.value_objects import parse_timestamp
+from tallylot.domain.value_objects import format_timestamp, parse_timestamp
 from tallylot.ports.artifacts import ArtifactStorePort
 
 
 class _BaselineRowModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True, populate_by_name=True)
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     _text_fields: ClassVar[tuple[str, ...]] = ()
     _decimal_fields: ClassVar[tuple[str, ...]] = ()
+    _integer_fields: ClassVar[tuple[str, ...]] = ()
     _timestamp_fields: ClassVar[tuple[str, ...]] = ()
+    _required_text_fields: ClassVar[tuple[str, ...]] = ()
 
     @field_validator("*", mode="before")
     @classmethod
-    def _normalize_fields(cls, value: object, info: object) -> object:
-        field_name = getattr(info, "field_name", "")
+    def _normalize_fields(cls, value: object, info: ValidationInfo) -> object:
+        field_name = info.field_name or ""
         if field_name in cls._timestamp_fields:
             text = "" if value is None else str(value).strip()
             if text:
                 parse_timestamp(text)
             return text
         if field_name in cls._text_fields:
-            return "" if value is None else str(value).strip()
+            text = "" if value is None else str(value).strip()
+            if field_name in cls._required_text_fields and not text:
+                raise ValueError(f"{field_name} must not be blank")
+            return text
         if field_name in cls._decimal_fields:
             if value is None:
                 return Decimal("0")
@@ -40,6 +45,9 @@ class _BaselineRowModel(BaseModel):
                 return value
             text = str(value).strip()
             return Decimal("0") if not text else Decimal(text)
+        if field_name in cls._integer_fields:
+            text = "" if value is None else str(value).strip()
+            return 0 if not text else int(text)
         return value
 
     def to_row(self) -> dict[str, str]:
@@ -63,6 +71,7 @@ class TradeTableRowModel(_BaselineRowModel):
     )
     _decimal_fields = ("buy_amount", "sell_amount", "fee_amount")
     _timestamp_fields = ("date",)
+    _required_text_fields = ("trade_type", "exchange")
 
     trade_type: str = Field(alias="Type")
     buy_amount: Decimal = Field(alias="Buy")
@@ -79,24 +88,26 @@ class TradeTableRowModel(_BaselineRowModel):
 
 
 class CurrentBalanceRowModel(_BaselineRowModel):
-    _text_fields = ("ticker", "name", "asset_type", "value_cad")
-    _decimal_fields = ("amount",)
+    _text_fields = ("ticker", "name", "asset_type")
+    _decimal_fields = ("amount", "value_cad")
+    _required_text_fields = ("ticker", "asset_type")
 
     ticker: str = Field(alias="Ticker")
     name: str = Field(alias="Name")
     asset_type: str = Field(alias="Type")
     amount: Decimal = Field(alias="Amount")
-    value_cad: str = Field(alias="Value in CAD")
+    value_cad: Decimal = Field(alias="Value in CAD")
 
 
 class BalanceByExchangeRowModel(_BaselineRowModel):
-    _text_fields = ("currency", "current_value_cad", "current_value_btc", "exchange")
-    _decimal_fields = ("amount",)
+    _text_fields = ("currency", "exchange")
+    _decimal_fields = ("amount", "current_value_cad", "current_value_btc")
+    _required_text_fields = ("currency", "exchange")
 
     amount: Decimal = Field(alias="Amount")
     currency: str = Field(alias="Currency")
-    current_value_cad: str = Field(alias="Current value in CAD")
-    current_value_btc: str = Field(alias="Current value in BTC")
+    current_value_cad: Decimal = Field(alias="Current value in CAD")
+    current_value_btc: Decimal = Field(alias="Current value in BTC")
     exchange: str = Field(alias="Exchange")
 
 
@@ -111,7 +122,6 @@ class MissingTransactionsRowModel(_BaselineRowModel):
         "missing_type",
         "currency",
         "fee_currency",
-        "value_cad",
         "exchange",
         "trade_group",
         "comment",
@@ -119,15 +129,16 @@ class MissingTransactionsRowModel(_BaselineRowModel):
         "date",
         "match",
     )
-    _decimal_fields = ("amount", "fee_amount")
+    _decimal_fields = ("amount", "fee_amount", "value_cad")
     _timestamp_fields = ("date",)
+    _required_text_fields = ("missing_type", "exchange")
 
     missing_type: str = Field(alias="Type")
     amount: Decimal = Field(alias="Amount")
     currency: str = Field(alias="Cur.")
     fee_amount: Decimal = Field(alias="Fee")
     fee_currency: str = Field(alias="Fee Cur.")
-    value_cad: str = Field(alias="Value in CAD")
+    value_cad: Decimal = Field(alias="Value in CAD")
     exchange: str = Field(alias="Exchange")
     trade_group: str = Field(alias="Trade Group")
     comment: str = Field(alias="Comment")
@@ -138,7 +149,6 @@ class MissingTransactionsRowModel(_BaselineRowModel):
 
 class DuplicateTransactionsRowModel(_BaselineRowModel):
     _text_fields = (
-        "duplicate_count",
         "duplicate_type",
         "exchange",
         "exchange_id",
@@ -148,9 +158,11 @@ class DuplicateTransactionsRowModel(_BaselineRowModel):
         "transaction_id",
         "transaction_date",
     )
+    _integer_fields = ("duplicate_count",)
     _timestamp_fields = ("transaction_date",)
+    _required_text_fields = ("duplicate_type", "exchange")
 
-    duplicate_count: str = Field(alias="# of duplicates")
+    duplicate_count: int = Field(alias="# of duplicates")
     duplicate_type: str = Field(alias="Type")
     exchange: str = Field(alias="Exchange")
     exchange_id: str = Field(alias="Exchange ID")
@@ -214,7 +226,9 @@ def read_baseline_export_rows(
 def parse_baseline_export_rows(
     stem: str, rows: Iterable[dict[str, str]]
 ) -> list[dict[str, str]]:
-    row_model = _BASELINE_ROW_MODELS[stem]
+    row_model = _BASELINE_ROW_MODELS.get(stem)
+    if row_model is None:
+        raise ValueError(f"Unsupported CoinTracking baseline export family: {stem}")
     return [
         row_model.model_validate(_normalize_blank_header(row)).to_row() for row in rows
     ]
@@ -233,5 +247,5 @@ def _row_text(value: object) -> str:
     if isinstance(value, Decimal):
         return format(value, "f")
     if isinstance(value, datetime):
-        return value.strftime("%Y-%m-%d %H:%M:%S")
+        return format_timestamp(value)
     return "" if value is None else str(value)

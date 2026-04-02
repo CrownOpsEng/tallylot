@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
+
+import pytest
+from pydantic import ValidationError
 
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tools.oracles.baseline import BaselineValidationService
@@ -19,8 +23,12 @@ def test_baseline_validation_service_writes_relocation_safe_artifacts(
     )
 
     store = FilesystemArtifactStore()
-    reconciliation_rows = store.read_rows(output_dir / "baseline_exchange_reconciliation.csv")
-    summary = json.loads((output_dir / "baseline_summary.json").read_text(encoding="utf-8"))
+    reconciliation_rows = store.read_rows(
+        output_dir / "baseline_exchange_reconciliation.csv"
+    )
+    summary = json.loads(
+        (output_dir / "baseline_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.asset_count >= 1
     assert any(row["ticker"] == "CAD" for row in reconciliation_rows)
@@ -47,3 +55,23 @@ def test_baseline_validation_emits_documented_artifact_package(
     assert (output_dir / "baseline_cad_flow_by_type.csv").exists()
     assert (output_dir / "baseline_cad_balance_by_exchange.csv").exists()
     assert (output_dir / "baseline_summary.json").exists()
+
+
+def test_baseline_validation_rejects_malformed_export_rows(
+    baseline_export_dir: Path,
+    tmp_path: Path,
+) -> None:
+    export_dir = tmp_path / "exports"
+    shutil.copytree(baseline_export_dir, export_dir)
+    (export_dir / "Current Balance.csv").write_text(
+        "Ticker,Name,Type,Amount,Value in CAD\n,Bitcoin,Coin,1.00000000,10.00\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValidationError, match="ticker must not be blank"):
+        BaselineValidationService(FilesystemArtifactStore()).execute(
+            BaselineValidateRequest(
+                export_dir=export_dir,
+                output_dir=tmp_path / "baseline",
+            )
+        )

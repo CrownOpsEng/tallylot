@@ -103,3 +103,42 @@ def test_parse_baseline_export_rows_rejects_extra_columns() -> None:
                 }
             ],
         )
+
+
+def test_parse_baseline_export_rows_rejects_unknown_export_family() -> None:
+    with pytest.raises(
+        ValueError, match="Unsupported CoinTracking baseline export family"
+    ):
+        parse_baseline_export_rows("Unsupported Report", [])
+
+
+def test_parse_baseline_export_rows_requires_csv_aliases() -> None:
+    with pytest.raises(ValidationError):
+        parse_baseline_export_rows(
+            "Current Balance",
+            [
+                {
+                    "ticker": "BTC",
+                    "name": "Bitcoin",
+                    "asset_type": "Coin",
+                    "amount": "1",
+                    "value_cad": "100",
+                }
+            ],
+        )
+
+
+def test_parse_baseline_export_rows_rejects_blank_required_identifiers() -> None:
+    with pytest.raises(ValidationError, match="ticker must not be blank"):
+        parse_baseline_export_rows(
+            "Current Balance",
+            [
+                {
+                    "Ticker": "",
+                    "Name": "Bitcoin",
+                    "Type": "Coin",
+                    "Amount": "1",
+                    "Value in CAD": "100",
+                }
+            ],
+        )
