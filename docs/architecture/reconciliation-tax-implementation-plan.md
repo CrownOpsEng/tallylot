@@ -1,7 +1,7 @@
 # Reconciliation And Tax Implementation Plan
 
-This document is the implementation anchor for evolving the repo from a
-tracker-dependent historical workflows into an independent reconciliation,
+This document is the implementation anchor for evolving the repo away from
+tracker-dependent historical workflows and into an independent reconciliation,
 accounting, and Canadian tax computation system.
 
 Use this plan when making structural decisions that affect normalization,

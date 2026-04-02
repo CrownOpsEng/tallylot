@@ -32,8 +32,10 @@ workspace/
 
 ## Seeded Control Files
 
-- `analysis/issues/issue_log.csv`
-- `analysis/issues/source_inventory.csv`
+- `analysis/issues/issue_log.csv` seeded from the repo-owned issue log
+  template under `docs/workspace/analysis/issues/`
+- `analysis/issues/source_inventory.csv` seeded from the repo-owned source
+  inventory template under `docs/workspace/analysis/issues/`
 - `analysis/inventory/wallet_inventory.csv`
 - `outputs/logs/round_log.csv`
 - `config/workspace.json`

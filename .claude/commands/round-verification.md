@@ -1,6 +1,6 @@
 # Round Verification
 
-Use this route after a manual CoinTracking repair or import:
+Use this route after a manual tracker repair or import:
 
 1. `uv run python -m tools.oracles.cli round scaffold`
 2. save the fresh verification export set under `working/verification/<round_id>/`
@@ -8,4 +8,4 @@ Use this route after a manual CoinTracking repair or import:
 4. review the comparison package
 5. update issue, source, and round-log records
 
-Use `docs/EXPORT_CHECKLIST.md` for the required export set.
+Use `docs/operations/export-checklist.md` for the required export set.

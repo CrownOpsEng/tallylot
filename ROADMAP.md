@@ -28,6 +28,9 @@ decisions that should not be rediscovered from scratch.
   family, not as the central business model.
 - Keep CoinTracking rendering isolated to output-adapter packages and keep
   oracle comparison code outside `src/tallylot/`.
+- Keep repo-owned workspace control files generic and operator-facing.
+  CoinTracking-specific workflow naming belongs only in concrete edge adapter,
+  oracle, or historical baseline references.
 - Build shared adapter-layer support for stable translation chores such as file
   traversal, file-family dispatch, row-context handling, draft compilation, and
   wallet evidence construction so provider adapters stay thin.
