@@ -56,7 +56,14 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: uv run python -m tools.validate_pr_metadata --title "$PR_TITLE" --body "$PR_BODY"
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          uv run python -m tools.validate_pr_metadata \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA"
 
   quality:
     needs: commit-messages
@@ -73,6 +80,8 @@ jobs:
         run: uv sync --python 3.12 --frozen
       - name: Markdownlint
         run: uv run pre-commit run markdownlint --all-files
+      - name: Actionlint
+        run: uv run actionlint -color
       - name: Ruff
         run: uv run ruff check .
       - name: Mypy
