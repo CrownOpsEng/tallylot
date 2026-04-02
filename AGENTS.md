@@ -36,8 +36,8 @@ Do not pre-load every repo doc by default.
 
 ## Execution Rules
 
-- Do not consider work ready until `ruff`, `mypy`, `pyright`, `pylint`, and
-  `pytest` pass.
+- Do not consider work ready until `markdownlint`, `ruff`, `mypy`, `pyright`,
+  `pylint`, and `pytest` pass.
 - Prefer the checked-in hooks:
   - `uv run pre-commit install --hook-type pre-commit --hook-type commit-msg`
   - `uv run pre-commit run --all-files`

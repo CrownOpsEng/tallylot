@@ -12,6 +12,7 @@ decisions that should not be rediscovered from scratch.
 - Filesystem-backed operational storage
 - CoinTracking CSV as the only implemented output adapter
 - Provider-agnostic AI interfaces with stub implementations
+- MIT-licensed package with CI-verified wheel and source distribution builds
 
 ## Deferred Work
 
@@ -69,6 +70,10 @@ decisions that should not be rediscovered from scratch.
   commits without forcing micro-commit overhead.
 - Keep application services on port contracts for adapter resolution and artifact
   persistence; do not import infrastructure modules from `application/`.
+- Keep packaging release-safe: wheels should ship only the
+  `src/crypto_reconciliation/` package, source distributions must remain
+  buildable from a clean checkout, and CI should continue verifying the build
+  plus an installable CLI entry point.
 - Do not bypass `Decimal` with float-based financial calculations.
 - Keep canonical events structurally strict: asset/amount pairs must be
   complete, and amounts must remain positive because direction is modeled by

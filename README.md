@@ -3,6 +3,9 @@
 Typed crypto ledger reconciliation tooling with a strict layered architecture
 and an external workspace model.
 
+This repository is MIT-licensed and ships both a library package,
+`crypto_reconciliation`, and the `crypto-reconciliation` CLI entry point.
+
 ## Principles
 
 - The repo contains application code, tests, docs, templates, and contracts.
@@ -71,6 +74,23 @@ uv run crypto-reconciliation verification compare --previous-dir <path> --curren
 uv run crypto-reconciliation batch stage --candidate <path> --baseline-export-dir <path> --output-dir <path>
 ```
 
+## Installation
+
+For local development:
+
+```bash
+uv sync --python 3.12
+uv run crypto-reconciliation --help
+```
+
+To build distributable artifacts from a clean checkout:
+
+```bash
+uv build
+```
+
+Build artifacts are written to `dist/` and are ignored by git.
+
 ## Development
 
 ```bash
@@ -78,6 +98,7 @@ uv sync --python 3.12
 git config --local commit.template .gitmessage.txt
 uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
 uv run pre-commit run --all-files
+uv run pre-commit run markdownlint --all-files
 uv run ruff check .
 uv run mypy
 uv run pyright
@@ -85,10 +106,10 @@ uv run pylint src tests tools
 uv run pytest
 ```
 
-`ruff`, `mypy`, `pyright`, `pylint`, and `pytest` are all required quality
-gates. The repo already ships a `.pre-commit-config.yaml`; install both the
-`pre-commit` and `commit-msg` hooks and treat a passing hook run as the minimum
-commit baseline.
+`markdownlint`, `ruff`, `mypy`, `pyright`, `pylint`, and `pytest` are all part
+of the expected quality baseline. The repo already ships a
+`.pre-commit-config.yaml`; install both the `pre-commit` and `commit-msg` hooks
+and treat a passing hook run as the minimum commit baseline.
 
 This repo uses a `src/` layout and expects editor diagnostics to run against the
 project `.venv`. The checked-in VS Code workspace settings point Python,
@@ -98,6 +119,10 @@ workspace interpreter at `.venv/bin/python` and reload the VS Code window.
 
 For AI-agent and contributor guardrails, start with `AGENTS.md` and then read
 only the narrow doc needed for the task.
+
+## License
+
+[MIT](LICENSE)
 
 ## Docs
 
