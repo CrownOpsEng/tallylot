@@ -77,10 +77,16 @@ This repo intentionally uses the external environment at
 `$HOME/.venvs/tallylot-py312`. The repo-root `.venv` file is a sentinel, not a
 virtualenv directory.
 
-Bootstrap the clone and run the standard checks with:
+Bootstrap the clone with:
 
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
+```
+
+Use the lighter gate during development and the full gate before closing
+substantial work:
+
+```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
