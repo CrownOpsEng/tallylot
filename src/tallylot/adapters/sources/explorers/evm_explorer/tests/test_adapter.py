@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.explorers.evm_explorer import ADAPTER
+from tallylot.adapters.sources.explorers.evm_explorer.adapter import _EvmExplorerAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
@@ -19,7 +19,7 @@ def test_evm_explorer_adapter_extracts_owned_address_from_single_to_column(tmp_p
         encoding="utf-8",
     )
 
-    records, issues = ADAPTER.extract_location_inventory(
+    records, issues = _EvmExplorerAdapter().extract_location_inventory(
         "ethereum-wallet",
         raw_dir,
         build_source_profile(adapter_id="evm_explorer", source="ethereum-wallet", raw_dir=str(raw_dir)),
@@ -41,7 +41,7 @@ def test_evm_explorer_adapter_prefers_filename_address_and_network_scope(tmp_pat
         encoding="utf-8",
     )
 
-    records, issues = ADAPTER.extract_location_inventory(
+    records, issues = _EvmExplorerAdapter().extract_location_inventory(
         "polygon-wallet",
         raw_dir,
         build_source_profile(adapter_id="evm_explorer", source="polygon-wallet", raw_dir=str(raw_dir)),
@@ -64,7 +64,7 @@ def test_evm_explorer_adapter_reports_missing_identifier_when_no_owned_address_i
         encoding="utf-8",
     )
 
-    records, issues = ADAPTER.extract_location_inventory(
+    records, issues = _EvmExplorerAdapter().extract_location_inventory(
         "ethereum-wallet",
         raw_dir,
         build_source_profile(adapter_id="evm_explorer", source="ethereum-wallet", raw_dir=str(raw_dir)),
@@ -86,7 +86,7 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(tmp_path: 
         encoding="utf-8",
     )
 
-    result = ADAPTER.translate(
+    result = _EvmExplorerAdapter().translate(
         build_source_profile(adapter_id="evm_explorer", source="ethereum-wallet", raw_dir=str(raw_dir)),
         raw_dir,
     )
@@ -116,7 +116,7 @@ def test_evm_explorer_adapter_surfaces_suspicious_nft_airdrops_for_review(tmp_pa
         encoding="utf-8",
     )
 
-    result = ADAPTER.translate(
+    result = _EvmExplorerAdapter().translate(
         build_source_profile(adapter_id="evm_explorer", source="ethereum-wallet", raw_dir=str(raw_dir)),
         raw_dir,
     )
@@ -132,7 +132,7 @@ def test_evm_explorer_empty_chain_scoped_capture_reports_missing_identifier(tmp_
     raw_dir.mkdir()
     (raw_dir / "export-empty.csv").write_text("Transaction Hash,DateTime (UTC)\n", encoding="utf-8")
 
-    records, issues = ADAPTER.extract_location_inventory(
+    records, issues = _EvmExplorerAdapter().extract_location_inventory(
         "eth-metamask1",
         raw_dir,
         build_source_profile(adapter_id="evm_explorer", source="eth-metamask1", raw_dir=str(raw_dir)),

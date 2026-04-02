@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.explorers.ronin import ADAPTER
+from tallylot.adapters.sources.explorers.ronin.adapter import _RoninAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, LegKind, ProjectionHint
 from tests.support.services import build_source_profile
@@ -41,8 +41,8 @@ def test_ronin_adapter_extracts_owned_wallet_and_normalizes_supported_rows(tmp_p
 
     profile = build_source_profile(adapter_id="ronin", source="wallet-a", raw_dir=str(raw_dir))
 
-    location_inventory, location_issues = ADAPTER.extract_location_inventory("wallet-a", raw_dir, profile)
-    result = ADAPTER.translate(profile, raw_dir)
+    location_inventory, location_issues = _RoninAdapter().extract_location_inventory("wallet-a", raw_dir, profile)
+    result = _RoninAdapter().translate(profile, raw_dir)
     facts = compile_activity_drafts(result.drafts)
 
     assert not location_issues
@@ -79,7 +79,7 @@ def test_ronin_adapter_accepts_precise_non_zero_fee_values(tmp_path: Path) -> No
         encoding="utf-8",
     )
 
-    result = ADAPTER.translate(
+    result = _RoninAdapter().translate(
         build_source_profile(adapter_id="ronin", source="wallet-a", raw_dir=str(raw_dir)),
         raw_dir,
     )
@@ -102,7 +102,7 @@ def test_ronin_adapter_surfaces_approvals_as_explicit_issues(tmp_path: Path) -> 
         encoding="utf-8",
     )
 
-    result = ADAPTER.translate(
+    result = _RoninAdapter().translate(
         build_source_profile(adapter_id="ronin", source="wallet-a", raw_dir=str(raw_dir)),
         raw_dir,
     )

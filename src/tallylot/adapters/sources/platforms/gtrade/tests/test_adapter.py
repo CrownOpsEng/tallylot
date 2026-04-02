@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.platforms.gtrade import ADAPTER
+from tallylot.adapters.sources.platforms.gtrade.adapter import _GTradeAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
@@ -58,7 +58,7 @@ def test_gtrade_adapter_surfaces_invalid_rows_without_crashing(tmp_path: Path) -
         encoding="utf-8",
     )
 
-    result = ADAPTER.translate(
+    result = _GTradeAdapter().translate(
         build_source_profile(adapter_id="gtrade", raw_dir=str(raw_dir), source="GTrade"),
         raw_dir,
     )
