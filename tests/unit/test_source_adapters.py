@@ -213,6 +213,56 @@ class SourceAdapterTests(unittest.TestCase):
             },
         )
 
+    def test_binance_adapter_surfaces_repo_transaction_history_transfer_and_p2p_gaps(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"
+        adapter = source_adapters.get_adapter("Binance")
+        profile = pipeline_common.build_source_profile(
+            source="Binance",
+            raw_dir=raw_dir,
+            adapter_name=adapter.name,
+            adapter_supported=adapter.supported,
+        )
+
+        result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+        self.assertEqual(5, len(result.exceptions))
+        self.assertTrue(
+            any(
+                row["raw_row_ref"] == "group:21-05-19 15:58:46:Spot"
+                and "Small Assets Exchange" in row["message"]
+                for row in result.exceptions
+            )
+        )
+        self.assertTrue(
+            any(
+                row["raw_row_ref"] == "group:23-09-20 18:17:41:Spot"
+                and "Transfer Between Spot Account and UM Futures Account" in row["message"]
+                for row in result.exceptions
+            )
+        )
+        self.assertTrue(
+            any(
+                row["raw_row_ref"] == "group:23-09-20 18:17:41:USD-M Futures"
+                and "Transfer Between Spot Account and UM Futures Account" in row["message"]
+                for row in result.exceptions
+            )
+        )
+        self.assertTrue(
+            any(
+                row["raw_row_ref"] == "group:23-09-20 19:03:46:Spot"
+                and "Transfer Between Main and Funding Wallet" in row["message"]
+                for row in result.exceptions
+            )
+        )
+        self.assertTrue(
+            any(
+                row["raw_row_ref"] == "group:23-09-20 19:03:46:Funding"
+                and "Transfer Between Main and Funding Wallet" in row["message"]
+                for row in result.exceptions
+            )
+        )
+        self.assertFalse(any("P2P Trading" in row["message"] for row in result.exceptions))
+
     def test_evm_explorer_adapter_normalizes_bsc_repo_exports(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "bsc-metamask1" / "2026-03"
         adapter = source_adapters.get_adapter("bsc-metamask1")
@@ -332,12 +382,44 @@ class SourceAdapterTests(unittest.TestCase):
             result = adapter.normalize(raw_dir, profile, exception_decisions={})
 
         self.assertEqual(5, len(result.canonical_events))
-        self.assertEqual(1, len(result.exceptions))
+        self.assertEqual(3, len(result.exceptions))
         kinds = [row["event_kind"] for row in result.canonical_events]
         self.assertIn("Trade", kinds)
         self.assertIn("Deposit", kinds)
         self.assertIn("Withdrawal", kinds)
         self.assertIn("Staking", kinds)
+        self.assertTrue(any("Transfer Between Spot Account and UM Futures Account" in row["message"] for row in result.exceptions))
+
+    def test_binance_transaction_history_skips_p2p_rows_when_c2c_history_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "Binance-C2C-Order-History-202603230441(UTC--6)_abcd.csv").write_text(
+                (
+                    "Order Number,Created Time,Order Type,Asset,Quantity,Total Price,Fiat Type,Counterparty,Status\n"
+                    "123,23-09-20 19:48:03,SELL,USDT,891,891,CAD,merchant,Completed\n"
+                ),
+                encoding="utf-8",
+            )
+            (raw_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
+                (
+                    "User ID,Time,Account,Operation,Coin,Change,Remark\n"
+                    "1,23-09-20 19:48:03,Funding,P2P Trading,USDT,-891,P2P - 123\n"
+                ),
+                encoding="utf-8",
+            )
+
+            adapter = source_adapters.get_adapter("Binance")
+            profile = pipeline_common.build_source_profile(
+                source="Binance",
+                raw_dir=raw_dir,
+                adapter_name=adapter.name,
+                adapter_supported=adapter.supported,
+            )
+            result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+        self.assertEqual(1, len(result.canonical_events))
+        self.assertEqual("Trade", result.canonical_events[0]["event_kind"])
+        self.assertEqual(0, len(result.exceptions))
 
     def test_binance_convert_date_updated_covers_transaction_history_one_second_skew(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

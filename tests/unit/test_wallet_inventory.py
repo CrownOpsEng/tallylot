@@ -86,7 +86,7 @@ class WalletInventoryTests(unittest.TestCase):
 
         self.assertEqual(str(out_dir / "wallet_inventory.csv"), summary["inventory_path"])
         self.assertTrue(any("wallet_id" in line for line in inventory_rows[:1]))
-        self.assertTrue(any("source,raw_dir" in line for line in evidence_rows[:1]))
+        self.assertTrue(any("source,capture_path" in line for line in evidence_rows[:1]))
         self.assertEqual(summary["wallet_count"], issues["wallet_count"])
 
     def test_profile_wallet_identifiers_flags_empty_chain_scoped_capture(self) -> None:

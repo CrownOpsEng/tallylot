@@ -12,7 +12,7 @@ Current helpers:
 - `stage_import_batch.py` → enforce overlap-screen approval before copying a candidate into `02_working/import_batches/` and optional `04_import_ready/`
 - `reconcile_source.py` → compare canonical source outputs against a CoinTracking Trade Table slice and optional Balance by Exchange slice
 - `source_manifest.py` → build a deterministic manifest for one external source capture folder
-- `wallet_inventory.py` → build the canonical wallet inventory, evidence rows, and identifier issues from the raw capture set
+- `wallet_inventory.py` → build the canonical wallet inventory, evidence rows, and identifier issues from the source capture set
 - `overlap_check.py` → screen a CoinTracking-ready import batch for cutoff overlap and baseline duplicate risk
 - `pdf_balance_extract.py` → extract deterministic balance rows from supported statement PDFs without guessing across unrelated PDFs
 - `round_scaffold.py` → create a verification round folder and seed the structured round log

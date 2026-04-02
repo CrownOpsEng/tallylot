@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import timezone, tzinfo
+from datetime import datetime, timezone, tzinfo
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -55,6 +55,7 @@ BINANCE_NUMBER_ASSET_PATTERN = re.compile(r"^\s*([-+]?[0-9]+(?:\.[0-9]+)?)\s*([A
 BINANCE_TRADE_ID_PATTERN = re.compile(r"TradeID\s*-\s*(?P<trade_id>[A-Za-z0-9_-]+)")
 BINANCE_SMALL_ASSET_PATTERN = re.compile(r"^(?P<asset>[A-Z0-9]+)\s+to\s+BNB$", re.IGNORECASE)
 BINANCE_TIME_FORMATS = ("%y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S")
+BASELINE_CUTOFF_TIMESTAMP = datetime(2023, 8, 5, 8, 34, 4)
 WEALTHSIMPLE_TIME_FORMATS = ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S")
 LEDGER_LIVE_TIME_FORMATS = ("%Y-%m-%dT%H:%M:%S.%fZ",)
 CRYPTO_COM_TIME_FORMATS = ("%Y-%m-%d %H:%M:%S",)
@@ -936,7 +937,7 @@ class BinanceAdapter(SourceAdapter):
         "Token Swap - Redenomination/Rebranding",
         "BETH to WBETH Wrapping",
     }
-    _ignored_operations = {
+    _historical_only_ignored_operations = {
         "Isolated Margin Loan",
         "Isolated Margin Repayment",
         "Launchpool Subscription/Redemption",
@@ -1160,31 +1161,28 @@ class BinanceAdapter(SourceAdapter):
                 continue
             asset = (row.get("Coin") or "").strip().upper()
             raw_row_ref = f"row:{index}"
-            events.append(
-                canonical_event(
-                    event_id=event_id_for(self.name, path.name, raw_row_ref),
-                    source=source,
-                    adapter=self.name,
-                    account="Binance",
-                    wallet="Funding",
-                    raw_file=path.name,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=normalized_timestamp(
-                        row["Time"],
-                        BINANCE_TIME_FORMATS,
-                        source_timezone=source_timezone_from_filename(path.name),
-                    ),
-                    event_kind="Withdrawal",
-                    description=f"Binance withdrawal via {row['Network']}",
-                    amount_out=decimal_text(decimal_or_zero(row["Amount"])),
-                    asset_out=asset,
-                    fee_amount=decimal_text(decimal_or_zero(row.get("Fee"))),
-                    fee_asset=asset,
-                    tx_hash=(row.get("TXID") or "").strip(),
-                    render_group="Funding",
-                    render_notes=row.get("Address", ""),
-                )
+            event = canonical_event(
+                event_id=event_id_for(self.name, path.name, raw_row_ref),
+                source=source,
+                adapter=self.name,
+                account="Binance",
+                wallet="Funding",
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=normalized_timestamp(
+                    row["Time"],
+                    BINANCE_TIME_FORMATS,
+                    source_timezone=source_timezone_from_filename(path.name),
+                ),
+                event_kind="Withdrawal",
+                description=f"Binance withdrawal via {row['Network']}",
+                amount_out=decimal_text(decimal_or_zero(row["Amount"])),
+                asset_out=asset,
+                tx_hash=(row.get("TXID") or "").strip(),
+                render_group="Funding",
+                render_notes=row.get("Address", ""),
             )
+            events.append(attach_fee_to_event(event, fee_amount=row.get("Fee", ""), fee_asset=asset))
         return events
 
     def _fiat_buy_history_events(self, path: Path, source: str) -> list[dict[str, str]]:
@@ -1327,7 +1325,18 @@ class BinanceAdapter(SourceAdapter):
             if timestamp_text in covered_timestamps:
                 continue
 
-            active_rows = [(index, row) for index, row in indexed_rows if (row.get("Operation") or "").strip() not in self._ignored_operations]
+            active_rows = list(indexed_rows)
+            group_timestamp = parse_datetime_to_utc_naive(
+                timestamp_text,
+                BINANCE_TIME_FORMATS,
+                source_timezone=timezone.utc,
+            )
+            if group_timestamp <= BASELINE_CUTOFF_TIMESTAMP:
+                active_rows = [
+                    (index, row)
+                    for index, row in active_rows
+                    if (row.get("Operation") or "").strip() not in self._historical_only_ignored_operations
+                ]
             if not active_rows:
                 continue
 
@@ -1629,11 +1638,6 @@ class BinanceAdapter(SourceAdapter):
         if len(positive) == 1 and len(negative) == 1 and len(fee_totals) <= 1:
             asset_in, amount_in = next(iter(positive.items()))
             asset_out, amount_out = next(iter(negative.items()))
-            fee_asset = ""
-            fee_amount = ""
-            if fee_totals:
-                fee_asset, fee_total = next(iter(fee_totals.items()))
-                fee_amount = decimal_text(fee_total)
             trade_id = next((extract_trade_id(row.get("Remark", "")) for row in rows if extract_trade_id(row.get("Remark", ""))), "")
             event = canonical_event(
                 event_id=event_id_for(self.name, path.name, raw_row_ref),
@@ -1650,12 +1654,13 @@ class BinanceAdapter(SourceAdapter):
                 asset_in=asset_in,
                 amount_out=decimal_text(amount_out),
                 asset_out=asset_out,
-                fee_amount=fee_amount,
-                fee_asset=fee_asset,
                 tx_hash=trade_id,
                 render_group=account or "Spot",
                 render_notes=", ".join(sorted(operations)),
             )
+            if fee_totals:
+                fee_asset, fee_total = next(iter(fee_totals.items()))
+                event = attach_fee_to_event(event, fee_amount=fee_total, fee_asset=fee_asset)
             return [event], None
 
         event_id = event_id_for(self.name, path.name, raw_row_ref)

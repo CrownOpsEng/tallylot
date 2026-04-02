@@ -181,7 +181,7 @@ Do:
 
 1. Review all known platforms and wallets with possible activity after `2023-08-05 08:34:04`.
 2. Add one row per source to `source_inventory.csv`.
-3. Record status, window, raw folder, and planned import order.
+3. Record status, window, capture path, and planned import order.
 4. Update the row again every time the source is confirmed active, excluded, exported, readied, imported, or closed.
 
 Gate:
@@ -202,7 +202,7 @@ Do:
 1. Export raw activity for one source at a time.
 2. Save untouched files into `01_raw_exports/external/<source>/<capture_id>/`.
 3. Run `06_scripts/source_manifest.py`.
-4. Update `source_inventory.csv` with the export window and raw folder.
+4. Update `source_inventory.csv` with the export window and capture path.
 5. Do not import yet.
 
 Gate:

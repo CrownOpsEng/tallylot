@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Build a canonical wallet inventory from profiled raw captures."""
+"""Build a canonical wallet inventory from profiled source captures."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ SOURCE_INVENTORY_HEADERS = (
     "export_window_end",
     "import_order",
     "status",
-    "raw_folder",
+    "capture_path",
     "profile_status",
     "adapter",
     "normalization_status",
@@ -147,7 +147,7 @@ def summarize_wallet_inventory(
             generated_issues.append(
                 {
                     "source": "",
-                    "raw_dir": "",
+                    "capture_path": "",
                     "wallet_id": "",
                     "issue_kind": "identifier_kind_conflict",
                     "message": f"Identifier {normalized_identifier} was classified under multiple kinds: {', '.join(sorted(kinds))}",
@@ -172,28 +172,28 @@ def build_wallet_inventory(repo_root: Path) -> tuple[list[dict[str, str]], list[
     repo_root = require_directory(repo_root.resolve(), "Repo root")
     source_inventory_rows = load_source_inventory(repo_root / "03_analysis" / "issues" / "source_inventory.csv")
     source_specs = [
-        {"source": row["source"], "raw_folder": row["raw_folder"], "adapter": row["adapter"]}
+        {"source": row["source"], "capture_path": row["capture_path"], "adapter": row["adapter"]}
         for row in source_inventory_rows
-        if row.get("raw_folder")
+        if row.get("capture_path")
     ]
 
     evidence_rows: list[dict[str, str]] = []
     issue_rows: list[dict[str, str]] = []
     seen_sources: set[tuple[str, str]] = set()
     for spec in source_specs:
-        key = (spec["source"], spec["raw_folder"])
+        key = (spec["source"], spec["capture_path"])
         if key in seen_sources:
             continue
         seen_sources.add(key)
-        raw_dir = repo_root / spec["raw_folder"]
+        raw_dir = repo_root / spec["capture_path"]
         if not raw_dir.exists():
             issue_rows.append(
                 wallet_issue_row(
                     source=spec["source"],
                     raw_dir=raw_dir,
                     wallet_id="",
-                    issue_kind="missing_raw_folder",
-                    message="Wallet inventory source row points to a raw folder that does not exist.",
+                    issue_kind="missing_capture_path",
+                    message="Wallet inventory source row points to a capture path that does not exist.",
                 )
             )
             continue

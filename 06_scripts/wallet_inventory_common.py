@@ -11,7 +11,7 @@ from typing import Iterable, Sequence
 
 WALLET_EVIDENCE_HEADERS = (
     "source",
-    "raw_dir",
+    "capture_path",
     "wallet_id",
     "identifier_kind",
     "normalized_identifier",
@@ -27,7 +27,7 @@ WALLET_EVIDENCE_HEADERS = (
 
 WALLET_ISSUE_HEADERS = (
     "source",
-    "raw_dir",
+    "capture_path",
     "wallet_id",
     "issue_kind",
     "message",
@@ -91,7 +91,7 @@ def wallet_evidence_row(
     normalized_identifier = normalize_identifier(kind, identifier_value)
     return {
         "source": source,
-        "raw_dir": str(raw_dir),
+        "capture_path": str(raw_dir),
         "wallet_id": wallet_id_for(kind, normalized_identifier),
         "identifier_kind": kind,
         "normalized_identifier": normalized_identifier,
@@ -117,7 +117,7 @@ def wallet_issue_row(
 ) -> dict[str, str]:
     return {
         "source": source,
-        "raw_dir": str(raw_dir),
+        "capture_path": str(raw_dir),
         "wallet_id": wallet_id,
         "issue_kind": issue_kind,
         "message": message,
