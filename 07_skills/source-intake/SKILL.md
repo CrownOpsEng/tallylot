@@ -23,6 +23,7 @@ Use this skill for the deterministic front half of source prep.
    - importable
    - evidence_only
    - blocked
+8. If the source needs an issue-log row, append it to `03_analysis/issues/issue_log.csv` using the allowed prefix families and the next `max(existing) + 1` number for that family. Use `BAL-*` for balance gaps whose origin is not yet proven; do not invent exchange-specific prefixes or reuse skipped numbers.
 
 ## Decision rules
 

@@ -36,6 +36,7 @@ Use this skill only after deterministic profiling and normalization have run.
 - Use compact fixture slices, not entire ledgers, for repair prompts.
 - Only propose adapter promotion after deterministic tests pass.
 - Keep ledger-impacting issues in `03_analysis/issues/issue_log.csv`; parser noise stays out unless it blocks import or verification.
+- When an exception becomes an issue-log row, use the allowed append-only prefix families and assign the next `max(existing) + 1` number within that family. If the result is a balance mismatch with unknown origin, use `BAL-*`; do not renumber old rows or invent source-specific namespaces.
 - "Universal" means deterministic coverage plus visible review gates, not automatic treatment of every exchange-specific internal movement.
 
 ## Decision memory
