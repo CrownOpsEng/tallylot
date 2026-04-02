@@ -33,7 +33,7 @@ in the external workspace.
 Default workspace root:
 
 ```text
-~/Documents/CryptoLedgerWorkspaces/crypto-reconciliation-2025
+~/crypto-reconciliation-workspace
 ```
 
 Resolution order:

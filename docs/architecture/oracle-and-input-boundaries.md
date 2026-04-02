@@ -24,7 +24,7 @@ depending on any one portfolio tracker.
 | Source evidence | exchange exports, wallet exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
 | Checkpoint evidence | balance statements, wallet snapshots, source-backed checkpoint packages | Yes | Yes | First-class reconciliation input |
 | Compatibility inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
-| Oracle support artifacts | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry exports | No | No | Comparison and regression only |
+| Oracle support artifacts | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry exports | No | No | Development and validation only; never production runtime inputs |
 | Derived outputs | CoinTracking export projection, Ledger journal, tax package, checkpoint package | No | No | Produced by the system |
 
 ## Normal Runtime Workflow
@@ -63,6 +63,8 @@ CoinTracking support must not expand into:
 
 Oracle-only artifacts are valuable, but they are not part of the core runtime
 contract.
+
+They are development and validation aids only, not production dependencies.
 
 Permitted uses:
 

@@ -20,6 +20,15 @@ def _pack_id(pack: AdapterPack) -> str:
 
 
 @pytest.mark.parametrize("pack", ALL_PACKS, ids=_pack_id)
+def test_adapter_pack_expected_dirs_do_not_contain_unowned_goldens(pack: AdapterPack) -> None:
+    expected_files = {path.name for path in pack.expected_dir.glob("*.json")}
+    allowed: set[str] = set(EXPECTED_WALLET_ARTIFACTS)
+    if pack.supports("normalize"):
+        allowed.update(EXPECTED_NORMALIZATION_ARTIFACTS)
+    assert expected_files == {f"{artifact_name}.json" for artifact_name in allowed}
+
+
+@pytest.mark.parametrize("pack", ALL_PACKS, ids=_pack_id)
 def test_adapter_pack_wallet_outputs_match_expected_goldens(pack: AdapterPack) -> None:
     payloads = collect_pack_outputs(pack)
 

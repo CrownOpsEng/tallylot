@@ -62,7 +62,7 @@ Naming convention:
 ## Reference
 
 - [`reference/README.md`](reference/README.md): route through tax references,
-  oracle manifests, and deferred follow-ups
+  repo-safe oracle guidance, and deferred follow-ups
 - [`operations/baseline-validation.md`](operations/baseline-validation.md):
   baseline artifact package and validation contract
 - [`operations/wallet-inventory.md`](operations/wallet-inventory.md): wallet
@@ -75,8 +75,8 @@ Naming convention:
   tax source routing
 - [`reference/test-suite-followups.md`](reference/test-suite-followups.md):
   deferred test work
-- [`reference/cointracking-full-export-manifest.csv`](reference/cointracking-full-export-manifest.csv):
-  baseline export manifest reference
+- [`reference/cointracking-oracle-artifacts.md`](reference/cointracking-oracle-artifacts.md):
+  generic guide to supported CoinTracking oracle artifact families
 
 ## Workspace Guides
 

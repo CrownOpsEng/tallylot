@@ -67,7 +67,7 @@ Workspace resolution order:
 
 1. `CRYPTO_RECON_WORKSPACE_ROOT`
 2. repo config in `crypto-reconciliation.toml`
-3. default `~/Documents/CryptoLedgerWorkspaces/crypto-reconciliation-2025`
+3. default `~/crypto-reconciliation-workspace`
 
 ## Current Runtime
 
@@ -84,8 +84,8 @@ Workspace resolution order:
 - Do not treat CoinTracking as the live ledger for new architecture work.
   CoinTracking is now a compatibility and oracle layer.
 - Do not treat CoinTracking tax or accounting reports as normal runtime inputs.
-  They are oracle-only support artifacts unless an explicit one-time checkpoint
-  import workflow adopts them with provenance.
+  They are development-only oracle support artifacts unless an explicit
+  one-time checkpoint import workflow adopts them with provenance.
 - Do not expand the current canonical event model into the long-term center of
   the system. New structural work should target the provider-neutral
   transaction fact model described in the implementation plan.

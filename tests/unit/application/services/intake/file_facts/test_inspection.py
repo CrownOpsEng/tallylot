@@ -103,18 +103,14 @@ def test_inspect_intake_file_extracts_non_evm_scope_tokens_from_content(tmp_path
     path.write_text(
         "Address,Public Key\n"
         "bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,"
-        "5ebb4c94284e7c805f247a6c7fbbb705bf3c1a234889401321c351aa05d468b6"
-        "ddb9577f143d435ea4bba178a611110f309c930e5400ac960b4bed9e912f2825\n",
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n",
         encoding="utf-8",
     )
 
     facts = inspect_intake_file(path, relative_path="incoming/Account 1/wallets.csv")
 
     assert "btc:bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" in facts.scope_tokens
-    assert (
-        "cardano:5ebb4c94284e7c805f247a6c7fbbb705bf3c1a234889401321c351aa05d468b6"
-        "ddb9577f143d435ea4bba178a611110f309c930e5400ac960b4bed9e912f2825" in facts.scope_tokens
-    )
+    assert "cardano:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" in facts.scope_tokens
 
 
 def test_inspect_intake_file_extracts_tron_scope_tokens_from_content(tmp_path: Path) -> None:
