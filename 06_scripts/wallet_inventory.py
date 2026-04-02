@@ -529,7 +529,7 @@ def profile_wallet_identifiers(source: str, raw_dir: Path) -> tuple[list[dict[st
     raw_dir = require_directory(raw_dir.resolve(), "Raw source directory")
     source_lower = source.strip().lower()
     path_lower = str(raw_dir).lower()
-    if "app-metamask" in path_lower:
+    if source_lower == "metamask app" or "app-metamask" in path_lower:
         evidence, issues = extract_metamask_app_wallets(source, raw_dir)
     elif "ledger live" in source_lower or "ledger live" in path_lower:
         evidence, issues = extract_ledger_live_wallets(source, raw_dir)

@@ -299,7 +299,7 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(summary["wallet_count"], len(inventory_rows))
         self.assertTrue(any(row["wallet_id"] == "evm_address:0x1111111111111111111111111111111111111111" for row in inventory_rows))
         self.assertTrue(any(row["wallet_id"] == "btc_xpub:xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" for row in inventory_rows))
-        self.assertTrue(any(row["source"] == "MetaMask app" for row in evidence_rows))
+        self.assertTrue(any(row["source"] == "Ledger Live" for row in evidence_rows))
         self.assertTrue(any(row["issue_kind"] == "partial_identifier_only" for row in issue_rows))
 
     def test_normalize_source_cli_supports_wealthsimple_repo_raw_dir(self) -> None:

@@ -29,9 +29,32 @@ class WalletInventoryTests(unittest.TestCase):
         self.assertEqual("passed", summary["status"])
 
     def test_profile_wallet_identifiers_extracts_metamask_app_accounts_and_snap_addresses(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "app-metamask" / "2026-03"
+        payload = {
+            "metamask": {
+                "internalAccounts": {
+                    "accounts": {
+                        "acc-1": {
+                            "address": "0x1111111111111111111111111111111111111111",
+                            "metadata": {"name": "Account 1", "keyring": {"type": "HD Key Tree"}},
+                        },
+                        "acc-2": {
+                            "address": "0x2222222222222222222222222222222222222222",
+                            "metadata": {"name": "Ledger 1", "keyring": {"type": "Ledger Hardware"}},
+                        },
+                    }
+                },
+                "identities": {
+                    "TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA": {"name": ""},
+                    "bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": {"name": ""},
+                    "F11111111111111111111111111111111111111111": {"name": ""},
+                },
+            }
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "MetaMask state logs.json").write_text(json.dumps(payload), encoding="utf-8")
 
-        evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("MetaMask app", raw_dir)
+            evidence, issues, summary = wallet_inventory.profile_wallet_identifiers("MetaMask app", raw_dir)
 
         wallet_ids = {row["wallet_id"] for row in evidence}
         self.assertIn("evm_address:0x1111111111111111111111111111111111111111", wallet_ids)
