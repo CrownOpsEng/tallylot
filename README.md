@@ -15,8 +15,8 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 - a populated issue log for known baseline exceptions
 - an active source inventory and structured round log
 - a universal source-intake pipeline for profiling, canonical normalization, CoinTracking rendering, and reconciliation
-- shared normalization helpers for fee-aware canonical events and output rendering
-- lightweight helper scripts for baseline checks, raw-source manifests, overlap screening, and verification comparison
+- shared inspection, routing, overlap, and orchestration modules used across intake, profiling, normalization, staging, and verification
+- lightweight helper scripts for baseline checks, raw-source manifests, intake sorting, overlap screening, fixture scaffolding, golden refresh, and verification comparison
 - repo-local AI skills under `07_skills/` for source intake, adapter authoring, normalization exceptions, round verification, and wallet inventory
 
 ## Start here
@@ -37,23 +37,26 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 1. validate and lock the baseline
 2. resolve or document baseline exceptions with evidence
 3. inventory post-cutoff sources
-4. profile one raw source at a time
-5. normalize into canonical events and balances
-6. stage and overlap-screen one CoinTracking candidate at a time
-7. import one source at a time into CoinTracking
-8. capture fresh verification exports after each round
-9. stop on unexplained drift and close out at `2025-12-31`
+4. sort mixed dumps into canonical historical capture folders
+5. profile one raw source capture at a time
+6. normalize into canonical events and balances
+7. stage and overlap-screen one CoinTracking candidate at a time
+8. import one source at a time into CoinTracking
+9. capture fresh verification exports after each round
+10. stop on unexplained drift and close out at `2025-12-31`
 
 ## Testing
 
 Run the full script test suite with:
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m pytest
 ```
 
 The suite is structured as:
 
+- `tests/adapters/` for adapter-boundary and adapter-pack expectations
+- `tests/pipeline/` for orchestration and intake coverage
 - `tests/unit/` for helper-level behavior
 - `tests/e2e/` for CLI execution against real script entrypoints
 - `tests/support/` for shared test harness utilities

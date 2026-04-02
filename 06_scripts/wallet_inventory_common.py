@@ -45,8 +45,6 @@ SOLANA_ADDRESS_PATTERN = re.compile(r"^[1-9A-HJ-NP-Za-km-z]{32,44}$")
 def infer_identifier_kind(value: str) -> str:
     text = value.strip()
     lower = text.lower()
-    if lower.endswith(".near"):
-        return "near_account"
     if EVM_ADDRESS_PATTERN.fullmatch(text):
         return "evm_address"
     if BTC_XPUB_PATTERN.fullmatch(text):
@@ -57,10 +55,10 @@ def infer_identifier_kind(value: str) -> str:
         return "tron_address"
     if SOLANA_ADDRESS_PATTERN.fullmatch(text):
         return "solana_address"
-    if lower.startswith("addr1") or len(text) >= 80 and all(char in "0123456789abcdef" for char in lower):
-        return "cardano_account_key"
     if NEAR_HEX_ACCOUNT_PATTERN.fullmatch(lower):
         return "near_account"
+    if lower.startswith("addr1") or len(text) >= 80 and all(char in "0123456789abcdef" for char in lower):
+        return "cardano_account_key"
     return "address_alias"
 
 

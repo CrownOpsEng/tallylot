@@ -5,13 +5,11 @@
 from __future__ import annotations
 
 import argparse
-from dataclasses import replace
 import json
 from pathlib import Path
 from typing import Sequence
 
-from pipeline_common import build_source_profile, write_profile_artifacts
-from source_adapters import get_adapter
+from pipeline import profile_source_capture
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -24,33 +22,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def profile_source(source: str, raw_dir: Path, out_dir: Path, manifest: Path | None = None) -> dict[str, object]:
-    profile = build_source_profile(
-        source=source,
-        raw_dir=raw_dir,
-        manifest_path=manifest,
-        adapter_name="generic",
-        adapter_supported=False,
-    )
-    adapter = get_adapter(source, profile)
-    profile = replace(profile, adapter=adapter.name, adapter_supported=adapter.supported)
-    timezone_summary, timezone_issues = adapter.validate_profile_timezones(profile)
-    profile = replace(
-        profile,
-        timezone_summary=timezone_summary,
-        timezone_issues=timezone_issues,
-    )
-    profile_json, inventory_csv = write_profile_artifacts(out_dir, profile)
-    return {
-        "source": profile.source,
-        "adapter": profile.adapter,
-        "adapter_supported": profile.adapter_supported,
-        "manifest_fingerprint": profile.manifest_fingerprint,
-        "timezone_status": timezone_summary["status"],
-        "timezone_issue_count": timezone_summary["issue_count"],
-        "profile_json": str(profile_json),
-        "profile_inventory_csv": str(inventory_csv),
-        "files_profiled": len(profile.file_inventory),
-    }
+    return profile_source_capture(source, raw_dir, out_dir, manifest=manifest)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

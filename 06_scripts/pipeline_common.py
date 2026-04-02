@@ -14,15 +14,22 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from inspection import (
+    TimestampEvidence,
+    build_file_inventory,
+    classify_file_family,
+    detect_csv_header,
+    detect_date_span_from_csv,
+    inspect_json_payload,
+    parse_candidate_timestamp,
+    parse_candidate_timestamp_evidence,
+)
 from script_common import (
     find_required_csv_exports,
-    parse_datetime,
-    parse_datetime_to_utc_naive,
     read_csv_rows,
     require_directory,
     require_file,
     source_timezone_from_filename,
-    tzinfo_label,
     write_csv_rows,
     write_json,
 )
@@ -107,20 +114,6 @@ PROFILE_INVENTORY_HEADERS = (
     "timezone_conflict",
 )
 
-DATE_FIELD_PATTERN = ("date", "time", "timestamp", "created at", "operation date", "settlement_date", "transaction_date")
-DATE_FORMATS = (
-    "%Y-%m-%d %H:%M:%S",
-    "%Y-%m-%d %H:%M:%S UTC",
-    "%Y-%m-%dT%H:%M:%S.%fZ",
-    "%y-%m-%d %H:%M:%S",
-    "%Y-%m-%d",
-    "%m/%d/%Y %H:%M:%S",
-    "%m/%d/%Y",
-    "%d/%m/%Y %H:%M:%S",
-    "%d/%m/%Y",
-    "%d.%m.%Y %H:%M:%S",
-)
-
 TIMEZONE_ISSUE_HEADERS = (
     "filename",
     "family",
@@ -153,15 +146,6 @@ class SourceProfile:
     normalization_hints: dict[str, object] | None = None
     timezone_summary: dict[str, object] | None = None
     timezone_issues: list[dict[str, str]] | None = None
-
-
-@dataclass(frozen=True)
-class TimestampEvidence:
-    value: datetime
-    fmt: str
-    resolution: str
-    timezone_mode: str
-    timezone_value: str
 
 
 def source_slug(value: str) -> str:
@@ -206,317 +190,8 @@ def manifest_fingerprint_from_rows(rows: list[dict[str, str]]) -> str:
 
 
 def find_manifest_for_raw_dir(raw_dir: Path) -> Path | None:
-    candidates = (
-        raw_dir / "manifest.csv",
-        raw_dir.parent / "manifest.csv",
-    )
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return None
-
-
-def first_non_empty_csv_row(path: Path) -> list[str]:
-    with path.open(newline="", encoding="utf-8-sig") as handle:
-        reader = csv.reader(handle)
-        for row in reader:
-            if any(cell.strip() for cell in row):
-                return row
-    return []
-
-
-def detect_csv_header(path: Path) -> tuple[list[str], int]:
-    with path.open(newline="", encoding="utf-8-sig") as handle:
-        rows = list(csv.reader(handle))
-    best_index = -1
-    best_row: list[str] = []
-    for index, row in enumerate(rows[:10]):
-        width = len([cell for cell in row if cell.strip()])
-        if width > len(best_row):
-            best_row = row
-            best_index = index
-    if best_index == -1:
-        return [], -1
-    return best_row, best_index
-
-
-def classify_file_family(path: Path, header: Sequence[str]) -> str:
-    name = path.name.lower()
-    header_lower = [column.strip().lower() for column in header]
-    header_set = set(header_lower)
-
-    def has_all(*columns: str) -> bool:
-        return set(columns).issubset(header_set)
-
-    if path.suffix.lower() == ".pdf":
-        return "statement_balance_pdf"
-    if has_all("id", "timestamp", "transaction type") and ("asset" in header_set or "statement" in name):
-        return "custodial_all_time_csv"
-    if has_all("portfolio", "trade id", "product", "side", "created at"):
-        return "fills_csv"
-    if has_all("portfolio", "type", "time", "amount", "balance", "amount/balance unit"):
-        return "transfer_statement_csv"
-    if has_all("transaction_date", "settlement_date", "account_type", "activity_type"):
-        return "broker_activity_csv"
-    if has_all("date", "transaction", "description", "amount", "balance", "currency"):
-        return "statement_transaction_csv"
-    if has_all("operation date", "operation type", "operation amount"):
-        return "wallet_operation_csv"
-    if has_all("date", "pair", "addr"):
-        return "derivatives_report_csv"
-    if "receipt" in header_set and "deposit value" in header_set:
-        return "near_receipt_csv"
-    if has_all("txn hash", "direction", "token id", "contract"):
-        return "near_nft_transaction_csv"
-    if has_all("txn hash", "direction", "token", "contract"):
-        return "near_ft_transaction_csv"
-    if has_all("txn hash", "method", "deposit value", "txn fee"):
-        return "near_transaction_csv"
-    if has_all("transaction hash", "blockno", "unixtimestamp", "datetime (utc)", "tokenvalue", "tokensymbol"):
-        return "explorer_token_transfer_csv"
-    if has_all("transaction hash", "blockno", "unixtimestamp", "datetime (utc)", "token id", "quantity"):
-        return "explorer_nft_transfer_csv"
-    if has_all("transaction hash", "blockno", "unixtimestamp", "datetime (utc)", "parenttxfrom", "parenttxto"):
-        return "explorer_internal_transaction_csv"
-    if "transaction hash" in header_set and "datetime (utc)" in header_set and any(
-        column.startswith("value_in(") or column.startswith("value_out(") for column in header_lower
-    ):
-        return "explorer_transaction_csv"
-    if has_all("type", "amount credited", "asset credited", "amount debited", "asset debited"):
-        return "custodial_transaction_csv"
-    if has_all("date", "type", "description", "debit", "credit"):
-        return "fiat_transaction_csv"
-    if has_all("timestamp (utc)", "transaction description", "currency", "amount", "transaction kind"):
-        return "custodial_transaction_csv"
-    if has_all("time", "wallet", "pair", "sell", "buy", "status"):
-        return "convert_order_csv"
-    if has_all("time", "coin", "network", "amount", "address", "txid", "status"):
-        return "deposit_history_csv"
-    if has_all("time", "coin", "network", "amount", "fee", "address", "txid", "status"):
-        return "withdrawal_history_csv"
-    if has_all("order number", "order type", "asset", "fiat type", "total price", "status"):
-        return "p2p_order_csv"
-    if has_all("time", "method", "spend amount", "receive amount", "fee", "price", "status", "transaction id"):
-        return "fiat_buy_csv"
-    if has_all("method", "amount", "price", "final amount", "created time", "status", "transaction id"):
-        return "fiat_exchange_csv"
-    if has_all("time", "type", "amount", "asset", "symbol", "transaction id"):
-        return "futures_transaction_csv"
-    if has_all("time", "pair", "side", "price", "executed", "amount", "fee"):
-        return "fills_csv"
-    if has_all("chain", "token", "amount", "value") or "portfolio" in name:
-        return "portfolio_snapshot_csv"
-    if "transaction" in name and "history" in name:
-        return "custodial_transaction_csv"
-    return "unknown"
-
-
-def inspect_json_payload(path: Path) -> tuple[str, str]:
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return "json", ""
-    if isinstance(payload, dict):
-        header_preview = " | ".join(str(key) for key in list(payload.keys())[:8])
-        if isinstance(payload.get("metamask"), dict):
-            return "metamask_state_json", header_preview
-        return "json", header_preview
-    return "json", type(payload).__name__
-
-
-def parse_candidate_timestamp(value: str, *, source_timezone: tzinfo | None = None) -> datetime | None:
-    evidence = parse_candidate_timestamp_evidence(value, source_timezone=source_timezone)
-    return evidence.value if evidence is not None else None
-
-
-def _header_timezone_hint(header: Sequence[str], date_field: str) -> tuple[str, str]:
-    joined = " | ".join(column.strip().lower() for column in header)
-    field = date_field.strip().lower()
-    if "utc" in field or "utc" in joined:
-        return "header_utc", "UTC"
-    return "", ""
-
-
-def _timestamp_resolution_for_format(fmt: str) -> str:
-    if "%H" not in fmt and "%I" not in fmt:
-        return "date_only"
-    if "%f" in fmt:
-        return "subsecond"
-    return "second"
-
-
-def _timezone_evidence_for_format(
-    fmt: str,
-    parsed: datetime,
-    *,
-    source_timezone: tzinfo | None = None,
-) -> tuple[str, str]:
-    if "%z" in fmt:
-        return "value_offset", tzinfo_label(parsed.tzinfo)
-    if "UTC" in fmt or fmt.endswith("Z"):
-        return "value_utc", "UTC"
-    if _timestamp_resolution_for_format(fmt) == "date_only":
-        return "date_only", ""
-    if source_timezone is not None:
-        return "source_timezone", tzinfo_label(source_timezone)
-    return "naive", ""
-
-
-def parse_candidate_timestamp_evidence(value: str, *, source_timezone: tzinfo | None = None) -> TimestampEvidence | None:
-    text = value.strip()
-    if not text:
-        return None
-    for fmt in DATE_FORMATS:
-        try:
-            parsed = parse_datetime(text, (fmt,))
-        except ValueError:
-            continue
-        timezone_mode, timezone_value = _timezone_evidence_for_format(fmt, parsed, source_timezone=source_timezone)
-        return TimestampEvidence(
-            value=parse_datetime_to_utc_naive(text, (fmt,), source_timezone=source_timezone),
-            fmt=fmt,
-            resolution=_timestamp_resolution_for_format(fmt),
-            timezone_mode=timezone_mode,
-            timezone_value=timezone_value,
-        )
-    return None
-
-
-def _finalize_timezone_metadata(
-    *,
-    filename: str,
-    header: Sequence[str],
-    date_field: str,
-    parsed_values: Sequence[TimestampEvidence],
-) -> tuple[str, str, str, str]:
-    if not parsed_values:
-        return "", "", "", ""
-
-    resolution = parsed_values[0].resolution if len({item.resolution for item in parsed_values}) == 1 else "mixed"
-    header_mode, header_value = _header_timezone_hint(header, date_field)
-    filename_timezone = source_timezone_from_filename(filename)
-    filename_mode = "filename_offset" if filename_timezone is not None else ""
-    filename_value = tzinfo_label(filename_timezone)
-    evidence_mode = parsed_values[0].timezone_mode if len({item.timezone_mode for item in parsed_values}) == 1 else "mixed"
-    evidence_value = parsed_values[0].timezone_value if len({item.timezone_value for item in parsed_values}) == 1 else "mixed"
-
-    hints = [(mode, value) for mode, value in ((header_mode, header_value), (filename_mode, filename_value), (evidence_mode, evidence_value)) if mode]
-    distinct_values = {value for _, value in hints if value}
-    if len(distinct_values) > 1:
-        return resolution, "conflict", " | ".join(sorted(distinct_values)), "yes"
-
-    if evidence_mode in {"value_utc", "value_offset"}:
-        return resolution, evidence_mode, evidence_value, ""
-    if filename_mode:
-        return resolution, filename_mode, filename_value, ""
-    if header_mode:
-        return resolution, header_mode, header_value, ""
-    return resolution, evidence_mode, evidence_value, ""
-
-
-def detect_date_span_from_csv(path: Path) -> tuple[str, str, str, int, str, str, str, str]:
-    header, header_index = detect_csv_header(path)
-    if header_index == -1 or not header:
-        return "", "", "", 0, "", "", "", ""
-
-    with path.open(newline="", encoding="utf-8-sig") as handle:
-        reader = csv.reader(handle)
-        payload = list(reader)[header_index + 1 :]
-
-    normalized_rows = [
-        {header[index]: (row[index] if index < len(row) else "") for index in range(len(header))}
-        for row in payload
-        if any(cell.strip() for cell in row)
-        and not (len(row) == 1 and row[0].strip().lower() == "no data matches the criteria.")
-    ]
-    date_field = ""
-    parsed_values: list[TimestampEvidence] = []
-    candidates = [field for field in header if any(token in field.lower() for token in DATE_FIELD_PATTERN)]
-    best_count = -1
-    source_timezone = source_timezone_from_filename(path.name)
-    for field in candidates:
-        current = [
-            parse_candidate_timestamp_evidence((row.get(field) or "").strip(), source_timezone=source_timezone)
-            for row in normalized_rows
-        ]
-        parsed = [value for value in current if value is not None]
-        if len(parsed) > best_count:
-            best_count = len(parsed)
-            parsed_values = parsed
-            date_field = field
-    if not parsed_values:
-        if not normalized_rows:
-            return "", "", "", 0, "", "", "", ""
-        return date_field, "", "", len(normalized_rows), "", "", "", ""
-    resolution, timezone_mode, timezone_value, timezone_conflict = _finalize_timezone_metadata(
-        filename=path.name,
-        header=header,
-        date_field=date_field,
-        parsed_values=parsed_values,
-    )
-    return (
-        date_field,
-        min(item.value for item in parsed_values).strftime("%Y-%m-%d %H:%M:%S"),
-        max(item.value for item in parsed_values).strftime("%Y-%m-%d %H:%M:%S"),
-        len(normalized_rows),
-        resolution,
-        timezone_mode,
-        timezone_value,
-        timezone_conflict,
-    )
-
-
-def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
-    raw_dir = require_directory(raw_dir.resolve(), "Raw source directory")
-    rows: list[dict[str, str]] = []
-    for path in sorted(file for file in raw_dir.iterdir() if file.is_file()):
-        suffix = path.suffix.lower()
-        header_preview = ""
-        family = "binary_evidence"
-        data_rows = ""
-        date_field = ""
-        min_timestamp = ""
-        max_timestamp = ""
-        timestamp_resolution = ""
-        timezone_mode = ""
-        timezone_value = ""
-        timezone_conflict = ""
-        if suffix == ".csv":
-            header, _ = detect_csv_header(path)
-            header_preview = " | ".join(header[:8])
-            family = classify_file_family(path, header)
-            (
-                date_field,
-                min_timestamp,
-                max_timestamp,
-                row_count,
-                timestamp_resolution,
-                timezone_mode,
-                timezone_value,
-                timezone_conflict,
-            ) = detect_date_span_from_csv(path)
-            data_rows = str(row_count)
-        elif suffix == ".pdf":
-            family = classify_file_family(path, ())
-        elif suffix == ".json":
-            family, header_preview = inspect_json_payload(path)
-        rows.append(
-            {
-                "filename": path.name,
-                "suffix": suffix,
-                "family": family,
-                "header_preview": header_preview,
-                "data_rows": data_rows,
-                "date_field": date_field,
-                "min_timestamp": min_timestamp,
-                "max_timestamp": max_timestamp,
-                "timestamp_resolution": timestamp_resolution,
-                "timezone_mode": timezone_mode,
-                "timezone_value": timezone_value,
-                "timezone_conflict": timezone_conflict,
-            }
-        )
-    return rows
+    candidate = raw_dir / "manifest.csv"
+    return candidate if candidate.exists() else None
 
 
 @lru_cache(maxsize=1)
