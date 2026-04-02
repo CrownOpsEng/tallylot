@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from repo_support import paths as repo_paths
-from repo_support.pyright_config import adapter_test_roots, sync_pyright_config
+from repo_support.paths import repo_root
+from repo_support.pyright_config import (
+    PYRIGHT_GENERATED_TEST_CONFIG_NAME,
+    adapter_test_roots,
+    expected_execution_environments,
+    sync_pyright_config,
+)
 
 
 def test_adapter_test_roots_are_discovered_from_globbed_adapter_packages(tmp_path: Path) -> None:
@@ -69,3 +76,10 @@ def test_sync_pyright_config_appends_discovered_adapter_test_roots(tmp_path: Pat
 }
 """
     )
+
+
+def test_checked_in_pyright_test_config_matches_discovered_adapter_tests() -> None:
+    config_path = repo_root() / PYRIGHT_GENERATED_TEST_CONFIG_NAME
+    pyright_config = json.loads(config_path.read_text(encoding="utf-8"))
+
+    assert pyright_config.get("executionEnvironments") == expected_execution_environments()

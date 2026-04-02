@@ -63,7 +63,13 @@ def _run_gate(gate: QualityGate) -> tuple[QualityGate, subprocess.CompletedProce
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     failures = 0
-    sync_pyright_config()
+    if sync_pyright_config():
+        print(
+            "[pyright-config] pyrightconfig.tests.json was out of sync and has "
+            "been refreshed; review and commit it before rerunning quality gates",
+            flush=True,
+        )
+        return 1
     quality_gates = _quality_gates(full_tests=args.full_tests)
 
     with ThreadPoolExecutor(max_workers=len(quality_gates)) as executor:

@@ -77,6 +77,10 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
 ) -> None:
     calls: list[str] = []
 
+    def fake_sync_pyright_config() -> bool:
+        calls.append("sync")
+        return False
+
     def fake_quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
         del full_tests
         return (QualityGate(name="noop", command=("uv",)),)
@@ -89,7 +93,7 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
     monkeypatch.setattr(
         tools.run_quality_gates,
         "sync_pyright_config",
-        lambda: calls.append("sync"),
+        fake_sync_pyright_config,
     )
     monkeypatch.setattr(tools.run_quality_gates, "_quality_gates", fake_quality_gates)
     monkeypatch.setattr(tools.run_quality_gates, "_run_gate", fake_run_gate)
@@ -97,3 +101,19 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
     assert tools.run_quality_gates.main(()) == 0
 
     assert calls == ["sync"]
+
+
+def test_quality_gates_fail_when_generated_pyright_config_was_stale(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def fake_quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
+        del full_tests
+        return ()
+
+    monkeypatch.setattr(tools.run_quality_gates, "sync_pyright_config", lambda: True)
+    monkeypatch.setattr(tools.run_quality_gates, "_quality_gates", fake_quality_gates)
+
+    assert tools.run_quality_gates.main(()) == 1
+
+    assert "pyrightconfig.tests.json was out of sync" in capsys.readouterr().out
