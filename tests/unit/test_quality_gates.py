@@ -77,25 +77,22 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
 ) -> None:
     calls: list[str] = []
 
+    def fake_quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
+        del full_tests
+        return (QualityGate(name="noop", command=("uv",)),)
+
+    def fake_run_gate(
+        gate: QualityGate,
+    ) -> tuple[QualityGate, subprocess.CompletedProcess[str], float]:
+        return gate, subprocess.CompletedProcess(gate.command, 0, stdout="", stderr=""), 0.0
+
     monkeypatch.setattr(
         tools.run_quality_gates,
         "sync_pyright_config",
         lambda: calls.append("sync"),
     )
-    monkeypatch.setattr(
-        tools.run_quality_gates,
-        "_quality_gates",
-        lambda *, full_tests: (QualityGate(name="noop", command=("uv",)),),
-    )
-    monkeypatch.setattr(
-        tools.run_quality_gates,
-        "_run_gate",
-        lambda gate: (
-            gate,
-            subprocess.CompletedProcess(gate.command, 0, stdout="", stderr=""),
-            0.0,
-        ),
-    )
+    monkeypatch.setattr(tools.run_quality_gates, "_quality_gates", fake_quality_gates)
+    monkeypatch.setattr(tools.run_quality_gates, "_run_gate", fake_run_gate)
 
     assert tools.run_quality_gates.main(()) == 0
 
