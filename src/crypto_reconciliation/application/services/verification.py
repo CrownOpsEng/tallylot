@@ -2,23 +2,15 @@
 
 from __future__ import annotations
 
-import hashlib
-from typing import cast
+from pathlib import Path
 
 from crypto_reconciliation.application.dtos import (
     VerificationCompareRequest,
     VerificationCompareResponse,
 )
+from crypto_reconciliation.application.services.verification_summary import summarize_verification_exports
 from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
-
-DEFAULT_REPORTS = (
-    "Validate Transactions.csv",
-    "Missing Transactions.csv",
-    "Duplicate Transactions.csv",
-    "Current Balance.csv",
-    "Balance by Exchange.csv",
-)
 
 
 class VerificationCompareService:
@@ -26,41 +18,86 @@ class VerificationCompareService:
         self._artifacts = artifacts
 
     def execute(self, request: VerificationCompareRequest) -> VerificationCompareResponse:
+        summary = self._summarize(request.previous_dir, request.current_dir)
         request.output_dir.mkdir(parents=True, exist_ok=True)
-        changed_reports = 0
-        summary: list[dict[str, str]] = []
-        for report_name in DEFAULT_REPORTS:
-            previous_path = request.previous_dir / report_name
-            current_path = request.current_dir / report_name
-            previous_rows = self._artifacts.read_rows(previous_path)
-            current_rows = self._artifacts.read_rows(current_path)
-            previous_hash = _fingerprint(previous_rows)
-            current_hash = _fingerprint(current_rows)
-            changed = previous_hash != current_hash
-            changed_reports += int(changed)
-            summary.append(
-                {
-                    "report_name": report_name,
-                    "previous_rows": str(len(previous_rows)),
-                    "current_rows": str(len(current_rows)),
-                    "changed": "yes" if changed else "no",
-                }
-            )
-        self._artifacts.write_rows(
-            request.output_dir / "verification_summary.csv",
-            ("report_name", "previous_rows", "current_rows", "changed"),
-            summary,
-        )
-        self._artifacts.write_json(
-            request.output_dir / "verification_summary.json",
-            cast(JsonValue, {"changed_reports": changed_reports, "reports": summary}),
-        )
+        self._write_artifacts(request.output_dir, summary)
         return VerificationCompareResponse(
             output_dir=request.output_dir,
-            changed_reports=changed_reports,
+            changed_reports=_summary_int(summary, "changed_reports"),
+            gate_suggestion=_summary_str(summary, "gate_suggestion"),
+        )
+
+    def _summarize(self, previous_dir: Path, current_dir: Path) -> dict[str, JsonValue]:
+        return summarize_verification_exports(previous_dir, current_dir, self._artifacts)
+
+    def _write_artifacts(self, output_dir: Path, summary: dict[str, JsonValue]) -> None:
+        self._artifacts.write_json(output_dir / "verification_summary.json", summary)
+        self._artifacts.write_rows(
+            output_dir / "new_validate_issue_rows.csv",
+            _summary_headers(summary, "new_validate_issue_rows", default=("Issue",)),
+            _summary_rows(summary, "new_validate_issue_rows"),
+        )
+        self._artifacts.write_rows(
+            output_dir / "resolved_validate_issue_rows.csv",
+            _summary_headers(summary, "resolved_validate_issue_rows", default=("Issue",)),
+            _summary_rows(summary, "resolved_validate_issue_rows"),
+        )
+        self._artifacts.write_rows(
+            output_dir / "new_missing_transaction_rows.csv",
+            _summary_headers(summary, "new_missing_transaction_rows", default=("Type",)),
+            _summary_rows(summary, "new_missing_transaction_rows"),
+        )
+        self._artifacts.write_rows(
+            output_dir / "resolved_missing_transaction_rows.csv",
+            _summary_headers(summary, "resolved_missing_transaction_rows", default=("Type",)),
+            _summary_rows(summary, "resolved_missing_transaction_rows"),
+        )
+        self._artifacts.write_rows(
+            output_dir / "current_balance_deltas.csv",
+            ("ticker", "reference_amount", "current_amount", "difference"),
+            _summary_rows(summary, "current_balance_deltas"),
+        )
+        self._artifacts.write_rows(
+            output_dir / "exchange_balance_deltas.csv",
+            ("exchange", "currency", "reference_amount", "current_amount", "difference"),
+            _summary_rows(summary, "exchange_balance_deltas"),
+        )
+        self._artifacts.write_rows(
+            output_dir / "current_duplicate_transaction_rows.csv",
+            _summary_headers(summary, "current_duplicate_transaction_rows", default=("",)),
+            _summary_rows(summary, "current_duplicate_transaction_rows"),
         )
 
 
-def _fingerprint(rows: list[dict[str, str]]) -> str:
-    payload = repr(sorted(rows, key=repr))
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+def _summary_headers(
+    summary: dict[str, JsonValue],
+    key: str,
+    *,
+    default: tuple[str, ...],
+) -> tuple[str, ...]:
+    rows = _summary_rows(summary, key)
+    if not rows:
+        return default
+    return tuple(sorted({column for row in rows for column in row}))
+
+
+def _summary_rows(summary: dict[str, JsonValue], key: str) -> list[dict[str, str]]:
+    value = summary.get(key, [])
+    if not isinstance(value, list):
+        return []
+    rows: list[dict[str, str]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        rows.append({str(column): "" if cell is None else str(cell) for column, cell in item.items()})
+    return rows
+
+
+def _summary_int(summary: dict[str, JsonValue], key: str) -> int:
+    value = summary.get(key, 0)
+    return int(value) if isinstance(value, int) else 0
+
+
+def _summary_str(summary: dict[str, JsonValue], key: str) -> str:
+    value = summary.get(key, "")
+    return value if isinstance(value, str) else ""

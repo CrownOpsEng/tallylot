@@ -136,6 +136,7 @@ class VerificationCompareRequest:
 class VerificationCompareResponse:
     output_dir: Path
     changed_reports: int
+    gate_suggestion: str
 
 
 @dataclass(frozen=True)

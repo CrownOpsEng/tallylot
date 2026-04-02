@@ -16,8 +16,11 @@ from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
+    IssueRecord,
+    SourceProfile,
+    WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId
+from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.infrastructure.storage import FilesystemStorage
@@ -52,6 +55,22 @@ class MatchingSourceAdapter:
     def normalize(self, profile: object, raw_dir: Path) -> NormalizationResult:
         del profile, raw_dir
         raise AssertionError("normalize should not be called in this test")
+
+    def validate_profile_timezones(
+        self,
+        profile: SourceProfile,
+    ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
+        del profile
+        return {}, ()
+
+    def extract_wallet_inventory(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+        del source, raw_dir, profile
+        return (), ()
 
 
 def _normalization_service(

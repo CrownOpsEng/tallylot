@@ -16,6 +16,7 @@ from crypto_reconciliation.domain.models import (
     SourceProfile,
     WalletInventoryRecord,
 )
+from crypto_reconciliation.domain.types import JsonValue
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,18 @@ class SourceAdapter(Protocol):
     manifest: AdapterManifest
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int: ...
+
+    def validate_profile_timezones(
+        self,
+        profile: SourceProfile,
+    ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]: ...
+
+    def extract_wallet_inventory(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]: ...
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult: ...
 

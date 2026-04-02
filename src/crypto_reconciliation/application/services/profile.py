@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
@@ -67,8 +68,7 @@ class ProfileService:
         inventory, scan_issues = self._build_inventory(raw_dir, inspect_archives=inspect_archives)
         adapter = self._select_adapter(source, raw_dir, tuple(inventory))
         fingerprint = self._manifest_fingerprint(inventory)
-        timezone_issues = tuple(_timezone_issues(source, adapter.manifest.adapter_id, inventory))
-        return SourceProfile(
+        seed_profile = SourceProfile(
             source=SourceId(source),
             raw_dir=str(raw_dir),
             adapter_id=AdapterId(str(adapter.manifest.adapter_id)),
@@ -78,10 +78,28 @@ class ProfileService:
             metadata={
                 "display_name": adapter.manifest.display_name,
                 "scan_issue_count": str(len(scan_issues)),
+            },
+            scan_issues=tuple(scan_issues),
+        )
+        timezone_summary, timezone_issues = _validate_profile_timezones(
+            adapter,
+            source=source,
+            profile=seed_profile,
+            inventory=inventory,
+        )
+        return SourceProfile(
+            source=seed_profile.source,
+            raw_dir=seed_profile.raw_dir,
+            adapter_id=seed_profile.adapter_id,
+            manifest_fingerprint=seed_profile.manifest_fingerprint,
+            file_inventory=seed_profile.file_inventory,
+            supported=seed_profile.supported,
+            metadata={
+                **seed_profile.metadata,
                 "timezone_issue_count": str(len(timezone_issues)),
             },
-            timezone_summary=_timezone_summary(inventory, timezone_issues),
-            scan_issues=tuple(scan_issues),
+            timezone_summary=timezone_summary,
+            scan_issues=seed_profile.scan_issues,
             timezone_issues=timezone_issues,
         )
 
@@ -90,33 +108,79 @@ class ProfileService:
         self._artifacts.write_rows(
             output_dir / "profile_inventory.csv",
             (
+                "source_path",
                 "relative_path",
+                "bundle_id",
+                "bundle_type",
+                "bundle_relative_path",
+                "alias_group",
+                "collision_status",
+                "path_scope_tokens",
+                "content_scope_tokens",
+                "scope_tokens",
+                "scope_preview",
                 "suffix",
+                "family",
+                "header_preview",
                 "size_bytes",
                 "sha256",
                 "archive_source_path",
                 "archive_member_path",
                 "row_count",
                 "header",
+                "date_field",
+                "min_timestamp",
+                "max_timestamp",
                 "timestamp_resolution",
                 "timezone_mode",
                 "timezone_value",
                 "timezone_conflict",
+                "export_timestamp",
+                "report_period_start",
+                "report_period_end",
+                "workbook_sheet_names",
+                "workbook_created_at",
+                "workbook_modified_at",
+                "artifact_kind",
+                "artifact_reason",
             ),
             (
                 {
+                    "source_path": entry.source_path or entry.relative_path,
                     "relative_path": entry.relative_path,
+                    "bundle_id": entry.bundle_id,
+                    "bundle_type": entry.bundle_type,
+                    "bundle_relative_path": entry.bundle_relative_path,
+                    "alias_group": entry.alias_group,
+                    "collision_status": entry.collision_status,
+                    "path_scope_tokens": entry.path_scope_tokens,
+                    "content_scope_tokens": entry.content_scope_tokens,
+                    "scope_tokens": entry.scope_tokens,
+                    "scope_preview": entry.scope_preview,
                     "suffix": entry.suffix,
+                    "family": entry.family,
+                    "header_preview": entry.header_preview,
                     "size_bytes": str(entry.size_bytes),
                     "sha256": entry.sha256,
                     "archive_source_path": entry.archive_source_path,
                     "archive_member_path": entry.archive_member_path,
                     "row_count": "" if entry.row_count is None else str(entry.row_count),
                     "header": "|".join(entry.header),
+                    "date_field": entry.date_field,
+                    "min_timestamp": entry.min_timestamp,
+                    "max_timestamp": entry.max_timestamp,
                     "timestamp_resolution": entry.timestamp_resolution,
                     "timezone_mode": entry.timezone_mode,
                     "timezone_value": entry.timezone_value,
                     "timezone_conflict": entry.timezone_conflict,
+                    "export_timestamp": entry.export_timestamp,
+                    "report_period_start": entry.report_period_start,
+                    "report_period_end": entry.report_period_end,
+                    "workbook_sheet_names": entry.workbook_sheet_names,
+                    "workbook_created_at": entry.workbook_created_at,
+                    "workbook_modified_at": entry.workbook_modified_at,
+                    "artifact_kind": entry.artifact_kind,
+                    "artifact_reason": entry.artifact_reason,
                 }
                 for entry in profile.file_inventory
             ),
@@ -153,10 +217,15 @@ class ProfileService:
                         suffix=entry.file_path.suffix.lower(),
                         size_bytes=entry.size_bytes,
                         sha256=entry.sha256,
+                        source_path=str(entry.file_path),
                         archive_source_path=entry.archive_source_path,
                         archive_member_path=entry.archive_member_path,
                         row_count=row_count,
+                        header_preview=" | ".join(header[:8]),
                         header=header,
+                        date_field=timezone_details.date_field,
+                        min_timestamp=timezone_details.min_timestamp,
+                        max_timestamp=timezone_details.max_timestamp,
                         timestamp_resolution=timezone_details.timestamp_resolution,
                         timezone_mode=timezone_details.timezone_mode,
                         timezone_value=timezone_details.timezone_value,
@@ -215,19 +284,15 @@ def _sha256sum_from_text(payload: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+@dataclass(frozen=True)
 class _TimezoneDetails:
-    def __init__(
-        self,
-        *,
-        timestamp_resolution: str = "",
-        timezone_mode: str = "",
-        timezone_value: str = "",
-        timezone_conflict: str = "",
-    ) -> None:
-        self.timestamp_resolution = timestamp_resolution
-        self.timezone_mode = timezone_mode
-        self.timezone_value = timezone_value
-        self.timezone_conflict = timezone_conflict
+    date_field: str = ""
+    min_timestamp: str = ""
+    max_timestamp: str = ""
+    timestamp_resolution: str = ""
+    timezone_mode: str = ""
+    timezone_value: str = ""
+    timezone_conflict: str = ""
 
 
 def _inventory_file_details(path: Path) -> tuple[tuple[str, ...], int | None, _TimezoneDetails]:
@@ -279,6 +344,9 @@ def _csv_timezone_details(
         timezone_mode = "naive"
 
     return _TimezoneDetails(
+        date_field=timestamp_field,
+        min_timestamp=sample_value,
+        max_timestamp=sample_value,
         timestamp_resolution=resolution,
         timezone_mode=timezone_mode,
         timezone_value=timezone_value,
@@ -301,43 +369,13 @@ def _value_has_non_utc_offset(value: str) -> bool:
     return len(stripped) >= 6 and stripped[-6] in {"+", "-"} and stripped[-3] == ":"
 
 
-def _timezone_issues(
+def _validate_profile_timezones(
+    adapter: SourceAdapter,
+    *,
     source: str,
-    adapter_id: AdapterId,
+    profile: SourceProfile,
     inventory: list[FileInventoryEntry],
-) -> list[IssueRecord]:
-    issues: list[IssueRecord] = []
-    for item in inventory:
-        if item.timezone_conflict:
-            issues.append(
-                IssueRecord(
-                    issue_id=f"{source}:{item.relative_path}:timezone_conflict",
-                    source=source,
-                    adapter_id=str(adapter_id),
-                    severity="high",
-                    kind="timezone_conflict",
-                    message=(
-                        "The file exposes conflicting timezone provenance and must be reviewed before normalization."
-                    ),
-                    raw_file=item.relative_path,
-                )
-            )
-    return issues
-
-
-def _timezone_summary(
-    inventory: list[FileInventoryEntry],
-    timezone_issues: tuple[IssueRecord, ...],
-) -> dict[str, object]:
-    modes: dict[str, int] = {}
-    timestamped_files = 0
-    for item in inventory:
-        if not item.timezone_mode:
-            continue
-        timestamped_files += 1
-        modes[item.timezone_mode] = modes.get(item.timezone_mode, 0) + 1
-    return {
-        "timestamped_file_count": timestamped_files,
-        "timezone_issue_count": len(timezone_issues),
-        "modes": modes,
-    }
+) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
+    del source, inventory
+    summary, issues = adapter.validate_profile_timezones(profile)
+    return summary, issues

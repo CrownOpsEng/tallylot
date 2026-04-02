@@ -1,9 +1,17 @@
 [
   {
     "account": "Fixture Exchange",
+    "account_label": "Primary",
+    "capture_path": "/home/user/Documents/Personal/Finance/Crypto/CoinTracking.info/crypto-reconciliation-2025/tests/fixtures/adapter_packs/structured_csv/basic/raw",
+    "confidence": "high",
+    "controller": "Fixture Exchange",
+    "display_identifier": "Fixture Exchange:Primary",
+    "evidence_kind": "normalized_transactions",
     "evidence_path": "transactions.csv",
     "identifier_kind": "account_wallet",
     "identifier_value": "Fixture Exchange:Primary",
+    "network_scope": "",
+    "normalized_identifier": "Fixture Exchange:Primary",
     "notes": "",
     "source": "Structured Example",
     "wallet": "Primary",

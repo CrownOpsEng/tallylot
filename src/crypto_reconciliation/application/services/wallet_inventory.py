@@ -7,24 +7,45 @@ from crypto_reconciliation.application.services.scan import (
     ensure_output_not_within_input_tree,
     iter_tree_files,
 )
+from crypto_reconciliation.application.services.wallet_inventory_summary import summarize_wallet_inventory
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
-EVIDENCE_HEADER = (
+INVENTORY_HEADER = (
     "wallet_id",
-    "source",
-    "account",
-    "wallet",
     "identifier_kind",
-    "identifier_value",
+    "normalized_identifier",
+    "display_identifier",
+    "network_scopes",
+    "source_labels",
+    "controller_labels",
+    "account_labels",
+    "evidence_count",
+    "primary_evidence_path",
+    "status",
+    "notes",
+)
+EVIDENCE_HEADER = (
+    "source",
+    "capture_path",
+    "wallet_id",
+    "identifier_kind",
+    "normalized_identifier",
+    "display_identifier",
+    "network_scope",
+    "controller",
+    "account_label",
+    "evidence_kind",
     "evidence_path",
+    "confidence",
+    "note",
 )
 ISSUE_HEADER = (
-    "wallet_id",
     "source",
-    "identifier_kind",
-    "identifier_value",
+    "capture_path",
+    "wallet_id",
     "issue_kind",
     "message",
+    "evidence_path",
 )
 
 
@@ -39,75 +60,10 @@ class WalletInventoryService:
             input_label="normalized root",
             output_label="wallet inventory aggregate output",
         )
-        rows: list[dict[str, str]] = []
-        evidence_rows: list[dict[str, str]] = []
-        issue_rows: list[dict[str, str]] = []
-        seen: set[tuple[str, str, str]] = set()
-        wallets_by_identifier: dict[tuple[str, str], set[str]] = {}
-        for path in iter_tree_files(request.normalized_root, exclude_paths=(request.output_path,)):
-            if path.name != "wallet_inventory.csv":
-                continue
-            for row in self._artifacts.read_rows(path):
-                key = (row["wallet_id"], row["identifier_kind"], row["identifier_value"])
-                wallets_by_identifier.setdefault(
-                    (row["identifier_kind"], row["identifier_value"]),
-                    set(),
-                ).add(row["wallet_id"])
-                if key in seen:
-                    continue
-                seen.add(key)
-                rows.append(row)
-                evidence_rows.append(
-                    {
-                        "wallet_id": row["wallet_id"],
-                        "source": row["source"],
-                        "account": row["account"],
-                        "wallet": row["wallet"],
-                        "identifier_kind": row["identifier_kind"],
-                        "identifier_value": row["identifier_value"],
-                        "evidence_path": row["evidence_path"],
-                    }
-                )
-                if not row["evidence_path"]:
-                    issue_rows.append(
-                        {
-                            "wallet_id": row["wallet_id"],
-                            "source": row["source"],
-                            "identifier_kind": row["identifier_kind"],
-                            "identifier_value": row["identifier_value"],
-                            "issue_kind": "missing_evidence_path",
-                            "message": "Wallet inventory rows must retain a source-relative evidence path.",
-                        }
-                    )
-        for (identifier_kind, identifier_value), wallet_ids in sorted(wallets_by_identifier.items()):
-            if len(wallet_ids) > 1:
-                wallet_id = sorted(wallet_ids)[0]
-                issue_rows.append(
-                    {
-                        "wallet_id": wallet_id,
-                        "source": "",
-                        "identifier_kind": identifier_kind,
-                        "identifier_value": identifier_value,
-                        "issue_kind": "conflicting_wallet_id",
-                        "message": (
-                            "The same identifier value maps to more than one wallet_id across normalized inputs."
-                        ),
-                    }
-                )
-        self._artifacts.write_rows(
-            request.output_path,
-            (
-                "wallet_id",
-                "source",
-                "account",
-                "wallet",
-                "evidence_path",
-                "identifier_kind",
-                "identifier_value",
-                "notes",
-            ),
-            rows,
-        )
+        evidence_rows = self._collect_evidence_rows(request)
+        inventory_rows, issue_rows = summarize_wallet_inventory(evidence_rows)
+
+        self._artifacts.write_rows(request.output_path, INVENTORY_HEADER, inventory_rows)
         self._artifacts.write_rows(
             request.output_path.with_name("wallet_inventory_evidence.csv"),
             EVIDENCE_HEADER,
@@ -121,14 +77,44 @@ class WalletInventoryService:
         self._artifacts.write_json(
             request.output_path.with_name("wallet_inventory_summary.json"),
             {
-                "wallet_count": len(rows),
+                "wallet_count": len(inventory_rows),
                 "evidence_count": len(evidence_rows),
                 "issue_count": len(issue_rows),
             },
         )
         return WalletInventoryResponse(
             output_path=request.output_path,
-            wallet_count=len(rows),
+            wallet_count=len(inventory_rows),
             evidence_count=len(evidence_rows),
             issue_count=len(issue_rows),
         )
+
+    def _collect_evidence_rows(self, request: WalletInventoryRequest) -> list[dict[str, str]]:
+        rows: list[dict[str, str]] = []
+        seen: set[tuple[str, ...]] = set()
+        for path in iter_tree_files(request.normalized_root, exclude_paths=(request.output_path,)):
+            if path.name != "wallet_inventory.csv":
+                continue
+            for row in self._artifacts.read_rows(path):
+                normalized_identifier = row.get("normalized_identifier") or row.get("identifier_value", "")
+                evidence_row = {
+                    "source": row.get("source", ""),
+                    "capture_path": row.get("capture_path", ""),
+                    "wallet_id": row.get("wallet_id", ""),
+                    "identifier_kind": row.get("identifier_kind", ""),
+                    "normalized_identifier": normalized_identifier,
+                    "display_identifier": row.get("display_identifier", "") or normalized_identifier,
+                    "network_scope": row.get("network_scope", ""),
+                    "controller": row.get("controller", ""),
+                    "account_label": row.get("account_label", "") or row.get("wallet", ""),
+                    "evidence_kind": row.get("evidence_kind", ""),
+                    "evidence_path": row.get("evidence_path", ""),
+                    "confidence": row.get("confidence", ""),
+                    "note": row.get("notes", ""),
+                }
+                key = tuple(evidence_row[column] for column in EVIDENCE_HEADER)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(evidence_row)
+        return rows
