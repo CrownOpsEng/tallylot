@@ -30,6 +30,16 @@ def _python_files(root: Path) -> tuple[Path, ...]:
     return tuple(sorted(root.rglob("*.py")))
 
 
+def _all_repo_python_files() -> tuple[Path, ...]:
+    return (
+        repo_root() / "conftest.py",
+        *_python_files(repo_root() / "repo_support"),
+        *_python_files(repo_root() / "src"),
+        *_python_files(repo_root() / "tests"),
+        *_python_files(repo_root() / "tools"),
+    )
+
+
 def _repo_side_python_files() -> tuple[Path, ...]:
     root = repo_root()
     repo_side_paths = (
@@ -156,18 +166,30 @@ def _defines_root_constants(path: Path) -> bool:
 
 
 def test_repo_has_no_type_ignore_comments() -> None:
-    python_files = (
-        repo_root() / "conftest.py",
-        *_python_files(repo_root() / "src"),
-        *_python_files(repo_root() / "tests"),
-        *_python_files(repo_root() / "tools"),
+    forbidden = (
+        "type:" + " ignore",
+        "pyright:" + " ignore",
+        "# " + "pyright:",
+        "# " + "mypy:",
     )
-    forbidden = ("type:" + " ignore", "pyright:" + " ignore")
 
-    for path in python_files:
+    for path in _all_repo_python_files():
         text = path.read_text(encoding="utf-8")
         for needle in forbidden:
             assert needle not in text, f"{path} contains forbidden typing bypass {needle!r}"
+
+
+def test_protected_access_suppressions_only_live_in_test_pylint_config() -> None:
+    needle = "protected" + "-access"
+    allowed_paths = {
+        repo_root() / "tests" / "unit" / "test_run_pylint.py",
+    }
+
+    for path in _all_repo_python_files():
+        if path in allowed_paths:
+            continue
+        text = path.read_text(encoding="utf-8")
+        assert needle not in text, f"{path} contains scattered {needle!r} suppression"
 
 
 def test_repo_root_derivation_is_centralized_in_repo_support_paths() -> None:

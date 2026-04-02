@@ -41,7 +41,7 @@ def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
         QualityGate(name="actionlint", command=("uv", "run", "actionlint", "-color")),
         QualityGate(name="ruff", command=("uv", "run", "ruff", "check", ".")),
         QualityGate(name="mypy", command=("uv", "run", "mypy")),
-        QualityGate(name="pyright", command=("uv", "run", "pyright")),
+        QualityGate(name="pyright", command=("uv", "run", "python", "-m", "tools.run_pyright")),
         QualityGate(name="pylint", command=("uv", "run", "python", "-m", "tools.run_pylint")),
         QualityGate(name="pytest", command=test_command),
     )

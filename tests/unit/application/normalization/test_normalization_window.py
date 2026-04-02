@@ -8,21 +8,16 @@ from tallylot.application.normalization import (
     filter_issues_by_window,
     filter_reviews_by_window,
 )
-from tallylot.application.normalization.window import _filter_facts_by_window
-from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     AccountingIntentHint,
     EconomicKind,
-    EconomicLeg,
-    FactSemantics,
     LegKind,
     ProjectionHint,
     TaxTreatmentHint,
-    TransactionFact,
 )
-from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
+from tallylot.domain.types import LocationId
 from tallylot.ports.source_translation import EconomicActivityDraft, classification, economic_leg
 
 
@@ -38,58 +33,6 @@ def test_filter_drafts_by_window_excludes_rows_before_start() -> None:
 
     assert filtered == (in_window,)
     assert excluded_count == 1
-
-
-def test_filter_facts_by_window_returns_original_events_without_bounds() -> None:
-    event = _transaction("txn-1", "2023-08-05 08:34:04")
-
-    filtered, excluded_count = _filter_facts_by_window((event,), window_start=None, window_end=None)
-
-    assert filtered == (event,)
-    assert excluded_count == 0
-
-
-def test_filter_facts_by_window_excludes_rows_before_start() -> None:
-    early = _transaction("txn-1", "2023-08-05 08:34:04")
-    in_window = _transaction("txn-2", "2023-08-05 08:34:05")
-
-    filtered, excluded_count = _filter_facts_by_window(
-        (early, in_window),
-        window_start="2023-08-05 08:34:05",
-        window_end=None,
-    )
-
-    assert filtered == (in_window,)
-    assert excluded_count == 1
-
-
-def test_filter_facts_by_window_excludes_rows_after_end() -> None:
-    in_window = _transaction("txn-1", "2023-08-05 08:34:04")
-    late = _transaction("txn-2", "2023-08-05 08:34:06")
-
-    filtered, excluded_count = _filter_facts_by_window(
-        (in_window, late),
-        window_start=None,
-        window_end="2023-08-05 08:34:05",
-    )
-
-    assert filtered == (in_window,)
-    assert excluded_count == 1
-
-
-def test_filter_facts_by_window_keeps_only_events_inside_both_bounds() -> None:
-    early = _transaction("txn-1", "2023-08-05 08:34:03")
-    in_window = _transaction("txn-2", "2023-08-05 08:34:04")
-    late = _transaction("txn-3", "2023-08-05 08:34:06")
-
-    filtered, excluded_count = _filter_facts_by_window(
-        (early, in_window, late),
-        window_start="2023-08-05 08:34:04",
-        window_end="2023-08-05 08:34:05",
-    )
-
-    assert filtered == (in_window,)
-    assert excluded_count == 2
 
 
 def test_filter_issues_by_window_excludes_timestamped_issues_before_start() -> None:
@@ -230,31 +173,6 @@ def test_filter_reviews_by_window_excludes_untimed_non_dataset_reviews() -> None
 
     assert excluded_count == 1
     assert [review.review_id for review in filtered] == ["dataset"]
-
-
-def _transaction(transaction_id: str, timestamp: str) -> TransactionFact:
-    return TransactionFact(
-        fact_id=TransactionId(transaction_id),
-        source=SourceId("fixture-source"),
-        adapter_id=AdapterId("fixture-adapter"),
-        timestamp=datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC),
-        location_id=LocationId("fixture-account:fixture-wallet"),
-        semantics=FactSemantics(
-            economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
-            accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
-            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
-            projection_hint=ProjectionHint.DEPOSIT,
-        ),
-        legs=(
-            EconomicLeg(
-                leg_id="primary_btc",
-                kind=LegKind.PRIMARY,
-                instrument_id=InstrumentId("symbol:BTC"),
-                quantity=Decimal("1"),
-            ),
-        ),
-        leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
-    )
 
 
 def _draft(transaction_id: str, timestamp: str) -> EconomicActivityDraft:

@@ -24,6 +24,7 @@ def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
     ]
     assert gates[0].command == ("uv", "run", "pre-commit", "run", "markdownlint", "--all-files")
     assert gates[1].command == ("uv", "run", "actionlint", "-color")
+    assert gates[4].command == ("uv", "run", "python", "-m", "tools.run_pyright")
     assert gates[5].command == ("uv", "run", "python", "-m", "tools.run_pylint")
     assert gates[-1].command == _DEFAULT_TEST_COMMAND
 
