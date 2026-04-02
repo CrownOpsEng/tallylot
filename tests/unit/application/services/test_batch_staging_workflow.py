@@ -201,3 +201,26 @@ def test_batch_staging_blocks_candidates_outside_normalization_window(
     assert response.staged is False
     assert "normalization_window_mismatch" in response.blocked_reason_codes
     assert summary["rows_outside_normalization_window"] == 1
+
+
+def test_batch_staging_accepts_legacy_cointracking_currency_headers(
+    baseline_export_dir: Path,
+    tmp_path: Path,
+) -> None:
+    candidate_path = tmp_path / "candidate.csv"
+    candidate_path.write_text(
+        "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
+        "Trade,1.0,BTC,10.0,CAD,0.1,CAD,Fixture,,legacy,2023-08-06 08:34:05,tx-2\n",
+        encoding="utf-8",
+    )
+
+    response = BatchStagingService(BatchScreeningService(build_registry(), FilesystemArtifactStore())).execute(
+        StageBatchRequest(
+            candidate_path=candidate_path,
+            baseline_export_dir=baseline_export_dir,
+            output_dir=tmp_path / "batch",
+        ),
+    )
+
+    assert response.staged is True
+    assert response.staged_path == tmp_path / "batch" / "candidate.csv"

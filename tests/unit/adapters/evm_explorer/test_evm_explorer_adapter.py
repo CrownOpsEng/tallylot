@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.evm_explorer.adapter import EvmExplorerAdapter
+from crypto_reconciliation.adapters.sources.explorers.evm_explorer.adapter import EvmExplorerAdapter
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 

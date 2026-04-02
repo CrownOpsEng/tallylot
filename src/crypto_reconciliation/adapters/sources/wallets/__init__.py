@@ -1,0 +1,1 @@
+"""Wallet source adapter namespaces."""

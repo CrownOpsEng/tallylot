@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from crypto_reconciliation.adapters.sources.coinbase.pdf_balances import extract_pdf_balances
+from crypto_reconciliation.adapters.sources.platforms.coinbase.pdf_balances import extract_pdf_balances
 
 
 def test_coinbase_pdf_balances_extract_asset_rows() -> None:

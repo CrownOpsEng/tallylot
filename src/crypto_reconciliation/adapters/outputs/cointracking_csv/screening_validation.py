@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import csv
 from pathlib import Path
 
 from crypto_reconciliation.domain.models import IssueRecord
@@ -10,40 +9,39 @@ from crypto_reconciliation.domain.value_objects import parse_timestamp
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 from .schema import COINTRACKING_HEADER
+from .screening_columns import cell, load_cointracking_rows
 
 
 def match_candidate(candidate_path: Path, artifacts: ArtifactStorePort) -> int:
+    del artifacts
     try:
-        header = tuple(artifacts.read_rows(candidate_path)[0].keys())
-    except (FileNotFoundError, IndexError, KeyError):
+        load_cointracking_rows(candidate_path)
+    except (FileNotFoundError, ValueError):
         return 0
-    return 100 if header == COINTRACKING_HEADER else 0
+    return 100
 
 
 def candidate_validation_issues(candidate_path: Path) -> tuple[list[IssueRecord], int, list[dict[str, str]]]:
-    with candidate_path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        header = tuple(reader.fieldnames or ())
-        issues: list[IssueRecord] = []
-        if header != COINTRACKING_HEADER:
-            issues.append(
-                IssueRecord(
-                    issue_id=f"{candidate_path.name}:schema",
-                    source="batch_screen",
-                    adapter_id="cointracking_csv",
-                    severity="high",
-                    kind="invalid_schema",
-                    message="The candidate file does not match the CoinTracking CSV header.",
-                    raw_file=candidate_path.name,
-                )
+    issues: list[IssueRecord] = []
+    try:
+        _, rows, columns = load_cointracking_rows(candidate_path)
+    except ValueError:
+        issues.append(
+            IssueRecord(
+                issue_id=f"{candidate_path.name}:schema",
+                source="batch_screen",
+                adapter_id="cointracking_csv",
+                severity="high",
+                kind="invalid_schema",
+                message="The candidate file does not match the CoinTracking CSV header.",
+                raw_file=candidate_path.name,
             )
-            return issues, 0, []
-
-        rows = list(reader)
+        )
+        return issues, 0, []
     valid_rows: list[dict[str, str]] = []
     for index, row in enumerate(rows, start=2):
-        date_value = (row.get("Date") or "").strip()
-        tx_id = (row.get("Tx-ID") or "").strip()
+        date_value = cell(row, columns["date"])
+        tx_id = cell(row, columns["tx_id"])
         if not date_value:
             issues.append(issue(candidate_path, index, "missing_date", "Candidate rows must include Date."))
             continue
@@ -62,7 +60,7 @@ def candidate_validation_issues(candidate_path: Path) -> tuple[list[IssueRecord]
                 )
             )
             continue
-        valid_rows.append(row)
+        valid_rows.append(_canonical_candidate_row(row, columns))
     return issues, len(rows), valid_rows
 
 
@@ -77,3 +75,27 @@ def issue(candidate_path: Path, row_ref: int, kind: str, message: str) -> IssueR
         raw_file=candidate_path.name,
         raw_row_ref=str(row_ref),
     )
+
+
+def _canonical_candidate_row(row: list[str], columns: dict[str, int | None]) -> dict[str, str]:
+    return {
+        header_name: cell(row, column_index)
+        for header_name, column_index in zip(
+            COINTRACKING_HEADER,
+            (
+                columns["type"],
+                columns["buy"],
+                columns["buy_currency"],
+                columns["sell"],
+                columns["sell_currency"],
+                columns["fee"],
+                columns["fee_currency"],
+                columns["exchange"],
+                columns["group"],
+                columns["comment"],
+                columns["date"],
+                columns["tx_id"],
+            ),
+            strict=True,
+        )
+    }

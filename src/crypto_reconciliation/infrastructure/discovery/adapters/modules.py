@@ -35,6 +35,16 @@ def iter_adapter_package_modules(package_name: str) -> tuple[ModuleType, ...]:
         if importlib.util.find_spec(qualified_name) is None:
             continue
         modules.append(importlib.import_module(qualified_name))
+    if modules:
+        return tuple(modules)
+
+    for package_info in pkgutil.iter_modules(package.__path__, package.__name__ + "."):
+        if is_ignored_discovery_name(package_info.name):
+            continue
+        if package_info.ispkg:
+            modules.extend(iter_adapter_package_modules(package_info.name))
+            continue
+        modules.append(importlib.import_module(package_info.name))
     return tuple(modules)
 
 

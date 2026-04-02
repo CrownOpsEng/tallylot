@@ -6,8 +6,8 @@ import pytest
 
 from crypto_reconciliation.adapters.outputs.cointracking_api import CoinTrackingApiStubAdapter
 from crypto_reconciliation.adapters.outputs.generic_http import GenericHttpOutputStubAdapter
-from crypto_reconciliation.adapters.sources.blockchain.stub import BlockchainSourceStubAdapter
-from crypto_reconciliation.adapters.sources.platform_api.stub import PlatformApiSourceStubAdapter
+from crypto_reconciliation.adapters.sources.stubs.blockchain.stub import BlockchainSourceStubAdapter
+from crypto_reconciliation.adapters.sources.stubs.platform_api.stub import PlatformApiSourceStubAdapter
 from crypto_reconciliation.domain.models import SourceProfile
 from crypto_reconciliation.domain.types import AdapterId, SourceId
 from crypto_reconciliation.infrastructure.ai import LocalStubModelGateway, NullModelGateway

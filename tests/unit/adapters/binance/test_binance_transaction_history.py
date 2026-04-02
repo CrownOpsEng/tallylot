@@ -3,9 +3,13 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.binance.field_parsing import amount_with_asset, row_change, split_pair
-from crypto_reconciliation.adapters.sources.binance.timestamps import parse_export_timestamp
-from crypto_reconciliation.adapters.sources.binance.transaction_history import normalize_transaction_rows
+from crypto_reconciliation.adapters.sources.platforms.binance.field_parsing import (
+    amount_with_asset,
+    row_change,
+    split_pair,
+)
+from crypto_reconciliation.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
+from crypto_reconciliation.adapters.sources.platforms.binance.transaction_history import normalize_transaction_rows
 from tests.support.services import build_source_profile
 
 

@@ -23,8 +23,16 @@ automatically.
 ## Discovery
 
 - Source adapters live under `crypto_reconciliation.adapters.sources`.
+- Group source adapters by source kind first:
+  - `generic/` for reusable source contracts such as structured CSV
+  - `portfolio/` for portfolio-import surfaces such as CoinTracking exports
+  - `explorers/` for blockchain explorer exports
+  - `wallets/` for wallet-state and wallet-owned exports
+  - `platforms/` for exchange or custodial platform exports
+  - `stubs/` for reserved non-runtime entry points
 - Output adapters live under `crypto_reconciliation.adapters.outputs`.
-- Discovery only scans top-level adapter modules plus package entry points.
+- Discovery scans category namespaces and adapter package entry points
+  recursively.
 - Package-style adapters should expose `ADAPTER` from `__init__.py` or
   `adapter.py`.
 - Package-local helpers, fixtures, and tests are intentionally ignored by
@@ -43,8 +51,10 @@ automatically.
 ## Tooling
 
 - Scaffold package-style adapters with
-  `uv run python -m tools.scaffold_adapter source <module_name> "<Display Name>"`
+  `uv run python -m tools.scaffold_adapter source platforms/<module_name> "<Display Name>"`
   or `uv run python -m tools.scaffold_adapter output <module_name> "<Display Name>"`.
+- Source scaffolds must include the category path so new adapters land in the
+  correct namespace from the start.
 - Refresh JSON golden fixtures with
   `uv run python -m tools.refresh_adapter_goldens --pack <adapter>/<pack>`.
 - Keep pack manifests under `tests/fixtures/adapter_packs/<adapter>/<pack>/`.

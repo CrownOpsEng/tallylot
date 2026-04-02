@@ -117,6 +117,9 @@ Current application of this rule:
   `issue_rules.py` over generic names.
 - Match package structure to the architecture first and the external provider
   second.
+- Under `adapters/sources/`, group packages by source kind before the provider:
+  `platforms/<provider>/`, `wallets/<provider>/`, `explorers/<provider>/`,
+  `portfolio/<surface>/`, `generic/<contract>/`, or `stubs/<reserved>/`.
 - Keep naming stable across implementation, tests, and adapter metadata.
 
 ## Refactor-First Hotspots
@@ -124,8 +127,8 @@ Current application of this rule:
 Split these modules before adding materially new behavior:
 
 - `src/crypto_reconciliation/application/services/intake/packages/resolution.py`
-- `src/crypto_reconciliation/adapters/sources/binance/adapter.py`
-- `src/crypto_reconciliation/adapters/sources/coinbase/adapter.py`
+- `src/crypto_reconciliation/adapters/sources/platforms/binance/adapter.py`
+- `src/crypto_reconciliation/adapters/sources/platforms/coinbase/adapter.py`
 
 Preserve these shared-surface package seams instead of collapsing them back
 into single modules:

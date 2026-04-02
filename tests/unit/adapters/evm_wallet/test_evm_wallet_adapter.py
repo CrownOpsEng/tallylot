@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.evm_wallet.adapter import (
+from crypto_reconciliation.adapters.sources.wallets.evm_wallet.adapter import (
     EvmWalletAdapter,
     _account_records,
     _identity_records,

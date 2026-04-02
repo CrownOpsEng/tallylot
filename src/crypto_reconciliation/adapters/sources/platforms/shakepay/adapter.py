@@ -15,10 +15,10 @@ from crypto_reconciliation.adapters.sources.mapped_event_support import (
     mapped_event,
     normalization_issue,
 )
-from crypto_reconciliation.adapters.sources.shakepay_pdf_balances import (
+from crypto_reconciliation.adapters.sources.platforms.shakepay.pdf_balances import (
     extract_pdf_balances as _extract_pdf_balances,
 )
-from crypto_reconciliation.adapters.sources.shakepay_pdf_balances import (
+from crypto_reconciliation.adapters.sources.platforms.shakepay.pdf_balances import (
     match_pdf_statement as _match_pdf_statement,
 )
 from crypto_reconciliation.domain.models import (

@@ -99,7 +99,7 @@ Benchmark test segments with:
 ```bash
 uv run python -m tools.benchmark_tests
 uv run python -m tools.benchmark_tests --parallel
-uv run python -m tools.scaffold_adapter source example_exchange "Example Exchange"
+uv run python -m tools.scaffold_adapter source platforms/example_exchange "Example Exchange"
 uv run python -m tools.refresh_adapter_goldens --pack structured_csv/basic
 ```
 

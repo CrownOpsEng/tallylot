@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.binance.funding_history import (
+from crypto_reconciliation.adapters.sources.platforms.binance.funding_history import (
     normalize_deposit_rows,
     normalize_withdraw_rows,
 )
-from crypto_reconciliation.adapters.sources.binance.spot_trades import normalize_spot_rows
+from crypto_reconciliation.adapters.sources.platforms.binance.spot_trades import normalize_spot_rows
 from tests.support.services import build_source_profile
 
 

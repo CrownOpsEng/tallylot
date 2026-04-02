@@ -1,0 +1,1 @@
+"""Platform source adapter namespaces."""

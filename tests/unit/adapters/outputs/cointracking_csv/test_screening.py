@@ -8,6 +8,7 @@ import pytest
 from crypto_reconciliation.adapters.outputs.cointracking_csv.screening import (
     _build_cointracking_column_map,
     _find_trade_table,
+    candidate_validation_issues,
     parse_overlap_datetime,
     summarize_candidate_overlap,
     write_overlap_artifacts,
@@ -43,6 +44,22 @@ def test_build_cointracking_column_map_accepts_alternate_headers() -> None:
     assert columns["group"] == 8
     assert columns["date"] == 9
     assert columns["tx_id"] == 10
+
+
+def test_candidate_validation_accepts_legacy_duplicate_currency_headers(tmp_path: Path) -> None:
+    candidate_path = tmp_path / "candidate.csv"
+    candidate_path.write_text(
+        "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
+        "Trade,1.0,BTC,10.0,CAD,0.1,CAD,Fixture,,ok,2023-08-06 08:34:05,tx-2\n",
+        encoding="utf-8",
+    )
+
+    issues, candidate_rows, valid_rows = candidate_validation_issues(candidate_path)
+
+    assert issues == []
+    assert candidate_rows == 1
+    assert valid_rows[0]["Cur..1"] == "CAD"
+    assert valid_rows[0]["Cur..2"] == "CAD"
 
 
 def test_build_cointracking_column_map_requires_type_and_date() -> None:

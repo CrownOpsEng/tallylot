@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from crypto_reconciliation.adapters.sources.binance.pdf_balances import extract_pdf_balances
+from crypto_reconciliation.adapters.sources.platforms.binance.pdf_balances import extract_pdf_balances
 
 
 def test_binance_pdf_balances_extract_total_and_wallet_breakdown() -> None:

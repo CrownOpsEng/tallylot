@@ -123,7 +123,10 @@ def test_iter_modules_supports_package_style_adapters_without_loading_tests(
     package_root.mkdir()
     (package_root / "__init__.py").write_text("", encoding="utf-8")
     (package_root / "flat_adapter.py").write_text("ADAPTER = object()\n", encoding="utf-8")
-    packaged = package_root / "packaged_adapter"
+    categorized = package_root / "platforms"
+    categorized.mkdir()
+    (categorized / "__init__.py").write_text("", encoding="utf-8")
+    packaged = categorized / "packaged_adapter"
     packaged.mkdir()
     (packaged / "__init__.py").write_text("", encoding="utf-8")
     (packaged / "adapter.py").write_text("ADAPTER = object()\n", encoding="utf-8")
@@ -134,15 +137,16 @@ def test_iter_modules_supports_package_style_adapters_without_loading_tests(
     importlib.invalidate_caches()
     sys.modules.pop("fixture_adapters", None)
     sys.modules.pop("fixture_adapters.flat_adapter", None)
-    sys.modules.pop("fixture_adapters.packaged_adapter", None)
-    sys.modules.pop("fixture_adapters.packaged_adapter.adapter", None)
-    sys.modules.pop("fixture_adapters.packaged_adapter.tests", None)
+    sys.modules.pop("fixture_adapters.platforms", None)
+    sys.modules.pop("fixture_adapters.platforms.packaged_adapter", None)
+    sys.modules.pop("fixture_adapters.platforms.packaged_adapter.adapter", None)
+    sys.modules.pop("fixture_adapters.platforms.packaged_adapter.tests", None)
 
     discovered = modules.iter_discoverable_modules("fixture_adapters")
 
     assert {module.__name__ for module in discovered} == {
         "fixture_adapters.flat_adapter",
-        "fixture_adapters.packaged_adapter.adapter",
+        "fixture_adapters.platforms.packaged_adapter.adapter",
     }
     sys.path.pop(0)
 

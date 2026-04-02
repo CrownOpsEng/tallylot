@@ -41,8 +41,12 @@ decisions that should not be rediscovered from scratch.
 
 ### Source Adapter Expansion
 
-- Add real blockchain adapters under `adapters/sources/blockchain/`.
-- Add real platform API adapters under `adapters/sources/platform_api/`.
+- Add real blockchain adapters under `adapters/sources/explorers/` when they
+  normalize exported blockchain evidence, or under `adapters/sources/stubs/`
+  only while the entry point remains reserved.
+- Add real platform API adapters under `adapters/sources/platforms/` when they
+  become productized, or under `adapters/sources/stubs/` while they remain
+  reserved.
 - Keep adapters self-contained with tests and metadata colocated.
 - Preserve auto-discovery and fail fast on malformed adapter metadata.
 
@@ -105,9 +109,9 @@ decisions that should not be rediscovered from scratch.
   contracts instead of silently picking a candidate.
 - Keep repo-local agent entrypoints real. If `.claude/commands/` is referenced
   in the docs, those files must exist and describe the current typed workflow.
-- Keep adapter discovery narrow: discover only top-level adapter modules and
-  package entry points so adapter-local tests and helpers can live beside the
-  adapter without affecting runtime registration.
+- Keep adapter discovery narrow: discover only source-category namespaces and
+  adapter package entry points so adapter-local tests and helpers can live
+  beside the adapter without affecting runtime registration.
 - Keep the shared-surface package seams intact now that they have been split:
   `domain/models/`, `interfaces/cli/`, and
   `infrastructure/discovery/adapters/` should keep bounded submodules instead

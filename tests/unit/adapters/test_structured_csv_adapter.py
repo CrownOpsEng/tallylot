@@ -3,11 +3,11 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.structured_csv import StructuredCsvSourceAdapter
-from crypto_reconciliation.adapters.sources.structured_csv.contracts import REQUIRED_HEADER
-from crypto_reconciliation.adapters.sources.structured_csv.feedback import StructuredCsvFeedbackFactory
-from crypto_reconciliation.adapters.sources.structured_csv.normalization import normalize_structured_csv
-from crypto_reconciliation.adapters.sources.structured_csv.validation import StructuredCsvRowValidator
+from crypto_reconciliation.adapters.sources.generic.structured_csv import StructuredCsvSourceAdapter
+from crypto_reconciliation.adapters.sources.generic.structured_csv.contracts import REQUIRED_HEADER
+from crypto_reconciliation.adapters.sources.generic.structured_csv.feedback import StructuredCsvFeedbackFactory
+from crypto_reconciliation.adapters.sources.generic.structured_csv.normalization import normalize_structured_csv
+from crypto_reconciliation.adapters.sources.generic.structured_csv.validation import StructuredCsvRowValidator
 from crypto_reconciliation.domain.models import FileInventoryEntry
 from tests.support.services import build_source_profile
 

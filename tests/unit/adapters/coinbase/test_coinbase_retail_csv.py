@@ -3,8 +3,8 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.coinbase.retail_csv import read_retail_rows
-from crypto_reconciliation.adapters.sources.coinbase.retail_rows import money_decimal
+from crypto_reconciliation.adapters.sources.platforms.coinbase.retail_csv import read_retail_rows
+from crypto_reconciliation.adapters.sources.platforms.coinbase.retail_rows import money_decimal
 
 
 def test_coinbase_retail_row_reader_skips_preface_lines(tmp_path: Path) -> None:
