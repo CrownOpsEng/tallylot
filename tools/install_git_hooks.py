@@ -12,7 +12,7 @@ HOOK_TEMPLATE = """#!/usr/bin/env bash
 set -euo pipefail
 
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
 PROJECT_ENVIRONMENT={project_environment}
@@ -37,7 +37,7 @@ COMMIT_MSG_HOOK_TEMPLATE = """#!/usr/bin/env bash
 set -euo pipefail
 
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
 PROJECT_ENVIRONMENT={project_environment}
