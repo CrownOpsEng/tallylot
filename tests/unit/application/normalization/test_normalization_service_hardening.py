@@ -10,7 +10,7 @@ import pytest
 
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
-from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.instruments import InstrumentId, InstrumentIdentityClaim
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
@@ -128,6 +128,111 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
 
     assert [row["kind"] for row in exception_rows] == ["zero_amount", "no_valid_rows"]
     assert not review_rows
+
+
+class IdentityBlockingAdapter(MatchingSourceAdapter):
+    def __init__(self) -> None:
+        super().__init__("identity_blocking", supported=True)
+
+    @override
+    def translate(self, profile: object, raw_dir: Path) -> SourceTranslationBatch:
+        del profile, raw_dir
+        return SourceTranslationBatch(
+            drafts=(
+                EconomicActivityDraft(
+                    activity_id="txn-good",
+                    source="fixture",
+                    adapter_id="identity_blocking",
+                    timestamp=datetime(2025, 1, 1, tzinfo=UTC),
+                    location_id=LocationId("fixture:primary"),
+                    classification=classification(
+                        economic_kind=EconomicKind.SPOT_TRADE,
+                        projection_hint=ProjectionHint.TRADE,
+                        accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                        tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
+                    ),
+                    legs=(
+                        economic_leg(
+                            leg_id="primary_btc",
+                            kind=LegKind.PRIMARY,
+                            instrument="BTC",
+                            quantity=Decimal("1"),
+                        ),
+                    ),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
+                    provenance_refs=("prov:good",),
+                ),
+                EconomicActivityDraft(
+                    activity_id="txn-blocked",
+                    source="fixture",
+                    adapter_id="identity_blocking",
+                    timestamp=datetime(2025, 1, 2, tzinfo=UTC),
+                    location_id=LocationId("fixture:primary"),
+                    classification=classification(
+                        economic_kind=EconomicKind.SPOT_TRADE,
+                        projection_hint=ProjectionHint.TRADE,
+                        accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                        tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
+                    ),
+                    legs=(
+                        economic_leg(
+                            leg_id="primary_btc",
+                            kind=LegKind.PRIMARY,
+                            instrument=(
+                                InstrumentIdentityClaim(scheme="symbol", value="BTC", venue="venue-a"),
+                                InstrumentIdentityClaim(scheme="symbol", value="BTC", venue="venue-b"),
+                            ),
+                            quantity=Decimal("1"),
+                        ),
+                    ),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
+                    provenance_refs=("prov:blocked",),
+                ),
+            ),
+            balance_evidence=(),
+            issues=(),
+            reviews=(),
+            location_inventory=(),
+        )
+
+
+def test_normalization_service_excludes_annotations_for_blocked_identity_drafts(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    artifacts = FilesystemArtifactStore()
+    service = build_registry_backed_normalization_service(
+        registry=FakeSourceRegistry(source_adapters=(IdentityBlockingAdapter(),)),
+        artifacts=artifacts,
+    )
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(
+            source="fixture",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+
+    facts = FilesystemFactRepository().read_facts(output_dir / "facts.csv")
+    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
+    issue_rows = artifacts.read_rows(output_dir / "exceptions.csv")
+    review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
+
+    assert response.fact_count == 1
+    assert response.issue_count == 1
+    assert response.review_count == 1
+    assert [str(fact.fact_id) for fact in facts] == ["txn-good"]
+    assert fact_annotations == [
+        {
+            "fact_id": "txn-good",
+            "provenance_refs": ["prov:good"],
+            "review_markers": [],
+            "adapter_metadata": [],
+        }
+    ]
+    assert [row["kind"] for row in issue_rows] == ["instrument_identity_blocked"]
+    assert [row["kind"] for row in review_rows] == ["instrument_identity_review"]
 
 
 def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) -> None:

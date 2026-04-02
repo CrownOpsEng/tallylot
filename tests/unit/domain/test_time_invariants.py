@@ -35,6 +35,18 @@ def test_balance_snapshot_requires_temporal_value() -> None:
     assert snapshot.as_of_at.tzinfo is UTC
 
 
+def test_balance_snapshot_requires_non_blank_instrument_id() -> None:
+    with pytest.raises(ValueError, match="balance snapshot instrument_id must not be blank"):
+        BalanceSnapshot(
+            source=SourceId("fixture"),
+            location_id=LocationId("taxable:spot"),
+            instrument_id=InstrumentId(""),
+            quantity=Decimal("1"),
+            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            as_of_precision=TemporalPrecision.TIMESTAMP,
+        )
+
+
 def test_balance_evidence_requires_temporal_value() -> None:
     with pytest.raises(ValueError, match="balance evidence as_of_at must be timezone-aware UTC"):
         BalanceEvidence(
@@ -56,3 +68,15 @@ def test_balance_evidence_requires_temporal_value() -> None:
     )
 
     assert evidence.as_of_at.tzinfo is UTC
+
+
+def test_balance_evidence_requires_non_blank_instrument_id() -> None:
+    with pytest.raises(ValueError, match="balance evidence instrument_id must not be blank"):
+        BalanceEvidence(
+            source=SourceId("fixture"),
+            location_id=LocationId("taxable:spot"),
+            instrument_id=InstrumentId(""),
+            quantity=Decimal("1"),
+            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            as_of_precision=TemporalPrecision.TIMESTAMP,
+        )

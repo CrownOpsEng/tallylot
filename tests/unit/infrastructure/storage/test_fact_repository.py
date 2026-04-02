@@ -112,6 +112,34 @@ def test_fact_repository_rejects_missing_schema_version(tmp_path: Path) -> None:
         raise AssertionError("expected missing schema version to be rejected")
 
 
+def test_fact_repository_rejects_effective_precision_without_effective_at(tmp_path: Path) -> None:
+    path = tmp_path / "facts.csv"
+    row = _fact_row(projection_hint="trade")
+    row["effective_precision"] = "date"
+    write_rows(path, FACT_HEADER, (row,))
+
+    try:
+        FilesystemFactRepository().read_facts(path)
+    except ValueError as error:
+        assert str(error) == "fact row effective_at and effective_precision must both be present or both be blank"
+    else:
+        raise AssertionError("expected orphaned effective_precision to be rejected")
+
+
+def test_fact_repository_rejects_effective_at_without_effective_precision(tmp_path: Path) -> None:
+    path = tmp_path / "facts.csv"
+    row = _fact_row(projection_hint="trade")
+    row["effective_at"] = "2025-01-02"
+    write_rows(path, FACT_HEADER, (row,))
+
+    try:
+        FilesystemFactRepository().read_facts(path)
+    except ValueError as error:
+        assert str(error) == "fact row effective_at and effective_precision must both be present or both be blank"
+    else:
+        raise AssertionError("expected orphaned effective_at to be rejected")
+
+
 def test_fact_repository_rejects_boolean_policy_counts(tmp_path: Path) -> None:
     path = tmp_path / "facts.csv"
     row = _fact_row(projection_hint="trade")

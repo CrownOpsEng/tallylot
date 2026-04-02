@@ -74,6 +74,7 @@ class NormalizeSourceUseCase:
         )
         compiled = compile_activity_drafts_with_feedback(drafts)
         facts = compiled.facts
+        emitted_fact_ids = {str(fact.fact_id) for fact in facts}
         enriched_issues = enrich_issue_context_timestamps(
             result.issues + compiled.issues,
             raw_dir=raw_dir,
@@ -97,7 +98,9 @@ class NormalizeSourceUseCase:
         derived_balances = derive_balance_snapshots(facts)
         outputs = NormalizationOutputs(
             facts=facts,
-            fact_annotations=annotation_records_from_drafts(drafts),
+            fact_annotations=annotation_records_from_drafts(
+                tuple(draft for draft in drafts if draft.activity_id in emitted_fact_ids)
+            ),
             location_annotations=location_annotation_records(result.location_inventory),
             derived_balances=derived_balances,
             balance_evidence=result.balance_evidence,

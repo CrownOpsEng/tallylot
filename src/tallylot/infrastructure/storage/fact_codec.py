@@ -59,12 +59,16 @@ def fact_from_row(row: dict[str, str]) -> TransactionFact:
         raise ValueError(
             f"unsupported fact schema_version: {schema_version or '<missing>'}; expected {FACT_SCHEMA_VERSION}"
         )
+    effective_at_text = row.get("effective_at", "").strip()
+    effective_precision_text = row.get("effective_precision", "").strip()
+    if bool(effective_at_text) != bool(effective_precision_text):
+        raise ValueError("fact row effective_at and effective_precision must both be present or both be blank")
     effective_precision = (
         _required_enum(
-            parse_temporal_precision(row.get("effective_precision", "")),
+            parse_temporal_precision(effective_precision_text),
             "effective_precision",
         )
-        if row.get("effective_at", "").strip()
+        if effective_at_text
         else None
     )
     return TransactionFact(
@@ -75,7 +79,7 @@ def fact_from_row(row: dict[str, str]) -> TransactionFact:
         effective_at=(
             None
             if effective_precision is None
-            else parse_temporal_value(row["effective_at"], precision=effective_precision)
+            else parse_temporal_value(effective_at_text, precision=effective_precision)
         ),
         effective_precision=effective_precision,
         location_id=LocationId(row["location_id"]),

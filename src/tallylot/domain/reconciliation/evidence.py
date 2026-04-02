@@ -29,6 +29,8 @@ class BalanceEvidence:
     notes: str = ""
 
     def __post_init__(self) -> None:
+        if not str(self.instrument_id):
+            raise ValueError("balance evidence instrument_id must not be blank")
         object.__setattr__(
             self,
             "as_of_at",

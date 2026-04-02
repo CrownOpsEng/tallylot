@@ -28,6 +28,8 @@ class BalanceSnapshot:
     notes: str = ""
 
     def __post_init__(self) -> None:
+        if not str(self.instrument_id):
+            raise ValueError("balance snapshot instrument_id must not be blank")
         object.__setattr__(
             self,
             "as_of_at",
