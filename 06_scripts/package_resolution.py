@@ -203,6 +203,7 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
 
     for group_key, packages in packages_by_group.items():
         ordered = sorted(packages, key=_package_sort_key, reverse=True)
+        ordered_rank = {package.bundle_id: rank for rank, package in enumerate(ordered)}
         duplicate_keys: set[PACKAGE_KEY] = set()
 
         for package in ordered:
@@ -210,7 +211,9 @@ def resolve_bundle_packages(rows: list[dict[str, str]]) -> PackageResolution:
             supersets = [
                 candidate
                 for candidate in ordered
-                if candidate.bundle_id != package.bundle_id and _counter_subset(package.material_hashes, candidate.material_hashes)
+                if candidate.bundle_id != package.bundle_id
+                and ordered_rank[candidate.bundle_id] < ordered_rank[package.bundle_id]
+                and _counter_subset(package.material_hashes, candidate.material_hashes)
             ]
             if not supersets:
                 continue
