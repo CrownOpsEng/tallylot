@@ -15,7 +15,7 @@ from .file_facts import IntakeFileFacts, detect_capture_id, inspect_intake_file
 from .inventory import resolve_inventory_route
 from .packages import PackageRuleSummary, PlannedPackageItem, apply_package_rules
 from .plan_intake import PlanIntakeUseCase
-from .routing import detect_source_folder, route_intake_file
+from .routing import route_intake_file
 
 __all__ = [
     "ApplyIntakeUseCase",
@@ -35,7 +35,6 @@ __all__ = [
     "ScannedTree",
     "apply_package_rules",
     "detect_capture_id",
-    "detect_source_folder",
     "inspect_intake_file",
     "resolve_inventory_route",
     "route_intake_file",

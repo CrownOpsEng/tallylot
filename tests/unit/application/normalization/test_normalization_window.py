@@ -5,10 +5,10 @@ from decimal import Decimal
 
 from tallylot.application.normalization import (
     filter_drafts_by_window,
-    filter_facts_by_window,
     filter_issues_by_window,
     filter_reviews_by_window,
 )
+from tallylot.application.normalization.window import _filter_facts_by_window
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.transactions import (
@@ -43,7 +43,7 @@ def test_filter_drafts_by_window_excludes_rows_before_start() -> None:
 def test_filter_facts_by_window_returns_original_events_without_bounds() -> None:
     event = _transaction("txn-1", "2023-08-05 08:34:04")
 
-    filtered, excluded_count = filter_facts_by_window((event,), window_start=None, window_end=None)
+    filtered, excluded_count = _filter_facts_by_window((event,), window_start=None, window_end=None)
 
     assert filtered == (event,)
     assert excluded_count == 0
@@ -53,7 +53,7 @@ def test_filter_facts_by_window_excludes_rows_before_start() -> None:
     early = _transaction("txn-1", "2023-08-05 08:34:04")
     in_window = _transaction("txn-2", "2023-08-05 08:34:05")
 
-    filtered, excluded_count = filter_facts_by_window(
+    filtered, excluded_count = _filter_facts_by_window(
         (early, in_window),
         window_start="2023-08-05 08:34:05",
         window_end=None,
@@ -67,7 +67,7 @@ def test_filter_facts_by_window_excludes_rows_after_end() -> None:
     in_window = _transaction("txn-1", "2023-08-05 08:34:04")
     late = _transaction("txn-2", "2023-08-05 08:34:06")
 
-    filtered, excluded_count = filter_facts_by_window(
+    filtered, excluded_count = _filter_facts_by_window(
         (in_window, late),
         window_start=None,
         window_end="2023-08-05 08:34:05",
@@ -82,7 +82,7 @@ def test_filter_facts_by_window_keeps_only_events_inside_both_bounds() -> None:
     in_window = _transaction("txn-2", "2023-08-05 08:34:04")
     late = _transaction("txn-3", "2023-08-05 08:34:06")
 
-    filtered, excluded_count = filter_facts_by_window(
+    filtered, excluded_count = _filter_facts_by_window(
         (early, in_window, late),
         window_start="2023-08-05 08:34:04",
         window_end="2023-08-05 08:34:05",

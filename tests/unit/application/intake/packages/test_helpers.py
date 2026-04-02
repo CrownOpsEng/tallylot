@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import UTC, date, datetime
 
 from tallylot.application.intake.packages.markers import (
-    extract_datetimes,
+    _extract_datetimes,
     logical_key,
     package_cycle_status,
     package_sort_key,
@@ -20,8 +20,8 @@ from tallylot.application.intake.packages.reviews import (
     apply_overlap_review_decisions,
 )
 from tallylot.application.intake.packages.scope import (
+    _material_scope_tokens,
     compatible_scope,
-    material_scope_tokens,
     overlap_reason,
     scope_status,
 )
@@ -54,7 +54,7 @@ def _bundle(
 
 
 def test_extract_datetimes_skips_invalid_tokens_and_deduplicates_compact_minute_values() -> None:
-    values = extract_datetimes("bad 202402301200 also 202403091200 and 20240309120059 and 2024_03_09")
+    values = _extract_datetimes("bad 202402301200 also 202403091200 and 20240309120059 and 2024_03_09")
 
     assert datetime(2024, 3, 9, 12, 0, tzinfo=UTC) not in values
     assert datetime(2024, 3, 9, 12, 0, 59, tzinfo=UTC) in values
@@ -99,7 +99,7 @@ def test_scope_helpers_distinguish_material_scope_partial_scope_and_overlap_reas
     right = _bundle(bundle_id="bundle-b", scope_tokens=frozenset({"evm:0x2", "label:main"}))
     partial = _bundle(bundle_id="bundle-c", scope_tokens=frozenset())
 
-    assert material_scope_tokens(left.scope_tokens) == frozenset({"evm:0x1"})
+    assert _material_scope_tokens(left.scope_tokens) == frozenset({"evm:0x1"})
     assert compatible_scope(left, right) is False
     assert scope_status(left, right) == "incompatible_scope"
     assert scope_status(left, partial) == "partial_scope"

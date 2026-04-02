@@ -8,7 +8,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-DEFAULT_WORKSPACE_ROOT = Path(
+_DEFAULT_WORKSPACE_ROOT = Path(
     "~/tallylot-workspace",
 ).expanduser()
 CONFIG_FILE_NAME = "tallylot.toml"
@@ -56,6 +56,6 @@ def load_app_config(*, repo_root: Path | None = None) -> AppConfig:
     elif parsed.workspace.root is not None:
         workspace_root = parsed.workspace.root.expanduser()
     else:
-        workspace_root = DEFAULT_WORKSPACE_ROOT
+        workspace_root = _DEFAULT_WORKSPACE_ROOT
 
     return AppConfig(repo_root=base_root, workspace_root=workspace_root)

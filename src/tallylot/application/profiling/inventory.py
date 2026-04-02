@@ -34,7 +34,7 @@ def build_inventory(
     issues: list[IssueRecord] = []
     with scanned_tree_files(raw_dir, inspect_archives=inspect_archives) as scanned_tree:
         for entry in scanned_tree.files:
-            header, row_count, timezone_details = inventory_file_details(entry.file_path)
+            header, row_count, timezone_details = _inventory_file_details(entry.file_path)
             inventory.append(
                 FileInventoryEntry(
                     relative_path=entry.relative_path,
@@ -98,7 +98,7 @@ class TimezoneDetails:
     timezone_conflict: str = ""
 
 
-def inventory_file_details(path: Path) -> tuple[tuple[str, ...], int | None, TimezoneDetails]:
+def _inventory_file_details(path: Path) -> tuple[tuple[str, ...], int | None, TimezoneDetails]:
     if path.suffix.lower() != ".csv":
         return (), None, TimezoneDetails()
     header, rows = inventory_csv_content(path)

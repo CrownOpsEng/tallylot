@@ -36,7 +36,7 @@ def route_intake_file(
         return route
 
     route_key = request.route_key
-    source_folder = detect_source_folder(registry, route_key, facts)
+    source_folder = _detect_source_folder(registry, route_key, facts)
     capture_id = detect_capture_id(route_key, facts) or incoming_dir.name
     relative_target = relative_target_path(route_key)
     if is_working_derivative(route_key):
@@ -83,7 +83,7 @@ def route_intake_file(
     )
 
 
-def detect_source_folder(
+def _detect_source_folder(
     registry: SourceAdapterRegistryPort,
     relative_path: str,
     facts: IntakeFileFacts,

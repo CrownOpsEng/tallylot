@@ -13,7 +13,7 @@ def filesystem_file(path: Path, *, relative_path: str) -> ScannedFile:
         relative_path=relative_path,
         file_path=path,
         size_bytes=path.stat().st_size,
-        sha256=sha256sum_path(path),
+        sha256=_sha256sum_path(path),
     )
 
 
@@ -50,7 +50,7 @@ def resolve_path(path: Path) -> Path:
     return path.expanduser().resolve(strict=False)
 
 
-def sha256sum_path(path: Path) -> str:
+def _sha256sum_path(path: Path) -> str:
     digest = sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):

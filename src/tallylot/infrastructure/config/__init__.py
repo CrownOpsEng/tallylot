@@ -1,5 +1,5 @@
 """Configuration infrastructure."""
 
-from .loader import DEFAULT_WORKSPACE_ROOT, AppConfig, load_app_config
+from .loader import AppConfig, load_app_config
 
-__all__ = ["DEFAULT_WORKSPACE_ROOT", "AppConfig", "load_app_config"]
+__all__ = ["AppConfig", "load_app_config"]

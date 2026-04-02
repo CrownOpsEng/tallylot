@@ -16,13 +16,13 @@ from tallylot.application.intake.archive.models import (
     ResolvedArchiveMember,
 )
 from tallylot.application.intake.archive.support import (
+    _sha256sum_path,
     add_unsupported_archive_issue,
     filesystem_file,
     has_unsupported_archive_suffix,
     resolve_path,
     sanitize_archive_member_path,
     sha256sum_bytes,
-    sha256sum_path,
     write_extracted_file,
 )
 
@@ -60,7 +60,7 @@ def test_sha256sum_path_hashes_file_contents(tmp_path: Path) -> None:
     path = tmp_path / "fixture.txt"
     path.write_text("tallylot\n", encoding="utf-8")
 
-    assert sha256sum_path(path) == "16efcbae8e8a960455cc5c2e1b24382e77ac932460fda23fdc1c0e8688dbee9e"
+    assert _sha256sum_path(path) == "16efcbae8e8a960455cc5c2e1b24382e77ac932460fda23fdc1c0e8688dbee9e"
 
 
 def test_resolve_archive_member_reports_unsafe_and_duplicate_paths(tmp_path: Path) -> None:

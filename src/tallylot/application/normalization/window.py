@@ -31,7 +31,7 @@ def filter_drafts_by_window(
     return tuple(filtered), excluded_count
 
 
-def filter_facts_by_window(
+def _filter_facts_by_window(
     facts: tuple[TransactionFact, ...],
     *,
     window_start: str | None,

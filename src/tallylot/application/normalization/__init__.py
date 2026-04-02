@@ -3,7 +3,7 @@
 from .balances import derive_balance_snapshots
 from .contracts import NormalizeRequest, NormalizeResponse
 from .normalize_source import NormalizationDependencies, NormalizeSourceUseCase
-from .window import filter_drafts_by_window, filter_facts_by_window, filter_issues_by_window, filter_reviews_by_window
+from .window import filter_drafts_by_window, filter_issues_by_window, filter_reviews_by_window
 
 __all__ = [
     "NormalizationDependencies",
@@ -12,7 +12,6 @@ __all__ = [
     "NormalizeSourceUseCase",
     "derive_balance_snapshots",
     "filter_drafts_by_window",
-    "filter_facts_by_window",
     "filter_issues_by_window",
     "filter_reviews_by_window",
 ]
