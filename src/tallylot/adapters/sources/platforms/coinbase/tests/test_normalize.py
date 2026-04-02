@@ -46,7 +46,7 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: 
     assert str(event.legs[0].asset) == "BTC"
     assert str(event.legs[1].asset) == "CAD"
     assert str(event.legs[0].amount) == "0.01"
-    assert event.legs[1].amount == 610
+    assert event.legs[1].amount == 600
 
 
 def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) -> None:

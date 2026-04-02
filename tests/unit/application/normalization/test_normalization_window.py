@@ -129,6 +129,36 @@ def test_filter_issues_by_window_excludes_timestamped_issues_before_start() -> N
     assert [issue.issue_id for issue in filtered] == ["inside", "untimed"]
 
 
+def test_filter_issues_by_window_excludes_untimed_activity_scoped_issues() -> None:
+    filtered, excluded_count = filter_issues_by_window(
+        (
+            IssueRecord(
+                issue_id="dataset",
+                source="Binance",
+                adapter_id="binance",
+                severity="medium",
+                kind="unsupported_group",
+                message="dataset",
+            ),
+            IssueRecord(
+                issue_id="row",
+                source="Binance",
+                adapter_id="binance",
+                severity="medium",
+                kind="unsupported_group",
+                message="row",
+                raw_file="transactions.csv",
+                raw_row_ref="2",
+            ),
+        ),
+        window_start="2023-08-05 08:34:05",
+        window_end=None,
+    )
+
+    assert excluded_count == 1
+    assert [issue.issue_id for issue in filtered] == ["dataset"]
+
+
 def test_filter_reviews_by_window_keeps_dataset_reviews_and_filters_row_reviews() -> None:
     filtered, excluded_count = filter_reviews_by_window(
         (
@@ -169,6 +199,36 @@ def test_filter_reviews_by_window_keeps_dataset_reviews_and_filters_row_reviews(
 
     assert excluded_count == 1
     assert [review.review_id for review in filtered] == ["dataset", "inside"]
+
+
+def test_filter_reviews_by_window_excludes_untimed_non_dataset_reviews() -> None:
+    filtered, excluded_count = filter_reviews_by_window(
+        (
+            NormalizationReviewRecord(
+                review_id="dataset",
+                source="fixture",
+                adapter_id="structured_csv",
+                scope="dataset",
+                kind="timezone_timezone_assumed_utc",
+                message="dataset review",
+            ),
+            NormalizationReviewRecord(
+                review_id="row",
+                source="fixture",
+                adapter_id="structured_csv",
+                scope="row",
+                kind="outbound_amount_sign_normalized",
+                message="row review",
+                raw_file="transactions.csv",
+                raw_row_ref="2",
+            ),
+        ),
+        window_start="2023-08-05 08:34:05",
+        window_end=None,
+    )
+
+    assert excluded_count == 1
+    assert [review.review_id for review in filtered] == ["dataset"]
 
 
 def _transaction(transaction_id: str, timestamp: str) -> TransactionFact:

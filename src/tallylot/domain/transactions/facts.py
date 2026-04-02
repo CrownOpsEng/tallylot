@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Literal
+from typing import Literal, TypeGuard, cast, get_args
 
 from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from tallylot.domain.value_objects import format_decimal, format_timestamp
@@ -17,6 +17,7 @@ from .classification import EconomicKind, JournalIntent, ProjectionType, TaxTrea
 
 FactDirection = Literal["in", "out"]
 _LEG_SUBTYPE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
+_FACT_DIRECTIONS = cast(tuple[FactDirection, ...], get_args(FactDirection))
 
 
 class LegKind(StrEnum):
@@ -90,10 +91,16 @@ class EconomicLeg:
     wallet: str = ""
 
     def __post_init__(self) -> None:
+        _validate_fact_direction(self.direction, label="fact leg direction")
         if self.amount <= Decimal("0"):
             raise ValueError("fact leg amount must be greater than zero")
         if self.kind is LegKind.PRIMARY and self.attributed_to_direction is not None:
             raise ValueError("primary legs must not declare attributed_to_direction")
+        if self.attributed_to_direction is not None:
+            _validate_fact_direction(
+                self.attributed_to_direction,
+                label="fact leg attributed_to_direction",
+            )
         if self.subtype is not None and not _LEG_SUBTYPE_PATTERN.fullmatch(self.subtype):
             raise ValueError("fact leg subtype must be lowercase snake_case")
 
@@ -225,6 +232,16 @@ def _leg_policy_json(policy: FactLegPolicy) -> list[dict[str, object]]:
 
 def _json_text(payload: list[dict[str, object]]) -> str:
     return json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+
+
+def _validate_fact_direction(value: str, *, label: str) -> FactDirection:
+    if not _is_fact_direction(value):
+        raise ValueError(f"unsupported {label}: {value}")
+    return value
+
+
+def _is_fact_direction(value: str) -> TypeGuard[FactDirection]:
+    return value in _FACT_DIRECTIONS
 
 
 SINGLE_PRIMARY_ACTIVITY_POLICY = FactLegPolicy(

@@ -64,8 +64,8 @@ What:
 - keep ADAPTER discovery entry point unchanged
 
 Checks:
-- uv run pre-commit run markdownlint --all-files
-- uv run python -m tools.run_quality_gates --full-tests
+- UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files
+- UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
 
 Standard footers are allowed, including `BREAKING CHANGE:`.
@@ -97,7 +97,7 @@ Install the repo hooks and commit template in each clone before doing stable
 work:
 
 ```bash
-uv run python -m tools.install_git_hooks
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
 ```
 
 The installed `pre-commit` hook formats safe staged Python files with Ruff
@@ -107,8 +107,8 @@ staged Python files so unrelated unstaged hunks are not accidentally committed.
 Validate messages directly when needed:
 
 ```bash
-uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
-uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
 ```
 
 ## Commit-Time Test Policy
@@ -116,7 +116,7 @@ uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
 The `pre-commit` `pytest` hook is intentionally scoped to fast unit coverage:
 
 ```bash
-uv run pytest -m "unit and not slow" --no-cov -q
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -m "unit and not slow" --no-cov -q
 ```
 
 That hook is meant to protect local commits without paying the cost of
@@ -124,26 +124,26 @@ coverage, contract tests, or end-to-end CLI flows on every commit. Full
 verification still means running:
 
 ```bash
-uv run pre-commit run markdownlint --all-files
-uv run python -m tools.run_quality_gates --full-tests
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
 
-Do not also run `uv run pre-commit run --all-files` in addition to the
+Do not also run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the
 parallel quality-gate runner unless you are validating the hooks themselves.
 
 Re-benchmark suite segments before broadening or shrinking the fast test slice:
 
 ```bash
-uv run python -m tools.benchmark_tests
-uv run python -m tools.benchmark_tests --parallel
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests --parallel
 ```
 
 For explicit local verification outside the hook path, the repo also ships a
 parallel quality-gate runner:
 
 ```bash
-uv run python -m tools.run_quality_gates
-uv run python -m tools.run_quality_gates --full-tests
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
 
 `pylint` remains part of the parallel quality-gate runner, but it is not part
@@ -158,8 +158,8 @@ After a lint-driven amend on a touched file, rerun the narrow checks against
 that exact file before treating the checkpoint as closed:
 
 ```bash
-uv run pylint <touched-file>
-uv run pytest -q --no-cov <touched-test-file>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>
 git show HEAD:<path>
 ```
 

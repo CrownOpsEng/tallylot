@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.explorers.near.adapter import NearAdapter
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -81,6 +82,9 @@ def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
         TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
         TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
     ]
+    transfer_charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert result.facts[0].legs[0].amount == Decimal("1")
+    assert transfer_charge_legs[0].amount == Decimal("0.01")
     assert any(str(event.source).endswith("Staking") for event in result.facts)
     assert result.issues == ()
 

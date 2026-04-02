@@ -277,7 +277,7 @@ def _optional_str(raw: JsonDict, key: str) -> str | None:
 
 def _required_int_value(raw: JsonDict, key: str) -> int:
     value = raw.get(key)
-    if not isinstance(value, int):
+    if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"missing required integer field: {key}")
     return value
 
@@ -286,6 +286,6 @@ def _optional_int_value(raw: JsonDict, key: str) -> int | None:
     value = raw.get(key)
     if value is None:
         return None
-    if not isinstance(value, int):
+    if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"invalid integer field: {key}")
     return value

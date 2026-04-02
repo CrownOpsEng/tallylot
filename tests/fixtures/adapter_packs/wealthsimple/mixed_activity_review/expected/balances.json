@@ -15,7 +15,7 @@
     "asset": "CAD",
     "balance_kind": "available",
     "notes": "",
-    "quantity": "-10001.25",
+    "quantity": "-10000",
     "source": "WealthSimple",
     "wallet": "acct-1"
   }

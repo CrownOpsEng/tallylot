@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import cast
 
 import pytest
 
@@ -9,6 +10,7 @@ from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicKind,
+    FactDirection,
     FactLegPolicy,
     JournalIntent,
     LegKind,
@@ -16,10 +18,16 @@ from tallylot.domain.transactions import (
     ProjectionType,
     TaxTreatmentCode,
 )
-from tallylot.ports.source_translation import ActivityDraftSeed, EconomicActivityDraft, classification, economic_leg
+from tallylot.ports.source_translation import (
+    ActivityDraftSeed,
+    DraftDirection,
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+)
 
 
-def test_activity_draft_seed_defaults_to_strict_leg_policy() -> None:
+def test_activity_draft_seed_requires_explicit_leg_policy() -> None:
     seed = ActivityDraftSeed(
         activity_id="txn-1",
         timestamp=datetime(2025, 1, 1, tzinfo=UTC),
@@ -29,7 +37,7 @@ def test_activity_draft_seed_defaults_to_strict_leg_policy() -> None:
     assert seed.leg_policy == SINGLE_PRIMARY_ACTIVITY_POLICY
 
 
-def test_economic_activity_draft_defaults_to_strict_leg_policy() -> None:
+def test_economic_activity_draft_preserves_explicit_leg_policy() -> None:
     draft = EconomicActivityDraft(
         activity_id="txn-1",
         source="fixture",
@@ -109,3 +117,22 @@ def test_economic_activity_draft_rejects_legs_that_exceed_declared_policy() -> N
         max_in_count=2,
         max_out_count=0,
     )
+
+
+def test_economic_activity_draft_rejects_invalid_direction_metadata() -> None:
+    with pytest.raises(ValueError, match="unsupported fact leg direction: buy"):
+        economic_leg(
+            direction=cast(DraftDirection, "buy"),
+            kind=LegKind.PRIMARY,
+            asset="BTC",
+            amount=Decimal("1"),
+        )
+
+    with pytest.raises(ValueError, match="unsupported fact leg attributed_to_direction: side"):
+        economic_leg(
+            direction="out",
+            kind=LegKind.CHARGE,
+            asset="CAD",
+            amount=Decimal("1"),
+            attributed_to_direction=cast(FactDirection, "side"),
+        )

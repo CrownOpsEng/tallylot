@@ -135,6 +135,7 @@ class LedgerLiveAdapter:
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         drafts: list[EconomicActivityDraft] = []
+        issues: list[IssueRecord] = []
         operations_by_hash: dict[str, list[tuple[str, dict[str, str]]]] = defaultdict(list)
         for path in matching_file_paths(raw_dir):
             for index, row in enumerate(read_csv_rows(path), start=2):
@@ -144,16 +145,36 @@ class LedgerLiveAdapter:
                 operations_by_hash[operation_hash].append((f"{path.name}:row:{index}", row))
 
         for operation_hash, grouped_rows in sorted(operations_by_hash.items()):
-            type_map = {row.get("Operation Type", "").strip().upper(): row for _, row in grouped_rows}
-            inbound = type_map.get("IN")
-            outbound = type_map.get("OUT")
-            fee_row = type_map.get("FEES")
-            if inbound is None or outbound is None:
-                continue
-            timestamp = _parse_timestamp((inbound.get("Operation Date") or "").strip())
-            account_label = (inbound.get("Account Name") or "").strip()
+            rows_by_type: dict[str, list[tuple[str, dict[str, str]]]] = defaultdict(list)
+            for raw_ref, row in grouped_rows:
+                rows_by_type[(row.get("Operation Type", "") or "").strip().upper()].append((raw_ref, row))
+            inbound_rows = rows_by_type.get("IN", [])
+            outbound_rows = rows_by_type.get("OUT", [])
+            fee_rows = rows_by_type.get("FEES", [])
             raw_file = grouped_rows[0][0].split(":row:", maxsplit=1)[0]
             raw_row_ref = ";".join(f"{raw_file}:{ref.split(':', maxsplit=1)[1]}" for ref, _ in grouped_rows)
+            if len(inbound_rows) != 1 or len(outbound_rows) != 1 or len(fee_rows) > 1:
+                issues.append(
+                    IssueRecord(
+                        issue_id=f"ledger_live:{raw_file}:{operation_hash}:unsupported_group",
+                        source=str(profile.source),
+                        adapter_id="ledger_live",
+                        severity="medium",
+                        kind="unsupported_group",
+                        message=(
+                            "Ledger Live grouped operation has an unsupported leg shape; "
+                            "expected exactly one IN row, one OUT row, and at most one FEES row."
+                        ),
+                        raw_file=raw_file,
+                        raw_row_ref=raw_row_ref,
+                    )
+                )
+                continue
+            _, inbound = inbound_rows[0]
+            _, outbound = outbound_rows[0]
+            fee_row = fee_rows[0][1] if fee_rows else None
+            timestamp = _parse_timestamp((inbound.get("Operation Date") or "").strip())
+            account_label = (inbound.get("Account Name") or "").strip()
             fee_amount = Decimal((fee_row or {}).get("Operation Amount") or "0")
             fee_asset = (fee_row or outbound).get("Currency Ticker") or ""
             drafts.append(
@@ -197,6 +218,7 @@ class LedgerLiveAdapter:
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         return translation_batch_from_drafts(
             drafts,
+            issues=issues,
             wallet_inventory=wallet_inventory,
         )
 

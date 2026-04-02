@@ -44,11 +44,11 @@ ARCHITECTURE_DOC_PATHS = [
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
 ]
 PRODUCTION_COMMAND_ROUTE_PATTERN = re.compile(
-    r"uv run tallylot "
+    r'(?:UV_PROJECT_ENVIRONMENT="\$HOME/\.venvs/tallylot-py312" )?uv run tallylot '
     r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
 )
 ORACLE_COMMAND_ROUTE_PATTERN = re.compile(
-    r"uv run python -m tools\.oracles\.cli "
+    r'(?:UV_PROJECT_ENVIRONMENT="\$HOME/\.venvs/tallylot-py312" )?uv run python -m tools\.oracles\.cli '
     r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
 )
 
@@ -166,8 +166,15 @@ def test_source_intake_route_mentions_current_typed_commands() -> None:
 def test_round_verification_route_mentions_oracle_cli_commands() -> None:
     text = (REPO_ROOT / ".claude" / "commands" / "round-verification.md").read_text(encoding="utf-8")
 
-    assert "uv run python -m tools.oracles.cli round scaffold" in text
-    assert "uv run python -m tools.oracles.cli verification compare" in text
+    scaffold_command = (
+        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli round scaffold'
+    )
+    compare_command = (
+        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli verification compare'
+    )
+
+    assert scaffold_command in text
+    assert compare_command in text
 
 
 def test_supporting_route_mentions_checkpoint_pdf_balance_extraction_command() -> None:
@@ -265,8 +272,8 @@ def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
     text = (REPO_ROOT / "docs" / "architecture" / "commit-standards.md").read_text(encoding="utf-8")
 
     assert "Do not describe `mypy` or `pyright` as covering `pylint` findings." in text
-    assert "uv run pylint <touched-file>" in text
-    assert "uv run pytest -q --no-cov <touched-test-file>" in text
+    assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>' in text
+    assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>' in text
     assert "git show HEAD:<path>" in text
 
 

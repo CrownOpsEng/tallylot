@@ -131,3 +131,25 @@ def test_cointracking_projection_rejects_unsupported_multi_leg_shapes() -> None:
                 ),
             )
         )
+
+
+def test_cointracking_projection_rejects_inbound_charge_legs() -> None:
+    with pytest.raises(ValueError, match="charge legs must be outbound"):
+        cointracking_row(
+            TransactionFact(
+                fact_id=TransactionId("txn-3"),
+                source=SourceId("fixture"),
+                adapter_id=AdapterId("fixture"),
+                timestamp=datetime(2025, 1, 1, tzinfo=UTC),
+                account="Fixture",
+                wallet="Primary",
+                classification=FactClassification(
+                    economic_kind=EconomicKind.CASH_EXPENSE,
+                    projection_type=ProjectionType.EXPENSE_NON_TAXABLE,
+                    journal_intent=JournalIntent.EXPENSE_RECOGNITION,
+                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+                ),
+                legs=(EconomicLeg(direction="in", kind=LegKind.CHARGE, asset=AssetSymbol("CAD"), amount=Decimal("1")),),
+                leg_policy=FactLegPolicy(limits=(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_in_count=1),)),
+            )
+        )

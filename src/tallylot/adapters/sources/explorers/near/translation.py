@@ -17,7 +17,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, FactDirection, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import EconomicLegDraft
@@ -60,18 +60,6 @@ def translate_transactions(
                 )
                 continue
             if method == "transfer":
-                net_amount = amount - fee
-                if net_amount <= Decimal("0"):
-                    issues.append(
-                        _row_issue(
-                            profile,
-                            path.name,
-                            raw_row_ref,
-                            issue_id_suffix="non_positive_net_transfer",
-                            message="NEAR transfer row has a non-positive net amount after fees.",
-                        )
-                    )
-                    continue
                 drafts.append(
                     EconomicActivityDraft(
                         activity_id=f"near:{path.name}:{raw_row_ref}",
@@ -86,13 +74,16 @@ def translate_transactions(
                             journal_intent=JournalIntent.FUNDING_INFLOW,
                             tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                         ),
-                        leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
+                        leg_policy=_transfer_in_policy(fee),
                         description=f"Transfer into {profile.source} - {tx_hash}",
                         raw_file=path.name,
                         raw_row_ref=raw_row_ref,
                         tx_hash=tx_hash,
                         provider_operation_key=method,
-                        legs=(economic_leg(direction="in", kind=LegKind.PRIMARY, asset="NEAR", amount=net_amount),),
+                        legs=(
+                            economic_leg(direction="in", kind=LegKind.PRIMARY, asset="NEAR", amount=amount),
+                            *_charge_legs(fee, attributed_to_direction="in"),
+                        ),
                     )
                 )
                 continue
@@ -121,7 +112,7 @@ def translate_transactions(
                             provider_operation_key=method,
                             legs=(
                                 economic_leg(direction="out", kind=LegKind.PRIMARY, asset="NEAR", amount=amount),
-                                *_charge_legs(fee),
+                                *_charge_legs(fee, attributed_to_direction="out"),
                             ),
                         ),
                         EconomicActivityDraft(
@@ -161,6 +152,14 @@ def translate_transactions(
 
 
 def _staking_out_policy(fee: Decimal) -> FactLegPolicy:
+    return _single_primary_with_optional_charge_policy(fee)
+
+
+def _transfer_in_policy(fee: Decimal) -> FactLegPolicy:
+    return _single_primary_with_optional_charge_policy(fee)
+
+
+def _single_primary_with_optional_charge_policy(fee: Decimal) -> FactLegPolicy:
     if fee <= Decimal("0"):
         return SINGLE_PRIMARY_ACTIVITY_POLICY
     return FactLegPolicy(
@@ -171,7 +170,7 @@ def _staking_out_policy(fee: Decimal) -> FactLegPolicy:
     )
 
 
-def _charge_legs(fee: Decimal) -> tuple[EconomicLegDraft, ...]:
+def _charge_legs(fee: Decimal, *, attributed_to_direction: FactDirection) -> tuple[EconomicLegDraft, ...]:
     if fee <= Decimal("0"):
         return ()
     return (
@@ -181,7 +180,7 @@ def _charge_legs(fee: Decimal) -> tuple[EconomicLegDraft, ...]:
             asset="NEAR",
             amount=fee,
             subtype="network_fee",
-            attributed_to_direction="out",
+            attributed_to_direction=attributed_to_direction,
         ),
     )
 

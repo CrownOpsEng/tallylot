@@ -28,6 +28,7 @@ class StructuredCsvRowValidator:
             self._validate_timestamp_field,
             self._validate_numeric_fields,
             self._validate_side_fields,
+            self._validate_side_attribution_targets,
         )
         for validator in validators:
             issue = validator(row, index)
@@ -178,4 +179,33 @@ class StructuredCsvRowValidator:
                     "invalid_side_value",
                     f"{field_name} must be 'in', 'out', or blank.",
                 )
+        return None
+
+    def _validate_side_attribution_targets(
+        self,
+        row: dict[str, str | None],
+        index: int,
+    ) -> IssueRecord | None:
+        for side_field, asset_field, target_asset_field in (
+            ("charge_side", "charge_asset", "asset_in"),
+            ("rebate_side", "rebate_asset", "asset_in"),
+            ("charge_side", "charge_asset", "asset_out"),
+            ("rebate_side", "rebate_asset", "asset_out"),
+        ):
+            if not (row.get(asset_field) or "").strip():
+                continue
+            side_value = (row.get(side_field) or "").strip()
+            if not side_value:
+                continue
+            if side_value == "in" and target_asset_field != "asset_in":
+                continue
+            if side_value == "out" and target_asset_field != "asset_out":
+                continue
+            if (row.get(target_asset_field) or "").strip():
+                continue
+            return self.feedback.issue(
+                index,
+                "invalid_side_attribution",
+                f"{side_field}={side_value!r} requires a matching {target_asset_field} primary leg.",
+            )
         return None

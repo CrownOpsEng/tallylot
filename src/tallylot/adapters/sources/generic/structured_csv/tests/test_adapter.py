@@ -8,6 +8,7 @@ from tallylot.adapters.sources.generic.structured_csv.contracts import REQUIRED_
 from tallylot.adapters.sources.generic.structured_csv.feedback import StructuredCsvFeedbackFactory
 from tallylot.adapters.sources.generic.structured_csv.normalization import translate_structured_csv
 from tallylot.adapters.sources.generic.structured_csv.validation import StructuredCsvRowValidator
+from tallylot.domain.transactions import LegKind
 from tallylot.ports.source_profiles import FileInventoryEntry
 from tests.support.services import build_source_profile
 
@@ -98,3 +99,62 @@ def test_translate_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
     assert not result.balance_evidence
     assert len(result.issues) == 1
     assert result.issues[0].kind == "invalid_schema"
+
+
+def test_structured_csv_validator_rejects_side_attribution_without_matching_primary_leg() -> None:
+    feedback = StructuredCsvFeedbackFactory(
+        profile=build_source_profile(adapter_id="structured_csv"),
+        adapter_id="structured_csv",
+    )
+    validator = StructuredCsvRowValidator(feedback=feedback)
+
+    issue = validator.validate_row(
+        {
+            "timestamp": "2023-08-06 10:00:00",
+            "category": "deposit",
+            "asset_in": "BTC",
+            "amount_in": "1.0",
+            "asset_out": "",
+            "amount_out": "",
+            "charge_asset": "BTC",
+            "charge_amount": "0.1",
+            "charge_side": "out",
+            "rebate_asset": "",
+            "rebate_amount": "",
+            "rebate_side": "",
+            "tx_hash": "tx-1",
+            "description": "fixture",
+            "account": "Primary",
+            "wallet": "Primary",
+        },
+        2,
+    )
+
+    assert issue is not None
+    assert issue.kind == "invalid_side_attribution"
+
+
+def test_translate_structured_csv_maps_charge_and_rebate_legs(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "transactions.csv").write_text(
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
+        "2023-08-06 10:00:00,trade,BTC,1.0,CAD,-100.0,CAD,-1.0,out,BTC,0.01,in,tx-1,fixture,Primary,Primary\n",
+        encoding="utf-8",
+    )
+
+    result = translate_structured_csv(
+        build_source_profile(adapter_id="structured_csv", raw_dir=str(raw_dir), source="Structured Example"),
+        raw_dir,
+        adapter_id="structured_csv",
+    )
+
+    assert len(result.facts) == 1
+    charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
+    rebate_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.REBATE)
+    assert charge_legs[0].amount == Decimal("1.0")
+    assert charge_legs[0].attributed_to_direction == "out"
+    assert rebate_legs[0].amount == Decimal("0.01")
+    assert rebate_legs[0].attributed_to_direction == "in"

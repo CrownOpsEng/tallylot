@@ -68,6 +68,9 @@ def filter_issues_by_window(
     excluded_count = 0
     for issue in issues:
         if not issue.context_timestamp:
+            if _is_activity_scoped_issue(issue):
+                excluded_count += 1
+                continue
             filtered.append(issue)
             continue
         issue_dt = parse_timestamp(issue.context_timestamp)
@@ -94,8 +97,11 @@ def filter_reviews_by_window(
     filtered: list[NormalizationReviewRecord] = []
     excluded_count = 0
     for review in reviews:
-        if review.scope == "dataset" or not review.context_timestamp:
+        if review.scope == "dataset":
             filtered.append(review)
+            continue
+        if not review.context_timestamp:
+            excluded_count += 1
             continue
         review_dt = parse_timestamp(review.context_timestamp)
         if start_dt is not None and review_dt < start_dt:
@@ -106,3 +112,7 @@ def filter_reviews_by_window(
             continue
         filtered.append(review)
     return tuple(filtered), excluded_count
+
+
+def _is_activity_scoped_issue(issue: IssueRecord) -> bool:
+    return bool(issue.raw_file or issue.raw_row_ref)

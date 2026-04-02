@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import cast
 
 import pytest
 
@@ -11,6 +12,7 @@ from tallylot.domain.transactions import (
     EconomicKind,
     EconomicLeg,
     FactClassification,
+    FactDirection,
     FactLegPolicy,
     JournalIntent,
     LegKind,
@@ -95,6 +97,25 @@ def test_transaction_fact_requires_at_least_one_leg() -> None:
 def test_fact_leg_rejects_non_positive_amounts() -> None:
     with pytest.raises(ValueError, match="fact leg amount must be greater than zero"):
         EconomicLeg(direction="in", kind=LegKind.PRIMARY, asset=AssetSymbol("BTC"), amount=Decimal("0"))
+
+
+def test_fact_leg_rejects_invalid_direction_values() -> None:
+    with pytest.raises(ValueError, match="unsupported fact leg direction: buy"):
+        EconomicLeg(
+            direction=cast(FactDirection, "buy"),
+            kind=LegKind.PRIMARY,
+            asset=AssetSymbol("BTC"),
+            amount=Decimal("1"),
+        )
+
+    with pytest.raises(ValueError, match="unsupported fact leg attributed_to_direction: side"):
+        EconomicLeg(
+            direction="out",
+            kind=LegKind.CHARGE,
+            asset=AssetSymbol("CAD"),
+            amount=Decimal("1"),
+            attributed_to_direction=cast(FactDirection, "side"),
+        )
 
 
 def test_fact_leg_policy_rejects_invalid_limits() -> None:

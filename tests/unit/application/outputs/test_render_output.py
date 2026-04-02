@@ -106,6 +106,28 @@ def test_output_projection_service_rejects_adapters_without_render_capability(tm
         )
 
 
+def test_output_projection_service_rejects_facts_outside_render_policy(tmp_path: Path) -> None:
+    facts_path = _write_facts(tmp_path)
+    service = RenderOutputUseCase(
+        FakeOutputRegistry(
+            FakeOutputAdapter(
+                supported=True,
+                capabilities=frozenset({AdapterCapability.OUTPUT_RENDER}),
+            )
+        ),
+        FilesystemFactRepository(),
+    )
+
+    with pytest.raises(ValueError, match="exceeds cointracking_csv render policy for primary legs"):
+        service.execute(
+            RenderOutputRequest(
+                output_adapter="cointracking_csv",
+                facts_path=facts_path,
+                output_path=tmp_path / "cointracking.csv",
+            )
+        )
+
+
 def _write_facts(tmp_path: Path) -> Path:
     path = tmp_path / "facts.csv"
     fact = TransactionFact(

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.wealthsimple.adapter import WealthsimpleAdapter
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import EconomicKind, JournalIntent, LegKind, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -21,6 +22,10 @@ def test_wealthsimple_fixture_exercises_supported_and_unsupported_rows() -> None
     assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
     assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert str(result.facts[0].timestamp) == "2023-09-22 00:00:00"
+    primary_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.PRIMARY)
+    charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert primary_legs[1].amount == Decimal("9998.75")
+    assert charge_legs[0].amount == Decimal("1.25")
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
     assert "Staking/REWARD" in result.issues[0].message
@@ -36,6 +41,10 @@ def test_wealthsimple_adapter_uses_broker_activity_family_without_filename_depen
     assert len(result.facts) == 1
     assert result.facts[0].raw_file == "broker-export.csv"
     assert result.facts[0].projection_type == ProjectionType.TRADE
+    primary_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.PRIMARY)
+    charge_legs = tuple(leg for leg in result.facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert primary_legs[1].amount == Decimal("17500")
+    assert charge_legs[0].amount == Decimal("12")
     assert not result.issues
 
 

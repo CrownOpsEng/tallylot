@@ -32,6 +32,7 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
     asset = (row.get("Asset") or "").strip().upper()
     quantity = parse_decimal((row.get("Quantity Transacted") or "").strip())
     price_currency = (row.get("Price Currency") or "").strip().upper()
+    subtotal_amount = money_decimal(row.get("Subtotal", ""))
     total_amount = money_decimal(row.get("Total (inclusive of fees and/or spread)", ""))
     fee_amount = money_decimal(row.get("Fees and/or Spread", ""))
     description = coinbase_description(tx_type, row.get("Notes", ""), asset, quantity, total_amount)
@@ -39,7 +40,11 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
     transaction_id = f"coinbase-retail-{row_id}"
     if quantity is None and tx_type not in SUPPORTED_RETAIL_TRANSACTION_TYPES:
         raise ValueError(f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}")
-    if tx_type == "buy" and quantity is not None and total_amount is not None:
+    if (
+        tx_type == "buy"
+        and quantity is not None
+        and (cash_amount := _retail_cash_amount(tx_type, subtotal_amount, total_amount, fee_amount)) is not None
+    ):
         return _draft(
             profile=profile,
             seed=ActivityDraftSeed(
@@ -55,11 +60,15 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             tx_type=tx_type,
             legs=(
                 economic_leg(direction="in", kind=LegKind.PRIMARY, asset=asset, amount=quantity),
-                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=price_currency, amount=total_amount),
+                economic_leg(direction="out", kind=LegKind.PRIMARY, asset=price_currency, amount=cash_amount),
                 *_charge_legs(fee_amount, price_currency, attributed_to_direction="out"),
             ),
         )
-    if tx_type == "sell" and quantity is not None and total_amount is not None:
+    if (
+        tx_type == "sell"
+        and quantity is not None
+        and (cash_amount := _retail_cash_amount(tx_type, subtotal_amount, total_amount, fee_amount)) is not None
+    ):
         return _draft(
             profile=profile,
             seed=ActivityDraftSeed(
@@ -74,7 +83,7 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             ),
             tx_type=tx_type,
             legs=(
-                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=price_currency, amount=total_amount),
+                economic_leg(direction="in", kind=LegKind.PRIMARY, asset=price_currency, amount=cash_amount),
                 economic_leg(direction="out", kind=LegKind.PRIMARY, asset=asset, amount=quantity),
                 *_charge_legs(fee_amount, price_currency, attributed_to_direction="in"),
             ),
@@ -178,6 +187,22 @@ def _charge_legs(
             attributed_to_direction=attributed_to_direction,
         ),
     )
+
+
+def _retail_cash_amount(
+    tx_type: str,
+    subtotal_amount: Decimal | None,
+    total_amount: Decimal | None,
+    fee_amount: Decimal | None,
+) -> Decimal | None:
+    if subtotal_amount is not None:
+        return subtotal_amount
+    if total_amount is None:
+        return None
+    if fee_amount is None or fee_amount <= Decimal("0"):
+        return total_amount
+    cash_amount = total_amount - fee_amount if tx_type == "buy" else total_amount + fee_amount
+    return cash_amount if cash_amount > Decimal("0") else None
 
 
 def _classification_for_type(tx_type: str) -> ActivityClassification:

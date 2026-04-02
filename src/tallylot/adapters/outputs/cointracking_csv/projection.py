@@ -54,6 +54,10 @@ def _single_primary_leg(transaction: TransactionFact, *, direction: str) -> Econ
 
 def _single_charge_leg(transaction: TransactionFact) -> EconomicLeg | None:
     matching_legs = tuple(leg for leg in transaction.legs if leg.kind is LegKind.CHARGE)
+    if any(leg.direction != "out" for leg in matching_legs):
+        raise ValueError(
+            f"fact {transaction.fact_id} has unsupported CoinTracking projection shape: charge legs must be outbound"
+        )
     if len(matching_legs) > 1:
         raise ValueError(
             f"fact {transaction.fact_id} has unsupported CoinTracking projection shape: expected at most one charge leg"

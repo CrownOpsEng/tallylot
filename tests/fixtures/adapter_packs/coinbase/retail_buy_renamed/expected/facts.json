@@ -8,7 +8,7 @@
     "fact_id": "coinbase-retail-tx-1",
     "journal_intent": "asset_exchange",
     "leg_policy": "[{\"kind\":\"charge\",\"max_count\":1,\"max_in_count\":0,\"max_out_count\":1},{\"kind\":\"primary\",\"max_count\":2,\"max_in_count\":1,\"max_out_count\":1}]",
-    "legs": "[{\"direction\":\"in\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"BTC\",\"amount\":\"0.01\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"CAD\",\"amount\":\"610\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"charge\",\"subtype\":\"trading_fee\",\"asset\":\"CAD\",\"amount\":\"10\",\"attributed_to_direction\":\"out\",\"account\":\"\",\"wallet\":\"\"}]",
+    "legs": "[{\"direction\":\"in\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"BTC\",\"amount\":\"0.01\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"primary\",\"subtype\":\"\",\"asset\":\"CAD\",\"amount\":\"600\",\"attributed_to_direction\":\"\",\"account\":\"\",\"wallet\":\"\"},{\"direction\":\"out\",\"kind\":\"charge\",\"subtype\":\"trading_fee\",\"asset\":\"CAD\",\"amount\":\"10\",\"attributed_to_direction\":\"out\",\"account\":\"\",\"wallet\":\"\"}]",
     "operation_group_id": "",
     "projection_type": "trade",
     "provider_operation_key": "buy",
