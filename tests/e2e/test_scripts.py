@@ -130,6 +130,78 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("raw export folder", result.stderr)
 
+    def test_coinbase_normalize_cli_builds_transaction_and_balance_outputs(self) -> None:
+        retail_csv = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / (
+            "retail-export.csv"
+        )
+        pro_statement_a = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / "2021-05 Coinbase Pro - Statement.csv"
+        pro_statement_b = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / "2022-11 Coinbase Pro - Statement.csv"
+        pro_fills = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / "2021-05 Coinbase Pro - Fills.csv"
+        statement_pdf = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / (
+            "coinbase_statement.pdf"
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tx_output = Path(tmpdir) / "coinbase_normalized.csv"
+            balance_output = Path(tmpdir) / "coinbase_balances.csv"
+
+            result = run_script(
+                "coinbase_normalize.py",
+                "--retail-csv",
+                str(retail_csv),
+                "--pro-statement",
+                str(pro_statement_a),
+                "--pro-statement",
+                str(pro_statement_b),
+                "--pro-fills",
+                str(pro_fills),
+                "--pdf",
+                str(statement_pdf),
+                "--tx-output",
+                str(tx_output),
+                "--balance-output",
+                str(balance_output),
+            )
+            summary = json.loads(result.stdout)
+            tx_rows = read_dict_rows(tx_output)
+            balance_rows = read_dict_rows(balance_output)
+
+        self.assertEqual(82, summary["normalized_transaction_rows"])
+        self.assertEqual(82, len(tx_rows))
+        self.assertGreaterEqual(summary["normalized_balance_rows"], 10)
+        self.assertEqual(summary["normalized_balance_rows"], len(balance_rows))
+
+    def test_pdf_balance_extract_cli_reads_supported_repo_pdfs(self) -> None:
+        coinbase_pdf = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / (
+            "coinbase_statement.pdf"
+        )
+        binance_pdf = REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw" / (
+            "binance.pdf"
+        )
+        shakepay_pdf = REPO_ROOT / "01_raw_exports" / "external" / "shakepay" / "raw" / "shakepay_Performance report_2025.pdf"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "balances.csv"
+            result = run_script(
+                "pdf_balance_extract.py",
+                "--source",
+                "auto",
+                "--pdf",
+                str(coinbase_pdf),
+                "--pdf",
+                str(binance_pdf),
+                "--pdf",
+                str(shakepay_pdf),
+                "--output",
+                str(output),
+            )
+            summary = json.loads(result.stdout)
+            rows = read_dict_rows(output)
+
+        self.assertEqual(3, len(summary["pdf_files"]))
+        self.assertGreaterEqual(summary["balance_rows"], 20)
+        self.assertEqual(summary["balance_rows"], len(rows))
+
     def test_binance_unwrap_cli_extracts_and_combines(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             source_dir = Path(tmpdir) / "source" / "raw"
@@ -231,6 +303,44 @@ class ScriptEndToEndTests(unittest.TestCase):
 
         self.assertEqual(1, result.returncode)
         self.assertIn("single path segment without traversal", result.stderr)
+
+    def test_coinbase_check_cli_flags_extra_cointracking_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ledger = Path(tmpdir) / "ledger.csv"
+            normalized = Path(tmpdir) / "normalized.csv"
+            out_dir = Path(tmpdir) / "out"
+            ledger.write_text(
+                (
+                    "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
+                    "Trade,0.00175640,BTC,25.00000000,CAD,1.49000000,CAD,Coinbase,,Bought 0.0017564 BTC for $25.00 CAD,2019-09-11 01:06:26,\n"
+                    "Deposit,25.00000000,CAD,,,0.00000000,,Coinbase,,,2019-09-11 01:06:26,\n"
+                ),
+                encoding="utf-8",
+            )
+            normalized.write_text(
+                (
+                    "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID,"
+                    "match_window_seconds,fee_tolerance,comment_mode,tx_id_mode,allowed_types,raw_source,raw_ref,notes\n"
+                    "Trade,0.00175640,BTC,25.00000000,CAD,1.46965254,CAD,Coinbase,,Bought 0.0017564 BTC for $25.00 CAD,2019-09-11 01:06:35,coinbase-retail-buy-1,20,0.03000000,exact,ignore,Trade,coinbase.csv,buy-1,\n"
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_script(
+                "coinbase_check.py",
+                "--cointracking-ledger",
+                str(ledger),
+                "--normalized-transactions",
+                str(normalized),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            extra_rows = read_dict_rows(out_dir / "extra_rows.csv")
+
+        self.assertEqual("failed", summary["status"])
+        self.assertEqual(1, summary["extra_rows"])
+        self.assertEqual("Deposit", extra_rows[0]["Type"])
 
     def test_overlap_check_cli_writes_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

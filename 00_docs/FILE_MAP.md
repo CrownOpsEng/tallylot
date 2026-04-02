@@ -65,6 +65,9 @@ Loose exports outside the canonical full export folder are not part of the worki
 | File | Purpose |
 | ---- | ------- |
 | `06_scripts/baseline_check.py` | Rebuild the durable baseline validation artifact package |
+| `06_scripts/coinbase_normalize.py` | Convert Coinbase raw CSV and statement-PDF evidence into CoinTracking-schema normalized transaction and balance files |
+| `06_scripts/coinbase_check.py` | Validate CoinTracking Coinbase rows against normalized Coinbase evidence and optional balance rows |
+| `06_scripts/pdf_balance_extract.py` | Extract deterministic balance rows from supported statement PDFs such as Coinbase Binance and Shakepay |
 | `06_scripts/source_manifest.py` | Hash raw external evidence folders into deterministic manifests |
 | `06_scripts/overlap_check.py` | Screen CoinTracking-ready import batches for cutoff overlap and baseline duplicates |
 | `06_scripts/round_scaffold.py` | Create a round folder and seed the round log |

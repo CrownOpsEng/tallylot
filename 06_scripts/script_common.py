@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import csv
 import json
+import subprocess
 from decimal import Decimal
+from datetime import datetime
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Sequence
 
 
 DEFAULT_VERIFICATION_EXPORTS = (
@@ -19,12 +21,65 @@ DEFAULT_VERIFICATION_EXPORTS = (
     "Balance by Exchange",
 )
 
+COINTRACKING_FILE_HEADERS = (
+    "Type",
+    "Buy",
+    "Cur.",
+    "Sell",
+    "Cur.",
+    "Fee",
+    "Cur.",
+    "Exchange",
+    "Group",
+    "Comment",
+    "Date",
+    "Tx-ID",
+)
+
+COINTRACKING_HEADERS = (
+    "Type",
+    "Buy",
+    "Buy Cur.",
+    "Sell",
+    "Sell Cur.",
+    "Fee",
+    "Fee Cur.",
+    "Exchange",
+    "Group",
+    "Comment",
+    "Date",
+    "Tx-ID",
+)
+
+COINTRACKING_INDEX = {
+    "Type": 0,
+    "Buy": 1,
+    "Buy Cur.": 2,
+    "Sell": 3,
+    "Sell Cur.": 4,
+    "Fee": 5,
+    "Fee Cur.": 6,
+    "Exchange": 7,
+    "Group": 8,
+    "Comment": 9,
+    "Date": 10,
+    "Tx-ID": 11,
+}
+
 
 def require_directory(path: Path, label: str) -> Path:
     if not path.exists():
         raise FileNotFoundError(f"{label} does not exist: {path}")
     if not path.is_dir():
         raise NotADirectoryError(f"{label} is not a directory: {path}")
+    return path
+
+
+def require_file(path: Path, label: str) -> Path:
+    if not path.exists():
+        raise FileNotFoundError(f"{label} does not exist: {path}")
+    if not path.is_file():
+        raise FileNotFoundError(f"{label} is not a file: {path}")
     return path
 
 
@@ -63,6 +118,48 @@ def decimal_text(value: Decimal, places: str = "0.00000000") -> str:
     return format(value.quantize(Decimal(places)), "f")
 
 
+def parse_decimal(value: str | None) -> Decimal | None:
+    if value is None:
+        return None
+    text = value.strip()
+    if not text or text == "-":
+        return None
+    text = text.replace("$", "").replace(",", "")
+    if text.startswith("(") and text.endswith(")"):
+        text = f"-{text[1:-1]}"
+    return Decimal(text)
+
+
+def decimal_or_zero(value: str | None) -> Decimal:
+    parsed = parse_decimal(value)
+    return parsed if parsed is not None else Decimal("0")
+
+
+def parse_datetime(value: str, formats: Sequence[str]) -> datetime:
+    for fmt in formats:
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+    format_list = ", ".join(formats)
+    raise ValueError(f"Unable to parse datetime {value!r}; expected one of: {format_list}")
+
+
+def normalize_whitespace(value: str | None) -> str:
+    return " ".join((value or "").split())
+
+
+def extract_pdf_text(pdf_path: Path) -> str:
+    pdf_path = require_file(pdf_path.resolve(), "PDF file")
+    result = subprocess.run(
+        ["pdftotext", str(pdf_path), "-"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
+
+
 def write_csv_rows(
     path: Path,
     fieldnames: list[str],
@@ -75,6 +172,59 @@ def write_csv_rows(
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def read_cointracking_rows(path: Path, extra_headers: Sequence[str] = ()) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    header = [*COINTRACKING_HEADERS, *extra_headers]
+    require_file(path.resolve(), "CoinTracking CSV")
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.reader(handle)
+        actual_header = next(reader, [])
+        expected_prefix = list(COINTRACKING_FILE_HEADERS)
+        expected_with_lpn = [
+            "Type",
+            "Buy",
+            "Cur.",
+            "Sell",
+            "Cur.",
+            "Fee",
+            "Cur.",
+            "Exchange",
+            "Group",
+            "Comment",
+            "Date",
+            "LPN",
+            "Tx-ID",
+        ]
+        has_lpn = actual_header[: len(expected_with_lpn)] == expected_with_lpn
+        if not has_lpn and actual_header[: len(expected_prefix)] != expected_prefix:
+            raise ValueError(f"Unexpected CoinTracking header in {path}: {actual_header}")
+        for raw_row in reader:
+            if not any(cell.strip() for cell in raw_row):
+                continue
+            if has_lpn:
+                raw_row = raw_row[:11] + raw_row[12:]
+            padded = raw_row + [""] * (len(header) - len(raw_row))
+            rows.append(dict(zip(header, padded[: len(header)])))
+    return rows
+
+
+def write_cointracking_rows(
+    path: Path,
+    rows: Iterable[dict[str, object]],
+    *,
+    extra_headers: Sequence[str] = (),
+    encoding: str = "utf-8",
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    header = [*COINTRACKING_HEADERS, *extra_headers]
+    file_header = [*COINTRACKING_FILE_HEADERS, *extra_headers]
+    with path.open("w", newline="", encoding=encoding) as handle:
+        writer = csv.writer(handle)
+        writer.writerow(file_header)
+        for row in rows:
+            writer.writerow([row.get(column, "") for column in header])
 
 
 def write_json(path: Path, payload: object, *, encoding: str = "utf-8") -> None:
