@@ -3127,6 +3127,7 @@ class LedgerLiveAdapter(SourceAdapter):
                         evidence_kind="csv_row",
                         evidence_path=path,
                         confidence="high",
+                        identifier_kind=self._wallet_identifier_kind(identifier_value, account_label),
                     )
                 )
 
@@ -3376,6 +3377,12 @@ class LedgerLiveAdapter(SourceAdapter):
             return "cardano"
         return ""
 
+    def _wallet_identifier_kind(self, identifier_value: str, account_label: str) -> str | None:
+        account = account_label.lower()
+        if "cardano" in account or "ada" in account:
+            return "cardano_account_key"
+        return None
+
 
 class NearAdapter(SourceAdapter):
     name = "near"
@@ -3545,12 +3552,17 @@ class NearAdapter(SourceAdapter):
             filename = row.get("filename", "")
             for match in re.finditer(r"[a-f0-9]{64}", filename.lower()):
                 account_paths.setdefault(match.group(0), raw_dir / filename)
+            near_match = re.search(r"([a-z0-9._-]+\.near)(?:_|\.csv)", filename.lower())
+            if near_match:
+                account_paths.setdefault(near_match.group(1), raw_dir / filename)
         if account_paths:
             return sorted(account_paths.items())
         for path in profile_paths(raw_dir, profile, families={"near_transaction_csv", "near_receipt_csv"}, suffixes={".csv"}):
             for row in read_csv_rows(path):
                 for field in ("To", "Affected", "Involved"):
                     value = (row.get(field) or "").strip().lower()
+                    if value.endswith(".near"):
+                        account_paths.setdefault(value, path)
                     if re.fullmatch(r"[a-f0-9]{64}", value):
                         account_paths.setdefault(value, path)
         return sorted(account_paths.items())
