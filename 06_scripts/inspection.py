@@ -7,11 +7,13 @@ from __future__ import annotations
 import csv
 import json
 import re
+import io
 from dataclasses import dataclass
 from datetime import datetime, timedelta, tzinfo
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from archive_handling import summarize_archive_members
 from script_common import parse_datetime, parse_datetime_to_utc_naive, sniff_csv_dialect, source_timezone_from_filename, tzinfo_label
 
 
@@ -36,6 +38,7 @@ EXPORT_DATE_PATTERNS = (
     re.compile(r"(?<!\d)(?P<date>\d{4}\.\d{2}\.\d{2})(?!\d)"),
     re.compile(r"(?<!\d)(?P<date>\d{8})(?!\d)"),
 )
+COMPACT_TIMESTAMP_PATTERN = re.compile(r"(?<!\d)(?P<timestamp>\d{12}|\d{14})(?!\d)")
 YEAR_MONTH_PATTERN = re.compile(r"(?P<year>20\d{2})[-_.](?P<month>\d{2})")
 YEAR_PATTERN = re.compile(r"(?<!\d)(?P<year>20\d{2})(?!\d)")
 
@@ -55,6 +58,15 @@ class HistoricalDateDecision:
     granularity: str
     basis: str
     review_required: bool = False
+
+
+@dataclass(frozen=True)
+class HistoricalDatePolicy:
+    prefer_last_explicit: bool = True
+    allow_content_span: bool = True
+    allow_compact_timestamp: bool = True
+    allow_year_month_context: bool = True
+    allow_year_context: bool = True
 
 
 @dataclass
@@ -113,6 +125,20 @@ def detect_csv_header(path: Path) -> tuple[list[str], int]:
     return best_row, best_index
 
 
+def detect_csv_header_from_text(text: str) -> tuple[list[str], int]:
+    rows = list(csv.reader(io.StringIO(text)))
+    best_index = -1
+    best_row: list[str] = []
+    for index, row in enumerate(rows[:10]):
+        width = len([cell for cell in row if cell.strip()])
+        if width > len(best_row):
+            best_row = row
+            best_index = index
+    if best_index == -1:
+        return [], -1
+    return best_row, best_index
+
+
 def classify_file_family(path: Path, header: Sequence[str]) -> str:
     name = path.name.lower()
     header_lower = [column.strip().lower() for column in header]
@@ -151,6 +177,8 @@ def classify_file_family(path: Path, header: Sequence[str]) -> str:
         return "near_ft_transaction_csv"
     if has_all("txn hash", "method", "deposit value", "txn fee"):
         return "near_transaction_csv"
+    if has_all("user_id", "utc_time", "account", "operation", "coin", "change", "remark"):
+        return "custodial_transaction_csv"
     if has_all("transaction hash", "blockno", "unixtimestamp", "datetime (utc)", "tokenvalue", "tokensymbol"):
         return "explorer_token_transfer_csv"
     if has_all("transaction hash", "blockno", "unixtimestamp", "datetime (utc)", "token id", "quantity"):
@@ -219,6 +247,19 @@ def inspect_json_payload(path: Path) -> tuple[str, str]:
             return "metamask_state_json", header_preview
         return "json", header_preview
     return "json", type(payload).__name__
+
+
+def inspect_archive_payload(path: Path) -> tuple[str, str, dict[str, str]]:
+    summary = summarize_archive_members(path, inspect_file)
+    preview = summary.get("archive_member_preview", "")
+    family_candidates = [item for item in summary.get("archive_member_families", "").split(";") if item]
+    if len(set(family_candidates)) == 1 and family_candidates:
+        return family_candidates[0], preview, summary
+    if summary.get("archive_detected_source") == "CoinTracking":
+        return "cointracking_archive_bundle", preview, summary
+    if summary.get("archive_detected_source") == "Binance":
+        return "binance_archive_bundle", preview, summary
+    return "archive_bundle", preview, summary
 
 
 def _header_timezone_hint(header: Sequence[str], date_field: str) -> tuple[str, str]:
@@ -466,6 +507,7 @@ def inspect_file(path: Path) -> dict[str, str]:
     timezone_mode = ""
     timezone_value = ""
     timezone_conflict = ""
+    archive_summary: dict[str, str] = {}
     if suffix == ".csv":
         (
             header,
@@ -486,6 +528,8 @@ def inspect_file(path: Path) -> dict[str, str]:
         family = classify_file_family(path, ())
     elif suffix == ".json":
         family, header_preview = inspect_json_payload(path)
+    elif suffix in {".zip", ".tar"} or path.name.lower().endswith((".tar.gz", ".tgz")):
+        family, header_preview, archive_summary = inspect_archive_payload(path)
     return {
         "filename": path.name,
         "suffix": suffix,
@@ -499,23 +543,31 @@ def inspect_file(path: Path) -> dict[str, str]:
         "timezone_mode": timezone_mode,
         "timezone_value": timezone_value,
         "timezone_conflict": timezone_conflict,
+        **archive_summary,
     }
 
 
 def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
-    for path in sorted(file for file in raw_dir.iterdir() if file.is_file()):
-        rows.append(inspect_file(path))
+    for path in sorted(file for file in raw_dir.rglob("*") if file.is_file()):
+        row = inspect_file(path)
+        relative = str(path.relative_to(raw_dir))
+        parts = path.relative_to(raw_dir).parts
+        row["filename"] = relative
+        row["source_path"] = relative
+        row["bundle_id"] = parts[0] if len(parts) > 1 else ""
+        row["bundle_type"] = "bundle" if len(parts) > 1 else "root_file"
+        row["bundle_relative_path"] = str(Path(*parts[1:])) if len(parts) > 1 else path.name
+        row["alias_group"] = ""
+        row["collision_status"] = ""
+        rows.append(row)
     return rows
 
 
-def infer_historical_date(parts: Iterable[str], inspection_row: dict[str, str]) -> HistoricalDateDecision:
-    texts = [part for part in parts if part]
-    for text in texts:
-        for pattern in EXPORT_DATE_PATTERNS:
-            match = pattern.search(text)
-            if match is None:
-                continue
+def _explicit_date_matches(text: str) -> list[tuple[datetime, str]]:
+    matches: list[tuple[datetime, str]] = []
+    for pattern in EXPORT_DATE_PATTERNS:
+        for match in pattern.finditer(text):
             date_text = match.group("date")
             try:
                 if "." in date_text:
@@ -523,29 +575,74 @@ def infer_historical_date(parts: Iterable[str], inspection_row: dict[str, str]) 
                 elif "-" in date_text:
                     parsed = datetime.strptime(date_text, "%Y-%m-%d")
                 else:
-                    compact = date_text[:8]
-                    if len(compact) != 8:
-                        continue
-                    parsed = datetime.strptime(compact, "%Y%m%d")
+                    parsed = datetime.strptime(date_text, "%Y%m%d")
             except ValueError:
                 continue
+            matches.append((parsed, date_text))
+    return matches
+
+
+def _compact_timestamp_matches(text: str) -> list[tuple[datetime, str]]:
+    matches: list[tuple[datetime, str]] = []
+    for match in COMPACT_TIMESTAMP_PATTERN.finditer(text):
+        value = match.group("timestamp")
+        fmt = "%Y%m%d%H%M%S" if len(value) == 14 else "%Y%m%d%H%M"
+        try:
+            parsed = datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+        matches.append((parsed, value))
+    return matches
+
+
+def infer_historical_date(
+    parts: Iterable[str],
+    inspection_row: dict[str, str],
+    *,
+    policy: HistoricalDatePolicy | None = None,
+) -> HistoricalDateDecision:
+    effective_policy = policy or HistoricalDatePolicy()
+    texts = [part for part in parts if part]
+
+    explicit_matches: list[tuple[datetime, str]] = []
+    for text in texts:
+        explicit_matches.extend(_explicit_date_matches(text))
+    if explicit_matches:
+        parsed, date_text = explicit_matches[-1] if effective_policy.prefer_last_explicit else explicit_matches[0]
+        return HistoricalDateDecision(
+            capture_id=parsed.strftime("%Y-%m"),
+            granularity="month",
+            basis=f"filename_or_folder:{date_text}",
+        )
+
+    if effective_policy.allow_compact_timestamp:
+        compact_matches: list[tuple[datetime, str]] = []
+        for text in texts:
+            compact_matches.extend(_compact_timestamp_matches(text))
+        if compact_matches:
+            parsed, token = compact_matches[-1] if effective_policy.prefer_last_explicit else compact_matches[0]
             return HistoricalDateDecision(
                 capture_id=parsed.strftime("%Y-%m"),
                 granularity="month",
-                basis=f"filename_or_folder:{date_text}",
+                basis=f"filename_or_folder:{token}",
             )
 
-    for text in texts:
-        match = YEAR_MONTH_PATTERN.search(text)
-        if match is not None:
+    if effective_policy.allow_year_month_context:
+        year_month_matches: list[str] = []
+        for text in texts:
+            year_month_matches.extend(match.group(0) for match in YEAR_MONTH_PATTERN.finditer(text))
+        if year_month_matches:
+            token = year_month_matches[-1] if effective_policy.prefer_last_explicit else year_month_matches[0]
+            match = YEAR_MONTH_PATTERN.search(token)
+            assert match is not None
             return HistoricalDateDecision(
                 capture_id=f"{match.group('year')}-{match.group('month')}",
                 granularity="month",
-                basis=f"filename_or_folder:{match.group(0)}",
+                basis=f"filename_or_folder:{token}",
             )
 
     min_timestamp = inspection_row.get("min_timestamp", "")
-    if min_timestamp:
+    if effective_policy.allow_content_span and min_timestamp:
         parsed = datetime.strptime(min_timestamp, "%Y-%m-%d %H:%M:%S")
         return HistoricalDateDecision(
             capture_id=parsed.strftime("%Y-%m"),
@@ -553,13 +650,16 @@ def infer_historical_date(parts: Iterable[str], inspection_row: dict[str, str]) 
             basis=f"content_span:{inspection_row.get('min_timestamp', '')}",
         )
 
-    for text in texts:
-        match = YEAR_PATTERN.search(text)
-        if match is not None:
+    if effective_policy.allow_year_context:
+        year_matches: list[str] = []
+        for text in texts:
+            year_matches.extend(match.group("year") for match in YEAR_PATTERN.finditer(text))
+        if year_matches:
+            year = year_matches[-1] if effective_policy.prefer_last_explicit else year_matches[0]
             return HistoricalDateDecision(
-                capture_id=match.group("year"),
+                capture_id=year,
                 granularity="year",
-                basis=f"filename_or_folder:{match.group('year')}",
+                basis=f"filename_or_folder:{year}",
             )
 
     return HistoricalDateDecision(

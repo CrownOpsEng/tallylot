@@ -21,6 +21,7 @@ def test_resolve_routing_decision_routes_cointracking_exports_to_ledger_history(
 
     assert decision.role == "ledger_export"
     assert "01_raw_exports/cointracking/history" in str(decision.destination_dir)
+    assert decision.bundle_type == "single_file_bundle"
 
 
 def test_resolve_routing_decision_defaults_binance_loose_files_to_source_raw(tmp_path: Path) -> None:
@@ -43,3 +44,5 @@ def test_resolve_routing_decision_defaults_binance_loose_files_to_source_raw(tmp
     assert decision.role == "source_raw"
     assert decision.source_folder == "binance"
     assert decision.capture_id == "2021-05"
+    assert decision.bundle_type == "synthetic_companion_bundle"
+    assert decision.bundle_id == "binance-isolated-margin-loose"

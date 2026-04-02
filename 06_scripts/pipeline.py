@@ -9,11 +9,14 @@ import json
 import shutil
 from collections import defaultdict
 from dataclasses import replace
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from archive_handling import inspect_archive_members, read_archive_member_bytes
 from inspection import inspect_file
 from overlap_engine import summarize_candidate_overlap, summarize_file_overlap, write_candidate_overlap_artifacts
+from package_resolution import reconcile_bundle_packages
 from pipeline_common import (
     CANONICAL_BALANCE_HEADERS,
     CANONICAL_EVENT_HEADERS,
@@ -26,6 +29,7 @@ from pipeline_common import (
     parse_canonical_timestamp,
     read_profile,
     repo_project_window_start,
+    source_slug,
     write_profile_artifacts,
 )
 from render_cointracking import RENDER_METADATA_HEADERS, render_cointracking_rows
@@ -36,12 +40,13 @@ from script_common import (
     read_cointracking_rows,
     require_directory,
     require_file,
+    sha256sum,
     write_cointracking_rows,
     write_csv_rows,
     write_json,
 )
 from source_adapters import decisions_fingerprint, get_adapter, load_exception_decisions
-from source_manifest import build_manifest_rows, write_manifest
+from source_manifest import write_manifest
 from wallet_inventory_common import WALLET_EVIDENCE_HEADERS, WALLET_ISSUE_HEADERS, dedupe_rows, wallet_issue_row
 
 
@@ -606,6 +611,77 @@ def refresh_wallet_inventory(repo_root: Path, *, out_dir: Path | None = None) ->
     }
 
 
+def _build_capture_manifest_rows(planned_rows: Sequence[dict[str, str]]) -> list[dict[str, object]]:
+    aliases_by_group: dict[str, list[str]] = defaultdict(list)
+    for row in planned_rows:
+        if row.get("alias_group"):
+            aliases_by_group[row["alias_group"]].append(row["source_path"])
+    rows: list[dict[str, object]] = []
+    for row in sorted(
+        (row for row in planned_rows if row.get("placement_status") in {"placed_primary", "placed_renamed"}),
+        key=lambda item: item["destination_relative_path"],
+    ):
+        destination_path = Path(row["destination_path"])
+        rows.append(
+            {
+                "filename": row["destination_relative_path"],
+                "bundle_id": row["bundle_id"],
+                "bundle_type": row["bundle_type"],
+                "bundle_relative_path": row["bundle_relative_path"],
+                "source_paths": "; ".join(sorted(dict.fromkeys(aliases_by_group.get(row["alias_group"], [row["source_path"]])))),
+                "alias_group": row["alias_group"],
+                "collision_status": row["collision_status"],
+                "size_bytes": destination_path.stat().st_size if destination_path.exists() else row["size_bytes"],
+                "sha256": row["sha256"],
+            }
+        )
+    return rows
+
+
+def _overlap_windows(a_start: str, a_end: str, b_start: str, b_end: str) -> bool:
+    if not all((a_start, a_end, b_start, b_end)):
+        return False
+    a_start_dt = parse_canonical_timestamp(a_start, label="a_start")
+    a_end_dt = parse_canonical_timestamp(a_end, label="a_end")
+    b_start_dt = parse_canonical_timestamp(b_start, label="b_start")
+    b_end_dt = parse_canonical_timestamp(b_end, label="b_end")
+    return a_start_dt <= b_end_dt and b_start_dt <= a_end_dt
+
+
+@lru_cache(maxsize=None)
+def _capture_window_inventory(capture_dir: Path) -> tuple[tuple[str, str, str], ...]:
+    rows: list[tuple[str, str, str]] = []
+    for path in sorted(file for file in capture_dir.rglob("*") if file.is_file() and file.name != "manifest.csv"):
+        inspection_row = inspect_file(path)
+        rows.append((str(path), inspection_row.get("min_timestamp", ""), inspection_row.get("max_timestamp", "")))
+    return tuple(rows)
+
+
+def _existing_capture_window_hits(repo_root: Path, decision_row: dict[str, str]) -> list[str]:
+    if decision_row["role"] != "source_raw":
+        return []
+    existing_capture = repo_root / "01_raw_exports" / "external" / decision_row["source_folder"] / decision_row["capture_id"]
+    if not existing_capture.exists():
+        return []
+    candidate_start = decision_row.get("inspection_min_timestamp", "")
+    candidate_end = decision_row.get("inspection_max_timestamp", "")
+    if not candidate_start or not candidate_end:
+        return [str(existing_capture)]
+    hits: list[str] = []
+    for path, existing_start, existing_end in _capture_window_inventory(existing_capture):
+        if _overlap_windows(candidate_start, candidate_end, existing_start, existing_end):
+            hits.append(path)
+            if len(hits) >= 5:
+                break
+    return hits
+
+
+def _archive_members_for_plan(path: Path, inspection_row: dict[str, str]) -> list[dict[str, str]]:
+    if inspection_row.get("archive_contains_crypto_records", "") != "yes":
+        return []
+    return inspect_archive_members(path, inspect_file)
+
+
 def plan_intake_dump(
     *,
     repo_root: Path,
@@ -621,7 +697,6 @@ def plan_intake_dump(
     overlap_by_path = {row["path"]: row for row in overlap_rows}
 
     planned_rows: list[dict[str, str]] = []
-    copied_files = 0
     review_count = 0
     for path in files:
         inspection_row = inspect_file(path)
@@ -631,28 +706,37 @@ def plan_intake_dump(
             path=path,
             inspection_row=inspection_row,
         )
-        destination_path = decision.destination_dir / path.name
-        if apply and not decision.review_required:
-            decision.destination_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(path, destination_path)
-            copied_files += 1
+        overlap_row = overlap_by_path.get(str(path.resolve()), {})
+        review_codes = list(decision.review_codes)
         if decision.review_required:
             review_count += 1
-        overlap_row = overlap_by_path.get(str(path.resolve()), {})
         planned_rows.append(
             {
                 "path": str(path.resolve()),
+                "source_path": str(path.resolve()),
+                "archive_source_path": "",
+                "archive_member_name": "",
                 "role": decision.role,
                 "source_label": decision.source_label,
+                "source_folder": decision.source_folder,
                 "system_label": decision.system_label,
                 "capture_id": decision.capture_id,
                 "capture_basis": decision.capture_basis,
-                "batch_slug": decision.batch_slug,
+                "date_policy": decision.date_policy,
+                "bundle_id": decision.bundle_id,
+                "bundle_type": decision.bundle_type,
+                "bundle_relative_path": decision.bundle_relative_path,
                 "destination_dir": str(decision.destination_dir),
-                "destination_path": str(destination_path),
+                "destination_path": str(decision.destination_path),
+                "destination_relative_path": str(Path(decision.bundle_id) / decision.bundle_relative_path),
+                "placed_filename": Path(decision.destination_path).name,
+                "placement_status": "planned",
+                "collision_status": "none",
+                "alias_group": "",
                 "confidence": decision.confidence,
                 "review_required": "yes" if decision.review_required else "no",
                 "review_reason": decision.review_reason,
+                "review_codes": ";".join(review_codes),
                 "merge_recommendation": decision.merge_recommendation,
                 "inspection_family": inspection_row.get("family", ""),
                 "inspection_min_timestamp": inspection_row.get("min_timestamp", ""),
@@ -660,31 +744,187 @@ def plan_intake_dump(
                 "overlap_reasons": overlap_row.get("reasons", ""),
                 "overlap_repo_matches": overlap_row.get("repo_matches", ""),
                 "overlap_incoming_match": overlap_row.get("incoming_match", ""),
+                "raw_overlap_status": "",
+                "raw_overlap_targets": "",
+                "sha256": sha256sum(path),
+                "size_bytes": str(path.stat().st_size),
             }
         )
+        for member in _archive_members_for_plan(path, inspection_row):
+            member_name = member["member_name"]
+            planned_rows.append(
+                {
+                    "path": f"{path.resolve()}::{member_name}",
+                    "source_path": f"{path.resolve()}::{member_name}",
+                    "archive_source_path": str(path.resolve()),
+                    "archive_member_name": member_name,
+                    "role": decision.role,
+                    "source_label": decision.source_label,
+                    "source_folder": decision.source_folder,
+                    "system_label": decision.system_label,
+                    "capture_id": decision.capture_id,
+                    "capture_basis": decision.capture_basis,
+                    "date_policy": decision.date_policy,
+                    "bundle_id": decision.bundle_id,
+                    "bundle_type": decision.bundle_type,
+                    "bundle_relative_path": str(Path("contents") / member_name),
+                    "destination_dir": str(decision.destination_dir),
+                    "destination_path": str(decision.destination_dir / "contents" / member_name),
+                    "destination_relative_path": str(Path(decision.bundle_id) / "contents" / member_name),
+                    "placed_filename": Path(member_name).name,
+                    "placement_status": "planned",
+                    "collision_status": "none",
+                    "alias_group": "",
+                    "confidence": decision.confidence,
+                    "review_required": "no",
+                    "review_reason": "",
+                    "review_codes": "",
+                    "merge_recommendation": decision.merge_recommendation,
+                    "inspection_family": member.get("family", ""),
+                    "inspection_min_timestamp": member.get("min_timestamp", ""),
+                    "inspection_max_timestamp": member.get("max_timestamp", ""),
+                    "overlap_reasons": "",
+                    "overlap_repo_matches": "",
+                    "overlap_incoming_match": "",
+                    "raw_overlap_status": "",
+                    "raw_overlap_targets": "",
+                    "sha256": member["sha256"],
+                    "size_bytes": member["size_bytes"],
+                }
+            )
+
+    groups: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in planned_rows:
+        groups[row["destination_path"]].append(row)
+
+    package_decisions = reconcile_bundle_packages(planned_rows)
+    duplicate_packages: set[tuple[str, str, str, str]] = set()
+    overlap_packages: set[tuple[str, str, str, str]] = set()
+    for row in planned_rows:
+        package_key = (row["role"], row["source_folder"], row["capture_id"], row["bundle_id"])
+        package_decision = package_decisions.get(package_key)
+        if package_decision is None:
+            row["package_status"] = ""
+            row["package_primary_bundle_id"] = ""
+            row["package_related_bundles"] = ""
+            continue
+        row["package_status"] = package_decision["package_status"]
+        row["package_primary_bundle_id"] = package_decision["package_primary_bundle_id"]
+        row["package_related_bundles"] = package_decision["package_related_bundles"]
+        if package_decision["package_status"].startswith("duplicate_package"):
+            duplicate_packages.add(package_key)
+        elif package_decision["package_status"] == "overlap_partial_review":
+            overlap_packages.add(package_key)
+            row["review_required"] = "yes"
+            row["review_reason"] = "; ".join(
+                part for part in [row["review_reason"], f"Package overlap with {package_decision['package_related_bundles']}"] if part
+            )
+            row["review_codes"] = ";".join(sorted(set(filter(None, (row["review_codes"] + ";package_overlap_review").split(";")))))
+
+    copied_files = 0
+    renamed_collisions = 0
+    alias_groups = 0
+    for destination_path, rows in groups.items():
+        active_rows = [row for row in rows if not row.get("package_status", "").startswith("duplicate_package")]
+        if not active_rows:
+            for row in rows:
+                row["placement_status"] = "package_duplicate_skip"
+            continue
+        rows = active_rows
+        if len(rows) == 1:
+            rows[0]["placement_status"] = "placed_primary"
+            continue
+
+        rows.sort(key=lambda item: (item["sha256"], item["source_path"]))
+        alias_group = source_slug(destination_path) or "alias"
+        alias_groups += 1
+        primary_by_hash: dict[str, dict[str, str]] = {}
+        for row in rows:
+            primary = primary_by_hash.get(row["sha256"])
+            if primary is None:
+                primary_by_hash[row["sha256"]] = row
+                row["alias_group"] = alias_group
+                row["placement_status"] = "placed_primary"
+                row["collision_status"] = "none"
+                continue
+            row["alias_group"] = alias_group
+            row["placement_status"] = "alias_only"
+            row["collision_status"] = "identical_duplicate_alias"
+
+        distinct_primary_rows = sorted(primary_by_hash.values(), key=lambda item: item["source_path"])
+        if len(distinct_primary_rows) > 1:
+            for index, row in enumerate(distinct_primary_rows):
+                suffix = Path(row["destination_path"]).suffix
+                stem = Path(row["destination_path"]).stem
+                row["placement_status"] = "placed_primary" if index == 0 else "placed_renamed"
+                if index > 0:
+                    renamed_collisions += 1
+                    new_name = f"{stem}__{row['sha256'][:8]}{suffix}"
+                    row["placed_filename"] = new_name
+                    row["collision_status"] = "renamed_content_collision"
+                    row["review_required"] = "yes"
+                    row["review_reason"] = "; ".join(part for part in [row["review_reason"], "Content collision required deterministic rename."] if part)
+                    row["review_codes"] = ";".join(sorted(set(filter(None, (row["review_codes"] + ";collision_renamed").split(";")))))
+                    row["destination_relative_path"] = str(Path(row["bundle_id"]) / new_name)
+                    row["destination_path"] = str(Path(row["destination_dir"]) / new_name)
+
+    for row in planned_rows:
+        raw_hits = _existing_capture_window_hits(repo_root, row)
+        row["raw_overlap_status"] = "capture_window_overlap" if raw_hits else ""
+        row["raw_overlap_targets"] = "; ".join(raw_hits)
+    review_count = sum(1 for row in planned_rows if row["review_required"] == "yes")
 
     if apply:
-        touched_dirs = sorted({Path(row["destination_dir"]) for row in planned_rows if row["review_required"] == "no"})
-        for directory in touched_dirs:
-            rows = build_manifest_rows(directory, directory / "manifest.csv")
-            write_manifest(directory / "manifest.csv", rows)
+        for row in planned_rows:
+            if row["placement_status"] not in {"placed_primary", "placed_renamed"}:
+                continue
+            destination_path = Path(row["destination_path"])
+            destination_path.parent.mkdir(parents=True, exist_ok=True)
+            if "::" in row["source_path"]:
+                archive_path = Path(row["archive_source_path"])
+                destination_path.write_bytes(read_archive_member_bytes(archive_path, row["archive_member_name"]))
+            else:
+                shutil.copy2(Path(row["source_path"]), destination_path)
+            copied_files += 1
+        capture_rows: dict[Path, list[dict[str, str]]] = defaultdict(list)
+        for row in planned_rows:
+            capture_rows[Path(row["destination_dir"]).parent].append(row)
+        for capture_dir, rows in sorted(capture_rows.items()):
+            manifest_rows = _build_capture_manifest_rows(rows)
+            write_manifest(capture_dir / "manifest.csv", manifest_rows)
 
     report_dir.mkdir(parents=True, exist_ok=True)
     write_csv_rows(
         report_dir / "intake_plan.csv",
         list(planned_rows[0].keys()) if planned_rows else [
             "path",
+            "source_path",
+            "archive_source_path",
+            "archive_member_name",
             "role",
             "source_label",
+            "source_folder",
             "system_label",
             "capture_id",
             "capture_basis",
-            "batch_slug",
+            "date_policy",
+            "bundle_id",
+            "bundle_type",
+            "bundle_relative_path",
             "destination_dir",
             "destination_path",
+            "destination_relative_path",
+            "placed_filename",
+            "placement_status",
+            "collision_status",
+            "alias_group",
+            "package_status",
+            "package_primary_bundle_id",
+            "package_related_bundles",
             "confidence",
             "review_required",
             "review_reason",
+            "review_codes",
             "merge_recommendation",
             "inspection_family",
             "inspection_min_timestamp",
@@ -692,6 +932,10 @@ def plan_intake_dump(
             "overlap_reasons",
             "overlap_repo_matches",
             "overlap_incoming_match",
+            "raw_overlap_status",
+            "raw_overlap_targets",
+            "sha256",
+            "size_bytes",
         ],
         planned_rows,
     )
@@ -707,6 +951,10 @@ def plan_intake_dump(
         "planned_files": len(planned_rows),
         "copied_files": copied_files,
         "review_required_files": review_count,
+        "alias_groups": alias_groups,
+        "renamed_collisions": renamed_collisions,
+        "duplicate_packages": len(duplicate_packages),
+        "overlap_packages": len(overlap_packages),
         "report_dir": str(report_dir),
         "file_overlap_summary": str(report_dir / "file_overlap_summary.json"),
         "intake_plan_csv": str(report_dir / "intake_plan.csv"),

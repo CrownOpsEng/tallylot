@@ -4,12 +4,21 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from inspection import HistoricalDateDecision, infer_historical_date
+from inspection import HistoricalDateDecision, HistoricalDatePolicy, infer_historical_date
 from pipeline_common import source_slug
+
+
+BINANCE_ROOT_COMPANION_NAMES = {"borrow.csv", "interest.csv", "liquidations.csv", "repay.csv", "trades.csv", "transfers.csv"}
+
+
+@dataclass(frozen=True)
+class BundleDecision:
+    bundle_id: str
+    bundle_type: str
+    bundle_relative_path: str
 
 
 @dataclass(frozen=True)
@@ -18,9 +27,8 @@ class RouteTarget:
     source_label: str
     source_folder: str
     system_label: str
-    batch_slug: str
     confidence: str
-    review_required: bool
+    review_codes: tuple[str, ...]
     review_reason: str = ""
 
 
@@ -32,69 +40,135 @@ class RoutingDecision:
     system_label: str
     capture_id: str
     capture_basis: str
-    batch_slug: str
+    date_policy: str
     destination_dir: Path
+    destination_path: Path
     confidence: str
     review_required: bool
     review_reason: str
+    review_codes: tuple[str, ...]
     merge_recommendation: str
+    bundle_id: str
+    bundle_type: str
+    bundle_relative_path: str
 
 
 def _normalized_text(path: Path) -> str:
     return " / ".join(part.lower() for part in path.parts)
 
 
+def _single_file_bundle_id(path: Path) -> str:
+    return source_slug(path.stem or path.name or "file")
+
+
+def _folder_bundle_slug(path: Path) -> str:
+    return source_slug("_".join(path.parts)) or "bundle"
+
+
+def _bundle_for_path(relative_path: Path, target: RouteTarget, inspection_row: dict[str, str]) -> BundleDecision:
+    name = relative_path.name
+    lower_name = name.lower()
+    family = inspection_row.get("family", "")
+    parts = relative_path.parts
+
+    if any(part.endswith("_files") for part in parts):
+        sidecar_index = next(index for index, part in enumerate(parts) if part.endswith("_files"))
+        bundle_parts = parts[: sidecar_index + 1]
+        bundle_root = Path(*bundle_parts)
+        bundle_parent = bundle_root.parent
+        bundle_label = bundle_root.name.removesuffix("_files")
+        bundle_id = source_slug(bundle_label) or "html-export"
+        bundle_relative_path = str(relative_path.relative_to(bundle_parent))
+        return BundleDecision(bundle_id=bundle_id, bundle_type="html_export_bundle", bundle_relative_path=bundle_relative_path)
+
+    if lower_name.endswith(".html") and "cointracking" in lower_name:
+        return BundleDecision(
+            bundle_id=source_slug(relative_path.stem) or "html-export",
+            bundle_type="html_export_bundle",
+            bundle_relative_path=name,
+        )
+
+    if lower_name in BINANCE_ROOT_COMPANION_NAMES and len(parts) == 1 and target.source_folder == "binance":
+        return BundleDecision(
+            bundle_id="binance-isolated-margin-loose",
+            bundle_type="synthetic_companion_bundle",
+            bundle_relative_path=name,
+        )
+
+    if family.endswith("_archive_bundle") or lower_name.endswith((".zip", ".tar", ".tgz", ".tar.gz")):
+        return BundleDecision(bundle_id=_single_file_bundle_id(relative_path), bundle_type="archive_bundle", bundle_relative_path=str(Path("archive") / name))
+
+    if len(parts) > 1:
+        bundle_root = relative_path.parent
+        return BundleDecision(
+            bundle_id=_folder_bundle_slug(bundle_root),
+            bundle_type="folder_bundle",
+            bundle_relative_path=name,
+        )
+
+    return BundleDecision(bundle_id=_single_file_bundle_id(relative_path), bundle_type="single_file_bundle", bundle_relative_path=name)
+
+
 def classify_route(path: Path, inspection_row: dict[str, str]) -> RouteTarget:
     text = _normalized_text(path)
     name = path.name.lower()
     family = inspection_row.get("family", "")
+    archive_source = inspection_row.get("archive_detected_source", "")
+    archive_status = inspection_row.get("archive_inspection_status", "")
+    archive_findings = inspection_row.get("archive_findings", "")
 
     if "pnl calc" in text:
-        return RouteTarget("working_derivative", "Binance", "binance", "", "pnl-calc", "high", False)
+        return RouteTarget("working_derivative", "Binance", "binance", "", "high", ())
     if "cointracking_excel_import" in name or family == "cointracking_import_csv":
-        return RouteTarget("working_derivative", "Binance", "binance", "", "cointracking-import", "high", False)
-    if "cointracking" in text or "cointracking" in name:
-        batch_slug = "tax-declaration" if "declaration" in text else "historical-export"
-        return RouteTarget("ledger_export", "CoinTracking", "cointracking", "cointracking", batch_slug, "high", False)
+        return RouteTarget("working_derivative", "Binance", "binance", "", "high", ())
+    if archive_source == "CoinTracking":
+        return RouteTarget("ledger_export", "CoinTracking", "cointracking", "cointracking", "high", ())
+    if archive_source == "Binance":
+        return RouteTarget("source_raw", "Binance", "binance", "", "high", ())
+    if archive_source == "WealthSimple":
+        return RouteTarget("source_raw", "WealthSimple", "wealthsimple", "", "high", ())
+    if archive_source == "Kucoin Main":
+        return RouteTarget("source_raw", "Kucoin Main", "kucoin-main", "", "high", ())
+    if "cointracking" in text or "cointracking" in name or family.startswith("cointracking_"):
+        return RouteTarget("ledger_export", "CoinTracking", "cointracking", "cointracking", "high", ())
     if name.startswith("bot-") or family == "trading_bot_deals_csv":
-        return RouteTarget("source_raw", "3Commas", "3commas", "", "bot-export", "high", False)
+        return RouteTarget("source_raw", "3Commas", "3commas", "", "high", ())
     if "wealthsimple" in text:
-        review_required = name.endswith(".jfif")
-        return RouteTarget(
-            "source_raw" if not review_required else "working_derivative",
-            "WealthSimple",
-            "wealthsimple",
-            "",
-            "historical-docs" if not review_required else "review",
-            "medium" if review_required else "high",
-            review_required,
-            "Non-export image inside WealthSimple folder." if review_required else "",
-        )
+        if name.endswith(".jfif"):
+            return RouteTarget("working_derivative", "WealthSimple", "wealthsimple", "", "medium", ("non_export_artifact",), "Non-export image inside WealthSimple folder.")
+        return RouteTarget("source_raw", "WealthSimple", "wealthsimple", "", "high", ())
     if "coinbase" in text:
-        return RouteTarget("source_raw", "Coinbase", "coinbase", "", "coinbase-pro" if "pro" in text else "retail", "high", False)
+        return RouteTarget("source_raw", "Coinbase", "coinbase", "", "high", ())
     if "coinberry" in text:
-        return RouteTarget("source_raw", "Coinberry", "coinberry", "", "activity-report", "high", False)
+        return RouteTarget("source_raw", "Coinberry", "coinberry", "", "high", ())
     if "crypto.com" in text or "crypto com" in text:
-        return RouteTarget("source_raw", "Crypto.com", "crypto.com", "", "historical-export", "high", False)
-    if "kucoin" in text:
-        return RouteTarget("source_raw", "Kucoin Main", "kucoin-main", "", "historical-export", "high", False)
+        return RouteTarget("source_raw", "Crypto.com", "crypto.com", "", "high", ())
+    if "kucoin" in text or "kucoin" in inspection_row.get("header_preview", "").lower():
+        return RouteTarget("source_raw", "Kucoin Main", "kucoin-main", "", "high", ())
     if "gemini" in text:
-        return RouteTarget("source_raw", "Gemini", "gemini", "", "historical-export", "high", False)
+        return RouteTarget("source_raw", "Gemini", "gemini", "", "high", ())
     if "shakepay" in text:
-        return RouteTarget("source_raw", "Shakepay", "shakepay", "", "historical-export", "high", False)
-    if "bsc wallet export" in name or family == "explorer_transaction_csv":
-        return RouteTarget("source_raw", "BSC MetaMask Wallet", "bsc-metamask1", "", "historical-explorer", "high", False)
-    if "binance" in text or family.startswith("binance_margin_") or name in {"borrow.csv", "interest.csv", "liquidations.csv", "repay.csv", "trades.csv", "transfers.csv"}:
-        if "archive" in text:
-            batch_slug = "archive"
-        elif "isolated" in text or family.startswith("binance_margin_"):
-            batch_slug = "isolated-margin"
-        elif "from binance" in text:
-            batch_slug = "from-binance"
-        else:
-            batch_slug = "historical-export"
-        return RouteTarget("source_raw", "Binance", "binance", "", batch_slug, "high", False)
-    return RouteTarget("working_derivative", "review", "review", "", "review", "low", True, "Could not deterministically classify file role/source.")
+        return RouteTarget("source_raw", "Shakepay", "shakepay", "", "high", ())
+    if "bsc wallet export" in name or family.startswith("explorer_"):
+        return RouteTarget("source_raw", "BSC MetaMask Wallet", "bsc-metamask1", "", "high", ())
+    if "binance" in text or family.startswith("binance_margin_") or family == "binance_archive_bundle" or name in BINANCE_ROOT_COMPANION_NAMES:
+        return RouteTarget("source_raw", "Binance", "binance", "", "high", ())
+    if "isolated" in text and family.endswith("_bundle"):
+        return RouteTarget("source_raw", "Binance", "binance", "", "medium", ("unsupported_inspection",), "Archive requires review to confirm Binance export family.")
+    if archive_status == "review":
+        return RouteTarget("working_derivative", "review", "review", "", "low", ("archive_contents_review",), archive_findings or "Archive contents need review.")
+    return RouteTarget("working_derivative", "review", "review", "", "low", ("unsupported_routing",), "Could not deterministically classify file role/source.")
+
+
+def date_policy_for_target(target: RouteTarget, bundle: BundleDecision, inspection_row: dict[str, str]) -> tuple[str, HistoricalDatePolicy]:
+    family = inspection_row.get("family", "")
+    if target.role == "ledger_export" or family.startswith("cointracking_"):
+        return "ledger_export_capture", HistoricalDatePolicy(allow_content_span=False)
+    if bundle.bundle_type in {"archive_bundle", "html_export_bundle"}:
+        return "bundle_export_timestamp", HistoricalDatePolicy(allow_content_span=False)
+    if family.startswith("binance_margin_") or family in {"trading_bot_deals_csv", "fills_csv", "transfer_statement_csv", "custodial_transaction_csv"}:
+        return "ranged_or_content_source_export", HistoricalDatePolicy()
+    return "generic_historical_capture", HistoricalDatePolicy()
 
 
 def infer_capture_folder_name(
@@ -103,17 +177,17 @@ def infer_capture_folder_name(
     target: RouteTarget,
     relative_path: Path,
     inspection_row: dict[str, str],
-) -> tuple[str, HistoricalDateDecision, str]:
-    historical = infer_historical_date(relative_path.parts, inspection_row)
+    bundle: BundleDecision,
+) -> tuple[str, str, HistoricalDateDecision, str]:
+    date_policy, historical_policy = date_policy_for_target(target, bundle, inspection_row)
+    historical = infer_historical_date(relative_path.parts, inspection_row, policy=historical_policy)
     capture_id = historical.capture_id
-    if capture_id == "review-required":
-        capture_id = "review-required"
-    if target.batch_slug and capture_id != "review-required":
-        existing_base = _target_root(repo_root, target) / capture_id
-        if existing_base.exists():
-            capture_id = f"{capture_id}_{target.batch_slug}"
-            return capture_id, historical, f"Existing capture {existing_base.name} suggests a merge candidate."
-    return capture_id, historical, ""
+    merge_recommendation = ""
+    if capture_id != "review-required":
+        existing_capture = _target_root(repo_root, target) / capture_id
+        if existing_capture.exists():
+            merge_recommendation = f"Existing capture {capture_id} already exists; compare bundle overlap before merging."
+    return capture_id, date_policy, historical, merge_recommendation
 
 
 def _target_root(repo_root: Path, target: RouteTarget) -> Path:
@@ -133,19 +207,27 @@ def resolve_routing_decision(
 ) -> RoutingDecision:
     relative_path = path.resolve().relative_to(incoming_root.resolve())
     target = classify_route(relative_path, inspection_row)
-    capture_folder, historical, merge_recommendation = infer_capture_folder_name(
+    bundle = _bundle_for_path(relative_path, target, inspection_row)
+    capture_folder, date_policy, historical, merge_recommendation = infer_capture_folder_name(
         repo_root=repo_root,
         target=target,
         relative_path=relative_path,
         inspection_row=inspection_row,
+        bundle=bundle,
     )
-    destination_dir = _target_root(repo_root, target) / capture_folder
-    review_required = target.review_required or historical.review_required
-    review_reason = "; ".join(
-        reason
-        for reason in (target.review_reason, historical.basis if historical.review_required else "")
-        if reason
-    )
+    capture_dir = _target_root(repo_root, target) / capture_folder
+    destination_dir = capture_dir / bundle.bundle_id
+    destination_path = destination_dir / bundle.bundle_relative_path
+
+    review_codes = list(target.review_codes)
+    if historical.review_required:
+        review_codes.append("unresolved_historical_date")
+    review_required = bool(review_codes)
+    review_reason_parts = [target.review_reason]
+    if historical.review_required:
+        review_reason_parts.append(historical.basis)
+    review_reason = "; ".join(part for part in review_reason_parts if part)
+
     return RoutingDecision(
         role=target.role,
         source_label=target.source_label,
@@ -153,10 +235,15 @@ def resolve_routing_decision(
         system_label=target.system_label,
         capture_id=capture_folder,
         capture_basis=historical.basis,
-        batch_slug=target.batch_slug,
+        date_policy=date_policy,
         destination_dir=destination_dir,
+        destination_path=destination_path,
         confidence=target.confidence,
         review_required=review_required,
         review_reason=review_reason,
+        review_codes=tuple(dict.fromkeys(review_codes)),
         merge_recommendation=merge_recommendation,
+        bundle_id=bundle.bundle_id,
+        bundle_type=bundle.bundle_type,
+        bundle_relative_path=bundle.bundle_relative_path,
     )

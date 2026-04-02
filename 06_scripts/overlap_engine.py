@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -13,7 +12,7 @@ from pathlib import Path
 from typing import Iterable
 
 from pipeline_common import CANONICAL_BASELINE_REQUIRED_FILES
-from script_common import find_required_csv_exports, require_directory, write_csv_rows, write_json
+from script_common import find_required_csv_exports, require_directory, sha256sum, write_csv_rows, write_json
 
 
 TRADE_TABLE_MARKER = "Trade Table"
@@ -26,15 +25,6 @@ class ManifestHit:
     manifest_path: Path
     capture_dir: Path
     filename: str
-
-
-def sha256sum(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
 
 def load_manifest_index(root: Path) -> dict[str, list[ManifestHit]]:
     index: dict[str, list[ManifestHit]] = defaultdict(list)

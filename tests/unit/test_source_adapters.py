@@ -306,6 +306,32 @@ def test_binance_convert_date_updated_covers_transaction_history_one_second_skew
     assert len(result.exceptions) == 0
 
 
+def test_binance_adapter_reads_nested_bundle_paths_from_profile_inventory(tmp_path: Path) -> None:
+    raw_dir = tmp_path
+    bundle_dir = raw_dir / "bundle_a"
+    bundle_dir.mkdir()
+    (bundle_dir / "Binance-C2C-Order-History-202603230441(UTC--6)_abcd.csv").write_text(
+        (
+            "Order Number,Created Time,Order Type,Asset,Quantity,Total Price,Fiat Type,Counterparty,Status\n"
+            "123,23-09-20 19:48:03,SELL,USDT,891,891,CAD,merchant,Completed\n"
+        ),
+        encoding="utf-8",
+    )
+    (bundle_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
+        (
+            "User ID,Time,Account,Operation,Coin,Change,Remark\n"
+            "1,23-09-20 19:48:03,Funding,P2P Trading,USDT,-891,P2P - 123\n"
+        ),
+        encoding="utf-8",
+    )
+    adapter, profile = build_profile("Binance", raw_dir)
+
+    result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+    assert len(result.canonical_events) == 1
+    assert len(result.exceptions) == 0
+
+
 def test_normalize_source_rejects_ambiguous_timezone_inventory(tmp_path: Path) -> None:
     raw_dir = tmp_path / "binance" / "raw"
     raw_dir.mkdir(parents=True)

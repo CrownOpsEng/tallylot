@@ -5,6 +5,8 @@ Use this folder for small helpers that reduce manual work without hiding logic.
 Current helpers:
 
 - `inspection.py` → shared delimiter-aware file inspection, file-family classification, timestamp extraction, and historical-date inference
+- `archive_handling.py` → shared archive member inspection, crypto-record detection, and deterministic extraction helpers for intake
+- `package_resolution.py` → shared bundle/package consolidation so fully redundant partial packages are reported and skipped deterministically
 - `routing.py` → shared role-based routing for historical intake dumps and canonical destination resolution
 - `overlap_engine.py` → shared overlap services for raw-evidence hash matching and CoinTracking candidate/baseline overlap checks
 - `pipeline.py` → shared orchestration layer used by the CLI entrypoints
@@ -52,6 +54,7 @@ Preferred raw-capture layout:
 
 - `01_raw_exports/external/<source>/<capture_id>/` for one evidence batch, with `<capture_id>` usually `YYYY-MM`
 - `manifest.csv` inside that same capture folder
+- bundle-aware placement under each capture, for example `<capture_id>/<bundle_id>/archive/...` and `<capture_id>/<bundle_id>/contents/...`
 - chain-first explorer folder names such as `eth-ledger1`, `eth-gala1`, `eth-metamask1`, `polygon-metamask1`, and `bsc-metamask1`
 - aggregate or app folders for wallet-app-wide evidence that is not truly chain-scoped, such as cross-chain MetaMask portfolio snapshots or state logs
 - historical ledger exports route separately from source evidence
@@ -60,6 +63,7 @@ Preferred raw-capture layout:
 The preferred prep flow is now:
 
 1. `intake_sort.py` when starting from a mixed dump
+   It inspects archives independently, preserves the original archive, extracts positively identified crypto-report members into the same canonical bundle, and suppresses fully redundant package copies when a deterministic superset exists.
 2. `source_manifest.py`
 3. `profile_source.py`
 4. `wallet_inventory.py` when wallet evidence changed

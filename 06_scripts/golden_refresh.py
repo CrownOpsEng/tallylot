@@ -8,11 +8,17 @@ import argparse
 import csv
 import json
 import shutil
+import sys
 from pathlib import Path
 from typing import Sequence
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from pipeline import normalize_source_capture, profile_wallet_identifiers
 from script_common import write_json
+from tests.support.adapter_packs import load_adapter_packs, stage_adapter_pack
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -40,14 +46,13 @@ def refresh_pack(pack_root: Path, workspace: Path) -> dict[str, object]:
     payload = json.loads((pack_root / "pack.json").read_text(encoding="utf-8"))
     source = str(payload["source"])
     capabilities = set(payload.get("capabilities", []))
-    raw_dir = pack_root / "raw"
     expected_dir = pack_root / "expected"
     temp_root = workspace / pack_root.parent.name / pack_root.name
     if temp_root.exists():
         shutil.rmtree(temp_root)
     temp_root.mkdir(parents=True, exist_ok=True)
-    staged_raw = temp_root / "raw"
-    shutil.copytree(raw_dir, staged_raw)
+    pack = next(candidate for candidate in load_adapter_packs() if candidate.root == pack_root)
+    staged_raw = stage_adapter_pack(pack, temp_root)
 
     written: dict[str, object] = {"pack": str(pack_root), "written": []}
     if "normalize" in capabilities:

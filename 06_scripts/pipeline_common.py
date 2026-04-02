@@ -101,6 +101,12 @@ EXCEPTION_HEADERS = (
 
 PROFILE_INVENTORY_HEADERS = (
     "filename",
+    "source_path",
+    "bundle_id",
+    "bundle_type",
+    "bundle_relative_path",
+    "alias_group",
+    "collision_status",
     "suffix",
     "family",
     "header_preview",
@@ -314,7 +320,19 @@ def build_source_profile(
     raw_dir = require_directory(raw_dir.resolve(), "Raw source directory")
     manifest_path = manifest_path.resolve() if manifest_path is not None else find_manifest_for_raw_dir(raw_dir)
     manifest_rows = read_csv_rows(manifest_path) if manifest_path is not None and manifest_path.exists() else []
-    fingerprint = manifest_fingerprint_from_rows(manifest_rows) if manifest_rows else stable_hash_rows(build_file_inventory(raw_dir))
+    manifest_by_filename = {row.get("filename", ""): row for row in manifest_rows}
+    file_inventory = build_file_inventory(raw_dir)
+    for row in file_inventory:
+        manifest_row = manifest_by_filename.get(row.get("filename", ""))
+        if manifest_row is None:
+            continue
+        row["source_path"] = manifest_row.get("source_paths", "") or row.get("source_path", "")
+        row["bundle_id"] = manifest_row.get("bundle_id", "") or row.get("bundle_id", "")
+        row["bundle_type"] = manifest_row.get("bundle_type", "") or row.get("bundle_type", "")
+        row["bundle_relative_path"] = manifest_row.get("bundle_relative_path", "") or row.get("bundle_relative_path", "")
+        row["alias_group"] = manifest_row.get("alias_group", "") or row.get("alias_group", "")
+        row["collision_status"] = manifest_row.get("collision_status", "") or row.get("collision_status", "")
+    fingerprint = manifest_fingerprint_from_rows(manifest_rows) if manifest_rows else stable_hash_rows(file_inventory)
     merged_hints = repo_normalization_hints_for_source(source, raw_dir)
     if normalization_hints:
         merged_hints.update(normalization_hints)
@@ -326,7 +344,7 @@ def build_source_profile(
         manifest_fingerprint=fingerprint,
         adapter=adapter_name,
         adapter_supported=adapter_supported,
-        file_inventory=build_file_inventory(raw_dir),
+        file_inventory=file_inventory,
         normalization_hints=merged_hints,
     )
 

@@ -72,6 +72,12 @@ def test_build_file_inventory_classifies_metamask_state_json_without_filename_de
             "timezone_mode": "",
             "timezone_value": "",
             "timezone_conflict": "",
+            "source_path": "wallet-state-backup.json",
+            "bundle_id": "",
+            "bundle_type": "root_file",
+            "bundle_relative_path": "wallet-state-backup.json",
+            "alias_group": "",
+            "collision_status": "",
         }
     ]
 

@@ -3,7 +3,7 @@
     "adapter": "wealthsimple",
     "event_id": "wealthsimple:activities-export-2026-03-23.csv:row:3",
     "exception_kind": "unsupported_row",
-    "manifest_fingerprint": "b814bf233c10eb42deea64775a9933a45464307e15e24306cd950940fd24e018",
+    "manifest_fingerprint": "0f1c13da4c5a70a0b470736326d604af5c164f5cd00a82df78bcf03f9b78b5f5",
     "message": "Unsupported Wealthsimple crypto activity: Staking/REWARD",
     "raw_file": "activities-export-2026-03-23.csv",
     "raw_row_ref": "row:3",

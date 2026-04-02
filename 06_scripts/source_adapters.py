@@ -518,6 +518,8 @@ def profile_paths(
     *,
     families: set[str] | None = None,
     suffixes: set[str] | None = None,
+    bundle_ids: set[str] | None = None,
+    path_contains: str | None = None,
     predicate=None,
 ) -> list[Path]:
     paths: list[Path] = []
@@ -525,6 +527,10 @@ def profile_paths(
         if families is not None and row.get("family") not in families:
             continue
         if suffixes is not None and row.get("suffix") not in suffixes:
+            continue
+        if bundle_ids is not None and row.get("bundle_id") not in bundle_ids:
+            continue
+        if path_contains is not None and path_contains.lower() not in row.get("filename", "").lower():
             continue
         path = raw_dir / row["filename"]
         if predicate is not None and not predicate(path, row):
@@ -553,7 +559,7 @@ def profile_has_row(
 
 
 def first_matching_json_file(raw_dir: Path, *, predicate) -> Path | None:
-    for path in sorted(raw_dir.glob("*.json")):
+    for path in sorted(raw_dir.rglob("*.json")):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -1040,13 +1046,21 @@ class BinanceAdapter(SourceAdapter):
         exceptions: list[dict[str, str]] = []
         balances: list[dict[str, str]] = []
         covered_timestamps: set[str] = set()
-        has_c2c_history = any(path.name.startswith("Binance-C2C-Order-History-") for path in raw_dir.glob("*.csv"))
+        csv_paths = profile_paths(raw_dir, profile, suffixes={".csv"})
+        profile_rows_by_path = {raw_dir / row["filename"]: row for row in profile.file_inventory}
+        pdf_paths = profile_paths(raw_dir, profile, suffixes={".pdf"}, predicate=lambda path, _row: path.name.startswith("AccountStatementPeriod_"))
+        has_c2c_history = any(
+            path.name.startswith("Binance-C2C-Order-History-") or profile_rows_by_path.get(path, {}).get("family") == "p2p_order_csv"
+            for path in csv_paths
+        )
 
-        for pdf_path in sorted(raw_dir.glob("AccountStatementPeriod_*.pdf")):
+        for pdf_path in pdf_paths:
             balances.extend(binance_balance_rows_from_text(extract_pdf_text(pdf_path), pdf_path.name))
 
-        for path in sorted(raw_dir.glob("*.csv")):
+        for path in csv_paths:
             name = path.name
+            row = profile_rows_by_path.get(path, {})
+            family = row.get("family", "")
             if name.startswith("Binance-Spot-Trade-History-"):
                 events.extend(self._spot_trade_events(path, profile.source))
                 covered_timestamps.update(self._timestamps_for_file(path, "Time", status_field=None, allowed_statuses=None))
@@ -1065,10 +1079,14 @@ class BinanceAdapter(SourceAdapter):
             elif name.startswith("Binance-Fiat-Sell-History-"):
                 events.extend(self._fiat_sell_history_events(path, profile.source))
                 covered_timestamps.update(self._timestamps_for_file(path, "Time", status_field="Status", allowed_statuses={"Successful"}))
-            elif name.startswith("Binance-C2C-Order-History-"):
+            elif name.startswith("Binance-C2C-Order-History-") or family == "p2p_order_csv":
                 events.extend(self._c2c_order_events(path, profile.source))
                 covered_timestamps.update(self._timestamps_for_file(path, "Created Time", status_field="Status", allowed_statuses={"Completed"}))
-            elif name.startswith("Binance-Transaction-History-") or re.match(r"^Binance Transactions \d{4}\.csv$", name):
+            elif (
+                name.startswith("Binance-Transaction-History-")
+                or re.match(r"^Binance Transactions \d{4}\.csv$", name)
+                or family == "custodial_transaction_csv"
+            ):
                 events.extend(
                     self._transaction_history_events(
                         path,

@@ -3,7 +3,7 @@
     "adapter": "gtrade",
     "event_id": "gtrade:gtrade-report.csv:row:4",
     "exception_kind": "unsupported_row",
-    "manifest_fingerprint": "11424b043d819a6b3b8eb3b7eb1ea40fe56f68f60d744eba82dd34870c418d86",
+    "manifest_fingerprint": "d3b1c24739482c2d94afd0a27de90ac4853626e64c0927742ea4e8b1c0e45f77",
     "message": "GTrade report row lacks realized PnL and cannot be deterministically converted into a CoinTracking transaction without supporting explorer evidence.",
     "raw_file": "gtrade-report.csv",
     "raw_row_ref": "row:4",
