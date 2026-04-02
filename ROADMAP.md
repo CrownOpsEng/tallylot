@@ -49,6 +49,14 @@ decisions that should not be rediscovered from scratch.
 - Do not reintroduce repo-local live workspace assumptions.
 - Do not add compatibility wrappers for removed legacy scripts.
 - Do not let adapters reach across layers into CLI or config code.
+- Keep the agent guidance router-first: `AGENTS.md` should stay short and direct
+  agents to narrow task-specific docs rather than front-loading broad repo
+  context.
+- Treat `docs/engineering-standards.md` as the code placement, typing,
+  modularization, and naming contract.
+- Treat `docs/commit-standards.md` as the commit message and stable-checkpoint
+  contract. Use Conventional Commits and prefer small cohesive checkpoint
+  commits without forcing micro-commit overhead.
 - Keep application services on port contracts for adapter resolution and artifact
   persistence; do not import infrastructure modules from `application/`.
 - Do not bypass `Decimal` with float-based financial calculations.
@@ -71,6 +79,10 @@ decisions that should not be rediscovered from scratch.
 - Keep adapter discovery narrow: discover only top-level adapter modules and
   package entry points so adapter-local tests and helpers can live beside the
   adapter without affecting runtime registration.
+- Refactor large modules before extending them materially. The current
+  refactor-first hotspots are `adapters/sources/structured_csv.py`,
+  `domain/models.py`, `interfaces/cli.py`, and
+  `infrastructure/discovery/adapters.py`.
 
 ## Near-Term Enhancements
 
@@ -78,3 +90,5 @@ decisions that should not be rediscovered from scratch.
 - Add more conservative overlap heuristics and duplicate signatures.
 - Expand source profiling to include richer file-family inspection.
 - Add golden refresh tooling once more than one working source adapter exists.
+- Decompose the current hotspot modules into smaller, bounded packages or
+  modules before they accumulate more responsibilities.

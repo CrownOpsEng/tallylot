@@ -70,6 +70,9 @@ uv run crypto-reconciliation batch stage --candidate <path> --baseline-export-di
 
 ```bash
 uv sync --python 3.12
+git config --local commit.template .gitmessage.txt
+uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
+uv run pre-commit run --all-files
 uv run ruff check .
 uv run mypy
 uv run pyright
@@ -77,14 +80,24 @@ uv run pylint src tests
 uv run pytest
 ```
 
-This repo uses a `src/` layout and expects editor diagnostics to run against
-the project `.venv`. The checked-in VS Code workspace settings point Python,
-Pylint, Mypy, and Ruff at that environment and add `src/` to analysis paths.
-If diagnostics still show stale import errors after syncing, re-select the
+`ruff`, `mypy`, `pyright`, and `pytest` are all required quality gates. The
+repo already ships a `.pre-commit-config.yaml`; install both the `pre-commit`
+and `commit-msg` hooks and treat a passing hook run as the minimum commit
+baseline.
+
+This repo uses a `src/` layout and expects editor diagnostics to run against the
+project `.venv`. The checked-in VS Code workspace settings point Python,
+Pylint, Mypy, and Ruff at that environment and add `src/` to analysis paths. If
+diagnostics still show stale import errors after syncing, re-select the
 workspace interpreter at `.venv/bin/python` and reload the VS Code window.
+
+For AI-agent and contributor guardrails, start with `AGENTS.md` and then read
+only the narrow doc needed for the task.
 
 ## Docs
 
 - [ROADMAP.md](ROADMAP.md)
+- [docs/commit-standards.md](docs/commit-standards.md)
+- [docs/engineering-standards.md](docs/engineering-standards.md)
 - [docs/workspace-layout.md](docs/workspace-layout.md)
 - [docs/adapter-authoring.md](docs/adapter-authoring.md)

@@ -2,11 +2,11 @@
 
 ## Objective
 
-Work in the rebuilt typed application architecture under `src/crypto_reconciliation/`.
-Treat the repo as code, tests, docs, and templates. Treat the live workspace as
-external to the repo.
+Work in the rebuilt typed application architecture under
+`src/crypto_reconciliation/`. Treat the repo as code, tests, docs, templates,
+and automation. Treat the live workspace as external to the repo.
 
-## Key Rules
+## Invariants
 
 - Do not add legacy wrappers, migration utilities, or one-off repair code.
 - Do not add repo-local live workspace assumptions.
@@ -19,6 +19,30 @@ external to the repo.
 - Surface unsupported or ambiguous data as explicit issues.
 - Keep adapter metadata, implementation, and tests aligned.
 - Update `ROADMAP.md` when making decisions that affect later rollout phases.
+
+## Read Only What You Need
+
+Start with this file, then load only the narrow doc required for the task.
+Do not pre-load every repo doc by default.
+
+| Task | Read |
+| ---- | ---- |
+| Code placement, typing, modularization, naming | `docs/engineering-standards.md` |
+| Source or output adapter work | `docs/adapter-authoring.md` |
+| External workspace layout and seeded files | `docs/workspace-layout.md` |
+| Commit messages, templates, and checkpoint behavior | `docs/commit-standards.md` |
+
+## Execution Rules
+
+- Do not consider work ready until `ruff`, `mypy`, `pyright`, and `pytest`
+  pass.
+- Prefer the checked-in hooks:
+  - `uv run pre-commit install --hook-type pre-commit --hook-type commit-msg`
+  - `uv run pre-commit run --all-files`
+- Treat commits as stable checkpoints by default:
+  - prefer small cohesive commits
+  - avoid micro-commits with no rollback or review value
+  - end the task on a clean, meaningful checkpoint commit
 
 ## Workspace Configuration
 
