@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Protocol
 
@@ -16,7 +16,7 @@ class ArtifactStorePort(Protocol):
         self,
         path: Path,
         header: tuple[str, ...],
-        rows: Iterable[dict[str, str]],
+        rows: Iterable[Mapping[str, str]],
     ) -> None: ...
 
     def write_json(self, path: Path, payload: JsonValue) -> None: ...

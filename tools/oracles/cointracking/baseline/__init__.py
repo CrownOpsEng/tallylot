@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 from pathlib import Path
+from types import MappingProxyType
 
 from tallylot.domain.value_objects import format_timestamp
 from tallylot.ports.artifacts import ArtifactStorePort
@@ -67,32 +68,38 @@ def build_baseline_artifacts_from_rows(rows: BaselineExportRows) -> BaselineArti
         row["Exchange"] for row in rows.exchange_rows if row.get("Exchange")
     }
     return BaselineArtifacts(
-        asset_snapshot_rows=asset_snapshot_rows,
-        reconciliation_rows=reconciliation_rows,
-        negative_balances=negative_balances,
-        source_activity_rows=source_activity_rows,
-        cad_flow_rows=cad_flow_rows,
-        cad_balance_by_exchange_rows=cad_balance_by_exchange_rows,
-        summary={
-            "latest_transaction_timestamp": format_timestamp(latest_timestamp),
-            "trade_count": len(rows.trade_rows),
-            "current_balance_rows": len(rows.current_rows),
-            "balance_by_exchange_rows": len(rows.exchange_rows),
-            "validate_transactions_rows": len(rows.validate_rows),
-            "missing_transactions_rows": len(rows.missing_rows),
-            "duplicate_transactions_rows": len(rows.duplicate_rows),
-            "negative_balance_rows": len(negative_balances),
-            "max_asset_difference": decimal_text(max_difference),
-            "max_asset_difference_ticker": max_ticker,
-            "ending_cad_balance": decimal_text(
-                current_by_ticker.get("CAD", Decimal("0"))
-            ),
-            "cad_bought_total": decimal_text(cad_bought_total),
-            "cad_sold_total": decimal_text(cad_sold_total),
-            "cad_fee_total": decimal_text(cad_fee_total),
-            "asset_reconciliation_assets": len(reconciliation_rows),
-            "trade_table_sources": len(trade_sources),
-            "balance_by_exchange_sources": len(balance_sources),
-            "source_activity_rows": len(source_activity_rows),
-        },
+        asset_snapshot_rows=tuple(MappingProxyType(row) for row in asset_snapshot_rows),
+        reconciliation_rows=tuple(MappingProxyType(row) for row in reconciliation_rows),
+        negative_balances=tuple(MappingProxyType(row) for row in negative_balances),
+        source_activity_rows=tuple(
+            MappingProxyType(row) for row in source_activity_rows
+        ),
+        cad_flow_rows=tuple(MappingProxyType(row) for row in cad_flow_rows),
+        cad_balance_by_exchange_rows=tuple(
+            MappingProxyType(row) for row in cad_balance_by_exchange_rows
+        ),
+        summary=MappingProxyType(
+            {
+                "latest_transaction_timestamp": format_timestamp(latest_timestamp),
+                "trade_count": len(rows.trade_rows),
+                "current_balance_rows": len(rows.current_rows),
+                "balance_by_exchange_rows": len(rows.exchange_rows),
+                "validate_transactions_rows": len(rows.validate_rows),
+                "missing_transactions_rows": len(rows.missing_rows),
+                "duplicate_transactions_rows": len(rows.duplicate_rows),
+                "negative_balance_rows": len(negative_balances),
+                "max_asset_difference": decimal_text(max_difference),
+                "max_asset_difference_ticker": max_ticker,
+                "ending_cad_balance": decimal_text(
+                    current_by_ticker.get("CAD", Decimal("0"))
+                ),
+                "cad_bought_total": decimal_text(cad_bought_total),
+                "cad_sold_total": decimal_text(cad_sold_total),
+                "cad_fee_total": decimal_text(cad_fee_total),
+                "asset_reconciliation_assets": len(reconciliation_rows),
+                "trade_table_sources": len(trade_sources),
+                "balance_by_exchange_sources": len(balance_sources),
+                "source_activity_rows": len(source_activity_rows),
+            }
+        ),
     )

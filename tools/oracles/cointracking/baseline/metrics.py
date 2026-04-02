@@ -47,9 +47,7 @@ def build_asset_snapshot(
     exchange_rows: Sequence[Mapping[str, str]],
 ) -> tuple[list[dict[str, str]], dict[str, Decimal], list[dict[str, str]]]:
     exchange_totals = _exchange_totals_by_asset(exchange_rows)
-    current_by_ticker = {
-        row["Ticker"]: _decimal_or_zero(row["Amount"]) for row in current_rows
-    }
+    current_by_ticker = _current_amounts_by_ticker(current_rows)
     snapshot_rows = [
         {
             "ticker": ticker,
@@ -69,7 +67,7 @@ def build_asset_snapshot(
             "name": row["Name"],
             "type": row["Type"],
             "amount": decimal_text(_decimal_or_zero(row["Amount"])),
-            "value_cad": row["Value in CAD"],
+            "value_cad": decimal_text(_decimal_or_zero(row["Value in CAD"])),
         }
         for row in current_rows
         if _decimal_or_zero(row["Amount"]) < Decimal("0")
@@ -105,7 +103,9 @@ def build_exchange_reconciliation(
         {
             "exchange": row["Exchange"],
             "amount": decimal_text(_decimal_or_zero(row["Amount"])),
-            "current_value_cad": row["Current value in CAD"],
+            "current_value_cad": decimal_text(
+                _decimal_or_zero(row["Current value in CAD"])
+            ),
         }
         for row in exchange_rows
         if row["Currency"] == "CAD"
@@ -216,3 +216,15 @@ def _exchange_totals_by_asset(
     for row in exchange_rows:
         totals[row["Currency"]] += _decimal_or_zero(row["Amount"])
     return dict(totals)
+
+
+def _current_amounts_by_ticker(
+    current_rows: Sequence[Mapping[str, str]],
+) -> dict[str, Decimal]:
+    current_by_ticker: dict[str, Decimal] = {}
+    for row in current_rows:
+        ticker = row["Ticker"]
+        if ticker in current_by_ticker:
+            raise ValueError(f"Duplicate Current Balance ticker row: {ticker}")
+        current_by_ticker[ticker] = _decimal_or_zero(row["Amount"])
+    return current_by_ticker
