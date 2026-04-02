@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Protocol
 
 from crypto_reconciliation.domain.models import (
+    BalanceEvidence,
     BalanceSnapshot,
     IssueRecord,
     NormalizationReviewRecord,
@@ -17,6 +18,8 @@ class StoragePort(Protocol):
     def write_transactions(self, path: Path, transactions: tuple[NormalizedTransaction, ...]) -> None: ...
 
     def write_balances(self, path: Path, balances: tuple[BalanceSnapshot, ...]) -> None: ...
+
+    def write_balance_evidence(self, path: Path, evidence: tuple[BalanceEvidence, ...]) -> None: ...
 
     def write_issue_records(self, path: Path, issues: tuple[IssueRecord, ...]) -> None: ...
 

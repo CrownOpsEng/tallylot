@@ -1,12 +1,19 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
+from typing import override
 
 import pytest
 
 from crypto_reconciliation.application.models.source import NormalizeRequest
+from crypto_reconciliation.domain.models import BalanceEvidence, NormalizedTransaction
+from crypto_reconciliation.domain.transactions import ProjectionType
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from crypto_reconciliation.ports.adapters import NormalizationResult
 from tests.support.services import (
     FakeSourceRegistry,
     MatchingSourceAdapter,
@@ -214,3 +221,90 @@ def test_normalization_service_rejects_output_inside_raw_tree(tmp_path: Path) ->
                 output_dir=raw_dir / "normalized",
             )
         )
+
+
+class EvidenceSourceAdapter(MatchingSourceAdapter):
+    @override
+    def normalize(self, profile: object, raw_dir: Path) -> NormalizationResult:
+        del profile, raw_dir
+        return NormalizationResult(
+            transactions=(
+                NormalizedTransaction(
+                    transaction_id=TransactionId("txn-1"),
+                    source=SourceId("fixture"),
+                    adapter_id=AdapterId("evidence_fixture"),
+                    account="Fixture",
+                    wallet="Primary",
+                    timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
+                    category="deposit",
+                    projection_type=ProjectionType.DEPOSIT,
+                    asset_in=AssetSymbol("BTC"),
+                    amount_in=Decimal("1.5"),
+                    tx_hash="tx-1",
+                ),
+            ),
+            balance_evidence=(
+                BalanceEvidence(
+                    source=SourceId("fixture"),
+                    account="Fixture",
+                    wallet="Primary",
+                    asset=AssetSymbol("BTC"),
+                    quantity=Decimal("2.5"),
+                    as_of=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
+                    evidence_ref="statement:page:1",
+                ),
+            ),
+            issues=(),
+            reviews=(),
+            wallet_inventory=(),
+        )
+
+
+def test_normalization_service_persists_balance_evidence_separately_from_derived_balances(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    registry = FakeSourceRegistry(source_adapters=(EvidenceSourceAdapter("evidence_fixture"),))
+    artifacts = FilesystemArtifactStore()
+    service = build_registry_backed_normalization_service(registry=registry, artifacts=artifacts)
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(
+            source="fixture",
+            raw_dir=raw_dir,
+            output_dir=output_dir,
+        )
+    )
+
+    balance_rows = artifacts.read_rows(output_dir / "balances.csv")
+    balance_evidence_rows = artifacts.read_rows(output_dir / "balance_evidence.csv")
+    summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
+
+    assert response.balance_count == 1
+    assert balance_rows == [
+        {
+            "source": "fixture",
+            "account": "Fixture",
+            "wallet": "Primary",
+            "asset": "BTC",
+            "quantity": "1.5",
+            "as_of": "2023-08-06 10:00:00",
+            "balance_kind": "available",
+            "notes": "",
+        }
+    ]
+    assert balance_evidence_rows == [
+        {
+            "source": "fixture",
+            "account": "Fixture",
+            "wallet": "Primary",
+            "asset": "BTC",
+            "quantity": "2.5",
+            "as_of": "2023-08-06 12:00:00",
+            "balance_kind": "available",
+            "evidence_ref": "statement:page:1",
+            "notes": "",
+        }
+    ]
+    assert summary["balance_count"] == 1
+    assert summary["balance_evidence_count"] == 1

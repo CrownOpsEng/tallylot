@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 
 from crypto_reconciliation.domain.models import NormalizedTransaction
+from crypto_reconciliation.domain.transactions import ProjectionType
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 
 
@@ -55,6 +56,8 @@ def test_transaction_rejects_non_positive_amounts() -> None:
 def test_transaction_to_row_formats_fields() -> None:
     row = replace(
         _valid_transaction(),
+        projection_type=ProjectionType.TRADE,
+        operation_group_id="bundle-1",
         fee_asset=AssetSymbol("CAD"),
         fee_amount=Decimal("0.10000000"),
     ).to_row()
@@ -63,3 +66,5 @@ def test_transaction_to_row_formats_fields() -> None:
     assert row["amount_in"] == "1"
     assert row["fee_amount"] == "0.1"
     assert row["account"] == "Fixture"
+    assert row["projection_type"] == "Trade"
+    assert row["operation_group_id"] == "bundle-1"

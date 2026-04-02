@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from decimal import Decimal
 from pathlib import Path
 
+from crypto_reconciliation.adapters.sources.platforms.gtrade.translation import translate_transactions
 from crypto_reconciliation.adapters.support import (
-    IssueSpec,
-    issue_record,
     match_intake_by_path_or_header,
     matching_file_paths,
     no_intake_route,
@@ -18,13 +15,7 @@ from crypto_reconciliation.adapters.support import (
     wallet_issue,
     wallet_record,
 )
-from crypto_reconciliation.adapters.support.drafts import (
-    ActivityClassification,
-    EconomicActivityDraft,
-    classification,
-    economic_leg,
-    normalization_result_from_drafts,
-)
+from crypto_reconciliation.adapters.support.drafts import normalization_result_from_drafts
 from crypto_reconciliation.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
@@ -132,91 +123,8 @@ class GTradeAdapter:
         return tuple(evidence), tuple(issues)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
-        drafts: list[EconomicActivityDraft] = []
-        issues: list[IssueRecord] = []
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
-        for path in matching_file_paths(raw_dir):
-            if _skip_unrecognized_csv(path):
-                continue
-            for index, row in enumerate(read_csv_rows(path), start=2):
-                pnl = _parse_decimal((row.get("PNL") or "").strip())
-                if pnl is None:
-                    issues.append(
-                        issue_record(
-                            IssueSpec(
-                                source=str(profile.source),
-                                adapter_id=str(self.manifest.adapter_id),
-                                issue_id=f"gtrade:{path.name}:row:{index}:invalid_pnl",
-                                severity="medium",
-                                kind="unsupported_row",
-                                message="GTrade row is missing a supported realized PnL value.",
-                                raw_file=path.name,
-                                raw_row_ref=f"row:{index}",
-                                status="needs_review",
-                            )
-                        )
-                    )
-                    continue
-                if pnl == Decimal("0"):
-                    issues.append(
-                        issue_record(
-                            IssueSpec(
-                                source=str(profile.source),
-                                adapter_id=str(self.manifest.adapter_id),
-                                issue_id=f"gtrade:{path.name}:row:{index}",
-                                severity="medium",
-                                kind="unsupported_row",
-                                message=(
-                                    "GTrade report row lacks realized PnL and cannot be deterministically converted "
-                                    "into a normalized transaction without supporting explorer evidence."
-                                ),
-                                raw_file=path.name,
-                                raw_row_ref=f"row:{index}",
-                                status="needs_review",
-                            )
-                        )
-                    )
-                    continue
-                description = (row.get("DESCRIPTION") or "").strip()
-                timestamp = _parse_report_date((row.get("DATE") or "").strip())
-                if timestamp is None:
-                    issues.append(
-                        issue_record(
-                            IssueSpec(
-                                source=str(profile.source),
-                                adapter_id=str(self.manifest.adapter_id),
-                                issue_id=f"gtrade:{path.name}:row:{index}:invalid_date",
-                                severity="medium",
-                                kind="unsupported_row",
-                                message="GTrade row is missing a supported report date.",
-                                raw_file=path.name,
-                                raw_row_ref=f"row:{index}",
-                                status="needs_review",
-                            )
-                        )
-                    )
-                    continue
-                drafts.append(
-                    EconomicActivityDraft(
-                        activity_id=f"gtrade:{path.name}:row:{index}",
-                        source=str(profile.source),
-                        adapter_id="gtrade",
-                        account=str(profile.source),
-                        wallet=str(profile.source),
-                        timestamp=timestamp,
-                        classification=_classification_for_pnl(pnl),
-                        description=description,
-                        raw_file=path.name,
-                        raw_row_ref=f"row:{index}",
-                        tx_hash=f"gtrade:{path.name}:row:{index}",
-                        provider_operation_key="realized_pnl",
-                        legs=(
-                            (economic_leg(direction="in", asset="DAI", amount=pnl),)
-                            if pnl > 0
-                            else (economic_leg(direction="out", asset="DAI", amount=abs(pnl)),)
-                        ),
-                    )
-                )
+        drafts, issues = translate_transactions(profile, raw_dir)
         return normalization_result_from_drafts(
             drafts,
             issues=issues,
@@ -224,46 +132,9 @@ class GTradeAdapter:
         )
 
 
-def _classification_for_pnl(pnl: Decimal) -> ActivityClassification:
-    if pnl > 0:
-        return classification(
-            normalized_category="derivatives_profit",
-            economic_kind="derivative_realized_profit",
-            projection_type="Derivatives / Futures Profit",
-            journal_intent="income_recognition",
-            tax_treatment_code="derivative_realized_gain",
-        )
-    return classification(
-        normalized_category="derivatives_loss",
-        economic_kind="derivative_realized_loss",
-        projection_type="Derivatives / Futures Loss",
-        journal_intent="expense_recognition",
-        tax_treatment_code="derivative_realized_loss",
-    )
-
-
 def _skip_unrecognized_csv(path: Path) -> bool:
     header = read_csv_header(path)
     return header[:3] != ("DATE", "PAIR", "ADDR")
-
-
-def _parse_decimal(value: str) -> Decimal | None:
-    if not value:
-        return None
-    try:
-        return Decimal(value)
-    except ArithmeticError:
-        return None
-
-
-def _parse_report_date(value: str) -> datetime | None:
-    if not value:
-        return None
-    try:
-        day, month, year = value.split("/")
-        return datetime.fromisoformat(f"{year}-{month}-{day}T00:00:00+00:00").astimezone(UTC).replace(tzinfo=None)
-    except ValueError:
-        return None
 
 
 ADAPTER = GTradeAdapter()

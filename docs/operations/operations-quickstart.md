@@ -72,6 +72,8 @@ supporting detail.
 
 2. Review:
    - `transactions.csv`
+   - `balances.csv`
+   - `balance_evidence.csv`
    - `exceptions.csv`
    - `normalization_reviews.csv`
    - `normalization_summary.json`

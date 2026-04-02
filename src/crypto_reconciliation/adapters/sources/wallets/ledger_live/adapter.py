@@ -179,7 +179,7 @@ class LedgerLiveAdapter:
                     raw_row_ref=raw_row_ref,
                     tx_hash=operation_hash,
                     provider_operation_key="ledger_live_swap",
-                    group_key=operation_hash,
+                    operation_group_id=operation_hash,
                     legs=(
                         economic_leg(
                             direction="in",

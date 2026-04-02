@@ -60,7 +60,7 @@ uv run crypto-reconciliation source profile --source <name> --raw-dir <path> --o
 uv run crypto-reconciliation source normalize --source <name> --raw-dir <path> --output-dir <path>
 uv run crypto-reconciliation source diff --candidate <path> --reference <path> --output-dir <path>
 uv run crypto-reconciliation wallet inventory rebuild --normalized-root <path> --output <path>
-uv run crypto-reconciliation output render file --output-adapter cointracking_csv --canonical-events <path> --output <path>
+uv run crypto-reconciliation output render file --output-adapter cointracking_csv --transactions <path> --output <path>
 uv run crypto-reconciliation verification compare --previous-dir <path> --current-dir <path> --output-dir <path>
 uv run crypto-reconciliation batch screen --candidate <path> --baseline-export-dir <path> --output-dir <path>
 uv run crypto-reconciliation batch stage --candidate <path> --baseline-export-dir <path> --output-dir <path>

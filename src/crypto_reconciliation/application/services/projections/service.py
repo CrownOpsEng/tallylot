@@ -6,7 +6,7 @@ from crypto_reconciliation.application.models.output import (
     RenderOutputRequest,
     RenderOutputResponse,
 )
-from crypto_reconciliation.application.services.parsers import load_transactions
+from crypto_reconciliation.application.services.normalize import load_transactions
 from crypto_reconciliation.domain.models import AdapterCapability
 from crypto_reconciliation.ports.adapters import OutputAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort

@@ -1,5 +1,7 @@
 """Core immutable domain models."""
 
+from ..reconciliation import BalanceEvidence
+from ..transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from .adapters import AdapterCapability, AdapterManifest
 from .inventory import FileInventoryEntry, WalletInventoryRecord
 from .issues import IssueRecord, NormalizationReviewRecord
@@ -9,12 +11,17 @@ from .transactions import BalanceSnapshot, NormalizedTransaction, TransactionCat
 __all__ = [
     "AdapterCapability",
     "AdapterManifest",
+    "BalanceEvidence",
     "BalanceSnapshot",
+    "EconomicKind",
     "FileInventoryEntry",
     "IssueRecord",
+    "JournalIntent",
     "NormalizationReviewRecord",
     "NormalizedTransaction",
+    "ProjectionType",
     "SourceProfile",
+    "TaxTreatmentCode",
     "TransactionCategory",
     "VerificationExportSet",
     "WalletInventoryRecord",

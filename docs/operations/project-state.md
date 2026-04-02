@@ -22,8 +22,8 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - source manifesting
 - source intake planning and apply with archive-aware reports
 - source profiling with timezone provenance
-- source normalization with CoinTracking candidate rendering and archive member
-  provenance
+- source normalization with explicit bridge artifacts, balance evidence, and
+  archive member provenance
 - wallet inventory rebuild with evidence, issues, and summary artifacts
 - baseline validation with the documented artifact package
 - batch screening and staging with explicit issues, overlap summaries, and

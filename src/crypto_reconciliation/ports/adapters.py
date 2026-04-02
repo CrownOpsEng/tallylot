@@ -8,7 +8,7 @@ from typing import Protocol
 
 from crypto_reconciliation.domain.models import (
     AdapterManifest,
-    BalanceSnapshot,
+    BalanceEvidence,
     FileInventoryEntry,
     IssueRecord,
     NormalizationReviewRecord,
@@ -26,7 +26,7 @@ from .output_workflows import BaselineArtifacts, ScreeningResult
 @dataclass(frozen=True)
 class NormalizationResult:
     transactions: tuple[NormalizedTransaction, ...]
-    balance_evidence: tuple[BalanceSnapshot, ...]
+    balance_evidence: tuple[BalanceEvidence, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
     wallet_inventory: tuple[WalletInventoryRecord, ...]

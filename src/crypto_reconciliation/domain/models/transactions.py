@@ -1,4 +1,4 @@
-"""Normalized transaction and balance models."""
+"""Normalized transaction bridge and derived balance models."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
+from crypto_reconciliation.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.domain.value_objects import format_decimal, format_timestamp
 
@@ -33,12 +34,12 @@ class NormalizedTransaction:
     wallet: str
     timestamp: datetime
     category: TransactionCategory
-    economic_kind: str = ""
-    projection_type: str = ""
-    journal_intent: str = ""
-    tax_treatment_code: str = ""
+    economic_kind: EconomicKind | None = None
+    projection_type: ProjectionType | None = None
+    journal_intent: JournalIntent | None = None
+    tax_treatment_code: TaxTreatmentCode | None = None
     provider_operation_key: str = ""
-    group_key: str = ""
+    operation_group_id: str = ""
     description: str = ""
     asset_in: AssetSymbol | None = None
     amount_in: Decimal | None = None
@@ -82,12 +83,12 @@ class NormalizedTransaction:
             "wallet": self.wallet,
             "timestamp": format_timestamp(self.timestamp),
             "category": self.category,
-            "economic_kind": self.economic_kind,
-            "projection_type": self.projection_type,
-            "journal_intent": self.journal_intent,
-            "tax_treatment_code": self.tax_treatment_code,
+            "economic_kind": "" if self.economic_kind is None else self.economic_kind.value,
+            "projection_type": "" if self.projection_type is None else self.projection_type.value,
+            "journal_intent": "" if self.journal_intent is None else self.journal_intent.value,
+            "tax_treatment_code": "" if self.tax_treatment_code is None else self.tax_treatment_code.value,
             "provider_operation_key": self.provider_operation_key,
-            "group_key": self.group_key,
+            "operation_group_id": self.operation_group_id,
             "description": self.description,
             "asset_in": str(self.asset_in or ""),
             "amount_in": format_decimal(self.amount_in),

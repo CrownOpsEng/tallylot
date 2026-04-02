@@ -143,12 +143,11 @@ def _draft(
         raw_row_ref=seed.raw_row_ref,
         tx_hash=seed.tx_hash,
         provider_operation_key=seed.provider_operation_key,
-        group_key=seed.group_key,
+        operation_group_id=seed.operation_group_id,
         provenance_refs=seed.provenance_refs,
         review_markers=seed.review_markers,
         confidence=seed.confidence,
         status=seed.status,
-        projection=seed.projection,
         legs=legs,
         fee_legs=fee_legs,
     )

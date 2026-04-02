@@ -30,7 +30,7 @@ behavior.
 
 ## Incoming Types
 
-| CoinTrackingType | Default EconomicKind | Default TaxTreatmentCode | Default JournalIntent | Tier | Notes |
+| ProjectionType Value | Default EconomicKind | Default TaxTreatmentCode | Default JournalIntent | Tier | Notes |
 | ---- | ---- | ---- | ---- | ---- | ---- |
 | `Deposit` | `asset_receipt` | `review_required_receipt` | `asset_inflow` | `T1` | Often becomes non-taxable transfer after linking |
 | `Income` | `income_receipt` | `income_on_receipt` | `income_receipt` | `T1` | Generic fallback income |
@@ -58,7 +58,7 @@ behavior.
 
 ## Outgoing Types
 
-| CoinTrackingType | Default EconomicKind | Default TaxTreatmentCode | Default JournalIntent | Tier | Notes |
+| ProjectionType Value | Default EconomicKind | Default TaxTreatmentCode | Default JournalIntent | Tier | Notes |
 | ---- | ---- | ---- | ---- | ---- | ---- |
 | `Withdrawal` | `asset_send` | `review_required_send` | `asset_outflow` | `T1` | Often becomes non-taxable transfer after linking |
 | `Spend` | `spend` | `taxable_disposition` | `expense_disposal` | `T1` | Goods/services spend |
@@ -83,7 +83,7 @@ behavior.
 ## Runtime Rules
 
 - Adapters should populate `EconomicKind` first.
-- `CoinTrackingType` is optional metadata or derived projection.
+- `ProjectionType` is optional metadata or derived projection.
 - Tax policy operates on facts plus `TaxTreatmentCode`, never directly on
   CoinTracking labels.
 - Journal rendering operates on facts plus `JournalIntent`, never directly on

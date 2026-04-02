@@ -10,7 +10,7 @@ def cointracking_row(transaction: NormalizedTransaction) -> dict[str, str]:
     if not transaction.projection_type:
         raise ValueError(f"transaction {transaction.transaction_id} is missing CoinTracking projection metadata")
     return {
-        "Type": transaction.projection_type,
+        "Type": transaction.projection_type.value,
         "Buy": format_decimal(transaction.amount_in),
         "Cur.": str(transaction.asset_in or ""),
         "Sell": format_decimal(transaction.amount_out),
@@ -18,7 +18,7 @@ def cointracking_row(transaction: NormalizedTransaction) -> dict[str, str]:
         "Fee": format_decimal(transaction.fee_amount),
         "Cur..2": str(transaction.fee_asset or ""),
         "Exchange": transaction.account,
-        "Group": transaction.group_key,
+        "Group": transaction.operation_group_id,
         "Comment": transaction.description,
         "Date": format_timestamp(transaction.timestamp),
         "Tx-ID": transaction.tx_hash or str(transaction.transaction_id),

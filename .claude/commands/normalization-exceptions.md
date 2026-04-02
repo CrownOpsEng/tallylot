@@ -4,7 +4,7 @@ Review these artifacts after `source normalize`:
 
 - `exceptions.csv` for blocking or unsupported rows
 - `normalization_reviews.csv` for explicit assumptions and canonicalizations
-- `canonical_events.csv` for the internal normalized event set
+- `transactions.csv` for the internal normalized bridge transaction set
 
 If the issue is a candidate-shape or overlap problem, render a candidate with
 `output render file` and continue with `batch screen` rather than editing the

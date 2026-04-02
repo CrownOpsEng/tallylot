@@ -11,9 +11,10 @@ decisions that should not be rediscovered from scratch.
 - CLI and library runtime only
 - Filesystem-backed operational storage
 - CoinTracking CSV as the only implemented output adapter
-- Normalization writes `transactions.csv` and `balances.csv` as the only active
-  normalized runtime artifacts; CoinTracking CSV exports run as explicit
-  adapter projections with no repo-level compatibility aliases
+- Normalization writes `transactions.csv`, `balances.csv`, and
+  `balance_evidence.csv` as the active bridge artifacts; CoinTracking CSV
+  exports run as explicit adapter projections with no repo-level compatibility
+  aliases
 - Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds
@@ -52,7 +53,7 @@ decisions that should not be rediscovered from scratch.
   carrying forward compatibility wrappers or parallel legacy names.
 - Keep classification layered:
   - provider-neutral economic kind
-  - CoinTracking compatibility type
+  - compatibility projection type
   - journal intent
   - tax treatment code
 - Keep journaling replaceable behind a renderer port. Ledger CLI is the first

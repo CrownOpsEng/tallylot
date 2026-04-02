@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from crypto_reconciliation.domain.models import (
+    BalanceEvidence,
     BalanceSnapshot,
     IssueRecord,
     NormalizationReviewRecord,
@@ -30,7 +31,7 @@ class FilesystemStorage:
                 "journal_intent",
                 "tax_treatment_code",
                 "provider_operation_key",
-                "group_key",
+                "operation_group_id",
                 "description",
                 "asset_in",
                 "amount_in",
@@ -52,6 +53,13 @@ class FilesystemStorage:
             path,
             ("source", "account", "wallet", "asset", "quantity", "as_of", "balance_kind", "notes"),
             (balance.to_row() for balance in balances),
+        )
+
+    def write_balance_evidence(self, path: Path, evidence: tuple[BalanceEvidence, ...]) -> None:
+        write_rows(
+            path,
+            ("source", "account", "wallet", "asset", "quantity", "as_of", "balance_kind", "evidence_ref", "notes"),
+            (record.to_row() for record in evidence),
         )
 
     def write_issue_records(self, path: Path, issues: tuple[IssueRecord, ...]) -> None:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from crypto_reconciliation.domain.models import (
-    BalanceSnapshot,
+    BalanceEvidence,
     IssueRecord,
     NormalizationReviewRecord,
     NormalizedTransaction,
@@ -24,7 +24,7 @@ def compile_activity_drafts(drafts: tuple[EconomicActivityDraft, ...]) -> tuple[
 def normalization_result_from_drafts(
     drafts: Iterable[EconomicActivityDraft] = (),
     *,
-    balance_evidence: Iterable[BalanceSnapshot] = (),
+    balance_evidence: Iterable[BalanceEvidence] = (),
     issues: Iterable[IssueRecord] = (),
     reviews: Iterable[NormalizationReviewRecord] = (),
     wallet_inventory: Iterable[WalletInventoryRecord] = (),
@@ -47,7 +47,6 @@ def compile_activity_draft(draft: EconomicActivityDraft) -> NormalizedTransactio
             "current normalized transaction compatibility compiler supports at most one inbound leg, "
             "one outbound leg, and one fee leg"
         )
-    projection = draft.projection
     inbound_leg = inbound_legs[0] if inbound_legs else None
     outbound_leg = outbound_legs[0] if outbound_legs else None
     fee = draft.fee_legs[0] if draft.fee_legs else None
@@ -64,7 +63,7 @@ def compile_activity_draft(draft: EconomicActivityDraft) -> NormalizedTransactio
         journal_intent=draft.classification.journal_intent,
         tax_treatment_code=draft.classification.tax_treatment_code,
         provider_operation_key=draft.provider_operation_key,
-        group_key=projection.group if projection is not None else draft.group_key,
+        operation_group_id=draft.operation_group_id,
         description=draft.description,
         asset_in=AssetSymbol(inbound_leg.asset) if inbound_leg is not None else None,
         amount_in=inbound_leg.amount if inbound_leg is not None else None,

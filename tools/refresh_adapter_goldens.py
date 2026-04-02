@@ -19,6 +19,7 @@ from tools.adapter_packs import DEFAULT_PACK_ROOT, AdapterPack, select_adapter_p
 EXPECTED_NORMALIZATION_ARTIFACTS = (
     "transactions",
     "balances",
+    "balance_evidence",
     "exceptions",
     "normalization_reviews",
     "normalization_summary",
@@ -103,6 +104,7 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
                 {
                     "transactions": artifacts.read_rows(output_dir / "transactions.csv"),
                     "balances": artifacts.read_rows(output_dir / "balances.csv"),
+                    "balance_evidence": artifacts.read_rows(output_dir / "balance_evidence.csv"),
                     "exceptions": artifacts.read_rows(output_dir / "exceptions.csv"),
                     "normalization_reviews": artifacts.read_rows(output_dir / "normalization_reviews.csv"),
                     "normalization_summary": json.loads(

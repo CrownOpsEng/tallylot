@@ -276,7 +276,7 @@ Required fields:
   - `tuple[Valuation, ...]`
   - currency, amount, method, provenance, confidence
 - compatibility and policy hints
-  - optional `CoinTrackingType`
+  - optional `ProjectionType`
   - optional `TaxTreatmentCode`
   - optional `JournalIntent`
 - status
@@ -305,7 +305,7 @@ Lock these early:
 - `OwnershipChange`
 - `ValuationMethod`
 - `CorrectionReason`
-- `CoinTrackingType`
+- `ProjectionType`
 - `TaxTreatmentCode`
 - `JournalIntent`
 

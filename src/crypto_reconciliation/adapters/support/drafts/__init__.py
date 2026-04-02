@@ -1,14 +1,12 @@
-"""Shared adapter draft models, compilers, and projection helpers."""
+"""Shared adapter draft models and compilers."""
 
 from .compiler import compile_activity_draft, compile_activity_drafts, normalization_result_from_drafts
 from .models import (
     ActivityClassification,
     ActivityDraftSeed,
-    CompatibilityProjection,
     EconomicActivityDraft,
     EconomicLegDraft,
     classification,
-    compatibility_projection,
     economic_leg,
     fee_leg,
 )
@@ -16,11 +14,9 @@ from .models import (
 __all__ = [
     "ActivityClassification",
     "ActivityDraftSeed",
-    "CompatibilityProjection",
     "EconomicActivityDraft",
     "EconomicLegDraft",
     "classification",
-    "compatibility_projection",
     "compile_activity_draft",
     "compile_activity_drafts",
     "economic_leg",

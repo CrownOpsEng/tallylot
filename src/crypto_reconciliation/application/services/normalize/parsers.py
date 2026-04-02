@@ -1,4 +1,4 @@
-"""Boundary parsers for persisted records."""
+"""Bridge-artifact parsers for normalization outputs."""
 
 from __future__ import annotations
 
@@ -7,6 +7,12 @@ from pathlib import Path
 from typing import cast
 
 from crypto_reconciliation.domain.models import NormalizedTransaction, TransactionCategory
+from crypto_reconciliation.domain.transactions import (
+    parse_economic_kind,
+    parse_journal_intent,
+    parse_projection_type,
+    parse_tax_treatment_code,
+)
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
 from crypto_reconciliation.domain.value_objects import parse_decimal
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
@@ -25,12 +31,12 @@ def load_transactions(path: Path, artifacts: ArtifactStorePort) -> tuple[Normali
                 wallet=row["wallet"],
                 timestamp=_parse_utc_timestamp(row["timestamp"]),
                 category=cast(TransactionCategory, row["category"]),
-                economic_kind=row.get("economic_kind", ""),
-                projection_type=row.get("projection_type", ""),
-                journal_intent=row.get("journal_intent", ""),
-                tax_treatment_code=row.get("tax_treatment_code", ""),
+                economic_kind=parse_economic_kind(row.get("economic_kind", "")),
+                projection_type=parse_projection_type(row.get("projection_type", "")),
+                journal_intent=parse_journal_intent(row.get("journal_intent", "")),
+                tax_treatment_code=parse_tax_treatment_code(row.get("tax_treatment_code", "")),
                 provider_operation_key=row.get("provider_operation_key", ""),
-                group_key=row.get("group_key", ""),
+                operation_group_id=row.get("operation_group_id", ""),
                 description=row["description"],
                 asset_in=AssetSymbol(row["asset_in"]) if row["asset_in"] else None,
                 amount_in=parse_decimal(row["amount_in"]),

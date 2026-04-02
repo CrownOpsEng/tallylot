@@ -5,28 +5,33 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, TypeVar
 
-from crypto_reconciliation.domain.models import TransactionCategory
+from crypto_reconciliation.domain.models import (
+    EconomicKind,
+    JournalIntent,
+    ProjectionType,
+    TaxTreatmentCode,
+    TransactionCategory,
+)
+from crypto_reconciliation.domain.transactions import (
+    parse_economic_kind,
+    parse_journal_intent,
+    parse_projection_type,
+    parse_tax_treatment_code,
+)
 
 DraftDirection = Literal["in", "out"]
+EnumT = TypeVar("EnumT")
 
 
 @dataclass(frozen=True)
 class ActivityClassification:
     normalized_category: TransactionCategory
-    economic_kind: str
-    projection_type: str
-    journal_intent: str
-    tax_treatment_code: str
-
-
-@dataclass(frozen=True)
-class CompatibilityProjection:
-    row_type: str
-    group: str = ""
-    comment: str = ""
-    tx_id: str = ""
+    economic_kind: EconomicKind
+    projection_type: ProjectionType | None
+    journal_intent: JournalIntent
+    tax_treatment_code: TaxTreatmentCode
 
 
 @dataclass(frozen=True)
@@ -38,12 +43,11 @@ class ActivityDraftSeed:
     raw_row_ref: str = ""
     tx_hash: str = ""
     provider_operation_key: str = ""
-    group_key: str = ""
+    operation_group_id: str = ""
     provenance_refs: tuple[str, ...] = ()
     review_markers: tuple[str, ...] = ()
     confidence: str = "high"
     status: str = "mapped"
-    projection: CompatibilityProjection | None = None
 
 
 @dataclass(frozen=True)
@@ -77,12 +81,11 @@ class EconomicActivityDraft:
     raw_row_ref: str = ""
     tx_hash: str = ""
     provider_operation_key: str = ""
-    group_key: str = ""
+    operation_group_id: str = ""
     provenance_refs: tuple[str, ...] = ()
     review_markers: tuple[str, ...] = ()
     confidence: str = "high"
     status: str = "mapped"
-    projection: CompatibilityProjection | None = None
 
     def __post_init__(self) -> None:
         if not self.legs:
@@ -92,28 +95,34 @@ class EconomicActivityDraft:
 def classification(
     *,
     normalized_category: TransactionCategory,
-    economic_kind: str,
-    projection_type: str,
-    journal_intent: str,
-    tax_treatment_code: str,
+    economic_kind: EconomicKind | str,
+    projection_type: ProjectionType | str | None = None,
+    journal_intent: JournalIntent | str,
+    tax_treatment_code: TaxTreatmentCode | str,
 ) -> ActivityClassification:
     return ActivityClassification(
         normalized_category=normalized_category,
-        economic_kind=economic_kind,
-        projection_type=projection_type,
-        journal_intent=journal_intent,
-        tax_treatment_code=tax_treatment_code,
+        economic_kind=(
+            economic_kind
+            if isinstance(economic_kind, EconomicKind)
+            else _require_enum(parse_economic_kind(economic_kind), "EconomicKind")
+        ),
+        projection_type=(
+            projection_type
+            if isinstance(projection_type, ProjectionType)
+            else parse_projection_type("" if projection_type is None else projection_type)
+        ),
+        journal_intent=(
+            journal_intent
+            if isinstance(journal_intent, JournalIntent)
+            else _require_enum(parse_journal_intent(journal_intent), "JournalIntent")
+        ),
+        tax_treatment_code=(
+            tax_treatment_code
+            if isinstance(tax_treatment_code, TaxTreatmentCode)
+            else _require_enum(parse_tax_treatment_code(tax_treatment_code), "TaxTreatmentCode")
+        ),
     )
-
-
-def compatibility_projection(
-    *,
-    row_type: str,
-    group: str = "",
-    comment: str = "",
-    tx_id: str = "",
-) -> CompatibilityProjection:
-    return CompatibilityProjection(row_type=row_type, group=group, comment=comment, tx_id=tx_id)
 
 
 def economic_leg(
@@ -135,3 +144,9 @@ def fee_leg(
     wallet: str = "",
 ) -> EconomicLegDraft:
     return EconomicLegDraft(direction="out", asset=asset, amount=amount, account=account, wallet=wallet)
+
+
+def _require_enum(value: EnumT | None, enum_name: str) -> EnumT:
+    if value is None:
+        raise ValueError(f"{enum_name} value is required")
+    return value

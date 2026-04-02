@@ -93,3 +93,31 @@ def test_wallet_inventory_rebuild_emits_documented_outputs(
     assert output_path.with_name("wallet_inventory_evidence.csv").exists()
     assert output_path.with_name("wallet_inventory_issues.csv").exists()
     assert output_path.with_name("wallet_inventory_summary.json").exists()
+
+
+def test_normalization_emits_balance_evidence_artifact(
+    structured_source_dir: Path,
+    tmp_path: Path,
+) -> None:
+    normalized_dir = tmp_path / "normalized"
+    artifacts = FilesystemArtifactStore()
+    registry = build_registry()
+
+    NormalizationService(
+        NormalizationDependencies(
+            source_registry=registry,
+            profile_service=ProfileService(registry, artifacts),
+            storage=FilesystemStorage(),
+            artifacts=artifacts,
+        )
+    ).execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_dir=structured_source_dir,
+            output_dir=normalized_dir,
+        )
+    )
+
+    assert (normalized_dir / "transactions.csv").exists()
+    assert (normalized_dir / "balances.csv").exists()
+    assert (normalized_dir / "balance_evidence.csv").exists()
