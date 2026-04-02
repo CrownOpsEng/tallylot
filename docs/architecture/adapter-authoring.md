@@ -24,12 +24,13 @@ automatically.
   must keep provider-local names that reflect the real job being done.
 - Surface unsupported or ambiguous rows as issues rather than guessing.
 - Use the shared adapter draft model as the source-translation contract.
-- Do not construct `NormalizedTransaction` directly in provider-local modules.
+- Do not construct CoinTracking rows or other output-adapter payloads directly
+  in provider-local modules.
 - Do not synthesize runtime balance snapshots in adapters unless the source
   export provides actual balance evidence.
 - Normalize source-specific sign conventions at the adapter edge. Normalized
-  transaction amounts stay positive; direction belongs in the mapped
-  fields, not signed magnitudes.
+  fact-leg amounts stay positive; direction belongs in the mapped fields, not
+  signed magnitudes.
 
 ## Source Adapter Shape
 
@@ -82,7 +83,7 @@ from the adapter package itself, not from a support-layer provider table.
   service, or tooling coverage that is not owned by one adapter should live
   under the repo-level `tests/` tree instead.
 - When an adapter becomes materially more complex, add golden fixtures that
-  assert normalized transactions, balances, issues, and rendered outputs.
+  assert transaction facts, balances, issues, and rendered outputs.
 - Adapters must continue to pass both strict type checkers. Do not rely on
   runtime tests as a substitute for `mypy` and `pyright`.
 

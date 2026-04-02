@@ -1,4 +1,4 @@
-"""Scope-compatibility helpers for intake package rules."""
+"""Scope-matching helpers for intake package rules."""
 
 from __future__ import annotations
 

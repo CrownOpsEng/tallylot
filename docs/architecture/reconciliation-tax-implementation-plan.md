@@ -77,10 +77,10 @@ shape.
 
 A single `category` string is not a stable center for the next phase.
 
-Every normalized fact should support distinct classification layers:
+Every transaction fact should support distinct classification layers:
 
 - `EconomicKind`: provider-neutral semantics
-- `ProjectionType`: compatibility projection type
+- `ProjectionType`: output projection metadata for external renderers
 - `TaxTreatmentCode`: jurisdiction-neutral tax intent
 - `JournalIntent`: accounting intent
 
@@ -113,7 +113,7 @@ rules remain explicit and tool-friendly.
 ### Domain Packages
 
 - `domain/transactions/`
-  - transaction facts, legs, valuations, ids, corrections, compatibility enums
+  - transaction facts, legs, valuations, ids, corrections, projection enums
 - `domain/reconciliation/`
   - balance assertions, transfer links, checkpoint continuity, materiality rules
 - `domain/accounting/`
@@ -227,8 +227,8 @@ The only lost capability should be comparison against the external oracle.
 
 ### Transitional Adapter Draft Seam
 
-Until `TransactionFact` replaces the compatibility artifact end to end, source
-normalization should translate through `EconomicActivityDraft`.
+Source normalization should translate through `EconomicActivityDraft` until all
+adapters emit `TransactionFact` artifacts directly.
 
 Required draft responsibilities:
 
@@ -247,15 +247,14 @@ Required draft responsibilities:
 Rules:
 
 - provider modules translate into drafts only; they do not assemble
-  `NormalizedTransaction` directly
-- shared fact builders may derive `TransactionFact` objects from drafts before
-  the temporary compatibility artifact is retired, but that derivation stays in
-  shared support rather than provider-local code
+  CoinTracking rows or other output-adapter payloads directly
+- shared fact builders may derive `TransactionFact` objects from drafts, but
+  that derivation stays in shared support rather than provider-local code
 - shared support stays adapter-agnostic and registry-driven; adapters publish
   manifests, translation registries, and provider-local coverage metadata
-- one shared compiler owns draft-to-compatibility conversion
-- one shared compatibility mapper owns the legacy category mapping from layered
-  classifications
+- one shared fact builder owns draft-to-fact conversion
+- one shared projection mapper owns the mapping from layered classifications
+  into concrete output-adapter row types
 - one shared projection mapper owns CoinTracking CSV row construction
 - grouped operations and provider-local export families must resolve through
   explicit translation registries, not ad hoc adapter entry-point branching
@@ -289,7 +288,7 @@ Required fields:
 - valuation
   - `tuple[Valuation, ...]`
   - currency, amount, method, provenance, confidence
-- compatibility and policy hints
+- projection and policy hints
   - optional `ProjectionType`
   - optional `TaxTreatmentCode`
   - optional `JournalIntent`
@@ -323,12 +322,12 @@ Lock these early:
 - `TaxTreatmentCode`
 - `JournalIntent`
 
-## CoinTracking Compatibility Contract
+## CoinTracking Output Contract
 
 ### Full Type Surface
 
-Lock the full CoinTracking import taxonomy now so the internal compatibility
-enum does not churn later.
+Lock the full CoinTracking output taxonomy now so the projection metadata used
+by the output adapter does not churn later.
 
 Trade types:
 
@@ -406,8 +405,8 @@ Add dedicated readers for:
 Use these for comparison and regression only. Do not normalize them into the
 same source-fact path as exchange and wallet exports.
 
-Keep them behind review or oracle ports so production state does not depend on
-their presence.
+Keep them in dev-only tooling under `tools/oracles/` so production state does
+not depend on their presence.
 
 ## Delivery Sequence
 
@@ -422,15 +421,15 @@ Deliverables:
 - migration plan from normalized transactions to transaction facts
 - provenance policy for external ideas and direct code reuse
 
-### Phase 1. Boundary Models And Oracle Readers
+### Phase 1. Boundary Models And Dev-Only Oracle Readers
 
 Estimated effort: `14` to `22` hours
 
 Deliverables:
 
 - Pydantic row models for CoinTracking report families
-- parser services for all oracle exports
-- projection-type enum and alias normalization for current compatibility outputs
+- parser services for all oracle exports under `tools/oracles/`
+- projection-type enum and alias normalization for current output adapters
 - comparison-ready artifact contracts
 
 ### Phase 2. Core Fact Model And Direct Normalization Replacement

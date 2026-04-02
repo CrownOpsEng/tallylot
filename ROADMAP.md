@@ -13,7 +13,7 @@ decisions that should not be rediscovered from scratch.
 - CoinTracking CSV as the only implemented output adapter
 - Normalization writes `facts.csv`, `balances.csv`, and
   `balance_evidence.csv` as active runtime artifacts; CoinTracking CSV exports
-  run as explicit output adapters with no repo-level compatibility aliases
+  run as explicit output adapters with no repo-level legacy aliases
 - Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds
@@ -23,8 +23,8 @@ decisions that should not be rediscovered from scratch.
 - Build deterministic reconciliation and source-backed checkpoints before tax
   computation. The `2023-08-05` CoinTracking export remains a historical oracle
   boundary, not a hard checkpoint.
-- Treat CoinTracking as an adapter-only oracle and projection layer, not as the
-  central business model.
+- Treat CoinTracking as one ordinary output adapter plus one dev-only oracle
+  family, not as the central business model.
 - Keep CoinTracking rendering isolated to output-adapter packages and keep
   oracle comparison code outside `src/crypto_reconciliation/`.
 - Build shared adapter-layer support for stable translation chores such as file
@@ -59,7 +59,7 @@ decisions that should not be rediscovered from scratch.
   names such as `services` or `models`.
 - Keep classification layered:
   - provider-neutral economic kind
-  - compatibility projection type
+  - output projection type
   - journal intent
   - tax treatment code
 - Keep journaling replaceable behind a renderer port. Ledger CLI is the first
@@ -76,9 +76,8 @@ decisions that should not be rediscovered from scratch.
   - discovery-time manifest validation
 - Keep the domain centered on frozen dataclasses, enums, and value objects so
   business invariants remain explicit and independent of framework behavior.
-- Support the required CoinTracking import taxonomy inside projection adapters
-  and shared projection contracts without requiring provider-local mapping
-  helpers.
+- Support the required CoinTracking output taxonomy inside output adapters and
+  shared projection contracts without requiring provider-local mapping helpers.
 - Keep CoinTracking tax reports, roll-forward outputs, average purchase price,
   and double-entry reports in the oracle lane only. They may support
   comparison, regression, and one-time review, but they must not become normal
@@ -164,9 +163,9 @@ decisions that should not be rediscovered from scratch.
   buildable from a clean checkout, and CI should continue verifying the build
   plus an installable CLI entry point.
 - Do not bypass `Decimal` with float-based financial calculations.
-- Keep normalized transactions structurally strict: asset/amount pairs must be
-  complete, and amounts must remain positive because direction is modeled by
-  the `in`/`out` fields rather than signed numbers.
+- Keep transaction facts structurally strict: every fact must retain at least
+  one positive-value economic leg, and leg direction must be modeled
+  explicitly rather than by signed magnitudes.
 - Normalize raw sign conventions inside adapters when direction is otherwise
   explicit. If the sign is the only direction signal or it conflicts with other
   fields, surface an issue instead of guessing. When adapters do apply an
@@ -230,5 +229,6 @@ decisions that should not be rediscovered from scratch.
   unimplemented cases.
 - Add more conservative overlap heuristics and duplicate signatures.
 - Expand source profiling to include richer file-family inspection.
-- Continue splitting hotspot services and DTO hubs into bounded feature modules
-  before facts, checkpoints, and tax policy add more responsibilities.
+- Continue splitting hotspot use-case modules and DTO hubs into bounded
+  feature modules before facts, checkpoints, and tax policy add more
+  responsibilities.

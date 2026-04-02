@@ -176,7 +176,7 @@ instead of guessing:
 When a task touches a migrating surface:
 
 - implement on the fact-based path first
-- preserve compatibility projections only as needed
+- preserve external output projections only as needed
 - do not add new behavior to the legacy center unless required for migration
 - add parity coverage before retiring older paths
 
@@ -197,7 +197,7 @@ When adding or changing adapters:
 When adding artifacts:
 
 - define the schema explicitly first
-- decide whether it is a runtime artifact, compatibility artifact, or
+- decide whether it is a runtime artifact, output-adapter artifact, or
   oracle-only artifact
 - add contract coverage for parsers and renderers
 

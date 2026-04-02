@@ -3,17 +3,17 @@
 Use this document to lock the current canonical classification vocabulary
 before deeper fact, checkpoint, accounting, and tax work lands.
 
-The current runtime still emits the normalized compatibility artifact, but the
-canonical layered terms live in `domain/transactions/classification.py`.
-Adapters should populate layered classifications first. The compiler owns the
-bridge mapping into the legacy `category` field.
+The current runtime now writes `TransactionFact` artifacts, and the canonical
+layered terms live in `domain/transactions/classification.py`. Adapters should
+populate layered classifications first. Output adapters own any mapping from
+fact metadata into external row types such as the CoinTracking `Type` column.
 
 ## Classification Layers
 
 - `EconomicKind`: provider-neutral semantic meaning
 - `TaxTreatmentCode`: default tax intent used by later policy layers
 - `JournalIntent`: default accounting intent used by later journal renderers
-- `ProjectionType`: compatibility projection metadata for the current bridge
+- `ProjectionType`: output projection metadata for concrete renderers
 
 Core behavior should not key primarily on the legacy normalized `category`
 string.
@@ -22,7 +22,7 @@ string.
 
 - `T1`: implemented and supported in the current runtime
 - `T2`: explicitly planned, but not yet part of the canonical runtime enum set
-- `T3`: compatibility-only or future-policy work
+- `T3`: output-specific or future-policy work
 
 ## Current Canonical Mapping
 
@@ -56,9 +56,9 @@ aligned on these values exactly.
 ## Runtime Rules
 
 - Adapters populate layered classifications first.
-- The compatibility compiler maps layered classifications into the temporary
-  normalized `category`.
-- `ProjectionType` is compatibility metadata, not the long-term core driver of
+- Output adapters map layered classifications into concrete external row
+  families when they need them.
+- `ProjectionType` is output metadata, not the long-term core driver of
   business behavior.
 - If an adapter cannot determine a safe layered classification, it must emit an
   explicit issue instead of guessing.

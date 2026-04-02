@@ -9,7 +9,7 @@ provider-neutral fact model with explicit parity gates.
 - preserve current working behavior while new foundations land
 - avoid pushing more semantics into the current normalized transaction model
 - keep adapters and services shippable at every checkpoint
-- make CoinTracking compatibility a projection, not the center
+- keep CoinTracking as an output projection, not the center
 
 ## Phase 0. Schema Lock
 
@@ -22,7 +22,7 @@ Deliver before broad code changes:
 
 Do not start tax-engine work before these contracts are written down.
 
-## Phase 1. Boundary Models And Oracle Readers
+## Phase 1. Boundary Models And Dev-Only Oracle Readers
 
 Introduce boundary-only models for:
 
@@ -37,8 +37,8 @@ Rules:
 - use `pydantic` here
 - keep these models out of the core domain
 - do not let oracle readers create production facts automatically
-- keep CoinTracking-specific metadata out of the normalized transaction core
-  while this phase lands
+- keep CoinTracking-specific metadata out of the transaction fact core while
+  this phase lands
 
 Exit criteria:
 
@@ -66,8 +66,8 @@ Bridge rule for the current branch:
 - source adapters translate provider exports into `EconomicActivityDraft`
 - adapter resolution remains registry-driven; shared support must not depend on
   concrete adapter ids or hand-maintained provider lists
-- shared compiler code produces the temporary normalized transaction artifact
-- shared projection code produces CoinTracking CSV compatibility rows
+- shared compiler code produces transaction facts
+- shared projection code produces CoinTracking CSV rows
 - application services, not adapters, derive runtime balances from translated
   activity unless the source provides real balance evidence
 
@@ -152,7 +152,7 @@ Retire or demote the current normalized-transaction-first path only after:
 - reconciliation no longer depends on normalized-transaction-specific
   assumptions
 - accounting and tax consume facts directly
-- CoinTracking output remains available as a compatibility projection
+- CoinTracking output remains available as an ordinary output adapter
 
 After this phase, new behavior must land in fact-based services first and the
 temporary normalized transaction shape should not continue as a second active
