@@ -77,7 +77,7 @@ class StructuredCsvSourceAdapter:
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
         summary: dict[str, JsonValue] = {
-            "status": "passed",
+            "status": "needs_review",
             "issue_count": 0,
             "rows_with_dates": 1,
             "mode_counts": {"naive": 1},

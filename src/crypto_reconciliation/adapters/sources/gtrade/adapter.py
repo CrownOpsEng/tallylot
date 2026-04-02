@@ -64,7 +64,7 @@ class GTradeAdapter:
         del profile
         evidence: list[WalletInventoryRecord] = []
         issues: list[IssueRecord] = []
-        for path in sorted(raw_dir.glob("*.csv")):
+        for path in sorted(raw_dir.rglob("*.csv")):
             for row in _read_rows(path):
                 alias = (row.get("ADDR") or "").strip().lower()
                 if not alias:
@@ -118,7 +118,7 @@ class GTradeAdapter:
         events: list[CanonicalEvent] = []
         issues: list[IssueRecord] = []
         wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
-        for path in sorted(raw_dir.glob("*.csv")):
+        for path in sorted(raw_dir.rglob("*.csv")):
             for index, row in enumerate(_read_rows(path), start=2):
                 pnl = Decimal((row.get("PNL") or "0").strip())
                 if pnl == Decimal("0"):

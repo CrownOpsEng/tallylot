@@ -77,7 +77,7 @@ class BinanceAdapter:
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         events: list[CanonicalEvent] = []
         issues: list[IssueRecord] = []
-        for path in sorted(raw_dir.glob("*.csv")):
+        for path in sorted(raw_dir.rglob("*.csv")):
             if path.name.startswith("Binance-Spot-Trade-History-"):
                 events.extend(_normalize_spot_rows(profile, path))
             elif path.name.startswith("Binance-Deposit-History-"):

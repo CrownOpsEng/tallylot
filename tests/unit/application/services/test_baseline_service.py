@@ -2,14 +2,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from crypto_reconciliation.application.dtos import BaselineValidateRequest
 from crypto_reconciliation.application.services.baseline import (
     BaselineValidationService,
+    _asset_snapshot,
+    _cad_balances,
     _cad_flow_by_type,
     _exchange_reconciliation,
-    _find_export,
+    _negative_balances,
     _source_activity,
 )
+from crypto_reconciliation.application.services.export_files import find_required_csv_export
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
@@ -119,12 +124,73 @@ def test_find_export_rejects_ambiguous_matches(tmp_path: Path) -> None:
     (export_dir / "Trade Table A.csv").write_text("x\n", encoding="utf-8")
     (export_dir / "Trade Table B.csv").write_text("x\n", encoding="utf-8")
 
-    try:
-        _find_export(export_dir, "Trade Table")
-    except FileNotFoundError as exc:
-        assert "exactly one export" in str(exc)
-    else:
-        raise AssertionError("expected ambiguous baseline export lookup to fail")
+    with pytest.raises(FileNotFoundError, match="exactly one export"):
+        find_required_csv_export(export_dir, "Trade Table")
+
+
+def test_asset_snapshot_sorts_current_rows_against_exchange_totals() -> None:
+    rows = _asset_snapshot(
+        current_rows=[
+            {"Ticker": "BTC", "Amount": "1.0"},
+            {"Ticker": "ETH", "Amount": "2.0"},
+        ],
+        exchange_rows=[
+            {"Currency": "BTC", "Amount": "0.75"},
+            {"Currency": "BTC", "Amount": "0.25"},
+            {"Currency": "ETH", "Amount": "2.5"},
+        ],
+    )
+
+    assert rows == [
+        {
+            "ticker": "BTC",
+            "current_balance_amount": "1.0",
+            "exchange_balance_amount": "1.00",
+            "delta": "0.00",
+        },
+        {
+            "ticker": "ETH",
+            "current_balance_amount": "2.0",
+            "exchange_balance_amount": "2.5",
+            "delta": "-0.5",
+        },
+    ]
+
+
+def test_negative_balances_tracks_only_negative_rows() -> None:
+    rows = _negative_balances(
+        [
+            {"Ticker": "BTC", "Name": "Bitcoin", "Type": "Coin", "Amount": "-0.5", "Value in CAD": "-1"},
+            {"Ticker": "ETH", "Name": "Ether", "Type": "Coin", "Amount": "1.0", "Value in CAD": "2"},
+        ]
+    )
+
+    assert rows == [
+        {
+            "ticker": "BTC",
+            "name": "Bitcoin",
+            "type": "Coin",
+            "amount": "-0.5",
+            "value_in_cad": "-1",
+        }
+    ]
+
+
+def test_cad_balances_returns_only_cad_rows() -> None:
+    rows = _cad_balances(
+        [
+            {"Exchange": "Coinbase", "Currency": "CAD", "Amount": "10.0", "Current value in CAD": "10.0"},
+            {"Exchange": "Coinbase", "Currency": "BTC", "Amount": "1.0", "Current value in CAD": "100.0"},
+        ]
+    )
+
+    assert rows == [
+        {
+            "exchange": "Coinbase",
+            "amount": "10.0",
+            "current_value_cad": "10.0",
+        }
+    ]
 
 
 def test_baseline_validation_service_writes_relocation_safe_artifacts(

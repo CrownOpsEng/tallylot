@@ -17,6 +17,7 @@ from crypto_reconciliation.application.dtos import (
     StageBatchRequest,
     StageBatchResponse,
 )
+from crypto_reconciliation.application.services.export_files import find_required_csv_export
 from crypto_reconciliation.application.services.overlap import (
     OverlapResult,
     summarize_candidate_overlap,
@@ -127,7 +128,7 @@ class BatchScreeningService:
         )
 
     def _screen(self, candidate_path: Path, baseline_export_dir: Path) -> _ScreeningResult:
-        baseline_trade_table = _find_export(baseline_export_dir, "Trade Table")
+        baseline_trade_table = find_required_csv_export(baseline_export_dir, "Trade Table")
         baseline_rows = self._artifacts.read_rows(baseline_trade_table)
         baseline_cutoff = max(parse_timestamp(row["Date"]) for row in baseline_rows if row.get("Date"))
         baseline_tx_ids = {row.get("Tx-ID", "") for row in baseline_rows if row.get("Tx-ID")}
@@ -276,13 +277,6 @@ def _issue(candidate_path: Path, row_ref: int, kind: str, message: str) -> Issue
     )
 
 
-def _find_export(export_dir: Path, stem: str) -> Path:
-    matches = [path for path in export_dir.glob("*.csv") if stem.lower() in path.name.lower()]
-    if len(matches) != 1:
-        raise FileNotFoundError(f"expected exactly one export containing {stem!r} in {export_dir}")
-    return matches[0]
-
-
 def _resolve_normalization_window(
     *,
     candidate: Path,
@@ -291,7 +285,7 @@ def _resolve_normalization_window(
     window_start: str | None,
     window_end: str | None,
 ) -> tuple[str, str, str]:
-    baseline_trade_table = _find_export(baseline_export_dir, "Trade Table")
+    baseline_trade_table = find_required_csv_export(baseline_export_dir, "Trade Table")
     baseline_rows = _read_candidate_rows(baseline_trade_table)
     baseline_cutoff = max(parse_timestamp(row["Date"]) for row in baseline_rows if row.get("Date"))
     effective_window_start = (

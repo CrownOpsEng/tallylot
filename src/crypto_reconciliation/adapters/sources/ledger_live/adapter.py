@@ -185,7 +185,7 @@ class LedgerLiveAdapter:
 
 
 def _csv_paths(raw_dir: Path) -> tuple[Path, ...]:
-    return tuple(sorted(raw_dir.glob("*.csv")))
+    return tuple(sorted(raw_dir.rglob("*.csv")))
 
 
 def _read_rows(path: Path) -> list[dict[str, str]]:

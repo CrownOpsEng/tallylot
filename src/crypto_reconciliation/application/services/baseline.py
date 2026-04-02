@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import Decimal
-from pathlib import Path
 
 from crypto_reconciliation.application.dtos import BaselineValidateRequest, BaselineValidateResponse
+from crypto_reconciliation.application.services.export_files import find_required_csv_export
 from crypto_reconciliation.domain.value_objects import parse_timestamp
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
@@ -16,12 +16,12 @@ class BaselineValidationService:
         self._artifacts = artifacts
 
     def execute(self, request: BaselineValidateRequest) -> BaselineValidateResponse:
-        trade_table = _find_export(request.export_dir, "Trade Table")
-        current_balance = _find_export(request.export_dir, "Current Balance")
-        exchange_balance = _find_export(request.export_dir, "Balance by Exchange")
-        validate_transactions = _find_export(request.export_dir, "Validate Transactions")
-        missing_transactions = _find_export(request.export_dir, "Missing Transactions")
-        duplicate_transactions = _find_export(request.export_dir, "Duplicate Transactions")
+        trade_table = find_required_csv_export(request.export_dir, "Trade Table")
+        current_balance = find_required_csv_export(request.export_dir, "Current Balance")
+        exchange_balance = find_required_csv_export(request.export_dir, "Balance by Exchange")
+        validate_transactions = find_required_csv_export(request.export_dir, "Validate Transactions")
+        missing_transactions = find_required_csv_export(request.export_dir, "Missing Transactions")
+        duplicate_transactions = find_required_csv_export(request.export_dir, "Duplicate Transactions")
 
         trade_rows = self._artifacts.read_rows(trade_table)
         current_rows = self._artifacts.read_rows(current_balance)
@@ -208,10 +208,3 @@ def _cad_balances(exchange_rows: list[dict[str, str]]) -> list[dict[str, str]]:
         for row in exchange_rows
         if row["Currency"] == "CAD"
     ]
-
-
-def _find_export(export_dir: Path, stem: str) -> Path:
-    matches = [path for path in export_dir.glob("*.csv") if stem.lower() in path.name.lower()]
-    if len(matches) != 1:
-        raise FileNotFoundError(f"expected exactly one export containing {stem!r} in {export_dir}")
-    return matches[0]

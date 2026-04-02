@@ -264,6 +264,10 @@ def _same_export_cycle(primary: _BundlePackage, candidate: _BundlePackage) -> bo
 
 
 def _compatible_scope(primary: _BundlePackage, candidate: _BundlePackage) -> bool:
+    primary_material_scope = _material_scope_tokens(primary.scope_tokens)
+    candidate_material_scope = _material_scope_tokens(candidate.scope_tokens)
+    if primary_material_scope and candidate_material_scope:
+        return bool(primary_material_scope & candidate_material_scope)
     if primary.scope_tokens and candidate.scope_tokens:
         return bool(primary.scope_tokens & candidate.scope_tokens)
     return True
@@ -505,11 +509,19 @@ def _package_cycle_status(package: _BundlePackage) -> str:
 
 
 def _scope_status(primary: _BundlePackage, candidate: _BundlePackage) -> str:
+    primary_material_scope = _material_scope_tokens(primary.scope_tokens)
+    candidate_material_scope = _material_scope_tokens(candidate.scope_tokens)
+    if primary_material_scope and candidate_material_scope:
+        return "matched_scope" if primary_material_scope & candidate_material_scope else "incompatible_scope"
     if primary.scope_tokens and candidate.scope_tokens:
         return "matched_scope" if primary.scope_tokens & candidate.scope_tokens else "incompatible_scope"
     if primary.scope_tokens or candidate.scope_tokens:
         return "partial_scope"
     return "scope_unknown"
+
+
+def _material_scope_tokens(tokens: frozenset[str]) -> frozenset[str]:
+    return frozenset(token for token in tokens if not token.startswith("label:"))
 
 
 def _overlap_reason(scope_status: str) -> str:

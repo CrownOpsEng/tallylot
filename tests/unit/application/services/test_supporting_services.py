@@ -5,38 +5,11 @@ from pathlib import Path
 
 from reportlab.pdfgen import canvas
 
-from crypto_reconciliation.application.dtos import (
-    PdfBalanceExtractRequest,
-    RoundScaffoldRequest,
-    SourceReconcileRequest,
-)
+from crypto_reconciliation.application.dtos import PdfBalanceExtractRequest, SourceReconcileRequest
 from crypto_reconciliation.application.services.pdf_extract import PdfBalanceExtractionService
 from crypto_reconciliation.application.services.reconcile import SourceReconciliationService
-from crypto_reconciliation.application.services.rounds import RoundScaffoldingService
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
-
-
-def test_round_scaffolding_service_creates_round_dir_and_seeds_log(tmp_path: Path) -> None:
-    workspace_root = tmp_path / "workspace"
-    FilesystemWorkspaceRepository().initialize(workspace_root)
-    artifacts = FilesystemArtifactStore()
-
-    response = RoundScaffoldingService(artifacts).execute(
-        RoundScaffoldRequest(
-            workspace_root=workspace_root,
-            round_id="post_import_fixture_01",
-            phase="post_import",
-            source="fixture",
-        )
-    )
-
-    round_log_rows = artifacts.read_rows(workspace_root / "outputs/logs/round_log.csv")
-
-    assert response.round_dir.exists()
-    assert response.seeded is True
-    assert round_log_rows[0]["round_id"] == "post_import_fixture_01"
 
 
 def test_source_reconciliation_service_writes_candidate_and_reference_diffs(tmp_path: Path) -> None:

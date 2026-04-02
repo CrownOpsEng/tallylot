@@ -60,7 +60,7 @@ class EvmWalletAdapter:
     ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
         evidence: list[WalletInventoryRecord] = []
-        for path in sorted(raw_dir.glob("*.json")):
+        for path in sorted(raw_dir.rglob("*.json")):
             payload = json.loads(path.read_text(encoding="utf-8"))
             evidence.extend(_account_records(source, path.name, payload))
             evidence.extend(_identity_records(source, path.name, payload))

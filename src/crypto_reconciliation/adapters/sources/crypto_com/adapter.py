@@ -78,7 +78,7 @@ class CryptoComAdapter:
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         events: list[CanonicalEvent] = []
         issues: list[IssueRecord] = []
-        for path in sorted(raw_dir.glob("*.csv")):
+        for path in sorted(raw_dir.rglob("*.csv")):
             for index, row in enumerate(_read_rows(path), start=2):
                 parsed = _normalize_row(profile, path.name, index, row)
                 if isinstance(parsed, IssueRecord):

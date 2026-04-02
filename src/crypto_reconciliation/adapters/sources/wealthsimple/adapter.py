@@ -98,7 +98,7 @@ class WealthsimpleAdapter:
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         events: list[CanonicalEvent] = []
         issues: list[IssueRecord] = []
-        for path in sorted(raw_dir.glob("*.csv")):
+        for path in sorted(raw_dir.rglob("*.csv")):
             for index, row in enumerate(_read_rows(path), start=2):
                 if (row.get("account_type") or "").strip().lower() != "crypto":
                     continue

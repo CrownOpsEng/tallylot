@@ -116,7 +116,7 @@ class EvmExplorerAdapter:
         wallet_inventory, wallet_issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
         owned_addresses = _owned_addresses(raw_dir)
         suspicious_hashes = _suspicious_nft_hashes(raw_dir, owned_addresses)
-        for path in sorted(raw_dir.glob("*.csv")):
+        for path in sorted(raw_dir.rglob("*.csv")):
             if "nft" in path.name.lower():
                 continue
             for index, row in enumerate(_read_rows(path), start=2):
@@ -189,12 +189,12 @@ def _read_rows(path: Path) -> list[dict[str, str]]:
 
 def _owned_addresses(raw_dir: Path) -> set[str]:
     addresses: set[str] = set()
-    for path in sorted(raw_dir.glob("*.csv")):
+    for path in sorted(raw_dir.rglob("*.csv")):
         for match in EVM_ADDRESS_PATTERN.finditer(path.name):
             addresses.add(match.group(0).lower())
     if addresses:
         return addresses
-    for path in sorted(raw_dir.glob("*.csv")):
+    for path in sorted(raw_dir.rglob("*.csv")):
         rows = _read_rows(path)
         to_addresses = {
             (row.get("To") or "").strip().lower()
@@ -218,16 +218,16 @@ def _network_scope(source: str) -> str:
 
 
 def _evidence_filename(raw_dir: Path, address: str) -> str:
-    for path in sorted(raw_dir.glob("*.csv")):
+    for path in sorted(raw_dir.rglob("*.csv")):
         if address in path.name.lower():
             return path.name
-    first = sorted(raw_dir.glob("*.csv"))
+    first = sorted(raw_dir.rglob("*.csv"))
     return first[0].name if first else ""
 
 
 def _suspicious_nft_hashes(raw_dir: Path, owned_addresses: set[str]) -> dict[str, str]:
     suspicious: dict[str, str] = {}
-    for path in sorted(raw_dir.glob("*nft*.csv")):
+    for path in sorted(raw_dir.rglob("*nft*.csv")):
         for index, row in enumerate(_read_rows(path), start=2):
             to_address = (row.get("To") or "").strip().lower()
             token_name = (row.get("TokenName") or "").strip()

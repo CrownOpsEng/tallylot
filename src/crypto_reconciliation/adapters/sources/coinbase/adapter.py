@@ -55,7 +55,7 @@ class CoinbaseAdapter:
             return 100
         if any(item.relative_path.endswith(".csv") and item.header == RETAIL_HEADER for item in inventory):
             return 100
-        if any(_header_for_path(path) == RETAIL_HEADER for path in raw_dir.glob("*.csv")):
+        if any(_header_for_path(path) == RETAIL_HEADER for path in raw_dir.rglob("*.csv")):
             return 100
         return 0
 
@@ -135,7 +135,7 @@ class CoinbaseAdapter:
 
 
 def _retail_path(raw_dir: Path) -> Path | None:
-    for path in sorted(raw_dir.glob("*.csv")):
+    for path in sorted(raw_dir.rglob("*.csv")):
         if _header_for_path(path) == RETAIL_HEADER:
             return path
     return None
