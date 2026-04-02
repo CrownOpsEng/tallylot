@@ -72,7 +72,5 @@
       "extraPaths": ["src", "."],
       "reportPrivateUsage": false
     }
-  ],
-  "venvPath": ".",
-  "venv": ".venv"
+  ]
 }
