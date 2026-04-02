@@ -205,6 +205,23 @@ When a task touches a migrating surface:
 If the change would force a big-bang rewrite, the migration sequence is wrong.
 Split the work into a smaller compatible slice.
 
+## Workflow Integrity Rules
+
+Keep workflow integrity rules explicit while the repo continues migrating.
+
+- filesystem scans that enumerate user evidence must be deterministic
+- tree-walking services should use the shared scan path with explicit output
+  exclusions rather than ad hoc `rglob()` behavior
+- archive inspection, archive safety limits, and archive-member issue reporting
+  belong in the shared intake scan layer rather than in source adapters or CLI
+  commands
+- profiling and normalization outputs must not be written inside raw evidence
+  trees
+- evidence references recorded in normalized or checkpoint-supporting artifacts
+  must stay source-relative and portable across workspaces
+- docs, command routes, and agent entrypoints must stay aligned with the
+  implemented runtime surface
+
 ## Adapter And Artifact Discipline
 
 When adding or changing adapters:
