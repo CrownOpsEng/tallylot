@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 from textwrap import dedent
 
@@ -15,6 +16,18 @@ ENTRYPOINT_PATHS = (
     REPO_ROOT / "CHANGELOG.md",
     *sorted((REPO_ROOT / ".claude" / "commands").glob("*.md")),
 )
+
+
+def override_active_roots(
+    monkeypatch: pytest.MonkeyPatch,
+    root: Path,
+    *,
+    docs_root: Path | None = None,
+) -> None:
+    resolved_docs_root = docs_root or root / "docs"
+    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", root)
+    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", resolved_docs_root)
+    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", root / "agents")
 
 
 def test_docs_maintenance_sync_check_passes() -> None:
@@ -165,6 +178,58 @@ def test_repo_markdown_paths_include_root_repo_docs() -> None:
 
     assert REPO_ROOT / "ROADMAP.md" in repo_paths
     assert REPO_ROOT / "CHANGELOG.md" in repo_paths
+
+
+def test_root_consumers_use_state_getters_instead_of_root_constants() -> None:
+    root_constant_names = {"REPO_ROOT", "DOCS_ROOT", "AGENTS_ROOT"}
+    for relative in (
+        "tools/docs_maintenance/cli.py",
+        "tools/docs_maintenance/links.py",
+        "tools/docs_maintenance/metadata.py",
+    ):
+        module_path = REPO_ROOT / relative
+        tree = ast.parse(module_path.read_text(encoding="utf-8"), filename=str(module_path))
+        imported_names = {
+            alias.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and node.level == 1 and node.module == "state"
+            for alias in node.names
+        }
+        assert imported_names.isdisjoint(root_constant_names), relative
+
+
+def test_repo_markdown_paths_follow_active_state_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    agents_root = tmp_path / "agents"
+    commands_root = tmp_path / ".claude" / "commands"
+    docs_root.mkdir()
+    agents_root.mkdir()
+    commands_root.mkdir(parents=True)
+    for path in (
+        tmp_path / "README.md",
+        tmp_path / "AGENTS.md",
+        tmp_path / "ROADMAP.md",
+        tmp_path / "CHANGELOG.md",
+        docs_root / "page.md",
+        agents_root / "note.md",
+        commands_root / "check.md",
+    ):
+        path.write_text("# Example\n", encoding="utf-8")
+
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
+
+    assert set(docs_maintenance.repo_markdown_paths()) == {
+        tmp_path / "README.md",
+        tmp_path / "AGENTS.md",
+        tmp_path / "ROADMAP.md",
+        tmp_path / "CHANGELOG.md",
+        docs_root / "page.md",
+        agents_root / "note.md",
+        commands_root / "check.md",
+    }
 
 
 def test_entrypoints_do_not_reference_retired_docs_paths() -> None:
@@ -321,12 +386,7 @@ def test_scaffold_workspace_doc_infers_reference_and_both(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+    override_active_roots(monkeypatch, tmp_path)
 
     exit_code = docs_maintenance.main(
         [
@@ -353,12 +413,7 @@ def test_scaffold_agents_doc_requires_explicit_doc_type(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+    override_active_roots(monkeypatch, tmp_path)
 
     exit_code = docs_maintenance.main(
         [
@@ -381,12 +436,7 @@ def test_scaffold_agents_doc_accepts_explicit_doc_type(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+    override_active_roots(monkeypatch, tmp_path)
 
     exit_code = docs_maintenance.main(
         [
@@ -417,12 +467,7 @@ def test_scaffold_sync_managed_doc_accepts_nav_order(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+    override_active_roots(monkeypatch, tmp_path)
 
     (tmp_path / "agents").mkdir()
     docs_root = tmp_path / "docs"
@@ -500,12 +545,7 @@ def test_scaffold_rejects_nav_order_outside_sync_managed_docs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", tmp_path / "docs")
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+    override_active_roots(monkeypatch, tmp_path)
 
     exit_code = docs_maintenance.main(
         [
@@ -535,12 +575,7 @@ def test_validate_documents_rejects_duplicate_nav_order(
     docs_root = tmp_path / "docs"
     (docs_root / "guides").mkdir(parents=True)
     (tmp_path / "agents").mkdir()
-    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", docs_root)
-    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", docs_root)
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
     for name in ("one", "two"):
         (docs_root / "guides" / f"{name}.md").write_text(
@@ -564,6 +599,60 @@ def test_validate_documents_rejects_duplicate_nav_order(
 
     with pytest.raises(ValueError, match="duplicate nav_order 10 in docs/guides"):
         docs_maintenance.validate_documents()
+
+
+def test_validate_documents_accepts_related_targets_in_active_repo_root(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    (docs_root / "reference").mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
+
+    (docs_root / "reference" / "target.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Target"
+            summary: "Target summary."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            ---
+
+            ## Target Section
+            """
+        ),
+        encoding="utf-8",
+    )
+    (docs_root / "reference" / "source.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Source"
+            summary: "Source summary."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            related:
+              - docs/reference/target.md#target-section
+            ---
+
+            ## Source
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    documents = docs_maintenance.validate_documents()
+
+    assert {document.relative_path for document in documents} == {
+        "docs/reference/source.md",
+        "docs/reference/target.md",
+    }
 
 
 def test_scaffold_rejects_duplicate_nav_order_and_rolls_back(
@@ -615,12 +704,7 @@ def test_scaffold_rejects_duplicate_nav_order_and_rolls_back(
         ),
         encoding="utf-8",
     )
-    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", docs_root)
-    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", docs_root)
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
     assert (
         docs_maintenance.main(
@@ -790,14 +874,6 @@ def test_sync_check_rejects_bare_uv_examples(
     (tmp_path / "ROADMAP.md").write_text("# ROADMAP\n", encoding="utf-8")
     (tmp_path / "CHANGELOG.md").write_text("# Changelog\n", encoding="utf-8")
 
-    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", docs_root)
-    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", docs_root)
-    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
-    monkeypatch.setattr(docs_maintenance.links, "REPO_ROOT", tmp_path)
-    monkeypatch.setattr(docs_maintenance.links, "DOCS_ROOT", docs_root)
-    monkeypatch.setattr(docs_maintenance.links, "AGENTS_ROOT", tmp_path / "agents")
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
     assert docs_maintenance.main(["sync", "--check"]) == 1

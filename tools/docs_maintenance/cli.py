@@ -16,7 +16,7 @@ from .metadata import (
     parse_frontmatter,
     validate_frontmatter,
 )
-from .state import AGENTS_ROOT, DOCS_ROOT, REPO_ROOT, relative_path
+from .state import agents_root, docs_root, relative_path, repo_root
 
 SYNCED_SECTIONS = ("concepts", "guides", "reference", "status", "standards")
 RETIRED_REFERENCES = (
@@ -68,7 +68,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def collect_documents() -> list[Document]:
-    paths = sorted(DOCS_ROOT.rglob("*.md")) + sorted(AGENTS_ROOT.rglob("*.md"))
+    paths = sorted(docs_root().rglob("*.md")) + sorted(agents_root().rglob("*.md"))
     documents: list[Document] = []
     for path in paths:
         frontmatter = parse_frontmatter(path.read_text(encoding="utf-8"), path)
@@ -154,7 +154,7 @@ def check_retired_references() -> None:
 
 
 def sync_docs_homepage(documents: list[Document], *, check: bool) -> bool:
-    docs_readme = DOCS_ROOT / "README.md"
+    docs_readme = docs_root() / "README.md"
     original = docs_readme.read_text(encoding="utf-8")
     updated = original
     for marker in SYNCED_SECTIONS:
@@ -188,9 +188,9 @@ def default_audience(path: Path, section: str | None) -> str:
 
 def scaffold_path(*, section: str | None, slug: str | None, path_argument: str | None) -> Path:
     if path_argument is not None:
-        path = REPO_ROOT / path_argument
+        path = repo_root() / path_argument
     elif section is not None and slug is not None:
-        path = AGENTS_ROOT / f"{slug}.md" if section == "agents" else DOCS_ROOT / section / f"{slug}.md"
+        path = agents_root() / f"{slug}.md" if section == "agents" else docs_root() / section / f"{slug}.md"
     else:
         raise ValueError("Provide either --path or both --section and --slug")
     if path.suffix != ".md":

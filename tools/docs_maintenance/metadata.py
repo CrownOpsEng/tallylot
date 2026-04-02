@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 import yaml
 
 from .links import heading_anchors
-from .state import REPO_ROOT, relative_path
+from .state import relative_path, repo_root
 
 REQUIRED_FRONTMATTER_FIELDS = (
     "title",
@@ -48,7 +48,7 @@ def validate_related_target(path: Path, target: str) -> None:
     if "#" in target:
         target_path_text, anchor = target.split("#", 1)
 
-    resolved = path if not target_path_text else (REPO_ROOT / target_path_text).resolve()
+    resolved = path if not target_path_text else (repo_root() / target_path_text).resolve()
     try:
         relative_path(resolved)
     except ValueError as error:

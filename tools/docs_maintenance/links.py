@@ -6,7 +6,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from urllib.parse import urlparse
 
-from .state import AGENTS_ROOT, DOCS_ROOT, REPO_ROOT, display_path
+from .state import agents_root, display_path, docs_root, repo_root
 
 INLINE_LINK_PATTERN = re.compile(r"(?<!!)\[([^\]]+)\]\(([^)]+)\)")
 REFERENCE_LINK_PATTERN = re.compile(r"(?<!!)\[([^\]]+)\]\[([^\]]*)\]")
@@ -20,13 +20,13 @@ FENCE_PATTERN = re.compile(r"^\s{0,3}([`~]{3,})(.*)$")
 
 def repo_markdown_paths() -> tuple[Path, ...]:
     return (
-        REPO_ROOT / "README.md",
-        REPO_ROOT / "AGENTS.md",
-        REPO_ROOT / "ROADMAP.md",
-        REPO_ROOT / "CHANGELOG.md",
-        *sorted(DOCS_ROOT.rglob("*.md")),
-        *sorted((REPO_ROOT / ".claude" / "commands").glob("*.md")),
-        *sorted(AGENTS_ROOT.rglob("*.md")),
+        repo_root() / "README.md",
+        repo_root() / "AGENTS.md",
+        repo_root() / "ROADMAP.md",
+        repo_root() / "CHANGELOG.md",
+        *sorted(docs_root().rglob("*.md")),
+        *sorted((repo_root() / ".claude" / "commands").glob("*.md")),
+        *sorted(agents_root().rglob("*.md")),
     )
 
 
