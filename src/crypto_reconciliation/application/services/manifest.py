@@ -27,7 +27,7 @@ class ManifestService:
             )
 
         payload = json.dumps(rows, sort_keys=True, separators=(",", ":"))
-        fingerprint = sha256sum_from_text(payload)
+        fingerprint = _sha256sum_from_text(payload)
         self._artifacts.write_rows(request.output_path, ("filename", "size_bytes", "sha256"), rows)
         return ManifestResponse(
             output_path=request.output_path,
@@ -36,5 +36,5 @@ class ManifestService:
         )
 
 
-def sha256sum_from_text(payload: str) -> str:
+def _sha256sum_from_text(payload: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()

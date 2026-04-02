@@ -39,7 +39,7 @@ SUITES = (
 )
 
 
-def build_argument_parser() -> argparse.ArgumentParser:
+def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Benchmark pytest suite segments for this repo.")
     parser.add_argument(
         "--suite",
@@ -55,8 +55,8 @@ def build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    return build_argument_parser().parse_args(argv)
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    return _build_argument_parser().parse_args(argv)
 
 
 def _selected_suites(selected_names: Sequence[str] | None) -> tuple[BenchmarkSuite, ...]:
@@ -74,7 +74,7 @@ def _command_for_suite(suite: BenchmarkSuite, *, parallel: bool) -> tuple[str, .
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv)
+    args = _parse_args(argv)
     exit_code = 0
 
     for suite in _selected_suites(args.suite):

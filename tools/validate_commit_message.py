@@ -35,7 +35,7 @@ class CommitMessage:
     text: str
 
 
-def normalize_message_lines(message: str) -> tuple[str, ...]:
+def _normalize_message_lines(message: str) -> tuple[str, ...]:
     lines: list[str] = []
     for raw_line in message.splitlines():
         line = raw_line.rstrip()
@@ -49,7 +49,7 @@ def normalize_message_lines(message: str) -> tuple[str, ...]:
 
 
 def validate_commit_message_text(message: str) -> tuple[str, ...]:
-    lines = normalize_message_lines(message)
+    lines = _normalize_message_lines(message)
     if not lines or lines[0] == "":
         return ("commit message subject is required",)
 
@@ -84,11 +84,11 @@ def validate_commit_message_text(message: str) -> tuple[str, ...]:
     return tuple(errors)
 
 
-def load_commit_message_file(path: Path) -> CommitMessage:
+def _load_commit_message_file(path: Path) -> CommitMessage:
     return CommitMessage(label=str(path), text=path.read_text(encoding="utf-8"))
 
 
-def load_commit_messages_from_range(rev_range: str) -> tuple[CommitMessage, ...]:
+def _load_commit_messages_from_range(rev_range: str) -> tuple[CommitMessage, ...]:
     revision_result = subprocess.run(
         ["git", "rev-list", "--reverse", rev_range],
         check=True,
@@ -108,19 +108,19 @@ def load_commit_messages_from_range(rev_range: str) -> tuple[CommitMessage, ...]
     return tuple(messages)
 
 
-def build_argument_parser() -> argparse.ArgumentParser:
+def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Validate commit messages for this repo.")
     parser.add_argument("message_files", metavar="MESSAGE_FILE", nargs="*", help="Path to commit message file.")
     parser.add_argument("--rev-range", dest="rev_range", help="Git revision range to validate.")
     return parser
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    return build_argument_parser().parse_args(argv)
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    return _build_argument_parser().parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv)
+    args = _parse_args(argv)
 
     if not args.message_files and args.rev_range is None:
         print("provide a commit message file or --rev-range", file=sys.stderr)
@@ -128,8 +128,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     messages: list[CommitMessage] = []
     if args.rev_range is not None:
-        messages.extend(load_commit_messages_from_range(args.rev_range))
-    messages.extend(load_commit_message_file(Path(path)) for path in args.message_files)
+        messages.extend(_load_commit_messages_from_range(args.rev_range))
+    messages.extend(_load_commit_message_file(Path(path)) for path in args.message_files)
 
     has_errors = False
     for message in messages:

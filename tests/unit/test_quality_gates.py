@@ -7,6 +7,7 @@ def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
     gates = _quality_gates(full_tests=False)
 
     assert [gate.name for gate in gates] == ["ruff", "mypy", "pyright", "pylint", "pytest"]
+    assert gates[3].command == ("uv", "run", "python", "-m", "tools.run_pylint")
     assert gates[-1].command == DEFAULT_TEST_COMMAND
 
 

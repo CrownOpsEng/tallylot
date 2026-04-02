@@ -18,7 +18,7 @@ DEFAULT_TEST_COMMAND = ("uv", "run", "pytest", "-m", "unit and not slow", "--no-
 FULL_TEST_COMMAND = ("uv", "run", "pytest")
 
 
-def build_argument_parser() -> argparse.ArgumentParser:
+def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run local quality gates in parallel.")
     parser.add_argument(
         "--full-tests",
@@ -28,8 +28,8 @@ def build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    return build_argument_parser().parse_args(argv)
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    return _build_argument_parser().parse_args(argv)
 
 
 def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
@@ -38,7 +38,7 @@ def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
         QualityGate(name="ruff", command=("uv", "run", "ruff", "check", ".")),
         QualityGate(name="mypy", command=("uv", "run", "mypy")),
         QualityGate(name="pyright", command=("uv", "run", "pyright")),
-        QualityGate(name="pylint", command=("uv", "run", "pylint", "src", "tests", "tools")),
+        QualityGate(name="pylint", command=("uv", "run", "python", "-m", "tools.run_pylint")),
         QualityGate(name="pytest", command=test_command),
     )
 
@@ -50,7 +50,7 @@ def _run_gate(gate: QualityGate) -> tuple[QualityGate, subprocess.CompletedProce
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = parse_args(argv)
+    args = _parse_args(argv)
     failures = 0
     quality_gates = _quality_gates(full_tests=args.full_tests)
 

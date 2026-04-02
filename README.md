@@ -74,7 +74,7 @@ uv run pre-commit run markdownlint --all-files
 uv run ruff check .
 uv run mypy
 uv run pyright
-uv run pylint src tests tools
+uv run python -m tools.run_pylint
 uv run pytest
 ```
 

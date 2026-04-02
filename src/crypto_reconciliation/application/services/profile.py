@@ -166,10 +166,10 @@ class ProfileService:
             }
             for item in inventory
         ]
-        return sha256sum_from_text(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+        return _sha256sum_from_text(json.dumps(payload, sort_keys=True, separators=(",", ":")))
 
 
-def sha256sum_from_text(payload: str) -> str:
+def _sha256sum_from_text(payload: str) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 

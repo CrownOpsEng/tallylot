@@ -54,7 +54,7 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
             return (cast(ModuleType, module),)
         return ()
 
-    monkeypatch.setattr(discovery_adapters, "iter_discoverable_modules", fake_iter_modules)
+    monkeypatch.setattr(discovery_adapters, "_iter_discoverable_modules", fake_iter_modules)
 
     with pytest.raises(ValueError, match="must declare normalize capability"):
         discovery_adapters.build_registry()
@@ -100,7 +100,7 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
             return (cast(ModuleType, source_module),)
         return (cast(ModuleType, output_module),)
 
-    monkeypatch.setattr(discovery_adapters, "iter_discoverable_modules", fake_iter_modules)
+    monkeypatch.setattr(discovery_adapters, "_iter_discoverable_modules", fake_iter_modules)
 
     with pytest.raises(ValueError, match="duplicate adapter_id"):
         discovery_adapters.build_registry()
@@ -128,7 +128,7 @@ def test_iter_modules_supports_package_style_adapters_without_loading_tests(
     sys.modules.pop("fixture_adapters.packaged_adapter.adapter", None)
     sys.modules.pop("fixture_adapters.packaged_adapter.tests", None)
 
-    modules = discovery_adapters.iter_discoverable_modules("fixture_adapters")
+    modules = discovery_adapters._iter_discoverable_modules("fixture_adapters")
 
     assert {module.__name__ for module in modules} == {
         "fixture_adapters.flat_adapter",

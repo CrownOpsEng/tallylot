@@ -29,7 +29,7 @@ repos:
         pass_filenames: false
       - id: pylint
         name: pylint
-        entry: uv run pylint src tests tools
+        entry: uv run python -m tools.run_pylint
         language: system
         pass_filenames: false
       - id: pytest
