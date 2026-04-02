@@ -172,6 +172,25 @@ class StructuredCsvSourceAdapter:
         row: dict[str, str | None],
         index: int,
     ) -> IssueRecord | None:
+        validators = (
+            self._validate_required_text_fields,
+            self._validate_amount_pairs,
+            self._validate_event_amount_presence,
+            self._validate_timestamp_field,
+            self._validate_numeric_fields,
+        )
+        for validator in validators:
+            issue = validator(profile, row, index)
+            if issue is not None:
+                return issue
+        return None
+
+    def _validate_required_text_fields(
+        self,
+        profile: SourceProfile,
+        row: dict[str, str | None],
+        index: int,
+    ) -> IssueRecord | None:
         missing_text_fields = [
             field_name
             for field_name in ("timestamp", "event_kind", "account", "wallet")
@@ -184,7 +203,14 @@ class StructuredCsvSourceAdapter:
                 "missing_required_field",
                 f"Missing required field(s): {', '.join(missing_text_fields)}.",
             )
+        return None
 
+    def _validate_amount_pairs(
+        self,
+        profile: SourceProfile,
+        row: dict[str, str | None],
+        index: int,
+    ) -> IssueRecord | None:
         for asset_field, amount_field in (
             ("asset_in", "amount_in"),
             ("asset_out", "amount_out"),
@@ -199,7 +225,14 @@ class StructuredCsvSourceAdapter:
                     "incomplete_amount_pair",
                     f"{asset_field} and {amount_field} must both be present or both be blank.",
                 )
+        return None
 
+    def _validate_event_amount_presence(
+        self,
+        profile: SourceProfile,
+        row: dict[str, str | None],
+        index: int,
+    ) -> IssueRecord | None:
         if not (row["asset_in"] or "").strip() and not (row["asset_out"] or "").strip():
             return self._issue(
                 profile,
@@ -207,7 +240,14 @@ class StructuredCsvSourceAdapter:
                 "missing_event_amount",
                 "A row must include either an inbound or outbound asset amount.",
             )
+        return None
 
+    def _validate_timestamp_field(
+        self,
+        profile: SourceProfile,
+        row: dict[str, str | None],
+        index: int,
+    ) -> IssueRecord | None:
         try:
             parse_timestamp((row["timestamp"] or "").strip())
         except ValueError:
@@ -217,10 +257,17 @@ class StructuredCsvSourceAdapter:
                 "invalid_timestamp",
                 f"Unsupported timestamp value: {(row['timestamp'] or '').strip()!r}.",
             )
+        return None
 
+    def _validate_numeric_fields(
+        self,
+        profile: SourceProfile,
+        row: dict[str, str | None],
+        index: int,
+    ) -> IssueRecord | None:
         for field_name in ("amount_in", "amount_out", "fee_amount"):
             try:
-                parse_decimal((row.get(field_name) or "").strip())
+                parsed_value = parse_decimal((row.get(field_name) or "").strip())
             except (InvalidOperation, ValueError):
                 return self._issue(
                     profile,
@@ -228,6 +275,13 @@ class StructuredCsvSourceAdapter:
                     "invalid_decimal",
                     "Unsupported decimal value for "
                     f"{field_name}: {(row.get(field_name) or '').strip()!r}.",
+                )
+            if parsed_value is not None and parsed_value <= Decimal("0"):
+                return self._issue(
+                    profile,
+                    index,
+                    "non_positive_amount",
+                    f"{field_name} must be greater than zero when present.",
                 )
 
         return None

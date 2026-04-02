@@ -52,11 +52,17 @@ decisions that should not be rediscovered from scratch.
 - Keep application services on port contracts for adapter resolution and artifact
   persistence; do not import infrastructure modules from `application/`.
 - Do not bypass `Decimal` with float-based financial calculations.
+- Keep canonical events structurally strict: asset/amount pairs must be
+  complete, and amounts must remain positive because direction is modeled by
+  the `in`/`out` fields rather than signed numbers.
 - Do not allow AI providers to mutate ledger records directly.
 - Keep normalized evidence references portable by storing source-relative paths
   instead of machine-local absolute paths.
 - Fail fast on ambiguous adapter matches and malformed adapter discovery
   contracts instead of silently picking a candidate.
+- Keep adapter discovery narrow: discover only top-level adapter modules and
+  package entry points so adapter-local tests and helpers can live beside the
+  adapter without affecting runtime registration.
 
 ## Near-Term Enhancements
 

@@ -66,6 +66,14 @@ def test_profile_service_rejects_ambiguous_adapter_matches(tmp_path: Path) -> No
         service.create_profile("fixture", raw_dir)
 
 
+def test_profile_service_rejects_missing_source_directories(tmp_path: Path) -> None:
+    registry = FakeSourceRegistry(source_adapters=(MatchingSourceAdapter("alpha_adapter"),))
+    service = ProfileService(registry, FilesystemArtifactStore())
+
+    with pytest.raises(FileNotFoundError, match="raw source directory does not exist"):
+        service.create_profile("fixture", tmp_path / "missing")
+
+
 def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
@@ -121,3 +129,36 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
 
     assert exception_rows[0]["kind"] == "invalid_decimal"
     assert wallet_rows[0]["evidence_path"] == "transactions.csv"
+
+
+def test_structured_csv_normalization_rejects_non_positive_amounts(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    header = (
+        "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+        "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+    )
+    (raw_dir / "transactions.csv").write_text(
+        header + "2023-08-06 10:00:00,Trade,BTC,0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n",
+        encoding="utf-8",
+    )
+    registry = build_registry()
+    artifacts = FilesystemArtifactStore()
+    service = NormalizationService(
+        registry,
+        ProfileService(registry, artifacts),
+        FilesystemStorage(),
+        artifacts,
+    )
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir)
+    )
+
+    assert response.event_count == 0
+    assert response.issue_count == 2
+
+    exception_rows = artifacts.read_rows(output_dir / "exceptions.csv")
+
+    assert [row["kind"] for row in exception_rows] == ["non_positive_amount", "no_valid_rows"]

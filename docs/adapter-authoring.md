@@ -16,7 +16,12 @@ automatically.
 
 - Source adapters live under `crypto_reconciliation.adapters.sources`.
 - Output adapters live under `crypto_reconciliation.adapters.outputs`.
-- Discovery loads module-level `ADAPTER` objects and validates their manifests.
+- Discovery only scans top-level adapter modules plus package entry points.
+- Package-style adapters should expose `ADAPTER` from `__init__.py` or
+  `adapter.py`.
+- Package-local helpers, fixtures, and tests are intentionally ignored by
+  discovery.
+- Discovery loads `ADAPTER` objects and validates their manifests.
 
 ## Testing
 

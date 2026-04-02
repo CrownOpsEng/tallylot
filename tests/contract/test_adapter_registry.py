@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import importlib
+import sys
+from pathlib import Path
 from types import ModuleType
 from typing import cast
 
@@ -51,7 +54,7 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
             return (cast(ModuleType, module),)
         return ()
 
-    monkeypatch.setattr(discovery_adapters, "_iter_modules", fake_iter_modules)
+    monkeypatch.setattr(discovery_adapters, "iter_discoverable_modules", fake_iter_modules)
 
     with pytest.raises(ValueError, match="must declare normalize capability"):
         discovery_adapters.build_registry()
@@ -97,7 +100,38 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
             return (cast(ModuleType, source_module),)
         return (cast(ModuleType, output_module),)
 
-    monkeypatch.setattr(discovery_adapters, "_iter_modules", fake_iter_modules)
+    monkeypatch.setattr(discovery_adapters, "iter_discoverable_modules", fake_iter_modules)
 
     with pytest.raises(ValueError, match="duplicate adapter_id"):
         discovery_adapters.build_registry()
+
+
+def test_iter_modules_supports_package_style_adapters_without_loading_tests(
+    tmp_path: Path,
+) -> None:
+    package_root = tmp_path / "fixture_adapters"
+    package_root.mkdir()
+    (package_root / "__init__.py").write_text("", encoding="utf-8")
+    (package_root / "flat_adapter.py").write_text("ADAPTER = object()\n", encoding="utf-8")
+    packaged = package_root / "packaged_adapter"
+    packaged.mkdir()
+    (packaged / "__init__.py").write_text("", encoding="utf-8")
+    (packaged / "adapter.py").write_text("ADAPTER = object()\n", encoding="utf-8")
+    (packaged / "tests.py").write_text("raise RuntimeError('should not import tests')\n", encoding="utf-8")
+    (package_root / "_helper.py").write_text("raise RuntimeError('should not import helpers')\n", encoding="utf-8")
+
+    sys.path.insert(0, str(tmp_path))
+    importlib.invalidate_caches()
+    sys.modules.pop("fixture_adapters", None)
+    sys.modules.pop("fixture_adapters.flat_adapter", None)
+    sys.modules.pop("fixture_adapters.packaged_adapter", None)
+    sys.modules.pop("fixture_adapters.packaged_adapter.adapter", None)
+    sys.modules.pop("fixture_adapters.packaged_adapter.tests", None)
+
+    modules = discovery_adapters.iter_discoverable_modules("fixture_adapters")
+
+    assert {module.__name__ for module in modules} == {
+        "fixture_adapters.flat_adapter",
+        "fixture_adapters.packaged_adapter.adapter",
+    }
+    sys.path.pop(0)

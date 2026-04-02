@@ -67,6 +67,10 @@ class ProfileService:
         )
 
     def _build_inventory(self, raw_dir: Path) -> list[FileInventoryEntry]:
+        if not raw_dir.exists():
+            raise FileNotFoundError(f"raw source directory does not exist: {raw_dir}")
+        if not raw_dir.is_dir():
+            raise NotADirectoryError(f"raw source path is not a directory: {raw_dir}")
         inventory: list[FileInventoryEntry] = []
         for path in sorted(candidate for candidate in raw_dir.rglob("*") if candidate.is_file()):
             header, row_count = csv_header_and_count(path)

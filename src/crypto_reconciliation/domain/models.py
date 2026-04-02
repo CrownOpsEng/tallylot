@@ -69,8 +69,25 @@ class CanonicalEvent:
     render_comment: str | None = None
 
     def __post_init__(self) -> None:
+        self._validate_amount_pair("asset_in", self.asset_in, "amount_in", self.amount_in)
+        self._validate_amount_pair("asset_out", self.asset_out, "amount_out", self.amount_out)
+        self._validate_amount_pair("fee_asset", self.fee_asset, "fee_amount", self.fee_amount)
         if self.amount_in is None and self.amount_out is None:
             raise ValueError("canonical event must include an inbound or outbound amount")
+
+    @staticmethod
+    def _validate_amount_pair(
+        asset_label: str,
+        asset: AssetSymbol | None,
+        amount_label: str,
+        amount: Decimal | None,
+    ) -> None:
+        if asset is None and amount is None:
+            return
+        if asset is None or amount is None:
+            raise ValueError(f"canonical event {asset_label} and {amount_label} must both be present")
+        if amount <= Decimal("0"):
+            raise ValueError(f"canonical event {amount_label} must be greater than zero")
 
     def to_row(self) -> dict[str, str]:
         return {

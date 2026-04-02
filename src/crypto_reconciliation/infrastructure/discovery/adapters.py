@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import pkgutil
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -14,6 +15,9 @@ from pydantic import BaseModel, ConfigDict
 from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest
 from crypto_reconciliation.domain.types import AdapterId
 from crypto_reconciliation.ports.adapters import OutputAdapter, SourceAdapter
+
+DISCOVERABLE_MODULE_NAMES = ("adapter", "stub")
+IGNORED_DISCOVERY_PARTS = frozenset({"tests", "fixtures", "__pycache__"})
 
 
 class AdapterManifestModel(BaseModel):
@@ -45,18 +49,44 @@ class AdapterRegistry:
         raise KeyError(f"unknown output adapter: {adapter_id}")
 
 
-def _iter_modules(package_name: str) -> tuple[ModuleType, ...]:
+def iter_discoverable_modules(package_name: str) -> tuple[ModuleType, ...]:
     package = importlib.import_module(package_name)
     modules: list[ModuleType] = []
-    for package_info in pkgutil.walk_packages(package.__path__, package.__name__ + "."):
-        module = importlib.import_module(package_info.name)
-        modules.append(module)
+    for package_info in pkgutil.iter_modules(package.__path__, package.__name__ + "."):
+        if _is_ignored_discovery_name(package_info.name):
+            continue
+        if package_info.ispkg:
+            modules.extend(_iter_adapter_package_modules(package_info.name))
+            continue
+        modules.append(importlib.import_module(package_info.name))
     return tuple(modules)
+
+
+def _iter_adapter_package_modules(package_name: str) -> tuple[ModuleType, ...]:
+    package = importlib.import_module(package_name)
+    if getattr(package, "ADAPTER", None) is not None:
+        return (package,)
+
+    modules: list[ModuleType] = []
+    for module_name in DISCOVERABLE_MODULE_NAMES:
+        qualified_name = f"{package_name}.{module_name}"
+        if importlib.util.find_spec(qualified_name) is None:
+            continue
+        modules.append(importlib.import_module(qualified_name))
+    return tuple(modules)
+
+
+def _is_ignored_discovery_name(module_name: str) -> bool:
+    parts = module_name.split(".")
+    return any(
+        part in IGNORED_DISCOVERY_PARTS or part.startswith(("test_", "_"))
+        for part in parts
+    )
 
 
 def _collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
     discovered: list[SourceAdapter] = []
-    for module in _iter_modules(package_name):
+    for module in iter_discoverable_modules(package_name):
         adapter = getattr(module, "ADAPTER", None)
         if adapter is None:
             continue
@@ -67,7 +97,7 @@ def _collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
 
 def _collect_output_adapters(package_name: str) -> tuple[OutputAdapter, ...]:
     discovered: list[OutputAdapter] = []
-    for module in _iter_modules(package_name):
+    for module in iter_discoverable_modules(package_name):
         adapter = getattr(module, "ADAPTER", None)
         if adapter is None:
             continue
