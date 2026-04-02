@@ -17,7 +17,7 @@ uv run python -m tools.oracles.cli baseline validate \
 - run `source profile`
 - run `source normalize`
 - review `timezone_issues.csv`, `exceptions.csv`, and `normalization_reviews.csv`
-- run `output render file` if you need the current tracker-import candidate
+- run `output render file` if the round needs `cointracking_candidate.csv`
 
 ## Batch Gate
 
@@ -27,6 +27,8 @@ uv run python -m tools.oracles.cli baseline validate \
 - run `uv run python -m tools.oracles.cli batch stage` only after the screen passes
 
 ## Verification Exports After Any Repair Or Import
+
+Use this report set for rounds that verify through CoinTracking.
 
 Always save to `working/verification/<round_id>/`:
 

@@ -4,8 +4,8 @@ Use this folder for the current implemented runtime and operator-facing
 workflow.
 
 These docs describe what the repo can do today. They may mention manual
-verification or tracker-import steps where the current runtime still depends on
-them for round close, but they are not the architecture source of truth for
+verification or external import steps where the current runtime still depends
+on them for round close, but they are not the architecture source of truth for
 the long-term platform-agnostic direction.
 
 ## Start Here

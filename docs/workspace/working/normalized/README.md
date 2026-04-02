@@ -22,7 +22,7 @@ Per-source folders should use the typed pipeline artifact set:
 adapter actually provides it.
 
 `cointracking_candidate.csv` is optional. Create it with `output render file`
-when you need the current tracker-import CSV export, and keep it beside the
+when the round uses the CoinTracking export path, and keep it beside the
 normalized artifacts only as a working file. Only
 `working/import_batches/` should hold files that have passed overlap
 screening and are approved for import.

@@ -11,7 +11,7 @@ Use this route for a full typed intake pass:
 7. `source normalize`
 8. review `facts.csv`, `exceptions.csv`, `normalization_reviews.csv`, and `normalization_summary.json`
 9. `checkpoint rebuild-wallet-inventory` when normalization emitted wallet evidence
-10. `output render file` when you need an external output artifact such as CoinTracking CSV
+10. `output render file` when the round needs an external output artifact such as `cointracking_candidate.csv`
 
 Use `docs/operations/operations-quickstart.md` for the short operator route and
 `docs/operations/mop.md` for the full workflow.

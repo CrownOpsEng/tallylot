@@ -3,8 +3,8 @@
 This tree holds derived files used to prepare import batches and verify
 round-close changes.
 
-In the current operator workflow, some verification folders still contain
-tracker export sets. That is a workflow detail, not the definition of the tree
+Some verification folders may contain exports from a concrete external
+verification tool. That is a workflow detail, not the definition of the tree
 itself.
 
 Subfolders:

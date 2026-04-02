@@ -1,14 +1,13 @@
 # Portfolio Exports
 
-Store portfolio-system exports and tracker captures here. The current
-historical baseline and most saved bundles happen to live under the
-`cointracking/` subtree.
+Store portfolio-system exports here. The current historical baseline and most
+saved bundles happen to live under the `cointracking/` subtree.
 
 This branch is separate from `evidence/raw/source/` on purpose:
 
 - `source/` holds upstream evidence from exchanges, wallets, explorers, bots, and other external systems
-- `portfolio/` holds portfolio-tracker exports, saved report bundles, and
-  other portfolio-system outputs used for baseline locking, verification, and
+- `portfolio/` holds portfolio-system exports, saved report bundles, and other
+  portfolio-system outputs used for baseline locking, verification, and
   reconciliation
 
 Rules:

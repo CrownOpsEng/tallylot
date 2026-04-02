@@ -8,8 +8,8 @@ Suggested folder names:
 - `post_import_coinbase_01`
 
 Each folder should contain the fresh verification export set captured
-immediately after the related action. In the current workflow, this usually
-means tracker exports from the current verification tool.
+immediately after the related action. Some rounds use CoinTracking exports
+here; others may use another external verification tool.
 
 For import rounds, also keep the
 `uv run python -m tools.oracles.cli verification compare` output under a

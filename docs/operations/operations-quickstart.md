@@ -78,7 +78,8 @@ supporting detail.
    - `normalization_reviews.csv`
    - `normalization_summary.json`
 
-3. Render an import candidate when needed:
+3. Render a CoinTracking candidate when the round uses the CoinTracking screen
+   and stage path:
 
    ```bash
    uv run tallylot output render file \
@@ -87,7 +88,7 @@ supporting detail.
      --output <workspace>/working/normalized/<source>/cointracking_candidate.csv
    ```
 
-4. Screen the candidate against the historical baseline:
+4. Screen that candidate against the historical baseline:
 
    ```bash
    uv run python -m tools.oracles.cli batch screen \
@@ -114,8 +115,9 @@ supporting detail.
      --source <source>
    ```
 
-2. Make the manual tracker change or import.
+2. Make the manual change or import in the external verification tool.
 3. Save the fresh verification export set under `working/verification/<round_id>/`.
+   Use the report set in `docs/operations/export-checklist.md`.
 4. Compare against the prior verified state:
 
    ```bash
