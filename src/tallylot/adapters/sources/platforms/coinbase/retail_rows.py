@@ -13,6 +13,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
     fee_leg,
 )
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -162,30 +163,30 @@ def _fee_legs(fee_amount: Decimal | None, fee_asset: str) -> tuple[EconomicLegDr
 def _classification_for_type(tx_type: str) -> ActivityClassification:
     if tx_type in {"buy", "sell"}:
         return classification(
-            economic_kind="spot_trade",
-            projection_type="trade",
-            journal_intent="asset_exchange",
-            tax_treatment_code="capital_exchange",
+            economic_kind=EconomicKind.SPOT_TRADE,
+            projection_type=ProjectionType.TRADE,
+            journal_intent=JournalIntent.ASSET_EXCHANGE,
+            tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
         )
     if tx_type == "reward income":
         return classification(
-            economic_kind="interest_income",
-            projection_type="interest_income",
-            journal_intent="income_recognition",
-            tax_treatment_code="ordinary_income",
+            economic_kind=EconomicKind.INTEREST_INCOME,
+            projection_type=ProjectionType.INTEREST_INCOME,
+            journal_intent=JournalIntent.INCOME_RECOGNITION,
+            tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
         )
     if tx_type in {"receive", "deposit"}:
         return classification(
-            economic_kind="asset_deposit",
-            projection_type="deposit",
-            journal_intent="funding_inflow",
-            tax_treatment_code="non_taxable_transfer_in",
+            economic_kind=EconomicKind.ASSET_DEPOSIT,
+            projection_type=ProjectionType.DEPOSIT,
+            journal_intent=JournalIntent.FUNDING_INFLOW,
+            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
         )
     return classification(
-        economic_kind="asset_withdrawal",
-        projection_type="withdrawal",
-        journal_intent="funding_outflow",
-        tax_treatment_code="non_taxable_transfer_out",
+        economic_kind=EconomicKind.ASSET_WITHDRAWAL,
+        projection_type=ProjectionType.WITHDRAWAL,
+        journal_intent=JournalIntent.FUNDING_OUTFLOW,
+        tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
     )
 
 

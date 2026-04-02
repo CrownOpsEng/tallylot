@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.crypto_com.adapter import CryptoComAdapter
-from tallylot.domain.transactions import EconomicKind, ProjectionType
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -24,6 +24,16 @@ def test_crypto_com_adapter_uses_transaction_kinds_without_filename_dependency()
         ProjectionType.DEPOSIT,
         ProjectionType.TRADE,
         ProjectionType.WITHDRAWAL,
+    ]
+    assert [event.journal_intent for event in result.facts] == [
+        JournalIntent.FUNDING_INFLOW,
+        JournalIntent.ASSET_EXCHANGE,
+        JournalIntent.FUNDING_OUTFLOW,
+    ]
+    assert [event.tax_treatment_code for event in result.facts] == [
+        TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+        TaxTreatmentCode.CAPITAL_EXCHANGE,
+        TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
     ]
     assert {event.raw_file for event in result.facts} == {"records-a.csv", "records-b.csv"}
     assert not result.issues

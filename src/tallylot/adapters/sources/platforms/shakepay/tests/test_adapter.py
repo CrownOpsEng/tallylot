@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from tallylot.domain.transactions import EconomicKind, ProjectionType
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 
 
@@ -25,6 +25,20 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
         ProjectionType.REWARD_BONUS,
         ProjectionType.TRADE,
         ProjectionType.WITHDRAWAL,
+    }
+    assert {event.journal_intent for event in result.facts} == {
+        JournalIntent.FUNDING_INFLOW,
+        JournalIntent.EXPENSE_RECOGNITION,
+        JournalIntent.FUNDING_OUTFLOW,
+        JournalIntent.INCOME_RECOGNITION,
+        JournalIntent.ASSET_EXCHANGE,
+    }
+    assert {event.tax_treatment_code for event in result.facts} == {
+        TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+        TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+        TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+        TaxTreatmentCode.ORDINARY_INCOME,
+        TaxTreatmentCode.CAPITAL_EXCHANGE,
     }
     assert any(event.description == "shakingsats" for event in result.facts)
     assert result.balance_evidence == ()

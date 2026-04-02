@@ -23,6 +23,7 @@ from tallylot.adapters.support.drafts import (
     translation_batch_from_drafts,
 )
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
@@ -132,10 +133,10 @@ def _normalize_row(
             wallet=str(profile.source),
             timestamp=timestamp,
             classification=classification(
-                economic_kind="fiat_deposit",
-                projection_type="deposit",
-                journal_intent="funding_inflow",
-                tax_treatment_code="non_taxable_transfer_in",
+                economic_kind=EconomicKind.FIAT_DEPOSIT,
+                projection_type=ProjectionType.DEPOSIT,
+                journal_intent=JournalIntent.FUNDING_INFLOW,
+                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
             ),
             description=description,
             raw_file=row_context.raw_file,
@@ -153,10 +154,10 @@ def _normalize_row(
             wallet=str(profile.source),
             timestamp=timestamp,
             classification=classification(
-                economic_kind="spot_trade",
-                projection_type="trade",
-                journal_intent="asset_exchange",
-                tax_treatment_code="capital_exchange",
+                economic_kind=EconomicKind.SPOT_TRADE,
+                projection_type=ProjectionType.TRADE,
+                journal_intent=JournalIntent.ASSET_EXCHANGE,
+                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
             description=f"{currency} -> {to_currency}",
             raw_file=row_context.raw_file,
@@ -177,10 +178,10 @@ def _normalize_row(
             wallet=str(profile.source),
             timestamp=timestamp,
             classification=classification(
-                economic_kind="asset_withdrawal",
-                projection_type="withdrawal",
-                journal_intent="funding_outflow",
-                tax_treatment_code="non_taxable_transfer_out",
+                economic_kind=EconomicKind.ASSET_WITHDRAWAL,
+                projection_type=ProjectionType.WITHDRAWAL,
+                journal_intent=JournalIntent.FUNDING_OUTFLOW,
+                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
             ),
             description=description,
             raw_file=row_context.raw_file,

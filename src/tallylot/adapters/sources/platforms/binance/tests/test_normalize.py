@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.binance.adapter import BinanceAdapter
-from tallylot.domain.transactions import EconomicKind, ProjectionType
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.services import build_source_profile
 
 
@@ -48,6 +48,8 @@ def test_binance_adapter_handles_supported_and_review_required_rows(tmp_path: Pa
     assert ProjectionType.STAKING in projection_types
     economic_kinds = {row.economic_kind for row in result.facts}
     assert EconomicKind.STAKING_REWARD in economic_kinds
+    assert JournalIntent.INCOME_RECOGNITION in {row.journal_intent for row in result.facts}
+    assert TaxTreatmentCode.STAKING_INCOME in {row.tax_treatment_code for row in result.facts}
     assert any("Transfer Between Spot Account and UM Futures Account" in row.message for row in result.issues)
 
 
@@ -93,6 +95,8 @@ def test_binance_transaction_history_skips_p2p_rows_when_c2c_history_exists(tmp_
     assert len(result.facts) == 1
     assert result.facts[0].economic_kind == EconomicKind.P2P_TRADE
     assert result.facts[0].projection_type == ProjectionType.TRADE
+    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert len(result.issues) == 0
 
 
@@ -119,6 +123,8 @@ def test_binance_adapter_reads_nested_bundle_paths(tmp_path: Path) -> None:
     assert len(result.facts) == 1
     assert result.facts[0].economic_kind == EconomicKind.P2P_TRADE
     assert result.facts[0].projection_type == ProjectionType.TRADE
+    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert not result.issues
 
 

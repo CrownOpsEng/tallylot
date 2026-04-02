@@ -12,6 +12,7 @@ from tallylot.adapters.support.rows import (
     read_csv_rows,
 )
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 
 
 def test_matching_file_paths_returns_sorted_matches(tmp_path: Path) -> None:
@@ -55,10 +56,10 @@ def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) ->
             wallet="fixture",
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
-                economic_kind="spot_trade",
-                projection_type="trade",
-                journal_intent="asset_exchange",
-                tax_treatment_code="capital_exchange",
+                economic_kind=EconomicKind.SPOT_TRADE,
+                projection_type=ProjectionType.TRADE,
+                journal_intent=JournalIntent.ASSET_EXCHANGE,
+                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,

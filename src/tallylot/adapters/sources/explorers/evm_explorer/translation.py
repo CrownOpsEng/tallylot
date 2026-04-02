@@ -9,6 +9,7 @@ from pathlib import Path
 from tallylot.adapters.support import IssueSpec, issue_record, matching_file_paths, read_csv_rows
 from tallylot.adapters.support.drafts import EconomicActivityDraft, classification, economic_leg
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.ports.source_profiles import SourceProfile
 
 
@@ -61,10 +62,10 @@ def translate_transactions(
                     wallet=str(profile.source),
                     timestamp=_parse_utc_timestamp((row.get("DateTime (UTC)") or "").strip()),
                     classification=classification(
-                        economic_kind="chain_transfer_in",
-                        projection_type="deposit",
-                        journal_intent="funding_inflow",
-                        tax_treatment_code="non_taxable_transfer_in",
+                        economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
+                        projection_type=ProjectionType.DEPOSIT,
+                        journal_intent=JournalIntent.FUNDING_INFLOW,
+                        tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                     ),
                     description=f"Transfer - {tx_hash}",
                     raw_file=path.name,

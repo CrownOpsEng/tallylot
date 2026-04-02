@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.explorers.near.adapter import NearAdapter
-from tallylot.domain.transactions import EconomicKind, ProjectionType
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -49,6 +49,8 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
     assert len(result.facts) == 1
     assert result.facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
     assert result.facts[0].projection_type == ProjectionType.DEPOSIT
+    assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
+    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
     assert str(result.facts[0].timestamp) == "2023-08-06 10:00:00"
 
 
@@ -68,6 +70,16 @@ def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
         ProjectionType.DEPOSIT,
         ProjectionType.WITHDRAWAL,
         ProjectionType.DEPOSIT,
+    ]
+    assert [event.journal_intent for event in result.facts] == [
+        JournalIntent.FUNDING_INFLOW,
+        JournalIntent.FUNDING_OUTFLOW,
+        JournalIntent.FUNDING_INFLOW,
+    ]
+    assert [event.tax_treatment_code for event in result.facts] == [
+        TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+        TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+        TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
     ]
     assert any(str(event.source).endswith("Staking") for event in result.facts)
     assert result.issues == ()

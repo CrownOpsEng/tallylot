@@ -24,6 +24,9 @@ automatically.
   must keep provider-local names that reflect the real job being done.
 - Surface unsupported or ambiguous rows as issues rather than guessing.
 - Use the shared adapter draft model as the source-translation contract.
+- Pass layered classifications as domain enums through the shared draft model.
+- Keep enum values machine-oriented and renderer-neutral; title-style labels
+  belong only in output adapters or oracle-specific readers.
 - Do not construct CoinTracking rows or other output-adapter payloads directly
   in provider-local modules.
 - Do not synthesize runtime balance snapshots in adapters unless the source

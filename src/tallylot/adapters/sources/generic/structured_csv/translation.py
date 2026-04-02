@@ -11,6 +11,7 @@ from tallylot.adapters.support.drafts import (
     fee_leg,
 )
 from tallylot.domain.issues import NormalizationReviewRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -60,26 +61,66 @@ def translate_row(
 
 
 def classification_for_category(category: StructuredCategory) -> ActivityClassification:
-    mapping: dict[str, tuple[str, str, str, str]] = {
-        "trade": ("spot_trade", "trade", "asset_exchange", "capital_exchange"),
-        "deposit": ("asset_deposit", "deposit", "funding_inflow", "non_taxable_transfer_in"),
-        "withdrawal": ("asset_withdrawal", "withdrawal", "funding_outflow", "non_taxable_transfer_out"),
-        "interest_income": ("interest_income", "interest_income", "income_recognition", "ordinary_income"),
-        "reward": ("platform_reward", "reward_bonus", "income_recognition", "ordinary_income"),
-        "expense": ("cash_expense", "expense_non_taxable", "expense_recognition", "non_taxable_expense"),
-        "swap": ("asset_swap", "swap_non_taxable", "asset_exchange", "non_taxable_asset_migration"),
-        "staking_reward": ("staking_reward", "staking", "income_recognition", "staking_income"),
+    mapping: dict[str, tuple[EconomicKind, ProjectionType, JournalIntent, TaxTreatmentCode]] = {
+        "trade": (
+            EconomicKind.SPOT_TRADE,
+            ProjectionType.TRADE,
+            JournalIntent.ASSET_EXCHANGE,
+            TaxTreatmentCode.CAPITAL_EXCHANGE,
+        ),
+        "deposit": (
+            EconomicKind.ASSET_DEPOSIT,
+            ProjectionType.DEPOSIT,
+            JournalIntent.FUNDING_INFLOW,
+            TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+        ),
+        "withdrawal": (
+            EconomicKind.ASSET_WITHDRAWAL,
+            ProjectionType.WITHDRAWAL,
+            JournalIntent.FUNDING_OUTFLOW,
+            TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+        ),
+        "interest_income": (
+            EconomicKind.INTEREST_INCOME,
+            ProjectionType.INTEREST_INCOME,
+            JournalIntent.INCOME_RECOGNITION,
+            TaxTreatmentCode.ORDINARY_INCOME,
+        ),
+        "reward": (
+            EconomicKind.PLATFORM_REWARD,
+            ProjectionType.REWARD_BONUS,
+            JournalIntent.INCOME_RECOGNITION,
+            TaxTreatmentCode.ORDINARY_INCOME,
+        ),
+        "expense": (
+            EconomicKind.CASH_EXPENSE,
+            ProjectionType.EXPENSE_NON_TAXABLE,
+            JournalIntent.EXPENSE_RECOGNITION,
+            TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+        ),
+        "swap": (
+            EconomicKind.ASSET_SWAP,
+            ProjectionType.SWAP_NON_TAXABLE,
+            JournalIntent.ASSET_EXCHANGE,
+            TaxTreatmentCode.NON_TAXABLE_ASSET_MIGRATION,
+        ),
+        "staking_reward": (
+            EconomicKind.STAKING_REWARD,
+            ProjectionType.STAKING,
+            JournalIntent.INCOME_RECOGNITION,
+            TaxTreatmentCode.STAKING_INCOME,
+        ),
         "derivatives_profit": (
-            "derivative_realized_profit",
-            "derivatives_futures_profit",
-            "income_recognition",
-            "derivative_realized_gain",
+            EconomicKind.DERIVATIVE_REALIZED_PROFIT,
+            ProjectionType.DERIVATIVES_FUTURES_PROFIT,
+            JournalIntent.INCOME_RECOGNITION,
+            TaxTreatmentCode.DERIVATIVE_REALIZED_GAIN,
         ),
         "derivatives_loss": (
-            "derivative_realized_loss",
-            "derivatives_futures_loss",
-            "expense_recognition",
-            "derivative_realized_loss",
+            EconomicKind.DERIVATIVE_REALIZED_LOSS,
+            ProjectionType.DERIVATIVES_FUTURES_LOSS,
+            JournalIntent.EXPENSE_RECOGNITION,
+            TaxTreatmentCode.DERIVATIVE_REALIZED_LOSS,
         ),
     }
     economic_kind, projection_type, journal_intent, tax_treatment_code = mapping[category]

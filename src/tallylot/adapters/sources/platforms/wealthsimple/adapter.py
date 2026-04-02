@@ -24,6 +24,7 @@ from tallylot.adapters.support.drafts import (
     translation_batch_from_drafts,
 )
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
@@ -172,10 +173,10 @@ def _normalize_row(
             wallet=account_id,
             timestamp=timestamp,
             classification=classification(
-                economic_kind="spot_trade",
-                projection_type="trade",
-                journal_intent="asset_exchange",
-                tax_treatment_code="capital_exchange",
+                economic_kind=EconomicKind.SPOT_TRADE,
+                projection_type=ProjectionType.TRADE,
+                journal_intent=JournalIntent.ASSET_EXCHANGE,
+                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
             description="Wealthsimple Crypto buy",
             raw_file=row_context.raw_file,
@@ -196,10 +197,10 @@ def _normalize_row(
             wallet=account_id,
             timestamp=timestamp,
             classification=classification(
-                economic_kind="spot_trade",
-                projection_type="trade",
-                journal_intent="asset_exchange",
-                tax_treatment_code="capital_exchange",
+                economic_kind=EconomicKind.SPOT_TRADE,
+                projection_type=ProjectionType.TRADE,
+                journal_intent=JournalIntent.ASSET_EXCHANGE,
+                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
             description="Wealthsimple Crypto sell",
             raw_file=row_context.raw_file,

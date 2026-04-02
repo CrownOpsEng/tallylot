@@ -6,7 +6,7 @@ import tomllib
 from collections import defaultdict
 from pathlib import Path
 
-from tallylot.domain.transactions import TransactionFact
+from tallylot.domain.transactions import ProjectionType, TransactionFact
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -171,3 +171,40 @@ def test_source_adapters_do_not_emit_cointracking_projection_labels() -> None:
     for path in sorted(adapters_root.rglob("*.py")):
         text = path.read_text(encoding="utf-8")
         assert forbidden_pattern.search(text) is None, f"{path} embeds CoinTracking projection labels"
+
+
+def test_source_adapters_do_not_pass_string_classification_values() -> None:
+    adapters_root = REPO_ROOT / "src" / "tallylot" / "adapters" / "sources"
+    forbidden_literals = (
+        'economic_kind="',
+        'projection_type="',
+        'journal_intent="',
+        'tax_treatment_code="',
+    )
+
+    for path in sorted(adapters_root.rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        for literal in forbidden_literals:
+            assert literal not in text, f"{path} passes string classification values through shared draft helpers"
+
+
+def test_projection_type_runtime_values_remain_machine_oriented() -> None:
+    assert ProjectionType.TRADE.value == "trade"
+    assert ProjectionType.DEPOSIT.value == "deposit"
+    assert ProjectionType.WITHDRAWAL.value == "withdrawal"
+
+
+def test_transaction_classification_matrix_describes_runtime_projection_values() -> None:
+    matrix_text = (REPO_ROOT / "docs" / "architecture" / "transaction-classification-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` |" in matrix_text
+    assert "| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` |" in matrix_text
+    assert (
+        "| `withdrawal` | `withdrawal` | `asset_withdrawal` | `non_taxable_transfer_out` | `funding_outflow` |"
+        in matrix_text
+    )
+    assert "enum members such as `ProjectionType.TRADE`" in matrix_text
+    assert "stored/runtime values such as `trade`" in matrix_text
+    assert "renderer labels such as `Trade`" in matrix_text
