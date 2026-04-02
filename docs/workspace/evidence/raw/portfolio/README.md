@@ -1,4 +1,11 @@
-# Portfolio Exports
+---
+title: "Portfolio Exports"
+summary: "Rules for portfolio-system export bundles kept under the mirrored workspace portfolio tree."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 Store portfolio-system exports here. The current historical baseline and most
 saved bundles happen to live under the `cointracking/` subtree.

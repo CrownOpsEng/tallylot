@@ -1,4 +1,11 @@
-# Checkpoints
+---
+title: "Checkpoints"
+summary: "Rules for frozen source-backed checkpoint packages and related sidecar artifacts."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 Store frozen checkpoint packages here.
 

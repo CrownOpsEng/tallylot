@@ -32,8 +32,10 @@ Do not pre-load every repo doc by default.
 | Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
 | Source or output adapter work | `docs/guides/write-an-adapter.md` |
+| Docs structure, generated index sections, or doc placement | `agents/docs-maintenance.md`, `docs/README.md` |
 | External workspace layout and seeded files | `docs/concepts/workspace-model.md`, `docs/workspace/README.md` |
 | Operational state or manual workflow | `docs/status/current-state.md`, `docs/guides/operator-quickstart.md`, `docs/guides/full-operator-workflow.md` |
+| Repo-specific baseline and verification context | `agents/repo-context.md` |
 | Workspace subtree conventions, checklists, or templates | `docs/workspace/README.md` |
 | Commit messages, templates, and checkpoint behavior | `docs/standards/commits.md` |
 | Final pre-close implementation checks | `.claude/commands/implementation-checkpoint.md` |
@@ -44,6 +46,7 @@ Do not pre-load every repo doc by default.
 - `docs/workspace/` remains the mirrored workspace reference subtree.
 - Agent routing and repo execution rules live in `AGENTS.md` and
   `.claude/commands/`.
+- Agent-only repo context and maintenance guides live under `agents/`.
 - Agent-only context must not live in `docs/` unless it is genuinely useful to
   humans.
 - Every new doc must have one primary type: concept, guide, reference,

@@ -1,4 +1,11 @@
-# Verification Packages
+---
+title: "Verification Packages"
+summary: "Layout rules for per-round verification export sets and comparison outputs."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 Create one folder per repair or import round.
 

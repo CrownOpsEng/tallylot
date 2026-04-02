@@ -1,4 +1,11 @@
-# Final 2025 Checkpoint
+---
+title: "Final 2025 Checkpoint"
+summary: "Expected target for the frozen 2025 year-end checkpoint package."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 Place the frozen `2025-12-31` checkpoint package here when that milestone is
 ready.

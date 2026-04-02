@@ -1,4 +1,11 @@
-# Import Batches
+---
+title: "Import Batches"
+summary: "Contract for approved per-source import candidates and their required supporting artifacts."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 Place the next approved import batch for a single source here.
 

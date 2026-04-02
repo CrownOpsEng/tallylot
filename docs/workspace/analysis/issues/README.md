@@ -1,4 +1,11 @@
-# Issues And Inventory Guide
+---
+title: "Issues And Inventory Guide"
+summary: "Rules for the live issue and source inventory control files in the mirrored workspace."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 This folder holds the two live issue-tracking control files that must stay
 current during execution.

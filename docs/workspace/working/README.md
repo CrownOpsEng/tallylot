@@ -1,4 +1,11 @@
-# Working Area
+---
+title: "Working Area"
+summary: "Boundaries for derived working artifacts used during normalization, staging, and verification."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 This tree holds derived files used to prepare import batches and verify
 round-close changes.

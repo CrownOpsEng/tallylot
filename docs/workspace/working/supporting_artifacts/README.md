@@ -1,4 +1,11 @@
-# Supporting Artifacts
+---
+title: "Supporting Artifacts"
+summary: "Rules for non-raw derivative materials discovered during intake and review work."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 This subtree holds non-raw derivatives discovered during intake.
 

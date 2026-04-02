@@ -1,4 +1,11 @@
-# Workspace Guides
+---
+title: "Workspace Guides"
+summary: "Mirrored repo guidance for the external workspace layout, templates, and subtree contracts."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 This subtree holds repo-owned guidance and templates for the external
 workspace. Keep live evidence and operator outputs in the workspace itself, but

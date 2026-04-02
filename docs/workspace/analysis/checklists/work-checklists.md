@@ -1,4 +1,11 @@
-# Checklists
+---
+title: "Checklists"
+summary: "Repair and import round checklists for mirrored workspace analysis work."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 ## Baseline repair round checklist
 
