@@ -8,21 +8,31 @@ from pytest import Item
 from repo_support.paths import fixtures_root, src_root
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 
-ADAPTER_ROOT = src_root() / "tallylot" / "adapters"
-ADAPTER_TEST_DIRS = tuple(sorted(path.resolve() for path in ADAPTER_ROOT.glob("**/tests")))
-ADAPTER_TEST_ANCESTORS = frozenset(
-    {
-        ancestor
-        for test_dir in ADAPTER_TEST_DIRS
-        for ancestor in (test_dir, *test_dir.parents)
-        if ancestor.is_relative_to(ADAPTER_ROOT)
-    }
-)
 MARKERS_BY_TEST_DIR = {
     "unit": "unit",
     "contract": "contract",
     "e2e": "e2e",
 }
+
+
+def _adapter_root() -> Path:
+    return src_root() / "tallylot" / "adapters"
+
+
+def _adapter_test_dirs() -> tuple[Path, ...]:
+    return tuple(sorted(path.resolve() for path in _adapter_root().glob("**/tests")))
+
+
+def _adapter_test_ancestors() -> frozenset[Path]:
+    adapter_root = _adapter_root()
+    return frozenset(
+        {
+            ancestor
+            for test_dir in _adapter_test_dirs()
+            for ancestor in (test_dir, *test_dir.parents)
+            if ancestor.is_relative_to(adapter_root)
+        }
+    )
 
 
 @pytest.fixture
@@ -59,11 +69,12 @@ def pytest_collection_modifyitems(items: list[Item]) -> None:
 
 def pytest_ignore_collect(collection_path: Path) -> bool:
     path = collection_path.resolve()
-    if not path.is_relative_to(ADAPTER_ROOT):
+    adapter_root = _adapter_root()
+    if not path.is_relative_to(adapter_root):
         return False
     if path.is_dir():
-        return path not in ADAPTER_TEST_ANCESTORS
-    return not any(path.is_relative_to(test_dir) for test_dir in ADAPTER_TEST_DIRS)
+        return path not in _adapter_test_ancestors()
+    return not any(path.is_relative_to(test_dir) for test_dir in _adapter_test_dirs())
 
 
 def _marker_for_test_path(path: Path) -> str | None:
@@ -71,6 +82,6 @@ def _marker_for_test_path(path: Path) -> str | None:
         marker = MARKERS_BY_TEST_DIR.get(part)
         if marker is not None:
             return marker
-    if any(path.is_relative_to(test_dir) for test_dir in ADAPTER_TEST_DIRS):
+    if any(path.is_relative_to(test_dir) for test_dir in _adapter_test_dirs()):
         return "unit"
     return None

@@ -77,13 +77,69 @@ def _assert_no_imports(root: Path, forbidden_modules: tuple[str, ...], *, produc
 
 
 def _uses_direct_repo_root_derivation(path: Path) -> bool:
+    def is_dunder_file_expr(node: ast.expr) -> bool:
+        return isinstance(node, ast.Name) and node.id == "__file__"
+
+    def is_path_dunder_file_expr(node: ast.expr) -> bool:
+        return (
+            isinstance(node, ast.Call)
+            and _is_named_call(node.func, "Path")
+            and len(node.args) == 1
+            and is_dunder_file_expr(node.args[0])
+        )
+
+    def is_resolve_call(node: ast.expr) -> bool:
+        return (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "resolve"
+            and is_path_dunder_file_expr(node.func.value)
+        )
+
+    def is_repo_root_derivation(node: ast.expr) -> bool:
+        current = node
+        if (
+            isinstance(current, ast.Subscript)
+            and isinstance(current.value, ast.Attribute)
+            and current.value.attr == "parents"
+        ):
+            return is_resolve_call(current.value.value)
+        while isinstance(current, ast.Attribute) and current.attr == "parent":
+            current = current.value
+        return is_resolve_call(current)
+
     module = _module(path)
     for node in ast.walk(module):
         if not isinstance(node, ast.Assign | ast.AnnAssign | ast.NamedExpr | ast.Call | ast.Attribute | ast.Subscript):
             continue
-        if "Path(__file__).resolve().parents[" in ast.unparse(node):
+        candidate: ast.expr | None = (
+            node.value if isinstance(node, ast.Assign | ast.AnnAssign | ast.NamedExpr) else node
+        )
+        if candidate is not None and is_repo_root_derivation(candidate):
             return True
     return False
+
+
+def test_repo_root_derivation_guard_catches_parent_and_parents_forms(tmp_path: Path) -> None:
+    parent_form = tmp_path / "parent_form.py"
+    parent_form.write_text(
+        "from pathlib import Path\nREPO = Path(__file__).resolve().parent.parent\n",
+        encoding="utf-8",
+    )
+    parents_form = tmp_path / "parents_form.py"
+    parents_form.write_text(
+        "from pathlib import Path\nREPO = Path(__file__).resolve().parents[1]\n",
+        encoding="utf-8",
+    )
+    allowed = tmp_path / "allowed.py"
+    allowed.write_text(
+        "from repo_support.paths import repo_root\nROOT = repo_root()\n",
+        encoding="utf-8",
+    )
+
+    assert _uses_direct_repo_root_derivation(parent_form) is True
+    assert _uses_direct_repo_root_derivation(parents_form) is True
+    assert _uses_direct_repo_root_derivation(allowed) is False
 
 
 def _defines_root_constants(path: Path) -> bool:

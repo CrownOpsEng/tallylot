@@ -5,25 +5,29 @@ from contextlib import contextmanager
 from pathlib import Path
 
 _DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[1]
-_ACTIVE_REPO_ROOT = _DEFAULT_REPO_ROOT
+_STATE = {"repo_root": _DEFAULT_REPO_ROOT}
 
 
 def _normalize_root(path: Path) -> Path:
     return path.expanduser().resolve()
 
 
+def _resolve_repo_path(path: Path) -> Path:
+    if path.is_absolute():
+        return path.resolve()
+    return (repo_root() / path).resolve()
+
+
 def repo_root() -> Path:
-    return _ACTIVE_REPO_ROOT
+    return _STATE["repo_root"]
 
 
 def set_repo_root(path: Path) -> None:
-    global _ACTIVE_REPO_ROOT
-    _ACTIVE_REPO_ROOT = _normalize_root(path)
+    _STATE["repo_root"] = _normalize_root(path)
 
 
 def reset_repo_root() -> None:
-    global _ACTIVE_REPO_ROOT
-    _ACTIVE_REPO_ROOT = _DEFAULT_REPO_ROOT
+    _STATE["repo_root"] = _DEFAULT_REPO_ROOT
 
 
 @contextmanager
@@ -69,7 +73,7 @@ def vscode_settings_path() -> Path:
 
 
 def relative_repo_path(path: Path) -> str:
-    return path.relative_to(repo_root()).as_posix()
+    return _resolve_repo_path(path).relative_to(repo_root()).as_posix()
 
 
 def display_repo_path(path: Path) -> str:
