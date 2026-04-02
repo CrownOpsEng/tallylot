@@ -32,6 +32,7 @@ from pipeline_common import (
     source_slug,
     write_profile_artifacts,
 )
+from raw_layout import cointracking_baseline_dir
 from render_cointracking import RENDER_METADATA_HEADERS, render_cointracking_rows
 from routing import resolve_routing_decision
 from scope_identity import describe_scope_tokens, row_scope_tokens
@@ -229,7 +230,7 @@ def normalize_source_capture(
     rendered_rows, skipped_rows = render_cointracking_rows(canonical_events)
     write_cointracking_rows(candidate_path, rendered_rows, extra_headers=RENDER_METADATA_HEADERS)
 
-    baseline_dir = Path(__file__).resolve().parents[1] / "01_raw_exports" / "cointracking" / "2023-08-05_full_export"
+    baseline_dir = cointracking_baseline_dir(Path(__file__).resolve().parents[1])
     overlap_summary: dict[str, object] = {}
     if baseline_dir.exists():
         overlap_summary, overlap_rows = summarize_candidate_overlap(baseline_dir, candidate_path)

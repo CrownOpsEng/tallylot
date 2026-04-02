@@ -14,15 +14,15 @@ Canadian tax compliance is foundational. When process convenience conflicts with
 
 ## Canonical baseline
 
-- Baseline folder: `01_raw_exports/cointracking/2023-08-05_full_export/`
+- Baseline folder: `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 - Authoritative cutoff timestamp: `2023-08-05 08:34:04`
 - Delta work starts strictly after that timestamp unless a newer baseline is intentionally adopted.
 
 ## Source priority
 
-1. `01_raw_exports/cointracking/2023-08-05_full_export/`
-2. Fresh post-repair CoinTracking exports captured in this repo
-3. Raw external source exports under `01_raw_exports/external/`
+1. `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
+2. Fresh post-repair CoinTracking exports captured under `01_raw_exports/portfolio/`
+3. Raw external source exports under `01_raw_exports/source/`
 4. Working derivatives in `02_working/`
 
 ## Non-negotiable rules

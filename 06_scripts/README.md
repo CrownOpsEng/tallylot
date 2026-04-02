@@ -8,7 +8,7 @@ Current helpers:
 - `scope_identity.py` → shared content-first scope extraction and inventory-aware scope labeling across inspection, package resolution, and intake reporting
 - `archive_handling.py` → shared archive member inspection, crypto-record detection, and deterministic extraction helpers for intake
 - `package_resolution.py` → shared bundle/package consolidation and same-cycle merge rules so strict duplicate packages can be skipped and warranted near-duplicate packages can be merged deterministically without crossing export cycles
-- `routing.py` → shared role-based routing for historical intake dumps and canonical destination resolution
+- `routing.py` → shared role-based routing for historical intake dumps and canonical destination resolution across sibling `source` and `portfolio` raw-export branches
 - `inventory_resolution.py` → inventory-backed source/account resolution used by intake routing so content-derived wallet scope can reuse existing repo naming instead of inventing new folders
 - `overlap_engine.py` → shared overlap services for raw-evidence hash matching and CoinTracking candidate/baseline overlap checks
 - `pipeline.py` → shared orchestration layer used by the CLI entrypoints
@@ -54,13 +54,13 @@ The explorer adapter is keyed to the export system and chain scope rather than a
 
 Preferred raw-capture layout:
 
-- `01_raw_exports/external/<source>/<capture_id>/` for one evidence batch, with `<capture_id>` usually `YYYY-MM`
+- `01_raw_exports/source/<source>/<capture_id>/` for one evidence batch, with `<capture_id>` usually `YYYY-MM`
 - `manifest.csv` inside that same capture folder
 - bundle-aware placement under each capture, for example `<capture_id>/<bundle_id>/archive/...` and `<capture_id>/<bundle_id>/contents/...`
 - chain-first explorer folder names such as `eth-ledger1`, `eth-gala1`, `eth-metamask1`, `polygon-metamask1`, and `bsc-metamask1`
 - aggregate or app folders for wallet-app-wide evidence that is not truly chain-scoped, such as cross-chain MetaMask portfolio snapshots or state logs
 - generic wallet folders only when the repo inventory cannot justify a known source name; in that case the folder should stay deterministic and identifier-based rather than guessing a friendly alias
-- historical ledger exports route separately from source evidence
+- portfolio-system exports route separately from source evidence under `01_raw_exports/portfolio/`
 - working derivatives route into `02_working/supporting_artifacts/<source>/`
 - saved HTML export sidecars inherit the parent HTML export timestamp and stay in the same canonical bundle instead of being treated as standalone undated files
 

@@ -2,7 +2,7 @@
 
 ## Canonical baseline already captured
 
-Located in `01_raw_exports/cointracking/2023-08-05_full_export/`
+Located in `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 
 ## During baseline repair rounds
 
@@ -51,9 +51,9 @@ After export:
 
 Always:
 
-- save untouched files into `01_raw_exports/external/<source>/<capture_id>/`
-- run `06_scripts/source_manifest.py` against `01_raw_exports/external/<source>/<capture_id>/`
-- store the manifest at `01_raw_exports/external/<source>/<capture_id>/manifest.csv`
+- save untouched files into `01_raw_exports/source/<source>/<capture_id>/`
+- run `06_scripts/source_manifest.py` against `01_raw_exports/source/<source>/<capture_id>/`
+- store the manifest at `01_raw_exports/source/<source>/<capture_id>/manifest.csv`
 - update `03_analysis/issues/source_inventory.csv`
 
 Before copying an approved import file to `04_import_ready/`:

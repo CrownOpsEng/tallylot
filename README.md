@@ -4,9 +4,15 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 
 ## Canonical baseline
 
-- source folder: `01_raw_exports/cointracking/2023-08-05_full_export/`
+- baseline export folder: `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 - authoritative cutoff from Trade Table: `2023-08-05 08:34:04`
 - delta window starts strictly after that timestamp unless a newer baseline is intentionally adopted
+
+## Raw export branches
+
+- `01_raw_exports/source/` holds external exchange, wallet, explorer, and bot evidence
+- `01_raw_exports/portfolio/` holds CoinTracking portfolio-system exports and saved report bundles
+- the two branches are siblings on purpose; portfolio outputs are not source evidence and must not be mixed into source intake
 
 ## What this package includes
 

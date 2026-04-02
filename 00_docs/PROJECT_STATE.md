@@ -2,7 +2,7 @@
 
 ## Baseline checkpoint
 
-- Canonical source: `01_raw_exports/cointracking/2023-08-05_full_export/`
+- Canonical baseline export: `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 - Authoritative cutoff timestamp: **2023-08-05 08:34:04**
 - Delta window start: **strictly after 2023-08-05 08:34:04**
 - Baseline full-export transaction count: **31,021**

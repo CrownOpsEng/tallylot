@@ -7,7 +7,7 @@ import routing
 from tests.support.helpers import write_minimal_xlsx
 
 
-def test_resolve_routing_decision_routes_cointracking_exports_to_ledger_history(tmp_path: Path) -> None:
+def test_resolve_routing_decision_routes_cointracking_exports_to_portfolio_history(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     incoming_root = repo_root / "01_raw_exports" / "incoming"
     path = incoming_root / "CoinTracking - 2021 Tax Export - Summary.pdf"
@@ -21,8 +21,8 @@ def test_resolve_routing_decision_routes_cointracking_exports_to_ledger_history(
         inspection_row={"family": "statement_balance_pdf", "min_timestamp": "", "max_timestamp": ""},
     )
 
-    assert decision.role == "ledger_export"
-    assert "01_raw_exports/cointracking/history" in str(decision.destination_dir)
+    assert decision.role == "portfolio_export"
+    assert "01_raw_exports/portfolio/cointracking/history" in str(decision.destination_dir)
     assert decision.bundle_type == "single_file_bundle"
 
 
@@ -64,7 +64,7 @@ def test_resolve_routing_decision_uses_inventory_backed_wallet_source_from_conte
     source_inventory.parent.mkdir(parents=True, exist_ok=True)
     source_inventory.write_text(
         "source,activity_after_cutoff,first_post_cutoff_tx,export_window_start,export_window_end,import_order,status,capture_path,profile_status,adapter,normalization_status,exception_count,candidate_path,notes\n"
-        "eth-gala1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,1,capture_complete,01_raw_exports/external/eth-gala1/2026-03,profiled,evm_explorer,ready,0,,\n",
+        "eth-gala1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,1,capture_complete,01_raw_exports/source/eth-gala1/2026-03,profiled,evm_explorer,ready,0,,\n",
         encoding="utf-8",
     )
     wallet_evidence = repo_root / "03_analysis" / "inventory" / "wallet_inventory_evidence.csv"
@@ -108,8 +108,8 @@ def test_resolve_routing_decision_keeps_generic_wallet_when_inventory_match_is_a
     source_inventory.parent.mkdir(parents=True, exist_ok=True)
     source_inventory.write_text(
         "source,activity_after_cutoff,first_post_cutoff_tx,export_window_start,export_window_end,import_order,status,capture_path,profile_status,adapter,normalization_status,exception_count,candidate_path,notes\n"
-        "eth-metamask1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,1,capture_complete,01_raw_exports/external/eth-metamask1/2026-03,profiled,evm_explorer,ready,0,,\n"
-        "polygon-metamask1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,2,capture_complete,01_raw_exports/external/polygon-metamask1/2026-03,profiled,evm_explorer,ready,0,,\n",
+        "eth-metamask1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,1,capture_complete,01_raw_exports/source/eth-metamask1/2026-03,profiled,evm_explorer,ready,0,,\n"
+        "polygon-metamask1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,2,capture_complete,01_raw_exports/source/polygon-metamask1/2026-03,profiled,evm_explorer,ready,0,,\n",
         encoding="utf-8",
     )
     wallet_evidence = repo_root / "03_analysis" / "inventory" / "wallet_inventory_evidence.csv"
@@ -196,7 +196,7 @@ def test_resolve_routing_decision_routes_cointracking_html_by_export_timestamp(t
         inspection_row=inspection.inspect_file(path),
     )
 
-    assert decision.role == "ledger_export"
+    assert decision.role == "portfolio_export"
     assert decision.capture_id == "2022-04"
     assert decision.review_required is False
 
@@ -225,7 +225,7 @@ def test_resolve_routing_decision_inherits_cointracking_html_bundle_timestamp_fo
         inspection_row=inspection.inspect_file(sidecar_path),
     )
 
-    assert decision.role == "ledger_export"
+    assert decision.role == "portfolio_export"
     assert decision.capture_id == "2022-04"
     assert decision.review_required is False
 

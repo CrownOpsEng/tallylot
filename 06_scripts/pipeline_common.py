@@ -24,6 +24,7 @@ from inspection import (
     parse_candidate_timestamp,
     parse_candidate_timestamp_evidence,
 )
+from raw_layout import cointracking_baseline_dir, parse_capture_path
 from script_common import (
     find_required_csv_exports,
     read_csv_rows,
@@ -145,7 +146,7 @@ TIMEZONE_ISSUE_HEADERS = (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_INVENTORY_PATH = REPO_ROOT / "03_analysis" / "issues" / "source_inventory.csv"
-CANONICAL_BASELINE_EXPORT_DIR = REPO_ROOT / "01_raw_exports" / "cointracking" / "2023-08-05_full_export"
+CANONICAL_BASELINE_EXPORT_DIR = cointracking_baseline_dir(REPO_ROOT)
 CANONICAL_BASELINE_REQUIRED_FILES = {"trade_table": "Trade Table"}
 CANONICAL_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
 REPO_PROJECT_WINDOW_END = "2025-12-31 23:59:59"
@@ -278,7 +279,10 @@ def repo_source_inventory_row(source: str, raw_dir: Path) -> dict[str, str] | No
         capture_path = (row.get("capture_path") or "").strip()
         if not capture_path or source_slug(row.get("source", "")) != target_slug:
             continue
-        if (REPO_ROOT / capture_path).resolve() == target_dir:
+        parsed = parse_capture_path(capture_path)
+        if parsed is None:
+            continue
+        if (REPO_ROOT / parsed.capture_path).resolve() == target_dir:
             return row
     return None
 

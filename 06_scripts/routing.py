@@ -11,6 +11,7 @@ from pathlib import Path
 from inventory_resolution import resolve_inventory_route
 from inspection import HistoricalDateDecision, HistoricalDatePolicy, infer_historical_date, inspect_file
 from pipeline_common import source_slug
+from raw_layout import cointracking_history_root, source_capture_root
 
 
 BINANCE_ROOT_COMPANION_NAMES = {"borrow.csv", "interest.csv", "liquidations.csv", "repay.csv", "trades.csv", "transfers.csv"}
@@ -129,7 +130,7 @@ def _base_route_target(path: Path, inspection_row: dict[str, str]) -> RouteTarge
     if "cointracking_excel_import" in name or family == "cointracking_import_csv":
         return RouteTarget("working_derivative", "Binance", "binance", "", "high", ())
     if archive_source == "CoinTracking":
-        return RouteTarget("ledger_export", "CoinTracking", "cointracking", "cointracking", "high", ())
+        return RouteTarget("portfolio_export", "CoinTracking", "cointracking", "cointracking", "high", ())
     if archive_source == "Binance":
         return RouteTarget("source_raw", "Binance", "binance", "", "high", ())
     if archive_source == "WealthSimple":
@@ -137,7 +138,7 @@ def _base_route_target(path: Path, inspection_row: dict[str, str]) -> RouteTarge
     if archive_source == "Kucoin Main":
         return RouteTarget("source_raw", "Kucoin Main", "kucoin-main", "", "high", ())
     if "cointracking" in text or "cointracking" in name or family.startswith("cointracking_"):
-        return RouteTarget("ledger_export", "CoinTracking", "cointracking", "cointracking", "high", ())
+        return RouteTarget("portfolio_export", "CoinTracking", "cointracking", "cointracking", "high", ())
     if name.startswith("bot-") or family == "trading_bot_deals_csv":
         return RouteTarget("source_raw", "3Commas", "3commas", "", "high", ())
     if "wealthsimple" in text:
@@ -208,8 +209,8 @@ def classify_route(path: Path, inspection_row: dict[str, str]) -> RouteTarget:
 
 def date_policy_for_target(target: RouteTarget, bundle: BundleDecision, inspection_row: dict[str, str]) -> tuple[str, HistoricalDatePolicy]:
     family = inspection_row.get("family", "")
-    if target.role == "ledger_export" or family.startswith("cointracking_"):
-        return "ledger_export_capture", HistoricalDatePolicy(allow_content_span=False)
+    if target.role == "portfolio_export" or family.startswith("cointracking_"):
+        return "portfolio_export_capture", HistoricalDatePolicy(allow_content_span=False)
     if bundle.bundle_type in {"archive_bundle", "html_export_bundle"}:
         return "bundle_export_timestamp", HistoricalDatePolicy(allow_content_span=False)
     if family.startswith("binance_margin_") or family in {"trading_bot_deals_csv", "fills_csv", "transfer_statement_csv", "custodial_transaction_csv"}:
@@ -276,9 +277,9 @@ def infer_capture_folder_name(
 
 def _target_root(repo_root: Path, target: RouteTarget) -> Path:
     if target.role == "source_raw":
-        return repo_root / "01_raw_exports" / "external" / target.source_folder
-    if target.role == "ledger_export":
-        return repo_root / "01_raw_exports" / "cointracking" / "history"
+        return source_capture_root(repo_root, target.source_folder)
+    if target.role == "portfolio_export":
+        return cointracking_history_root(repo_root)
     return repo_root / "02_working" / "supporting_artifacts" / target.source_folder
 
 

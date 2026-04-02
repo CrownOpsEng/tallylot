@@ -86,13 +86,13 @@ python3 06_scripts/intake_sort.py \
 
 ```bash
 python3 06_scripts/source_manifest.py \
-  --source-dir 01_raw_exports/external/<source>/<capture_id> \
-  --output 01_raw_exports/external/<source>/<capture_id>/manifest.csv
+  --source-dir 01_raw_exports/source/<source>/<capture_id> \
+  --output 01_raw_exports/source/<source>/<capture_id>/manifest.csv
 ```
 
 ```bash
 python3 06_scripts/profile_source.py \
   --source "<Source Name>" \
-  --raw-dir 01_raw_exports/external/<source>/<capture_id> \
+  --raw-dir 01_raw_exports/source/<source>/<capture_id> \
   --out-dir 02_working/normalized/<source>
 ```

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Iterable
 
 from pipeline_common import source_slug
+from raw_layout import SOURCE_BRANCH, parse_capture_path
 from scope_identity import describe_scope_tokens
 
 
@@ -52,12 +53,10 @@ def _source_inventory_rows(repo_root: str) -> tuple[dict[str, str], ...]:
 
 
 def _source_folder_from_capture_path(capture_path: str) -> str:
-    parts = Path(capture_path).parts
-    if len(parts) >= 3 and parts[:3] == ("01_raw_exports", "external", parts[2]):
-        return parts[2]
-    if len(parts) >= 2 and parts[0] == "01_raw_exports":
-        return parts[1]
-    return ""
+    parsed = parse_capture_path(capture_path)
+    if parsed is None or parsed.branch != SOURCE_BRANCH:
+        return ""
+    return parsed.source_folder
 
 
 @lru_cache(maxsize=8)

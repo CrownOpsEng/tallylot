@@ -30,7 +30,7 @@ def test_plan_intake_dump_dry_run_writes_reports_without_copying(tmp_path: Path)
 
     assert summary["status"] == "planned"
     assert (report_dir / "intake_plan.csv").exists()
-    assert not (repo_root / "01_raw_exports" / "external" / "binance" / "2021-05" / "binance-isolated-margin-loose" / "borrow.csv").exists()
+    assert not (repo_root / "01_raw_exports" / "source" / "binance" / "2021-05" / "binance-isolated-margin-loose" / "borrow.csv").exists()
 
 
 @pytest.mark.pipeline
@@ -51,8 +51,8 @@ def test_plan_intake_dump_apply_copies_files_and_writes_manifest(tmp_path: Path)
         apply=True,
     )
 
-    target = repo_root / "01_raw_exports" / "external" / "binance" / "2021-05" / "binance-isolated-margin-loose" / "borrow.csv"
-    manifest = repo_root / "01_raw_exports" / "external" / "binance" / "2021-05" / "manifest.csv"
+    target = repo_root / "01_raw_exports" / "source" / "binance" / "2021-05" / "binance-isolated-margin-loose" / "borrow.csv"
+    manifest = repo_root / "01_raw_exports" / "source" / "binance" / "2021-05" / "manifest.csv"
     assert summary["status"] == "applied"
     assert target.exists()
     assert manifest.exists()
@@ -79,7 +79,13 @@ def test_plan_intake_dump_aliases_identical_duplicates_without_overwrite(tmp_pat
         apply=True,
     )
 
-    manifest = list(csv.DictReader((repo_root / "01_raw_exports" / "cointracking" / "history" / "review-required" / "manifest.csv").open(encoding="utf-8")))
+    manifest = list(
+        csv.DictReader(
+            (repo_root / "01_raw_exports" / "portfolio" / "cointracking" / "history" / "review-required" / "manifest.csv").open(
+                encoding="utf-8"
+            )
+        )
+    )
     assert summary["alias_groups"] >= 1
     assert len(manifest) == 1
     assert "CoinTracking Export_files/style.min.css" in manifest[0]["source_paths"]
@@ -108,9 +114,9 @@ def test_plan_intake_dump_extracts_identified_crypto_archives(tmp_path: Path) ->
         apply=True,
     )
 
-    archive_path = repo_root / "01_raw_exports" / "external" / "binance" / "2022-03" / "202203291736" / "archive" / "202203291736.zip"
-    extracted_path = repo_root / "01_raw_exports" / "external" / "binance" / "2022-03" / "202203291736" / "contents" / "part-00000.csv"
-    manifest = list(csv.DictReader((repo_root / "01_raw_exports" / "external" / "binance" / "2022-03" / "manifest.csv").open(encoding="utf-8")))
+    archive_path = repo_root / "01_raw_exports" / "source" / "binance" / "2022-03" / "202203291736" / "archive" / "202203291736.zip"
+    extracted_path = repo_root / "01_raw_exports" / "source" / "binance" / "2022-03" / "202203291736" / "contents" / "part-00000.csv"
+    manifest = list(csv.DictReader((repo_root / "01_raw_exports" / "source" / "binance" / "2022-03" / "manifest.csv").open(encoding="utf-8")))
 
     assert summary["status"] == "applied"
     assert archive_path.exists()
@@ -175,7 +181,7 @@ def test_plan_intake_dump_merges_same_cycle_near_duplicate_packages(tmp_path: Pa
 
     plan_rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
     primary_row = next(row for row in plan_rows if row["package_status"] == "merge_primary")
-    manifest_path = repo_root / "01_raw_exports" / "external" / "binance" / primary_row["capture_id"] / "manifest.csv"
+    manifest_path = repo_root / "01_raw_exports" / "source" / "binance" / primary_row["capture_id"] / "manifest.csv"
     rows = list(csv.DictReader(manifest_path.open(encoding="utf-8")))
     filenames = {row["filename"] for row in rows}
 
@@ -252,7 +258,7 @@ def test_plan_intake_dump_skips_superseded_conflicting_file_during_merge_apply(t
     plan_rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
     superseded_row = next(row for row in plan_rows if "/202203291730-export/trades.csv" in row["source_path"])
     primary_trade_row = next(row for row in plan_rows if "/202203291830-export/trades.csv" in row["source_path"])
-    manifest_path = repo_root / "01_raw_exports" / "external" / "binance" / primary_trade_row["capture_id"] / "manifest.csv"
+    manifest_path = repo_root / "01_raw_exports" / "source" / "binance" / primary_trade_row["capture_id"] / "manifest.csv"
     manifest_rows = list(csv.DictReader(manifest_path.open(encoding="utf-8")))
     filenames = {row["filename"] for row in manifest_rows}
 
@@ -285,7 +291,7 @@ def test_plan_intake_dump_marks_mixed_cycle_bundle_for_review_but_still_places_f
 
     plan_rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
     mixed_rows = [row for row in plan_rows if row["package_status"] == "mixed_cycle_review"]
-    manifest_path = repo_root / "01_raw_exports" / "external" / "binance" / mixed_rows[0]["capture_id"] / "manifest.csv"
+    manifest_path = repo_root / "01_raw_exports" / "source" / "binance" / mixed_rows[0]["capture_id"] / "manifest.csv"
     manifest_rows = list(csv.DictReader(manifest_path.open(encoding="utf-8")))
 
     assert summary["mixed_cycle_packages"] == 1
@@ -344,7 +350,7 @@ def test_plan_intake_dump_routes_wallet_export_to_existing_inventory_source(tmp_
     source_inventory.parent.mkdir(parents=True, exist_ok=True)
     source_inventory.write_text(
         "source,activity_after_cutoff,first_post_cutoff_tx,export_window_start,export_window_end,import_order,status,capture_path,profile_status,adapter,normalization_status,exception_count,candidate_path,notes\n"
-        "eth-gala1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,1,capture_complete,01_raw_exports/external/eth-gala1/2026-03,profiled,evm_explorer,ready,0,,\n",
+        "eth-gala1,yes,,2023-08-05 08:34:05,2025-12-31 23:59:59,1,capture_complete,01_raw_exports/source/eth-gala1/2026-03,profiled,evm_explorer,ready,0,,\n",
         encoding="utf-8",
     )
     wallet_evidence = repo_root / "03_analysis" / "inventory" / "wallet_inventory_evidence.csv"
@@ -381,7 +387,7 @@ def test_plan_intake_dump_routes_wallet_export_to_existing_inventory_source(tmp_
 
 
 @pytest.mark.pipeline
-def test_plan_intake_dump_routes_cointracking_html_to_ledger_capture_without_review(tmp_path: Path) -> None:
+def test_plan_intake_dump_routes_cointracking_html_to_portfolio_capture_without_review(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
     incoming = repo_root / "01_raw_exports" / "incoming"
     path = incoming / "tmp" / "CoinTracking · Tax Declaration Export.html"
@@ -405,7 +411,7 @@ def test_plan_intake_dump_routes_cointracking_html_to_ledger_capture_without_rev
     rows = list(csv.DictReader((report_dir / "intake_plan.csv").open(encoding="utf-8")))
     row = next(item for item in rows if item["archive_source_path"] == "")
 
-    assert row["role"] == "ledger_export"
+    assert row["role"] == "portfolio_export"
     assert row["capture_id"] == "2022-04"
     assert row["review_required"] == "no"
 
