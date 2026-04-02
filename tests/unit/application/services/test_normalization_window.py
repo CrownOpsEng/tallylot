@@ -3,8 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from crypto_reconciliation.application.services.normalization_window import filter_events_by_window
-from crypto_reconciliation.domain.models import CanonicalEvent
+from crypto_reconciliation.application.services.normalization_window import (
+    filter_events_by_window,
+    filter_issues_by_window,
+)
+from crypto_reconciliation.domain.models import CanonicalEvent, IssueRecord
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
 
 
@@ -58,6 +61,44 @@ def test_filter_events_by_window_keeps_only_events_inside_both_bounds() -> None:
 
     assert filtered == (in_window,)
     assert excluded_count == 2
+
+
+def test_filter_issues_by_window_excludes_timestamped_issues_before_start() -> None:
+    filtered, excluded_count = filter_issues_by_window(
+        (
+            IssueRecord(
+                issue_id="before",
+                source="Binance",
+                adapter_id="binance",
+                severity="medium",
+                kind="unsupported_group",
+                message="before",
+                context_timestamp="2023-08-05 08:34:04",
+            ),
+            IssueRecord(
+                issue_id="inside",
+                source="Binance",
+                adapter_id="binance",
+                severity="medium",
+                kind="unsupported_group",
+                message="inside",
+                context_timestamp="2023-08-05 08:34:05",
+            ),
+            IssueRecord(
+                issue_id="untimed",
+                source="Binance",
+                adapter_id="binance",
+                severity="medium",
+                kind="unsupported_group",
+                message="untimed",
+            ),
+        ),
+        window_start="2023-08-05 08:34:05",
+        window_end=None,
+    )
+
+    assert excluded_count == 1
+    assert [issue.issue_id for issue in filtered] == ["inside", "untimed"]
 
 
 def _event(event_id: str, timestamp: str) -> CanonicalEvent:

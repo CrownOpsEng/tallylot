@@ -1,6 +1,7 @@
 [
   {
     "adapter_id": "wealthsimple",
+    "context_timestamp": "2023-09-23 00:00:00",
     "issue_id": "wealthsimple:activities-export-2026-03-23.csv:row:3",
     "kind": "unsupported_row",
     "message": "Unsupported Wealthsimple crypto activity: Staking/REWARD",

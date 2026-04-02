@@ -31,7 +31,7 @@ WORKSPACE_DIRECTORIES = (
 SEED_FILES = (
     SeedFile(
         "analysis/issues/issue_log.csv",
-        "issue_id,source,adapter_id,severity,kind,message,raw_file,raw_row_ref,status\n",
+        "issue_id,source,adapter_id,severity,kind,message,context_timestamp,raw_file,raw_row_ref,status\n",
     ),
     SeedFile(
         "analysis/issues/source_inventory.csv",

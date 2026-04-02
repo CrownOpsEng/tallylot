@@ -33,6 +33,18 @@ SPOT_HEADER = ("Time", "Pair", "Side", "Price", "Executed", "Amount", "Fee")
 DEPOSIT_HEADER = ("Time", "Coin", "Network", "Amount", "Address", "TXID", "Status")
 WITHDRAW_HEADER = ("Time", "Coin", "Network", "Amount", "Fee", "Address", "TXID", "Status")
 TRANSACTION_HEADER = ("User ID", "Time", "Account", "Operation", "Coin", "Change", "Remark")
+CONVERT_HEADER = ("Time", "Wallet", "Pair", "Type", "Sell", "Buy", "Price", "Inverse Price", "Date Updated", "Status")
+C2C_HEADER = (
+    "Order Number",
+    "Created Time",
+    "Order Type",
+    "Asset",
+    "Quantity",
+    "Total Price",
+    "Fiat Type",
+    "Counterparty",
+    "Status",
+)
 
 
 class BinanceAdapter:
@@ -49,7 +61,17 @@ class BinanceAdapter:
         if "binance" in source.lower():
             return 100
         headers = {item.header for item in inventory}
-        if any(header in headers for header in (SPOT_HEADER, DEPOSIT_HEADER, WITHDRAW_HEADER, TRANSACTION_HEADER)):
+        if any(
+            header in headers
+            for header in (
+                SPOT_HEADER,
+                DEPOSIT_HEADER,
+                WITHDRAW_HEADER,
+                TRANSACTION_HEADER,
+                CONVERT_HEADER,
+                C2C_HEADER,
+            )
+        ):
             return 100
         return 0
 
@@ -77,6 +99,8 @@ class BinanceAdapter:
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         events: list[CanonicalEvent] = []
         issues: list[IssueRecord] = []
+        convert_match_times: set[datetime] = set()
+        p2p_match_times: set[datetime] = set()
         for path in sorted(raw_dir.rglob("*.csv")):
             if path.name.startswith("Binance-Spot-Trade-History-"):
                 events.extend(_normalize_spot_rows(profile, path))
@@ -84,8 +108,21 @@ class BinanceAdapter:
                 events.extend(_normalize_deposit_rows(profile, path))
             elif path.name.startswith("Binance-Withdraw-History-"):
                 events.extend(_normalize_withdraw_rows(profile, path))
+            elif path.name.startswith("Binance-Convert-Order-History-"):
+                convert_events, matched_times = _normalize_convert_order_rows(profile, path)
+                events.extend(convert_events)
+                convert_match_times.update(matched_times)
+            elif path.name.startswith("Binance-C2C-Order-History-"):
+                c2c_events, matched_times = _normalize_c2c_order_rows(profile, path)
+                events.extend(c2c_events)
+                p2p_match_times.update(matched_times)
             elif path.name.startswith("Binance-Transaction-History-"):
-                parsed_events, parsed_issues = _normalize_transaction_rows(profile, path)
+                parsed_events, parsed_issues = _normalize_transaction_rows(
+                    profile,
+                    path,
+                    convert_match_times=frozenset(convert_match_times),
+                    p2p_match_times=frozenset(p2p_match_times),
+                )
                 events.extend(parsed_events)
                 issues.extend(parsed_issues)
         return NormalizationResult(
@@ -248,9 +285,14 @@ def _normalize_withdraw_rows(profile: SourceProfile, path: Path) -> list[Canonic
 def _normalize_transaction_rows(
     profile: SourceProfile,
     path: Path,
+    *,
+    convert_match_times: frozenset[datetime] | None = None,
+    p2p_match_times: frozenset[datetime] | None = None,
 ) -> tuple[list[CanonicalEvent], list[IssueRecord]]:
     events: list[CanonicalEvent] = []
     issues: list[IssueRecord] = []
+    resolved_convert_match_times = convert_match_times or frozenset()
+    resolved_p2p_match_times = p2p_match_times or frozenset()
     grouped_rows: dict[tuple[str, str, str], list[tuple[int, dict[str, str]]]] = defaultdict(list)
     for index, row in enumerate(_read_rows(path), start=2):
         if _is_no_data_row(row):
@@ -262,6 +304,7 @@ def _normalize_transaction_rows(
         )
         grouped_rows[key].append((index, row))
     for (time_value, account, operation), group in sorted(grouped_rows.items()):
+        parsed_time = _parse_transaction_history_timestamp(time_value)
         if operation == "ETH 2.0 Staking Rewards":
             index, row = group[0]
             change = parse_decimal((row.get("Change") or "").strip())
@@ -276,7 +319,7 @@ def _normalize_transaction_rows(
                         adapter_id="binance",
                         account=account,
                         wallet=account,
-                        timestamp=_parse_transaction_history_timestamp(time_value),
+                        timestamp=parsed_time,
                         event_kind="Staking",
                         description=operation,
                         raw_file=path.name,
@@ -307,7 +350,7 @@ def _normalize_transaction_rows(
                         adapter_id="binance",
                         account=account,
                         wallet=account,
-                        timestamp=_parse_transaction_history_timestamp(time_value),
+                        timestamp=parsed_time,
                         event_kind="Trade",
                         description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",
                         raw_file=path.name,
@@ -322,6 +365,10 @@ def _normalize_transaction_rows(
                     )
                 )
             )
+            continue
+        if operation == "Binance Convert" and parsed_time in resolved_convert_match_times:
+            continue
+        if operation == "P2P Trading" and parsed_time in resolved_p2p_match_times:
             continue
         issue_kind = "ambiguous_group" if operation == "Binance Convert" else "unsupported_group"
         message_prefix = (
@@ -345,6 +392,101 @@ def _normalize_transaction_rows(
     return events, issues
 
 
+def _normalize_convert_order_rows(
+    profile: SourceProfile,
+    path: Path,
+) -> tuple[list[CanonicalEvent], set[datetime]]:
+    events: list[CanonicalEvent] = []
+    matched_times: set[datetime] = set()
+    for index, row in enumerate(_read_rows(path), start=2):
+        if (row.get("Status") or "").strip().lower() != "successful":
+            continue
+        buy_amount, buy_asset = _amount_with_asset(row.get("Buy", ""))
+        sell_amount, sell_asset = _amount_with_asset(row.get("Sell", ""))
+        if buy_amount is None or sell_amount is None or not buy_asset or not sell_asset:
+            continue
+        date_updated = (row.get("Date Updated") or row.get("Time") or "").strip()
+        matched_times.add(_parse_transaction_history_timestamp(date_updated))
+        events.append(
+            mapped_event(
+                MappedEventSpec(
+                    event_id=f"binance:{path.name}:convert:{index}",
+                    source=str(profile.source),
+                    adapter_id="binance",
+                    account=(row.get("Wallet") or "").strip() or "Spot",
+                    wallet=(row.get("Wallet") or "").strip() or "Spot",
+                    timestamp=_parse_offset_timestamp(date_updated, path.name),
+                    event_kind="Trade",
+                    description=f"Binance convert {(row.get('Pair') or '').strip()}",
+                    raw_file=path.name,
+                    raw_row_ref=f"row:{index}",
+                    render_exchange=str(profile.source),
+                    asset_in=buy_asset,
+                    amount_in=buy_amount,
+                    asset_out=sell_asset,
+                    amount_out=sell_amount,
+                    render_group=(row.get("Wallet") or "").strip() or "Spot",
+                    render_notes=(row.get("Pair") or "").strip(),
+                )
+            )
+        )
+    return events, matched_times
+
+
+def _normalize_c2c_order_rows(
+    profile: SourceProfile,
+    path: Path,
+) -> tuple[list[CanonicalEvent], set[datetime]]:
+    events: list[CanonicalEvent] = []
+    matched_times: set[datetime] = set()
+    for index, row in enumerate(_read_rows(path), start=2):
+        if (row.get("Status") or "").strip().lower() != "completed":
+            continue
+        quantity = parse_decimal((row.get("Quantity") or "").strip())
+        total_price = parse_decimal((row.get("Total Price") or "").strip())
+        asset = (row.get("Asset") or "").strip().upper()
+        fiat = (row.get("Fiat Type") or "").strip().upper()
+        if quantity is None or total_price is None or not asset or not fiat:
+            continue
+        order_type = (row.get("Order Type") or "").strip().upper()
+        created_time = (row.get("Created Time") or "").strip()
+        matched_times.add(_parse_transaction_history_timestamp(created_time))
+        if order_type == "SELL":
+            asset_in = fiat
+            amount_in = total_price
+            asset_out = asset
+            amount_out = quantity
+        else:
+            asset_in = asset
+            amount_in = quantity
+            asset_out = fiat
+            amount_out = total_price
+        events.append(
+            mapped_event(
+                MappedEventSpec(
+                    event_id=f"binance:{path.name}:c2c:{(row.get('Order Number') or '').strip() or index}",
+                    source=str(profile.source),
+                    adapter_id="binance",
+                    account="Funding",
+                    wallet="Funding",
+                    timestamp=_parse_offset_timestamp(created_time, path.name),
+                    event_kind="Trade",
+                    description=f"Binance C2C {(row.get('Order Type') or '').strip()} {asset}/{fiat}",
+                    raw_file=path.name,
+                    raw_row_ref=f"row:{index}",
+                    render_exchange=str(profile.source),
+                    asset_in=asset_in,
+                    amount_in=amount_in,
+                    asset_out=asset_out,
+                    amount_out=amount_out,
+                    render_group="Funding",
+                    render_notes=(row.get("Counterparty") or "").strip(),
+                )
+            )
+        )
+    return events, matched_times
+
+
 def _split_pair(pair: str) -> tuple[str, str]:
     quote_candidates = ("USDT", "USDC", "BUSD", "BTC", "ETH", "BNB", "EUR", "USD", "CAD")
     for quote in quote_candidates:
@@ -354,7 +496,7 @@ def _split_pair(pair: str) -> tuple[str, str]:
 
 
 def _amount_with_asset(value: str) -> tuple[Decimal | None, str]:
-    match = re.fullmatch(r"\s*([+-]?[0-9]*\.?[0-9]+)([A-Za-z0-9]+)\s*", value or "")
+    match = re.fullmatch(r"\s*([+-]?[0-9]*\.?[0-9]+)\s*([A-Za-z0-9]+)\s*", value or "")
     if match is None:
         return parse_decimal((value or "").strip()), ""
     amount = parse_decimal(match.group(1))

@@ -8,7 +8,11 @@ from typing import cast
 
 from crypto_reconciliation.application.dtos import NormalizeRequest, NormalizeResponse
 from crypto_reconciliation.application.services.common import ensure_directory
-from crypto_reconciliation.application.services.normalization_window import filter_events_by_window
+from crypto_reconciliation.application.services.issue_context import enrich_issue_context_timestamps
+from crypto_reconciliation.application.services.normalization_window import (
+    filter_events_by_window,
+    filter_issues_by_window,
+)
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
 from crypto_reconciliation.domain.models import NormalizationReviewRecord, SourceProfile
@@ -61,6 +65,16 @@ class NormalizationService:
             window_start=request.window_start,
             window_end=request.window_end,
         )
+        enriched_issues = enrich_issue_context_timestamps(
+            result.issues,
+            raw_dir=request.raw_dir,
+            inventory=profile.file_inventory,
+        )
+        issue_records, issues_outside_window = filter_issues_by_window(
+            enriched_issues,
+            window_start=request.window_start,
+            window_end=request.window_end,
+        )
         self._storage.write_canonical_events(
             request.output_dir / "canonical_events.csv",
             canonical_events,
@@ -69,7 +83,7 @@ class NormalizationService:
             request.output_dir / "canonical_balances.csv",
             result.canonical_balances,
         )
-        self._storage.write_issue_records(request.output_dir / "exceptions.csv", result.issues)
+        self._storage.write_issue_records(request.output_dir / "exceptions.csv", issue_records)
         self._storage.write_review_records(
             request.output_dir / "normalization_reviews.csv",
             result.reviews,
@@ -107,11 +121,12 @@ class NormalizationService:
                     "adapter_id": str(profile.adapter_id),
                     "event_count": len(canonical_events),
                     "balance_count": len(result.canonical_balances),
-                    "issue_count": len(result.issues),
+                    "issue_count": len(issue_records),
                     "review_count": len(result.reviews),
                     "review_summary": self._review_summary(result.reviews),
                     "wallet_count": len(result.wallet_inventory),
                     "events_outside_normalization_window": events_outside_window,
+                    "issues_outside_normalization_window": issues_outside_window,
                     "normalization_window_start": request.window_start or "",
                     "normalization_window_end": request.window_end or "",
                 },
@@ -122,7 +137,7 @@ class NormalizationService:
             adapter_id=str(profile.adapter_id),
             event_count=len(canonical_events),
             balance_count=len(result.canonical_balances),
-            issue_count=len(result.issues),
+            issue_count=len(issue_records),
             review_count=len(result.reviews),
         )
 

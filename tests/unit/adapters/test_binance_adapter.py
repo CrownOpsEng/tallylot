@@ -223,6 +223,57 @@ def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewar
     assert not issues
 
 
+def test_binance_convert_order_history_suppresses_matching_transaction_history_review(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "Binance-Convert-Order-History-202603230441(UTC--6)_abcd.csv").write_text(
+        "Time,Wallet,Pair,Type,Sell,Buy,Price,Inverse Price,Date Updated,Status\n"
+        "21-05-11 00:44:32,SPOT,ETHBUSD,Instant,124.60184573 BUSD,0.03158115 ETH,x,x,21-05-11 00:44:33,Successful\n",
+        encoding="utf-8",
+    )
+    (raw_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
+        "User ID,Time,Account,Operation,Coin,Change,Remark\n1,21-05-11 00:44:33,Spot,Binance Convert,ETH,0.03158115,\n",
+        encoding="utf-8",
+    )
+
+    result = BinanceAdapter().normalize(
+        build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
+        raw_dir,
+    )
+
+    assert len(result.canonical_events) == 1
+    assert result.canonical_events[0].event_kind == "Trade"
+    assert str(result.canonical_events[0].asset_in) == "ETH"
+    assert str(result.canonical_events[0].asset_out) == "BUSD"
+    assert not result.issues
+
+
+def test_binance_c2c_order_history_suppresses_matching_p2p_review(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "Binance-C2C-Order-History-202603230441(UTC--6)_abcd.csv").write_text(
+        "Order Number,Created Time,Order Type,Asset,Quantity,Total Price,Fiat Type,Counterparty,Status\n"
+        "123,23-09-20 19:48:03,SELL,USDT,891,891,CAD,merchant,Completed\n",
+        encoding="utf-8",
+    )
+    (raw_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
+        "User ID,Time,Account,Operation,Coin,Change,Remark\n"
+        "1,23-09-20 19:48:03,Funding,P2P Trading,USDT,-891,P2P - 123\n",
+        encoding="utf-8",
+    )
+
+    result = BinanceAdapter().normalize(
+        build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
+        raw_dir,
+    )
+
+    assert len(result.canonical_events) == 1
+    assert result.canonical_events[0].event_kind == "Trade"
+    assert str(result.canonical_events[0].asset_in) == "CAD"
+    assert str(result.canonical_events[0].asset_out) == "USDT"
+    assert not result.issues
+
+
 def test_binance_transaction_history_skips_non_positive_staking_and_incomplete_dust_groups(
     tmp_path: Path,
 ) -> None:

@@ -4,6 +4,7 @@
   "event_count": 3,
   "events_outside_normalization_window": 0,
   "issue_count": 0,
+  "issues_outside_normalization_window": 0,
   "normalization_window_end": "",
   "normalization_window_start": "",
   "review_count": 0,

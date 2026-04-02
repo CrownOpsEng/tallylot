@@ -1,6 +1,7 @@
 [
   {
     "adapter_id": "coinbase",
+    "context_timestamp": "",
     "issue_id": "coinbase:missing_retail_csv",
     "kind": "missing_required_input",
     "message": "Coinbase retail all-time CSV is required for deterministic normalization.",

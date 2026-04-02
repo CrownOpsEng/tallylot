@@ -196,6 +196,7 @@ class IssueRecord:
     severity: str
     kind: str
     message: str
+    context_timestamp: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
     status: str = "open"
@@ -208,6 +209,7 @@ class IssueRecord:
             "severity": self.severity,
             "kind": self.kind,
             "message": self.message,
+            "context_timestamp": self.context_timestamp,
             "raw_file": self.raw_file,
             "raw_row_ref": self.raw_row_ref,
             "status": self.status,

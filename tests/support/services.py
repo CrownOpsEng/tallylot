@@ -7,7 +7,7 @@ from crypto_reconciliation.application.services.normalize import (
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.application.services.render import CoinTrackingRenderService
 from crypto_reconciliation.domain.models import SourceProfile
-from crypto_reconciliation.domain.types import AdapterId, SourceId
+from crypto_reconciliation.domain.types import AdapterId, JsonValue, SourceId
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.infrastructure.storage import FilesystemStorage
@@ -18,6 +18,7 @@ def build_source_profile(
     source: str = "fixture_source",
     adapter_id: str,
     raw_dir: str = "/tmp/raw",
+    normalization_hints: dict[str, JsonValue] | None = None,
 ) -> SourceProfile:
     return SourceProfile(
         source=SourceId(source),
@@ -26,6 +27,7 @@ def build_source_profile(
         manifest_fingerprint="fixture-fingerprint",
         file_inventory=(),
         supported=True,
+        normalization_hints=normalization_hints or {},
     )
 
 

@@ -69,6 +69,7 @@ class FilesystemStorage:
                 "severity",
                 "kind",
                 "message",
+                "context_timestamp",
                 "raw_file",
                 "raw_row_ref",
                 "status",

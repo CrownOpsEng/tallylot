@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.coinbase.adapter import CoinbaseAdapter
+from crypto_reconciliation.adapters.sources.coinbase.adapter import CoinbaseAdapter, _money_decimal, _read_retail_rows
 from tests.support.services import build_source_profile
 
 
@@ -100,3 +101,55 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
     assert result.canonical_events[0].event_kind == "Trade"
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
+
+
+def test_coinbase_retail_row_reader_skips_preface_lines(tmp_path: Path) -> None:
+    path = tmp_path / "coinbase.csv"
+    path.write_text(
+        "\nTransactions\nUser,Example,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "raw-1,2025-01-01 00:00:00 UTC,Reward Income,ADA,1.0,CAD,$1.00,$1.00,$1.00,$0.00,Received 1 ADA\n",
+        encoding="utf-8",
+    )
+
+    rows = _read_retail_rows(path)
+
+    assert len(rows) == 1
+    assert rows[0]["ID"] == "raw-1"
+
+
+def test_coinbase_money_decimal_parses_currency_text() -> None:
+    assert _money_decimal("$1,234.56") == Decimal("1234.56")
+
+
+def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail-export.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "reward-1,2023-03-18 01:28:49 UTC,Reward Income,ADA,0.000021,CAD,$0.48,$0.00,$0.00,$0.00,"
+        "Received 0.000021 ADA from Coinbase Rewards\n"
+        "migration-neg,2025-10-17 13:38:17 UTC,Asset Migration,MATIC,-1.65526374,CAD,$0.25,-$0.42,-$0.42,$0.00,\n"
+        "migration-pos,2025-10-17 13:38:17 UTC,Asset Migration,POL,1.65526374,CAD,$0.25,$0.42,$0.42,$0.00,\n",
+        encoding="utf-8",
+    )
+
+    result = CoinbaseAdapter().normalize(
+        build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
+        raw_dir,
+    )
+
+    reward_event, migration_event = result.canonical_events
+
+    assert len(result.canonical_events) == 2
+    assert reward_event.event_kind == "Interest Income"
+    assert str(reward_event.asset_in) == "ADA"
+    assert migration_event.event_kind == "Swap (non taxable)"
+    assert migration_event.render_group == "Asset Migration"
+    assert str(migration_event.asset_in) == "POL"
+    assert str(migration_event.asset_out) == "MATIC"
+    assert not result.issues
