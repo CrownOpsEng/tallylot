@@ -4,34 +4,18 @@ from pathlib import Path
 
 from crypto_reconciliation.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
 from crypto_reconciliation.application.dtos import NormalizeRequest, RenderCoinTrackingRequest
-from crypto_reconciliation.application.services.normalize import (
-    NormalizationDependencies,
-    NormalizationService,
-)
-from crypto_reconciliation.application.services.profile import ProfileService
-from crypto_reconciliation.application.services.render import CoinTrackingRenderService
-from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.storage import FilesystemStorage
+from tests.support.services import build_normalization_service, build_render_service
 
 
 def test_cointracking_output_matches_expected_schema(
     structured_source_dir: Path,
     tmp_path: Path,
 ) -> None:
-    registry = build_registry()
     artifacts = FilesystemArtifactStore()
-    normalization = NormalizationService(
-        NormalizationDependencies(
-            source_registry=registry,
-            output_registry=registry,
-            profile_service=ProfileService(registry, artifacts),
-            storage=FilesystemStorage(),
-            artifacts=artifacts,
-        )
-    )
-    render = CoinTrackingRenderService(registry, artifacts)
+    normalization = build_normalization_service(artifacts=artifacts)
+    render = build_render_service(artifacts=artifacts)
     normalized_dir = tmp_path / "normalized"
 
     normalization.execute(

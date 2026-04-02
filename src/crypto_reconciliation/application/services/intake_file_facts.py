@@ -57,7 +57,7 @@ def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
     if path.suffix.lower() != ".csv":
         return IntakeFileFacts(
             scope_tokens=tuple(sorted(_scope_tokens(relative_path, []))),
-            network_hints=tuple(sorted(_network_hints(relative_path, ()))),
+            network_hints=tuple(sorted(_network_hints(relative_path, (), []))),
         )
 
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -66,7 +66,7 @@ def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
         rows = list(reader)
     timestamp_values = _timestamp_values(rows, header)
     scope_tokens = _scope_tokens(relative_path, rows)
-    network_hints = _network_hints(relative_path, header)
+    network_hints = _network_hints(relative_path, header, rows)
     return IntakeFileFacts(
         header=header,
         min_timestamp=timestamp_values[0] if timestamp_values else "",
@@ -127,8 +127,13 @@ def _scope_tokens(relative_path: str, rows: list[dict[str, CsvCell]]) -> set[str
     return tokens
 
 
-def _network_hints(relative_path: str, header: tuple[str, ...]) -> set[str]:
-    search_text = " ".join((relative_path, *header)).lower()
+def _network_hints(
+    relative_path: str,
+    header: tuple[str, ...],
+    rows: list[dict[str, CsvCell]],
+) -> set[str]:
+    row_text = " ".join(_cell_text(value) for row in rows[:50] for value in row.values())
+    search_text = " ".join((relative_path, *header, row_text)).lower()
     hints: set[str] = set()
     for token, network in NETWORK_HINTS:
         if token in search_text:

@@ -4,15 +4,9 @@ import json
 from pathlib import Path
 
 from crypto_reconciliation.application.dtos import NormalizeRequest
-from crypto_reconciliation.application.services.normalize import (
-    NormalizationDependencies,
-    NormalizationService,
-)
-from crypto_reconciliation.application.services.profile import ProfileService
-from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.storage import FilesystemStorage
+from tests.support.services import build_normalization_service
 
 
 def test_normalization_service_filters_events_outside_explicit_window(tmp_path: Path) -> None:
@@ -27,17 +21,8 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
         ),
         encoding="utf-8",
     )
-    registry = build_registry()
     artifacts = FilesystemArtifactStore()
-    service = NormalizationService(
-        NormalizationDependencies(
-            source_registry=registry,
-            output_registry=registry,
-            profile_service=ProfileService(registry, artifacts),
-            storage=FilesystemStorage(),
-            artifacts=artifacts,
-        )
-    )
+    service = build_normalization_service(artifacts=artifacts)
     output_dir = tmp_path / "normalized"
 
     response = service.execute(

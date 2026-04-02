@@ -111,13 +111,27 @@ def _exchange_reconciliation(
     current_rows: list[dict[str, str]],
     exchange_rows: list[dict[str, str]],
 ) -> list[dict[str, str]]:
-    snapshot = _asset_snapshot(current_rows, exchange_rows)
+    current_by_ticker = {row["Ticker"]: Decimal(row["Amount"]) for row in current_rows}
+    exchange_totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    for row in exchange_rows:
+        exchange_totals[row["Currency"]] += Decimal(row["Amount"])
+    all_tickers = sorted(set(current_by_ticker) | set(exchange_totals))
     return [
         {
-            **row,
-            "status": "matched" if Decimal(row["delta"]) == Decimal("0") else "drift",
+            "ticker": ticker,
+            "current_balance_amount": format(current_by_ticker.get(ticker, Decimal("0")), "f"),
+            "exchange_balance_amount": format(exchange_totals.get(ticker, Decimal("0")), "f"),
+            "delta": format(
+                current_by_ticker.get(ticker, Decimal("0")) - exchange_totals.get(ticker, Decimal("0")),
+                "f",
+            ),
+            "status": (
+                "matched"
+                if current_by_ticker.get(ticker, Decimal("0")) == exchange_totals.get(ticker, Decimal("0"))
+                else "drift"
+            ),
         }
-        for row in snapshot
+        for ticker in all_tickers
     ]
 
 
@@ -146,12 +160,13 @@ def _source_activity(
     return [
         {
             "source": source,
-            "first_timestamp": min(values, key=parse_timestamp),
-            "last_timestamp": max(values, key=parse_timestamp),
+            "first_timestamp": min(values, key=parse_timestamp) if values else "",
+            "last_timestamp": max(values, key=parse_timestamp) if values else "",
             "transaction_count": str(len(values)),
             "has_balance_rows": "yes" if source in balance_sources else "no",
         }
-        for source, values in sorted(activity.items())
+        for source in sorted(set(activity) | balance_sources)
+        for values in (activity.get(source, []),)
     ]
 
 
