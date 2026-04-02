@@ -31,6 +31,8 @@ def repo_markdown_paths() -> tuple[Path, ...]:
 def text_without_fenced_code(text: str) -> str:
     lines: list[str] = []
     active_fence: str | None = None
+    in_indented_code = False
+    previous_non_fence_blank = True
     for line in text.splitlines():
         fence_match = FENCE_PATTERN.match(line)
         if fence_match is not None:
@@ -45,7 +47,16 @@ def text_without_fenced_code(text: str) -> str:
                 continue
         if active_fence is not None:
             continue
+        is_indented_code_line = line.startswith(("    ", "\t"))
+        if in_indented_code:
+            if is_indented_code_line or not line.strip():
+                continue
+            in_indented_code = False
+        if is_indented_code_line and previous_non_fence_blank:
+            in_indented_code = True
+            continue
         lines.append(line)
+        previous_non_fence_blank = not line.strip()
     return "\n".join(lines)
 
 
