@@ -30,7 +30,27 @@ These planning anchors drive phase order and acceptance criteria:
 
 ## Roadmap Sequence
 
-### 1. Fact-Path Stabilization Before Deeper Trust Work
+### 1. Oracle Boundary Completion
+
+Finish the remaining dev-only oracle support needed for comparison,
+regression, and filing-close validation.
+
+Scope:
+
+- complete boundary models for the supported CoinTracking oracle artifact
+  families
+- complete deterministic readers and comparison-ready artifact contracts under
+  the dev-only oracle tooling surface
+- finish oracle comparison coverage needed for filing-close validation
+
+Exit criteria:
+
+- supported oracle files parse deterministically
+- oracle comparison workflows are complete enough to support later filing-close
+  validation
+- oracle support remains outside the production runtime surface
+
+### 2. Fact-Path Stabilization Before Deeper Trust Work
 
 Finish the remaining fact-path follow-through required before broad
 reconciliation, accounting, and tax work expands.
@@ -38,28 +58,22 @@ reconciliation, accounting, and tax work expands.
 Scope:
 
 - keep direct fact artifacts as the only canonical runtime model
-- preserve fail-fast `schema_version` handling with regeneration from raw
-  evidence as the recovery path after fact-shape breaks
 - finish adapter parity and projection parity coverage on the current fact
   model
-- keep identifier resolution blocking when a fact cannot resolve safely to one
-  `InstrumentId`
 - keep review and issue outputs explicit for ambiguous direction, precision, or
   classification decisions
 - continue tightening overlap heuristics, duplicate detection, and file-family
   signatures where capture ownership is still ambiguous
-- keep source-relative evidence references portable across workspaces
 
 Exit criteria:
 
 - supported adapters emit canonical facts without normalized-transaction-era
   wrapper lanes
-- fact readers reject unexpected schema versions deterministically
 - CoinTracking CSV projection remains correct from facts alone
 - remaining normalization ambiguity paths emit explicit reviews or blocking
   issues instead of silent coercion
 
-### 2. Reconciliation
+### 3. Reconciliation
 
 Build deterministic reconciliation on top of transaction facts and source-backed
 balance evidence.
@@ -82,7 +96,7 @@ Exit criteria:
   stopgaps
 - material reconciliation issues surface explicitly and reproducibly
 
-### 3. Checkpoint Packages And Opening State
+### 4. Checkpoint Packages And Opening State
 
 Formalize typed checkpoint packages as the handoff between reconstruction,
 reconciliation, accounting, and tax.
@@ -103,7 +117,7 @@ Exit criteria:
   memory
 - checkpoint continuity reports exist as first-class artifacts
 
-### 4. Accounting Validation
+### 5. Accounting Validation
 
 Advance accounting in parallel once reconciliation contracts are stable enough
 to support journal projection.
@@ -122,7 +136,7 @@ Exit criteria:
 - Ledger CLI parse and balance validation passes for supported activity
 - accounting outputs can be checked against checkpoint balances
 
-### 5. Canadian Tax Policy
+### 6. Canadian Tax Policy
 
 Implement the first tax policy only after reconciliation establishes a trusted
 fact history and checkpoint basis.
@@ -143,7 +157,7 @@ Exit criteria:
 - year-end and carry-forward state is reproducible without tracker tax reports
 - unresolved unsupported tax items are visible rather than hidden in notes
 
-### 6. Filing Workflow
+### 7. Filing Workflow
 
 Assemble the full filing-capable workflow after reconciliation, checkpoints,
 accounting, and tax each have a working typed slice.
@@ -163,7 +177,46 @@ Exit criteria:
 - no unresolved material reconciliation issues remain
 - no unresolved material unsupported tax items remain
 
-### 7. Post-Core Runtime Expansion
+### 8. Transition Retirement And Parity Closeout
+
+Retire or demote the remaining normalized-transaction-era transition surfaces
+after the filing-critical path is stable.
+
+Scope:
+
+- remove remaining normalized-transaction-first assumptions from active runtime
+  workflows
+- keep parity coverage in place until older transition surfaces are retired
+- keep CoinTracking output available as an ordinary output adapter after the
+  transition path is removed
+
+Exit criteria:
+
+- reconciliation, accounting, and tax all consume fact-native workflows
+- no active runtime slice still depends on normalized-transaction-era
+  assumptions
+- new behavior lands on fact-based services first
+
+### 9. Public Repo And Agent Hardening
+
+Finish the post-filing documentation and repository hardening needed for a
+public, agent-usable codebase.
+
+Scope:
+
+- sanitize and maintain publishable fixtures
+- keep provenance and reuse documentation clear
+- keep the docs set navigable by ownership and concern
+- keep public-facing scope descriptions aligned with the implemented runtime
+
+Exit criteria:
+
+- repo-safe fixtures and documentation are maintained without private workflow
+  assumptions
+- a new contributor or coding agent can find the correct roadmap, state,
+  architecture, operations, and workspace docs without broad context loading
+
+### 10. Post-Core Runtime Expansion
 
 Only after the filing-critical path is stable should the repo expand runtime
 surfaces and storage choices.
@@ -184,13 +237,6 @@ These workstreams continue across the major phases above.
 ### Oracle Lane
 
 - keep CoinTracking report readers and comparison tooling under `tools/oracles/`
-- support the required CoinTracking oracle families:
-  - `Trade Table`
-  - `Trade List`
-  - `Double-entry`
-  - `Roll Forward in CAD`
-  - `Realized Gain or Loss in CAD`
-  - `Average Purchase Price`
 - use oracle artifacts for regression, black-box comparison, and historical
   review only
 - never let oracle files become hidden production dependencies
@@ -255,8 +301,7 @@ The system is filing-ready only when all of these are true:
 
 ### Provider-Backed AI Runtime
 
-- add provider-backed `ModelGateway` implementations for OpenAI and
-  OAuth-based providers
+- add provider-backed AI integrations for supported providers
 - persist prompts, review findings, and evidence references in a structured
   audit trail
 - keep model providers read-only with respect to ledger mutation
