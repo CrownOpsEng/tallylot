@@ -28,8 +28,6 @@ uv run python -m tools.oracles.cli baseline validate \
 
 ## Verification Exports After Any Repair Or Import
 
-Use this report set for rounds that verify through CoinTracking.
-
 Always save to `working/verification/<round_id>/`:
 
 - Validate Transactions

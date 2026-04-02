@@ -11,9 +11,6 @@ evidence, normalization, staging, verification, and review artifacts in the
 external workspace, while manual import and verification steps still
 remain part of the current round-close process.
 
-CoinTracking names in this runbook refer to the current adapter and oracle
-workflow only.
-
 ## Working Principles
 
 - The current operator workflow still includes manual repair and import

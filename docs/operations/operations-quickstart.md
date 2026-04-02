@@ -78,8 +78,7 @@ supporting detail.
    - `normalization_reviews.csv`
    - `normalization_summary.json`
 
-3. Render a CoinTracking candidate when the round uses the CoinTracking screen
-   and stage path:
+3. Render the current candidate file when needed:
 
    ```bash
    uv run tallylot output render file \

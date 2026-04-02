@@ -2,8 +2,6 @@
 
 ## Baseline repair round checklist
 
-Use the named report exports below when the round verifies through CoinTracking.
-
 - [ ] Run `uv run python -m tools.oracles.cli round scaffold` for the round
 - [ ] Review `analysis/reconciliation/baseline_cad_flow_by_type.csv` and current status of `FIAT-001`
 - [ ] Review open P1 items in `analysis/issues/issue_log.csv`
@@ -25,15 +23,13 @@ Use the named report exports below when the round verifies through CoinTracking.
 
 ## Source import round checklist
 
-Use the named report exports below when the round verifies through CoinTracking.
-
 - [ ] Confirm the source has a row in `analysis/issues/source_inventory.csv`
 - [ ] Confirm the export window starts strictly after `2023-08-05 08:34:04`
 - [ ] Save raw source files to `evidence/raw/source/<source>/<capture_id>/`
 - [ ] Generate or refresh `evidence/raw/source/<source>/<capture_id>/manifest.csv`
 - [ ] Run `source profile` and review timezone artifacts
 - [ ] Run `source normalize` and review exception and review artifacts
-- [ ] Render `cointracking_candidate.csv` when the round uses the CoinTracking screen and stage path
+- [ ] Render `cointracking_candidate.csv` when needed
 - [ ] Run `uv run python -m tools.oracles.cli batch screen` on the candidate CSV and review the output
 - [ ] Run `uv run python -m tools.oracles.cli batch stage` only after the screen passes
 - [ ] Run `uv run python -m tools.oracles.cli round scaffold`
