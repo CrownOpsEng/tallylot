@@ -28,39 +28,29 @@ class BaselineRowModel(BaseModel):
     def _normalize_fields(cls, value: object, info: ValidationInfo) -> object:
         field_name = info.field_name or ""
         if field_name in cls._timestamp_fields:
-            text = "" if value is None else str(value).strip()
-            if field_name in cls._required_timestamp_fields and not text:
-                raise ValueError(f"{field_name} must not be blank")
-            if text:
-                parse_timestamp(text)
-            return text
+            return _normalize_timestamp_field(
+                field_name,
+                value,
+                cls._required_timestamp_fields,
+            )
         if field_name in cls._text_fields:
-            text = "" if value is None else str(value).strip()
-            if field_name in cls._required_text_fields and not text:
-                raise ValueError(f"{field_name} must not be blank")
-            return text
+            return _normalize_text_field(
+                field_name,
+                value,
+                cls._required_text_fields,
+            )
         if field_name in cls._decimal_fields:
-            if value is None:
-                if field_name in cls._required_decimal_fields:
-                    raise ValueError(f"{field_name} must not be blank")
-                return Decimal("0")
-            if isinstance(value, Decimal):
-                return value
-            text = str(value).strip()
-            if field_name in cls._required_decimal_fields and not text:
-                raise ValueError(f"{field_name} must not be blank")
-            return Decimal("0") if not text else Decimal(text)
+            return _normalize_decimal_field(
+                field_name,
+                value,
+                cls._required_decimal_fields,
+            )
         if field_name in cls._integer_fields:
-            text = "" if value is None else str(value).strip()
-            if field_name in cls._required_positive_integer_fields and not text:
-                raise ValueError(f"{field_name} must not be blank")
-            integer_value = 0 if not text else int(text)
-            if (
-                field_name in cls._required_positive_integer_fields
-                and integer_value <= 0
-            ):
-                raise ValueError(f"{field_name} must be positive")
-            return integer_value
+            return _normalize_integer_field(
+                field_name,
+                value,
+                cls._required_positive_integer_fields,
+            )
         return value
 
     def to_row(self) -> dict[str, str]:
@@ -199,3 +189,58 @@ def _row_text(value: object) -> str:
     if isinstance(value, datetime):
         return format_timestamp(value)
     return "" if value is None else str(value)
+
+
+def _normalize_timestamp_field(
+    field_name: str,
+    value: object,
+    required_fields: tuple[str, ...],
+) -> str:
+    text = "" if value is None else str(value).strip()
+    if field_name in required_fields and not text:
+        raise ValueError(f"{field_name} must not be blank")
+    if text:
+        parse_timestamp(text)
+    return text
+
+
+def _normalize_text_field(
+    field_name: str,
+    value: object,
+    required_fields: tuple[str, ...],
+) -> str:
+    text = "" if value is None else str(value).strip()
+    if field_name in required_fields and not text:
+        raise ValueError(f"{field_name} must not be blank")
+    return text
+
+
+def _normalize_decimal_field(
+    field_name: str,
+    value: object,
+    required_fields: tuple[str, ...],
+) -> Decimal:
+    if value is None:
+        if field_name in required_fields:
+            raise ValueError(f"{field_name} must not be blank")
+        return Decimal("0")
+    if isinstance(value, Decimal):
+        return value
+    text = str(value).strip()
+    if field_name in required_fields and not text:
+        raise ValueError(f"{field_name} must not be blank")
+    return Decimal("0") if not text else Decimal(text)
+
+
+def _normalize_integer_field(
+    field_name: str,
+    value: object,
+    required_positive_fields: tuple[str, ...],
+) -> int:
+    text = "" if value is None else str(value).strip()
+    if field_name in required_positive_fields and not text:
+        raise ValueError(f"{field_name} must not be blank")
+    integer_value = 0 if not text else int(text)
+    if field_name in required_positive_fields and integer_value <= 0:
+        raise ValueError(f"{field_name} must be positive")
+    return integer_value
