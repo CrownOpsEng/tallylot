@@ -76,7 +76,7 @@ uv run pre-commit run --all-files
 uv run ruff check .
 uv run mypy
 uv run pyright
-uv run pylint src tests
+uv run pylint src tests tools
 uv run pytest
 ```
 

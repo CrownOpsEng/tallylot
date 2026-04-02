@@ -32,10 +32,7 @@ class NormalizationService:
         self._profile_service.write_profile_artifacts(profile, request.output_dir)
         adapter = self._registry.source_adapter(str(profile.adapter_id))
         if not profile.supported:
-            raise ValueError(
-                f"source adapter {profile.adapter_id} "
-                "is not supported for normalization in this phase"
-            )
+            raise ValueError(f"source adapter {profile.adapter_id} is not supported for normalization in this phase")
         result = adapter.normalize(profile, request.raw_dir)
         self._storage.write_canonical_events(
             request.output_dir / "canonical_events.csv",
@@ -104,11 +101,7 @@ class NormalizationService:
                     }
                 ),
                 "messages": sorted(
-                    {
-                        review.message
-                        for review in reviews
-                        if review.scope == scope and review.kind == kind
-                    }
+                    {review.message for review in reviews if review.scope == scope and review.kind == kind}
                 ),
             }
             for (scope, kind), count in sorted(counts.items())

@@ -78,9 +78,7 @@ def test_profile_service_rejects_missing_source_directories(tmp_path: Path) -> N
 def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
-    registry = FakeSourceRegistry(
-        source_adapters=(MatchingSourceAdapter("unsupported", supported=False),)
-    )
+    registry = FakeSourceRegistry(source_adapters=(MatchingSourceAdapter("unsupported", supported=False),))
     artifacts = FilesystemArtifactStore()
     profile_service = ProfileService(registry, artifacts)
     service = NormalizationService(registry, profile_service, FilesystemStorage(), artifacts)
@@ -118,9 +116,7 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
     )
     output_dir = tmp_path / "normalized"
 
-    response = service.execute(
-        NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir)
-    )
+    response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
 
     assert response.event_count == 1
     assert response.issue_count == 1
@@ -159,9 +155,7 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
     )
     output_dir = tmp_path / "normalized"
 
-    response = service.execute(
-        NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir)
-    )
+    response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
 
     assert response.event_count == 0
     assert response.issue_count == 2
@@ -171,7 +165,7 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
 
     assert [row["kind"] for row in exception_rows] == ["zero_amount", "no_valid_rows"]
-    assert review_rows == []
+    assert not review_rows
 
 
 def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Path) -> None:
@@ -195,9 +189,7 @@ def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Pat
     )
     output_dir = tmp_path / "normalized"
 
-    response = service.execute(
-        NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir)
-    )
+    response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
 
     assert response.event_count == 1
     assert response.issue_count == 0
@@ -283,9 +275,7 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
     )
     output_dir = tmp_path / "normalized"
 
-    response = service.execute(
-        NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir)
-    )
+    response = service.execute(NormalizeRequest(source="fixture_source", raw_dir=raw_dir, output_dir=output_dir))
 
     assert response.event_count == 0
     assert response.issue_count == 2
@@ -298,4 +288,4 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
         "conflicting_amount_sign",
         "no_valid_rows",
     ]
-    assert review_rows == []
+    assert not review_rows

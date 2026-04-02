@@ -42,7 +42,7 @@ addopts = [
     "--cov-report=term-missing",
     "-ra",
 ]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 markers = [
     "e2e: end-to-end CLI and service coverage.",
@@ -73,8 +73,8 @@ warn_unused_ignores = true
 warn_unreachable = true
 show_error_codes = true
 pretty = true
-files = ["src", "tests"]
-mypy_path = ["src"]
+files = ["src", "tests", "tools"]
+mypy_path = ["src", "."]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
@@ -91,7 +91,7 @@ select = ["E", "F", "I", "B", "UP", "N", "C4", "DTZ", "PIE", "RET", "RUF", "SIM"
 [tool.pylint.main]
 py-version = "3.12"
 ignore = [".venv", "__pycache__", ".git"]
-source-roots = ["src"]
+source-roots = ["src", "."]
 
 [tool.pylint.messages_control]
 disable = [

@@ -8,16 +8,13 @@ from typing import Any, Protocol
 
 
 class ArtifactStorePort(Protocol):
-    def read_rows(self, path: Path) -> list[dict[str, str]]:
-        ...
+    def read_rows(self, path: Path) -> list[dict[str, str]]: ...
 
     def write_rows(
         self,
         path: Path,
         header: tuple[str, ...],
         rows: Iterable[dict[str, str]],
-    ) -> None:
-        ...
+    ) -> None: ...
 
-    def write_json(self, path: Path, payload: Any) -> None:
-        ...
+    def write_json(self, path: Path, payload: Any) -> None: ...

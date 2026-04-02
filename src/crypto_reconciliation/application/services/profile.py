@@ -93,10 +93,7 @@ class ProfileService:
         inventory: tuple[FileInventoryEntry, ...],
     ) -> SourceAdapter:
         ranked = sorted(
-            (
-                (adapter.match(source, raw_dir, inventory), adapter)
-                for adapter in self._registry.source_adapters
-            ),
+            ((adapter.match(source, raw_dir, inventory), adapter) for adapter in self._registry.source_adapters),
             key=lambda item: item[0],
             reverse=True,
         )
@@ -108,9 +105,7 @@ class ProfileService:
         tied = [candidate for candidate_score, candidate in ranked if candidate_score == score]
         if len(tied) > 1:
             tied_ids = ", ".join(sorted(str(candidate.manifest.adapter_id) for candidate in tied))
-            raise ValueError(
-                f"ambiguous source adapter match for {source!r} at {raw_dir}: {tied_ids}"
-            )
+            raise ValueError(f"ambiguous source adapter match for {source!r} at {raw_dir}: {tied_ids}")
         return adapter
 
     def _manifest_fingerprint(self, inventory: list[FileInventoryEntry]) -> str:

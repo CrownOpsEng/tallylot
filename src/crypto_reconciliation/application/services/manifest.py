@@ -16,9 +16,7 @@ class ManifestService:
 
     def execute(self, request: ManifestRequest) -> ManifestResponse:
         rows: list[dict[str, str]] = []
-        for path in sorted(
-            candidate for candidate in request.source_dir.rglob("*") if candidate.is_file()
-        ):
+        for path in sorted(candidate for candidate in request.source_dir.rglob("*") if candidate.is_file()):
             rows.append(
                 {
                     "filename": str(path.relative_to(request.source_dir)),

@@ -21,12 +21,8 @@ class CoinTrackingRenderService:
         events = load_canonical_events(request.canonical_events_path, self._artifacts)
         adapter = self._registry.output_adapter("cointracking_csv")
         if not adapter.manifest.supported:
-            raise ValueError(
-                f"output adapter {adapter.manifest.adapter_id} is not supported for rendering"
-            )
+            raise ValueError(f"output adapter {adapter.manifest.adapter_id} is not supported for rendering")
         if AdapterCapability.OUTPUT_RENDER not in adapter.manifest.capabilities:
-            raise ValueError(
-                f"output adapter {adapter.manifest.adapter_id} does not declare render capability"
-            )
+            raise ValueError(f"output adapter {adapter.manifest.adapter_id} does not declare render capability")
         artifact = adapter.render(events, request.output_path)
         return RenderCoinTrackingResponse(output_path=artifact.path, row_count=artifact.row_count)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -36,6 +37,23 @@ REQUIRED_HEADER = (
     "account",
     "wallet",
 )
+
+
+@dataclass(frozen=True)
+class ReviewValues:
+    field_name: str = ""
+    original_value: str = ""
+    normalized_value: str = ""
+
+
+EMPTY_REVIEW_VALUES = ReviewValues()
+
+
+@dataclass(frozen=True)
+class ReviewSpec:
+    kind: str
+    message: str
+    values: ReviewValues = EMPTY_REVIEW_VALUES
 
 
 class StructuredCsvSourceAdapter:
@@ -190,7 +208,9 @@ class StructuredCsvSourceAdapter:
             canonical_events=tuple(events),
             canonical_balances=balance_rows,
             issues=tuple(
-                issues if events else [
+                issues
+                if events
+                else [
                     *issues,
                     IssueRecord(
                         issue_id=f"{profile.source}:no_valid_rows",
@@ -200,7 +220,7 @@ class StructuredCsvSourceAdapter:
                         kind="no_valid_rows",
                         message="No valid rows were available for normalization.",
                         raw_file="transactions.csv",
-                    )
+                    ),
                 ]
             ),
             reviews=tuple(reviews),
@@ -314,8 +334,7 @@ class StructuredCsvSourceAdapter:
                     profile,
                     index,
                     "invalid_decimal",
-                    "Unsupported decimal value for "
-                    f"{field_name}: {(row.get(field_name) or '').strip()!r}.",
+                    f"Unsupported decimal value for {field_name}: {(row.get(field_name) or '').strip()!r}.",
                 )
             if parsed_value == Decimal("0"):
                 return self._issue(
@@ -349,13 +368,15 @@ class StructuredCsvSourceAdapter:
             return canonical, self._review(
                 profile,
                 index=index,
-                kind="outbound_amount_sign_canonicalized",
-                message=(
-                    f"{field_name} was negative and was canonicalized to a positive outbound value."
+                spec=ReviewSpec(
+                    kind="outbound_amount_sign_canonicalized",
+                    message=f"{field_name} was negative and was canonicalized to a positive outbound value.",
+                    values=ReviewValues(
+                        field_name=field_name,
+                        original_value=(raw_value or "").strip(),
+                        normalized_value=format_decimal(canonical),
+                    ),
                 ),
-                field_name=field_name,
-                original_value=(raw_value or "").strip(),
-                normalized_value=format_decimal(canonical),
             )
         return value, None
 
@@ -383,36 +404,30 @@ class StructuredCsvSourceAdapter:
         kind: str,
         message: str,
     ) -> NormalizationReviewRecord:
-        return self._review(profile, index=None, kind=kind, message=message)
+        return self._review(profile, index=None, spec=ReviewSpec(kind=kind, message=message))
 
     def _review(
         self,
         profile: SourceProfile,
         *,
         index: int | None,
-        kind: str,
-        message: str,
-        field_name: str = "",
-        original_value: str = "",
-        normalized_value: str = "",
+        spec: ReviewSpec,
     ) -> NormalizationReviewRecord:
         review_id = (
-            f"{profile.source}:{index}:{kind}"
-            if index is not None
-            else f"{profile.source}:dataset:{kind}"
+            f"{profile.source}:{index}:{spec.kind}" if index is not None else f"{profile.source}:dataset:{spec.kind}"
         )
         return NormalizationReviewRecord(
             review_id=review_id,
             source=str(profile.source),
             adapter_id=str(self.manifest.adapter_id),
             scope="row" if index is not None else "dataset",
-            kind=kind,
-            message=message,
+            kind=spec.kind,
+            message=spec.message,
             raw_file="transactions.csv",
             raw_row_ref="" if index is None else str(index),
-            field_name=field_name,
-            original_value=original_value,
-            normalized_value=normalized_value,
+            field_name=spec.values.field_name,
+            original_value=spec.values.original_value,
+            normalized_value=spec.values.normalized_value,
         )
 
 

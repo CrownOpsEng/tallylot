@@ -78,10 +78,7 @@ def _iter_adapter_package_modules(package_name: str) -> tuple[ModuleType, ...]:
 
 def _is_ignored_discovery_name(module_name: str) -> bool:
     parts = module_name.split(".")
-    return any(
-        part in IGNORED_DISCOVERY_PARTS or part.startswith(("test_", "_"))
-        for part in parts
-    )
+    return any(part in IGNORED_DISCOVERY_PARTS or part.startswith(("test_", "_")) for part in parts)
 
 
 def _collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
@@ -121,14 +118,9 @@ def _validated_manifest(raw_manifest: AdapterManifest) -> AdapterManifest:
 def _validate_source_adapter_contract(adapter: object, module: ModuleType) -> SourceAdapter:
     manifest = _validated_manifest(_manifest_from_adapter(adapter, module))
     if AdapterCapability.NORMALIZE not in manifest.capabilities:
-        raise ValueError(
-            f"{module.__name__} adapter {manifest.adapter_id} must declare normalize capability"
-        )
+        raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} must declare normalize capability")
     if AdapterCapability.OUTPUT_RENDER in manifest.capabilities:
-        raise ValueError(
-            f"{module.__name__} adapter {manifest.adapter_id} "
-            "cannot declare output render capability"
-        )
+        raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} cannot declare output render capability")
     if not _has_callable(adapter, "match") or not _has_callable(adapter, "normalize"):
         raise TypeError(f"{module.__name__} ADAPTER does not implement the source adapter contract")
     return cast(SourceAdapter, adapter)
@@ -137,17 +129,13 @@ def _validate_source_adapter_contract(adapter: object, module: ModuleType) -> So
 def _validate_output_adapter_contract(adapter: object, module: ModuleType) -> OutputAdapter:
     manifest = _validated_manifest(_manifest_from_adapter(adapter, module))
     if AdapterCapability.OUTPUT_RENDER not in manifest.capabilities:
-        raise ValueError(
-            f"{module.__name__} adapter {manifest.adapter_id} must declare output render capability"
-        )
+        raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} must declare output render capability")
     forbidden_capabilities = {
         AdapterCapability.NORMALIZE,
         AdapterCapability.WALLET_INVENTORY,
     }
     if manifest.capabilities.intersection(forbidden_capabilities):
-        raise ValueError(
-            f"{module.__name__} adapter {manifest.adapter_id} declares source-only capabilities"
-        )
+        raise ValueError(f"{module.__name__} adapter {manifest.adapter_id} declares source-only capabilities")
     if not _has_callable(adapter, "render"):
         raise TypeError(f"{module.__name__} ADAPTER does not implement the output adapter contract")
     return cast(OutputAdapter, adapter)

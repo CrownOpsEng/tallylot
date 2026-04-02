@@ -21,5 +21,4 @@ class ReviewResponse:
 
 
 class ModelGateway(Protocol):
-    def review(self, request: ReviewRequest) -> ReviewResponse:
-        ...
+    def review(self, request: ReviewRequest) -> ReviewResponse: ...

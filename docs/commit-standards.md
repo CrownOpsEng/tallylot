@@ -3,6 +3,9 @@
 Use Conventional Commits for all authored commits. Keep commit history small,
 cohesive, and checkpoint-oriented.
 
+Auto-generated merge commits are tolerated by the validator, but authored
+commits should use the Conventional Commit format.
+
 ## Subject Format
 
 Use this format for the first line:
@@ -96,4 +99,11 @@ Install the repo hooks and commit template in each clone:
 ```bash
 git config --local commit.template .gitmessage.txt
 uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
+```
+
+Validate messages directly when needed:
+
+```bash
+uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
 ```

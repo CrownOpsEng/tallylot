@@ -136,9 +136,7 @@ def source_normalize(
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
     _, normalization_service, _ = _services()
-    response = normalization_service.execute(
-        NormalizeRequest(source=source, raw_dir=raw_dir, output_dir=output_dir)
-    )
+    response = normalization_service.execute(NormalizeRequest(source=source, raw_dir=raw_dir, output_dir=output_dir))
     typer.echo(json.dumps(response.__dict__, default=str))
 
 

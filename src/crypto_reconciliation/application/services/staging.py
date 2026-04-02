@@ -20,19 +20,11 @@ class BatchStagingService:
         baseline_rows = self._artifacts.read_rows(baseline_trade_table)
         candidate_rows = self._artifacts.read_rows(request.candidate_path)
 
-        baseline_cutoff = max(
-            parse_timestamp(row["Date"])
-            for row in baseline_rows
-            if row.get("Date")
-        )
+        baseline_cutoff = max(parse_timestamp(row["Date"]) for row in baseline_rows if row.get("Date"))
         baseline_tx_ids = {row.get("Tx-ID", "") for row in baseline_rows if row.get("Tx-ID")}
-        duplicate_count = sum(
-            1 for row in candidate_rows if row.get("Tx-ID", "") in baseline_tx_ids
-        )
+        duplicate_count = sum(1 for row in candidate_rows if row.get("Tx-ID", "") in baseline_tx_ids)
         has_time_overlap = any(
-            parse_timestamp(row["Date"]) <= baseline_cutoff
-            for row in candidate_rows
-            if row.get("Date")
+            parse_timestamp(row["Date"]) <= baseline_cutoff for row in candidate_rows if row.get("Date")
         )
         staged = duplicate_count == 0 and not has_time_overlap
         if staged:
