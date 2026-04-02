@@ -4,176 +4,20 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
-from datetime import datetime
-from decimal import Decimal
 from pathlib import Path
-from typing import ClassVar
-
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
-
-from tallylot.domain.value_objects import format_timestamp, parse_timestamp
 from tallylot.ports.artifacts import ArtifactStorePort
+from .row_models import (
+    BalanceByExchangeRowModel,
+    BaselineRowModel,
+    CurrentBalanceRowModel,
+    DuplicateTransactionsRowModel,
+    MissingTransactionsRowModel,
+    TradeTableRowModel,
+    ValidateTransactionsRowModel,
+)
 
 
-class _BaselineRowModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    _text_fields: ClassVar[tuple[str, ...]] = ()
-    _decimal_fields: ClassVar[tuple[str, ...]] = ()
-    _integer_fields: ClassVar[tuple[str, ...]] = ()
-    _timestamp_fields: ClassVar[tuple[str, ...]] = ()
-    _required_text_fields: ClassVar[tuple[str, ...]] = ()
-
-    @field_validator("*", mode="before")
-    @classmethod
-    def _normalize_fields(cls, value: object, info: ValidationInfo) -> object:
-        field_name = info.field_name or ""
-        if field_name in cls._timestamp_fields:
-            text = "" if value is None else str(value).strip()
-            if text:
-                parse_timestamp(text)
-            return text
-        if field_name in cls._text_fields:
-            text = "" if value is None else str(value).strip()
-            if field_name in cls._required_text_fields and not text:
-                raise ValueError(f"{field_name} must not be blank")
-            return text
-        if field_name in cls._decimal_fields:
-            if value is None:
-                return Decimal("0")
-            if isinstance(value, Decimal):
-                return value
-            text = str(value).strip()
-            return Decimal("0") if not text else Decimal(text)
-        if field_name in cls._integer_fields:
-            text = "" if value is None else str(value).strip()
-            return 0 if not text else int(text)
-        return value
-
-    def to_row(self) -> dict[str, str]:
-        return {
-            alias: _row_text(value)
-            for alias, value in self.model_dump(by_alias=True).items()
-        }
-
-
-class TradeTableRowModel(_BaselineRowModel):
-    _text_fields = (
-        "trade_type",
-        "buy_currency",
-        "sell_currency",
-        "fee_currency",
-        "exchange",
-        "group",
-        "comment",
-        "date",
-        "transaction_id",
-    )
-    _decimal_fields = ("buy_amount", "sell_amount", "fee_amount")
-    _timestamp_fields = ("date",)
-    _required_text_fields = ("trade_type", "exchange")
-
-    trade_type: str = Field(alias="Type")
-    buy_amount: Decimal = Field(alias="Buy")
-    buy_currency: str = Field(alias="Cur.")
-    sell_amount: Decimal = Field(alias="Sell")
-    sell_currency: str = Field(alias="Cur..1")
-    fee_amount: Decimal = Field(alias="Fee")
-    fee_currency: str = Field(alias="Cur..2")
-    exchange: str = Field(alias="Exchange")
-    group: str = Field(alias="Group")
-    comment: str = Field(alias="Comment")
-    date: str = Field(alias="Date")
-    transaction_id: str = Field(alias="Tx-ID")
-
-
-class CurrentBalanceRowModel(_BaselineRowModel):
-    _text_fields = ("ticker", "name", "asset_type")
-    _decimal_fields = ("amount", "value_cad")
-    _required_text_fields = ("ticker", "asset_type")
-
-    ticker: str = Field(alias="Ticker")
-    name: str = Field(alias="Name")
-    asset_type: str = Field(alias="Type")
-    amount: Decimal = Field(alias="Amount")
-    value_cad: Decimal = Field(alias="Value in CAD")
-
-
-class BalanceByExchangeRowModel(_BaselineRowModel):
-    _text_fields = ("currency", "exchange")
-    _decimal_fields = ("amount", "current_value_cad", "current_value_btc")
-    _required_text_fields = ("currency", "exchange")
-
-    amount: Decimal = Field(alias="Amount")
-    currency: str = Field(alias="Currency")
-    current_value_cad: Decimal = Field(alias="Current value in CAD")
-    current_value_btc: Decimal = Field(alias="Current value in BTC")
-    exchange: str = Field(alias="Exchange")
-
-
-class ValidateTransactionsRowModel(_BaselineRowModel):
-    _text_fields = ("issue",)
-
-    issue: str = Field(alias="Issue")
-
-
-class MissingTransactionsRowModel(_BaselineRowModel):
-    _text_fields = (
-        "missing_type",
-        "currency",
-        "fee_currency",
-        "exchange",
-        "trade_group",
-        "comment",
-        "trade_id",
-        "date",
-        "match",
-    )
-    _decimal_fields = ("amount", "fee_amount", "value_cad")
-    _timestamp_fields = ("date",)
-    _required_text_fields = ("missing_type", "exchange")
-
-    missing_type: str = Field(alias="Type")
-    amount: Decimal = Field(alias="Amount")
-    currency: str = Field(alias="Cur.")
-    fee_amount: Decimal = Field(alias="Fee")
-    fee_currency: str = Field(alias="Fee Cur.")
-    value_cad: Decimal = Field(alias="Value in CAD")
-    exchange: str = Field(alias="Exchange")
-    trade_group: str = Field(alias="Trade Group")
-    comment: str = Field(alias="Comment")
-    trade_id: str = Field(alias="Trade ID")
-    date: str = Field(alias="Date")
-    match: str = Field(alias="Match")
-
-
-class DuplicateTransactionsRowModel(_BaselineRowModel):
-    _text_fields = (
-        "duplicate_type",
-        "exchange",
-        "exchange_id",
-        "buy",
-        "sell",
-        "trade_group",
-        "transaction_id",
-        "transaction_date",
-    )
-    _integer_fields = ("duplicate_count",)
-    _timestamp_fields = ("transaction_date",)
-    _required_text_fields = ("duplicate_type", "exchange")
-
-    duplicate_count: int = Field(alias="# of duplicates")
-    duplicate_type: str = Field(alias="Type")
-    exchange: str = Field(alias="Exchange")
-    exchange_id: str = Field(alias="Exchange ID")
-    buy: str = Field(alias="Buy")
-    sell: str = Field(alias="Sell")
-    trade_group: str = Field(alias="Trade Group")
-    transaction_id: str = Field(alias="Tx ID")
-    transaction_date: str = Field(alias="Tx Date")
-
-
-_BASELINE_ROW_MODELS: dict[str, type[_BaselineRowModel]] = {
+_BASELINE_ROW_MODELS: dict[str, type[BaselineRowModel]] = {
     "Trade Table": TradeTableRowModel,
     "Current Balance": CurrentBalanceRowModel,
     "Balance by Exchange": BalanceByExchangeRowModel,
@@ -241,11 +85,3 @@ def _normalize_blank_header(row: dict[str, str]) -> dict[str, str]:
     if unnamed_value:
         return row
     return {key: value for key, value in row.items() if key}
-
-
-def _row_text(value: object) -> str:
-    if isinstance(value, Decimal):
-        return format(value, "f")
-    if isinstance(value, datetime):
-        return format_timestamp(value)
-    return "" if value is None else str(value)
