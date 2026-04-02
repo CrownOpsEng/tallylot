@@ -4,11 +4,11 @@ This file is the forward planning document for the repo.
 
 - Completed work belongs in [CHANGELOG.md](CHANGELOG.md).
 - The currently implemented runtime surface belongs in
-  [`docs/operations/project-state.md`](docs/operations/project-state.md).
+  [`docs/status/current-state.md`](docs/status/current-state.md).
 - Architectural decisions, schema contracts, and migration rules belong in the
   architecture docs, especially:
   - [`docs/architecture/reconciliation-tax-implementation-plan.md`](docs/architecture/reconciliation-tax-implementation-plan.md)
-  - [`docs/architecture/implementation-migration-sequence.md`](docs/architecture/implementation-migration-sequence.md)
+  - [`docs/status/migration-sequence.md`](docs/status/migration-sequence.md)
   - [`docs/architecture/oracle-and-input-boundaries.md`](docs/architecture/oracle-and-input-boundaries.md)
   - [`docs/architecture/transaction-classification-matrix.md`](docs/architecture/transaction-classification-matrix.md)
 
@@ -322,4 +322,4 @@ of the following together:
 
 - `ROADMAP.md`
 - `docs/architecture/reconciliation-tax-implementation-plan.md`
-- `docs/architecture/implementation-migration-sequence.md`
+- `docs/status/migration-sequence.md`

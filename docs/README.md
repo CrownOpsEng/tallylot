@@ -18,7 +18,7 @@ Naming convention:
 - Remaining planned work: [../ROADMAP.md](../ROADMAP.md)
 - Completed milestones: [../CHANGELOG.md](../CHANGELOG.md)
 - Current implemented runtime surface:
-  [operations/project-state.md](operations/project-state.md)
+  [status/current-state.md](status/current-state.md)
 - Coding or architecture work: start with [AGENTS.md](../AGENTS.md), then use
   [architecture/README.md](architecture/README.md)
 - Manual or operator workflow: use
@@ -49,9 +49,9 @@ Naming convention:
 
 - [`architecture/README.md`](architecture/README.md): route through the build
   and architecture docs by concern
-- [`architecture/engineering-standards.md`](architecture/engineering-standards.md):
+- [`standards/engineering.md`](standards/engineering.md):
   code placement, typing, modularization, and naming
-- [`architecture/implementation-working-agreement.md`](architecture/implementation-working-agreement.md):
+- [`standards/implementation.md`](standards/implementation.md):
   coding-time execution contract for structure, tests, refactors, and commits
 - [`architecture/reconciliation-tax-implementation-plan.md`](architecture/reconciliation-tax-implementation-plan.md):
   implementation anchor for reconciliation, checkpointing, accounting, and tax
@@ -59,18 +59,18 @@ Naming convention:
   platform-agnostic runtime-versus-oracle boundary rules
 - [`architecture/transaction-classification-matrix.md`](architecture/transaction-classification-matrix.md):
   layered classification mapping and support tiers
-- [`architecture/implementation-migration-sequence.md`](architecture/implementation-migration-sequence.md):
+- [`status/migration-sequence.md`](status/migration-sequence.md):
   migration order, dual-write strategy, and retirement gates
 - [`architecture/adapter-authoring.md`](architecture/adapter-authoring.md):
   source and output adapter contracts and conventions
-- [`architecture/commit-standards.md`](architecture/commit-standards.md):
+- [`standards/commits.md`](standards/commits.md):
   commit message format and checkpoint rules
 
 ## Operations And Runbooks
 
 - [`operations/README.md`](operations/README.md): route through runtime,
   runbook, and artifact-contract docs
-- [`operations/project-state.md`](operations/project-state.md): current runtime
+- [`status/current-state.md`](status/current-state.md): current runtime
   and implemented surface
 - [`operations/operations-quickstart.md`](operations/operations-quickstart.md):
   shortest safe path through a normal working session

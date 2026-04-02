@@ -3,8 +3,8 @@
 Use this route before closing any non-trivial coding task.
 
 1. Read:
-   - `docs/architecture/implementation-working-agreement.md`
-   - `docs/architecture/commit-standards.md`
+   - `docs/standards/implementation.md`
+   - `docs/standards/commits.md`
 2. Confirm the change still respects:
    - layer ownership
    - provider-neutral core design

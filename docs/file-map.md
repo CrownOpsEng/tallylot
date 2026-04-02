@@ -9,14 +9,14 @@ command, artifact, or agent route.
 | ---- | ---- |
 | plan the remaining work | `ROADMAP.md` |
 | review completed milestones | `CHANGELOG.md` |
-| understand the current implemented surface | `docs/operations/project-state.md` |
+| understand the current implemented surface | `docs/status/current-state.md` |
 | understand doc ownership and routing | `docs/README.md` |
-| make a code or architecture change | `docs/architecture/engineering-standards.md` |
-| follow repo coding discipline while implementing | `docs/architecture/implementation-working-agreement.md` |
+| make a code or architecture change | `docs/standards/engineering.md` |
+| follow repo coding discipline while implementing | `docs/standards/implementation.md` |
 | work on reconciliation, checkpoints, journaling, or tax | `docs/architecture/reconciliation-tax-implementation-plan.md` |
 | enforce platform-agnostic runtime and oracle boundaries | `docs/architecture/oracle-and-input-boundaries.md` |
 | map transaction semantics and support tiers | `docs/architecture/transaction-classification-matrix.md` |
-| follow the no-big-bang migration order | `docs/architecture/implementation-migration-sequence.md` |
+| follow the no-big-bang migration order | `docs/status/migration-sequence.md` |
 | author or repair a source or output adapter | `docs/architecture/adapter-authoring.md` |
 | follow the short operator workflow | `docs/operations/operations-quickstart.md` |
 | follow the detailed operator workflow | `docs/operations/mop.md` |
@@ -26,7 +26,7 @@ command, artifact, or agent route.
 | review location inventory outputs | `docs/operations/wallet-inventory.md` |
 | review timezone provenance outputs | `docs/operations/timezone-validation.md` |
 | check export and verification hygiene | `docs/operations/export-checklist.md` |
-| check commit format and checkpoint rules | `docs/architecture/commit-standards.md` |
+| check commit format and checkpoint rules | `docs/standards/commits.md` |
 | load a compact repo-specific agent prompt | `docs/operations/ai-session-prompt.md` |
 | inspect supported historical oracle artifact families | `docs/reference/cointracking-oracle-artifacts.md` |
 

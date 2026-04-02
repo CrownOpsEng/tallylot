@@ -7,8 +7,8 @@ reconciliation, checkpoint, accounting, and tax buildout.
 2. Read these when the task touches boundaries or sequencing:
    - `docs/architecture/oracle-and-input-boundaries.md`
    - `docs/architecture/transaction-classification-matrix.md`
-   - `docs/architecture/implementation-migration-sequence.md`
-   - `docs/architecture/implementation-working-agreement.md`
+   - `docs/status/migration-sequence.md`
+   - `docs/standards/implementation.md`
 3. Confirm whether the task changes:
    - transaction facts
    - reconciliation rules

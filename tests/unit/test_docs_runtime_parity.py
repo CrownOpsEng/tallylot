@@ -14,11 +14,6 @@ from tallylot.interfaces.cli import app
 from tools.oracles.cli import app as oracle_app
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DOC_PATHS = [
-    REPO_ROOT / "README.md",
-    *sorted((REPO_ROOT / "docs").rglob("*.md")),
-    *sorted((REPO_ROOT / ".claude").rglob("*.md")),
-]
 PRODUCTION_ROUTE_DOC_PATHS = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "docs" / "operations" / "operations-quickstart.md",
@@ -39,7 +34,7 @@ ORACLE_ROUTE_DOC_PATHS = [
 ARCHITECTURE_DOC_PATHS = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "ROADMAP.md",
-    REPO_ROOT / "docs" / "architecture" / "engineering-standards.md",
+    REPO_ROOT / "docs" / "standards" / "engineering.md",
     REPO_ROOT / "docs" / "architecture" / "reconciliation-tax-implementation-plan.md",
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
 ]
@@ -132,15 +127,6 @@ def test_documented_oracle_cli_routes_exist() -> None:
     missing_routes = sorted(documented_routes - registered_routes)
 
     assert not missing_routes, f"documented oracle CLI routes do not exist: {missing_routes}"
-
-
-def test_docs_do_not_reference_removed_legacy_paths() -> None:
-    forbidden = ("06_scripts/", "07_skills/")
-
-    for path in DOC_PATHS:
-        text = path.read_text(encoding="utf-8")
-        for needle in forbidden:
-            assert needle not in text, f"{path} still references {needle}"
 
 
 def test_documented_claude_command_routes_exist() -> None:
@@ -316,7 +302,7 @@ def test_workspace_source_inventory_seed_header_matches_template() -> None:
 
 
 def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
-    text = (REPO_ROOT / "docs" / "architecture" / "commit-standards.md").read_text(encoding="utf-8")
+    text = (REPO_ROOT / "docs" / "standards" / "commits.md").read_text(encoding="utf-8")
 
     assert "Do not describe `mypy` or `pyright` as covering `pylint` findings." in text
     assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>' in text

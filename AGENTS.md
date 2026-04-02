@@ -27,15 +27,15 @@ Do not pre-load every repo doc by default.
 
 | Task | Read |
 | ---- | ---- |
-| Code placement, typing, modularization, naming | `docs/architecture/engineering-standards.md` |
-| Active implementation execution discipline | `docs/architecture/implementation-working-agreement.md`, `docs/architecture/commit-standards.md` |
+| Code placement, typing, modularization, naming | `docs/standards/engineering.md` |
+| Active implementation execution discipline | `docs/standards/implementation.md`, `docs/standards/commits.md` |
 | Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/architecture/reconciliation-tax-implementation-plan.md` |
-| Platform-agnostic boundaries, classification mapping, or migration order | `docs/architecture/oracle-and-input-boundaries.md`, `docs/architecture/transaction-classification-matrix.md`, `docs/architecture/implementation-migration-sequence.md` |
+| Platform-agnostic boundaries, classification mapping, or migration order | `docs/architecture/oracle-and-input-boundaries.md`, `docs/architecture/transaction-classification-matrix.md`, `docs/status/migration-sequence.md` |
 | Source or output adapter work | `docs/architecture/adapter-authoring.md` |
 | External workspace layout and seeded files | `docs/operations/workspace-layout.md` |
 | Operational state, manual workflow, or agent runbooks | `docs/README.md`, then the specific doc it routes you to |
 | Workspace subtree conventions, checklists, or templates | `docs/workspace/README.md` |
-| Commit messages, templates, and checkpoint behavior | `docs/architecture/commit-standards.md` |
+| Commit messages, templates, and checkpoint behavior | `docs/standards/commits.md` |
 | Final pre-close implementation checks | `.claude/commands/implementation-checkpoint.md` |
 
 ## Execution Rules
@@ -117,7 +117,7 @@ Workspace resolution order:
   - request validation
   - discovery-time manifest validation
 - Keep domain models centered on frozen dataclasses, enums, and value objects.
-- Follow `docs/architecture/implementation-working-agreement.md` during coding:
+- Follow `docs/standards/implementation.md` during coding:
   - structure first
   - tests alongside behavior
   - refactor obvious shared seams during the task

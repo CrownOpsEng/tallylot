@@ -1,4 +1,11 @@
-# Implementation Working Agreement
+---
+title: "Implementation Working Agreement"
+summary: "Execution rules for shaping, verifying, refactoring, and checkpointing repo work."
+doc_type: standard
+audience: human
+owner: repo
+status: active
+---
 
 Use this document when actively coding in the repo. It is the execution
 contract for how work should be shaped, verified, refactored, and committed so
@@ -6,10 +13,10 @@ future sessions do not depend on repeated reminders from the user.
 
 This document complements:
 
-- `docs/architecture/engineering-standards.md` for placement and modularity rules
-- `docs/architecture/commit-standards.md` for commit format and checkpoint policy
+- `docs/standards/engineering.md` for placement and modularity rules
+- `docs/standards/commits.md` for commit format and checkpoint policy
 - `docs/architecture/reconciliation-tax-implementation-plan.md` for architecture direction
-- `docs/architecture/implementation-migration-sequence.md` for no-big-bang migration order
+- `docs/status/migration-sequence.md` for no-big-bang migration order
 
 ## Repo-Native Tooling To Use
 
@@ -150,11 +157,14 @@ Expected behavior:
 
 - make a commit when a bounded slice is stable and verified
 - keep commits cohesive and reviewable
+- prefer one commit per coherent reshape slice, not one commit per file
 - do not bundle unrelated fixes
 - do not wait for the user to remind you to commit once the task has reached a
   real checkpoint
+- when a refactor spans structure, routing, tooling, and tests, checkpoint each
+  stable slice that already passes the narrow checks for that slice
 - when opening a PR, use a Conventional Commit title and the structured PR body
-  defined in `docs/architecture/commit-standards.md` because that metadata
+  defined in `docs/standards/commits.md` because that metadata
   becomes the squash commit on `main`
 - before closing a non-trivial task, ensure the commit already exists rather
   than leaving commit creation as follow-up work
@@ -164,6 +174,9 @@ When not to commit:
 - the worktree is inconsistent
 - the tests for the slice are failing
 - the checkpoint would be hard to review or roll back
+
+Do not collapse a broad but separable refactor into one giant commit unless
+the slice truly cannot be reviewed or validated incrementally.
 
 ## Quality Gates
 
@@ -261,7 +274,7 @@ Pause feature work and fix the structure first when:
 
 - a new change would require importing across a forbidden layer boundary
 - a module is becoming a new catch-all
-- a hotspot module called out in `docs/architecture/engineering-standards.md` is about to
+- a hotspot module called out in `docs/standards/engineering.md` is about to
   absorb materially new behavior without first being split
 - a flat directory would end up with more than 2 same-prefix files for one
   capability

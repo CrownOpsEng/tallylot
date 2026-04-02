@@ -1,4 +1,11 @@
-# Project State
+---
+title: "Current State"
+summary: "Implemented runtime capabilities, current operational surface, and deferred areas."
+doc_type: status
+audience: human
+owner: repo
+status: active
+---
 
 ## Current Runtime
 

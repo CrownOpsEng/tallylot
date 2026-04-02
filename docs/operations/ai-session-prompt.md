@@ -19,7 +19,7 @@ Start with these facts:
 7. The only implemented file output adapter today is `cointracking_csv`
 8. CoinTracking tax and accounting reports stay in comparison tooling; they are
    not runtime inputs
-9. Follow `docs/architecture/implementation-working-agreement.md` for execution
+9. Follow `docs/standards/implementation.md` for execution
    discipline
 
 Check these artifacts first:

@@ -10,14 +10,14 @@ decisions.
 
 ## Start Here
 
-1. [`project-state.md`](project-state.md)
+1. [`../status/current-state.md`](../status/current-state.md)
 2. [`operations-quickstart.md`](operations-quickstart.md)
 3. [`mop.md`](mop.md) when the short path is not enough
 
 ## Routing By Concern
 
 - Current implemented runtime surface:
-  [`project-state.md`](project-state.md)
+  [`../status/current-state.md`](../status/current-state.md)
 - Shortest operator session path:
   [`operations-quickstart.md`](operations-quickstart.md)
 - Longer-form operator procedure:

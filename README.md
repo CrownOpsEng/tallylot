@@ -22,7 +22,7 @@ Live evidence and operational artifacts belong in the external workspace.
 - filesystem-backed operational storage
 - external workspace model
 
-Use [docs/operations/project-state.md](docs/operations/project-state.md) for
+Use [docs/status/current-state.md](docs/status/current-state.md) for
 the current implemented runtime surface.
 
 ## Documentation Map
@@ -30,7 +30,7 @@ the current implemented runtime surface.
 - [ROADMAP.md](ROADMAP.md): remaining planned work and sequencing
 - [CHANGELOG.md](CHANGELOG.md): completed mainline milestones
 - [docs/README.md](docs/README.md): docs index and ownership map
-- [docs/operations/project-state.md](docs/operations/project-state.md):
+- [docs/status/current-state.md](docs/status/current-state.md):
   current implemented runtime surface
 - [docs/architecture/README.md](docs/architecture/README.md): architecture and
   implementation rules
@@ -79,9 +79,9 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
 
-Use [docs/architecture/implementation-working-agreement.md](docs/architecture/implementation-working-agreement.md)
+Use [docs/standards/implementation.md](docs/standards/implementation.md)
 for coding-time rules and
-[docs/architecture/commit-standards.md](docs/architecture/commit-standards.md)
+[docs/standards/commits.md](docs/standards/commits.md)
 for commit and PR policy.
 
 ## License

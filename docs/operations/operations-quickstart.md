@@ -6,7 +6,7 @@ supporting detail.
 
 ## Start Of Session
 
-1. Confirm the current runtime surface in `docs/operations/project-state.md`
+1. Confirm the current runtime surface in `docs/status/current-state.md`
    if the repo has changed since the last session.
 2. Confirm the baseline contract in `docs/operations/baseline-validation.md`.
 3. Review `analysis/issues/issue_log.csv` and

@@ -1,4 +1,11 @@
-# Implementation Migration Sequence
+---
+title: "Migration Sequence"
+summary: "Incremental migration order from the legacy normalized flow to the provider-neutral fact model."
+doc_type: status
+audience: human
+owner: repo
+status: active
+---
 
 Use this document to implement the next phase without a big-bang refactor. The
 goal is to move from the current normalized-transaction flow to a

@@ -83,7 +83,7 @@ def test_markdownlint_only_disables_md013() -> None:
 
 def test_module_size_policy_remains_aligned() -> None:
     pylint_text = (REPO_ROOT / ".pylintrc").read_text(encoding="utf-8")
-    standards_text = (REPO_ROOT / "docs/architecture/engineering-standards.md").read_text(encoding="utf-8")
+    standards_text = (REPO_ROOT / "docs/standards/engineering.md").read_text(encoding="utf-8")
 
     assert "max-module-lines = 450" in pylint_text
     assert re.search(r"Refactor before extending beyond 300 lines", standards_text) is not None
