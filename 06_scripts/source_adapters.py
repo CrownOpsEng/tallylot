@@ -19,7 +19,7 @@ from coinbase_common import (
     normalize_coinbase_transactions,
     retail_csv_rows,
 )
-from pdf_balance_extract import binance_balance_rows_from_text
+from pdf_balance_extract import binance_balance_rows_from_text, shakepay_balance_rows_from_text
 from pipeline_common import CANONICAL_BALANCE_HEADERS, CANONICAL_EVENT_HEADERS, EXCEPTION_HEADERS, SourceProfile
 from script_common import (
     decimal_or_zero,
@@ -43,6 +43,10 @@ BINANCE_TRADE_ID_PATTERN = re.compile(r"TradeID\s*-\s*(?P<trade_id>[A-Za-z0-9_-]
 BINANCE_SMALL_ASSET_PATTERN = re.compile(r"^(?P<asset>[A-Z0-9]+)\s+to\s+BNB$", re.IGNORECASE)
 BINANCE_TIME_FORMATS = ("%y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S")
 WEALTHSIMPLE_TIME_FORMATS = ("%Y-%m-%d", "%Y-%m-%d %H:%M:%S")
+LEDGER_LIVE_TIME_FORMATS = ("%Y-%m-%dT%H:%M:%S.%fZ",)
+CRYPTO_COM_TIME_FORMATS = ("%Y-%m-%d %H:%M:%S",)
+SHAKEPAY_TIME_FORMATS = ("%Y-%m-%d %H:%M:%S",)
+NEAR_TIME_FORMATS = ("%Y-%m-%d %H:%M:%S",)
 
 
 @dataclass(frozen=True)
@@ -263,6 +267,61 @@ def sum_changes(rows: Iterable[dict[str, str]]) -> dict[str, Decimal]:
     for row in rows:
         totals[row["Coin"].upper()] += decimal_or_zero(row["Change"])
     return totals
+
+
+def tx_hash_or_event_id(event_id: str, raw_hash: str) -> str:
+    return raw_hash.strip() or event_id
+
+
+def raw_hash_description(prefix: str, raw_hash: str, fallback: str) -> str:
+    hash_text = raw_hash.strip()
+    return f"{prefix} - {hash_text}" if hash_text else fallback
+
+
+def sum_decimal_strings(values: Iterable[str]) -> Decimal:
+    total = Decimal("0")
+    for value in values:
+        total += decimal_or_zero(value)
+    return total
+
+
+def source_staked_label(source: str) -> str:
+    return f"{source} - Staking" if not source.endswith("Staking") else source
+
+
+def build_balance_row(
+    *,
+    source: str,
+    account: str,
+    wallet: str,
+    balance_kind: str,
+    asset: str,
+    quantity: str = "",
+    staked_quantity: str = "",
+    value_amount: str = "",
+    value_currency: str = "",
+    price_amount: str = "",
+    price_currency: str = "",
+    as_of: str = "",
+    pdf_file: str = "",
+    notes: str = "",
+) -> dict[str, str]:
+    return {
+        "source": source,
+        "account": account,
+        "wallet": wallet,
+        "balance_kind": balance_kind,
+        "asset": asset,
+        "quantity": quantity,
+        "staked_quantity": staked_quantity,
+        "value_amount": value_amount,
+        "value_currency": value_currency,
+        "price_amount": price_amount,
+        "price_currency": price_currency,
+        "as_of": as_of,
+        "pdf_file": pdf_file,
+        "notes": notes,
+    }
 
 
 class SourceAdapter:
@@ -1290,31 +1349,769 @@ class BinanceAdapter(SourceAdapter):
         return events, None
 
 
-class MetamaskAdapter(SourceAdapter):
-    name = "metamask"
-    aliases = ("metamask", "bsc metamask wallet", "eth metamask wallet", "metamask - polygon")
+class CryptoComAdapter(SourceAdapter):
+    name = "crypto_com"
+    aliases = ("crypto.com", "crypto com", "cryptocom")
+    supported = True
+
+    def normalize(
+        self,
+        raw_dir: Path,
+        profile: SourceProfile,
+        *,
+        exception_decisions: dict[str, dict[str, str]],
+    ) -> AdapterNormalizationResult:
+        cash_paths = sorted(path for path in raw_dir.glob("cash_transactions*.csv") if path.is_file())
+        crypto_paths = sorted(path for path in raw_dir.glob("crypto_transactions*.csv") if path.is_file())
+        exceptions: list[dict[str, str]] = []
+        if not cash_paths and not crypto_paths:
+            maybe_append_exception(
+                exceptions,
+                exception_decisions,
+                manifest_fingerprint=profile.manifest_fingerprint,
+                source=profile.source,
+                adapter=self.name,
+                event_id="crypto_com:missing_transaction_csvs",
+                raw_file="",
+                raw_row_ref="",
+                exception_kind="missing_required_input",
+                message="Crypto.com cash or crypto transaction CSV exports are required for normalization.",
+            )
+            return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
+
+        events: list[dict[str, str]] = []
+        for path in cash_paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                kind = (row.get("Transaction Kind") or "").strip().lower()
+                if kind != "viban_deposit":
+                    continue
+                timestamp = normalized_timestamp(row["Timestamp (UTC)"], CRYPTO_COM_TIME_FORMATS)
+                raw_row_ref = f"row:{index}"
+                event_id = event_id_for(self.name, path.name, raw_row_ref)
+                events.append(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=path.name,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=timestamp,
+                        event_kind="Deposit",
+                        description=(row.get("Transaction Description") or "Crypto.com cash deposit").strip(),
+                        amount_in=decimal_text(decimal_or_zero(row.get("Amount"))),
+                        asset_in=(row.get("Currency") or "").strip().upper(),
+                        tx_hash=(row.get("Transaction Hash") or "").strip(),
+                        render_notes=kind,
+                    )
+                )
+
+        for path in crypto_paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                kind = (row.get("Transaction Kind") or "").strip().lower()
+                timestamp = normalized_timestamp(row["Timestamp (UTC)"], CRYPTO_COM_TIME_FORMATS)
+                raw_row_ref = f"row:{index}"
+                event_id = event_id_for(self.name, path.name, raw_row_ref)
+                description = (row.get("Transaction Description") or kind or "Crypto.com event").strip()
+                tx_hash = tx_hash_or_event_id(event_id, row.get("Transaction Hash") or "")
+                currency = (row.get("Currency") or "").strip().upper()
+                to_currency = (row.get("To Currency") or "").strip().upper()
+                amount = abs(decimal_or_zero(row.get("Amount")))
+                to_amount = abs(decimal_or_zero(row.get("To Amount")))
+
+                if kind == "viban_purchase" and currency and to_currency:
+                    events.append(
+                        canonical_event(
+                            event_id=event_id,
+                            source=profile.source,
+                            adapter=self.name,
+                            account=profile.source,
+                            wallet=profile.source,
+                            raw_file=path.name,
+                            raw_row_ref=raw_row_ref,
+                            timestamp=timestamp,
+                            event_kind="Trade",
+                            description=f"{currency} -> {to_currency}",
+                            amount_in=decimal_text(to_amount),
+                            asset_in=to_currency,
+                            amount_out=decimal_text(amount),
+                            asset_out=currency,
+                            tx_hash=tx_hash,
+                            render_notes=kind,
+                        )
+                    )
+                    continue
+
+                if kind == "crypto_withdrawal" and currency:
+                    events.append(
+                        canonical_event(
+                            event_id=event_id,
+                            source=profile.source,
+                            adapter=self.name,
+                            account=profile.source,
+                            wallet=profile.source,
+                            raw_file=path.name,
+                            raw_row_ref=raw_row_ref,
+                            timestamp=timestamp,
+                            event_kind="Withdrawal",
+                            description=description,
+                            amount_out=decimal_text(amount),
+                            asset_out=currency,
+                            tx_hash=tx_hash,
+                            render_notes=kind,
+                        )
+                    )
+                    continue
+
+                maybe_append_exception(
+                    exceptions,
+                    exception_decisions,
+                    manifest_fingerprint=profile.manifest_fingerprint,
+                    source=profile.source,
+                    adapter=self.name,
+                    event_id=event_id,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    exception_kind="unsupported_row",
+                    message=f"Unsupported Crypto.com transaction kind: {kind or 'blank'}",
+                )
+
+        return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
+
+
+class EvmExplorerAdapter(SourceAdapter):
+    name = "evm_explorer"
+    aliases = (
+        "evm explorer",
+        "metamask",
+        "bsc metamask wallet",
+        "eth metamask wallet",
+        "eth galagames wallet",
+        "metamask - polygon",
+    )
 
 
 class ShakepayAdapter(SourceAdapter):
     name = "shakepay"
     aliases = ("shakepay",)
+    supported = True
+
+    def normalize(
+        self,
+        raw_dir: Path,
+        profile: SourceProfile,
+        *,
+        exception_decisions: dict[str, dict[str, str]],
+    ) -> AdapterNormalizationResult:
+        cash_paths = sorted(path for path in raw_dir.glob("cash_transactions*.csv") if path.is_file())
+        crypto_paths = sorted(path for path in raw_dir.glob("crypto_transactions*.csv") if path.is_file())
+        pdf_paths = sorted(path for path in raw_dir.glob("shakepay_*Performance report*.pdf") if path.is_file())
+        exceptions: list[dict[str, str]] = []
+        if not cash_paths and not crypto_paths:
+            maybe_append_exception(
+                exceptions,
+                exception_decisions,
+                manifest_fingerprint=profile.manifest_fingerprint,
+                source=profile.source,
+                adapter=self.name,
+                event_id="shakepay:missing_transaction_csvs",
+                raw_file="",
+                raw_row_ref="",
+                exception_kind="missing_required_input",
+                message="Shakepay cash or crypto transaction CSV exports are required for normalization.",
+            )
+            return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
+
+        events: list[dict[str, str]] = []
+        balances: list[dict[str, str]] = []
+        for pdf_path in pdf_paths:
+            balances.extend(shakepay_balance_rows_from_text(extract_pdf_text(pdf_path), pdf_path.name))
+
+        for path in crypto_paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                event = self._crypto_event(path, profile.source, index, row)
+                if event is not None:
+                    events.append(event)
+
+        for path in cash_paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                event = self._cash_event(path, profile.source, index, row)
+                if event is not None:
+                    events.append(event)
+
+        return AdapterNormalizationResult(canonical_events=events, canonical_balances=balances, exceptions=exceptions)
+
+    def _crypto_event(self, path: Path, source: str, index: int, row: dict[str, str]) -> dict[str, str] | None:
+        event_type = (row.get("Type") or "").strip()
+        raw_row_ref = f"row:{index}"
+        event_id = event_id_for(self.name, path.name, raw_row_ref)
+        timestamp = normalized_timestamp(row["Date"], SHAKEPAY_TIME_FORMATS)
+        description = (row.get("Description") or event_type or "Shakepay").strip()
+
+        if event_type == "Reward":
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Reward / Bonus",
+                description=description.lower(),
+                amount_in=decimal_text(abs(decimal_or_zero(row.get("Amount Credited")))),
+                asset_in=(row.get("Asset Credited") or "").strip().upper(),
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+
+        if event_type == "Buy":
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Trade",
+                description=description,
+                amount_in=decimal_text(abs(decimal_or_zero(row.get("Amount Credited")))),
+                asset_in=(row.get("Asset Credited") or "").strip().upper(),
+                amount_out=decimal_text(abs(decimal_or_zero(row.get("Amount Debited")))),
+                asset_out=(row.get("Asset Debited") or "").strip().upper(),
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+
+        if event_type == "Sell":
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Trade",
+                description=description,
+                amount_in=decimal_text(abs(decimal_or_zero(row.get("Amount Credited")))),
+                asset_in=(row.get("Asset Credited") or "").strip().upper(),
+                amount_out=decimal_text(abs(decimal_or_zero(row.get("Amount Debited")))),
+                asset_out=(row.get("Asset Debited") or "").strip().upper(),
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+
+        if event_type == "Receive":
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Deposit",
+                description=description,
+                amount_in=decimal_text(abs(decimal_or_zero(row.get("Amount Credited")))),
+                asset_in=(row.get("Asset Credited") or "").strip().upper(),
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+
+        if event_type == "Send":
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Withdrawal",
+                description=description,
+                amount_out=decimal_text(abs(decimal_or_zero(row.get("Amount Debited")))),
+                asset_out=(row.get("Asset Debited") or "").strip().upper(),
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+        return None
+
+    def _cash_event(self, path: Path, source: str, index: int, row: dict[str, str]) -> dict[str, str] | None:
+        event_type = (row.get("Type") or "").strip()
+        raw_row_ref = f"row:{index}"
+        event_id = event_id_for(self.name, path.name, raw_row_ref)
+        timestamp = normalized_timestamp(row["Date"], SHAKEPAY_TIME_FORMATS)
+        description = (row.get("Description") or event_type or "Shakepay cash").strip()
+        credit = abs(decimal_or_zero(row.get("Credit")))
+        debit = abs(decimal_or_zero(row.get("Debit")))
+
+        if event_type in {"Buy", "Sell"}:
+            return None
+
+        if event_type in {"Interac e-Transfer", "Receive"} and credit > 0:
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Deposit",
+                description=description,
+                amount_in=decimal_text(credit),
+                asset_in="CAD",
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+
+        if event_type in {"Card purchase", "Bill payment", "Other"} and debit > 0:
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Expense (non taxable)",
+                description=description,
+                amount_out=decimal_text(debit),
+                asset_out="CAD",
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+
+        if event_type == "Send" and debit > 0:
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Withdrawal",
+                description=description,
+                amount_out=decimal_text(debit),
+                asset_out="CAD",
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+
+        if event_type == "Reward" and credit > 0:
+            return canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Reward / Bonus",
+                description=description,
+                amount_in=decimal_text(credit),
+                asset_in="CAD",
+                tx_hash=event_id,
+                render_notes=event_type,
+            )
+
+        return None
 
 
 class LedgerLiveAdapter(SourceAdapter):
     name = "ledger_live"
     aliases = ("ledger live", "ada ledger")
+    supported = True
+
+    def normalize(
+        self,
+        raw_dir: Path,
+        profile: SourceProfile,
+        *,
+        exception_decisions: dict[str, dict[str, str]],
+    ) -> AdapterNormalizationResult:
+        paths = sorted(path for path in raw_dir.glob("ledgerlive-operations-*.csv") if path.is_file())
+        exceptions: list[dict[str, str]] = []
+        if not paths:
+            maybe_append_exception(
+                exceptions,
+                exception_decisions,
+                manifest_fingerprint=profile.manifest_fingerprint,
+                source=profile.source,
+                adapter=self.name,
+                event_id="ledger_live:missing_operations_csv",
+                raw_file="",
+                raw_row_ref="",
+                exception_kind="missing_required_input",
+                message="Ledger Live operations CSV export is required for normalization.",
+            )
+            return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
+
+        grouped_rows: dict[tuple[str, str], list[tuple[Path, int, dict[str, str]]]] = defaultdict(list)
+        for path in paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                if (row.get("Status") or "Confirmed").strip() not in {"", "Confirmed"}:
+                    continue
+                operation_hash = (row.get("Operation Hash") or "").strip()
+                if not operation_hash:
+                    continue
+                account_name = (row.get("Account Name") or "").strip() or profile.source
+                grouped_rows[(account_name, operation_hash)].append((path, index, row))
+
+        events: list[dict[str, str]] = []
+        for (account_name, operation_hash), indexed_rows in sorted(grouped_rows.items()):
+            events.extend(self._group_events(profile.source, account_name, operation_hash, indexed_rows))
+
+        return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
+
+    def _group_events(
+        self,
+        source: str,
+        account_name: str,
+        operation_hash: str,
+        indexed_rows: list[tuple[Path, int, dict[str, str]]],
+    ) -> list[dict[str, str]]:
+        timestamp = normalized_timestamp(indexed_rows[0][2]["Operation Date"], LEDGER_LIVE_TIME_FORMATS)
+        by_type: dict[str, list[tuple[Path, int, dict[str, str]]]] = defaultdict(list)
+        for item in indexed_rows:
+            by_type[(item[2].get("Operation Type") or "").strip().upper()].append(item)
+
+        if by_type.get("DELEGATE"):
+            by_type.pop("OUT", None)
+
+        in_assets = defaultdict(Decimal)
+        out_assets = defaultdict(Decimal)
+        fee_assets = defaultdict(Decimal)
+        for _, _, row in by_type.get("IN", []):
+            in_assets[(row.get("Currency Ticker") or "").strip().upper()] += decimal_or_zero(row.get("Operation Amount"))
+        for _, _, row in by_type.get("OUT", []):
+            out_assets[(row.get("Currency Ticker") or "").strip().upper()] += decimal_or_zero(row.get("Operation Amount"))
+        for _, _, row in by_type.get("FEES", []):
+            fee_assets[(row.get("Currency Ticker") or "").strip().upper()] += decimal_or_zero(row.get("Operation Amount"))
+
+        events: list[dict[str, str]] = []
+        if len(in_assets) == 1 and len(out_assets) == 1:
+            asset_in, amount_in = next(iter(in_assets.items()))
+            asset_out, amount_out = next(iter(out_assets.items()))
+            fee_asset = ""
+            fee_amount = ""
+            if len(fee_assets) == 1:
+                fee_asset, fee_total = next(iter(fee_assets.items()))
+                fee_amount = decimal_text(fee_total)
+            event_id = event_id_for(self.name, indexed_rows[0][0].name, operation_hash)
+            events.append(
+                canonical_event(
+                    event_id=event_id,
+                    source=source,
+                    adapter=self.name,
+                    account=account_name,
+                    wallet=account_name,
+                    raw_file=indexed_rows[0][0].name,
+                    raw_row_ref=";".join(f"{path.name}:row:{index}" for path, index, _ in indexed_rows),
+                    timestamp=timestamp,
+                    event_kind="Trade",
+                    description=account_name,
+                    amount_in=decimal_text(amount_in),
+                    asset_in=asset_in,
+                    amount_out=decimal_text(amount_out),
+                    asset_out=asset_out,
+                    fee_amount=fee_amount,
+                    fee_asset=fee_asset,
+                    tx_hash=operation_hash,
+                    render_notes="ledger_live_grouped_trade",
+                )
+            )
+            return events
+
+        for path, index, row in by_type.get("IN", []):
+            raw_row_ref = f"row:{index}"
+            event_id = event_id_for(self.name, path.name, raw_row_ref)
+            asset = (row.get("Currency Ticker") or "").strip().upper()
+            events.append(
+                canonical_event(
+                    event_id=event_id,
+                    source=source,
+                    adapter=self.name,
+                    account=account_name,
+                    wallet=account_name,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(row["Operation Date"], LEDGER_LIVE_TIME_FORMATS),
+                    event_kind="Deposit",
+                    description=account_name,
+                    amount_in=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
+                    asset_in=asset,
+                    tx_hash=f"IN-{operation_hash}",
+                    render_notes="ledger_live_in",
+                )
+            )
+
+        for path, index, row in by_type.get("OUT", []):
+            raw_row_ref = f"row:{index}"
+            event_id = event_id_for(self.name, path.name, raw_row_ref)
+            asset = (row.get("Currency Ticker") or "").strip().upper()
+            events.append(
+                canonical_event(
+                    event_id=event_id,
+                    source=source,
+                    adapter=self.name,
+                    account=account_name,
+                    wallet=account_name,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(row["Operation Date"], LEDGER_LIVE_TIME_FORMATS),
+                    event_kind="Withdrawal",
+                    description=account_name,
+                    amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
+                    asset_out=asset,
+                    fee_amount=decimal_text(decimal_or_zero(row.get("Operation Fees"))),
+                    fee_asset=asset if decimal_or_zero(row.get("Operation Fees")) else "",
+                    tx_hash=f"OUT-{operation_hash}",
+                    render_notes="ledger_live_out",
+                )
+            )
+
+        for path, index, row in by_type.get("DELEGATE", []):
+            raw_row_ref = f"row:{index}"
+            event_id = event_id_for(self.name, path.name, raw_row_ref)
+            asset = (row.get("Currency Ticker") or "").strip().upper()
+            events.append(
+                canonical_event(
+                    event_id=event_id,
+                    source=source,
+                    adapter=self.name,
+                    account=account_name,
+                    wallet=account_name,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(row["Operation Date"], LEDGER_LIVE_TIME_FORMATS),
+                    event_kind="Expense (non taxable)",
+                    description=f"{asset} Staking Deposit - {operation_hash}",
+                    amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
+                    asset_out=asset,
+                    fee_amount=decimal_text(decimal_or_zero(row.get("Operation Fees"))),
+                    fee_asset=asset if decimal_or_zero(row.get("Operation Fees")) else "",
+                    render_notes="ledger_live_delegate",
+                )
+            )
+
+        for path, index, row in by_type.get("FEES", []):
+            raw_row_ref = f"row:{index}"
+            event_id = event_id_for(self.name, path.name, raw_row_ref)
+            asset = (row.get("Currency Ticker") or "").strip().upper()
+            events.append(
+                canonical_event(
+                    event_id=event_id,
+                    source=source,
+                    adapter=self.name,
+                    account=account_name,
+                    wallet=account_name,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(row["Operation Date"], LEDGER_LIVE_TIME_FORMATS),
+                    event_kind="Other Fee",
+                    description=f"{account_name} network fee",
+                    amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
+                    asset_out=asset,
+                    tx_hash=f"FEE-{operation_hash}",
+                    render_notes="ledger_live_fee",
+                )
+            )
+        return events
 
 
 class NearAdapter(SourceAdapter):
     name = "near"
     aliases = ("near", "near wallet", "near wallet - staking")
+    supported = True
+
+    def normalize(
+        self,
+        raw_dir: Path,
+        profile: SourceProfile,
+        *,
+        exception_decisions: dict[str, dict[str, str]],
+    ) -> AdapterNormalizationResult:
+        tx_paths = sorted(path for path in raw_dir.glob("*transactions*.csv") if "ft_" not in path.name and "nft_" not in path.name)
+        ft_paths = sorted(path for path in raw_dir.glob("*ft_transactions*.csv"))
+        nft_paths = sorted(path for path in raw_dir.glob("*nft_transactions*.csv"))
+        exceptions: list[dict[str, str]] = []
+        if not tx_paths and not ft_paths and not nft_paths:
+            maybe_append_exception(
+                exceptions,
+                exception_decisions,
+                manifest_fingerprint=profile.manifest_fingerprint,
+                source=profile.source,
+                adapter=self.name,
+                event_id="near:missing_export_csvs",
+                raw_file="",
+                raw_row_ref="",
+                exception_kind="missing_required_input",
+                message="NEAR transaction or token export CSVs are required for normalization.",
+            )
+            return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
+
+        events: list[dict[str, str]] = []
+        seen_tx_hashes: set[str] = set()
+        for path in tx_paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                tx_hash = (row.get("Txn Hash") or "").strip()
+                if not tx_hash or tx_hash in seen_tx_hashes or (row.get("Status") or "").strip() != "Success":
+                    continue
+                seen_tx_hashes.add(tx_hash)
+                method = (row.get("Method") or "").strip()
+                if method == "TRANSFER" and (row.get("To") or "").strip() == self._wallet_id():
+                    events.append(self._near_deposit_event(path, profile.source, index, row))
+                    continue
+                if method == "deposit_and_stake":
+                    events.extend(self._near_stake_events(path, profile.source, index, row))
+                    continue
+
+        for path in ft_paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                if (row.get("Status") or "").strip() != "Success" or (row.get("Direction") or "").strip() != "In":
+                    continue
+                raw_row_ref = f"row:{index}"
+                event_id = event_id_for(self.name, path.name, raw_row_ref)
+                token = (row.get("Token") or "").strip()
+                event_kind = "Airdrop" if "airdrop" in ((row.get("Contract") or "") + " " + token).lower() else "Deposit"
+                events.append(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=path.name,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=normalized_timestamp(row["Time"], NEAR_TIME_FORMATS),
+                        event_kind=event_kind,
+                        description=token,
+                        amount_in=decimal_text(decimal_or_zero(row.get("Quantity"))),
+                        asset_in=token,
+                        tx_hash=(row.get("Txn Hash") or "").strip(),
+                        render_notes=(row.get("Contract") or "").strip(),
+                    )
+                )
+
+        for path in nft_paths:
+            for index, row in enumerate(read_csv_rows(path), start=2):
+                if (row.get("Status") or "").strip() != "Success" or (row.get("Direction") or "").strip() != "In":
+                    continue
+                raw_row_ref = f"row:{index}"
+                event_id = event_id_for(self.name, path.name, raw_row_ref)
+                token_name = (row.get("Token") or "").strip()
+                contract = (row.get("Contract") or "").strip()
+                events.append(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=path.name,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=normalized_timestamp(row["Time"], NEAR_TIME_FORMATS),
+                        event_kind="Airdrop",
+                        description=token_name or contract or "NEAR NFT mint",
+                        amount_in="1.00000000",
+                        asset_in=token_name or contract or "NEAR NFT",
+                        tx_hash=(row.get("Txn Hash") or "").strip(),
+                        render_notes=f"token_id={(row.get('Token ID') or '').strip()}",
+                    )
+                )
+
+        return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
+
+    def _wallet_id(self) -> str:
+        return "example.near"
+
+    def _near_deposit_event(self, path: Path, source: str, index: int, row: dict[str, str]) -> dict[str, str]:
+        raw_row_ref = f"row:{index}"
+        event_id = event_id_for(self.name, path.name, raw_row_ref)
+        deposit_value = decimal_or_zero(row.get("Deposit Value"))
+        tx_fee = decimal_or_zero(row.get("Txn Fee"))
+        return canonical_event(
+            event_id=event_id,
+            source=source,
+            adapter=self.name,
+            account=source,
+            wallet=source,
+            raw_file=path.name,
+            raw_row_ref=raw_row_ref,
+            timestamp=normalized_timestamp(row["Time"], NEAR_TIME_FORMATS),
+            event_kind="Deposit",
+            description=raw_hash_description(f"Transfer into {source}", row.get("Txn Hash") or "", f"Transfer into {source}"),
+            amount_in=decimal_text(deposit_value - tx_fee),
+            asset_in="NEAR",
+            tx_hash=(row.get("Txn Hash") or "").strip(),
+            render_notes="near_transfer_in",
+        )
+
+    def _near_stake_events(self, path: Path, source: str, index: int, row: dict[str, str]) -> list[dict[str, str]]:
+        raw_row_ref = f"row:{index}"
+        timestamp = normalized_timestamp(row["Time"], NEAR_TIME_FORMATS)
+        tx_hash = (row.get("Txn Hash") or "").strip()
+        deposit_value = decimal_or_zero(row.get("Deposit Value"))
+        tx_fee = decimal_or_zero(row.get("Txn Fee"))
+        description = f"Stake NEAR - {tx_hash}" if tx_hash else "Stake NEAR"
+        return [
+            canonical_event(
+                event_id=event_id_for(self.name, path.name, f"{raw_row_ref}:wallet"),
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Withdrawal",
+                description=description,
+                amount_out=decimal_text(deposit_value + tx_fee),
+                asset_out="NEAR",
+                fee_amount=decimal_text(tx_fee),
+                fee_asset="NEAR",
+                tx_hash=tx_hash,
+                render_notes="near_stake_out",
+            ),
+            canonical_event(
+                event_id=event_id_for(self.name, path.name, f"{raw_row_ref}:staking"),
+                source=source_staked_label(source),
+                adapter=self.name,
+                account=source_staked_label(source),
+                wallet=source_staked_label(source),
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Deposit",
+                description=description,
+                amount_in=decimal_text(deposit_value),
+                asset_in="NEAR",
+                tx_hash=tx_hash,
+                render_notes="near_stake_in",
+            ),
+        ]
 
 
 ADAPTERS: tuple[SourceAdapter, ...] = (
     CoinbaseAdapter(),
     WealthsimpleAdapter(),
     BinanceAdapter(),
-    MetamaskAdapter(),
+    CryptoComAdapter(),
+    EvmExplorerAdapter(),
     ShakepayAdapter(),
     LedgerLiveAdapter(),
     NearAdapter(),

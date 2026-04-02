@@ -18,6 +18,16 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertTrue(source_adapters.get_adapter("WealthSimple").supported)
         self.assertEqual("binance", source_adapters.get_adapter("Binance").name)
         self.assertTrue(source_adapters.get_adapter("Binance").supported)
+        self.assertEqual("crypto_com", source_adapters.get_adapter("Crypto.com").name)
+        self.assertTrue(source_adapters.get_adapter("Crypto.com").supported)
+        self.assertEqual("shakepay", source_adapters.get_adapter("Shakepay").name)
+        self.assertTrue(source_adapters.get_adapter("Shakepay").supported)
+        self.assertEqual("ledger_live", source_adapters.get_adapter("Ledger Live").name)
+        self.assertTrue(source_adapters.get_adapter("Ledger Live").supported)
+        self.assertEqual("near", source_adapters.get_adapter("NEAR Wallet").name)
+        self.assertTrue(source_adapters.get_adapter("NEAR Wallet").supported)
+        self.assertEqual("evm_explorer", source_adapters.get_adapter("BSC MetaMask Wallet").name)
+        self.assertFalse(source_adapters.get_adapter("BSC MetaMask Wallet").supported)
 
     def test_load_exception_decisions_filters_by_manifest_fingerprint(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -68,6 +78,82 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertEqual([], result.exceptions)
         self.assertEqual("Withdrawal", result.canonical_events[0]["event_kind"])
         self.assertEqual("Trade", result.canonical_events[2]["event_kind"])
+
+    def test_crypto_com_adapter_normalizes_repo_exports(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "crypto.com" / "raw"
+        adapter = source_adapters.get_adapter("Crypto.com")
+        profile = pipeline_common.build_source_profile(
+            source="Crypto.com",
+            raw_dir=raw_dir,
+            adapter_name=adapter.name,
+            adapter_supported=adapter.supported,
+        )
+
+        result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+        self.assertEqual(12, len(result.canonical_events))
+        self.assertEqual([], result.exceptions)
+        self.assertEqual(
+            {"Deposit": 4, "Trade": 4, "Withdrawal": 4},
+            {
+                event_kind: sum(1 for row in result.canonical_events if row["event_kind"] == event_kind)
+                for event_kind in {"Deposit", "Trade", "Withdrawal"}
+            },
+        )
+
+    def test_shakepay_adapter_normalizes_repo_exports(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "shakepay" / "raw"
+        adapter = source_adapters.get_adapter("Shakepay")
+        profile = pipeline_common.build_source_profile(
+            source="Shakepay",
+            raw_dir=raw_dir,
+            adapter_name=adapter.name,
+            adapter_supported=adapter.supported,
+        )
+
+        result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+        self.assertEqual(1895, len(result.canonical_events))
+        self.assertEqual(2, len(result.canonical_balances))
+        self.assertEqual([], result.exceptions)
+        self.assertEqual("Reward / Bonus", result.canonical_events[0]["event_kind"])
+        self.assertEqual("shakingsats", result.canonical_events[0]["description"])
+
+    def test_ledger_live_adapter_normalizes_repo_exports(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"
+        adapter = source_adapters.get_adapter("Ledger Live")
+        profile = pipeline_common.build_source_profile(
+            source="Ledger Live",
+            raw_dir=raw_dir,
+            adapter_name=adapter.name,
+            adapter_supported=adapter.supported,
+        )
+
+        result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+        self.assertEqual(22, len(result.canonical_events))
+        self.assertEqual([], result.exceptions)
+        kinds = {row["event_kind"] for row in result.canonical_events}
+        self.assertIn("Trade", kinds)
+        self.assertIn("Expense (non taxable)", kinds)
+        self.assertIn("Withdrawal", kinds)
+
+    def test_near_adapter_normalizes_repo_exports(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "near" / "raw"
+        adapter = source_adapters.get_adapter("NEAR Wallet")
+        profile = pipeline_common.build_source_profile(
+            source="NEAR Wallet",
+            raw_dir=raw_dir,
+            adapter_name=adapter.name,
+            adapter_supported=adapter.supported,
+        )
+
+        result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+        self.assertEqual(14, len(result.canonical_events))
+        self.assertEqual([], result.exceptions)
+        self.assertTrue(any(row["source"] == "NEAR Wallet - Staking" for row in result.canonical_events))
+        self.assertTrue(any(row["event_kind"] == "Airdrop" for row in result.canonical_events))
 
     def test_binance_adapter_handles_supported_and_review_required_rows(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -159,6 +245,7 @@ class SourceAdapterTests(unittest.TestCase):
             ("WealthSimple", REPO_ROOT / "01_raw_exports" / "external" / "wealthsimple" / "raw"),
             ("Binance", REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"),
             ("BSC MetaMask Wallet", REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"),
+            ("Crypto.com", REPO_ROOT / "01_raw_exports" / "external" / "crypto.com" / "raw"),
             ("Shakepay", REPO_ROOT / "01_raw_exports" / "external" / "shakepay" / "raw"),
             ("Ledger Live", REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"),
             ("NEAR Wallet", REPO_ROOT / "01_raw_exports" / "external" / "near" / "raw"),
