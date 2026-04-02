@@ -166,6 +166,8 @@ Known current adapter workaround:
   or `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter output <module_name> "<Display Name>"`.
 - Source scaffolds must include the category path so new adapters land in the
   correct namespace from the start.
+- The scaffold tool refreshes `pyrightconfig.tests.json` so package-local
+  adapter tests remain under the centralized test-private checker policy.
 - Source scaffolds now generate `translation.py` with a provider-local
   `FILE_TRANSLATION_RULES` registry and a shared draft compiler call.
 - Refresh JSON golden fixtures with

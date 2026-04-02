@@ -43,6 +43,11 @@ Prefer the repo's built-in tooling before inventing local workflows:
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
 - scaffold new adapters with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
+- refresh generated pyright test-private execution environments with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.sync_pyright_config`
+  when adapter-local `tests/` packages are added or removed outside the
+  scaffold tool; `tools.run_quality_gates` also refreshes that generated config
+  before invoking `pyright`
 - refresh adapter golden fixtures with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.refresh_adapter_goldens ...`
 - benchmark test-slice changes with
@@ -50,6 +55,11 @@ Prefer the repo's built-in tooling before inventing local workflows:
 
 Do not replace these with ad hoc shell habits when the repo already has a
 supported path.
+
+`pyrightconfig.tests.json` is generated repo policy for test-private execution
+environments. Do not hand-maintain adapter `executionEnvironments` in
+`pyrightconfig.json`; update adapter-local test package layouts and rerun the
+sync or quality-gate tool instead.
 
 When repo-native tooling and tests need shared support:
 
