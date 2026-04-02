@@ -128,7 +128,9 @@ def test_iter_modules_supports_package_style_adapters_without_loading_tests(
     sys.modules.pop("fixture_adapters.packaged_adapter.adapter", None)
     sys.modules.pop("fixture_adapters.packaged_adapter.tests", None)
 
-    modules = discovery_adapters._iter_discoverable_modules("fixture_adapters")
+    modules = discovery_adapters._iter_discoverable_modules(  # pylint: disable=protected-access
+        "fixture_adapters"
+    )
 
     assert {module.__name__ for module in modules} == {
         "fixture_adapters.flat_adapter",
