@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,12 +15,13 @@ FAMILY_HEADER_PATTERN = re.compile(r"^## `(tests/.+?\.py)`$")
 LEGACY_TEST_COUNT_PATTERN = re.compile(r"^- Legacy tests: (\d+)$")
 PROOF_TYPE_VALUES = frozenset({"ported-direct", "superseded-direct"})
 TOTALS_KEYS = (
-    "Legacy families on `master`",
+    "Tracked legacy families",
     "Tracked family sections",
     "Tracked legacy behaviors",
     "`ported-direct` behaviors",
     "`superseded-direct` behaviors",
 )
+FAMILY_INDEX_MARKER = "## Family Index"
 
 
 @dataclass(frozen=True)
@@ -39,19 +39,20 @@ class LedgerSection:
     rows: tuple[LedgerRow, ...]
 
 
-def _master_legacy_families() -> set[str]:
-    result = subprocess.run(
-        ("git", "ls-tree", "-r", "--name-only", "master", "tests"),
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return {
-        line
-        for line in result.stdout.splitlines()
-        if line.startswith("tests/") and line.endswith(".py") and Path(line).name.startswith("test_")
-    }
+def _family_index_entries() -> tuple[str, ...]:
+    text = LEDGER_PATH.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    in_family_index = False
+    entries: list[str] = []
+    for line in lines:
+        if line == FAMILY_INDEX_MARKER:
+            in_family_index = True
+            continue
+        if in_family_index and line.startswith("## "):
+            break
+        if in_family_index and line.startswith("- `") and line.endswith("`"):
+            entries.append(line.removeprefix("- `").removesuffix("`"))
+    return tuple(entries)
 
 
 def _parse_ledger_sections() -> dict[str, LedgerSection]:
@@ -115,8 +116,8 @@ def _parse_totals() -> dict[str, int]:
     return totals
 
 
-def test_master_legacy_family_set_matches_behavior_ledger_sections() -> None:
-    assert _parse_ledger_sections().keys() == _master_legacy_families()
+def test_family_index_matches_behavior_ledger_sections() -> None:
+    assert _parse_ledger_sections().keys() == set(_family_index_entries())
 
 
 def test_each_legacy_family_has_behavior_rows_with_unique_identifiers() -> None:
@@ -149,7 +150,7 @@ def test_ledger_totals_are_derived_from_behavior_rows() -> None:
     ported = sum(1 for row in behavior_rows if row.proof_type == "ported-direct")
     superseded = sum(1 for row in behavior_rows if row.proof_type == "superseded-direct")
     assert totals == {
-        "Legacy families on `master`": len(_master_legacy_families()),
+        "Tracked legacy families": len(_family_index_entries()),
         "Tracked family sections": len(sections),
         "Tracked legacy behaviors": len(behavior_rows),
         "`ported-direct` behaviors": ported,

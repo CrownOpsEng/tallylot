@@ -19,7 +19,7 @@ workflow around it.
 
 - [`PROJECT_STATE.md`](PROJECT_STATE.md): current runtime and project-surface
   status
-- [`MASTER_PARITY_LEDGER.md`](MASTER_PARITY_LEDGER.md): sole `master`
+- [`MASTER_PARITY_LEDGER.md`](MASTER_PARITY_LEDGER.md): sole legacy-family
   behavior-parity ledger and typed recovery map
 - [`OPERATIONS_QUICKSTART.md`](OPERATIONS_QUICKSTART.md): shortest safe path
   through the current workflow

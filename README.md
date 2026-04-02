@@ -27,7 +27,7 @@ in the external workspace.
   Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
   wallet-state, and the generic structured CSV adapter
 - blockchain, platform API, SQLite, and provider-backed AI remain stubbed
-- restored `master` parity status is tracked in `docs/MASTER_PARITY_LEDGER.md`
+- restored legacy parity status is tracked in `docs/MASTER_PARITY_LEDGER.md`
 
 ## Workspace Model
 

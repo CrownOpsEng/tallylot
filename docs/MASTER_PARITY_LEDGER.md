@@ -1,14 +1,14 @@
 # Master Parity Ledger
 
-This ledger is the sole maintained parity artifact for `master`. It tracks
-behavior-level proof against the typed application architecture under
+This ledger is the sole maintained parity artifact for the retired legacy test
+families. It tracks behavior-level proof against the typed application architecture under
 `src/crypto_reconciliation/`. Legacy script names and removed flat paths stay
 retired; parity is satisfied only through the current typed services, adapters,
 contracts, and CLI.
 
 ## Proof Standard
 
-- Every `master` test family appears exactly once as a family section below.
+- Every tracked legacy test family appears exactly once in the family index and as a family section below.
 - Every tracked behavior row maps to direct typed proof or a narrower typed
   supersession.
 - Broad workflow coverage is supporting evidence, not the only proof for
@@ -27,7 +27,7 @@ contracts, and CLI.
 
 | Metric | Count |
 | ---- | ----: |
-| Legacy families on `master` | 25 |
+| Tracked legacy families | 25 |
 | Tracked family sections | 25 |
 | Tracked legacy behaviors | 243 |
 | `ported-direct` behaviors | 181 |
