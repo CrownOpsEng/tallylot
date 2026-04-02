@@ -72,7 +72,10 @@ def parse_frontmatter(text: str, path: Path) -> dict[str, object]:
     if match is None:
         raise ValueError(f"{path} is missing frontmatter")
 
-    loaded: object = yaml.safe_load(match.group(1))
+    try:
+        loaded: object = yaml.safe_load(match.group(1))
+    except yaml.YAMLError as error:
+        raise ValueError(f"{path} has invalid frontmatter: {error}") from error
     if not isinstance(loaded, Mapping):
         raise ValueError(f"{path} frontmatter must be a mapping")
     frontmatter: dict[str, object] = {}

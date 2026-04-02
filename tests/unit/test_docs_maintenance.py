@@ -163,6 +163,25 @@ def test_parse_frontmatter_rejects_invalid_nav_order() -> None:
         docs_maintenance.validate_frontmatter(path, frontmatter)
 
 
+def test_parse_frontmatter_wraps_yaml_errors() -> None:
+    path = REPO_ROOT / "docs" / "guides" / "example.md"
+    text = dedent(
+        """\
+        ---
+        title: "Guide "Quoted""
+        summary: "Broken summary."
+        doc_type: guide
+        audience: human
+        owner: repo
+        status: active
+        ---
+        """
+    )
+
+    with pytest.raises(ValueError, match="has invalid frontmatter"):
+        docs_maintenance.parse_frontmatter(text, path)
+
+
 def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
     paths = (
         *sorted((REPO_ROOT / "docs").rglob("*.md")),
@@ -552,6 +571,85 @@ def test_scaffold_sync_managed_doc_accepts_nav_order(
     frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
 
     assert frontmatter["nav_order"] == 70
+
+
+def test_scaffold_sync_managed_doc_escapes_yaml_sensitive_fields(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    override_active_roots(monkeypatch, tmp_path)
+
+    (tmp_path / "agents").mkdir()
+    docs_root = tmp_path / "docs"
+    (docs_root / "concepts").mkdir(parents=True)
+    (docs_root / "guides").mkdir(parents=True)
+    (docs_root / "reference").mkdir(parents=True)
+    (docs_root / "status").mkdir(parents=True)
+    (docs_root / "standards").mkdir(parents=True)
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+            """
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = docs_maintenance.main(
+        [
+            "scaffold",
+            "--section",
+            "guides",
+            "--slug",
+            "quoted-guide",
+            "--title",
+            'Guide "Quoted"',
+            "--summary",
+            'Summary with "quotes".',
+            "--nav-order",
+            "70",
+        ]
+    )
+
+    assert exit_code == 0
+
+    created = tmp_path / "docs" / "guides" / "quoted-guide.md"
+    frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
+
+    assert frontmatter["title"] == 'Guide "Quoted"'
+    assert frontmatter["summary"] == 'Summary with "quotes".'
 
 
 def test_scaffold_rejects_nav_order_outside_sync_managed_docs(

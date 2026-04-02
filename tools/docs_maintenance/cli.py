@@ -5,6 +5,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 from .links import repo_markdown_paths, validate_markdown_links, validate_uv_examples
 from .metadata import (
     ALLOWED_AUDIENCES,
@@ -223,18 +225,17 @@ def write_scaffold(args: argparse.Namespace) -> int:
     )
     if args.nav_order is not None and not nav_order_allowed:
         raise ValueError("--nav-order is only valid for sync-managed human docs")
-    frontmatter = (
-        "---\n"
-        f'title: "{args.title}"\n'
-        f'summary: "{args.summary}"\n'
-        f"doc_type: {doc_type}\n"
-        f"audience: {audience}\n"
-        "owner: repo\n"
-        "status: active\n"
-    )
+    frontmatter_data: dict[str, object] = {
+        "title": args.title,
+        "summary": args.summary,
+        "doc_type": doc_type,
+        "audience": audience,
+        "owner": "repo",
+        "status": "active",
+    }
     if args.nav_order is not None:
-        frontmatter += f"nav_order: {args.nav_order}\n"
-    frontmatter += "---\n\n"
+        frontmatter_data["nav_order"] = args.nav_order
+    frontmatter = f"---\n{yaml.safe_dump(frontmatter_data, sort_keys=False)}---\n\n"
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(frontmatter + starter_body(doc_type, args.title), encoding="utf-8")
@@ -246,13 +247,14 @@ def write_scaffold(args: argparse.Namespace) -> int:
         "docs/status/",
         "docs/standards/",
     )
-    if relative_path(path).startswith(sync_prefixes):
-        try:
+    try:
+        validate_frontmatter(path, parse_frontmatter(path.read_text(encoding="utf-8"), path))
+        if relative_path(path).startswith(sync_prefixes):
             documents = collect_documents()
             sync_docs_homepage(documents, check=False)
-        except Exception:
-            path.unlink(missing_ok=True)
-            raise
+    except Exception:
+        path.unlink(missing_ok=True)
+        raise
     print(relative)
     return 0
 
