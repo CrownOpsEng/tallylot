@@ -55,8 +55,13 @@ Implementation rule:
 - first land a fact-aligned adapter draft seam so working adapters stop
   constructing the temporary normalized artifact directly
 - normalization writes transaction facts first
+- introduce instrument identity, signed legs, stable leg ids, and the repo-wide
+  `*_at` plus `*_precision` temporal convention as part of the canonical fact
+  contract
 - replace the normalized transaction artifact set directly once the fact path is
   ready
+- replace the current fact artifact schema directly for this branch rather than
+  preserving a second active canonical model
 - CoinTracking output remains an adapter projection, not a second core model
 - until fact services land, keep CoinTracking candidate rendering as an
   explicit projection step rather than a normalization side effect
@@ -70,10 +75,19 @@ Bridge rule for the current branch:
 - shared projection code produces CoinTracking CSV rows
 - application services, not adapters, derive runtime balances from translated
   activity unless the source provides real balance evidence
+- unresolved or ambiguous identifier resolution blocks fact emission for the
+  affected activity and must surface both review output and a blocking issue
+- no parallel canonical runtime, wrapper lane, or runtime artifact translators
+- a clean fact artifact schema break is allowed in this branch when the
+  canonical replacement is ready
+- fact artifact readers must reject unknown `schema_version` values and the
+  operational recovery path is full regeneration from raw evidence
 
 Exit criteria:
 
 - at least one adapter writes fact artifacts end to end
+- fact artifacts fail fast when the schema version does not match the current
+  reader
 - projection tests prove the CoinTracking adapter still renders the expected
   external shape from the new facts
 
@@ -95,6 +109,10 @@ Rules:
   fact metadata, not operator notes
 - row-level candidate-versus-reference CSV comparison is a `source diff`
   utility, not the reconciliation service surface
+- reconciliation advances in parallel with the accounting slice once the
+  canonical fact shape is stable
+- reconciliation remains the gate before tax and before treating rebuilt fact
+  history as trusted
 
 Exit criteria:
 
@@ -116,6 +134,10 @@ Rules:
 - accounting consumes facts plus journal intents
 - CoinTracking double-entry is comparison-only
 - unsupported activity must surface as explicit journal coverage gaps
+- accounting advances in parallel with reconciliation once the canonical fact
+  shape is stable
+- accounting is the journal structure and coverage validator, not the evidence
+  truth gate
 
 Exit criteria:
 

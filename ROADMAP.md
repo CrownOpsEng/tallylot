@@ -10,7 +10,10 @@ decisions that should not be rediscovered from scratch.
 - External workspace model only
 - CLI and library runtime only
 - Filesystem-backed operational storage
-- One concrete CoinTracking CSV edge adapter is implemented today
+- One concrete CoinTracking CSV output adapter is implemented today
+- Real source adapters are implemented for Coinbase, Wealthsimple, Binance,
+  Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
+  wallet-state, and the generic structured CSV surface
 - Normalization writes `facts.csv`, `fact_annotations.json`, `balances.csv`,
   `balance_evidence.csv`, `exceptions.csv`, and
   `normalization_reviews.csv` as active runtime artifacts
@@ -22,11 +25,15 @@ decisions that should not be rediscovered from scratch.
 
 ## Locked Design Decisions For The Next Major Phase
 
+- Complete fact-path alignment before expanding reconciliation, accounting, or
+  tax behavior. The branch-level alignment work may break the current fact
+  artifact schema directly rather than preserving a compatibility lane.
 - Build deterministic reconciliation and source-backed checkpoints before tax
-  computation. The `2023-08-05` CoinTracking export remains a historical oracle
-  boundary, not a hard checkpoint.
+  computation. Run minimal accounting projection work in parallel once the
+  canonical fact path stabilizes. Reconciliation remains the trust gate before
+  tax; accounting remains the journal coverage and balance gate.
 - Treat CoinTracking as one ordinary output adapter plus one dev-only oracle
-  family, not as the central business model.
+  family, not as the central business model or implemented center.
 - Keep CoinTracking rendering isolated to output-adapter packages and keep
   oracle comparison code outside `src/tallylot/`.
 - Keep repo-owned workspace control files generic and operator-facing.
@@ -56,6 +63,25 @@ decisions that should not be rediscovered from scratch.
 - Introduce a provider-neutral transaction fact model as the new system of
   record. Replace the current normalized transaction shape directly instead of
   carrying forward compatibility wrappers or parallel legacy names.
+- Keep canonical identity instrument-based:
+  - facts, evidence, and downstream projections use `InstrumentId`
+  - symbols, venue identifiers, and chain contracts are identifier inputs, not
+    canonical identity
+  - unresolved or ambiguous identifier resolution must emit review output and
+    block fact emission for the affected activity
+- Keep canonical leg math sign-based:
+  - facts and downstream services use signed `quantity`
+  - positive quantity increases the balance of the leg location; negative
+    quantity decreases it
+  - output adapters may impose narrower native render policies and must fail
+    explicitly on unsupported shapes
+- Keep canonical fact timing explicit:
+  - facts include `effective_at` plus `effective_precision`
+  - adapters must preserve the difference between a date-only effective value
+    and an exact timestamp, including exact midnight timestamps
+  - execution timestamps and effective-time values are not interchangeable
+  - any repo field that may be either date-only or exact-time uses the same
+    `*_at` plus `*_precision` convention
 - Keep the production layer roots explicit:
   - `domain/`
   - `application/`
@@ -185,8 +211,8 @@ decisions that should not be rediscovered from scratch.
   plus an installable CLI entry point.
 - Do not bypass `Decimal` with float-based financial calculations.
 - Keep transaction facts structurally strict: every fact must retain at least
-  one positive-value economic leg, and leg direction must be modeled
-  explicitly rather than by signed magnitudes.
+  one non-zero economic leg and canonical leg quantities must be signed
+  `Decimal` values.
 - Keep one canonical `legs` tuple only. Do not reintroduce `fee_legs`,
   `is_fee`, or any other fee-only storage lane in facts, drafts, or
   persistence.
@@ -198,9 +224,10 @@ decisions that should not be rediscovered from scratch.
   unspecified kinds are disallowed, zero-`primary` shapes are opt-in, and
   adapters must declare policy intentionally on emitted drafts rather than
   relying on hidden defaults in the core.
-- Keep non-primary attribution metadata narrow. `attributed_to_direction` is
-  optional metadata on non-`primary` legs only, and it is valid only when
-  exactly one `primary` leg exists on the referenced side.
+- Keep non-primary attribution metadata narrow. `attributed_to_leg_id` is
+  optional metadata on non-`primary` legs only, and it is valid only when it
+  references one concrete leg in the same fact. Leg order is not a stable
+  identity contract.
 - Do not reintroduce convenience selectors such as `asset_in`, `amount_out`,
   or `fee_amount`. Engine code must consume canonical `legs` directly.
 - Keep CoinTracking strict at the edge. Its render policy supports one inbound
@@ -216,9 +243,9 @@ decisions that should not be rediscovered from scratch.
 - Do not reintroduce a legacy fact `category` bridge. Layered classification
   fields are the stable center; compatibility labels belong only at adapter
   edges.
-- Normalize raw sign conventions inside adapters when direction is otherwise
-  explicit. If the sign is the only direction signal or it conflicts with other
-  fields, surface an issue instead of guessing. When adapters do apply an
+- Normalize raw sign conventions inside adapters into signed canonical
+  quantities. If the provider direction signal is ambiguous or conflicts with
+  other fields, surface an issue instead of guessing. When adapters do apply an
   interpretive normalization or fallback default, emit normalization review
   records so users can validate the behavior explicitly.
 - Keep source-derived runtime balances application-owned unless the source
@@ -227,6 +254,11 @@ decisions that should not be rediscovered from scratch.
 - Keep normalization review artifacts separate from hard issues: invalid or
   unsupported data stays in exceptions, while assumption-driven transforms and
   defaults go to normalization review reporting with concise grouped summaries.
+- Treat the current fact artifact schema as disposable during this branch:
+  - readers must fail fast on unknown `schema_version`
+  - old fact artifacts are not a read-compatibility contract
+  - rebuilding normalization and checkpoint artifacts from raw evidence is the
+    recovery path after the schema break
 - Keep normalization windows explicit and internally consistent. Window
   `facts.csv`, `fact_annotations.json`, `balances.csv`, `exceptions.csv`, and
   `normalization_reviews.csv`; do not window `balance_evidence.csv` or
@@ -237,9 +269,26 @@ decisions that should not be rediscovered from scratch.
   evidence. Adapter parsing must normalize to UTC before domain construction,
   while persisted artifact timestamp text remains timezone-less and is
   interpreted as UTC on read.
+- Keep temporal precision repo-wide and explicit:
+  - exact-time fields use UTC-aware `*_at` values
+  - fields that may be date-only or exact-time use `*_at` plus
+    `*_precision`
+  - `*_precision` uses one shared enum with at least `timestamp` and `date`
+  - date-only values are not interchangeable with exact midnight timestamps
+  - infer precision from the source contract and parsed field shape, not from a
+    normalized `00:00:00` value
 - Reserve reconciliation naming for fact, checkpoint, and oracle-comparison
   workflows. Candidate-versus-reference CSV comparison stays under `source
   diff` until fact-based reconciliation exists.
+- Complete these precursor refactors before broader reconciliation and
+  accounting expansion:
+  - instrument registry and identifier mapping seam
+  - blocking identifier-resolution path with explicit review output
+  - signed-leg rewrite
+  - attribution rewrite
+  - effective-time and precision model
+  - schema-version fail-fast guard on fact artifacts
+  - storage, balance derivation, and output projection updates
 - Do not allow AI providers to mutate ledger records directly.
 - Keep normalized evidence references portable by storing source-relative paths
   instead of machine-local absolute paths.

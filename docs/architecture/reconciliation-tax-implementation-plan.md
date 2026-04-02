@@ -38,9 +38,11 @@ Normal runtime operation must stay platform-agnostic:
 
 ## Key Decisions
 
-### 1. Build Reconciliation Before Tax
+### 1. Build Reconciliation Before Tax, With Accounting In Parallel
 
-The first major capability is deterministic reconciliation, not ACB math.
+The first major milestone after fact-path alignment is deterministic
+reconciliation, not ACB math. Minimal accounting projection should advance in
+parallel on the same canonical facts.
 
 Reason:
 
@@ -48,6 +50,8 @@ Reason:
 - the best available checkpoint evidence is around `2026-03-23`
 - tax computation is not trustworthy until the fact set lands on a confirmed
   checkpoint
+- accounting and reconciliation validate different properties of the same fact
+  set and should remain separate capabilities
 
 ### 2. Keep CoinTracking At The Edge
 
@@ -270,22 +274,47 @@ The only lost capability should be comparison against the external oracle.
 
 ## Schema Contract
 
+### Repo-Wide Temporal Precision Contract
+
+- Use one timing convention everywhere in the repo:
+  - exact-time fields use UTC-aware `*_at` values
+  - fields that may be date-only or exact-time use `*_at` plus
+    `*_precision`
+- `*_precision` uses one shared enum with at least:
+  - `timestamp`
+  - `date`
+- Date-only values are stored distinctly from exact timestamps even when an
+  exact timestamp falls at midnight.
+- Adapters are responsible for preserving this distinction at translation time.
+- Infer precision from the source contract and parsed field shape, not from the
+  normalized clock value. An exact midnight timestamp remains `timestamp`
+  precision; a date-only source value remains `date` precision.
+- New domain and port fields must adopt this convention instead of introducing
+  provider-local date flags, boolean precision markers, or mixed string shapes.
+
 ### Current Fact-Shape Contract
 
 - `TransactionFact` and `EconomicActivityDraft` use one canonical `legs` tuple.
+- Fact construction requires successful identifier resolution to exactly one
+  `InstrumentId`. Unresolved or ambiguous identity must emit review output and a
+  blocking issue rather than guessing.
 - Every leg carries:
-  - flow `direction`
+  - stable `leg_id`
+  - signed `quantity`
   - semantic `LegKind`
   - optional adapter-detail `subtype`
-  - optional `attributed_to_direction` metadata
-- `attributed_to_direction` is valid only on non-`primary` legs and only when
-  exactly one `primary` leg exists on the referenced side.
+  - optional `attributed_to_leg_id` metadata
+- signed quantities use one meaning everywhere:
+  - positive increases the balance of the leg location
+  - negative decreases the balance of the leg location
+- `attributed_to_leg_id` is valid only on non-`primary` legs and only when
+  it references one concrete leg in the same fact.
 - `FactLegPolicy` is generic and per-kind:
-  - `LegShapeLimit` declares `min_count`, `max_count`, `min_in_count`,
-    `max_in_count`, `min_out_count`, and `max_out_count`
+  - `LegShapeLimit` declares `min_count`, `max_count`, `min_positive_count`,
+    `max_positive_count`, `min_negative_count`, and `max_negative_count`
   - no duplicate kinds
   - minimum counts cannot exceed maximum counts
-  - directional limits cannot exceed per-kind totals
+  - signed-count limits cannot exceed per-kind totals
   - unspecified kinds are disallowed
   - zero-`primary` shapes are opt-in through the declared policy
 - Current shared policy constants cover:
@@ -294,16 +323,20 @@ The only lost capability should be comparison against the external oracle.
   - two-sided primary exchange with one `charge`
 - CoinTracking currently supports only:
   - at least one `primary`
-  - up to one inbound `primary`
-  - up to one outbound `primary`
-  - up to one `charge`
+  - up to one positive `primary`
+  - up to one negative `primary`
+  - up to one negative `charge`
   - no other non-primary leg kinds
+  - renderers derive inbound and outbound adapter concepts from sign
 
 ### Current Normalization Window Contract
 
 - Runtime timestamps are timezone-aware UTC in drafts, facts, balances, and
   balance evidence. Persisted artifact timestamp text remains
   `YYYY-MM-DD HH:MM:SS` and is interpreted as UTC on read.
+- Fields that may be date-only or exact-time persist both `*_at` and
+  `*_precision` so exact midnight timestamps remain distinguishable from
+  date-only values.
 - Windowed normalization applies to:
   - `facts.csv`
   - `fact_annotations.json`
@@ -324,14 +357,17 @@ adapters emit `TransactionFact` artifacts directly.
 
 Required draft responsibilities:
 
-- stable identity plus evidence references
+- stable identity claims plus evidence references
 - UTC-aware timestamp and provenance
+- optional `effective_at`
+- optional `effective_precision`
 - account and wallet scope
 - one canonical `legs` tuple only; no separate fee lane
 - explicit leg semantics per leg:
+  - stable `leg_id`
   - `LegKind`
   - optional `subtype`
-  - optional `attributed_to_direction` on non-`primary` legs only
+  - optional `attributed_to_leg_id` on non-`primary` legs only
 - explicit per-kind leg-shape policy through `FactLegPolicy` and
   `LegShapeLimit`, including any required minimum counts
 - provider operation key and grouped-row support
@@ -346,6 +382,10 @@ Rules:
 
 - provider modules translate into drafts only; they do not assemble
   CoinTracking rows or other output-adapter payloads directly
+- shared identifier resolution must succeed to exactly one instrument before
+  fact construction
+- unresolved or ambiguous identifier resolution blocks fact emission for the
+  affected activity and must surface both review output and a blocking issue
 - shared fact builders may derive `TransactionFact` objects from drafts, but
   that derivation stays in shared support rather than provider-local code
 - shared support stays adapter-agnostic and registry-driven; adapters publish
@@ -373,7 +413,8 @@ Required fields:
   - tx hash
 - time
   - event timestamp
-  - optional settlement timestamp
+  - optional `effective_at`
+  - optional `effective_precision`
   - timestamp provenance
   - timestamp precision
 - participants
@@ -383,6 +424,9 @@ Required fields:
   - ownership scope
 - economics
   - `tuple[EconomicLeg, ...]`
+  - legs use canonical `InstrumentId`
+  - legs carry stable `leg_id`
+  - legs use signed `quantity: Decimal`
   - explicit per-kind leg-shape policy
   - optional grouped correction or bundle links
   - beneficial ownership change classification
@@ -403,6 +447,9 @@ Required fields:
 ### Supporting Types
 
 - `EconomicLeg`
+- `InstrumentIdentityClaim`
+- `EffectiveTime`
+- `TemporalPrecision`
 - `Valuation`
 - `TransferLink`
 - `CorrectionRecord`

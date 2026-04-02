@@ -31,12 +31,29 @@ automatically.
   in provider-local modules.
 - Do not synthesize runtime balance snapshots in adapters unless the source
   export provides actual balance evidence.
-- Normalize source-specific sign conventions at the adapter edge. Normalized
-  fact-leg amounts stay positive; direction belongs in the mapped fields, not
-  signed magnitudes.
+- Normalize source-specific sign conventions at the adapter edge into signed
+  canonical quantities. If the provider sign or direction signal is ambiguous,
+  surface an issue or review instead of guessing.
+- Treat symbols, venue codes, and chain contracts as identifier inputs.
+  Adapters should target canonical instrument references through the shared
+  identifier-resolution seam rather than treating raw symbols as stable
+  identity.
+- Emit identifier claims that are sufficient for shared resolution to one
+  canonical instrument. If resolution is unresolved or ambiguous, emit a review
+  record plus a blocking issue and do not produce a fact for that activity.
 - Normalize runtime timestamps at the adapter edge. Draft, fact, balance, and
   balance-evidence timestamps must be timezone-aware UTC before they enter the
   shared domain or port models.
+- Preserve effective-time precision at the adapter edge. If the source provides
+  only a date, emit date-only effective-time metadata. If the source provides an
+  exact timestamp, preserve that exact timestamp even when it is midnight.
+- Use the repo-wide temporal convention consistently. Fields that may be
+  date-only or exact-time must use `*_at` plus `*_precision`, with one shared
+  precision enum rather than provider-local boolean flags or ad hoc string
+  markers.
+- Infer temporal precision from the source contract and parsed field shape, not
+  from the normalized clock value. An exact midnight timestamp remains
+  `timestamp` precision; a date-only source value remains `date` precision.
 - Declare `FactLegPolicy` explicitly on every emitted draft. Required kinds and
   zero-`primary` behavior must be expressed through the policy limits rather
   than inferred by shared defaults.
