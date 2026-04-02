@@ -80,13 +80,12 @@ def collect_documents() -> list[Document]:
                 frontmatter=frontmatter,
             )
         )
+    validate_nav_order_uniqueness(documents)
     return documents
 
 
 def validate_documents() -> list[Document]:
-    documents = collect_documents()
-    validate_nav_order_uniqueness(documents)
-    return documents
+    return collect_documents()
 
 
 def section_documents(documents: list[Document], section: str) -> list[Document]:
@@ -239,7 +238,6 @@ def write_scaffold(args: argparse.Namespace) -> int:
 
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(frontmatter + starter_body(doc_type, args.title), encoding="utf-8")
-    print(relative)
 
     sync_prefixes = (
         "docs/concepts/",
@@ -249,8 +247,13 @@ def write_scaffold(args: argparse.Namespace) -> int:
         "docs/standards/",
     )
     if relative_path(path).startswith(sync_prefixes):
-        documents = collect_documents()
-        sync_docs_homepage(documents, check=False)
+        try:
+            documents = collect_documents()
+            sync_docs_homepage(documents, check=False)
+        except Exception:
+            path.unlink(missing_ok=True)
+            raise
+    print(relative)
     return 0
 
 

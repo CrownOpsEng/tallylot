@@ -566,6 +566,105 @@ def test_validate_documents_rejects_duplicate_nav_order(
         docs_maintenance.validate_documents()
 
 
+def test_scaffold_rejects_duplicate_nav_order_and_rolls_back(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs_root = tmp_path / "docs"
+    (tmp_path / "agents").mkdir()
+    for section in ("concepts", "guides", "reference", "status", "standards"):
+        (docs_root / section).mkdir(parents=True, exist_ok=True)
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+            """
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(docs_maintenance.cli, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.cli, "DOCS_ROOT", docs_root)
+    monkeypatch.setattr(docs_maintenance.cli, "AGENTS_ROOT", tmp_path / "agents")
+    monkeypatch.setattr(docs_maintenance.state, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(docs_maintenance.state, "DOCS_ROOT", docs_root)
+    monkeypatch.setattr(docs_maintenance.state, "AGENTS_ROOT", tmp_path / "agents")
+
+    assert (
+        docs_maintenance.main(
+            [
+                "scaffold",
+                "--section",
+                "guides",
+                "--slug",
+                "one",
+                "--title",
+                "One",
+                "--summary",
+                "One summary.",
+                "--nav-order",
+                "10",
+            ]
+        )
+        == 0
+    )
+
+    assert (
+        docs_maintenance.main(
+            [
+                "scaffold",
+                "--section",
+                "guides",
+                "--slug",
+                "two",
+                "--title",
+                "Two",
+                "--summary",
+                "Two summary.",
+                "--nav-order",
+                "10",
+            ]
+        )
+        == 1
+    )
+    assert not (docs_root / "guides" / "two.md").exists()
+    captured = capsys.readouterr()
+    assert "docs/guides/one.md" in captured.out
+    assert "docs/guides/two.md" not in captured.out
+
+
 def test_validate_uv_examples_rejects_bare_uv_examples(tmp_path: Path) -> None:
     page = tmp_path / "README.md"
     page.write_text("Run `uv run python -m tools.docs_maintenance sync --check`.\n", encoding="utf-8")
