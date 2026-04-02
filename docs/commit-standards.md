@@ -75,8 +75,8 @@ Standard footers are allowed, including `BREAKING CHANGE:`.
 
 ## Stable Checkpoint Commits
 
-Commit at stable checkpoints by default. This is a workflow preference, not a
-hard timer or commit-count rule.
+Commit at stable checkpoints by default. In this repo that is an expected
+working agreement, not optional guidance to ignore once a change is stable.
 
 A stable checkpoint means:
 
@@ -95,12 +95,16 @@ series of micro-commits with no practical review value.
 
 ## Local Setup
 
-Install the repo hooks and commit template in each clone:
+Install the repo hooks and commit template in each clone before doing stable
+work:
 
 ```bash
 git config --local commit.template .gitmessage.txt
 uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```
+
+Do not replace this with ad hoc wrappers unless the docs are updated in the
+same change and the wrapper exactly preserves the documented behavior.
 
 Validate messages directly when needed:
 
