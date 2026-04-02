@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections import Counter
 
-from .intake_package_markers import package_cycle_status, package_sort_key
-from .intake_package_models import BundlePackage, package_key
-from .intake_package_scope import scope_status
+from .package_markers import package_cycle_status, package_sort_key
+from .package_models import BundlePackage, package_key
+from .package_scope import scope_status
 
 
 def apply_duplicate_decisions(

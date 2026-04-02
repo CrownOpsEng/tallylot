@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .intake_package_models import BundlePackage
+from .package_models import BundlePackage
 
 
 def compatible_scope(primary: BundlePackage, candidate: BundlePackage) -> bool:

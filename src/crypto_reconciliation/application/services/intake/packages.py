@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .intake_package_models import PackageRuleSummary, PlannedPackageItem
-from .intake_package_resolution import apply_package_rules
+from .package_models import PackageRuleSummary, PlannedPackageItem
+from .package_resolution import apply_package_rules
 
 __all__ = [
     "PackageRuleSummary",

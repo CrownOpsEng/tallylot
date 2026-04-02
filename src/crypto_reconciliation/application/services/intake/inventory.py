@@ -5,8 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from crypto_reconciliation.application.services.intake_file_facts import IntakeFileFacts
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+
+from .file_facts import IntakeFileFacts
 
 
 @dataclass(frozen=True)

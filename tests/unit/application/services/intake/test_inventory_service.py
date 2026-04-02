@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.application.services.intake_file_facts import IntakeFileFacts
-from crypto_reconciliation.application.services.intake_inventory import resolve_inventory_route
+from crypto_reconciliation.application.services.intake.file_facts import IntakeFileFacts
+from crypto_reconciliation.application.services.intake.inventory import resolve_inventory_route
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
 

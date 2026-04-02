@@ -6,22 +6,22 @@ from collections import Counter, defaultdict
 from dataclasses import replace
 from datetime import datetime
 
-from .intake_package_duplicates import apply_duplicate_decisions
-from .intake_package_markers import (
+from .package_duplicates import apply_duplicate_decisions
+from .package_markers import (
     logical_key,
     material_indexes,
     package_sort_key,
     row_marker,
 )
-from .intake_package_merges import apply_merge_decisions
-from .intake_package_models import (
+from .package_merges import apply_merge_decisions
+from .package_models import (
     BundlePackage,
     PackageGroupKey,
     PackageRuleSummary,
     PlannedPackageItem,
     package_key,
 )
-from .intake_package_reviews import apply_default_decisions, apply_overlap_review_decisions
+from .package_reviews import apply_default_decisions, apply_overlap_review_decisions
 
 
 def apply_package_rules(

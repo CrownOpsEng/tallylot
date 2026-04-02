@@ -6,7 +6,7 @@ import re
 from datetime import UTC, datetime
 from pathlib import PurePosixPath
 
-from .intake_package_models import BundlePackage, PlannedPackageItem
+from .package_models import BundlePackage, PlannedPackageItem
 
 COMPACT_TIMESTAMP_14 = re.compile(r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)")
 COMPACT_TIMESTAMP_12 = re.compile(r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)")

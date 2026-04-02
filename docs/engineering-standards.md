@@ -64,11 +64,21 @@ When a capability grows, split by stable seams:
 - `domain/`: separate models, value objects, and typed aliases by concept.
 - `application/services/`: keep one workflow per service module; extract shared
   parsing, validation, or assembly logic into specifically named siblings.
+  Once a workflow area grows beyond a few related siblings or starts building a
+  flat pile of same-prefix modules such as `intake_*`, move it into a feature
+  package such as `application/services/intake/`.
 - `interfaces/`: keep command parsing and command execution thin; move real work
   into services.
 - `adapters/`: move larger adapters to package-style modules with an
   `adapter.py` or `__init__.py` entry point plus local parser, mapper, issue,
   and fixture modules.
+
+Mirror that structure in tests:
+
+- place unit tests under the matching package path when a feature owns a
+  package
+- prefer `tests/unit/application/services/intake/...` over scattering
+  `test_intake_*` files across unrelated directories
 
 ## Naming Rules
 

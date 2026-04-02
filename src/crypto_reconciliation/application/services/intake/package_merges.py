@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-from .intake_package_markers import same_export_cycle
-from .intake_package_models import BundlePackage, PlannedPackageItem, package_key
-from .intake_package_scope import compatible_scope, scope_status
+from .package_markers import same_export_cycle
+from .package_models import BundlePackage, PlannedPackageItem, package_key
+from .package_scope import compatible_scope, scope_status
 
 
 def apply_merge_decisions(
