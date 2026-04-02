@@ -16,7 +16,7 @@ from .shared import emit_response
 
 
 @output_render_app.command("file")
-def render_output_file(
+def _render_output_file(
     output_adapter: Annotated[str, typer.Option()],
     facts: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
@@ -29,3 +29,6 @@ def render_output_file(
         )
     )
     emit_response(response.__dict__)
+
+
+_COMMAND_CALLBACKS = (_render_output_file,)

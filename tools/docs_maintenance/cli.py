@@ -149,7 +149,7 @@ def replace_marker_block(text: str, marker: str, replacement: str) -> str:
     return pattern.sub(new_block, text, count=1)
 
 
-def check_retired_references() -> None:
+def _check_retired_references() -> None:
     for path in repo_markdown_paths():
         referenced_paths = set(markdown_target_paths(path))
         if path.suffix == ".md" and path.exists() and relative_path(path).startswith(("docs/", "agents/")):
@@ -287,7 +287,7 @@ def run_sync(*, check: bool) -> int:
     documents = validate_documents()
     validate_markdown_links(repo_markdown_paths())
     validate_uv_examples(repo_markdown_paths())
-    check_retired_references()
+    _check_retired_references()
     sync_docs_homepage(documents, check=check)
     print("docs maintenance sync passed")
     return 0

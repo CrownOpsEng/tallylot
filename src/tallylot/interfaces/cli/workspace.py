@@ -19,7 +19,7 @@ from .shared import emit_response
 
 
 @workspace_app.command("init")
-def workspace_init(
+def _workspace_init(
     workspace_root: Annotated[
         Path | None,
         typer.Option(dir_okay=True, file_okay=False),
@@ -35,3 +35,6 @@ def workspace_init(
             "created_path_count": len(response.created_refs),
         }
     )
+
+
+_COMMAND_CALLBACKS = (_workspace_init,)

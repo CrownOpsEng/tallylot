@@ -49,7 +49,7 @@ def override_active_roots(
 
 
 def test_docs_maintenance_sync_check_passes() -> None:
-    docs_maintenance.cli.check_retired_references()
+    docs_maintenance.cli._check_retired_references()
 
 
 def test_parse_frontmatter_supports_optional_fields() -> None:
@@ -364,7 +364,7 @@ def test_sync_check_ignores_plain_text_mentions_of_retired_paths(
 
     override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
-    docs_maintenance.cli.check_retired_references()
+    docs_maintenance.cli._check_retired_references()
 
 
 def test_validate_markdown_links_accepts_repo_local_links(tmp_path: Path) -> None:
@@ -503,7 +503,7 @@ def test_sync_check_rejects_retired_markdown_link_targets(
     override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
     with pytest.raises(ValueError, match="still references retired path docs/file-map.md"):
-        docs_maintenance.cli.check_retired_references()
+        docs_maintenance.cli._check_retired_references()
 
 
 def test_sync_check_rejects_retired_related_targets(
@@ -582,7 +582,7 @@ def test_sync_check_rejects_retired_related_targets(
     override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
     with pytest.raises(ValueError, match="still references retired path docs/file-map.md"):
-        docs_maintenance.cli.check_retired_references()
+        docs_maintenance.cli._check_retired_references()
 
 
 def test_validate_markdown_links_accepts_reference_style_links(tmp_path: Path) -> None:

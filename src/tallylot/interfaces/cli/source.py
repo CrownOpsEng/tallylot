@@ -28,7 +28,7 @@ from .shared import emit_response
 
 
 @source_app.command("manifest")
-def source_manifest(
+def _source_manifest(
     source_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
@@ -44,7 +44,7 @@ def source_manifest(
 
 
 @source_app.command("profile")
-def source_profile(
+def _source_profile(
     source: Annotated[str, typer.Option()],
     raw_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
@@ -62,7 +62,7 @@ def source_profile(
 
 
 @source_app.command("normalize")
-def source_normalize(
+def _source_normalize(
     *,  # pylint: disable=too-many-arguments,too-many-positional-arguments
     source: Annotated[str, typer.Option()],
     raw_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
@@ -85,7 +85,7 @@ def source_normalize(
 
 
 @source_intake_app.command("plan")
-def source_intake_plan(
+def _source_intake_plan(
     incoming_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     workspace_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     report_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
@@ -103,7 +103,7 @@ def source_intake_plan(
 
 
 @source_intake_app.command("apply")
-def source_intake_apply(
+def _source_intake_apply(
     incoming_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     workspace_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     report_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
@@ -118,3 +118,12 @@ def source_intake_apply(
         )
     )
     emit_response(response.__dict__)
+
+
+_COMMAND_CALLBACKS = (
+    _source_manifest,
+    _source_profile,
+    _source_normalize,
+    _source_intake_plan,
+    _source_intake_apply,
+)
