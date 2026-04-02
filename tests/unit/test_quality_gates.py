@@ -7,7 +7,7 @@ import pytest
 
 import tools.run_quality_gates
 from repo_support.paths import repo_root
-from tools.run_quality_gates import DEFAULT_TEST_COMMAND, FULL_TEST_COMMAND, _quality_gates
+from tools.run_quality_gates import _DEFAULT_TEST_COMMAND, _FULL_TEST_COMMAND, _quality_gates
 
 
 def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
@@ -25,13 +25,13 @@ def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
     assert gates[0].command == ("uv", "run", "pre-commit", "run", "markdownlint", "--all-files")
     assert gates[1].command == ("uv", "run", "actionlint", "-color")
     assert gates[5].command == ("uv", "run", "python", "-m", "tools.run_pylint")
-    assert gates[-1].command == DEFAULT_TEST_COMMAND
+    assert gates[-1].command == _DEFAULT_TEST_COMMAND
 
 
 def test_quality_gates_can_switch_to_full_pytest() -> None:
     gates = _quality_gates(full_tests=True)
 
-    assert gates[-1].command == FULL_TEST_COMMAND
+    assert gates[-1].command == _FULL_TEST_COMMAND
 
 
 def test_run_gate_exports_external_uv_project_environment(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -13,7 +13,7 @@ from tools.uv_environment import repo_uv_environment
 
 
 @dataclass(frozen=True)
-class ParityStep:
+class _ParityStep:
     name: str
     command: tuple[str, ...]
 
@@ -107,7 +107,7 @@ def _verify_built_wheel(dist_dir: Path) -> tuple[int, str, str]:
         return verify_result.returncode, verify_result.stdout, verify_result.stderr
 
 
-def _run_step(step: ParityStep) -> int:
+def _run_step(step: _ParityStep) -> int:
     started = time.perf_counter()
     result = subprocess.run(
         step.command,
@@ -131,10 +131,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("provide both --pr-title and --pr-body-file when validating PR metadata", flush=True)
         return 2
 
-    steps: list[ParityStep] = []
+    steps: list[_ParityStep] = []
     if args.include_commit_messages:
         steps.append(
-            ParityStep(
+            _ParityStep(
                 name="commit-messages",
                 command=(
                     "uv",
@@ -151,7 +151,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         base_sha, head_sha = _pr_validation_shas()
         pr_body = Path(args.pr_body_file).read_text(encoding="utf-8")
         steps.append(
-            ParityStep(
+            _ParityStep(
                 name="pr-metadata",
                 command=(
                     "uv",
@@ -171,7 +171,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         )
     steps.append(
-        ParityStep(
+        _ParityStep(
             name="quality",
             command=("uv", "run", "python", "-m", "tools.run_quality_gates", "--full-tests"),
         )
@@ -183,7 +183,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     dist_dir = Path("dist")
     shutil.rmtree(dist_dir, ignore_errors=True)
-    build_status = _run_step(ParityStep(name="build", command=("uv", "build")))
+    build_status = _run_step(_ParityStep(name="build", command=("uv", "build")))
     if build_status != 0:
         return build_status
 

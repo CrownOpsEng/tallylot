@@ -7,24 +7,24 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class PylintTarget:
+class _PylintTarget:
     name: str
     command: tuple[str, ...]
 
 
-TARGETS = (
-    PylintTarget(
+_TARGETS = (
+    _PylintTarget(
         name="src-tools",
         command=(sys.executable, "-m", "pylint", "src", "tools", "conftest.py"),
     ),
-    PylintTarget(
+    _PylintTarget(
         name="tests",
         command=(sys.executable, "-m", "pylint", "--rcfile=.pylintrc-tests", "tests"),
     ),
 )
 
 
-def _run_target(target: PylintTarget) -> int:
+def _run_target(target: _PylintTarget) -> int:
     result = subprocess.run(target.command, check=False)
     return result.returncode
 
@@ -32,7 +32,7 @@ def _run_target(target: PylintTarget) -> int:
 def main(argv: Sequence[str] | None = None) -> int:
     del argv
     exit_code = 0
-    for target in TARGETS:
+    for target in _TARGETS:
         print(f"[pylint:{target.name}] {' '.join(target.command[2:])}", flush=True)
         if _run_target(target) != 0:
             exit_code = 1

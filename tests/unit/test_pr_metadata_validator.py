@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from pytest import MonkeyPatch
 
-from tools.validate_pr_metadata import validate_pr_body, validate_pr_checkpoints, validate_pr_title
+from tools.validate_pr_metadata import _validate_pr_body, _validate_pr_checkpoints, _validate_pr_title
 
 
 def test_pr_title_with_conventional_commit_subject_is_valid() -> None:
-    errors = validate_pr_title("refactor: preserve fact model guardrails")
+    errors = _validate_pr_title("refactor: preserve fact model guardrails")
 
     assert not errors
 
 
 def test_pr_title_without_conventional_commit_subject_is_rejected() -> None:
-    errors = validate_pr_title("cleanup repo history")
+    errors = _validate_pr_title("cleanup repo history")
 
     assert errors == (
         "subject must match `type(scope): imperative summary` or "
@@ -36,7 +36,7 @@ Included checkpoints:
 - `docs: codify pull request standards`
 """
 
-    errors = validate_pr_body(body)
+    errors = _validate_pr_body(body)
 
     assert not errors
 
@@ -58,7 +58,7 @@ Included checkpoints:
 - `docs: codify pull request standards`
 """
 
-    errors = validate_pr_body(body)
+    errors = _validate_pr_body(body)
 
     assert not errors
 
@@ -75,7 +75,7 @@ Checks:
 - uv run python -m tools.run_quality_gates
 """
 
-    errors = validate_pr_body(body)
+    errors = _validate_pr_body(body)
 
     assert errors == ("missing `Included checkpoints:` section",)
 
@@ -95,7 +95,7 @@ Included checkpoints:
 - `docs: codify pull request standards`
 """
 
-    errors = validate_pr_body(body)
+    errors = _validate_pr_body(body)
 
     assert errors == ("`Why:` entries must use `- ` bullets", "`Why:` must contain at least one bullet")
 
@@ -125,7 +125,7 @@ Included checkpoints:
 
     monkeypatch.setattr("tools.validate_pr_metadata._load_commit_subjects", fake_loader)
 
-    errors = validate_pr_checkpoints(
+    errors = _validate_pr_checkpoints(
         body,
         base_sha="0000000",
         head_sha="1111111",
@@ -157,7 +157,7 @@ Included checkpoints:
 
     monkeypatch.setattr("tools.validate_pr_metadata._load_commit_subjects", fake_loader)
 
-    errors = validate_pr_checkpoints(body, base_sha="base", head_sha="head")
+    errors = _validate_pr_checkpoints(body, base_sha="base", head_sha="head")
 
     assert errors == ()
 
@@ -183,7 +183,7 @@ Included checkpoints:
 
     monkeypatch.setattr("tools.validate_pr_metadata._load_commit_subjects", fake_loader)
 
-    errors = validate_pr_checkpoints(body, base_sha="base", head_sha="head")
+    errors = _validate_pr_checkpoints(body, base_sha="base", head_sha="head")
 
     assert errors == ("`Included checkpoints:` entries must wrap commit subjects in backticks",)
 
@@ -209,6 +209,6 @@ Included checkpoints:
 
     monkeypatch.setattr("tools.validate_pr_metadata._load_commit_subjects", fake_loader)
 
-    errors = validate_pr_checkpoints(body, base_sha="base", head_sha="head")
+    errors = _validate_pr_checkpoints(body, base_sha="base", head_sha="head")
 
     assert errors == ("`Included checkpoints:` must exactly match the branch commit subjects in order",)

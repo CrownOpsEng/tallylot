@@ -16,8 +16,8 @@ class QualityGate:
     command: tuple[str, ...]
 
 
-DEFAULT_TEST_COMMAND = ("uv", "run", "pytest", "-m", "unit and not slow", "--no-cov", "-q")
-FULL_TEST_COMMAND = ("uv", "run", "pytest")
+_DEFAULT_TEST_COMMAND = ("uv", "run", "pytest", "-m", "unit and not slow", "--no-cov", "-q")
+_FULL_TEST_COMMAND = ("uv", "run", "pytest")
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -35,7 +35,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
-    test_command = FULL_TEST_COMMAND if full_tests else DEFAULT_TEST_COMMAND
+    test_command = _FULL_TEST_COMMAND if full_tests else _DEFAULT_TEST_COMMAND
     return (
         QualityGate(name="markdownlint", command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files")),
         QualityGate(name="actionlint", command=("uv", "run", "actionlint", "-color")),

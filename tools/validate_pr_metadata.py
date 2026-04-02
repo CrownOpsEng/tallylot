@@ -69,14 +69,14 @@ def _load_commit_subjects(base_sha: str, head_sha: str) -> tuple[str, ...]:
     return tuple(line for line in revision_result.stdout.splitlines() if line)
 
 
-def validate_pr_title(title: str) -> tuple[str, ...]:
+def _validate_pr_title(title: str) -> tuple[str, ...]:
     stripped = title.strip()
     if stripped == "":
         return ("PR title is required",)
     return validate_subject_line(stripped, allow_merge=False)
 
 
-def validate_pr_body(body: str) -> tuple[str, ...]:
+def _validate_pr_body(body: str) -> tuple[str, ...]:
     lines = _normalize_body_lines(body)
     if not lines:
         return ("PR body is required",)
@@ -89,7 +89,7 @@ def validate_pr_body(body: str) -> tuple[str, ...]:
     )
 
 
-def validate_pr_checkpoints(body: str, *, base_sha: str, head_sha: str) -> tuple[str, ...]:
+def _validate_pr_checkpoints(body: str, *, base_sha: str, head_sha: str) -> tuple[str, ...]:
     parsed_sections = _parse_required_sections(body)
     checkpoint_entries = parsed_sections["Included checkpoints"]
     normalized_entries = tuple(_normalize_checkpoint_entry(entry) for entry in checkpoint_entries)
@@ -122,9 +122,9 @@ def _build_argument_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     args = _build_argument_parser().parse_args(argv)
 
-    errors = [*validate_pr_title(args.title), *validate_pr_body(args.body)]
+    errors = [*_validate_pr_title(args.title), *_validate_pr_body(args.body)]
     if args.base_sha and args.head_sha:
-        errors.extend(validate_pr_checkpoints(args.body, base_sha=args.base_sha, head_sha=args.head_sha))
+        errors.extend(_validate_pr_checkpoints(args.body, base_sha=args.base_sha, head_sha=args.head_sha))
     if not errors:
         return 0
 

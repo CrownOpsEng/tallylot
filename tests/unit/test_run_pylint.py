@@ -3,22 +3,22 @@ from __future__ import annotations
 import sys
 
 from repo_support.paths import repo_root
-from tools.run_pylint import TARGETS, PylintTarget
+from tools.run_pylint import _PylintTarget, _TARGETS
 
 
 def test_pylint_targets_split_repo_code_from_tests() -> None:
     expected_targets = (
-        PylintTarget(
+        _PylintTarget(
             name="src-tools",
             command=(sys.executable, "-m", "pylint", "src", "tools", "conftest.py"),
         ),
-        PylintTarget(
+        _PylintTarget(
             name="tests",
             command=(sys.executable, "-m", "pylint", "--rcfile=.pylintrc-tests", "tests"),
         ),
     )
 
-    assert expected_targets == TARGETS
+    assert expected_targets == _TARGETS
 
 
 def test_test_pylint_rcfile_disables_protected_access() -> None:

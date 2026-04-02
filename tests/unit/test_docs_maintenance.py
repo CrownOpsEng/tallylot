@@ -27,11 +27,11 @@ def entrypoint_paths() -> tuple[Path, ...]:
 
 @pytest.fixture(autouse=True)
 def reset_repo_root_state() -> Iterator[None]:
-    repo_paths.reset_repo_root()
+    repo_paths._reset_repo_root()
     try:
         yield
     finally:
-        repo_paths.reset_repo_root()
+        repo_paths._reset_repo_root()
 
 
 def override_active_roots(
@@ -45,7 +45,7 @@ def override_active_roots(
     expected_docs_root = root.resolve() / "docs"
     if resolved_docs_root.resolve() != expected_docs_root:
         raise AssertionError(f"docs root must resolve under the repo root: {resolved_docs_root}")
-    repo_paths.set_repo_root(root)
+    repo_paths._set_repo_root(root)
 
 
 def test_docs_maintenance_sync_check_passes() -> None:

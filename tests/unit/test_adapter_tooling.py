@@ -3,12 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from repo_support import paths as repo_paths
-from tools.adapter_packs import load_adapter_packs, select_adapter_packs
-from tools.scaffold_adapter import AdapterScaffoldSpec, _build_argument_parser, scaffold_adapter
+from tools.adapter_packs import _load_adapter_packs, select_adapter_packs
+from tools.scaffold_adapter import _AdapterScaffoldSpec, _build_argument_parser, _scaffold_adapter
 
 
 def test_load_adapter_packs_discovers_structured_csv_pack() -> None:
-    packs = load_adapter_packs()
+    packs = _load_adapter_packs()
 
     pack_ids = {pack.id for pack in packs}
 
@@ -36,7 +36,7 @@ def test_load_adapter_packs_uses_active_repo_root_by_default(tmp_path: Path) -> 
     )
 
     with repo_paths.override_repo_root(tmp_path):
-        packs = load_adapter_packs()
+        packs = _load_adapter_packs()
 
     assert len(packs) == 1
     assert packs[0].id == "example/basic"
@@ -57,8 +57,8 @@ def test_scaffold_parser_uses_active_repo_root_by_default(tmp_path: Path) -> Non
 
 def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
-    created = scaffold_adapter(
-        spec=AdapterScaffoldSpec(
+    created = _scaffold_adapter(
+        spec=_AdapterScaffoldSpec(
             repo_root=repo_root,
             kind="source",
             module_name="platforms/example_exchange",
@@ -93,8 +93,8 @@ def test_scaffold_adapter_requires_source_category_namespace(tmp_path: Path) -> 
     repo_root = tmp_path / "repo"
 
     try:
-        scaffold_adapter(
-            spec=AdapterScaffoldSpec(
+        _scaffold_adapter(
+            spec=_AdapterScaffoldSpec(
                 repo_root=repo_root,
                 kind="source",
                 module_name="example_exchange",

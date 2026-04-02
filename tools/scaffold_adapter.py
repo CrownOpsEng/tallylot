@@ -39,7 +39,7 @@ def _camel_case(value: str) -> str:
 
 
 @dataclass(frozen=True)
-class AdapterScaffoldSpec:
+class _AdapterScaffoldSpec:
     repo_root: Path
     kind: str
     module_name: str
@@ -60,9 +60,9 @@ def _module_parts(kind: str, module_name: str) -> tuple[str, ...]:
     return parts
 
 
-def scaffold_adapter(
+def _scaffold_adapter(
     *,
-    spec: AdapterScaffoldSpec,
+    spec: _AdapterScaffoldSpec,
     force: bool,
 ) -> tuple[Path, ...]:
     module_parts = _module_parts(spec.kind, spec.module_name)
@@ -124,7 +124,7 @@ def _adapter_root(repo_root: Path, kind: str, module_parts: tuple[str, ...]) -> 
 
 def _adapter_template(
     *,
-    spec: AdapterScaffoldSpec,
+    spec: _AdapterScaffoldSpec,
     adapter_name: str,
     adapter_class_name: str,
 ) -> str:
@@ -337,8 +337,8 @@ def _write_file(path: Path, content: str, *, force: bool) -> Path:
 def main(argv: list[str] | None = None) -> int:
     args = _build_argument_parser().parse_args(argv)
     resolved_repo_root = active_repo_root() if args.repo_root is None else args.repo_root.resolve()
-    created = scaffold_adapter(
-        spec=AdapterScaffoldSpec(
+    created = _scaffold_adapter(
+        spec=_AdapterScaffoldSpec(
             repo_root=resolved_repo_root,
             kind=args.kind,
             module_name=args.module_name,

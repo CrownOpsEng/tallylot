@@ -22,22 +22,22 @@ def repo_root() -> Path:
     return _STATE["repo_root"]
 
 
-def set_repo_root(path: Path) -> None:
+def _set_repo_root(path: Path) -> None:
     _STATE["repo_root"] = _normalize_root(path)
 
 
-def reset_repo_root() -> None:
+def _reset_repo_root() -> None:
     _STATE["repo_root"] = _DEFAULT_REPO_ROOT
 
 
 @contextmanager
 def override_repo_root(path: Path) -> Iterator[Path]:
     previous_root = repo_root()
-    set_repo_root(path)
+    _set_repo_root(path)
     try:
         yield repo_root()
     finally:
-        set_repo_root(previous_root)
+        _set_repo_root(previous_root)
 
 
 def src_root() -> Path:
