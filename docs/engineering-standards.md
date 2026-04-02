@@ -83,7 +83,10 @@ When a capability grows, split by stable seams:
 
 Split these modules before adding materially new behavior:
 
-- `src/crypto_reconciliation/adapters/sources/structured_csv.py`
+- `src/crypto_reconciliation/application/services/intake.py`
+- `src/crypto_reconciliation/application/services/intake_packages.py`
+- `src/crypto_reconciliation/adapters/sources/binance/adapter.py`
+- `src/crypto_reconciliation/adapters/sources/coinbase/adapter.py`
 - `src/crypto_reconciliation/domain/models.py`
 - `src/crypto_reconciliation/interfaces/cli.py`
 - `src/crypto_reconciliation/infrastructure/discovery/adapters.py`

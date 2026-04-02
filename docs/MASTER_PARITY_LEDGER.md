@@ -18,7 +18,8 @@ or file locations are not revived to satisfy parity.
 
 | Metric | `master` | Current |
 | ---- | ----: | ----: |
-| Raw test definitions | 243 | 284 |
+| Raw test definitions | 243 | 302 |
+| Collected pytest tests | n/a | 350 |
 | Legacy test families | 25 | n/a |
 | Status of legacy families | n/a | 25 closed |
 
@@ -67,6 +68,12 @@ or file locations are not revived to satisfy parity.
   inventory-backed wallet routing.
 - Restored adapter-local proof for Coinbase, Binance, NEAR, EVM explorer, and
   EVM wallet-state instead of relying only on aggregate golden packs.
+- Split the `structured_csv` adapter into package-style typed seams with direct
+  validator, feedback, and normalization tests instead of a single hotspot
+  module.
+- Split broad workflow proof into service-focused workflow test modules so
+  manifesting, verification, staging, and wallet-inventory parity remain
+  directly auditable instead of being buried in one large file.
 - Fixed a real Binance regression where transaction-history sentinel rows
   created false unsupported-group issues.
 - Restored parity-friendly JSON artifact writing with parent creation, sorted
