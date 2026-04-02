@@ -10,11 +10,15 @@ repo-local agent entrypoint.
 | `docs/MOP.md` | Full typed-package workflow and manual CoinTracking procedure |
 | `docs/OPERATIONS_QUICKSTART.md` | Shortest safe route through the workflow |
 | `docs/BASELINE_VALIDATION.md` | Baseline validation artifact package |
+| `docs/RECONCILIATION_TAX_IMPLEMENTATION_PLAN.md` | Implementation anchor for the reconciliation, checkpoint, accounting, and tax buildout |
+| `docs/IMPLEMENTATION_WORKING_AGREEMENT.md` | Coding-time execution contract for refactors, tests, and commits |
+| `docs/ORACLE_AND_INPUT_BOUNDARIES.md` | Platform-agnostic runtime and oracle boundary rules |
+| `docs/TRANSACTION_CLASSIFICATION_MATRIX.md` | Layered classification mapping and support tiers |
+| `docs/IMPLEMENTATION_MIGRATION_SEQUENCE.md` | Migration order, dual-write strategy, and parity gates |
 | `docs/WALLET_INVENTORY.md` | Wallet inventory rebuild outputs and review rules |
 | `docs/TIMEZONE_VALIDATION.md` | Timezone provenance and review contract |
 | `docs/EXPORT_CHECKLIST.md` | Verification export and staging checklist |
 | `docs/PROJECT_STATE.md` | Current implemented runtime surface |
-| `docs/MASTER_PARITY_LEDGER.md` | Sole behavior-level legacy-family parity ledger and recovery map |
 | `docs/AI_SESSION_PROMPT.md` | Compact agent context |
 
 ## Active Workspace Artifacts
@@ -69,5 +73,7 @@ repo-local agent entrypoint.
 | `.claude/commands/wallet-inventory.md` | Wallet inventory rebuild workflow |
 | `.claude/commands/normalization-exceptions.md` | Review normalization exceptions and reviews |
 | `.claude/commands/source-reconcile.md` | Candidate-versus-reference reconciliation workflow |
+| `.claude/commands/reconciliation-tax-build.md` | Architecture and implementation route for the reconciliation, checkpoint, accounting, and tax buildout |
+| `.claude/commands/implementation-checkpoint.md` | Final implementation review, verification, and commit route |
 | `.claude/commands/supporting-artifacts.md` | PDF balance extraction and supporting evidence workflow |
 | `.claude/commands/adapter-authoring.md` | Adapter authoring and repair route |

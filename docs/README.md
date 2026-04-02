@@ -12,6 +12,9 @@ workflow around it.
   contracts and conventions
 - [`workspace-layout.md`](workspace-layout.md): external workspace shape and
   seeded files
+- [`IMPLEMENTATION_WORKING_AGREEMENT.md`](IMPLEMENTATION_WORKING_AGREEMENT.md):
+  execution contract for refactoring, testing, and checkpoint commits during
+  coding
 - [`commit-standards.md`](commit-standards.md): commit message format and
   checkpoint rules
 
@@ -19,8 +22,15 @@ workflow around it.
 
 - [`PROJECT_STATE.md`](PROJECT_STATE.md): current runtime and project-surface
   status
-- [`MASTER_PARITY_LEDGER.md`](MASTER_PARITY_LEDGER.md): sole legacy-family
-  behavior-parity ledger and typed recovery map
+- [`RECONCILIATION_TAX_IMPLEMENTATION_PLAN.md`](RECONCILIATION_TAX_IMPLEMENTATION_PLAN.md):
+  design and implementation anchor for the reconciliation, checkpoint,
+  accounting, and tax-engine buildout
+- [`ORACLE_AND_INPUT_BOUNDARIES.md`](ORACLE_AND_INPUT_BOUNDARIES.md):
+  platform-agnostic runtime-versus-oracle boundary rules
+- [`TRANSACTION_CLASSIFICATION_MATRIX.md`](TRANSACTION_CLASSIFICATION_MATRIX.md):
+  layered classification and CoinTracking compatibility mapping
+- [`IMPLEMENTATION_MIGRATION_SEQUENCE.md`](IMPLEMENTATION_MIGRATION_SEQUENCE.md):
+  no-big-bang migration order and parity gates
 - [`OPERATIONS_QUICKSTART.md`](OPERATIONS_QUICKSTART.md): shortest safe path
   through the current workflow
 - [`MOP.md`](MOP.md): full manual of procedure for the current typed package
@@ -64,6 +74,11 @@ workflow around it.
   normalization review route
 - [`.claude/commands/source-reconcile.md`](../.claude/commands/source-reconcile.md):
   candidate-versus-reference diff route
+- [`.claude/commands/reconciliation-tax-build.md`](../.claude/commands/reconciliation-tax-build.md):
+  architecture and implementation route for the reconciliation, checkpoint,
+  accounting, and tax buildout
+- [`.claude/commands/implementation-checkpoint.md`](../.claude/commands/implementation-checkpoint.md):
+  final coding-quality, refactor, and commit checkpoint route
 - [`.claude/commands/supporting-artifacts.md`](../.claude/commands/supporting-artifacts.md):
   PDF balance extraction and supporting evidence route
 - [`.claude/commands/adapter-authoring.md`](../.claude/commands/adapter-authoring.md):
