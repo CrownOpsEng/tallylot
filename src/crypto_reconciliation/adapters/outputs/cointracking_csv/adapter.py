@@ -1,4 +1,4 @@
-"""Stub CoinTracking API output adapter entry point."""
+"""CoinTracking CSV output adapter."""
 
 from __future__ import annotations
 
@@ -10,29 +10,29 @@ from crypto_reconciliation.ports.adapters import RenderedArtifact
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 from crypto_reconciliation.ports.output_workflows import BaselineArtifacts, ScreeningResult
 
+from . import baseline as baseline_support
+from . import screening
+from .rendering import render as render_output
+from .schema import CANDIDATE_ARTIFACT_NAME
 
-class CoinTrackingApiStubAdapter:
+
+class CoinTrackingCsvAdapter:
     manifest = AdapterManifest(
-        adapter_id=AdapterId("cointracking_api"),
-        display_name="CoinTracking API",
-        version="0.0.0",
-        capabilities=frozenset({AdapterCapability.OUTPUT_RENDER}),
-        supported=False,
-        description="Reserved API adapter entry point.",
+        adapter_id=AdapterId("cointracking_csv"),
+        display_name="CoinTracking CSV",
+        version="1.0.0",
+        capabilities=frozenset({AdapterCapability.OUTPUT_RENDER, AdapterCapability.REVIEW}),
+        description="Render canonical events into CoinTracking-compatible CSV rows and review CoinTracking exports.",
     )
 
     def render(self, events: tuple[CanonicalEvent, ...], output_path: Path) -> RenderedArtifact:
-        del events, output_path
-        raise NotImplementedError(
-            "CoinTracking API integration is intentionally stubbed in this phase.",
-        )
+        return render_output(events, output_path)
 
     def candidate_artifact_name(self) -> str:
-        return "cointracking_api_candidate.json"
+        return CANDIDATE_ARTIFACT_NAME
 
     def match_candidate(self, candidate_path: Path, artifacts: ArtifactStorePort) -> int:
-        del candidate_path, artifacts
-        return 0
+        return screening.match_candidate(candidate_path, artifacts)
 
     def screen_candidate(
         self,
@@ -40,16 +40,14 @@ class CoinTrackingApiStubAdapter:
         baseline_export_dir: Path,
         artifacts: ArtifactStorePort,
     ) -> ScreeningResult:
-        del candidate_path, baseline_export_dir, artifacts
-        raise NotImplementedError("CoinTracking API review workflows are intentionally stubbed in this phase.")
+        return screening.screen_candidate(candidate_path, baseline_export_dir, artifacts)
 
     def match_baseline_exports(self, export_dir: Path, artifacts: ArtifactStorePort) -> int:
-        del export_dir, artifacts
-        return 0
+        del artifacts
+        return baseline_support.match_baseline_exports(export_dir)
 
     def build_baseline_artifacts(self, export_dir: Path, artifacts: ArtifactStorePort) -> BaselineArtifacts:
-        del export_dir, artifacts
-        raise NotImplementedError("CoinTracking API review workflows are intentionally stubbed in this phase.")
+        return baseline_support.build_baseline_artifacts(export_dir, artifacts)
 
 
-ADAPTER = CoinTrackingApiStubAdapter()
+ADAPTER = CoinTrackingCsvAdapter()

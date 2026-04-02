@@ -1,4 +1,4 @@
-"""Pure baseline analysis helpers."""
+"""CoinTracking baseline export analysis."""
 
 from __future__ import annotations
 
@@ -8,29 +8,11 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
-from crypto_reconciliation.application.services.export_files import find_required_csv_exports
-from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.domain.value_objects import format_timestamp, parse_timestamp
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from crypto_reconciliation.ports.output_workflows import BaselineArtifacts
 
-REQUIRED_BASELINE_EXPORTS = (
-    "Trade Table",
-    "Current Balance",
-    "Balance by Exchange",
-    "Validate Transactions",
-    "Missing Transactions",
-    "Duplicate Transactions",
-)
-
-
-@dataclass(frozen=True)
-class BaselineArtifacts:
-    asset_snapshot_rows: list[dict[str, str]]
-    reconciliation_rows: list[dict[str, str]]
-    negative_balances: list[dict[str, str]]
-    source_activity_rows: list[dict[str, str]]
-    cad_flow_rows: list[dict[str, str]]
-    cad_balance_by_exchange_rows: list[dict[str, str]]
-    summary: dict[str, JsonValue]
+from .schema import REQUIRED_BASELINE_EXPORTS
 
 
 @dataclass(frozen=True)
@@ -43,8 +25,27 @@ class BaselineExportRows:
     duplicate_rows: list[dict[str, str]]
 
 
+def match_baseline_exports(export_dir: Path) -> int:
+    present = sum(1 for stem in REQUIRED_BASELINE_EXPORTS if _find_matching_csv_files(export_dir, stem))
+    return 0 if present == 0 else int(100 * present / len(REQUIRED_BASELINE_EXPORTS))
+
+
+def build_baseline_artifacts(export_dir: Path, artifacts: ArtifactStorePort) -> BaselineArtifacts:
+    exports = find_required_baseline_exports(export_dir)
+    return build_baseline_artifacts_from_rows(
+        BaselineExportRows(
+            trade_rows=artifacts.read_rows(exports["Trade Table"]),
+            current_rows=artifacts.read_rows(exports["Current Balance"]),
+            exchange_rows=artifacts.read_rows(exports["Balance by Exchange"]),
+            validate_rows=artifacts.read_rows(exports["Validate Transactions"]),
+            missing_rows=artifacts.read_rows(exports["Missing Transactions"]),
+            duplicate_rows=artifacts.read_rows(exports["Duplicate Transactions"]),
+        )
+    )
+
+
 def find_required_baseline_exports(export_dir: Path) -> dict[str, Path]:
-    return find_required_csv_exports(export_dir, REQUIRED_BASELINE_EXPORTS)
+    return {stem: _find_required_csv_export(export_dir, stem) for stem in REQUIRED_BASELINE_EXPORTS}
 
 
 def decimal_text(value: Decimal) -> str:
@@ -215,7 +216,7 @@ def build_cad_flow_summary(
     return rows, cad_bought_total, cad_sold_total, cad_fee_total
 
 
-def build_baseline_artifacts(rows: BaselineExportRows) -> BaselineArtifacts:
+def build_baseline_artifacts_from_rows(rows: BaselineExportRows) -> BaselineArtifacts:
     latest_timestamp = latest_trade_timestamp(rows.trade_rows)
     asset_snapshot_rows, current_by_ticker, negative_balances = build_asset_snapshot(
         rows.current_rows,
@@ -267,7 +268,25 @@ def _decimal_or_zero(value: str | Decimal) -> Decimal:
 
 
 def _exchange_totals_by_asset(exchange_rows: list[dict[str, str]]) -> dict[str, Decimal]:
-    exchange_totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
     for row in exchange_rows:
-        exchange_totals[row["Currency"]] += _decimal_or_zero(row["Amount"])
-    return dict(exchange_totals)
+        totals[row["Currency"]] += _decimal_or_zero(row["Amount"])
+    return dict(totals)
+
+
+def _find_matching_csv_files(directory: Path, stem: str) -> list[Path]:
+    return sorted(
+        path
+        for path in directory.iterdir()
+        if path.is_file() and path.suffix.lower() == ".csv" and stem.lower() in path.name.lower()
+    )
+
+
+def _find_required_csv_export(directory: Path, stem: str) -> Path:
+    matches = _find_matching_csv_files(directory, stem)
+    if not matches:
+        raise FileNotFoundError(f"expected exactly one export containing {stem!r} in {directory}")
+    if len(matches) > 1:
+        candidates = ", ".join(path.name for path in matches)
+        raise ValueError(f"Ambiguous export containing {stem!r} in {directory}: {candidates}")
+    return matches[0]

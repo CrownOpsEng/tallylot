@@ -8,6 +8,7 @@ from crypto_reconciliation.application.services.staging import (
     BatchScreeningService,
     BatchStagingService,
 )
+from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -62,7 +63,7 @@ def test_batch_staging_uses_normalization_summary_window_and_import_ready_copy(
         encoding="utf-8",
     )
 
-    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
+    response = BatchStagingService(BatchScreeningService(build_registry(), FilesystemArtifactStore())).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,
@@ -131,7 +132,7 @@ def test_batch_staging_explicit_window_overrides_normalization_summary(
         encoding="utf-8",
     )
 
-    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
+    response = BatchStagingService(BatchScreeningService(build_registry(), FilesystemArtifactStore())).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,
@@ -187,7 +188,7 @@ def test_batch_staging_blocks_candidates_outside_normalization_window(
         ),
     )
 
-    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
+    response = BatchStagingService(BatchScreeningService(build_registry(), FilesystemArtifactStore())).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,

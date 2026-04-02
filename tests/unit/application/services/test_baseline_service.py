@@ -6,9 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.dtos import BaselineValidateRequest
-from crypto_reconciliation.application.services.baseline import (
-    BaselineValidationService,
+from crypto_reconciliation.adapters.outputs.cointracking_csv.baseline import (
     build_asset_snapshot,
     build_cad_flow_summary,
     build_exchange_reconciliation,
@@ -18,7 +16,10 @@ from crypto_reconciliation.application.services.baseline import (
     latest_trade_timestamp,
     parse_trade_table_row,
 )
+from crypto_reconciliation.application.dtos import BaselineValidateRequest
+from crypto_reconciliation.application.services.baseline import BaselineValidationService
 from crypto_reconciliation.application.services.export_files import find_required_csv_export, find_required_csv_exports
+from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
@@ -258,7 +259,7 @@ def test_baseline_validation_service_writes_relocation_safe_artifacts(
 ) -> None:
     output_dir = tmp_path / "baseline"
 
-    response = BaselineValidationService(FilesystemArtifactStore()).execute(
+    response = BaselineValidationService(build_registry(), FilesystemArtifactStore()).execute(
         BaselineValidateRequest(export_dir=baseline_export_dir, output_dir=output_dir)
     )
 

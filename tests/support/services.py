@@ -8,7 +8,7 @@ from crypto_reconciliation.application.services.normalize import (
     NormalizationService,
 )
 from crypto_reconciliation.application.services.profile import ProfileService
-from crypto_reconciliation.application.services.render import CoinTrackingRenderService
+from crypto_reconciliation.application.services.render import OutputRenderService
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
@@ -70,9 +70,9 @@ def build_normalization_service(
 def build_render_service(
     *,
     artifacts: FilesystemArtifactStore | None = None,
-) -> CoinTrackingRenderService:
+) -> OutputRenderService:
     runtime_registry = build_registry()
-    return CoinTrackingRenderService(runtime_registry, artifacts or FilesystemArtifactStore())
+    return OutputRenderService(runtime_registry, artifacts or FilesystemArtifactStore())
 
 
 @dataclass(frozen=True)

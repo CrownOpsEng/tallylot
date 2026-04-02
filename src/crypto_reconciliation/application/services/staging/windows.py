@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 from datetime import timedelta
 from pathlib import Path
@@ -9,8 +10,6 @@ from typing import cast
 
 from crypto_reconciliation.application.services.export_files import find_required_csv_export
 from crypto_reconciliation.domain.value_objects import parse_timestamp
-
-from .validation import read_candidate_rows
 
 DEFAULT_NORMALIZATION_WINDOW_END = "2025-12-31 23:59:59"
 
@@ -71,3 +70,8 @@ def count_candidate_rows_outside_window(
         if date_dt < start_dt or date_dt > end_dt:
             rows_outside_window += 1
     return rows_outside_window
+
+
+def read_candidate_rows(path: Path) -> list[dict[str, str]]:
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        return list(csv.DictReader(handle))

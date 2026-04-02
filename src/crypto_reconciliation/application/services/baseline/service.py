@@ -5,14 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from crypto_reconciliation.application.dtos import BaselineValidateRequest, BaselineValidateResponse
+from crypto_reconciliation.domain.models import AdapterCapability
+from crypto_reconciliation.ports.adapters import OutputAdapter, OutputAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
-
-from .analysis import (
-    BaselineArtifacts,
-    BaselineExportRows,
-    build_baseline_artifacts,
-    find_required_baseline_exports,
-)
+from crypto_reconciliation.ports.output_workflows import BaselineArtifacts
 
 ASSET_SNAPSHOT_HEADER = (
     "ticker",
@@ -43,21 +39,13 @@ CAD_BALANCE_HEADER = ("exchange", "amount", "current_value_cad")
 
 
 class BaselineValidationService:
-    def __init__(self, artifacts: ArtifactStorePort) -> None:
+    def __init__(self, registry: OutputAdapterRegistryPort, artifacts: ArtifactStorePort) -> None:
+        self._registry = registry
         self._artifacts = artifacts
 
     def execute(self, request: BaselineValidateRequest) -> BaselineValidateResponse:
-        exports = find_required_baseline_exports(request.export_dir)
-        artifacts = build_baseline_artifacts(
-            BaselineExportRows(
-                trade_rows=self._artifacts.read_rows(exports["Trade Table"]),
-                current_rows=self._artifacts.read_rows(exports["Current Balance"]),
-                exchange_rows=self._artifacts.read_rows(exports["Balance by Exchange"]),
-                validate_rows=self._artifacts.read_rows(exports["Validate Transactions"]),
-                missing_rows=self._artifacts.read_rows(exports["Missing Transactions"]),
-                duplicate_rows=self._artifacts.read_rows(exports["Duplicate Transactions"]),
-            )
-        )
+        adapter = _resolve_review_adapter(self._registry, request.export_dir, self._artifacts)
+        artifacts = adapter.build_baseline_artifacts(request.export_dir, self._artifacts)
         request.output_dir.mkdir(parents=True, exist_ok=True)
         _write_baseline_artifacts(request.output_dir, artifacts, self._artifacts)
         return BaselineValidateResponse(
@@ -95,3 +83,25 @@ def _write_baseline_artifacts(
         artifacts.cad_balance_by_exchange_rows,
     )
     store.write_json(output_dir / "baseline_summary.json", artifacts.summary)
+
+
+def _resolve_review_adapter(
+    registry: OutputAdapterRegistryPort,
+    export_dir: Path,
+    artifacts: ArtifactStorePort,
+) -> OutputAdapter:
+    matches = [
+        (adapter.match_baseline_exports(export_dir, artifacts), adapter)
+        for adapter in registry.output_adapters
+        if adapter.manifest.supported and AdapterCapability.REVIEW in adapter.manifest.capabilities
+    ]
+    scored_matches = [(score, adapter) for score, adapter in matches if score > 0]
+    if not scored_matches:
+        raise ValueError(f"unable to detect supported baseline export adapter from {export_dir}")
+    scored_matches.sort(key=lambda item: item[0], reverse=True)
+    best_score = scored_matches[0][0]
+    best_adapters = [adapter for score, adapter in scored_matches if score == best_score]
+    if len(best_adapters) > 1:
+        adapter_ids = ", ".join(sorted(str(adapter.manifest.adapter_id) for adapter in best_adapters))
+        raise ValueError(f"ambiguous baseline export adapter: {adapter_ids}")
+    return best_adapters[0]

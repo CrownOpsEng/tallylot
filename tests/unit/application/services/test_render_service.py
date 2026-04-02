@@ -7,13 +7,15 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.dtos import RenderCoinTrackingRequest
-from crypto_reconciliation.application.services.render import CoinTrackingRenderService
+from crypto_reconciliation.application.dtos import RenderOutputRequest
+from crypto_reconciliation.application.services.render import OutputRenderService
 from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest, CanonicalEvent
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.ports.adapters import OutputAdapter, RenderedArtifact
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from crypto_reconciliation.ports.output_workflows import BaselineArtifacts, ScreeningResult
 
 
 @dataclass(frozen=True)
@@ -44,10 +46,34 @@ class FakeOutputAdapter:
         del events, output_path
         raise AssertionError("render should not be called when adapter validation fails")
 
+    def candidate_artifact_name(self) -> str:
+        return "cointracking_candidate.csv"
+
+    def match_candidate(self, candidate_path: Path, artifacts: ArtifactStorePort) -> int:
+        del candidate_path, artifacts
+        return 0
+
+    def screen_candidate(
+        self,
+        candidate_path: Path,
+        baseline_export_dir: Path,
+        artifacts: ArtifactStorePort,
+    ) -> ScreeningResult:
+        del candidate_path, baseline_export_dir, artifacts
+        raise AssertionError("screen_candidate should not be called in render tests")
+
+    def match_baseline_exports(self, export_dir: Path, artifacts: ArtifactStorePort) -> int:
+        del export_dir, artifacts
+        return 0
+
+    def build_baseline_artifacts(self, export_dir: Path, artifacts: ArtifactStorePort) -> BaselineArtifacts:
+        del export_dir, artifacts
+        raise AssertionError("build_baseline_artifacts should not be called in render tests")
+
 
 def test_render_service_rejects_unsupported_output_adapters(tmp_path: Path) -> None:
     canonical_events_path = _write_canonical_events(tmp_path)
-    service = CoinTrackingRenderService(
+    service = OutputRenderService(
         FakeOutputRegistry(
             FakeOutputAdapter(
                 supported=False,
@@ -59,7 +85,8 @@ def test_render_service_rejects_unsupported_output_adapters(tmp_path: Path) -> N
 
     with pytest.raises(ValueError, match="is not supported for rendering"):
         service.execute(
-            RenderCoinTrackingRequest(
+            RenderOutputRequest(
+                output_adapter="cointracking_csv",
                 canonical_events_path=canonical_events_path,
                 output_path=tmp_path / "cointracking.csv",
             )
@@ -68,7 +95,7 @@ def test_render_service_rejects_unsupported_output_adapters(tmp_path: Path) -> N
 
 def test_render_service_rejects_adapters_without_render_capability(tmp_path: Path) -> None:
     canonical_events_path = _write_canonical_events(tmp_path)
-    service = CoinTrackingRenderService(
+    service = OutputRenderService(
         FakeOutputRegistry(
             FakeOutputAdapter(
                 supported=True,
@@ -80,7 +107,8 @@ def test_render_service_rejects_adapters_without_render_capability(tmp_path: Pat
 
     with pytest.raises(ValueError, match="does not declare render capability"):
         service.execute(
-            RenderCoinTrackingRequest(
+            RenderOutputRequest(
+                output_adapter="cointracking_csv",
                 canonical_events_path=canonical_events_path,
                 output_path=tmp_path / "cointracking.csv",
             )

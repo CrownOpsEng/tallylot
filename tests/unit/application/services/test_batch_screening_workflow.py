@@ -5,6 +5,7 @@ from pathlib import Path
 
 from crypto_reconciliation.application.dtos import ScreenBatchRequest
 from crypto_reconciliation.application.services.staging import BatchScreeningService
+from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -50,7 +51,7 @@ def test_batch_screening_writes_overlap_artifacts_for_review_required_candidates
     output_dir = tmp_path / "screen"
     artifacts = FilesystemArtifactStore()
 
-    response = BatchScreeningService(artifacts).execute(
+    response = BatchScreeningService(build_registry(), artifacts).execute(
         ScreenBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,
@@ -122,7 +123,7 @@ def test_batch_screening_surfaces_missing_required_candidate_fields(
     output_dir = tmp_path / "screen"
     artifacts = FilesystemArtifactStore()
 
-    response = BatchScreeningService(artifacts).execute(
+    response = BatchScreeningService(build_registry(), artifacts).execute(
         ScreenBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,
@@ -178,7 +179,7 @@ def test_batch_screening_surfaces_invalid_candidate_timestamps(
     output_dir = tmp_path / "screen"
     artifacts = FilesystemArtifactStore()
 
-    response = BatchScreeningService(artifacts).execute(
+    response = BatchScreeningService(build_registry(), artifacts).execute(
         ScreenBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,

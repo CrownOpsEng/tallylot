@@ -17,6 +17,9 @@ from crypto_reconciliation.domain.models import (
     WalletInventoryRecord,
 )
 from crypto_reconciliation.domain.types import JsonValue
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+
+from .output_workflows import BaselineArtifacts, ScreeningResult
 
 
 @dataclass(frozen=True)
@@ -59,6 +62,21 @@ class OutputAdapter(Protocol):
     manifest: AdapterManifest
 
     def render(self, events: tuple[CanonicalEvent, ...], output_path: Path) -> RenderedArtifact: ...
+
+    def candidate_artifact_name(self) -> str: ...
+
+    def match_candidate(self, candidate_path: Path, artifacts: ArtifactStorePort) -> int: ...
+
+    def screen_candidate(
+        self,
+        candidate_path: Path,
+        baseline_export_dir: Path,
+        artifacts: ArtifactStorePort,
+    ) -> ScreeningResult: ...
+
+    def match_baseline_exports(self, export_dir: Path, artifacts: ArtifactStorePort) -> int: ...
+
+    def build_baseline_artifacts(self, export_dir: Path, artifacts: ArtifactStorePort) -> BaselineArtifacts: ...
 
 
 class SourceAdapterRegistryPort(Protocol):

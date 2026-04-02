@@ -7,6 +7,7 @@ from crypto_reconciliation.application.services.staging import (
     BatchScreeningService,
     BatchStagingService,
 )
+from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -51,7 +52,7 @@ def test_batch_staging_detects_duplicates(
     )
     artifacts = FilesystemArtifactStore()
 
-    response = BatchStagingService(BatchScreeningService(artifacts)).execute(
+    response = BatchStagingService(BatchScreeningService(build_registry(), artifacts)).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,

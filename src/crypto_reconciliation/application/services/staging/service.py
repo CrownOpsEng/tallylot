@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import cast
 
@@ -12,18 +13,16 @@ from crypto_reconciliation.application.dtos import (
     StageBatchRequest,
     StageBatchResponse,
 )
-from crypto_reconciliation.application.services.export_files import find_required_csv_export
-from crypto_reconciliation.application.services.overlap import summarize_candidate_overlap, write_overlap_artifacts
+from crypto_reconciliation.domain.models import AdapterCapability
 from crypto_reconciliation.domain.types import JsonValue
-from crypto_reconciliation.domain.value_objects import parse_timestamp
+from crypto_reconciliation.ports.adapters import OutputAdapter, OutputAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from crypto_reconciliation.ports.output_workflows import OverlapResult, ScreeningResult
 
-from .models import ScreeningResult
-from .validation import candidate_validation_issues
 from .windows import count_candidate_rows_outside_window, resolve_normalization_window
 
 CANONICAL_TIMEZONE = "UTC"
-COINTRACKING_IMPORT_TIMEZONE = "UTC"
+OUTPUT_IMPORT_TIMEZONE = "UTC"
 ISSUE_HEADER = (
     "issue_id",
     "source",
@@ -39,7 +38,8 @@ ISSUE_HEADER = (
 
 
 class BatchScreeningService:
-    def __init__(self, artifacts: ArtifactStorePort) -> None:
+    def __init__(self, registry: OutputAdapterRegistryPort, artifacts: ArtifactStorePort) -> None:
+        self._registry = registry
         self._artifacts = artifacts
 
     @property
@@ -75,7 +75,7 @@ class BatchScreeningService:
                     else _summary_int(screening.overlap_result.summary, "rows_flagged")
                 ),
                 "canonical_timezone": CANONICAL_TIMEZONE,
-                "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+                "output_import_timezone": OUTPUT_IMPORT_TIMEZONE,
                 "blocked_reason_codes": list(screening.blocked_reason_codes),
             },
         )
@@ -95,22 +95,8 @@ class BatchScreeningService:
         )
 
     def _screen(self, candidate_path: Path, baseline_export_dir: Path) -> ScreeningResult:
-        baseline_trade_table = find_required_csv_export(baseline_export_dir, "Trade Table")
-        baseline_rows = self._artifacts.read_rows(baseline_trade_table)
-        baseline_cutoff = max(parse_timestamp(row["Date"]) for row in baseline_rows if row.get("Date"))
-        baseline_tx_ids = {row.get("Tx-ID", "") for row in baseline_rows if row.get("Tx-ID")}
-
-        issues, candidate_rows, valid_rows = candidate_validation_issues(candidate_path)
-        duplicate_count = sum(1 for row in valid_rows if row["Tx-ID"] in baseline_tx_ids)
-        has_time_overlap = any(parse_timestamp(row["Date"]) <= baseline_cutoff for row in valid_rows)
-        overlap_result = None if issues else summarize_candidate_overlap(baseline_export_dir, candidate_path)
-        return ScreeningResult(
-            candidate_rows=candidate_rows,
-            issues=tuple(issues),
-            duplicate_count=duplicate_count,
-            has_time_overlap=has_time_overlap,
-            overlap_result=overlap_result,
-        )
+        adapter = _resolve_review_adapter(self._registry, candidate_path, self._artifacts)
+        return adapter.screen_candidate(candidate_path, baseline_export_dir, self._artifacts)
 
 
 class BatchStagingService:
@@ -166,7 +152,7 @@ class BatchStagingService:
                     "normalization_window_end": window_end,
                     "normalization_summary": normalization_summary,
                     "canonical_timezone": CANONICAL_TIMEZONE,
-                    "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+                    "output_import_timezone": OUTPUT_IMPORT_TIMEZONE,
                     "staged_path": "" if staged_path is None else str(staged_path),
                     "import_ready_copy_path": "" if import_ready_copy_path is None else str(import_ready_copy_path),
                     "blocked_reason_codes": blocked_reason_codes,
@@ -185,6 +171,56 @@ class BatchStagingService:
         )
 
 
-def _summary_int(summary: dict[str, object], key: str) -> int:
+def _summary_int(summary: Mapping[str, JsonValue], key: str) -> int:
     value = summary.get(key, 0)
     return value if isinstance(value, int) else 0
+
+
+def write_overlap_artifacts(
+    output_dir: Path,
+    result: OverlapResult,
+    *,
+    write_json: Callable[[Path, JsonValue], None],
+    write_rows: Callable[[Path, tuple[str, ...], Iterable[dict[str, str]]], None],
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    write_json(output_dir / "overlap_summary.json", result.summary)
+    write_rows(output_dir / "overlap_flagged_rows.csv", OVERLAP_FLAGGED_HEADER, result.flagged_rows)
+
+
+def _resolve_review_adapter(
+    registry: OutputAdapterRegistryPort,
+    candidate_path: Path,
+    artifacts: ArtifactStorePort,
+) -> OutputAdapter:
+    matches = [
+        (adapter.match_candidate(candidate_path, artifacts), adapter)
+        for adapter in registry.output_adapters
+        if adapter.manifest.supported and AdapterCapability.REVIEW in adapter.manifest.capabilities
+    ]
+    scored_matches = [(score, adapter) for score, adapter in matches if score > 0]
+    if not scored_matches:
+        raise ValueError(f"unable to detect supported output adapter for candidate {candidate_path}")
+    scored_matches.sort(key=lambda item: item[0], reverse=True)
+    best_score = scored_matches[0][0]
+    best_adapters = [adapter for score, adapter in scored_matches if score == best_score]
+    if len(best_adapters) > 1:
+        adapter_ids = ", ".join(sorted(str(adapter.manifest.adapter_id) for adapter in best_adapters))
+        raise ValueError(f"ambiguous output adapter for candidate {candidate_path}: {adapter_ids}")
+    return best_adapters[0]
+
+
+OVERLAP_FLAGGED_HEADER = (
+    "row_number",
+    "reasons",
+    "type",
+    "buy",
+    "buy_currency",
+    "sell",
+    "sell_currency",
+    "fee",
+    "fee_currency",
+    "exchange",
+    "date",
+    "tx_id",
+)

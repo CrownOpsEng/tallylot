@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from crypto_reconciliation.application.services.reconcile import compare_balances, compare_transactions
+from crypto_reconciliation.adapters.outputs.cointracking_csv.reconcile import (
+    compare_balances,
+    compare_transactions,
+)
 
 
 def _expected_row(**overrides: str) -> dict[str, str]:

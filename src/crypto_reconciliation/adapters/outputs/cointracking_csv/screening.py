@@ -1,16 +1,21 @@
-"""CoinTracking candidate overlap detection helpers."""
+"""CoinTracking-specific candidate screening."""
 
 from __future__ import annotations
 
 import csv
 from collections import Counter
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
+from crypto_reconciliation.domain.models import IssueRecord
 from crypto_reconciliation.domain.types import JsonValue
+from crypto_reconciliation.domain.value_objects import parse_timestamp
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
+from crypto_reconciliation.ports.output_workflows import OverlapResult, ScreeningResult
+
+from .schema import COINTRACKING_HEADER
 
 DATE_FORMATS = ("%Y-%m-%d %H:%M:%S", "%d.%m.%Y %H:%M:%S")
 TX_ID_HEADERS = ("Tx-ID", "Tx ID", "Trade ID", "Transaction ID")
@@ -30,10 +35,81 @@ OVERLAP_FLAGGED_HEADER = (
 )
 
 
-@dataclass(frozen=True)
-class OverlapResult:
-    summary: dict[str, object]
-    flagged_rows: tuple[dict[str, str], ...]
+def match_candidate(candidate_path: Path, artifacts: ArtifactStorePort) -> int:
+    try:
+        header = tuple(artifacts.read_rows(candidate_path)[0].keys())
+    except (FileNotFoundError, IndexError, KeyError):
+        return 0
+    return 100 if header == COINTRACKING_HEADER else 0
+
+
+def screen_candidate(
+    candidate_path: Path,
+    baseline_export_dir: Path,
+    artifacts: ArtifactStorePort,
+) -> ScreeningResult:
+    baseline_trade_table = _find_trade_table(baseline_export_dir)
+    baseline_rows = artifacts.read_rows(baseline_trade_table)
+    baseline_cutoff = max(parse_timestamp(row["Date"]) for row in baseline_rows if row.get("Date"))
+    baseline_tx_ids = {row.get("Tx-ID", "") for row in baseline_rows if row.get("Tx-ID")}
+
+    issues, candidate_rows, valid_rows = candidate_validation_issues(candidate_path)
+    duplicate_count = sum(1 for row in valid_rows if row["Tx-ID"] in baseline_tx_ids)
+    has_time_overlap = any(parse_timestamp(row["Date"]) <= baseline_cutoff for row in valid_rows)
+    overlap_result = None if issues else summarize_candidate_overlap(baseline_export_dir, candidate_path)
+    return ScreeningResult(
+        candidate_rows=candidate_rows,
+        issues=tuple(issues),
+        duplicate_count=duplicate_count,
+        has_time_overlap=has_time_overlap,
+        overlap_result=overlap_result,
+    )
+
+
+def candidate_validation_issues(candidate_path: Path) -> tuple[list[IssueRecord], int, list[dict[str, str]]]:
+    with candidate_path.open("r", encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        header = tuple(reader.fieldnames or ())
+        issues: list[IssueRecord] = []
+        if header != COINTRACKING_HEADER:
+            issues.append(
+                IssueRecord(
+                    issue_id=f"{candidate_path.name}:schema",
+                    source="batch_screen",
+                    adapter_id="cointracking_csv",
+                    severity="high",
+                    kind="invalid_schema",
+                    message="The candidate file does not match the CoinTracking CSV header.",
+                    raw_file=candidate_path.name,
+                )
+            )
+            return issues, 0, []
+
+        rows = list(reader)
+    valid_rows: list[dict[str, str]] = []
+    for index, row in enumerate(rows, start=2):
+        date_value = (row.get("Date") or "").strip()
+        tx_id = (row.get("Tx-ID") or "").strip()
+        if not date_value:
+            issues.append(issue(candidate_path, index, "missing_date", "Candidate rows must include Date."))
+            continue
+        if not tx_id:
+            issues.append(issue(candidate_path, index, "missing_tx_id", "Candidate rows must include Tx-ID."))
+            continue
+        try:
+            parse_timestamp(date_value)
+        except ValueError:
+            issues.append(
+                issue(
+                    candidate_path,
+                    index,
+                    "invalid_date",
+                    f"Unsupported Date value: {date_value!r}.",
+                )
+            )
+            continue
+        valid_rows.append(row)
+    return issues, len(rows), valid_rows
 
 
 def summarize_candidate_overlap(
@@ -111,22 +187,37 @@ def summarize_candidate_overlap(
                 }
             )
 
-    summary: dict[str, object] = {
-        "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
-        "baseline_trade_table": str(trade_table_path),
-        "candidate_file": str(candidate_path.resolve()),
-        "candidate_header_columns": candidate_header,
-        "cutoff_timestamp": cutoff.strftime("%Y-%m-%d %H:%M:%S"),
-        "candidate_row_count": len(candidate_rows),
-        "rows_flagged": len(flagged_rows),
-        "rows_on_or_before_cutoff": before_or_at_cutoff_rows,
-        "rows_with_blank_date": blank_date_rows,
-        "rows_with_unparseable_date": unparsable_date_rows,
-        "rows_with_baseline_tx_id_match": baseline_tx_id_matches,
-        "rows_with_baseline_economic_signature_match": baseline_signature_matches,
-        "status": "pass" if not flagged_rows else "review_required",
-    }
+    summary = cast(
+        dict[str, JsonValue],
+        {
+            "generated_at_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
+            "baseline_trade_table": str(trade_table_path),
+            "candidate_file": str(candidate_path.resolve()),
+            "candidate_header_columns": candidate_header,
+            "cutoff_timestamp": cutoff.strftime("%Y-%m-%d %H:%M:%S"),
+            "candidate_row_count": len(candidate_rows),
+            "rows_flagged": len(flagged_rows),
+            "rows_on_or_before_cutoff": before_or_at_cutoff_rows,
+            "rows_with_blank_date": blank_date_rows,
+            "rows_with_unparseable_date": unparsable_date_rows,
+            "rows_with_baseline_tx_id_match": baseline_tx_id_matches,
+            "rows_with_baseline_economic_signature_match": baseline_signature_matches,
+            "status": "pass" if not flagged_rows else "review_required",
+        },
+    )
     return OverlapResult(summary=summary, flagged_rows=tuple(flagged_rows))
+
+
+def write_overlap_artifacts(
+    output_dir: Path,
+    result: OverlapResult,
+    *,
+    write_json: Callable[[Path, JsonValue], None],
+    write_rows: Callable[[Path, tuple[str, ...], Iterable[dict[str, str]]], None],
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    write_json(output_dir / "overlap_summary.json", result.summary)
+    write_rows(output_dir / "overlap_flagged_rows.csv", OVERLAP_FLAGGED_HEADER, result.flagged_rows)
 
 
 def parse_overlap_datetime(value: str) -> datetime:
@@ -138,16 +229,17 @@ def parse_overlap_datetime(value: str) -> datetime:
     raise ValueError(f"Unsupported timestamp format: {value!r}")
 
 
-def write_overlap_artifacts(
-    output_dir: Path,
-    result: OverlapResult,
-    *,
-    write_json: Callable[[Path, JsonValue], None],
-    write_rows: Callable[[Path, tuple[str, ...], Iterable[dict[str, str]]], None],
-) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    write_json(output_dir / "overlap_summary.json", cast(JsonValue, result.summary))
-    write_rows(output_dir / "overlap_flagged_rows.csv", OVERLAP_FLAGGED_HEADER, result.flagged_rows)
+def issue(candidate_path: Path, row_ref: int, kind: str, message: str) -> IssueRecord:
+    return IssueRecord(
+        issue_id=f"{candidate_path.name}:{row_ref}:{kind}",
+        source="batch_screen",
+        adapter_id="cointracking_csv",
+        severity="high",
+        kind=kind,
+        message=message,
+        raw_file=candidate_path.name,
+        raw_row_ref=str(row_ref),
+    )
 
 
 def _find_trade_table(export_dir: Path) -> Path:
