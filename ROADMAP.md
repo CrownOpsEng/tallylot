@@ -49,8 +49,14 @@ decisions that should not be rediscovered from scratch.
 - Do not reintroduce repo-local live workspace assumptions.
 - Do not add compatibility wrappers for removed legacy scripts.
 - Do not let adapters reach across layers into CLI or config code.
+- Keep application services on port contracts for adapter resolution and artifact
+  persistence; do not import infrastructure modules from `application/`.
 - Do not bypass `Decimal` with float-based financial calculations.
 - Do not allow AI providers to mutate ledger records directly.
+- Keep normalized evidence references portable by storing source-relative paths
+  instead of machine-local absolute paths.
+- Fail fast on ambiguous adapter matches and malformed adapter discovery
+  contracts instead of silently picking a candidate.
 
 ## Near-Term Enhancements
 

@@ -7,19 +7,21 @@ from decimal import Decimal
 from pathlib import Path
 
 from crypto_reconciliation.application.dtos import BaselineValidateRequest, BaselineValidateResponse
-from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows, write_rows
-from crypto_reconciliation.infrastructure.serialization.json_io import write_json
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 
 class BaselineValidationService:
+    def __init__(self, artifacts: ArtifactStorePort) -> None:
+        self._artifacts = artifacts
+
     def execute(self, request: BaselineValidateRequest) -> BaselineValidateResponse:
         trade_table = _find_export(request.export_dir, "Trade Table")
         current_balance = _find_export(request.export_dir, "Current Balance")
         exchange_balance = _find_export(request.export_dir, "Balance by Exchange")
 
-        trade_rows = read_rows(trade_table)
-        current_rows = read_rows(current_balance)
-        exchange_rows = read_rows(exchange_balance)
+        trade_rows = self._artifacts.read_rows(trade_table)
+        current_rows = self._artifacts.read_rows(current_balance)
+        exchange_rows = self._artifacts.read_rows(exchange_balance)
 
         latest_timestamp = max(row["Date"] for row in trade_rows if row.get("Date"))
         exchange_totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
@@ -41,12 +43,12 @@ class BaselineValidationService:
             )
 
         request.output_dir.mkdir(parents=True, exist_ok=True)
-        write_rows(
+        self._artifacts.write_rows(
             request.output_dir / "baseline_asset_snapshot.csv",
             ("ticker", "current_balance_amount", "exchange_balance_amount", "delta"),
             asset_snapshot,
         )
-        write_json(
+        self._artifacts.write_json(
             request.output_dir / "baseline_summary.json",
             {
                 "latest_transaction_timestamp": latest_timestamp,

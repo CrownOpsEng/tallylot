@@ -7,16 +7,18 @@ from pathlib import Path
 
 from crypto_reconciliation.application.dtos import StageBatchRequest, StageBatchResponse
 from crypto_reconciliation.domain.value_objects import parse_timestamp
-from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
-from crypto_reconciliation.infrastructure.serialization.json_io import write_json
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 
 class BatchStagingService:
+    def __init__(self, artifacts: ArtifactStorePort) -> None:
+        self._artifacts = artifacts
+
     def execute(self, request: StageBatchRequest) -> StageBatchResponse:
         request.output_dir.mkdir(parents=True, exist_ok=True)
         baseline_trade_table = _find_export(request.baseline_export_dir, "Trade Table")
-        baseline_rows = read_rows(baseline_trade_table)
-        candidate_rows = read_rows(request.candidate_path)
+        baseline_rows = self._artifacts.read_rows(baseline_trade_table)
+        candidate_rows = self._artifacts.read_rows(request.candidate_path)
 
         baseline_cutoff = max(
             parse_timestamp(row["Date"])
@@ -35,7 +37,7 @@ class BatchStagingService:
         staged = duplicate_count == 0 and not has_time_overlap
         if staged:
             shutil.copy2(request.candidate_path, request.output_dir / request.candidate_path.name)
-        write_json(
+        self._artifacts.write_json(
             request.output_dir / "stage_summary.json",
             {
                 "staged": staged,

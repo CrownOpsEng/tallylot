@@ -8,11 +8,11 @@ from pathlib import Path
 from crypto_reconciliation.domain.models import CanonicalEvent
 from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
 from crypto_reconciliation.domain.value_objects import parse_decimal
-from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 
-def load_canonical_events(path: Path) -> tuple[CanonicalEvent, ...]:
-    rows = read_rows(path)
+def load_canonical_events(path: Path, artifacts: ArtifactStorePort) -> tuple[CanonicalEvent, ...]:
+    rows = artifacts.read_rows(path)
     events: list[CanonicalEvent] = []
     for row in rows:
         events.append(

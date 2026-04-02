@@ -74,6 +74,7 @@ warn_unreachable = true
 show_error_codes = true
 pretty = true
 files = ["src", "tests"]
+mypy_path = ["src"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*"]
@@ -81,7 +82,7 @@ disallow_untyped_defs = false
 disallow_untyped_decorators = false
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
@@ -90,6 +91,7 @@ select = ["E", "F", "I", "B", "UP", "N", "C4", "DTZ", "PIE", "RET", "RUF", "SIM"
 [tool.pylint.main]
 py-version = "3.12"
 ignore = [".venv", "__pycache__", ".git"]
+source-roots = ["src"]
 
 [tool.pylint.messages_control]
 disable = [
@@ -103,7 +105,7 @@ disable = [
 ]
 
 [tool.pylint.format]
-max-line-length = 100
+max-line-length = 120
 
 [tool.uv]
 default-groups = ["dev"]

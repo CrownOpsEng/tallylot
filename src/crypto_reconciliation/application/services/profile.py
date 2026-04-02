@@ -14,15 +14,14 @@ from crypto_reconciliation.application.services.common import (
 )
 from crypto_reconciliation.domain.models import FileInventoryEntry, SourceProfile
 from crypto_reconciliation.domain.types import AdapterId, SourceId
-from crypto_reconciliation.infrastructure.discovery.adapters import AdapterRegistry
-from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
-from crypto_reconciliation.infrastructure.serialization.json_io import write_json
-from crypto_reconciliation.ports.adapters import SourceAdapter
+from crypto_reconciliation.ports.adapters import SourceAdapter, SourceAdapterRegistryPort
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 
 class ProfileService:
-    def __init__(self, registry: AdapterRegistry) -> None:
+    def __init__(self, registry: SourceAdapterRegistryPort, artifacts: ArtifactStorePort) -> None:
         self._registry = registry
+        self._artifacts = artifacts
 
     def execute(self, request: ProfileRequest) -> ProfileResponse:
         ensure_directory(request.output_dir)
@@ -50,8 +49,8 @@ class ProfileService:
         )
 
     def write_profile_artifacts(self, profile: SourceProfile, output_dir: Path) -> None:
-        write_json(output_dir / "profile.json", profile.to_dict())
-        write_rows(
+        self._artifacts.write_json(output_dir / "profile.json", profile.to_dict())
+        self._artifacts.write_rows(
             output_dir / "profile_inventory.csv",
             ("relative_path", "suffix", "size_bytes", "sha256", "row_count", "header"),
             (
@@ -97,9 +96,17 @@ class ProfileService:
             key=lambda item: item[0],
             reverse=True,
         )
+        if not ranked:
+            raise ValueError("no source adapters are registered")
         score, adapter = ranked[0]
         if score <= 0:
             raise ValueError(f"no source adapter matched {source!r} at {raw_dir}")
+        tied = [candidate for candidate_score, candidate in ranked if candidate_score == score]
+        if len(tied) > 1:
+            tied_ids = ", ".join(sorted(str(candidate.manifest.adapter_id) for candidate in tied))
+            raise ValueError(
+                f"ambiguous source adapter match for {source!r} at {raw_dir}: {tied_ids}"
+            )
         return adapter
 
     def _manifest_fingerprint(self, inventory: list[FileInventoryEntry]) -> str:

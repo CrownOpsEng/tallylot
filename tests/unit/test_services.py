@@ -13,12 +13,13 @@ from crypto_reconciliation.application.services.staging import BatchStagingServi
 from crypto_reconciliation.application.services.verification import VerificationCompareService
 from crypto_reconciliation.application.services.wallet_inventory import WalletInventoryService
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
+from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_manifest_service_writes_manifest(structured_source_dir: Path, tmp_path: Path) -> None:
     output_path = tmp_path / "manifest.csv"
 
-    response = ManifestService().execute(
+    response = ManifestService(FilesystemArtifactStore()).execute(
         ManifestRequest(source_dir=structured_source_dir, output_path=output_path),
     )
 
@@ -34,7 +35,7 @@ def test_verification_compare_service_writes_summary(
 ) -> None:
     output_dir = tmp_path / "verification"
 
-    response = VerificationCompareService().execute(
+    response = VerificationCompareService(FilesystemArtifactStore()).execute(
         VerificationCompareRequest(
             previous_dir=verification_previous_dir,
             current_dir=verification_current_dir,
@@ -85,7 +86,7 @@ def test_batch_staging_detects_duplicates(
         ),
     )
 
-    response = BatchStagingService().execute(
+    response = BatchStagingService(FilesystemArtifactStore()).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,
@@ -123,7 +124,7 @@ def test_wallet_inventory_service_deduplicates_rows(tmp_path: Path) -> None:
     write_rows(normalized_a, header, (row,))
     write_rows(normalized_b, header, (row,))
 
-    response = WalletInventoryService().execute(
+    response = WalletInventoryService(FilesystemArtifactStore()).execute(
         WalletInventoryRequest(normalized_root=tmp_path, output_path=tmp_path / "wallets.csv"),
     )
 

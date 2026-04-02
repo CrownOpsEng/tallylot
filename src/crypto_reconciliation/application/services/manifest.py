@@ -7,10 +7,13 @@ import json
 
 from crypto_reconciliation.application.dtos import ManifestRequest, ManifestResponse
 from crypto_reconciliation.application.services.common import sha256sum
-from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 
 class ManifestService:
+    def __init__(self, artifacts: ArtifactStorePort) -> None:
+        self._artifacts = artifacts
+
     def execute(self, request: ManifestRequest) -> ManifestResponse:
         rows: list[dict[str, str]] = []
         for path in sorted(
@@ -26,7 +29,7 @@ class ManifestService:
 
         payload = json.dumps(rows, sort_keys=True, separators=(",", ":"))
         fingerprint = sha256sum_from_text(payload)
-        write_rows(request.output_path, ("filename", "size_bytes", "sha256"), rows)
+        self._artifacts.write_rows(request.output_path, ("filename", "size_bytes", "sha256"), rows)
         return ManifestResponse(
             output_path=request.output_path,
             file_count=len(rows),

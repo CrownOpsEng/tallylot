@@ -7,6 +7,7 @@ import pkgutil
 from collections.abc import Iterable
 from dataclasses import dataclass
 from types import ModuleType
+from typing import cast
 
 from pydantic import BaseModel, ConfigDict
 
@@ -59,8 +60,7 @@ def _collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
         adapter = getattr(module, "ADAPTER", None)
         if adapter is None:
             continue
-        _validated_manifest(adapter.manifest)
-        discovered.append(adapter)
+        discovered.append(_validate_source_adapter_contract(adapter, module))
     _validate_unique_ids(discovered)
     return tuple(sorted(discovered, key=lambda item: str(item.manifest.adapter_id)))
 
@@ -71,8 +71,7 @@ def _collect_output_adapters(package_name: str) -> tuple[OutputAdapter, ...]:
         adapter = getattr(module, "ADAPTER", None)
         if adapter is None:
             continue
-        _validated_manifest(adapter.manifest)
-        discovered.append(adapter)
+        discovered.append(_validate_output_adapter_contract(adapter, module))
     _validate_unique_ids(discovered)
     return tuple(sorted(discovered, key=lambda item: str(item.manifest.adapter_id)))
 
@@ -89,6 +88,53 @@ def _validated_manifest(raw_manifest: AdapterManifest) -> AdapterManifest:
     )
 
 
+def _validate_source_adapter_contract(adapter: object, module: ModuleType) -> SourceAdapter:
+    manifest = _validated_manifest(_manifest_from_adapter(adapter, module))
+    if AdapterCapability.NORMALIZE not in manifest.capabilities:
+        raise ValueError(
+            f"{module.__name__} adapter {manifest.adapter_id} must declare normalize capability"
+        )
+    if AdapterCapability.OUTPUT_RENDER in manifest.capabilities:
+        raise ValueError(
+            f"{module.__name__} adapter {manifest.adapter_id} "
+            "cannot declare output render capability"
+        )
+    if not _has_callable(adapter, "match") or not _has_callable(adapter, "normalize"):
+        raise TypeError(f"{module.__name__} ADAPTER does not implement the source adapter contract")
+    return cast(SourceAdapter, adapter)
+
+
+def _validate_output_adapter_contract(adapter: object, module: ModuleType) -> OutputAdapter:
+    manifest = _validated_manifest(_manifest_from_adapter(adapter, module))
+    if AdapterCapability.OUTPUT_RENDER not in manifest.capabilities:
+        raise ValueError(
+            f"{module.__name__} adapter {manifest.adapter_id} must declare output render capability"
+        )
+    forbidden_capabilities = {
+        AdapterCapability.NORMALIZE,
+        AdapterCapability.WALLET_INVENTORY,
+    }
+    if manifest.capabilities.intersection(forbidden_capabilities):
+        raise ValueError(
+            f"{module.__name__} adapter {manifest.adapter_id} declares source-only capabilities"
+        )
+    if not _has_callable(adapter, "render"):
+        raise TypeError(f"{module.__name__} ADAPTER does not implement the output adapter contract")
+    return cast(OutputAdapter, adapter)
+
+
+def _manifest_from_adapter(adapter: object, module: ModuleType) -> AdapterManifest:
+    manifest = getattr(adapter, "manifest", None)
+    if not isinstance(manifest, AdapterManifest):
+        raise TypeError(f"{module.__name__} ADAPTER is missing a valid AdapterManifest")
+    return manifest
+
+
+def _has_callable(adapter: object, attribute: str) -> bool:
+    candidate = getattr(adapter, attribute, None)
+    return callable(candidate)
+
+
 def _validate_unique_ids(adapters: Iterable[SourceAdapter | OutputAdapter]) -> None:
     seen: set[str] = set()
     for adapter in adapters:
@@ -99,7 +145,10 @@ def _validate_unique_ids(adapters: Iterable[SourceAdapter | OutputAdapter]) -> N
 
 
 def build_registry() -> AdapterRegistry:
+    source_adapters = _collect_source_adapters("crypto_reconciliation.adapters.sources")
+    output_adapters = _collect_output_adapters("crypto_reconciliation.adapters.outputs")
+    _validate_unique_ids((*source_adapters, *output_adapters))
     return AdapterRegistry(
-        source_adapters=_collect_source_adapters("crypto_reconciliation.adapters.sources"),
-        output_adapters=_collect_output_adapters("crypto_reconciliation.adapters.outputs"),
+        source_adapters=source_adapters,
+        output_adapters=output_adapters,
     )

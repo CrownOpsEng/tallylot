@@ -47,3 +47,21 @@ class OutputAdapter(Protocol):
 
     def render(self, events: tuple[CanonicalEvent, ...], output_path: Path) -> RenderedArtifact:
         ...
+
+
+class SourceAdapterRegistryPort(Protocol):
+    @property
+    def source_adapters(self) -> tuple[SourceAdapter, ...]:
+        ...
+
+    def source_adapter(self, adapter_id: str) -> SourceAdapter:
+        ...
+
+
+class OutputAdapterRegistryPort(Protocol):
+    @property
+    def output_adapters(self) -> tuple[OutputAdapter, ...]:
+        ...
+
+    def output_adapter(self, adapter_id: str) -> OutputAdapter:
+        ...

@@ -6,7 +6,9 @@ Desktop.ini
 *.swo
 *~
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
 
 # Python bytecode and tooling caches
 __pycache__/

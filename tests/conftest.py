@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 
+from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
+
 
 @pytest.fixture
 def structured_source_dir() -> Path:
@@ -23,3 +25,8 @@ def verification_previous_dir() -> Path:
 @pytest.fixture
 def verification_current_dir() -> Path:
     return Path(__file__).parent / "fixtures" / "verification" / "current"
+
+
+@pytest.fixture
+def artifact_store() -> FilesystemArtifactStore:
+    return FilesystemArtifactStore()

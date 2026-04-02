@@ -32,6 +32,7 @@ from crypto_reconciliation.application.services import (
 )
 from crypto_reconciliation.infrastructure.config import load_app_config
 from crypto_reconciliation.infrastructure.discovery import build_registry
+from crypto_reconciliation.infrastructure.serialization import FilesystemArtifactStore
 from crypto_reconciliation.infrastructure.storage import FilesystemStorage
 from crypto_reconciliation.infrastructure.workspace import FilesystemWorkspaceRepository
 
@@ -63,10 +64,11 @@ def _services() -> tuple[
     CoinTrackingRenderService,
 ]:
     registry = build_registry()
-    profile_service = ProfileService(registry)
+    artifacts = FilesystemArtifactStore()
+    profile_service = ProfileService(registry, artifacts)
     storage = FilesystemStorage()
-    normalization_service = NormalizationService(registry, profile_service, storage)
-    render_service = CoinTrackingRenderService(registry)
+    normalization_service = NormalizationService(registry, profile_service, storage, artifacts)
+    render_service = CoinTrackingRenderService(registry, artifacts)
     return profile_service, normalization_service, render_service
 
 
@@ -97,7 +99,7 @@ def baseline_validate(
     export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = BaselineValidationService().execute(
+    response = BaselineValidationService(FilesystemArtifactStore()).execute(
         BaselineValidateRequest(export_dir=export_dir, output_dir=output_dir)
     )
     typer.echo(json.dumps(response.__dict__, default=str))
@@ -108,7 +110,9 @@ def source_manifest(
     source_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
-    response = ManifestService().execute(ManifestRequest(source_dir=source_dir, output_path=output))
+    response = ManifestService(FilesystemArtifactStore()).execute(
+        ManifestRequest(source_dir=source_dir, output_path=output)
+    )
     typer.echo(json.dumps(response.__dict__, default=str))
 
 
@@ -143,7 +147,7 @@ def wallet_inventory_rebuild(
     normalized_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
-    response = WalletInventoryService().execute(
+    response = WalletInventoryService(FilesystemArtifactStore()).execute(
         WalletInventoryRequest(normalized_root=normalized_root, output_path=output)
     )
     typer.echo(json.dumps(response.__dict__, default=str))
@@ -167,7 +171,7 @@ def verification_compare(
     current_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = VerificationCompareService().execute(
+    response = VerificationCompareService(FilesystemArtifactStore()).execute(
         VerificationCompareRequest(
             previous_dir=previous_dir,
             current_dir=current_dir,
@@ -183,7 +187,7 @@ def batch_stage(
     baseline_export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = BatchStagingService().execute(
+    response = BatchStagingService(FilesystemArtifactStore()).execute(
         StageBatchRequest(
             candidate_path=candidate,
             baseline_export_dir=baseline_export_dir,

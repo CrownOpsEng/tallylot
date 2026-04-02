@@ -8,8 +8,7 @@ from crypto_reconciliation.application.dtos import (
     VerificationCompareRequest,
     VerificationCompareResponse,
 )
-from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows, write_rows
-from crypto_reconciliation.infrastructure.serialization.json_io import write_json
+from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 DEFAULT_REPORTS = (
     "Validate Transactions.csv",
@@ -21,6 +20,9 @@ DEFAULT_REPORTS = (
 
 
 class VerificationCompareService:
+    def __init__(self, artifacts: ArtifactStorePort) -> None:
+        self._artifacts = artifacts
+
     def execute(self, request: VerificationCompareRequest) -> VerificationCompareResponse:
         request.output_dir.mkdir(parents=True, exist_ok=True)
         changed_reports = 0
@@ -28,8 +30,8 @@ class VerificationCompareService:
         for report_name in DEFAULT_REPORTS:
             previous_path = request.previous_dir / report_name
             current_path = request.current_dir / report_name
-            previous_rows = read_rows(previous_path)
-            current_rows = read_rows(current_path)
+            previous_rows = self._artifacts.read_rows(previous_path)
+            current_rows = self._artifacts.read_rows(current_path)
             previous_hash = _fingerprint(previous_rows)
             current_hash = _fingerprint(current_rows)
             changed = previous_hash != current_hash
@@ -42,12 +44,12 @@ class VerificationCompareService:
                     "changed": "yes" if changed else "no",
                 }
             )
-        write_rows(
+        self._artifacts.write_rows(
             request.output_dir / "verification_summary.csv",
             ("report_name", "previous_rows", "current_rows", "changed"),
             summary,
         )
-        write_json(
+        self._artifacts.write_json(
             request.output_dir / "verification_summary.json",
             {"changed_reports": changed_reports, "reports": summary},
         )

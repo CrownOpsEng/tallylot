@@ -77,6 +77,12 @@ uv run pylint src tests
 uv run pytest
 ```
 
+This repo uses a `src/` layout and expects editor diagnostics to run against
+the project `.venv`. The checked-in VS Code workspace settings point Python,
+Pylint, Mypy, and Ruff at that environment and add `src/` to analysis paths.
+If diagnostics still show stale import errors after syncing, re-select the
+workspace interpreter at `.venv/bin/python` and reload the VS Code window.
+
 ## Docs
 
 - [ROADMAP.md](ROADMAP.md)

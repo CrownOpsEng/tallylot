@@ -9,6 +9,7 @@ from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.application.services.render import CoinTrackingRenderService
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
+from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.infrastructure.storage import FilesystemStorage
 
 
@@ -17,8 +18,14 @@ def test_cointracking_output_matches_expected_schema(
     tmp_path: Path,
 ) -> None:
     registry = build_registry()
-    normalization = NormalizationService(registry, ProfileService(registry), FilesystemStorage())
-    render = CoinTrackingRenderService(registry)
+    artifacts = FilesystemArtifactStore()
+    normalization = NormalizationService(
+        registry,
+        ProfileService(registry, artifacts),
+        FilesystemStorage(),
+        artifacts,
+    )
+    render = CoinTrackingRenderService(registry, artifacts)
     normalized_dir = tmp_path / "normalized"
 
     normalization.execute(
