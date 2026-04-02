@@ -6,8 +6,8 @@ Current helpers:
 
 - `baseline_check.py` → derive the baseline cutoff, counts, negative balances, and reconciliation artifacts
 - `profile_source.py` → inspect a raw source folder, classify file families, and write `profile.json`, `profile_inventory.csv`, plus `timezone_issues.csv`
-- `normalize_source.py` → convert a raw source folder into canonical events, canonical balances, exceptions, and a cached CoinTracking candidate after timezone validation passes
-- `normalization_common.py` → shared canonical-event helpers, including attached-fee behavior used across adapters
+- `normalize_source.py` → convert a raw source folder into canonical events, canonical balances, exceptions, and a cached CoinTracking candidate after timezone validation; optional normalization-window filters are explicit rather than implicit
+- `normalization_common.py` → shared canonical-event helpers, including deterministic fee attachment and exact-by-default fee matching used across adapters
 - `render_cointracking.py` → translate canonical events into a CoinTracking-ready CSV with reconciliation metadata
 - `stage_import_batch.py` → enforce overlap-screen approval before copying a candidate into `02_working/import_batches/` and optional `04_import_ready/`
 - `reconcile_source.py` → compare canonical source outputs against a CoinTracking Trade Table slice and optional Balance by Exchange slice
@@ -56,6 +56,8 @@ The preferred prep flow is now:
 5. `render_cointracking.py` only when a separate render step is needed
 6. `stage_import_batch.py`
 7. `reconcile_source.py`
+
+`normalize_source.py` now preserves the full canonical event set by default. Use `--window-start` / `--window-end` only when you intentionally want a trimmed normalization artifact. The repo-default post-baseline import window is enforced at `stage_import_batch.py`, which blocks candidates that still contain out-of-window rows.
 
 `profile_source.py` no longer refreshes repo-wide wallet inventory as a side effect. Wallet inventory remains required repo workflow state, but it is now refreshed explicitly through `wallet_inventory.py`.
 

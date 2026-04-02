@@ -230,7 +230,10 @@ class ScriptEndToEndTests(unittest.TestCase):
             )
             profile = read_json(out_dir / "profile.json")
 
+        self.assertEqual("2023-08-05 08:34:05", profile["normalization_hints"]["project_window_start"])
         self.assertEqual("2023-08-05 08:34:04", profile["normalization_hints"]["project_baseline_cutoff_timestamp"])
+        self.assertEqual("2025-12-31 23:59:59", profile["normalization_hints"]["project_window_end"])
+        self.assertEqual("2026-03-21 00:00:00", profile["normalization_hints"]["capture_window_end"])
 
     def test_wallet_inventory_cli_builds_repo_inventory(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -301,10 +304,13 @@ class ScriptEndToEndTests(unittest.TestCase):
             balances = read_dict_rows(out_dir / "canonical_balances.csv")
 
         self.assertEqual("ready", summary["status"])
+        self.assertEqual("", summary["normalization_window_start"])
+        self.assertEqual("", summary["normalization_window_end"])
+        self.assertEqual(0, summary["events_outside_normalization_window"])
         self.assertEqual(1895, summary["canonical_events"])
         self.assertEqual(2, summary["canonical_balances"])
         self.assertEqual(0, summary["exceptions"])
-        self.assertEqual(1895, len(events))
+        self.assertEqual(summary["canonical_events"], len(events))
         self.assertEqual(2, len(balances))
 
     def test_normalize_source_cli_supports_ledger_live_repo_raw_dir(self) -> None:

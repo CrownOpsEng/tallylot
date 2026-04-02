@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Sequence
 
 from overlap_check import summarize_overlap, write_overlap_artifacts
-from script_common import CANONICAL_TIMEZONE, COINTRACKING_IMPORT_TIMEZONE, require_file, write_json
+from pipeline_common import REPO_PROJECT_WINDOW_END, parse_canonical_timestamp, repo_project_window_start
+from script_common import CANONICAL_TIMEZONE, COINTRACKING_IMPORT_TIMEZONE, read_cointracking_rows, require_file, write_json
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -21,7 +22,24 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--out-dir", required=True, type=Path)
     parser.add_argument("--staged-name")
     parser.add_argument("--import-ready-dir", type=Path)
+    parser.add_argument("--window-start")
+    parser.add_argument("--window-end")
     return parser.parse_args(argv)
+
+
+def count_candidate_rows_outside_window(candidate: Path, *, window_start: str, window_end: str) -> int:
+    start_dt = parse_canonical_timestamp(window_start, label="window_start") if window_start else None
+    end_dt = parse_canonical_timestamp(window_end, label="window_end") if window_end else None
+    rows_outside_window = 0
+    for row in read_cointracking_rows(candidate):
+        date_text = (row.get("Date") or "").strip()
+        date_dt = parse_canonical_timestamp(date_text, label="candidate Date")
+        if start_dt is not None and date_dt < start_dt:
+            rows_outside_window += 1
+            continue
+        if end_dt is not None and date_dt > end_dt:
+            rows_outside_window += 1
+    return rows_outside_window
 
 
 def stage_import_batch(
@@ -31,10 +49,14 @@ def stage_import_batch(
     *,
     staged_name: str | None = None,
     import_ready_dir: Path | None = None,
+    window_start: str | None = None,
+    window_end: str | None = None,
 ) -> dict[str, object]:
     candidate = require_file(candidate.resolve(), "CoinTracking candidate")
     out_dir = out_dir.resolve()
     overlap_dir = out_dir / "overlap_check"
+    effective_window_start = repo_project_window_start() if window_start is None else window_start
+    effective_window_end = REPO_PROJECT_WINDOW_END if window_end is None else window_end
     summary, flagged_rows = summarize_overlap(baseline_export_dir, candidate)
     write_overlap_artifacts(overlap_dir, summary, flagged_rows)
 
@@ -44,9 +66,33 @@ def stage_import_batch(
             "candidate": str(candidate),
             "canonical_timezone": CANONICAL_TIMEZONE,
             "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+            "normalization_window_start": effective_window_start,
+            "normalization_window_end": effective_window_end,
             "overlap_summary": str(overlap_dir / "overlap_summary.json"),
             "rows_flagged": summary["rows_flagged"],
+            "rows_outside_normalization_window": 0,
             "message": "Candidate failed overlap screening and was not staged.",
+        }
+        write_json(out_dir / "stage_summary.json", result)
+        return result
+
+    rows_outside_window = count_candidate_rows_outside_window(
+        candidate,
+        window_start=effective_window_start,
+        window_end=effective_window_end,
+    )
+    if rows_outside_window:
+        result = {
+            "status": "blocked",
+            "candidate": str(candidate),
+            "canonical_timezone": CANONICAL_TIMEZONE,
+            "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+            "normalization_window_start": effective_window_start,
+            "normalization_window_end": effective_window_end,
+            "overlap_summary": str(overlap_dir / "overlap_summary.json"),
+            "rows_flagged": 0,
+            "rows_outside_normalization_window": rows_outside_window,
+            "message": "Candidate contains row(s) outside the approved normalization window and was not staged.",
         }
         write_json(out_dir / "stage_summary.json", result)
         return result
@@ -68,10 +114,13 @@ def stage_import_batch(
         "candidate": str(candidate),
         "canonical_timezone": CANONICAL_TIMEZONE,
         "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+        "normalization_window_start": effective_window_start,
+        "normalization_window_end": effective_window_end,
         "staged_path": str(staged_path),
         "import_ready_path": import_ready_path,
         "overlap_summary": str(overlap_dir / "overlap_summary.json"),
         "rows_flagged": 0,
+        "rows_outside_normalization_window": 0,
     }
     write_json(out_dir / "stage_summary.json", result)
     return result
@@ -85,6 +134,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.out_dir,
         staged_name=args.staged_name,
         import_ready_dir=args.import_ready_dir,
+        window_start=args.window_start,
+        window_end=args.window_end,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0 if summary["status"] == "staged" else 1

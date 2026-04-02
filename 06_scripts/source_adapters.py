@@ -323,7 +323,7 @@ def canonical_event(
     render_tx_id_mode: str = "exact",
     render_allowed_types: str | None = None,
 ) -> dict[str, str]:
-    return {
+    event = {
         "event_id": event_id,
         "source": source,
         "adapter": adapter,
@@ -337,8 +337,8 @@ def canonical_event(
         "amount_in": amount_in,
         "asset_out": asset_out,
         "amount_out": amount_out,
-        "fee_asset": fee_asset,
-        "fee_amount": fee_amount,
+        "fee_asset": "",
+        "fee_amount": "",
         "tx_hash": tx_hash,
         "description": description,
         "confidence": "high",
@@ -355,6 +355,42 @@ def canonical_event(
         "render_fee_tolerance": render_fee_tolerance,
         "render_notes": render_notes,
     }
+    return attach_fee_to_event(event, fee_amount=fee_amount, fee_asset=fee_asset)
+
+
+def standalone_fee_event(
+    *,
+    event_id: str,
+    source: str,
+    adapter: str,
+    account: str,
+    wallet: str,
+    raw_file: str,
+    raw_row_ref: str,
+    timestamp: str,
+    description: str,
+    fee_amount: str | Decimal,
+    fee_asset: str,
+    tx_hash: str = "",
+    render_notes: str = "",
+) -> dict[str, str]:
+    fee_decimal = fee_amount if isinstance(fee_amount, Decimal) else decimal_or_zero(fee_amount)
+    return canonical_event(
+        event_id=event_id,
+        source=source,
+        adapter=adapter,
+        account=account,
+        wallet=wallet,
+        raw_file=raw_file,
+        raw_row_ref=raw_row_ref,
+        timestamp=timestamp,
+        event_kind="Other Fee",
+        description=description,
+        amount_out=decimal_text(fee_decimal),
+        asset_out=fee_asset.strip().upper(),
+        tx_hash=tx_hash,
+        render_notes=render_notes,
+    )
 
 
 def maybe_append_exception(
@@ -813,53 +849,49 @@ class WealthsimpleAdapter(SourceAdapter):
                 if activity_type == "Trade" and symbol and currency:
                     if activity_sub_type == "BUY":
                         events.append(
-                            attach_fee_to_event(
-                                canonical_event(
-                                    event_id=event_id,
-                                    source=profile.source,
-                                    adapter=self.name,
-                                    account=account,
-                                    wallet=account,
-                                    raw_file=path.name,
-                                    raw_row_ref=raw_row_ref,
-                                    timestamp=timestamp,
-                                    event_kind="Trade",
-                                    description="Wealthsimple Crypto buy",
-                                    amount_in=decimal_text(abs(quantity)),
-                                    asset_in=symbol,
-                                    amount_out=decimal_text(abs(net_cash)),
-                                    asset_out=currency,
-                                    render_match_window_seconds="86399",
-                                    render_notes=description,
-                                ),
+                            canonical_event(
+                                event_id=event_id,
+                                source=profile.source,
+                                adapter=self.name,
+                                account=account,
+                                wallet=account,
+                                raw_file=path.name,
+                                raw_row_ref=raw_row_ref,
+                                timestamp=timestamp,
+                                event_kind="Trade",
+                                description="Wealthsimple Crypto buy",
+                                amount_in=decimal_text(abs(quantity)),
+                                asset_in=symbol,
+                                amount_out=decimal_text(abs(net_cash)),
+                                asset_out=currency,
                                 fee_amount=commission,
                                 fee_asset=currency,
+                                render_match_window_seconds="86399",
+                                render_notes=description,
                             )
                         )
                         continue
                     if activity_sub_type == "SELL":
                         events.append(
-                            attach_fee_to_event(
-                                canonical_event(
-                                    event_id=event_id,
-                                    source=profile.source,
-                                    adapter=self.name,
-                                    account=account,
-                                    wallet=account,
-                                    raw_file=path.name,
-                                    raw_row_ref=raw_row_ref,
-                                    timestamp=timestamp,
-                                    event_kind="Trade",
-                                    description="Wealthsimple Crypto sell",
-                                    amount_in=decimal_text(abs(net_cash)),
-                                    asset_in=currency,
-                                    amount_out=decimal_text(abs(quantity)),
-                                    asset_out=symbol,
-                                    render_match_window_seconds="86399",
-                                    render_notes=description,
-                                ),
+                            canonical_event(
+                                event_id=event_id,
+                                source=profile.source,
+                                adapter=self.name,
+                                account=account,
+                                wallet=account,
+                                raw_file=path.name,
+                                raw_row_ref=raw_row_ref,
+                                timestamp=timestamp,
+                                event_kind="Trade",
+                                description="Wealthsimple Crypto sell",
+                                amount_in=decimal_text(abs(net_cash)),
+                                asset_in=currency,
+                                amount_out=decimal_text(abs(quantity)),
+                                asset_out=symbol,
                                 fee_amount=commission,
                                 fee_asset=currency,
+                                render_match_window_seconds="86399",
+                                render_notes=description,
                             )
                         )
                         continue
@@ -1081,27 +1113,25 @@ class BinanceAdapter(SourceAdapter):
                 amount_in, asset_in = quote_amount, quote_asset
                 amount_out, asset_out = executed_amount, executed_asset
             events.append(
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=source,
-                        adapter=self.name,
-                        account="Spot",
-                        wallet="Spot",
-                        raw_file=path.name,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=timestamp,
-                        event_kind="Trade",
-                        description=f"Binance spot {side.lower()} {row['Pair']}",
-                        amount_in=amount_in,
-                        asset_in=asset_in,
-                        amount_out=amount_out,
-                        asset_out=asset_out,
-                        render_group="Spot",
-                        render_notes=row["Pair"],
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=source,
+                    adapter=self.name,
+                    account="Spot",
+                    wallet="Spot",
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Trade",
+                    description=f"Binance spot {side.lower()} {row['Pair']}",
+                    amount_in=amount_in,
+                    asset_in=asset_in,
+                    amount_out=amount_out,
+                    asset_out=asset_out,
                     fee_amount=fee_amount,
                     fee_asset=fee_asset,
+                    render_group="Spot",
+                    render_notes=row["Pair"],
                 )
             )
         return events
@@ -1179,28 +1209,31 @@ class BinanceAdapter(SourceAdapter):
                 continue
             asset = (row.get("Coin") or "").strip().upper()
             raw_row_ref = f"row:{index}"
-            event = canonical_event(
-                event_id=event_id_for(self.name, path.name, raw_row_ref),
-                source=source,
-                adapter=self.name,
-                account="Binance",
-                wallet="Funding",
-                raw_file=path.name,
-                raw_row_ref=raw_row_ref,
-                timestamp=normalized_timestamp(
-                    row["Time"],
-                    BINANCE_TIME_FORMATS,
-                    source_timezone=source_timezone_from_filename(path.name),
-                ),
-                event_kind="Withdrawal",
-                description=f"Binance withdrawal via {row['Network']}",
-                amount_out=decimal_text(decimal_or_zero(row["Amount"])),
-                asset_out=asset,
-                tx_hash=(row.get("TXID") or "").strip(),
-                render_group="Funding",
-                render_notes=row.get("Address", ""),
+            events.append(
+                canonical_event(
+                    event_id=event_id_for(self.name, path.name, raw_row_ref),
+                    source=source,
+                    adapter=self.name,
+                    account="Binance",
+                    wallet="Funding",
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(
+                        row["Time"],
+                        BINANCE_TIME_FORMATS,
+                        source_timezone=source_timezone_from_filename(path.name),
+                    ),
+                    event_kind="Withdrawal",
+                    description=f"Binance withdrawal via {row['Network']}",
+                    amount_out=decimal_text(decimal_or_zero(row["Amount"])),
+                    asset_out=asset,
+                    fee_amount=row.get("Fee", ""),
+                    fee_asset=asset,
+                    tx_hash=(row.get("TXID") or "").strip(),
+                    render_group="Funding",
+                    render_notes=row.get("Address", ""),
+                )
             )
-            events.append(attach_fee_to_event(event, fee_amount=row.get("Fee", ""), fee_asset=asset))
         return events
 
     def _fiat_buy_history_events(self, path: Path, source: str) -> list[dict[str, str]]:
@@ -1213,32 +1246,30 @@ class BinanceAdapter(SourceAdapter):
             fee_amount, fee_asset = parse_number_asset(row["Fee"])
             raw_row_ref = f"row:{index}"
             events.append(
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id_for(self.name, path.name, raw_row_ref),
-                        source=source,
-                        adapter=self.name,
-                        account="Funding",
-                        wallet="Funding",
-                        raw_file=path.name,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=normalized_timestamp(
-                            row["Time"],
-                            BINANCE_TIME_FORMATS,
-                            source_timezone=source_timezone_from_filename(path.name),
-                        ),
-                        event_kind="Trade",
-                        description=f"Binance fiat buy via {row['Method']}",
-                        amount_in=receive_amount,
-                        asset_in=receive_asset,
-                        amount_out=spend_amount,
-                        asset_out=spend_asset,
-                        tx_hash=(row.get("Transaction ID") or "").strip(),
-                        render_group="Funding",
-                        render_notes=row.get("Price", ""),
+                canonical_event(
+                    event_id=event_id_for(self.name, path.name, raw_row_ref),
+                    source=source,
+                    adapter=self.name,
+                    account="Funding",
+                    wallet="Funding",
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(
+                        row["Time"],
+                        BINANCE_TIME_FORMATS,
+                        source_timezone=source_timezone_from_filename(path.name),
                     ),
+                    event_kind="Trade",
+                    description=f"Binance fiat buy via {row['Method']}",
+                    amount_in=receive_amount,
+                    asset_in=receive_asset,
+                    amount_out=spend_amount,
+                    asset_out=spend_asset,
                     fee_amount=fee_amount,
                     fee_asset=fee_asset,
+                    tx_hash=(row.get("Transaction ID") or "").strip(),
+                    render_group="Funding",
+                    render_notes=row.get("Price", ""),
                 )
             )
         return events
@@ -1254,32 +1285,30 @@ class BinanceAdapter(SourceAdapter):
             fee_amount, fee_asset = parse_number_asset(row["Fee"])
             raw_row_ref = f"row:{index}"
             events.append(
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id_for(self.name, path.name, raw_row_ref),
-                        source=source,
-                        adapter=self.name,
-                        account="Funding",
-                        wallet="Funding",
-                        raw_file=path.name,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=normalized_timestamp(
-                            row["Time"],
-                            BINANCE_TIME_FORMATS,
-                            source_timezone=source_timezone_from_filename(path.name),
-                        ),
-                        event_kind="Trade",
-                        description=f"Binance fiat sell via {row['Method']}",
-                        amount_in=receive_amount,
-                        asset_in=receive_asset,
-                        amount_out=spend_amount,
-                        asset_out=spend_asset,
-                        tx_hash=(row.get("Transaction ID") or "").strip(),
-                        render_group="Funding",
-                        render_notes=row.get("Price", ""),
+                canonical_event(
+                    event_id=event_id_for(self.name, path.name, raw_row_ref),
+                    source=source,
+                    adapter=self.name,
+                    account="Funding",
+                    wallet="Funding",
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(
+                        row["Time"],
+                        BINANCE_TIME_FORMATS,
+                        source_timezone=source_timezone_from_filename(path.name),
                     ),
+                    event_kind="Trade",
+                    description=f"Binance fiat sell via {row['Method']}",
+                    amount_in=receive_amount,
+                    asset_in=receive_asset,
+                    amount_out=spend_amount,
+                    asset_out=spend_asset,
                     fee_amount=fee_amount,
                     fee_asset=fee_asset,
+                    tx_hash=(row.get("Transaction ID") or "").strip(),
+                    render_group="Funding",
+                    render_notes=row.get("Price", ""),
                 )
             )
         return events
@@ -1662,6 +1691,11 @@ class BinanceAdapter(SourceAdapter):
             asset_in, amount_in = next(iter(positive.items()))
             asset_out, amount_out = next(iter(negative.items()))
             trade_id = next((extract_trade_id(row.get("Remark", "")) for row in rows if extract_trade_id(row.get("Remark", ""))), "")
+            fee_asset = ""
+            fee_total = ""
+            if fee_totals:
+                fee_asset, fee_value = next(iter(fee_totals.items()))
+                fee_total = fee_value
             event = canonical_event(
                 event_id=event_id_for(self.name, path.name, raw_row_ref),
                 source=profile.source,
@@ -1677,13 +1711,12 @@ class BinanceAdapter(SourceAdapter):
                 asset_in=asset_in,
                 amount_out=decimal_text(amount_out),
                 asset_out=asset_out,
+                fee_amount=fee_total,
+                fee_asset=fee_asset,
                 tx_hash=trade_id,
                 render_group=account or "Spot",
                 render_notes=", ".join(sorted(operations)),
             )
-            if fee_totals:
-                fee_asset, fee_total = next(iter(fee_totals.items()))
-                event = attach_fee_to_event(event, fee_amount=fee_total, fee_asset=fee_asset)
             return [event], None
 
         event_id = event_id_for(self.name, path.name, raw_row_ref)
@@ -2228,7 +2261,7 @@ class EvmExplorerAdapter(SourceAdapter):
             ), None
 
         if "claim" in method.lower() and incoming and not outgoing:
-            events = [
+            return [
                 canonical_event(
                     event_id=event_id,
                     source=profile.source,
@@ -2242,34 +2275,38 @@ class EvmExplorerAdapter(SourceAdapter):
                     description=f"{method} - {tx_hash}",
                     amount_in=decimal_text(incoming[0][1]),
                     asset_in=incoming[0][0],
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
                     tx_hash=tx_hash,
                     render_notes="evm_claim",
                 )
-            ]
-            return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset), None
+            ], None
 
         if incoming and (outgoing or native_out > 0):
             asset_out, amount_out = outgoing[0] if outgoing else (native_asset, native_out)
             asset_in, amount_in = incoming[0]
-            trade_event = canonical_event(
-                event_id=event_id,
-                source=profile.source,
-                adapter=self.name,
-                account=profile.source,
-                wallet=profile.source,
-                raw_file=raw_file,
-                raw_row_ref=raw_row_ref,
-                timestamp=timestamp,
-                event_kind="Trade",
-                description=f"{method} - {tx_hash}",
-                amount_in=decimal_text(amount_in),
-                asset_in=asset_in,
-                amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
-                asset_out=asset_out,
-                tx_hash=tx_hash,
-                render_notes="evm_trade",
-            )
-            return [attach_fee_to_event(trade_event, fee_amount=fee_paid, fee_asset=native_asset)], None
+            return [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Trade",
+                    description=f"{method} - {tx_hash}",
+                    amount_in=decimal_text(amount_in),
+                    asset_in=asset_in,
+                    amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
+                    asset_out=asset_out,
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_trade",
+                )
+            ], None
 
         if suspicious_nft_assets and not incoming and not outgoing and native_in <= 0 and native_out <= 0:
             decision = exception_decisions.get(event_id, {})
@@ -2292,45 +2329,46 @@ class EvmExplorerAdapter(SourceAdapter):
 
         if outgoing:
             asset_out, amount_out = outgoing[0]
-            withdrawal_event = canonical_event(
-                event_id=event_id,
-                source=profile.source,
-                adapter=self.name,
-                account=profile.source,
-                wallet=profile.source,
-                raw_file=raw_file,
-                raw_row_ref=raw_row_ref,
-                timestamp=timestamp,
-                event_kind="Withdrawal",
-                description=f"{method or 'Transfer out'} - {tx_hash}",
-                amount_out=decimal_text(amount_out),
-                asset_out=asset_out,
-                tx_hash=tx_hash,
-                render_notes="evm_out",
-            )
-            return [attach_fee_to_event(withdrawal_event, fee_amount=fee_paid, fee_asset=native_asset)], None
+            return [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Withdrawal",
+                    description=f"{method or 'Transfer out'} - {tx_hash}",
+                    amount_out=decimal_text(amount_out),
+                    asset_out=asset_out,
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_out",
+                )
+            ], None
 
         if native_out > 0:
             return [
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=profile.source,
-                        adapter=self.name,
-                        account=profile.source,
-                        wallet=profile.source,
-                        raw_file=raw_file,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=timestamp,
-                        event_kind="Withdrawal",
-                        description=f"{method or 'Transfer out'} - {tx_hash}",
-                        amount_out=decimal_text(native_out),
-                        asset_out=native_asset,
-                        tx_hash=tx_hash,
-                        render_notes="evm_native_out",
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Withdrawal",
+                    description=f"{method or 'Transfer out'} - {tx_hash}",
+                    amount_out=decimal_text(native_out),
+                    asset_out=native_asset,
                     fee_amount=fee_paid,
                     fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_native_out",
                 )
             ], None
 
@@ -2338,55 +2376,51 @@ class EvmExplorerAdapter(SourceAdapter):
             asset_in, amount_in = incoming[0]
             event_kind = "Airdrop" if inbound_is_airdrop else "Deposit"
             return [
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=profile.source,
-                        adapter=self.name,
-                        account=profile.source,
-                        wallet=profile.source,
-                        raw_file=raw_file,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=timestamp,
-                        event_kind=event_kind,
-                        description=f"{method or event_kind} - {tx_hash}",
-                        amount_in=decimal_text(amount_in),
-                        asset_in=asset_in,
-                        tx_hash=tx_hash,
-                        render_notes="evm_in",
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind=event_kind,
+                    description=f"{method or event_kind} - {tx_hash}",
+                    amount_in=decimal_text(amount_in),
+                    asset_in=asset_in,
                     fee_amount=fee_paid,
                     fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_in",
                 )
             ], None
 
         if native_in > 0:
             return [
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=profile.source,
-                        adapter=self.name,
-                        account=profile.source,
-                        wallet=profile.source,
-                        raw_file=raw_file,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=timestamp,
-                        event_kind="Deposit",
-                        description=f"{method or 'Transfer in'} - {tx_hash}",
-                        amount_in=decimal_text(native_in),
-                        asset_in=native_asset,
-                        tx_hash=tx_hash,
-                        render_notes="evm_native_in",
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Deposit",
+                    description=f"{method or 'Transfer in'} - {tx_hash}",
+                    amount_in=decimal_text(native_in),
+                    asset_in=native_asset,
                     fee_amount=fee_paid,
                     fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_native_in",
                 )
             ], None
 
         if fee_paid > 0:
             return [
-                canonical_event(
+                standalone_fee_event(
                     event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
                     source=profile.source,
                     adapter=self.name,
@@ -2395,10 +2429,9 @@ class EvmExplorerAdapter(SourceAdapter):
                     raw_file=raw_file,
                     raw_row_ref=raw_row_ref,
                     timestamp=timestamp,
-                    event_kind="Other Fee",
                     description=f"{method or 'Explorer tx'} - {tx_hash}",
-                    amount_out=decimal_text(fee_paid),
-                    asset_out=native_asset,
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
                     tx_hash=tx_hash,
                     render_notes="evm_fee_only",
                 )
@@ -2599,7 +2632,29 @@ class EvmExplorerAdapter(SourceAdapter):
                 render_notes="evm_stake_in",
             ),
         ]
-        return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset)
+        if fee_paid > 0:
+            events = attach_fee_to_event_list(
+                events,
+                fee_amount=fee_paid,
+                fee_asset=native_asset,
+                target_event_id=event_id_for(self.name, raw_file, f"{tx_hash}:stake_out"),
+                standalone_event=standalone_fee_event(
+                    event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
+                    source=source,
+                    adapter=self.name,
+                    account=source,
+                    wallet=source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    description=f"Stake {asset} - {tx_hash}",
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_stake_fee",
+                ),
+            )
+        return events
 
     def _unstake_events(
         self,
@@ -2648,7 +2703,29 @@ class EvmExplorerAdapter(SourceAdapter):
                 render_notes="evm_unstake_out",
             ),
         ]
-        return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset)
+        if fee_paid > 0:
+            events = attach_fee_to_event_list(
+                events,
+                fee_amount=fee_paid,
+                fee_asset=native_asset,
+                target_event_id=event_id_for(self.name, raw_file, f"{tx_hash}:unstake_in"),
+                standalone_event=standalone_fee_event(
+                    event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
+                    source=source,
+                    adapter=self.name,
+                    account=source,
+                    wallet=source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    description=f"Unstake {asset} - {tx_hash}",
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_unstake_fee",
+                ),
+            )
+        return events
 
 
 class ShakepayAdapter(SourceAdapter):
@@ -3066,6 +3143,11 @@ class LedgerLiveAdapter(SourceAdapter):
             asset_in, amount_in = next(iter(in_assets.items()))
             asset_out, amount_out = next(iter(out_assets.items()))
             event_id = event_id_for(self.name, indexed_rows[0][0].name, operation_hash)
+            fee_asset = ""
+            fee_total = ""
+            if len(fee_assets) == 1:
+                fee_asset, fee_value = next(iter(fee_assets.items()))
+                fee_total = fee_value
             event = canonical_event(
                 event_id=event_id,
                 source=source,
@@ -3081,12 +3163,11 @@ class LedgerLiveAdapter(SourceAdapter):
                 asset_in=asset_in,
                 amount_out=decimal_text(amount_out),
                 asset_out=asset_out,
+                fee_amount=fee_total,
+                fee_asset=fee_asset,
                 tx_hash=operation_hash,
                 render_notes="ledger_live_grouped_trade",
             )
-            if len(fee_assets) == 1:
-                fee_asset, fee_total = next(iter(fee_assets.items()))
-                event = attach_fee_to_event(event, fee_amount=fee_total, fee_asset=fee_asset)
             events.append(event)
             return events
 
@@ -3119,25 +3200,23 @@ class LedgerLiveAdapter(SourceAdapter):
             asset = (row.get("Currency Ticker") or "").strip().upper()
             fee_paid = decimal_or_zero(row.get("Operation Fees"))
             events.append(
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=source,
-                        adapter=self.name,
-                        account=account_name,
-                        wallet=account_name,
-                        raw_file=path.name,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=normalized_timestamp(row["Operation Date"], LEDGER_LIVE_TIME_FORMATS),
-                        event_kind="Withdrawal",
-                        description=account_name,
-                        amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
-                        asset_out=asset,
-                        tx_hash=f"OUT-{operation_hash}",
-                        render_notes="ledger_live_out",
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=source,
+                    adapter=self.name,
+                    account=account_name,
+                    wallet=account_name,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(row["Operation Date"], LEDGER_LIVE_TIME_FORMATS),
+                    event_kind="Withdrawal",
+                    description=account_name,
+                    amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
+                    asset_out=asset,
                     fee_amount=fee_paid,
                     fee_asset=asset,
+                    tx_hash=f"OUT-{operation_hash}",
+                    render_notes="ledger_live_out",
                 )
             )
 
@@ -3147,24 +3226,22 @@ class LedgerLiveAdapter(SourceAdapter):
             asset = (row.get("Currency Ticker") or "").strip().upper()
             fee_paid = decimal_or_zero(row.get("Operation Fees"))
             events.append(
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=source,
-                        adapter=self.name,
-                        account=account_name,
-                        wallet=account_name,
-                        raw_file=path.name,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=normalized_timestamp(row["Operation Date"], LEDGER_LIVE_TIME_FORMATS),
-                        event_kind="Expense (non taxable)",
-                        description=f"{asset} Staking Deposit - {operation_hash}",
-                        amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
-                        asset_out=asset,
-                        render_notes="ledger_live_delegate",
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=source,
+                    adapter=self.name,
+                    account=account_name,
+                    wallet=account_name,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=normalized_timestamp(row["Operation Date"], LEDGER_LIVE_TIME_FORMATS),
+                    event_kind="Expense (non taxable)",
+                    description=f"{asset} Staking Deposit - {operation_hash}",
+                    amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
+                    asset_out=asset,
                     fee_amount=fee_paid,
                     fee_asset=asset,
+                    render_notes="ledger_live_delegate",
                 )
             )
 
@@ -3427,26 +3504,23 @@ class NearAdapter(SourceAdapter):
         deposit_value = decimal_or_zero(row.get("Deposit Value"))
         tx_fee = decimal_or_zero(row.get("Txn Fee"))
         description = f"Stake NEAR - {tx_hash}" if tx_hash else "Stake NEAR"
-        return [
-            attach_fee_to_event(
-                canonical_event(
-                    event_id=event_id_for(self.name, path.name, f"{raw_row_ref}:wallet"),
-                    source=source,
-                    adapter=self.name,
-                    account=source,
-                    wallet=source,
-                    raw_file=path.name,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind="Withdrawal",
-                    description=description,
-                    amount_out=decimal_text(deposit_value + tx_fee),
-                    asset_out="NEAR",
-                    tx_hash=tx_hash,
-                    render_notes="near_stake_out",
-                ),
-                fee_amount=tx_fee,
-                fee_asset="NEAR",
+        wallet_event_id = event_id_for(self.name, path.name, f"{raw_row_ref}:wallet")
+        events = [
+            canonical_event(
+                event_id=wallet_event_id,
+                source=source,
+                adapter=self.name,
+                account=source,
+                wallet=source,
+                raw_file=path.name,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Withdrawal",
+                description=description,
+                amount_out=decimal_text(deposit_value),
+                asset_out="NEAR",
+                tx_hash=tx_hash,
+                render_notes="near_stake_out",
             ),
             canonical_event(
                 event_id=event_id_for(self.name, path.name, f"{raw_row_ref}:staking"),
@@ -3465,6 +3539,29 @@ class NearAdapter(SourceAdapter):
                 render_notes="near_stake_in",
             ),
         ]
+        if tx_fee > 0:
+            events = attach_fee_to_event_list(
+                events,
+                fee_amount=tx_fee,
+                fee_asset="NEAR",
+                target_event_id=wallet_event_id,
+                standalone_event=standalone_fee_event(
+                    event_id=event_id_for(self.name, path.name, f"{raw_row_ref}:fee"),
+                    source=source,
+                    adapter=self.name,
+                    account=source,
+                    wallet=source,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    description=description,
+                    fee_amount=tx_fee,
+                    fee_asset="NEAR",
+                    tx_hash=tx_hash,
+                    render_notes="near_stake_fee",
+                ),
+            )
+        return events
 
 
 class GTradeAdapter(SourceAdapter):

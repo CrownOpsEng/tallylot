@@ -26,10 +26,10 @@ The project still follows the canonical cutoff:
 | Order | Source | Current status | Next concrete action | Round target |
 | --- | --- | --- | --- | --- |
 | 1 | Coinbase | `capture_complete` | Verify whether the Coinbase all-time export fully subsumes historical Coinbase Pro coverage, then build the post-cutoff candidate | `post_import_coinbase_01` |
-| 2 | WealthSimple | `capture_complete` | Trim to the project window, normalize for CoinTracking, and overlap-screen | `post_import_wealthsimple_01` |
-| 3 | ledger-live-main | `capture_complete` | Normalize the capture-local Ledger Live files and overlap-screen the candidate | `post_import_ledger_live_main_01` |
-| 4 | bsc-metamask1 | `capture_complete` | Normalize the capture-local explorer files and overlap-screen the candidate | `post_import_bsc_metamask1_01` |
-| 5 | Binance | `capture_complete` | Classify the residual WBETH dust treatment, trim all candidates to `<= 2025-12-31`, then overlap-screen | `post_import_binance_01` |
+| 2 | WealthSimple | `capture_complete` | Normalize canonically, then stage and overlap-screen with the shared repo import window | `post_import_wealthsimple_01` |
+| 3 | ledger-live-main | `capture_complete` | Normalize the capture-local Ledger Live files, then stage and overlap-screen the candidate | `post_import_ledger_live_main_01` |
+| 4 | bsc-metamask1 | `capture_complete` | Normalize the capture-local explorer files, then stage and overlap-screen the candidate | `post_import_bsc_metamask1_01` |
+| 5 | Binance | `capture_complete` | Classify the residual WBETH dust treatment, normalize canonically, then stage and overlap-screen with the shared repo import window | `post_import_binance_01` |
 | 6 | Shakepay | `capture_complete` | Prepare the final import tranche and keep it last per project procedure | `post_import_shakepay_01` |
 
 ## Open Follow-Ups

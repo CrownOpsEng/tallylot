@@ -615,3 +615,36 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertTrue(summary["adapter_supported"])
         self.assertEqual("ready", summary["status"])
         self.assertNotEqual("stale", summary["manifest_fingerprint"])
+
+    def test_normalize_source_applies_explicit_normalization_window_overrides(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            raw_dir = root / "binance" / "raw"
+            raw_dir.mkdir(parents=True)
+            (raw_dir / "Binance-Deposit-History-202603230411(UTC--6)_abcd.csv").write_text(
+                (
+                    "Time,Coin,Network,Amount,Address,TXID,Status\n"
+                    "23-08-05 08:34:05,USDT,MATIC,10,addr,tx-1,Completed\n"
+                    "26-01-01 00:00:00,USDT,MATIC,20,addr,tx-2,Completed\n"
+                ),
+                encoding="utf-8",
+            )
+            out_dir = root / "normalized"
+
+            summary = normalize_source.normalize_source(
+                "Binance",
+                raw_dir,
+                out_dir,
+                window_start="2023-08-05 08:34:05",
+                window_end="2025-12-31 23:59:59",
+            )
+
+            events = pipeline_common.read_profile(out_dir / "normalization_summary.json")
+            canonical_rows = (out_dir / "canonical_events.csv").read_text(encoding="utf-8")
+
+        self.assertEqual(1, summary["canonical_events"])
+        self.assertEqual(1, summary["events_outside_normalization_window"])
+        self.assertEqual("2023-08-05 08:34:05", events["normalization_window_start"])
+        self.assertEqual("2025-12-31 23:59:59", events["normalization_window_end"])
+        self.assertIn("2023-08-05 14:34:05", canonical_rows)
+        self.assertNotIn("2026-01-01", canonical_rows)

@@ -158,3 +158,21 @@ class PipelineCommonTests(unittest.TestCase):
         row["event_id"] = ""
         with self.assertRaisesRegex(ValueError, "event_id"):
             pipeline_common.validate_canonical_event_row(row)
+
+    def test_filter_rows_by_timestamp_window_keeps_only_rows_inside_bounds(self) -> None:
+        rows = [
+            {"timestamp": "2023-08-05 08:34:04", "event_id": "before"},
+            {"timestamp": "2023-08-05 08:34:05", "event_id": "start"},
+            {"timestamp": "2025-12-31 23:59:59", "event_id": "end"},
+            {"timestamp": "2026-01-01 00:00:00", "event_id": "after"},
+        ]
+
+        included, excluded = pipeline_common.filter_rows_by_timestamp_window(
+            rows,
+            timestamp_key="timestamp",
+            window_start="2023-08-05 08:34:05",
+            window_end="2025-12-31 23:59:59",
+        )
+
+        self.assertEqual(["start", "end"], [row["event_id"] for row in included])
+        self.assertEqual(["before", "after"], [row["event_id"] for row in excluded])
