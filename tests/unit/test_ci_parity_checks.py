@@ -50,6 +50,14 @@ def test_ci_parity_stops_when_commit_message_step_fails(monkeypatch: MonkeyPatch
     assert ci_parity.main(["--include-commit-messages"]) == 1
 
 
+def test_ci_parity_requires_full_pr_metadata_input(tmp_path: Path) -> None:
+    pr_body = tmp_path / "pr.md"
+    pr_body.write_text("Why:\n- explain\n", encoding="utf-8")
+
+    assert ci_parity.main(["--pr-title", "ci: tighten parity"]) == 2
+    assert ci_parity.main(["--pr-body-file", str(pr_body)]) == 2
+
+
 def test_ci_parity_runs_quality_build_and_verify(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.chdir(tmp_path)
     dist_dir = tmp_path / "dist"
@@ -103,3 +111,45 @@ def test_ci_parity_can_include_commit_messages(monkeypatch: MonkeyPatch, tmp_pat
 
     assert ci_parity.main(["--include-commit-messages"]) == 0
     assert steps_seen == ["commit-messages", "quality", "build"]
+
+
+def test_ci_parity_can_include_pr_metadata(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(ci_parity, "_pr_validation_shas", lambda: ("base", "head"))
+    pr_body = tmp_path / "pr.md"
+    pr_body_text = (
+        "Why:\n- explain\n\n"
+        "What:\n- change\n\n"
+        "Checks:\n- uv run pytest\n\n"
+        "Included checkpoints:\n- `ci: tighten parity`\n"
+    )
+    pr_body.write_text(
+        pr_body_text,
+        encoding="utf-8",
+    )
+    dist_dir = tmp_path / "dist"
+    dist_dir.mkdir()
+    wheel_path = dist_dir / "tallylot-0.1.0-py3-none-any.whl"
+    wheel_path.write_text("stub", encoding="utf-8")
+
+    steps_seen: list[ci_parity.ParityStep] = []
+
+    def fake_run_step(step: ci_parity.ParityStep) -> int:
+        steps_seen.append(step)
+        if step.name == "build":
+            dist_dir.mkdir(exist_ok=True)
+            wheel_path.write_text("rebuilt", encoding="utf-8")
+        return 0
+
+    def fake_verify_built_wheel(dist_path: Path) -> tuple[int, str, str]:
+        assert dist_path.resolve() == dist_dir.resolve()
+        return 0, "", ""
+
+    monkeypatch.setattr(ci_parity, "_run_step", fake_run_step)
+    monkeypatch.setattr(ci_parity, "_verify_built_wheel", fake_verify_built_wheel)
+
+    assert ci_parity.main(["--pr-title", "ci: tighten parity", "--pr-body-file", str(pr_body)]) == 0
+    assert [step.name for step in steps_seen] == ["pr-metadata", "quality", "build"]
+    assert steps_seen[0].command[4] == "tools.validate_pr_metadata"
+    assert "--base-sha" in steps_seen[0].command
+    assert "--head-sha" in steps_seen[0].command

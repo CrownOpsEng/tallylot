@@ -89,7 +89,7 @@ jobs:
       - name: Pyright
         run: uv run pyright
       - name: Pylint
-        run: uv run pylint src tests tools
+        run: uv run python -m tools.run_pylint
       - name: Pytest
         run: uv run pytest
       - name: Build distributions

@@ -48,12 +48,29 @@ def _commit_message_range() -> str:
     return f"{merge_base}..{head_sha}"
 
 
+def _pr_validation_shas() -> tuple[str, str]:
+    default_branch = _default_branch_ref()
+    try:
+        base_sha = _git_stdout("merge-base", "HEAD", default_branch)
+    except subprocess.CalledProcessError:
+        return _git_stdout("rev-parse", "HEAD^"), _git_stdout("rev-parse", "HEAD")
+    return base_sha, _git_stdout("rev-parse", "HEAD")
+
+
 def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run local checks that mirror the GitHub Actions CI workflow.")
     parser.add_argument(
         "--include-commit-messages",
         action="store_true",
         help="Also validate the current branch commit-message range before running quality and build checks.",
+    )
+    parser.add_argument(
+        "--pr-title",
+        help="Validate pull request metadata for the current branch using this PR title.",
+    )
+    parser.add_argument(
+        "--pr-body-file",
+        help="Path to a file containing the pull request body to validate for the current branch.",
     )
     return parser
 
@@ -110,6 +127,9 @@ def _run_step(step: ParityStep) -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
+    if (args.pr_title is None) != (args.pr_body_file is None):
+        print("provide both --pr-title and --pr-body-file when validating PR metadata", flush=True)
+        return 2
 
     steps: list[ParityStep] = []
     if args.include_commit_messages:
@@ -124,6 +144,29 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "tools.validate_commit_message",
                     "--rev-range",
                     _commit_message_range(),
+                ),
+            )
+        )
+    if args.pr_title is not None and args.pr_body_file is not None:
+        base_sha, head_sha = _pr_validation_shas()
+        pr_body = Path(args.pr_body_file).read_text(encoding="utf-8")
+        steps.append(
+            ParityStep(
+                name="pr-metadata",
+                command=(
+                    "uv",
+                    "run",
+                    "python",
+                    "-m",
+                    "tools.validate_pr_metadata",
+                    "--title",
+                    args.pr_title,
+                    "--body",
+                    pr_body,
+                    "--base-sha",
+                    base_sha,
+                    "--head-sha",
+                    head_sha,
                 ),
             )
         )

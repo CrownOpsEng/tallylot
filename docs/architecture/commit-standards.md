@@ -202,10 +202,24 @@ verification command. Use `tools.run_ci_parity_checks` only when changing CI,
 packaging, release, or other workflow surfaces where exact local parity with
 GitHub Actions is worth the extra time. Add `--include-commit-messages` when
 you also want the parity run to validate the current branch commit-message
-range before running the full quality and build path.
+range before running the full quality and build path. Add `--pr-title` plus
+`--pr-body-file` when you also want the parity run to validate the current
+branch PR title, body, and `Included checkpoints:` list against the branch
+history.
 Do not run `tools.run_quality_gates --full-tests` immediately before
 `tools.run_ci_parity_checks`; the parity runner already includes the full
 quality gate pass.
+
+Example:
+
+```bash
+gh pr view 12 --json title,body --jq '.title' > /tmp/pr-title.txt
+gh pr view 12 --json title,body --jq '.body' > /tmp/pr-body.md
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks \
+  --include-commit-messages \
+  --pr-title "$(cat /tmp/pr-title.txt)" \
+  --pr-body-file /tmp/pr-body.md
+```
 
 `pylint` remains part of the parallel quality-gate runner, but it is not part
 of the `pre-commit` hook path because it is materially slower than the other
