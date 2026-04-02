@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from crypto_reconciliation.adapters.sources.near.adapter import NearAdapter
+from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
 
@@ -47,3 +48,26 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
     assert len(result.canonical_events) == 1
     assert result.canonical_events[0].event_kind == "Deposit"
     assert str(result.canonical_events[0].timestamp) == "2023-08-06 10:00:00"
+
+
+def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
+    raw_dir = fixture_raw_dir("near", "staking_and_wallet")
+
+    profile, adapter = profile_and_adapter("capture-near", raw_dir)
+    result = adapter.normalize(profile, raw_dir)
+
+    assert str(profile.adapter_id) == "near"
+    assert [event.event_kind for event in result.canonical_events] == ["Deposit", "Withdrawal", "Deposit"]
+    assert any(str(event.source).endswith("Staking") for event in result.canonical_events)
+    assert result.issues == ()
+
+
+def test_near_wallet_capture_extracts_near_account_identifiers() -> None:
+    raw_dir = fixture_raw_dir("near", "wallet_capture")
+
+    profile, adapter = profile_and_adapter("capture-near", raw_dir)
+    evidence, issues = adapter.extract_wallet_inventory("capture-near", raw_dir, profile)
+
+    assert str(profile.adapter_id) == "near"
+    assert issues == ()
+    assert any(row.identifier_kind == "near_account" for row in evidence)

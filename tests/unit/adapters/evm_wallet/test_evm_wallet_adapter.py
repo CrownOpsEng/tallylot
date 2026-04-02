@@ -12,6 +12,7 @@ from crypto_reconciliation.adapters.sources.evm_wallet.adapter import (
     _wallet_state_root,
 )
 from crypto_reconciliation.domain.models import FileInventoryEntry
+from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
 
@@ -206,3 +207,29 @@ def test_wallet_state_helpers_handle_fallback_shapes() -> None:
     assert _wallet_state_root([]) is None
     assert _wallet_state_root({"wallet_state": "not-a-dict"}) is None
     assert _wallet_state_root({"metamask": {"identities": {}}}) == {"identities": {}}
+
+
+def test_metamask_empty_state_fixture_reports_missing_identifier() -> None:
+    raw_dir = fixture_raw_dir("evm_wallet", "missing_state")
+
+    profile, adapter = profile_and_adapter("EVM wallet", raw_dir)
+    evidence, issues = adapter.extract_wallet_inventory("EVM wallet", raw_dir, profile)
+
+    assert str(profile.adapter_id) == "evm_wallet"
+    assert evidence == ()
+    assert len(issues) == 1
+    assert issues[0].kind == "missing_identifier"
+
+
+def test_metamask_wallet_inventory_uses_renamed_state_file_without_filename_dependency() -> None:
+    raw_dir = fixture_raw_dir("evm_wallet", "wallets")
+
+    profile, adapter = profile_and_adapter("Unknown Wallet", raw_dir)
+    evidence, issues = adapter.extract_wallet_inventory("Unknown Wallet", raw_dir, profile)
+
+    assert str(profile.adapter_id) == "evm_wallet"
+    assert issues == ()
+    assert {row.wallet_id for row in evidence} >= {
+        "evm_address:0x1111111111111111111111111111111111111111",
+        "btc_address:bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    }
