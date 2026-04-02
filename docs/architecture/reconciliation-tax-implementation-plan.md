@@ -22,6 +22,8 @@ The system must:
 - compute forward tax state for `2023` to `2025`
 - render a deterministic double-entry journal and require it to validate
 - surface unsupported or ambiguous facts as explicit issues
+- preserve one interface-neutral application surface so future CLI, HTTP/API,
+  and agent entrypoints can share the same typed workflows
 
 Normal runtime operation must stay platform-agnostic:
 
@@ -165,6 +167,24 @@ is inherently specific.
   - policy application, ACB updates, and disposition or income outputs
 - `application/outputs/`
   - render external artifacts from facts, journals, or tax results
+
+### Interfaces
+
+- `interfaces/cli/`
+  - current operator-facing entry points over application capabilities
+- `interfaces/api/`
+  - reserve for a future thin HTTP or agent-facing surface over the same typed
+    application workflows
+
+Rules:
+
+- CLI, API, and agent entrypoints should share use-case contracts instead of
+  growing separate orchestration logic.
+- Application request and response DTOs should trend toward transport-safe
+  resource references so a future API does not inherit raw filesystem `Path`
+  assumptions as its public contract.
+- Long-running workflows should expose explicit job or artifact references at
+  the interface boundary rather than relying on shell-owned temporary paths.
 
 ### Ports
 

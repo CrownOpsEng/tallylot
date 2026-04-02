@@ -100,13 +100,20 @@ decisions that should not be rediscovered from scratch.
 
 ## Deferred Work
 
-### HTTP And API Runtime
+### HTTP, API, And Agent Runtime
 
 - Add a thin HTTP layer only over the existing application capabilities and
   typed use-case contracts.
 - Do not let HTTP handlers own business rules, serialization policy, or adapter
   orchestration.
-- Keep CLI and API requests on the same service contracts.
+- Keep CLI, API, and agent requests on the same service contracts.
+- Move application-facing request and response DTOs toward resource-oriented
+  contracts so interfaces stop exposing raw filesystem `Path` assumptions as
+  the long-term boundary shape.
+- Prefer job handles plus artifact references for long-running workflows rather
+  than interface-owned temporary paths or ad hoc shell coupling.
+- Keep agent-facing mutation paths explicit, typed, and auditable; AI/model
+  providers remain read-only with respect to ledger mutation.
 
 ### Database Adoption
 
