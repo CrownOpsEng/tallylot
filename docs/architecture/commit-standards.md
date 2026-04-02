@@ -149,3 +149,20 @@ uv run python -m tools.run_quality_gates --full-tests
 `pylint` remains part of the parallel quality-gate runner, but it is not part
 of the `pre-commit` hook path because it is materially slower than the other
 commit-time checks.
+
+Do not describe `mypy` or `pyright` as covering `pylint` findings. Type checks
+and lint checks catch different failure classes and must be reported
+separately.
+
+After a lint-driven amend on a touched file, rerun the narrow checks against
+that exact file before treating the checkpoint as closed:
+
+```bash
+uv run pylint <touched-file>
+uv run pytest -q --no-cov <touched-test-file>
+git show HEAD:<path>
+```
+
+Use the `git show HEAD:<path>` step when the warning or failure was reported
+against the just-amended file so the verification is tied to the committed
+content rather than an older staged or working-tree state.

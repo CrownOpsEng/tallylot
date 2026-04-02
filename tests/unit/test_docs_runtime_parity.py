@@ -234,6 +234,15 @@ def test_private_oracle_manifest_is_not_checked_in() -> None:
     assert not (REPO_ROOT / "docs" / "reference" / "cointracking-full-export-manifest.csv").exists()
 
 
+def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
+    text = (REPO_ROOT / "docs" / "architecture" / "commit-standards.md").read_text(encoding="utf-8")
+
+    assert "Do not describe `mypy` or `pyright` as covering `pylint` findings." in text
+    assert "uv run pylint <touched-file>" in text
+    assert "uv run pytest -q --no-cov <touched-test-file>" in text
+    assert "git show HEAD:<path>" in text
+
+
 def test_reference_docs_do_not_check_in_oracle_data_files() -> None:
     forbidden_suffixes = {".csv", ".json", ".zip", ".html", ".pdf"}
 
