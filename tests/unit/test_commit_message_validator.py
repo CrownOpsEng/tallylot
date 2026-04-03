@@ -74,7 +74,7 @@ def test_squash_merge_commit_message_with_included_checkpoints_is_valid() -> Non
 refactor: source verification and routing (#11)
 
 Why:
-- keep the squash-merge record reviewable on main
+- keep the single-checkpoint squash record reviewable on main
 
 What:
 - preserve the validated pull request summary
@@ -231,7 +231,9 @@ Checks:
 def test_missing_structured_body_is_rejected() -> None:
     errors = _validate_commit_message_text("docs: route agents to narrow standards\n")
 
-    assert errors == ("commit message body is required with `Why:`, `What:`, `Checks:` sections",)
+    assert errors == (
+        "commit message body is required with `Why:`, `What:`, `Checks:` sections",
+    )
 
 
 def test_authored_commit_message_rejects_included_checkpoints_section() -> None:
