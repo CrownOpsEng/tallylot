@@ -19,7 +19,11 @@ from tallylot.application.normalization.normalize_source import (
 )
 from tallylot.application.outputs.render_output import RenderOutputUseCase
 from tallylot.application.profiling.build_profile import BuildProfileUseCase
-from tallylot.application.reconciliation.assert_balances import AssertBalancesUseCase
+from tallylot.application.reconciliation import (
+    BalanceCheckWorkflow,
+    BalanceCoverageWorkflow,
+    BalanceSummaryWorkflow,
+)
 from tallylot.application.workspace.initialize_workspace import (
     InitializeWorkspaceUseCase,
 )
@@ -95,9 +99,19 @@ def extract_pdf_balances_use_case() -> ExtractPdfBalancesUseCase:
     return ExtractPdfBalancesUseCase(registry, artifacts)
 
 
-def assert_balances_use_case() -> AssertBalancesUseCase:
+def balance_coverage_workflow() -> BalanceCoverageWorkflow:
+    _, artifacts, _, _ = runtime_dependencies()
+    return BalanceCoverageWorkflow(artifacts)
+
+
+def balance_check_workflow() -> BalanceCheckWorkflow:
     _, artifacts, _, evidence = runtime_dependencies()
-    return AssertBalancesUseCase(evidence, artifacts)
+    return BalanceCheckWorkflow(evidence, artifacts)
+
+
+def balance_summary_workflow() -> BalanceSummaryWorkflow:
+    _, artifacts, _, _ = runtime_dependencies()
+    return BalanceSummaryWorkflow(artifacts)
 
 
 def initialize_workspace_use_case() -> InitializeWorkspaceUseCase:

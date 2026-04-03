@@ -19,10 +19,21 @@ class HasWorkspaceRoot(Protocol):
     workspace_root_ref: WorkspacePath
 
 
-class HasBalanceAssertionRefs(Protocol):
-    snapshot_input_ref: str
-    evidence_input_ref: str
-    assertion_output_ref: str
+class HasBalanceCoverageRefs(Protocol):
+    input_root_ref: str
+    coverage_output_ref: str
+
+
+class HasBalanceCheckRefs(Protocol):
+    input_root_ref: str
+    output_root_ref: str
+    sources: tuple[str, ...]
+
+
+class HasBalanceSummaryRefs(Protocol):
+    coverage_input_ref: str
+    check_summary_input_ref: str
+    summary_output_ref: str
 
 
 def test_cli_registers_current_command_groups() -> None:
@@ -76,46 +87,148 @@ def test_workspace_init_uses_configured_root_when_option_is_omitted(
     assert seen["workspace_root"] == str(configured_root)
 
 
-def test_reconciliation_assert_balances_cli(
+def test_reconciliation_balance_inspect_cli(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    snapshots_path = tmp_path / "balances.csv"
-    evidence_path = tmp_path / "balance_evidence.csv"
-    output_path = tmp_path / "balance_assertions.csv"
+    input_root = tmp_path / "normalized"
+    output_path = tmp_path / "balance_coverage.csv"
     seen: dict[str, object] = {}
 
-    class StubAssertBalancesUseCase:
+    class StubBalanceCoverageWorkflow:
         def execute(self, request: object) -> object:
             seen["request"] = request
             return SimpleNamespace(
-                assertion_output_ref=str(output_path),
-                assertion_count=1,
-                issue_count=0,
+                coverage_output_ref=str(output_path),
+                coverage_summary_output_ref=str(
+                    tmp_path / "balance_coverage_summary.json"
+                ),
+                source_count=1,
+                comparable_source_count=1,
             )
 
     monkeypatch.setattr(
         cli_reconciliation,
-        "assert_balances_use_case",
-        lambda: StubAssertBalancesUseCase(),
+        "balance_coverage_workflow",
+        lambda: StubBalanceCoverageWorkflow(),
     )
 
     result = runner.invoke(
         app,
         [
             "reconciliation",
-            "assert-balances",
-            "--snapshots",
-            str(snapshots_path),
-            "--evidence",
-            str(evidence_path),
+            "balances",
+            "inspect",
+            "--input-root",
+            str(input_root),
             "--output",
             str(output_path),
         ],
     )
 
-    request = cast(HasBalanceAssertionRefs, seen["request"])
+    request = cast(HasBalanceCoverageRefs, seen["request"])
 
     assert result.exit_code == 0
-    assert request.snapshot_input_ref == str(snapshots_path)
-    assert request.evidence_input_ref == str(evidence_path)
-    assert request.assertion_output_ref == str(output_path)
+    assert request.input_root_ref == str(input_root)
+    assert request.coverage_output_ref == str(output_path)
+
+
+def test_reconciliation_balance_check_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    input_root = tmp_path / "normalized"
+    output_root = tmp_path / "analysis"
+    seen: dict[str, object] = {}
+
+    class StubBalanceCheckWorkflow:
+        def execute(self, request: object) -> object:
+            seen["request"] = request
+            return SimpleNamespace(
+                output_root_ref=str(output_root),
+                check_summary_output_ref=str(output_root / "balance_check_summary.csv"),
+                source_count=1,
+                clean_source_count=1,
+                issue_source_count=0,
+                failed_source_count=0,
+                no_assertion_source_count=0,
+            )
+
+    monkeypatch.setattr(
+        cli_reconciliation,
+        "balance_check_workflow",
+        lambda: StubBalanceCheckWorkflow(),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "reconciliation",
+            "balances",
+            "check",
+            "--input-root",
+            str(input_root),
+            "--output-root",
+            str(output_root),
+            "--source",
+            "coinbase",
+            "--source",
+            "shakepay",
+        ],
+    )
+
+    request = cast(HasBalanceCheckRefs, seen["request"])
+
+    assert result.exit_code == 0
+    assert request.input_root_ref == str(input_root)
+    assert request.output_root_ref == str(output_root)
+    assert request.sources == ("coinbase", "shakepay")
+
+
+def test_reconciliation_balance_summarize_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    coverage_path = tmp_path / "balance_coverage.csv"
+    check_summary_path = tmp_path / "balance_check_summary.csv"
+    output_path = tmp_path / "balance_reconciliation_summary.json"
+    seen: dict[str, object] = {}
+
+    class StubBalanceSummaryWorkflow:
+        def execute(self, request: object) -> object:
+            seen["request"] = request
+            return SimpleNamespace(
+                summary_output_ref=str(output_path),
+                blocker_output_ref=str(
+                    tmp_path / "balance_reconciliation_blockers.csv"
+                ),
+                source_count=1,
+                latest_portfolio_clean_date="",
+                latest_clean_source_date="2026-03-23",
+                latest_observed_assertion_date="2026-03-23",
+            )
+
+    monkeypatch.setattr(
+        cli_reconciliation,
+        "balance_summary_workflow",
+        lambda: StubBalanceSummaryWorkflow(),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "reconciliation",
+            "balances",
+            "summarize",
+            "--coverage",
+            str(coverage_path),
+            "--check-summary",
+            str(check_summary_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    request = cast(HasBalanceSummaryRefs, seen["request"])
+
+    assert result.exit_code == 0
+    assert request.coverage_input_ref == str(coverage_path)
+    assert request.check_summary_input_ref == str(check_summary_path)
+    assert request.summary_output_ref == str(output_path)

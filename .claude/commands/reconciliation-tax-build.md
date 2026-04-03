@@ -36,7 +36,11 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - reconciliation behavior
    - journal validation
    - tax outputs
-9. Emit explicit issues when the task uncovers unsupported behavior or deferred
+9. For balance coverage, checking, or reconciliation-date questions, use
+   `.claude/commands/reconciliation-balance-operations.md` and the runtime
+   `reconciliation balances` commands instead of ad hoc shell loops or
+   repo-only batch scripts.
+10. Emit explicit issues when the task uncovers unsupported behavior or deferred
    cases.
-10. Refactor obvious shared seams, add tests for new behavior, and commit a
+11. Refactor obvious shared seams, add tests for new behavior, and commit a
     verified checkpoint before closing the task.

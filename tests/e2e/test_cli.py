@@ -228,14 +228,16 @@ def test_checkpoint_extract_pdf_balances_cli(tmp_path: Path) -> None:
     assert rows[1]["balance_kind"] == "closing_market_value"
 
 
-def test_reconciliation_assert_balances_cli_writes_artifacts(tmp_path: Path) -> None:
-    snapshots_path = tmp_path / "balances.csv"
-    evidence_path = tmp_path / "balance_evidence.csv"
-    output_path = tmp_path / "balance_assertions.csv"
+def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None:
+    input_root = tmp_path / "coinbase"
+    analysis_root = tmp_path / "analysis"
+    coverage_path = tmp_path / "balance_coverage.csv"
+    summary_path = tmp_path / "balance_reconciliation_summary.json"
     as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+    input_root.mkdir()
 
     FilesystemEvidenceRepository().write_balance_snapshots(
-        snapshots_path,
+        input_root / "balances.csv",
         (
             BalanceSnapshot(
                 source=SourceId("coinbase"),
@@ -248,7 +250,7 @@ def test_reconciliation_assert_balances_cli_writes_artifacts(tmp_path: Path) -> 
         ),
     )
     FilesystemEvidenceRepository().write_balance_evidence(
-        evidence_path,
+        input_root / "balance_evidence.csv",
         (
             BalanceEvidence(
                 source=SourceId("coinbase"),
@@ -262,45 +264,75 @@ def test_reconciliation_assert_balances_cli_writes_artifacts(tmp_path: Path) -> 
         ),
     )
 
-    result = runner.invoke(
+    inspect_result = runner.invoke(
         app,
         [
             "reconciliation",
-            "assert-balances",
-            "--snapshots",
-            str(snapshots_path),
-            "--evidence",
-            str(evidence_path),
+            "balances",
+            "inspect",
+            "--input-root",
+            str(input_root),
             "--output",
-            str(output_path),
+            str(coverage_path),
+        ],
+    )
+    check_result = runner.invoke(
+        app,
+        [
+            "reconciliation",
+            "balances",
+            "check",
+            "--input-root",
+            str(input_root),
+            "--output-root",
+            str(analysis_root),
+        ],
+    )
+    summarize_result = runner.invoke(
+        app,
+        [
+            "reconciliation",
+            "balances",
+            "summarize",
+            "--coverage",
+            str(coverage_path),
+            "--check-summary",
+            str(analysis_root / "balance_check_summary.csv"),
+            "--output",
+            str(summary_path),
         ],
     )
 
-    assertion_rows = FilesystemArtifactStore().read_rows(output_path)
+    assertion_rows = FilesystemArtifactStore().read_rows(
+        analysis_root / "balance_assertions.csv"
+    )
     issue_rows = FilesystemArtifactStore().read_rows(
-        tmp_path / "reconciliation_issues.csv"
+        analysis_root / "reconciliation_issues.csv"
     )
-    summary = json.loads(
-        (tmp_path / "balance_assertion_summary.json").read_text(encoding="utf-8")
+    assertion_summary = json.loads(
+        (analysis_root / "balance_assertion_summary.json").read_text(encoding="utf-8")
     )
+    reconciliation_summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-    assert result.exit_code == 0
+    assert inspect_result.exit_code == 0
+    assert check_result.exit_code == 0
+    assert summarize_result.exit_code == 0
     assert assertion_rows[0]["status"] == "drift"
     assert issue_rows[0]["kind"] == "balance_drift"
-    assert summary["assertion_count"] == 1
-    assert summary["issue_count"] == 1
+    assert assertion_summary["assertion_count"] == 1
+    assert assertion_summary["issue_count"] == 1
+    assert reconciliation_summary["latest_observed_assertion_date"] == "2025-12-31"
 
 
-def test_reconciliation_assert_balances_cli_rejects_conflicting_outputs(
+def test_reconciliation_balance_check_cli_rejects_output_inside_input_root(
     tmp_path: Path,
 ) -> None:
-    snapshots_path = tmp_path / "balances.csv"
-    evidence_path = tmp_path / "balance_evidence.csv"
-    output_path = tmp_path / "reconciliation_issues.csv"
+    input_root = tmp_path / "coinbase"
     as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+    input_root.mkdir()
 
     FilesystemEvidenceRepository().write_balance_snapshots(
-        snapshots_path,
+        input_root / "balances.csv",
         (
             BalanceSnapshot(
                 source=SourceId("coinbase"),
@@ -313,7 +345,7 @@ def test_reconciliation_assert_balances_cli_rejects_conflicting_outputs(
         ),
     )
     FilesystemEvidenceRepository().write_balance_evidence(
-        evidence_path,
+        input_root / "balance_evidence.csv",
         (
             BalanceEvidence(
                 source=SourceId("coinbase"),
@@ -331,16 +363,15 @@ def test_reconciliation_assert_balances_cli_rejects_conflicting_outputs(
         app,
         [
             "reconciliation",
-            "assert-balances",
-            "--snapshots",
-            str(snapshots_path),
-            "--evidence",
-            str(evidence_path),
-            "--output",
-            str(output_path),
+            "balances",
+            "check",
+            "--input-root",
+            str(input_root),
+            "--output-root",
+            str(input_root / "analysis"),
         ],
     )
 
     assert result.exit_code == 2
-    assert "must not reuse" in result.stderr
+    assert "balance check output root must not be inside balance input" in result.stderr
     assert "Traceback" not in result.stdout + result.stderr
