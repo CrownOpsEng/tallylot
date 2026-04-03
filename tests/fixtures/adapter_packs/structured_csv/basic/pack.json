@@ -1,0 +1,10 @@
+{
+  "capabilities": [
+    "normalize",
+    "wallet_inventory"
+  ],
+  "source": "Structured Example",
+  "expected_adapter": "structured_csv",
+  "expected_timezone_status": "needs_review",
+  "expected_normalization_status": "ready"
+}

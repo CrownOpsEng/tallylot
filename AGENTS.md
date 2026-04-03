@@ -30,15 +30,30 @@ Do not pre-load every repo doc by default.
 | Code placement, typing, modularization, naming | `docs/engineering-standards.md` |
 | Source or output adapter work | `docs/adapter-authoring.md` |
 | External workspace layout and seeded files | `docs/workspace-layout.md` |
+| Operational state, manual workflow, or agent runbooks | `docs/README.md`, then the specific doc it routes you to |
+| Workspace subtree conventions, checklists, or templates | `docs/workspace/README.md` |
 | Commit messages, templates, and checkpoint behavior | `docs/commit-standards.md` |
 
 ## Execution Rules
 
-- Do not consider work ready until `ruff`, `mypy`, `pyright`, and `pytest`
-  pass.
-- Prefer the checked-in hooks:
+- Bootstrap each clone before doing stable work:
+  - `git config --local commit.template .gitmessage.txt`
   - `uv run pre-commit install --hook-type pre-commit --hook-type commit-msg`
-  - `uv run pre-commit run --all-files`
+- Do not consider work ready until `markdownlint`, `ruff`, `mypy`, `pyright`,
+  `pylint`, and `pytest` pass.
+- Bootstrap the checked-in hooks:
+  - `git config --local commit.template .gitmessage.txt`
+  - `uv run pre-commit install --hook-type pre-commit --hook-type commit-msg`
+- For explicit local verification, prefer:
+  - `uv run pre-commit run markdownlint --all-files`
+  - `uv run python -m tools.run_quality_gates`
+  - `uv run python -m tools.run_quality_gates --full-tests`
+- Do not run `uv run pre-commit run --all-files` in addition to the parallel
+  quality-gate runner unless you are debugging hook behavior itself.
+- The commit-time `pytest` hook is intentionally fast:
+  - `unit and not slow`
+  - no coverage
+  - run full `uv run pytest` before closing substantial work
 - Treat commits as stable checkpoints by default:
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value

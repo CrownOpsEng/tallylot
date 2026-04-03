@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+
+from crypto_reconciliation.domain.types import JsonValue
 
 
-def write_json(path: Path, payload: Any) -> None:
+def write_json(path: Path, payload: JsonValue) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-
-
-def read_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))

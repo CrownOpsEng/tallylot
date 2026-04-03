@@ -49,7 +49,7 @@ class AdapterRegistry:
         raise KeyError(f"unknown output adapter: {adapter_id}")
 
 
-def iter_discoverable_modules(package_name: str) -> tuple[ModuleType, ...]:
+def _iter_discoverable_modules(package_name: str) -> tuple[ModuleType, ...]:
     package = importlib.import_module(package_name)
     modules: list[ModuleType] = []
     for package_info in pkgutil.iter_modules(package.__path__, package.__name__ + "."):
@@ -83,7 +83,7 @@ def _is_ignored_discovery_name(module_name: str) -> bool:
 
 def _collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
     discovered: list[SourceAdapter] = []
-    for module in iter_discoverable_modules(package_name):
+    for module in _iter_discoverable_modules(package_name):
         adapter = getattr(module, "ADAPTER", None)
         if adapter is None:
             continue
@@ -94,7 +94,7 @@ def _collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
 
 def _collect_output_adapters(package_name: str) -> tuple[OutputAdapter, ...]:
     discovered: list[OutputAdapter] = []
-    for module in iter_discoverable_modules(package_name):
+    for module in _iter_discoverable_modules(package_name):
         adapter = getattr(module, "ADAPTER", None)
         if adapter is None:
             continue

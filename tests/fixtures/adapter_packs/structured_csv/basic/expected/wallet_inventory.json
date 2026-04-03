@@ -1,0 +1,20 @@
+[
+  {
+    "account": "Fixture Exchange",
+    "account_label": "Primary",
+    "capture_path": "<fixture-raw-dir>",
+    "confidence": "high",
+    "controller": "Fixture Exchange",
+    "display_identifier": "Fixture Exchange:Primary",
+    "evidence_kind": "normalized_transactions",
+    "evidence_path": "transactions.csv",
+    "identifier_kind": "account_wallet",
+    "identifier_value": "Fixture Exchange:Primary",
+    "network_scope": "",
+    "normalized_identifier": "Fixture Exchange:Primary",
+    "notes": "",
+    "source": "Structured Example",
+    "wallet": "Primary",
+    "wallet_id": "Structured Example:Fixture Exchange:Primary"
+  }
+]

@@ -5,6 +5,11 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.45.0
+    hooks:
+      - id: markdownlint
+        args: [--config, .markdownlint.json]
   - repo: local
     hooks:
       - id: commit-message
@@ -23,7 +28,7 @@ repos:
         language: system
         pass_filenames: false
       - id: pytest
-        name: pytest
-        entry: uv run pytest
+        name: pytest-fast
+        entry: uv run pytest -m "unit and not slow" --no-cov -q
         language: system
         pass_filenames: false

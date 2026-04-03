@@ -11,7 +11,9 @@ decisions that should not be rediscovered from scratch.
 - CLI and library runtime only
 - Filesystem-backed operational storage
 - CoinTracking CSV as the only implemented output adapter
+- Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
+- MIT-licensed package with CI-verified wheel and source distribution builds
 
 ## Deferred Work
 
@@ -47,6 +49,19 @@ decisions that should not be rediscovered from scratch.
 ## Rules For Future Work
 
 - Do not reintroduce repo-local live workspace assumptions.
+- Keep docs-to-runtime capability parity as an explicit invariant. If a command,
+  artifact, or agent entrypoint is documented as active, it must exist and be
+  tested.
+- Keep the retired legacy workspace roots out of git:
+  `00_docs/`, `01_raw_exports/`, `02_working/`, `03_analysis/`,
+  `04_import_ready/`, and `05_outputs/`.
+- Keep repo-owned runbooks and agent-facing guides under `docs/`, and keep
+  repo-owned workspace subtree guidance and templates under `docs/workspace/`.
+- Treat workspace docs under the external root as live working copies or
+  operator artifacts, not as the version-controlled source of truth.
+- If workspace docs are ever refreshed or seeded beyond the minimal README,
+  derive them from the repo-owned docs instead of maintaining a second manual
+  documentation branch.
 - Do not add compatibility wrappers for removed legacy scripts.
 - Do not let adapters reach across layers into CLI or config code.
 - Keep the agent guidance router-first: `AGENTS.md` should stay short and direct
@@ -59,6 +74,18 @@ decisions that should not be rediscovered from scratch.
   commits without forcing micro-commit overhead.
 - Keep application services on port contracts for adapter resolution and artifact
   persistence; do not import infrastructure modules from `application/`.
+- Keep filesystem scans deterministic. Services that enumerate trees must use a
+  stable scan contract with explicit output exclusions rather than ad hoc
+  `rglob()` behavior.
+- Keep archive inspection centralized. ZIP handling, archive safety limits, and
+  archive-member issue reporting belong in the shared scan layer rather than in
+  source-specific adapters or CLI commands.
+- Keep raw-evidence protections strict. Profiling and normalization outputs must
+  not be written inside raw evidence trees.
+- Keep packaging release-safe: wheels should ship only the
+  `src/crypto_reconciliation/` package, source distributions must remain
+  buildable from a clean checkout, and CI should continue verifying the build
+  plus an installable CLI entry point.
 - Do not bypass `Decimal` with float-based financial calculations.
 - Keep canonical events structurally strict: asset/amount pairs must be
   complete, and amounts must remain positive because direction is modeled by
@@ -76,6 +103,8 @@ decisions that should not be rediscovered from scratch.
   instead of machine-local absolute paths.
 - Fail fast on ambiguous adapter matches and malformed adapter discovery
   contracts instead of silently picking a candidate.
+- Keep repo-local agent entrypoints real. If `.claude/commands/` is referenced
+  in the docs, those files must exist and describe the current typed workflow.
 - Keep adapter discovery narrow: discover only top-level adapter modules and
   package entry points so adapter-local tests and helpers can live beside the
   adapter without affecting runtime registration.
@@ -83,12 +112,26 @@ decisions that should not be rediscovered from scratch.
   refactor-first hotspots are `adapters/sources/structured_csv.py`,
   `domain/models.py`, `interfaces/cli.py`, and
   `infrastructure/discovery/adapters.py`.
+- The repo-local operational dataset was migrated to the external workspace on
+  2026-03-26. Use this mapping for any future manual recovery or audit work:
+  `00_docs -> docs`, `01_raw_exports/source -> evidence/raw/source`,
+  `01_raw_exports/portfolio -> evidence/raw/portfolio`,
+  `01_raw_exports/incoming -> evidence/raw/incoming`, `02_working -> working`,
+  `03_analysis -> analysis`, `05_outputs -> outputs`.
+- Treat `evidence/raw/incoming/` as a historical quarantine area for migrated
+  catch-all evidence only. New intake should go directly to canonical capture
+  paths under `evidence/raw/source/` or `evidence/raw/portfolio/`.
+- The separate `04_import_ready/` root is retired in the current architecture.
+  Keep approved import candidates under `working/import_batches/`.
 
 ## Near-Term Enhancements
 
 - Add richer baseline reconciliation artifacts.
 - Add more conservative overlap heuristics and duplicate signatures.
 - Expand source profiling to include richer file-family inspection.
-- Add golden refresh tooling once more than one working source adapter exists.
+- Expand adapter-pack goldens from `structured_csv` to every restored real
+  source adapter.
+- Recover the typed source-adapter parity listed in
+  `docs/MASTER_PARITY_LEDGER.md`.
 - Decompose the current hotspot modules into smaller, bounded packages or
   modules before they accumulate more responsibilities.

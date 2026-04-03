@@ -1,60 +1,94 @@
-# OS / editor noise
-.DS_Store
-Thumbs.db
-Desktop.ini
-*.swp
-*.swo
-*~
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+share/python-wheels/
+var/
+wheels/
+pip-wheel-metadata/
+*.egg
+*.egg-info/
+.installed.cfg
+MANIFEST
+
+# Unit test / coverage reports
+.cache/
+.coverage
+.coverage.*
+.hypothesis/
+.mypy_cache/
+.nox/
+.pyre/
+.pytest_cache/
+.pytype/
+.ruff_cache/
+.tox/
+coverage.xml
+htmlcov/
+nosetests.xml
+*.cover
+*.py,cover
+
+# Virtual environments
+.env
+.env.*
+.envrc
+.venv/
+.python-version
+.direnv/
+ENV/
+env/
+env.bak/
+venv/
+venv.bak/
+__pypackages__/
+
+# Editors and notebooks
 .idea/
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+*.swp
+*.swo
+*~
 .ipynb_checkpoints/
 
-# Python bytecode and tooling caches
-__pycache__/
-*.py[cod]
-*.pyd
-.mypy_cache/
-.dmypy.json
-.pytest_cache/
-.ruff_cache/
-.hypothesis/
-.tox/
-.nox/
-.pyre/
-.pytype/
+# OS files
+.DS_Store
+Desktop.ini
+Thumbs.db
 
-# Virtual environments
-.venv/
-venv/
-env/
-ENV/
-.python-version
-
-# Coverage and test artifacts
-.coverage
-.coverage.*
-coverage.xml
-htmlcov/
-
-# Packaging artifacts
-build/
-dist/
-.eggs/
-*.egg-info/
-
-# Local environment files
-.env
-.env.*
-
-# Temporary scratch files
-*.tmp
+# Local logs and temporary scratch files
+*.log
 *.temp
-.cache/
+*.tmp
+.benchmarks/
+.claude/
+.tmp_golden_refresh/
 tmp/
 
 # Repo-local scratch and live artifact spillover
-.tmp_golden_refresh/
 01_raw_exports/incoming/
 02_working/intake_reports/
+
+# Retired repo-local workspace roots
+/00_docs/
+/01_raw_exports/
+/02_working/
+/03_analysis/
+/04_import_ready/
+/05_outputs/

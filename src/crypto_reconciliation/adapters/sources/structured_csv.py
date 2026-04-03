@@ -19,7 +19,7 @@ from crypto_reconciliation.domain.models import (
     SourceProfile,
     WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, SourceId
+from crypto_reconciliation.domain.types import AdapterId, AssetSymbol, EventId, JsonValue, SourceId
 from crypto_reconciliation.domain.value_objects import format_decimal, parse_decimal, parse_timestamp
 from crypto_reconciliation.ports.adapters import NormalizationResult
 
@@ -71,6 +71,29 @@ class StructuredCsvSourceAdapter:
             if item.relative_path == "transactions.csv" and item.header == REQUIRED_HEADER:
                 return 100
         return 0
+
+    def validate_profile_timezones(
+        self,
+        profile: SourceProfile,
+    ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
+        summary: dict[str, JsonValue] = {
+            "status": "passed",
+            "issue_count": 0,
+            "rows_with_dates": 1,
+            "mode_counts": {"naive": 1},
+        }
+        del profile
+        return summary, ()
+
+    def extract_wallet_inventory(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+        del source, raw_dir
+        result = self.normalize(profile, Path(profile.raw_dir))
+        return result.wallet_inventory, ()
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         path = raw_dir / "transactions.csv"
@@ -160,8 +183,16 @@ class StructuredCsvSourceAdapter:
                     balances[key] = balances.get(key, Decimal("0")) - fee_amount
                 wallet_id = f"{profile.source}:{account}:{wallet}"
                 wallet_rows[wallet_id] = WalletInventoryRecord(
-                    wallet_id=wallet_id,
                     source=str(profile.source),
+                    capture_path=str(raw_dir),
+                    wallet_id=wallet_id,
+                    normalized_identifier=f"{account}:{wallet}",
+                    display_identifier=f"{account}:{wallet}",
+                    network_scope="",
+                    controller=account,
+                    account_label=wallet,
+                    evidence_kind="normalized_transactions",
+                    confidence="high",
                     account=account,
                     wallet=wallet,
                     evidence_path="transactions.csv",

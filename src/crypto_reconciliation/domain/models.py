@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 
-from .types import AdapterId, AssetSymbol, EventId, SourceId
+from .types import AdapterId, AssetSymbol, EventId, JsonValue, SourceId
 from .value_objects import format_decimal, format_timestamp
 
 
@@ -19,6 +19,10 @@ class AdapterCapability(StrEnum):
 
 
 def _empty_metadata() -> dict[str, str]:
+    return {}
+
+
+def _empty_object_map() -> dict[str, JsonValue]:
     return {}
 
 
@@ -38,8 +42,37 @@ class FileInventoryEntry:
     suffix: str
     size_bytes: int
     sha256: str
+    source_path: str = ""
+    bundle_id: str = ""
+    bundle_type: str = ""
+    bundle_relative_path: str = ""
+    alias_group: str = ""
+    collision_status: str = ""
+    path_scope_tokens: str = ""
+    content_scope_tokens: str = ""
+    scope_tokens: str = ""
+    scope_preview: str = ""
+    archive_source_path: str = ""
+    archive_member_path: str = ""
     row_count: int | None = None
+    family: str = ""
+    header_preview: str = ""
     header: tuple[str, ...] = ()
+    date_field: str = ""
+    min_timestamp: str = ""
+    max_timestamp: str = ""
+    timestamp_resolution: str = ""
+    timezone_mode: str = ""
+    timezone_value: str = ""
+    timezone_conflict: str = ""
+    export_timestamp: str = ""
+    report_period_start: str = ""
+    report_period_end: str = ""
+    workbook_sheet_names: str = ""
+    workbook_created_at: str = ""
+    workbook_modified_at: str = ""
+    artifact_kind: str = ""
+    artifact_reason: str = ""
 
 
 @dataclass(frozen=True)
@@ -67,6 +100,13 @@ class CanonicalEvent:
     render_exchange: str | None = None
     render_group: str | None = None
     render_comment: str | None = None
+    render_comment_mode: str | None = None
+    render_tx_id: str | None = None
+    render_tx_id_mode: str | None = None
+    render_allowed_types: str | None = None
+    render_match_window_seconds: str | None = None
+    render_fee_tolerance: str | None = None
+    render_notes: str | None = None
 
     def __post_init__(self) -> None:
         self._validate_amount_pair("asset_in", self.asset_in, "amount_in", self.amount_in)
@@ -114,6 +154,13 @@ class CanonicalEvent:
             "render_exchange": self.render_exchange or "",
             "render_group": self.render_group or "",
             "render_comment": self.render_comment or "",
+            "render_comment_mode": self.render_comment_mode or "",
+            "render_tx_id": self.render_tx_id or "",
+            "render_tx_id_mode": self.render_tx_id_mode or "",
+            "render_allowed_types": self.render_allowed_types or "",
+            "render_match_window_seconds": self.render_match_window_seconds or "",
+            "render_fee_tolerance": self.render_fee_tolerance or "",
+            "render_notes": self.render_notes or "",
         }
 
 
@@ -201,23 +248,39 @@ class NormalizationReviewRecord:
 
 @dataclass(frozen=True)
 class WalletInventoryRecord:
-    wallet_id: str
     source: str
-    account: str
-    wallet: str
-    evidence_path: str
     identifier_kind: str
     identifier_value: str
+    wallet_id: str = ""
+    account: str = ""
+    wallet: str = ""
+    capture_path: str = ""
+    normalized_identifier: str = ""
+    display_identifier: str = ""
+    network_scope: str = ""
+    controller: str = ""
+    account_label: str = ""
+    evidence_kind: str = ""
+    evidence_path: str = ""
+    confidence: str = ""
     notes: str = ""
 
     def to_row(self) -> dict[str, str]:
         return {
-            "wallet_id": self.wallet_id,
             "source": self.source,
+            "capture_path": self.capture_path,
+            "wallet_id": self.wallet_id,
+            "identifier_kind": self.identifier_kind,
+            "normalized_identifier": self.normalized_identifier or self.identifier_value,
+            "display_identifier": self.display_identifier or self.identifier_value,
+            "network_scope": self.network_scope,
+            "controller": self.controller,
+            "account_label": self.account_label,
+            "evidence_kind": self.evidence_kind,
+            "evidence_path": self.evidence_path,
+            "confidence": self.confidence,
             "account": self.account,
             "wallet": self.wallet,
-            "evidence_path": self.evidence_path,
-            "identifier_kind": self.identifier_kind,
             "identifier_value": self.identifier_value,
             "notes": self.notes,
         }
@@ -232,6 +295,10 @@ class SourceProfile:
     file_inventory: tuple[FileInventoryEntry, ...]
     supported: bool
     metadata: dict[str, str] = field(default_factory=_empty_metadata)
+    normalization_hints: dict[str, JsonValue] = field(default_factory=_empty_object_map)
+    timezone_summary: dict[str, JsonValue] = field(default_factory=_empty_object_map)
+    scan_issues: tuple[IssueRecord, ...] = ()
+    timezone_issues: tuple[IssueRecord, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -241,14 +308,46 @@ class SourceProfile:
             "manifest_fingerprint": self.manifest_fingerprint,
             "supported": self.supported,
             "metadata": dict(self.metadata),
+            "normalization_hints": dict(self.normalization_hints),
+            "timezone_summary": dict(self.timezone_summary),
+            "scan_issues": [issue.to_row() for issue in self.scan_issues],
             "file_inventory": [
                 {
                     "relative_path": item.relative_path,
                     "suffix": item.suffix,
                     "size_bytes": item.size_bytes,
                     "sha256": item.sha256,
+                    "source_path": item.source_path,
+                    "bundle_id": item.bundle_id,
+                    "bundle_type": item.bundle_type,
+                    "bundle_relative_path": item.bundle_relative_path,
+                    "alias_group": item.alias_group,
+                    "collision_status": item.collision_status,
+                    "path_scope_tokens": item.path_scope_tokens,
+                    "content_scope_tokens": item.content_scope_tokens,
+                    "scope_tokens": item.scope_tokens,
+                    "scope_preview": item.scope_preview,
+                    "archive_source_path": item.archive_source_path,
+                    "archive_member_path": item.archive_member_path,
                     "row_count": item.row_count,
+                    "family": item.family,
+                    "header_preview": item.header_preview,
                     "header": list(item.header),
+                    "date_field": item.date_field,
+                    "min_timestamp": item.min_timestamp,
+                    "max_timestamp": item.max_timestamp,
+                    "timestamp_resolution": item.timestamp_resolution,
+                    "timezone_mode": item.timezone_mode,
+                    "timezone_value": item.timezone_value,
+                    "timezone_conflict": item.timezone_conflict,
+                    "export_timestamp": item.export_timestamp,
+                    "report_period_start": item.report_period_start,
+                    "report_period_end": item.report_period_end,
+                    "workbook_sheet_names": item.workbook_sheet_names,
+                    "workbook_created_at": item.workbook_created_at,
+                    "workbook_modified_at": item.workbook_modified_at,
+                    "artifact_kind": item.artifact_kind,
+                    "artifact_reason": item.artifact_reason,
                 }
                 for item in self.file_inventory
             ],

@@ -1,0 +1,65 @@
+# Method Of Procedure
+
+## Objective
+
+Use CoinTracking.info as the live ledger while this package manages evidence,
+normalization, staging, verification, and review artifacts in the external
+workspace.
+
+## Working Principles
+
+- CoinTracking remains the manual system of record for repairs and imports.
+- Raw exports are immutable.
+- One source at a time. No multi-source imports before verification.
+- The typed package should do the mechanical work; ambiguous cases stay visible
+  as issues or review records.
+- A blocked gate is a valid outcome. Review the artifacts before retrying.
+
+## Workflow
+
+### 1. Lock The Baseline
+
+Run `baseline validate` against the canonical CoinTracking export folder and
+review the generated reconciliation package.
+
+### 2. Capture Raw Evidence
+
+- save raw files to `evidence/raw/source/<source>/<capture_id>/`
+- run `source manifest`
+- keep `manifest.csv` inside the capture folder
+
+### 3. Profile And Normalize
+
+- run `source profile`
+- review `profile.json`, `profile_inventory.csv`, and `timezone_issues.csv`
+- run `source normalize`
+- review `exceptions.csv`, `normalization_reviews.csv`, and `cointracking_candidate.csv`
+
+### 4. Screen And Stage
+
+- run `batch screen`
+- do not proceed while `stage_summary.json` reports `passed: false`
+- run `batch stage` only after the candidate passes the screen
+
+### 5. Seed And Execute The Round
+
+- run `round scaffold`
+- make the manual CoinTracking repair or import
+- save the fresh verification export set in `working/verification/<round_id>/`
+
+### 6. Verify
+
+- run `verification compare`
+- review the comparison package
+- update issue and source-tracking files
+- update the round log
+
+### 7. Reconcile When Needed
+
+Use `source reconcile` when you need a deterministic comparison between the
+candidate or canonical source slice and a reference ledger slice.
+
+## Supporting Artifacts
+
+Use `supporting extract-pdf-balances` for supported Coinbase, Binance, and
+Shakepay PDF statements when balance evidence is only available in PDF form.

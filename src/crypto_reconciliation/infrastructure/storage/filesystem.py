@@ -41,6 +41,13 @@ class FilesystemStorage:
                 "render_exchange",
                 "render_group",
                 "render_comment",
+                "render_comment_mode",
+                "render_tx_id",
+                "render_tx_id_mode",
+                "render_allowed_types",
+                "render_match_window_seconds",
+                "render_fee_tolerance",
+                "render_notes",
             ),
             (event.to_row() for event in events),
         )

@@ -6,19 +6,25 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.dtos import NormalizeRequest
-from crypto_reconciliation.application.services.normalize import NormalizationService
+from crypto_reconciliation.application.dtos import NormalizeRequest, ProfileRequest
+from crypto_reconciliation.application.services.normalize import (
+    NormalizationDependencies,
+    NormalizationService,
+)
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
     FileInventoryEntry,
+    IssueRecord,
+    SourceProfile,
+    WalletInventoryRecord,
 )
-from crypto_reconciliation.domain.types import AdapterId
+from crypto_reconciliation.domain.types import AdapterId, JsonValue
 from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.infrastructure.storage import FilesystemStorage
-from crypto_reconciliation.ports.adapters import NormalizationResult, SourceAdapter
+from crypto_reconciliation.ports.adapters import NormalizationResult, SourceAdapter, SourceAdapterRegistryPort
 
 
 @dataclass(frozen=True)
@@ -50,6 +56,38 @@ class MatchingSourceAdapter:
         del profile, raw_dir
         raise AssertionError("normalize should not be called in this test")
 
+    def validate_profile_timezones(
+        self,
+        profile: SourceProfile,
+    ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
+        del profile
+        return {}, ()
+
+    def extract_wallet_inventory(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+        del source, raw_dir, profile
+        return (), ()
+
+
+def _normalization_service(
+    registry: SourceAdapterRegistryPort,
+    artifacts: FilesystemArtifactStore,
+) -> NormalizationService:
+    runtime_registry = build_registry()
+    return NormalizationService(
+        NormalizationDependencies(
+            source_registry=registry,
+            output_registry=runtime_registry,
+            profile_service=ProfileService(registry, artifacts),
+            storage=FilesystemStorage(),
+            artifacts=artifacts,
+        )
+    )
+
 
 def test_profile_service_rejects_ambiguous_adapter_matches(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
@@ -80,8 +118,7 @@ def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> N
     raw_dir.mkdir()
     registry = FakeSourceRegistry(source_adapters=(MatchingSourceAdapter("unsupported", supported=False),))
     artifacts = FilesystemArtifactStore()
-    profile_service = ProfileService(registry, artifacts)
-    service = NormalizationService(registry, profile_service, FilesystemStorage(), artifacts)
+    service = _normalization_service(registry, artifacts)
 
     with pytest.raises(ValueError, match="is not supported for normalization"):
         service.execute(
@@ -109,10 +146,13 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
     registry = build_registry()
     artifacts = FilesystemArtifactStore()
     service = NormalizationService(
-        registry,
-        ProfileService(registry, artifacts),
-        FilesystemStorage(),
-        artifacts,
+        NormalizationDependencies(
+            source_registry=registry,
+            output_registry=registry,
+            profile_service=ProfileService(registry, artifacts),
+            storage=FilesystemStorage(),
+            artifacts=artifacts,
+        )
     )
     output_dir = tmp_path / "normalized"
 
@@ -132,6 +172,8 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: 
         "default_render_mapping",
     ]
     assert wallet_rows[0]["evidence_path"] == "transactions.csv"
+    assert (output_dir / "cointracking_candidate.csv").exists()
+    assert (output_dir / "timezone_issues.csv").exists()
 
 
 def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> None:
@@ -148,10 +190,13 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
     registry = build_registry()
     artifacts = FilesystemArtifactStore()
     service = NormalizationService(
-        registry,
-        ProfileService(registry, artifacts),
-        FilesystemStorage(),
-        artifacts,
+        NormalizationDependencies(
+            source_registry=registry,
+            output_registry=registry,
+            profile_service=ProfileService(registry, artifacts),
+            storage=FilesystemStorage(),
+            artifacts=artifacts,
+        )
     )
     output_dir = tmp_path / "normalized"
 
@@ -182,10 +227,13 @@ def test_structured_csv_normalization_canonicalizes_signed_amounts(tmp_path: Pat
     registry = build_registry()
     artifacts = FilesystemArtifactStore()
     service = NormalizationService(
-        registry,
-        ProfileService(registry, artifacts),
-        FilesystemStorage(),
-        artifacts,
+        NormalizationDependencies(
+            source_registry=registry,
+            output_registry=registry,
+            profile_service=ProfileService(registry, artifacts),
+            storage=FilesystemStorage(),
+            artifacts=artifacts,
+        )
     )
     output_dir = tmp_path / "normalized"
 
@@ -268,10 +316,13 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
     registry = build_registry()
     artifacts = FilesystemArtifactStore()
     service = NormalizationService(
-        registry,
-        ProfileService(registry, artifacts),
-        FilesystemStorage(),
-        artifacts,
+        NormalizationDependencies(
+            source_registry=registry,
+            output_registry=registry,
+            profile_service=ProfileService(registry, artifacts),
+            storage=FilesystemStorage(),
+            artifacts=artifacts,
+        )
     )
     output_dir = tmp_path / "normalized"
 
@@ -289,3 +340,65 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
         "no_valid_rows",
     ]
     assert not review_rows
+
+
+def test_profile_service_rejects_output_inside_raw_tree(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "transactions.csv").write_text(
+        (
+            "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+            "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+        ),
+        encoding="utf-8",
+    )
+    registry = build_registry()
+    service = ProfileService(registry, FilesystemArtifactStore())
+
+    with pytest.raises(
+        ValueError,
+        match="profile output directory must not be inside raw source directory",
+    ):
+        service.execute(
+            ProfileRequest(
+                source="fixture_source",
+                raw_dir=raw_dir,
+                output_dir=raw_dir / "profile",
+            )
+        )
+
+
+def test_normalization_service_rejects_output_inside_raw_tree(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "transactions.csv").write_text(
+        (
+            "timestamp,event_kind,asset_in,amount_in,asset_out,amount_out,"
+            "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+            "2023-08-06 10:00:00,Trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-1,BTC buy,Fixture,Primary\n"
+        ),
+        encoding="utf-8",
+    )
+    registry = build_registry()
+    artifacts = FilesystemArtifactStore()
+    service = NormalizationService(
+        NormalizationDependencies(
+            source_registry=registry,
+            output_registry=registry,
+            profile_service=ProfileService(registry, artifacts),
+            storage=FilesystemStorage(),
+            artifacts=artifacts,
+        )
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="normalization output directory must not be inside raw source directory",
+    ):
+        service.execute(
+            NormalizeRequest(
+                source="fixture_source",
+                raw_dir=raw_dir,
+                output_dir=raw_dir / "normalized",
+            )
+        )

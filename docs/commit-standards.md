@@ -64,18 +64,16 @@ What:
 - keep ADAPTER discovery entry point unchanged
 
 Checks:
-- uv run ruff check .
-- uv run mypy
-- uv run pyright
-- uv run pytest
+- uv run pre-commit run markdownlint --all-files
+- uv run python -m tools.run_quality_gates --full-tests
 ```
 
 Standard footers are allowed, including `BREAKING CHANGE:`.
 
 ## Stable Checkpoint Commits
 
-Commit at stable checkpoints by default. This is a workflow preference, not a
-hard timer or commit-count rule.
+Commit at stable checkpoints by default. In this repo that is an expected
+working agreement, not optional guidance to ignore once a change is stable.
 
 A stable checkpoint means:
 
@@ -94,12 +92,16 @@ series of micro-commits with no practical review value.
 
 ## Local Setup
 
-Install the repo hooks and commit template in each clone:
+Install the repo hooks and commit template in each clone before doing stable
+work:
 
 ```bash
 git config --local commit.template .gitmessage.txt
 uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```
+
+Do not replace this with ad hoc wrappers unless the docs are updated in the
+same change and the wrapper exactly preserves the documented behavior.
 
 Validate messages directly when needed:
 
@@ -107,3 +109,42 @@ Validate messages directly when needed:
 uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
 uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
 ```
+
+## Commit-Time Test Policy
+
+The `pre-commit` `pytest` hook is intentionally scoped to fast unit coverage:
+
+```bash
+uv run pytest -m "unit and not slow" --no-cov -q
+```
+
+That hook is meant to protect local commits without paying the cost of
+coverage, contract tests, or end-to-end CLI flows on every commit. Full
+verification still means running:
+
+```bash
+uv run pre-commit run markdownlint --all-files
+uv run python -m tools.run_quality_gates --full-tests
+```
+
+Do not also run `uv run pre-commit run --all-files` in addition to the
+parallel quality-gate runner unless you are validating the hooks themselves.
+
+Re-benchmark suite segments before broadening or shrinking the fast test slice:
+
+```bash
+uv run python -m tools.benchmark_tests
+uv run python -m tools.benchmark_tests --parallel
+```
+
+For explicit local verification outside the hook path, the repo also ships a
+parallel quality-gate runner:
+
+```bash
+uv run python -m tools.run_quality_gates
+uv run python -m tools.run_quality_gates --full-tests
+```
+
+`pylint` remains part of the parallel quality-gate runner, but it is not part
+of the `pre-commit` hook path because it is materially slower than the other
+commit-time checks.
