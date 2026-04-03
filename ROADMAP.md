@@ -208,6 +208,10 @@ decisions that should not be rediscovered from scratch.
 - Keep docs-to-runtime capability parity as an explicit invariant. If a command,
   artifact, or agent entrypoint is documented as active, it must exist and be
   tested.
+- Keep `main` squash-merged through PRs only. PR titles must use the
+  Conventional Commit subject format, and PR bodies must include `Why:`,
+  `What:`, `Checks:`, and chronological `Included checkpoints:` sections
+  because that metadata becomes the mainline commit record.
 - Keep the retired legacy workspace roots out of git:
   `00_docs/`, `01_raw_exports/`, `02_working/`, `03_analysis/`,
   `04_import_ready/`, and `05_outputs/`.

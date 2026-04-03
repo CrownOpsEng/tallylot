@@ -8,25 +8,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-ALLOWED_TYPES = (
-    "feat",
-    "fix",
-    "refactor",
-    "docs",
-    "test",
-    "chore",
-    "build",
-    "ci",
-    "perf",
-    "revert",
-)
-TYPE_PATTERN = "|".join(ALLOWED_TYPES)
-SCOPE_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
-SUBJECT_PATTERN = re.compile(rf"^(?:{TYPE_PATTERN})(?:\(({SCOPE_PATTERN})\))?: (?P<summary>.+)$")
-MERGE_SUBJECT_PATTERN = re.compile(r"^Merge (?:branch|pull request) ")
-SECTION_PATTERN = re.compile(r"^(?:Why|What|Checks):(?: .+)?$")
-FOOTER_PATTERN = re.compile(r"^(?:BREAKING CHANGE|[A-Za-z][A-Za-z0-9-]*):(?: .+)?$")
-LABEL_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9 -]*:(?: .+)?$")
+from tools.message_standards import MERGE_SUBJECT_PATTERN, validate_structured_sections, validate_subject_line
+
+SQUASH_PR_SUBJECT_PATTERN = re.compile(r" \(\#\d+\)$")
 
 
 @dataclass(frozen=True)
@@ -57,31 +41,19 @@ def validate_commit_message_text(message: str) -> tuple[str, ...]:
     if MERGE_SUBJECT_PATTERN.match(subject):
         return ()
 
-    errors: list[str] = []
-    if len(subject) > 72:
-        errors.append("subject must be 72 characters or fewer")
-    if subject.endswith("."):
-        errors.append("subject must not end with a period")
-    if SUBJECT_PATTERN.fullmatch(subject) is None:
-        allowed_types = ", ".join(ALLOWED_TYPES)
-        errors.append(
-            "subject must match `type(scope): imperative summary` or "
-            f"`type: imperative summary` using one of: {allowed_types}"
-        )
-    if len(lines) > 1 and lines[1] != "":
-        errors.append("insert a blank line between the subject and the body")
+    optional_sections = ("Included checkpoints",) if SQUASH_PR_SUBJECT_PATTERN.search(subject) else ()
 
-    for line in lines[2:]:
-        if line == "":
-            continue
-        if SECTION_PATTERN.fullmatch(line) is not None:
-            continue
-        if FOOTER_PATTERN.fullmatch(line) is not None:
-            continue
-        if LABEL_PATTERN.fullmatch(line) is not None:
-            errors.append(f"unsupported structured label: {line}")
-
-    return tuple(errors)
+    return (
+        *validate_subject_line(subject),
+        *validate_structured_sections(
+            lines,
+            required_sections=("Why", "What", "Checks"),
+            optional_sections=optional_sections,
+            require_body=True,
+            label="commit message",
+            allow_footers=True,
+        ),
+    )
 
 
 def _load_commit_message_file(path: Path) -> CommitMessage:

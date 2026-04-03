@@ -7,15 +7,7 @@
 # - summary of the implementation
 #
 # Checks:
-# - uv run pre-commit run --all-files
-# - uv run pre-commit run markdownlint --all-files
-# - uv run ruff check .
-# - uv run mypy
-# - uv run pyright
-# - uv run python -m tools.run_pylint
-# - uv run pytest
-#
-# Stable checkpoint:
-# - yes, if the tree is coherent, verified, and ready to keep
+# - UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <focused-tests>
+# - UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
 #
 # BREAKING CHANGE: describe any incompatible behavior change

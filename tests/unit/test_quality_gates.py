@@ -14,8 +14,18 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
     gates = _quality_gates(full_tests=False)
 
-    assert [gate.name for gate in gates] == ["ruff", "mypy", "pyright", "pylint", "pytest"]
-    assert gates[3].command == ("uv", "run", "python", "-m", "tools.run_pylint")
+    assert [gate.name for gate in gates] == [
+        "markdownlint",
+        "actionlint",
+        "ruff",
+        "mypy",
+        "pyright",
+        "pylint",
+        "pytest",
+    ]
+    assert gates[0].command == ("uv", "run", "pre-commit", "run", "markdownlint", "--all-files")
+    assert gates[1].command == ("uv", "run", "actionlint", "-color")
+    assert gates[5].command == ("uv", "run", "python", "-m", "tools.run_pylint")
     assert gates[-1].command == DEFAULT_TEST_COMMAND
 
 
