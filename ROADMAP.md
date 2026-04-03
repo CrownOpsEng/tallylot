@@ -109,8 +109,7 @@ decisions that should not be rediscovered from scratch.
   package entry points so adapter-local tests and helpers can live beside the
   adapter without affecting runtime registration.
 - Refactor large modules before extending them materially. The current
-  refactor-first hotspots are `adapters/sources/structured_csv.py`,
-  `domain/models.py`, `interfaces/cli.py`, and
+  refactor-first hotspots are `domain/models.py`, `interfaces/cli.py`, and
   `infrastructure/discovery/adapters.py`.
 - The repo-local operational dataset was migrated to the external workspace on
   2026-03-26. Use this mapping for any future manual recovery or audit work:
@@ -129,9 +128,5 @@ decisions that should not be rediscovered from scratch.
 - Add richer baseline reconciliation artifacts.
 - Add more conservative overlap heuristics and duplicate signatures.
 - Expand source profiling to include richer file-family inspection.
-- Expand adapter-pack goldens from `structured_csv` to every restored real
-  source adapter.
-- Recover the typed source-adapter parity listed in
-  `docs/MASTER_PARITY_LEDGER.md`.
 - Decompose the current hotspot modules into smaller, bounded packages or
   modules before they accumulate more responsibilities.

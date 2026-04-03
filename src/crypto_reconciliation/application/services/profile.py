@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import csv
 import hashlib
 import json
 from dataclasses import dataclass
@@ -12,6 +11,15 @@ from typing import cast
 from crypto_reconciliation.application.dtos import ProfileRequest, ProfileResponse
 from crypto_reconciliation.application.services.archive_scan import scanned_tree_files
 from crypto_reconciliation.application.services.common import ensure_directory
+from crypto_reconciliation.application.services.csv_inventory import (
+    filename_timezone,
+    format_timezone_value,
+    inventory_csv_content,
+    is_timestamp_field,
+    parse_inventory_timestamp,
+    timestamp_resolution,
+    value_has_non_utc_offset,
+)
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
 from crypto_reconciliation.domain.models import FileInventoryEntry, IssueRecord, SourceProfile
 from crypto_reconciliation.domain.types import AdapterId, JsonValue, SourceId
@@ -25,6 +33,7 @@ ISSUE_HEADER = (
     "severity",
     "kind",
     "message",
+    "context_timestamp",
     "raw_file",
     "raw_row_ref",
     "status",
@@ -298,35 +307,32 @@ class _TimezoneDetails:
 def _inventory_file_details(path: Path) -> tuple[tuple[str, ...], int | None, _TimezoneDetails]:
     if path.suffix.lower() != ".csv":
         return (), None, _TimezoneDetails()
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        header = tuple(reader.fieldnames or ())
-        rows = list(reader)
+    header, rows = inventory_csv_content(path)
     row_count = len(rows)
     if not header:
         return header, row_count, _TimezoneDetails()
-    timezone_details = _csv_timezone_details(header, rows)
+    timezone_details = _csv_timezone_details(path.name, header, rows)
     return header, row_count, timezone_details
 
 
 def _csv_timezone_details(
+    filename: str,
     header: tuple[str, ...],
     rows: list[dict[str, str]],
 ) -> _TimezoneDetails:
-    timestamp_field = next((name for name in header if name.lower() in {"timestamp", "date", "datetime", "time"}), "")
+    timestamp_field = next((name for name in header if is_timestamp_field(name)), "")
     if not timestamp_field:
         return _TimezoneDetails()
-    sample_value = next(
-        (row.get(timestamp_field, "").strip() for row in rows if row.get(timestamp_field, "").strip()),
-        "",
-    )
+    values = [row.get(timestamp_field, "").strip() for row in rows if row.get(timestamp_field, "").strip()]
+    sample_value = values[0] if values else ""
     header_utc = "utc" in timestamp_field.lower()
-    resolution = _timestamp_resolution(sample_value)
+    resolution = timestamp_resolution(sample_value)
+    source_timezone = filename_timezone(filename)
     timezone_mode = ""
     timezone_value = ""
     timezone_conflict = ""
 
-    if header_utc and _value_has_non_utc_offset(sample_value):
+    if header_utc and value_has_non_utc_offset(sample_value):
         timezone_mode = "conflict"
         timezone_conflict = f"header:{timestamp_field}|value:{sample_value}"
     elif header_utc:
@@ -335,38 +341,35 @@ def _csv_timezone_details(
     elif sample_value.endswith(("Z", " UTC")):
         timezone_mode = "value_utc"
         timezone_value = "UTC"
-    elif _value_has_non_utc_offset(sample_value):
+    elif value_has_non_utc_offset(sample_value):
         timezone_mode = "value_utc"
         timezone_value = sample_value[-6:]
-    elif resolution == "date":
+    elif source_timezone is not None and sample_value:
+        timezone_mode = "filename_offset"
+        timezone_value = format_timezone_value(source_timezone)
+    elif resolution == "date_only":
         timezone_mode = "date_only"
     elif sample_value:
         timezone_mode = "naive"
 
+    parsed_values = [
+        parsed
+        for value in values
+        if (parsed := parse_inventory_timestamp(value, source_timezone=source_timezone)) is not None
+    ]
+    parsed_values.sort()
+    min_timestamp = parsed_values[0].strftime("%Y-%m-%d %H:%M:%S") if parsed_values else ""
+    max_timestamp = parsed_values[-1].strftime("%Y-%m-%d %H:%M:%S") if parsed_values else ""
+
     return _TimezoneDetails(
         date_field=timestamp_field,
-        min_timestamp=sample_value,
-        max_timestamp=sample_value,
+        min_timestamp=min_timestamp,
+        max_timestamp=max_timestamp,
         timestamp_resolution=resolution,
         timezone_mode=timezone_mode,
         timezone_value=timezone_value,
         timezone_conflict=timezone_conflict,
     )
-
-
-def _timestamp_resolution(value: str) -> str:
-    if not value:
-        return ""
-    if len(value.strip()) == 10 and value.count("-") == 2:
-        return "date"
-    if ":" in value:
-        return "second"
-    return "unknown"
-
-
-def _value_has_non_utc_offset(value: str) -> bool:
-    stripped = value.strip()
-    return len(stripped) >= 6 and stripped[-6] in {"+", "-"} and stripped[-3] == ":"
 
 
 def _validate_profile_timezones(

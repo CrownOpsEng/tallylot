@@ -11,10 +11,31 @@ the typed package.
 4. Review `analysis/issues/issue_log.csv` and `analysis/issues/source_inventory.csv`.
 5. Review the latest baseline reconciliation package under `analysis/reconciliation/`.
 
-## Capture And Profile A Source
+## Intake A Source
 
-1. Save untouched files to `evidence/raw/source/<source>/<capture_id>/`.
-2. Build the capture manifest:
+1. Start from an untouched incoming dump when the capture is not already in the
+   workspace.
+2. Plan the intake first:
+
+   ```bash
+   uv run crypto-reconciliation source intake plan \
+     --incoming-dir <incoming_dump> \
+     --workspace-root <workspace> \
+     --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
+   ```
+
+3. Review `intake_plan.csv`, `intake_issues.csv`, and `intake_summary.json`.
+4. Apply the intake only after the plan looks correct:
+
+   ```bash
+   uv run crypto-reconciliation source intake apply \
+     --incoming-dir <incoming_dump> \
+     --workspace-root <workspace> \
+     --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
+   ```
+
+5. If the capture is already settled in `evidence/raw/source/<source>/<capture_id>/`,
+   build the capture manifest:
 
    ```bash
    uv run crypto-reconciliation source manifest \
@@ -22,7 +43,7 @@ the typed package.
      --output <workspace>/evidence/raw/source/<source>/<capture_id>/manifest.csv
    ```
 
-3. Profile the capture:
+6. Profile the capture:
 
    ```bash
    uv run crypto-reconciliation source profile \
@@ -31,7 +52,7 @@ the typed package.
      --output-dir <workspace>/working/normalized/<source>
    ```
 
-4. Review `profile.json`, `profile_inventory.csv`, and `timezone_issues.csv`.
+7. Review `profile.json`, `profile_inventory.csv`, and `timezone_issues.csv`.
 
 ## Normalize, Screen, And Stage
 
@@ -61,6 +82,8 @@ the typed package.
 
 4. If the screen passes, stage the same candidate with `batch stage`. If it
    blocks, review `stage_issues.csv` and `stage_summary.json` first.
+5. Use `source reconcile` when the candidate needs a direct row diff against a
+   reference export before import.
 
 ## Seed And Verify A Round
 

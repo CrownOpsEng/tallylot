@@ -1,0 +1,4 @@
+Date,Type,Description,Debit,Credit,Spot Rate,Buy / Sell Rate,Balance
+2024-01-01 09:10:11,Interac e-Transfer,CAD deposit,,100.00,,,100.00
+2024-01-01 12:00:00,Card purchase,Coffee,5.00,,,,95.00
+2024-01-03 08:00:00,Send,CAD withdrawal,25.00,,,,70.00

@@ -51,3 +51,20 @@ workflow around it.
 
 - [`workspace/README.md`](workspace/README.md): repo-owned guidance and
   templates for workspace subtrees
+
+## Agent Routes
+
+- [`.claude/commands/source-intake.md`](../.claude/commands/source-intake.md):
+  intake, profile, normalize, stage, and reconcile route
+- [`.claude/commands/round-verification.md`](../.claude/commands/round-verification.md):
+  round scaffold and verification compare route
+- [`.claude/commands/wallet-inventory.md`](../.claude/commands/wallet-inventory.md):
+  wallet inventory rebuild route
+- [`.claude/commands/normalization-exceptions.md`](../.claude/commands/normalization-exceptions.md):
+  normalization review route
+- [`.claude/commands/source-reconcile.md`](../.claude/commands/source-reconcile.md):
+  candidate-versus-reference diff route
+- [`.claude/commands/supporting-artifacts.md`](../.claude/commands/supporting-artifacts.md):
+  PDF balance extraction and supporting evidence route
+- [`.claude/commands/adapter-authoring.md`](../.claude/commands/adapter-authoring.md):
+  adapter authoring and repair route

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
+from reportlab.pdfgen import canvas
 from typer.testing import CliRunner
 
+from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.interfaces.cli import app
 
 runner = CliRunner()
@@ -88,6 +91,31 @@ def test_baseline_validate_cli(baseline_export_dir: Path, tmp_path: Path) -> Non
     assert result.exit_code == 0
     assert (output_dir / "baseline_summary.json").exists()
     assert (output_dir / "baseline_exchange_reconciliation.csv").exists()
+
+
+def test_source_manifest_cli(tmp_path: Path) -> None:
+    source_dir = tmp_path / "capture"
+    source_dir.mkdir()
+    (source_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    output_path = tmp_path / "manifest.csv"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "manifest",
+            "--source-dir",
+            str(source_dir),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["file_count"] == 1
+    assert output_path.exists()
 
 
 def test_verification_compare_cli(
@@ -256,3 +284,92 @@ def test_source_intake_plan_cli(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert (report_dir / "intake_plan.csv").exists()
+
+
+def test_source_intake_apply_cli(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(report_dir),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["copied_count"] == 1
+    assert (report_dir / "intake_summary.json").exists()
+    assert (workspace_root / "evidence/raw/source/unclassified/incoming/transactions.csv").exists()
+
+
+def test_source_reconcile_cli(tmp_path: Path) -> None:
+    candidate_path = tmp_path / "candidate.csv"
+    reference_path = tmp_path / "reference.csv"
+    candidate_path.write_text("Type,Date,Tx-ID\nTrade,2023-08-06 10:00:00,tx-1\n", encoding="utf-8")
+    reference_path.write_text("Type,Date,Tx-ID\nTrade,2023-08-07 10:00:00,tx-2\n", encoding="utf-8")
+    output_dir = tmp_path / "reconcile"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "reconcile",
+            "--candidate",
+            str(candidate_path),
+            "--reference",
+            str(reference_path),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["candidate_only_count"] == 1
+    assert (output_dir / "candidate_only.csv").exists()
+    assert (output_dir / "reference_only.csv").exists()
+
+
+def test_supporting_extract_pdf_balances_cli(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "shakepay_Performance report_2025.pdf"
+    output_path = tmp_path / "balances.csv"
+    pdf = canvas.Canvas(str(pdf_path))
+    pdf.drawString(72, 750, "Performance report For the year ending on December 31, 2025")
+    pdf.drawString(72, 735, "For the year ($) Since account opening ($) $256.37 $0.00")
+    pdf.drawString(72, 720, "Opening market value (as of 2025-01-01 00:00 EST)")
+    pdf.drawString(72, 705, "Closing market value at year end $643.81")
+    pdf.save()
+
+    result = runner.invoke(
+        app,
+        [
+            "supporting",
+            "extract-pdf-balances",
+            "--pdf",
+            str(pdf_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    rows = FilesystemArtifactStore().read_rows(output_path)
+
+    assert result.exit_code == 0
+    assert len(rows) == 2
+    assert rows[0]["balance_kind"] == "opening_market_value"
+    assert rows[1]["balance_kind"] == "closing_market_value"

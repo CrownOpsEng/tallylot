@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 
@@ -86,6 +87,8 @@ class NormalizeRequest:
     source: str
     raw_dir: Path
     output_dir: Path
+    window_start: str | None = None
+    window_end: str | None = None
     inspect_archives: bool = True
 
 
@@ -201,6 +204,7 @@ class RoundScaffoldRequest:
     round_id: str
     phase: str
     source: str
+    today: date | None = None
 
 
 @dataclass(frozen=True)
@@ -208,6 +212,7 @@ class RoundScaffoldResponse:
     workspace_root: Path
     round_dir: Path
     round_log_path: Path
+    readme_path: Path
     seeded: bool
 
 

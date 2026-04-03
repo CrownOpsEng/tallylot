@@ -1,0 +1,14 @@
+[
+  {
+    "adapter_id": "gtrade",
+    "context_timestamp": "",
+    "issue_id": "gtrade:gtrade-report.csv:row:4",
+    "kind": "unsupported_row",
+    "message": "GTrade report row lacks realized PnL and cannot be deterministically converted into a CoinTracking transaction without supporting explorer evidence.",
+    "raw_file": "gtrade-report.csv",
+    "raw_row_ref": "row:4",
+    "severity": "medium",
+    "source": "GTrade 1CT",
+    "status": "needs_review"
+  }
+]

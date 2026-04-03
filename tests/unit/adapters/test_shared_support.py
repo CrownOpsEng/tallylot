@@ -1,0 +1,36 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from decimal import Decimal
+
+from crypto_reconciliation.adapters.sources.mapped_event_support import MappedEventSpec, mapped_event
+from crypto_reconciliation.adapters.sources.wallet_record_support import normalized_identifier, wallet_identifier_kind
+
+
+def test_mapped_event_defaults_render_fields_from_event_shape() -> None:
+    event = mapped_event(
+        MappedEventSpec(
+            event_id="evt-1",
+            source="fixture",
+            adapter_id="fixture_adapter",
+            account="Primary",
+            wallet="Primary",
+            timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
+            event_kind="Deposit",
+            description="Fixture deposit",
+            raw_file="fixture.csv",
+            raw_row_ref="row:2",
+            render_exchange="Fixture",
+            asset_in="BTC",
+            amount_in=Decimal("1.5"),
+        )
+    )
+
+    assert event.render_type == "Deposit"
+    assert event.render_comment == "Fixture deposit"
+    assert event.render_allowed_types == "Deposit"
+
+
+def test_wallet_identifier_helpers_normalize_evm_and_classify_near_accounts() -> None:
+    assert normalized_identifier("evm_address", "0xABCDEF") == "0xabcdef"
+    assert wallet_identifier_kind("example.near") == "near_account"

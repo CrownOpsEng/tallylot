@@ -1,0 +1,3 @@
+Txn Hash,Time,Status,Method,Deposit Value,Txn Fee,To
+tx-1,2024-01-01 00:00:00,Success,TRANSFER,1.00000000,0.01000000,example.near
+tx-2,2024-01-02 00:00:00,Success,deposit_and_stake,2.00000000,0.10000000,example.near

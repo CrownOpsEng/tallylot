@@ -165,9 +165,12 @@ def source_profile(
 
 @source_app.command("normalize")
 def source_normalize(
+    *,  # pylint: disable=too-many-arguments,too-many-positional-arguments
     source: Annotated[str, typer.Option()],
     raw_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    window_start: Annotated[str | None, typer.Option()] = None,
+    window_end: Annotated[str | None, typer.Option()] = None,
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
     response = _normalization_service().execute(
@@ -175,6 +178,8 @@ def source_normalize(
             source=source,
             raw_dir=raw_dir,
             output_dir=output_dir,
+            window_start=window_start,
+            window_end=window_end,
             inspect_archives=inspect_archives,
         )
     )

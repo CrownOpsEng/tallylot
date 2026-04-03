@@ -7,7 +7,9 @@
 - CLI and library interfaces only
 - Filesystem-backed storage implementation
 - CoinTracking CSV output adapter implemented
-- Structured CSV source adapter implemented
+- Restored real source adapters for Coinbase, Wealthsimple, Binance,
+  Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
+  wallet-state, plus the generic structured CSV adapter
 - Universal ZIP inspection enabled by default for source scanning workflows
 - Blockchain, platform API, SQLite, and provider-backed AI remain stubs behind
   typed boundaries
@@ -45,9 +47,6 @@ The repo currently ships typed replacements for the core workflow capabilities:
 
 ## Deferred Surface
 
-- Additional real source adapters beyond the structured CSV adapter
-- Typed source-intake routing and package resolution still narrower than
-  `master`; see `docs/MASTER_PARITY_LEDGER.md`
 - HTTP/API runtime
 - SQLite-backed active storage
 - provider-backed AI runtime

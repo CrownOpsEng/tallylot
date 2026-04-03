@@ -1,0 +1,20 @@
+[
+  {
+    "account": "",
+    "account_label": "",
+    "capture_path": "",
+    "confidence": "high",
+    "controller": "Explorer export",
+    "display_identifier": "0x1111111111111111111111111111111111111111",
+    "evidence_kind": "filename",
+    "evidence_path": "transactions.csv",
+    "identifier_kind": "evm_address",
+    "identifier_value": "0x1111111111111111111111111111111111111111",
+    "network_scope": "bsc",
+    "normalized_identifier": "0x1111111111111111111111111111111111111111",
+    "notes": "",
+    "source": "bsc-wallet",
+    "wallet": "",
+    "wallet_id": "evm_address:0x1111111111111111111111111111111111111111"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "adapter_id": "evm_explorer",
+    "context_timestamp": "",
+    "issue_id": "evm_explorer:bsc-wallet-1:multiple_primary_identifiers:multiple_primary_identifiers",
+    "kind": "multiple_primary_identifiers",
+    "message": "The profiled explorer capture exposed more than one owned EVM address.",
+    "raw_file": "",
+    "raw_row_ref": "",
+    "severity": "medium",
+    "source": "bsc-wallet-1",
+    "status": "open"
+  }
+]

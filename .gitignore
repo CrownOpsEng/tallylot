@@ -78,6 +78,10 @@ Thumbs.db
 *.tmp
 .benchmarks/
 .claude/
+!.claude/
+.claude/*
+!.claude/commands/
+!.claude/commands/*.md
 .tmp_golden_refresh/
 tmp/
 
