@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from pytest import MonkeyPatch
 
-from tools.validate_pr_metadata import _validate_pr_body, _validate_pr_checkpoints, _validate_pr_title
+from tools.validate_pr_metadata import (
+    _validate_pr_body,
+    _validate_pr_checkpoints,
+    _validate_pr_title,
+)
 
 
 def test_pr_title_with_conventional_commit_subject_is_valid() -> None:
@@ -24,10 +28,10 @@ def test_pr_title_without_conventional_commit_subject_is_rejected() -> None:
 def test_pr_body_with_required_sections_is_valid() -> None:
     body = """\
 Why:
-- keep mainline history concise
+- keep multi-checkpoint history visible on main
 
 What:
-- document and validate squash-merge metadata
+- document and validate pull request metadata
 
 Checks:
 - uv run python -m tools.run_quality_gates
@@ -46,10 +50,10 @@ def test_pr_body_tolerates_leading_html_comment() -> None:
 <!-- markdownlint-disable-file MD041 MD032 -->
 
 Why:
-- keep mainline history concise
+- keep multi-checkpoint history visible on main
 
 What:
-- document and validate squash-merge metadata
+- document and validate pull request metadata
 
 Checks:
 - uv run python -m tools.run_quality_gates
@@ -66,10 +70,10 @@ Included checkpoints:
 def test_pr_body_rejects_missing_section() -> None:
     body = """\
 Why:
-- keep mainline history concise
+- keep multi-checkpoint history visible on main
 
 What:
-- document and validate squash-merge metadata
+- document and validate pull request metadata
 
 Checks:
 - uv run python -m tools.run_quality_gates
@@ -83,10 +87,10 @@ Checks:
 def test_pr_body_rejects_non_bullet_content() -> None:
     body = """\
 Why:
-keep mainline history concise
+keep multi-checkpoint history visible on main
 
 What:
-- document and validate squash-merge metadata
+- document and validate pull request metadata
 
 Checks:
 - uv run python -m tools.run_quality_gates
@@ -97,16 +101,19 @@ Included checkpoints:
 
     errors = _validate_pr_body(body)
 
-    assert errors == ("`Why:` entries must use `- ` bullets", "`Why:` must contain at least one bullet")
+    assert errors == (
+        "`Why:` entries must use `- ` bullets",
+        "`Why:` must contain at least one bullet",
+    )
 
 
 def test_pr_checkpoints_match_commit_subjects(monkeypatch: MonkeyPatch) -> None:
     body = """\
 Why:
-- keep mainline history concise
+- keep multi-checkpoint history visible on main
 
 What:
-- document and validate squash-merge metadata
+- document and validate pull request metadata
 
 Checks:
 - uv run python -m tools.run_quality_gates
@@ -139,10 +146,10 @@ def test_pr_checkpoints_ignore_leading_html_comment(monkeypatch: MonkeyPatch) ->
 <!-- markdownlint-disable-file MD041 MD032 -->
 
 Why:
-- keep mainline history concise
+- keep multi-checkpoint history visible on main
 
 What:
-- document and validate squash-merge metadata
+- document and validate pull request metadata
 
 Checks:
 - uv run python -m tools.run_quality_gates
@@ -162,13 +169,15 @@ Included checkpoints:
     assert errors == ()
 
 
-def test_pr_checkpoints_reject_non_exact_commit_subjects(monkeypatch: MonkeyPatch) -> None:
+def test_pr_checkpoints_reject_non_exact_commit_subjects(
+    monkeypatch: MonkeyPatch,
+) -> None:
     body = """\
 Why:
-- keep mainline history concise
+- keep multi-checkpoint history visible on main
 
 What:
-- document and validate squash-merge metadata
+- document and validate pull request metadata
 
 Checks:
 - uv run python -m tools.run_quality_gates
@@ -185,16 +194,18 @@ Included checkpoints:
 
     errors = _validate_pr_checkpoints(body, base_sha="base", head_sha="head")
 
-    assert errors == ("`Included checkpoints:` entries must wrap commit subjects in backticks",)
+    assert errors == (
+        "`Included checkpoints:` entries must wrap commit subjects in backticks",
+    )
 
 
 def test_pr_checkpoints_reject_subject_mismatch(monkeypatch: MonkeyPatch) -> None:
     body = """\
 Why:
-- keep mainline history concise
+- keep multi-checkpoint history visible on main
 
 What:
-- document and validate squash-merge metadata
+- document and validate pull request metadata
 
 Checks:
 - uv run python -m tools.run_quality_gates
@@ -211,4 +222,6 @@ Included checkpoints:
 
     errors = _validate_pr_checkpoints(body, base_sha="base", head_sha="head")
 
-    assert errors == ("`Included checkpoints:` must exactly match the branch commit subjects in order",)
+    assert errors == (
+        "`Included checkpoints:` must exactly match the branch commit subjects in order",
+    )

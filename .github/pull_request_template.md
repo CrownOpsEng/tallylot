@@ -1,4 +1,5 @@
 <!-- markdownlint-disable-file MD041 MD032 -->
+<!-- Multi-checkpoint PRs must merge-commit. Single-checkpoint PRs must squash. -->
 
 Why:
 - explain the problem or constraint this PR resolves
