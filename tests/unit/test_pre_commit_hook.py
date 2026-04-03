@@ -152,6 +152,11 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
             None,
         ),
         (
+            ("uv", "sync", "--frozen"),
+            tmp_path,
+            str(Path.home() / ".venvs" / "tallylot-py312"),
+        ),
+        (
             (
                 "uv",
                 "run",

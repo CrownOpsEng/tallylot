@@ -67,7 +67,10 @@ Do not pre-load every repo doc by default.
   override it with ad hoc repo-local envs.
 - For all `uv` commands in this repo, use:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv ...`
-- Bootstrap each clone before doing stable work:
+- Bootstrap each clone before doing stable work. This refreshes the shared
+  external project environment for the current checkout and installs repo git
+  hooks, which clears stale editable package paths after repo relocation or
+  history rebuilds:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
 - Do not consider work ready until `markdownlint`, `ruff`, `mypy`, `pyright`,
   `pylint`, and `pytest` pass.
