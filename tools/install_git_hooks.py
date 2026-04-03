@@ -85,6 +85,12 @@ def _install_hooks(repo_root: Path) -> None:
         cwd=repo_root,
     )
     subprocess.run(
+        ["uv", "sync", "--frozen"],
+        check=True,
+        cwd=repo_root,
+        env=repo_uv_environment(),
+    )
+    subprocess.run(
         [
             "uv",
             "run",
@@ -109,13 +115,17 @@ def _install_hooks(repo_root: Path) -> None:
         _HOOK_TEMPLATE.format(**hook_format_args),
         encoding="utf-8",
     )
-    hook_path.chmod(hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    hook_path.chmod(
+        hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+    )
     commit_msg_hook_path = repo_root / ".git/hooks/commit-msg"
     commit_msg_hook_path.write_text(
         _COMMIT_MSG_HOOK_TEMPLATE.format(**hook_format_args),
         encoding="utf-8",
     )
-    commit_msg_hook_path.chmod(commit_msg_hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    commit_msg_hook_path.chmod(
+        commit_msg_hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+    )
 
 
 def main() -> int:

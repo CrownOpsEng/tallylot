@@ -32,8 +32,12 @@ Prefer the repo's built-in tooling before inventing local workflows:
 - inspect a fresh VS Code Problems snapshot first when the `vscode-problems`
   skill or MCP server is available, then fall back to CLI checks when the
   snapshot is stale, missing, or incomplete
-- bootstrap hooks in each clone with
+- bootstrap each clone with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
+  so the shared external environment is synced to the current checkout before
+  hook installation; rerun that command if
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot ...`
+  resolves a stale editable checkout after repo relocation or history rebuilds
 - run broad verification with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
 - run full verification before closing substantial work with
