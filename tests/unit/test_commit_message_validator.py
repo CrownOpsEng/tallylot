@@ -1,6 +1,14 @@
 from __future__ import annotations
 
-from tools.validate_commit_message import _validate_commit_message_text
+import subprocess
+
+from pytest import MonkeyPatch
+
+from tools.validate_commit_message import (
+    _fallback_rev_range,
+    _load_commit_messages_from_range,
+    _validate_commit_message_text,
+)
 
 
 def test_commit_message_without_scope_is_valid() -> None:
@@ -257,3 +265,61 @@ Included checkpoints:
         "unsupported structured label: Included checkpoints:",
         "unexpected trailing content: - `docs: route agents to narrow standards`",
     )
+
+
+def test_fallback_rev_range_uses_head_commit_only() -> None:
+    assert _fallback_rev_range("deadbeef..cafebabe") == "cafebabe^!"
+
+
+def test_fallback_rev_range_rejects_non_range_input() -> None:
+    assert _fallback_rev_range("HEAD^!") is None
+
+
+def test_load_commit_messages_from_range_falls_back_for_rewritten_history(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, ...]] = []
+
+    def fake_run(
+        command: list[str],
+        *,
+        check: bool,
+        capture_output: bool,
+        text: bool,
+    ) -> subprocess.CompletedProcess[str]:
+        del check, capture_output, text
+        command_tuple = tuple(command)
+        calls.append(command_tuple)
+        if command_tuple == ("git", "rev-list", "--reverse", "before..after"):
+            raise subprocess.CalledProcessError(
+                returncode=128,
+                cmd=command,
+                stderr="fatal: Invalid revision range before..after",
+            )
+        if command_tuple == ("git", "rev-list", "--reverse", "after^!"):
+            return subprocess.CompletedProcess(command, 0, stdout="after\n", stderr="")
+        if command_tuple == ("git", "show", "--quiet", "--format=%B", "after"):
+            return subprocess.CompletedProcess(
+                command,
+                0,
+                stdout=(
+                    "docs: codify pull request merge policy (#35)\n\n"
+                    "Why:\n- keep history clean\n\n"
+                    "What:\n- rewrite the commit record\n\n"
+                    "Checks:\n- uv run pytest\n\n"
+                    "Included checkpoints:\n"
+                    "- `docs: codify pull request merge policy`\n"
+                ),
+                stderr="",
+            )
+        raise AssertionError(f"unexpected command: {command_tuple}")
+
+    monkeypatch.setattr("tools.validate_commit_message.subprocess.run", fake_run)
+
+    messages = _load_commit_messages_from_range("before..after")
+
+    assert [message.label for message in messages] == ["commit after"]
+    assert calls[:2] == [
+        ("git", "rev-list", "--reverse", "before..after"),
+        ("git", "rev-list", "--reverse", "after^!"),
+    ]
