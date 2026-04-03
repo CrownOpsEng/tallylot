@@ -142,3 +142,36 @@ def test_assert_balances_use_case_rejects_derived_output_overwriting_input_file(
         ),
     ):
         AssertBalancesUseCase(evidence_repo, artifacts).execute(request)
+
+
+def test_assert_balances_use_case_rejects_reused_derived_output_paths(
+    tmp_path: Path,
+) -> None:
+    snapshot_path = tmp_path / "balances.csv"
+    evidence_path = tmp_path / "balance_evidence.csv"
+    output_path = tmp_path / "reconciliation_issues.csv"
+    snapshot_path.write_text(
+        "source,location_id,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,notes\n",
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        "source,location_id,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,evidence_ref,notes\n",
+        encoding="utf-8",
+    )
+
+    request = BalanceAssertionRequest(
+        snapshot_input_ref=to_resource_ref(snapshot_path),
+        evidence_input_ref=to_resource_ref(evidence_path),
+        assertion_output_ref=to_resource_ref(output_path),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "balance assertion issue output must not reuse balance assertion output"
+        ),
+    ):
+        AssertBalancesUseCase(
+            FilesystemEvidenceRepository(),
+            FilesystemArtifactStore(),
+        ).execute(request)

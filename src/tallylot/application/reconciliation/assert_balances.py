@@ -51,6 +51,13 @@ class AssertBalancesUseCase:
         summary_output_path = assertion_output_path.with_name(
             "balance_assertion_summary.json"
         )
+        _ensure_output_paths_are_distinct(
+            {
+                "balance assertion output": assertion_output_path,
+                "balance assertion issue output": issue_output_path,
+                "balance assertion summary output": summary_output_path,
+            }
+        )
         _ensure_output_paths_are_safe(
             snapshot_path,
             input_label="balance snapshot input",
@@ -109,3 +116,14 @@ def _ensure_output_paths_are_safe(
             input_label=input_label,
             output_label=output_label,
         )
+
+
+def _ensure_output_paths_are_distinct(output_paths: dict[str, Path]) -> None:
+    seen_paths: dict[Path, str] = {}
+    for output_label, output_path in output_paths.items():
+        existing_label = seen_paths.get(output_path)
+        if existing_label is not None:
+            raise ValueError(
+                f"{output_label} must not reuse {existing_label}: {output_path}"
+            )
+        seen_paths[output_path] = output_label
