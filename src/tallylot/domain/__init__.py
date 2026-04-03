@@ -10,7 +10,13 @@ from .instruments import (
 )
 from .issues import IssueRecord, NormalizationReviewRecord
 from .locations import LocationKind, LocationRecord
-from .reconciliation import BalanceEvidence
+from .reconciliation import (
+    BalanceAssertion,
+    BalanceAssertionResult,
+    BalanceAssertionStatus,
+    BalanceEvidence,
+    assert_balance_snapshots,
+)
 from .temporal import TemporalPrecision
 from .transactions import (
     FACT_SCHEMA_VERSION,
@@ -34,6 +40,9 @@ __all__ = [
     "TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY",
     "AccountingIntentHint",
     "BalanceEvidence",
+    "BalanceAssertion",
+    "BalanceAssertionResult",
+    "BalanceAssertionStatus",
     "BalanceSnapshot",
     "EconomicKind",
     "FactLegPolicy",
@@ -52,4 +61,5 @@ __all__ = [
     "TaxTreatmentHint",
     "TemporalPrecision",
     "TransactionFact",
+    "assert_balance_snapshots",
 ]
