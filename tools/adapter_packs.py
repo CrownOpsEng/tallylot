@@ -72,6 +72,12 @@ def select_adapter_packs(
 def _load_adapter_pack(manifest_path: Path) -> AdapterPack:
     payload = _manifest_payload(manifest_path)
     root = manifest_path.parent
+    raw_dir = root / "raw"
+    expected_dir = root / "expected"
+    if not raw_dir.is_dir():
+        raise ValueError(f"adapter pack is missing required raw/ directory: {manifest_path}")
+    if not expected_dir.is_dir():
+        raise ValueError(f"adapter pack is missing required expected/ directory: {manifest_path}")
     adapter = payload.get("adapter", root.parent.name)
     source = payload.get("source")
     if not isinstance(source, str) or not source.strip():

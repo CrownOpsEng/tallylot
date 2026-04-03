@@ -9,7 +9,7 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 DEFAULT_WORKSPACE_ROOT = Path(
-    "~/Documents/CryptoLedgerWorkspaces/crypto-reconciliation-2025",
+    "~/crypto-reconciliation-workspace",
 ).expanduser()
 CONFIG_FILE_NAME = "crypto-reconciliation.toml"
 

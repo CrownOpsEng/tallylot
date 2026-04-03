@@ -1,15 +1,20 @@
 # Operations Quickstart
 
-Use this file for the shortest safe path between manual CoinTracking work and
-the typed package.
+Use this file for the shortest safe path through a normal operator session.
+Use `docs/operations/mop.md` when you need the long-form procedure or
+supporting detail.
 
 ## Start Of Session
 
-1. Read `docs/PROJECT_STATE.md`.
-2. Read `docs/BASELINE_VALIDATION.md`.
-3. Confirm the current baseline export path and cutoff.
-4. Review `analysis/issues/issue_log.csv` and `analysis/issues/source_inventory.csv`.
-5. Review the latest baseline reconciliation package under `analysis/reconciliation/`.
+1. Confirm the current runtime surface in `docs/operations/project-state.md`
+   if the repo has changed since the last session.
+2. Confirm the baseline contract in `docs/operations/baseline-validation.md`.
+3. Review `analysis/issues/issue_log.csv` and
+   `analysis/issues/source_inventory.csv`.
+4. Review the latest baseline reconciliation package under
+   `analysis/reconciliation/`.
+5. Confirm the current baseline export path and cutoff before touching a
+   source or staging a candidate.
 
 ## Intake A Source
 
@@ -80,9 +85,10 @@ the typed package.
      --output-dir <workspace>/working/import_batches/<source>
    ```
 
-4. If the screen passes, stage the same candidate with `batch stage`. If it
-   blocks, review `stage_issues.csv` and `stage_summary.json` first.
-5. Use `source reconcile` when the candidate needs a direct row diff against a
+4. If the screen passes, stage the same candidate with `batch stage`.
+5. If it blocks, review `stage_issues.csv` and `stage_summary.json` before
+   changing anything manually.
+6. Use `source reconcile` when the candidate needs a direct row diff against a
    reference export before import.
 
 ## Seed And Verify A Round
@@ -109,3 +115,4 @@ the typed package.
 
 5. Update `analysis/issues/issue_log.csv`, `analysis/issues/source_inventory.csv`
    when relevant, and `outputs/logs/round_log.csv`.
+6. Do not advance to the next source until the current round is verified.

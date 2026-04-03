@@ -27,12 +27,16 @@ Do not pre-load every repo doc by default.
 
 | Task | Read |
 | ---- | ---- |
-| Code placement, typing, modularization, naming | `docs/engineering-standards.md` |
-| Source or output adapter work | `docs/adapter-authoring.md` |
-| External workspace layout and seeded files | `docs/workspace-layout.md` |
+| Code placement, typing, modularization, naming | `docs/architecture/engineering-standards.md` |
+| Active implementation execution discipline | `docs/architecture/implementation-working-agreement.md`, `docs/architecture/commit-standards.md` |
+| Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/architecture/reconciliation-tax-implementation-plan.md` |
+| Platform-agnostic boundaries, classification mapping, or migration order | `docs/architecture/oracle-and-input-boundaries.md`, `docs/architecture/transaction-classification-matrix.md`, `docs/architecture/implementation-migration-sequence.md` |
+| Source or output adapter work | `docs/architecture/adapter-authoring.md` |
+| External workspace layout and seeded files | `docs/operations/workspace-layout.md` |
 | Operational state, manual workflow, or agent runbooks | `docs/README.md`, then the specific doc it routes you to |
 | Workspace subtree conventions, checklists, or templates | `docs/workspace/README.md` |
-| Commit messages, templates, and checkpoint behavior | `docs/commit-standards.md` |
+| Commit messages, templates, and checkpoint behavior | `docs/architecture/commit-standards.md` |
+| Final pre-close implementation checks | `.claude/commands/implementation-checkpoint.md` |
 
 ## Execution Rules
 
@@ -63,7 +67,7 @@ Workspace resolution order:
 
 1. `CRYPTO_RECON_WORKSPACE_ROOT`
 2. repo config in `crypto-reconciliation.toml`
-3. default `~/Documents/CryptoLedgerWorkspaces/crypto-reconciliation-2025`
+3. default `~/crypto-reconciliation-workspace`
 
 ## Current Runtime
 
@@ -72,3 +76,30 @@ Workspace resolution order:
 - CLI and library only
 - Filesystem-backed storage implementation
 - SQLite and provider-backed AI remain stubbed behind interfaces
+
+## Current Build Direction
+
+- Treat `docs/architecture/reconciliation-tax-implementation-plan.md` as the implementation
+  anchor for reconciliation, checkpointing, journaling, and tax computation.
+- Do not treat CoinTracking as the live ledger for new architecture work.
+  CoinTracking is now a compatibility and oracle layer.
+- Do not treat CoinTracking tax or accounting reports as normal runtime inputs.
+  They are development-only oracle support artifacts unless an explicit
+  one-time checkpoint import workflow adopts them with provenance.
+- Do not expand the current canonical event model into the long-term center of
+  the system. New structural work should target the provider-neutral
+  transaction fact model described in the implementation plan.
+- Keep `pydantic` at boundaries:
+  - config
+  - external artifact parsing
+  - report row validation
+  - request validation
+  - discovery-time manifest validation
+- Keep domain models centered on frozen dataclasses, enums, and value objects.
+- Follow `docs/architecture/implementation-working-agreement.md` during coding:
+  - structure first
+  - tests alongside behavior
+  - refactor obvious shared seams during the task
+  - commit at stable checkpoints without waiting to be reminded
+- When work affects architecture, schema, or execution sequencing, update
+  `ROADMAP.md` and the implementation plan together.

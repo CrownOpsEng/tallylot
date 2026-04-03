@@ -15,6 +15,50 @@ decisions that should not be rediscovered from scratch.
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds
 
+## Locked Design Decisions For The Next Major Phase
+
+- Build deterministic reconciliation and source-backed checkpoints before tax
+  computation. The `2023-08-05` CoinTracking export remains a historical oracle
+  boundary, not a hard checkpoint.
+- Treat CoinTracking as a compatibility and oracle layer, not as the central
+  business model.
+- Keep the core runtime platform-agnostic: normal reconstruction, checkpoint,
+  accounting, and tax workflows must run from source evidence and intentional
+  checkpoints without requiring CoinTracking tax or accounting outputs.
+- Introduce a provider-neutral transaction fact model as the new system of
+  record. Keep the current canonical event model as a compatibility projection
+  during migration instead of expanding it into a multi-purpose ledger object.
+- Keep classification layered:
+  - provider-neutral economic kind
+  - CoinTracking compatibility type
+  - journal intent
+  - tax treatment code
+- Keep journaling replaceable behind a renderer port. Ledger CLI is the first
+  validation target, but the domain must not depend on one concrete ledger
+  implementation.
+- Keep tax policy replaceable behind a policy port. Canadian capital-account
+  treatment is the only required implementation for the next phase, but the
+  core model must stay jurisdiction-neutral.
+- Expand `pydantic` at boundaries only:
+  - config
+  - external artifact parsing
+  - report row validation
+  - CLI or API request validation
+  - discovery-time manifest validation
+- Keep the domain centered on frozen dataclasses, enums, and value objects so
+  business invariants remain explicit and independent of framework behavior.
+- Support the full CoinTracking import taxonomy in the compatibility layer now
+  to avoid later enum churn, even though the next implementation phase only
+  gives first-class behavior to the subset needed for the current dataset and
+  Canadian tax MVP.
+- Keep CoinTracking tax reports, roll-forward outputs, average purchase price,
+  and double-entry reports in the oracle lane only. They may support
+  comparison, regression, and one-time review, but they must not become normal
+  runtime inputs or hidden dependencies.
+- Preserve deterministic correction support as a first-class capability.
+  Redistribution, supersession, and de-duplication fixes must be modeled in
+  data and rules, not as ad hoc operator memory.
+
 ## Deferred Work
 
 ### HTTP And API Runtime
@@ -71,9 +115,9 @@ decisions that should not be rediscovered from scratch.
 - Keep the agent guidance router-first: `AGENTS.md` should stay short and direct
   agents to narrow task-specific docs rather than front-loading broad repo
   context.
-- Treat `docs/engineering-standards.md` as the code placement, typing,
+- Treat `docs/architecture/engineering-standards.md` as the code placement, typing,
   modularization, and naming contract.
-- Treat `docs/commit-standards.md` as the commit message and stable-checkpoint
+- Treat `docs/architecture/commit-standards.md` as the commit message and stable-checkpoint
   contract. Use Conventional Commits and prefer small cohesive checkpoint
   commits without forcing micro-commit overhead.
 - Keep application services on port contracts for adapter resolution and artifact
@@ -131,6 +175,21 @@ decisions that should not be rediscovered from scratch.
 ## Near-Term Enhancements
 
 - Add richer baseline reconciliation artifacts.
+- Add dedicated CoinTracking oracle readers for `Trade Table`, `Trade List`,
+  `Double-entry`, `Roll Forward in CAD`, `Realized Gain or Loss in CAD`, and
+  `Average Purchase Price`.
+- Add explicit runtime-boundary, classification-matrix, and migration-sequence
+  docs so future work does not drift back into CoinTracking-centric design.
+- Add a provider-neutral transaction fact model and migrate normalization to a
+  dual-write compatibility phase before retiring canonical-event-first
+  workflows.
+- Add deterministic checkpoint assembly and continuity validation centered on
+  the best-evidenced balance date around `2026-03-23`.
+- Add a journal renderer port and Ledger CLI implementation for hard-gate
+  balance validation on supported activity.
+- Add a Canadian capital-account tax policy implementation over reconciled
+  facts, with explicit unsupported-item reporting and roadmap capture for
+  unimplemented cases.
 - Add more conservative overlap heuristics and duplicate signatures.
 - Expand source profiling to include richer file-family inspection.
 - Decompose the current hotspot modules into smaller, bounded packages or

@@ -17,7 +17,6 @@
 - [ ] Export Balance by Exchange
 - [ ] Export Trade Table, Roll Forward, or Double-entry only if needed
 - [ ] Store exports under `working/verification/<round_id>/`
-- [ ] Run AI verification
 - [ ] Update `cointracking_action`, `verification_path`, `gate_result`, and `closed_at` in the issue log
 - [ ] Update `outputs/logs/round_log.csv`
 - [ ] Confirm whether `FIAT-001` changed and update it if needed
@@ -42,7 +41,6 @@
 - [ ] Export Trade Table, Roll Forward, or Double-entry only if needed
 - [ ] Store exports under `working/verification/<round_id>/`
 - [ ] Run `verification compare` against the prior state and save the comparison artifacts
-- [ ] Run AI verification
 - [ ] Review CAD rows in `Current Balance` and `Balance by Exchange` if the source touches fiat rails
 - [ ] Update `analysis/issues/source_inventory.csv`
 - [ ] Update `analysis/issues/issue_log.csv` for any new or changed issues

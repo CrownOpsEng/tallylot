@@ -3,4 +3,4 @@ name = "crypto-reconciliation"
 python = "3.12"
 
 [workspace]
-# root = "~/Documents/CryptoLedgerWorkspaces/crypto-reconciliation-2025"
+# root = "~/crypto-reconciliation-workspace"

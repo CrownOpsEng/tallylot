@@ -4,7 +4,7 @@ Use this file only when the working guide is not enough or when a tax position n
 
 ## Default rule
 
-1. Start with `docs/CANADIAN_CRYPTOCURRENCY_TAXATION_GUIDE.md`.
+1. Start with `docs/reference/canadian-cryptocurrency-taxation-guide.md`.
 2. If the treatment is still unclear or material, jump to the relevant CRA source below.
 3. If the CRA source still does not clearly settle the issue, log the uncertainty and avoid guessing.
 

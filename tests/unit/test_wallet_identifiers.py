@@ -15,10 +15,7 @@ def test_wallet_identifier_kind_detects_supported_wallet_formats() -> None:
 
 def test_wallet_identifier_kind_detects_cardano_and_near_values() -> None:
     assert (
-        wallet_identifier_kind(
-            "5ebb4c94284e7c805f247a6c7fbbb705bf3c1a234889401321c351aa05d468b6"
-            "ddb9577f143d435ea4bba178a611110f309c930e5400ac960b4bed9e912f2825"
-        )
+        wallet_identifier_kind("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
         == "cardano_account_key"
     )
     assert wallet_identifier_kind("alice.near") == "near_account"
