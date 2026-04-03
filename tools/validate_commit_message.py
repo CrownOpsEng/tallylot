@@ -8,7 +8,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from tools.message_standards import MERGE_SUBJECT_PATTERN, validate_structured_sections, validate_subject_line
+from tools.message_standards import (
+    MERGE_SUBJECT_PATTERN,
+    validate_structured_sections,
+    validate_subject_line,
+)
 
 SQUASH_PR_SUBJECT_PATTERN = re.compile(r" \(\#\d+\)$")
 
@@ -41,7 +45,9 @@ def _validate_commit_message_text(message: str) -> tuple[str, ...]:
     if MERGE_SUBJECT_PATTERN.match(subject):
         return ()
 
-    optional_sections = ("Included checkpoints",) if SQUASH_PR_SUBJECT_PATTERN.search(subject) else ()
+    optional_sections = (
+        ("Included checkpoints",) if SQUASH_PR_SUBJECT_PATTERN.search(subject) else ()
+    )
 
     return (
         *validate_subject_line(subject),
@@ -60,13 +66,33 @@ def _load_commit_message_file(path: Path) -> CommitMessage:
     return CommitMessage(label=str(path), text=path.read_text(encoding="utf-8"))
 
 
+def _fallback_rev_range(rev_range: str) -> str | None:
+    if ".." not in rev_range:
+        return None
+    _, head_ref = rev_range.split("..", 1)
+    if head_ref == "":
+        return None
+    return f"{head_ref}^!"
+
+
 def _load_commit_messages_from_range(rev_range: str) -> tuple[CommitMessage, ...]:
-    revision_result = subprocess.run(
-        ["git", "rev-list", "--reverse", rev_range],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        revision_result = subprocess.run(
+            ["git", "rev-list", "--reverse", rev_range],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError:
+        fallback_range = _fallback_rev_range(rev_range)
+        if fallback_range is None:
+            raise
+        revision_result = subprocess.run(
+            ["git", "rev-list", "--reverse", fallback_range],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
     commit_ids = tuple(line for line in revision_result.stdout.splitlines() if line)
     messages: list[CommitMessage] = []
     for commit_id in commit_ids:
@@ -76,14 +102,25 @@ def _load_commit_messages_from_range(rev_range: str) -> tuple[CommitMessage, ...
             capture_output=True,
             text=True,
         )
-        messages.append(CommitMessage(label=f"commit {commit_id[:7]}", text=message_result.stdout))
+        messages.append(
+            CommitMessage(label=f"commit {commit_id[:7]}", text=message_result.stdout)
+        )
     return tuple(messages)
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate commit messages for this repo.")
-    parser.add_argument("message_files", metavar="MESSAGE_FILE", nargs="*", help="Path to commit message file.")
-    parser.add_argument("--rev-range", dest="rev_range", help="Git revision range to validate.")
+    parser = argparse.ArgumentParser(
+        description="Validate commit messages for this repo."
+    )
+    parser.add_argument(
+        "message_files",
+        metavar="MESSAGE_FILE",
+        nargs="*",
+        help="Path to commit message file.",
+    )
+    parser.add_argument(
+        "--rev-range", dest="rev_range", help="Git revision range to validate."
+    )
     return parser
 
 
@@ -101,7 +138,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     messages: list[CommitMessage] = []
     if args.rev_range is not None:
         messages.extend(_load_commit_messages_from_range(args.rev_range))
-    messages.extend(_load_commit_message_file(Path(path)) for path in args.message_files)
+    messages.extend(
+        _load_commit_message_file(Path(path)) for path in args.message_files
+    )
 
     has_errors = False
     for message in messages:
