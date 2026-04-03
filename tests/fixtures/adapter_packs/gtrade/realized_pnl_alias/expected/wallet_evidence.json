@@ -1,0 +1,15 @@
+[
+  {
+    "account_label": "",
+    "confidence": "medium",
+    "controller": "GTrade report",
+    "display_identifier": "bb4d",
+    "evidence_kind": "csv_row",
+    "identifier_kind": "address_alias",
+    "network_scope": "polygon",
+    "normalized_identifier": "bb4d",
+    "note": "The report exposes a truncated trader alias instead of a full on-chain address.",
+    "source": "GTrade 1CT",
+    "wallet_id": "address_alias:bb4d"
+  }
+]

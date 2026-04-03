@@ -1,0 +1,28 @@
+[
+  {
+    "account_label": "",
+    "confidence": "high",
+    "controller": "Explorer export",
+    "display_identifier": "0x1111111111111111111111111111111111111111",
+    "evidence_kind": "filename",
+    "identifier_kind": "evm_address",
+    "network_scope": "bsc",
+    "normalized_identifier": "0x1111111111111111111111111111111111111111",
+    "note": "",
+    "source": "bsc-metamask1",
+    "wallet_id": "evm_address:0x1111111111111111111111111111111111111111"
+  },
+  {
+    "account_label": "",
+    "confidence": "high",
+    "controller": "Explorer export",
+    "display_identifier": "0x2222222222222222222222222222222222222222",
+    "evidence_kind": "filename",
+    "identifier_kind": "evm_address",
+    "network_scope": "bsc",
+    "normalized_identifier": "0x2222222222222222222222222222222222222222",
+    "note": "",
+    "source": "bsc-metamask1",
+    "wallet_id": "evm_address:0x2222222222222222222222222222222222222222"
+  }
+]

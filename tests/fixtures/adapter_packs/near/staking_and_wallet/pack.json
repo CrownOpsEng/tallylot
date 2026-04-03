@@ -1,0 +1,1 @@
+{"capabilities":["normalize","wallet"],"source":"capture-near","expected_adapter":"near","expected_timezone_status":"passed","expected_normalization_status":"ready"}

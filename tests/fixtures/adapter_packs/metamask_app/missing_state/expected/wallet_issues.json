@@ -1,0 +1,8 @@
+[
+  {
+    "issue_kind": "missing_identifier",
+    "message": "No wallet identifiers could be extracted from the MetaMask app state.",
+    "source": "MetaMask app",
+    "wallet_id": ""
+  }
+]

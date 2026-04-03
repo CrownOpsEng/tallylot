@@ -13,7 +13,7 @@ Use this skill when the task is adapter implementation, not operational intake.
 2. Implement source logic inside `06_scripts/source_adapters.py`.
 3. Reuse shared helpers before adding source-specific branching:
    - `06_scripts/pipeline_common.py` for profile/schema helpers
-   - `06_scripts/normalization_common.py` for canonical fee attachment
+   - `06_scripts/normalization_common.py` for deterministic canonical fee attachment
    - `06_scripts/render_cointracking.py` for output shaping
 4. Emit canonical events that preserve the economic event count as much as possible.
 5. Add or update deterministic tests:
@@ -28,7 +28,10 @@ Use this skill when the task is adapter implementation, not operational intake.
 - Canonical normalization is source-agnostic. Adapters should describe source rows in the shared canonical schema, not in CoinTracking-specific terms unless a render field needs it.
 - Keep one economic action in one canonical event whenever the source supports it.
 - Keep the associated fee on the same canonical trade, deposit, withdrawal, staking, or unstaking event when that fee is part of the same source action.
-- Only emit a standalone fee event when the source truly exposes a fee-only action with no principal movement to attach it to.
+- Use the shared fee helpers for fee attachment and fee-to-event matching instead of hand-rolling `fee_amount` / `fee_asset` edits in adapters.
+- Fee matching must be deterministic. Strict exact-timestamp matching is the default. A small timestamp tolerance is allowed only when the source is known to round or truncate timestamps, and that tolerance must be explicitly opted into and documented in the adapter.
+- If a fee cannot be matched to exactly one target event under the chosen rule, emit a standalone fee event instead of guessing.
+- Only emit a standalone fee event by default when the source truly exposes a fee-only action or the deterministic matcher cannot justify a unique attachment target.
 - Internal transfers, staking shuffles, and wallet/account movements should stay explicit in canonical events rather than being silently dropped.
 - Margin, funding, borrow, repayment, liquidation, and rebate rows must never be silently ignored. Normalize them or surface them in `exceptions.csv`.
 - If the source cannot justify a safe mapping, prefer an explicit exception over a guessed transaction.

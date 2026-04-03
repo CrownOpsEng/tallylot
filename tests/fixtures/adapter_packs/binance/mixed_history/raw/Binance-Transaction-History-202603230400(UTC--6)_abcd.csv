@@ -1,0 +1,7 @@
+User ID,Time,Account,Operation,Coin,Change,Remark
+1,23-08-06 02:34:03,Spot,ETH 2.0 Staking Rewards,BETH,0.00000599,
+1,23-09-20 18:46:46,Spot,Small Assets Exchange BNB,ETH,-0.00005643,ETH to BNB
+1,23-09-20 18:46:46,Spot,Small Assets Exchange BNB,BNB,0.00041767,ETH to BNB
+1,23-09-20 18:17:41,USD-M Futures,Transfer Between Spot Account and UM Futures Account,USDT,-43.90477684,
+1,23-09-20 18:17:41,Spot,Transfer Between Spot Account and UM Futures Account,USDT,43.90477684,
+1,21-05-11 00:44:33,Spot,Binance Convert,ETH,0.03158115,

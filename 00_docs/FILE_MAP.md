@@ -77,7 +77,7 @@ Loose exports outside the canonical full export folder are not part of the worki
 | `06_scripts/reconcile_source.py` | Compare canonical source outputs against CoinTracking ledger slices and optional balance evidence |
 | `06_scripts/pdf_balance_extract.py` | Extract deterministic balance rows from supported statement PDFs such as Coinbase Binance and Shakepay |
 | `06_scripts/source_manifest.py` | Hash raw external evidence folders into deterministic manifests |
-| `06_scripts/wallet_inventory.py` | Build the canonical wallet inventory plus evidence and issue artifacts from raw captures |
+| `06_scripts/wallet_inventory.py` | Build the canonical wallet inventory plus evidence and issue artifacts from source captures |
 | `06_scripts/overlap_check.py` | Screen CoinTracking-ready import batches for cutoff overlap and baseline duplicates |
 | `06_scripts/round_scaffold.py` | Create a round folder and seed the round log |
 | `06_scripts/verification_compare.py` | Compare two verification folders and write deterministic drift artifacts |

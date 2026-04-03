@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import replace
+import hashlib
 import json
 from pathlib import Path
 from typing import Sequence
@@ -15,6 +16,8 @@ from pipeline_common import (
     CANONICAL_EVENT_HEADERS,
     EXCEPTION_HEADERS,
     build_source_profile,
+    filter_rows_by_timestamp_window,
+    normalization_window_from_hints,
     read_profile,
     write_csv_rows,
     write_json,
@@ -32,8 +35,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--profile-json", type=Path)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--exception-decisions", type=Path)
+    parser.add_argument("--window-start")
+    parser.add_argument("--window-end")
     parser.add_argument("--force", action="store_true")
     return parser.parse_args(argv)
+
+
+def normalization_context_fingerprint(hints: dict[str, object] | None) -> str:
+    payload = json.dumps(hints or {}, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def normalize_source(
@@ -44,6 +54,8 @@ def normalize_source(
     profile_json: Path | None = None,
     manifest: Path | None = None,
     exception_decisions: Path | None = None,
+    window_start: str | None = None,
+    window_end: str | None = None,
     force: bool = False,
 ) -> dict[str, object]:
     profile = build_source_profile(
@@ -57,11 +69,25 @@ def normalize_source(
     profile = replace(profile, adapter=adapter.name, adapter_supported=adapter.supported)
     if profile_json is not None and profile_json.exists():
         profile_payload = read_profile(profile_json)
-        manifest_fingerprint = str(profile_payload["manifest_fingerprint"])
-        adapter_name = adapter.name
-    else:
-        manifest_fingerprint = profile.manifest_fingerprint
-        adapter_name = adapter.name
+        profile_hints = profile_payload.get("normalization_hints")
+        if isinstance(profile_hints, dict):
+            profile = replace(
+                profile,
+                normalization_hints={**(profile.normalization_hints or {}), **profile_hints},
+            )
+    if window_start is not None or window_end is not None:
+        profile = replace(
+            profile,
+            normalization_hints={
+                **(profile.normalization_hints or {}),
+                **({"normalization_window_start": window_start} if window_start is not None else {}),
+                **({"normalization_window_end": window_end} if window_end is not None else {}),
+            },
+        )
+    manifest_fingerprint = profile.manifest_fingerprint
+    adapter_name = adapter.name
+    effective_window_start, effective_window_end = normalization_window_from_hints(profile.normalization_hints)
+    context_fingerprint = normalization_context_fingerprint(profile.normalization_hints)
     timezone_summary, timezone_issues = adapter.validate_profile_timezones(profile)
     profile = replace(profile, timezone_summary=timezone_summary, timezone_issues=timezone_issues)
     if timezone_issues:
@@ -86,6 +112,9 @@ def normalize_source(
             existing.get("manifest_fingerprint") == manifest_fingerprint
             and existing.get("adapter") == adapter_name
             and existing.get("exception_decisions_fingerprint") == decisions_digest
+            and existing.get("normalization_context_fingerprint", "") == context_fingerprint
+            and existing.get("normalization_window_start", "") == effective_window_start
+            and existing.get("normalization_window_end", "") == effective_window_end
             and events_path.exists()
             and balances_path.exists()
             and exceptions_path.exists()
@@ -97,21 +126,31 @@ def normalize_source(
                 "manifest_fingerprint": manifest_fingerprint,
                 "canonical_timezone": CANONICAL_TIMEZONE,
                 "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+                "normalization_context_fingerprint": context_fingerprint,
+                "normalization_window_start": effective_window_start,
+                "normalization_window_end": effective_window_end,
                 "timezone_status": str(existing.get("timezone_status", "not_checked")),
                 "timezone_issue_count": int(existing.get("timezone_issue_count", 0)),
                 "status": "cached",
                 "canonical_events": int(existing.get("canonical_events", 0)),
+                "events_outside_normalization_window": int(existing.get("events_outside_normalization_window", 0)),
                 "exceptions": int(existing.get("exceptions", 0)),
                 "cointracking_rows": int(existing.get("cointracking_rows", 0)),
                 "summary_path": str(summary_path),
             }
 
     result = adapter.normalize(raw_dir.resolve(), profile, exception_decisions=decisions)
+    canonical_events, excluded_events = filter_rows_by_timestamp_window(
+        result.canonical_events,
+        timestamp_key="timestamp",
+        window_start=effective_window_start,
+        window_end=effective_window_end,
+    )
 
-    write_csv_rows(events_path, list(CANONICAL_EVENT_HEADERS), result.canonical_events)
+    write_csv_rows(events_path, list(CANONICAL_EVENT_HEADERS), canonical_events)
     write_csv_rows(balances_path, list(CANONICAL_BALANCE_HEADERS), result.canonical_balances)
     write_csv_rows(exceptions_path, list(EXCEPTION_HEADERS), result.exceptions)
-    rendered_rows, skipped_rows = render_cointracking_rows(result.canonical_events)
+    rendered_rows, skipped_rows = render_cointracking_rows(canonical_events)
     from render_cointracking import RENDER_METADATA_HEADERS
     from script_common import write_cointracking_rows
 
@@ -124,10 +163,14 @@ def normalize_source(
         "manifest_fingerprint": profile.manifest_fingerprint,
         "canonical_timezone": CANONICAL_TIMEZONE,
         "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
+        "normalization_context_fingerprint": context_fingerprint,
+        "normalization_window_start": effective_window_start,
+        "normalization_window_end": effective_window_end,
         "timezone_status": timezone_summary["status"],
         "timezone_issue_count": timezone_summary["issue_count"],
-        "canonical_events": len(result.canonical_events),
+        "canonical_events": len(canonical_events),
         "canonical_balances": len(result.canonical_balances),
+        "events_outside_normalization_window": len(excluded_events),
         "exceptions": len(result.exceptions),
         "exception_decisions_fingerprint": decisions_digest,
         "cointracking_rows": len(rendered_rows),
@@ -157,6 +200,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         profile_json=args.profile_json,
         manifest=args.manifest,
         exception_decisions=args.exception_decisions,
+        window_start=args.window_start,
+        window_end=args.window_end,
         force=args.force,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))

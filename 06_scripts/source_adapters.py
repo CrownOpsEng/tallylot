@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import timezone, tzinfo
+from datetime import datetime, timezone, tzinfo
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable, Sequence
@@ -323,7 +323,7 @@ def canonical_event(
     render_tx_id_mode: str = "exact",
     render_allowed_types: str | None = None,
 ) -> dict[str, str]:
-    return {
+    event = {
         "event_id": event_id,
         "source": source,
         "adapter": adapter,
@@ -337,8 +337,8 @@ def canonical_event(
         "amount_in": amount_in,
         "asset_out": asset_out,
         "amount_out": amount_out,
-        "fee_asset": fee_asset,
-        "fee_amount": fee_amount,
+        "fee_asset": "",
+        "fee_amount": "",
         "tx_hash": tx_hash,
         "description": description,
         "confidence": "high",
@@ -355,6 +355,42 @@ def canonical_event(
         "render_fee_tolerance": render_fee_tolerance,
         "render_notes": render_notes,
     }
+    return attach_fee_to_event(event, fee_amount=fee_amount, fee_asset=fee_asset)
+
+
+def standalone_fee_event(
+    *,
+    event_id: str,
+    source: str,
+    adapter: str,
+    account: str,
+    wallet: str,
+    raw_file: str,
+    raw_row_ref: str,
+    timestamp: str,
+    description: str,
+    fee_amount: str | Decimal,
+    fee_asset: str,
+    tx_hash: str = "",
+    render_notes: str = "",
+) -> dict[str, str]:
+    fee_decimal = fee_amount if isinstance(fee_amount, Decimal) else decimal_or_zero(fee_amount)
+    return canonical_event(
+        event_id=event_id,
+        source=source,
+        adapter=adapter,
+        account=account,
+        wallet=wallet,
+        raw_file=raw_file,
+        raw_row_ref=raw_row_ref,
+        timestamp=timestamp,
+        event_kind="Other Fee",
+        description=description,
+        amount_out=decimal_text(fee_decimal),
+        asset_out=fee_asset.strip().upper(),
+        tx_hash=tx_hash,
+        render_notes=render_notes,
+    )
 
 
 def maybe_append_exception(
@@ -415,6 +451,19 @@ def tx_hash_or_event_id(event_id: str, raw_hash: str) -> str:
 def raw_hash_description(prefix: str, raw_hash: str, fallback: str) -> str:
     hash_text = raw_hash.strip()
     return f"{prefix} - {hash_text}" if hash_text else fallback
+
+
+def profile_hint_timestamp(profile: SourceProfile, key: str) -> datetime | None:
+    hints = profile.normalization_hints or {}
+    value = hints.get(key, "")
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.strptime(value.strip(), "%Y-%m-%d %H:%M:%S")
+    except ValueError as exc:
+        raise ValueError(
+            f"Profile normalization hint {key!r} must use YYYY-MM-DD HH:MM:SS; got {value!r}"
+        ) from exc
 
 
 def sum_decimal_strings(values: Iterable[str]) -> Decimal:
@@ -503,6 +552,25 @@ def profile_has_row(
     return False
 
 
+def first_matching_json_file(raw_dir: Path, *, predicate) -> Path | None:
+    for path in sorted(raw_dir.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if predicate(payload):
+            return path
+    return None
+
+
+def csv_contains_transaction_kind(path: Path, expected_kinds: set[str]) -> bool:
+    for row in read_csv_rows(path):
+        kind = (row.get("Transaction Kind") or "").strip().lower()
+        if kind in expected_kinds:
+            return True
+    return False
+
+
 class SourceAdapter:
     name = "base"
     aliases: tuple[str, ...] = ()
@@ -566,7 +634,7 @@ class MetamaskAppAdapter(SourceAdapter):
     supported = False
 
     def matches_profile(self, profile: SourceProfile) -> bool:
-        return any(row.get("filename") == "MetaMask state logs.json" for row in profile.file_inventory)
+        return profile_has_row(profile, families={"metamask_state_json"})
 
     def extract_wallet_identifiers(
         self,
@@ -574,15 +642,18 @@ class MetamaskAppAdapter(SourceAdapter):
         raw_dir: Path,
         profile: SourceProfile,
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-        state_path = raw_dir / "MetaMask state logs.json"
-        if not state_path.exists():
+        state_path = first_matching_json_file(
+            raw_dir,
+            predicate=lambda payload: isinstance(payload, dict) and isinstance(payload.get("metamask"), dict),
+        )
+        if state_path is None:
             return [], [
                 wallet_issue_row(
                     source=source,
                     raw_dir=raw_dir,
                     wallet_id="",
                     issue_kind="missing_identifier",
-                    message="MetaMask state logs were not found.",
+                    message="MetaMask app state JSON was not found.",
                 )
             ]
 
@@ -659,9 +730,9 @@ class CoinbaseAdapter(SourceAdapter):
     supported = True
 
     def matches_profile(self, profile: SourceProfile) -> bool:
-        return profile_has_row(profile, filename_contains="statement - all time") or profile_has_row(
+        return profile_has_row(
             profile,
-            filename_contains="coinbase pro - statement",
+            families={"custodial_all_time_csv", "transfer_statement_csv", "fills_csv"},
         )
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
@@ -681,7 +752,6 @@ class CoinbaseAdapter(SourceAdapter):
             profile,
             families={"custodial_all_time_csv"},
             suffixes={".csv"},
-            predicate=lambda path, _: "statement - all time" in path.name.lower(),
         )
         retail_path = retail_candidates[-1] if retail_candidates else None
         pro_statement_paths = profile_paths(
@@ -689,14 +759,12 @@ class CoinbaseAdapter(SourceAdapter):
             profile,
             families={"transfer_statement_csv"},
             suffixes={".csv"},
-            predicate=lambda path, _: "coinbase pro - statement" in path.name.lower(),
         )
         pro_fill_paths = profile_paths(
             raw_dir,
             profile,
             families={"fills_csv"},
             suffixes={".csv"},
-            predicate=lambda path, _: "coinbase pro - fills" in path.name.lower(),
         )
         pdf_paths = profile_paths(raw_dir, profile, families={"statement_balance_pdf"}, suffixes={".pdf"})
 
@@ -736,7 +804,7 @@ class WealthsimpleAdapter(SourceAdapter):
     supported = True
 
     def matches_profile(self, profile: SourceProfile) -> bool:
-        return profile_has_row(profile, filename_contains="activities-export")
+        return profile_has_row(profile, families={"broker_activity_csv"})
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -755,7 +823,6 @@ class WealthsimpleAdapter(SourceAdapter):
             profile,
             families={"broker_activity_csv"},
             suffixes={".csv"},
-            predicate=lambda path, _: path.name.lower().startswith("activities-export"),
         )
         exceptions: list[dict[str, str]] = []
         if not activity_paths:
@@ -815,7 +882,7 @@ class WealthsimpleAdapter(SourceAdapter):
                                 asset_in=symbol,
                                 amount_out=decimal_text(abs(net_cash)),
                                 asset_out=currency,
-                                fee_amount=decimal_text(commission),
+                                fee_amount=commission,
                                 fee_asset=currency,
                                 render_match_window_seconds="86399",
                                 render_notes=description,
@@ -839,7 +906,7 @@ class WealthsimpleAdapter(SourceAdapter):
                                 asset_in=currency,
                                 amount_out=decimal_text(abs(quantity)),
                                 asset_out=symbol,
-                                fee_amount=decimal_text(commission),
+                                fee_amount=commission,
                                 fee_asset=currency,
                                 render_match_window_seconds="86399",
                                 render_notes=description,
@@ -936,7 +1003,7 @@ class BinanceAdapter(SourceAdapter):
         "Token Swap - Redenomination/Rebranding",
         "BETH to WBETH Wrapping",
     }
-    _ignored_operations = {
+    _historical_only_ignored_operations = {
         "Isolated Margin Loan",
         "Isolated Margin Repayment",
         "Launchpool Subscription/Redemption",
@@ -1178,7 +1245,7 @@ class BinanceAdapter(SourceAdapter):
                     description=f"Binance withdrawal via {row['Network']}",
                     amount_out=decimal_text(decimal_or_zero(row["Amount"])),
                     asset_out=asset,
-                    fee_amount=decimal_text(decimal_or_zero(row.get("Fee"))),
+                    fee_amount=row.get("Fee", ""),
                     fee_asset=asset,
                     tx_hash=(row.get("TXID") or "").strip(),
                     render_group="Funding",
@@ -1315,6 +1382,7 @@ class BinanceAdapter(SourceAdapter):
         exceptions: list[dict[str, str]],
     ) -> list[dict[str, str]]:
         groups: dict[tuple[str, str], list[tuple[int, dict[str, str]]]] = defaultdict(list)
+        historical_cutoff = profile_hint_timestamp(profile, "project_baseline_cutoff_timestamp")
         for index, row in enumerate(read_csv_rows(path), start=2):
             if not any((value or "").strip() for value in row.values()):
                 continue
@@ -1327,7 +1395,18 @@ class BinanceAdapter(SourceAdapter):
             if timestamp_text in covered_timestamps:
                 continue
 
-            active_rows = [(index, row) for index, row in indexed_rows if (row.get("Operation") or "").strip() not in self._ignored_operations]
+            active_rows = list(indexed_rows)
+            group_timestamp = parse_datetime_to_utc_naive(
+                timestamp_text,
+                BINANCE_TIME_FORMATS,
+                source_timezone=timezone.utc,
+            )
+            if historical_cutoff is not None and group_timestamp <= historical_cutoff:
+                active_rows = [
+                    (index, row)
+                    for index, row in active_rows
+                    if (row.get("Operation") or "").strip() not in self._historical_only_ignored_operations
+                ]
             if not active_rows:
                 continue
 
@@ -1629,12 +1708,12 @@ class BinanceAdapter(SourceAdapter):
         if len(positive) == 1 and len(negative) == 1 and len(fee_totals) <= 1:
             asset_in, amount_in = next(iter(positive.items()))
             asset_out, amount_out = next(iter(negative.items()))
-            fee_asset = ""
-            fee_amount = ""
-            if fee_totals:
-                fee_asset, fee_total = next(iter(fee_totals.items()))
-                fee_amount = decimal_text(fee_total)
             trade_id = next((extract_trade_id(row.get("Remark", "")) for row in rows if extract_trade_id(row.get("Remark", ""))), "")
+            fee_asset = ""
+            fee_total = ""
+            if fee_totals:
+                fee_asset, fee_value = next(iter(fee_totals.items()))
+                fee_total = fee_value
             event = canonical_event(
                 event_id=event_id_for(self.name, path.name, raw_row_ref),
                 source=profile.source,
@@ -1650,7 +1729,7 @@ class BinanceAdapter(SourceAdapter):
                 asset_in=asset_in,
                 amount_out=decimal_text(amount_out),
                 asset_out=asset_out,
-                fee_amount=fee_amount,
+                fee_amount=fee_total,
                 fee_asset=fee_asset,
                 tx_hash=trade_id,
                 render_group=account or "Spot",
@@ -1753,16 +1832,16 @@ class CryptoComAdapter(SourceAdapter):
             profile,
             families={"custodial_transaction_csv"},
             suffixes={".csv"},
-            predicate=lambda path, row: path.name.lower().startswith("cash_transactions_")
-            and "timestamp (utc)" in row.get("header_preview", "").lower(),
+            predicate=lambda path, row: "timestamp (utc)" in row.get("header_preview", "").lower()
+            and csv_contains_transaction_kind(path, {"viban_deposit"}),
         )
         crypto_paths = profile_paths(
             raw_dir,
             profile,
             families={"custodial_transaction_csv"},
             suffixes={".csv"},
-            predicate=lambda path, row: path.name.lower().startswith("crypto_transactions_")
-            and "timestamp (utc)" in row.get("header_preview", "").lower(),
+            predicate=lambda path, row: "timestamp (utc)" in row.get("header_preview", "").lower()
+            and csv_contains_transaction_kind(path, {"viban_purchase", "crypto_withdrawal"}),
         )
         exceptions: list[dict[str, str]] = []
         if not cash_paths and not crypto_paths:
@@ -1941,13 +2020,9 @@ class EvmExplorerAdapter(SourceAdapter):
         issues: list[dict[str, str]] = []
         scope_key = self._scope_for_profile(profile)
         selected_paths = self._selected_paths(raw_dir, profile, scope_key)
-        addresses = {
-            match.group(0)
-            for path in selected_paths
-            for match in EVM_ADDRESS_PATTERN.finditer(path.name)
-        }
+        addresses = self._owned_addresses_for_selected_paths(selected_paths, profile)
         for address in sorted(addresses, key=str.lower):
-            path = next(path for path in selected_paths if address.lower() in path.name.lower())
+            path = next((path for path in selected_paths if address.lower() in path.name.lower()), selected_paths[0])
             evidence.append(
                 wallet_evidence_row(
                     source=source,
@@ -2010,11 +2085,7 @@ class EvmExplorerAdapter(SourceAdapter):
             )
             return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
 
-        owned_addresses = {
-            match.group(0).lower()
-            for path in selected_paths
-            for match in re.finditer(r"0x[a-fA-F0-9]{40}", path.name)
-        }
+        owned_addresses = {address.lower() for address in self._owned_addresses_for_selected_paths(selected_paths, profile)}
         native_asset = self._native_asset_by_scope[scope_key]
         grouped: dict[str, dict[str, list[tuple[Path, int, dict[str, str]]]]] = defaultdict(
             lambda: {"normal": [], "token": [], "internal": [], "nft": []}
@@ -2101,6 +2172,84 @@ class EvmExplorerAdapter(SourceAdapter):
         if family == "explorer_transaction_csv":
             return "normal"
         return None
+
+    def _owned_addresses_for_selected_paths(
+        self,
+        selected_paths: Sequence[Path],
+        profile: SourceProfile,
+    ) -> set[str]:
+        addresses = {
+            match.group(0)
+            for path in selected_paths
+            for match in EVM_ADDRESS_PATTERN.finditer(path.name)
+        }
+        if addresses or not self._is_chain_scoped_capture(profile.raw_dir):
+            return addresses
+        inferred = self._infer_chain_scoped_owned_addresses(selected_paths)
+        return inferred
+
+    def _infer_chain_scoped_owned_addresses(self, selected_paths: Sequence[Path]) -> set[str]:
+        directional_row_count = 0
+        directional_counts: Counter[str] = Counter()
+        row_count = 0
+        address_row_counts: Counter[str] = Counter()
+        for path in selected_paths:
+            for row in read_csv_rows(path):
+                directional_candidate = self._directional_owner_candidate(row)
+                if directional_candidate:
+                    directional_row_count += 1
+                    directional_counts[directional_candidate.lower()] += 1
+                row_addresses = {
+                    address.lower()
+                    for address in self._ownership_candidate_addresses(row)
+                }
+                if not row_addresses:
+                    continue
+                row_count += 1
+                address_row_counts.update(row_addresses)
+        if directional_row_count > 0:
+            directional_candidates = {
+                address
+                for address, count in directional_counts.items()
+                if count == directional_row_count
+            }
+            if len(directional_candidates) == 1:
+                return directional_candidates
+        if row_count == 0:
+            return set()
+        candidates = {
+            address
+            for address, count in address_row_counts.items()
+            if count == row_count
+        }
+        return candidates if len(candidates) == 1 else set()
+
+    def _ownership_candidate_addresses(self, row: dict[str, str]) -> set[str]:
+        candidates: set[str] = set()
+        for field in ("From", "To", "ParentTxFrom", "ParentTxTo"):
+            value = (row.get(field) or "").strip()
+            if not value:
+                continue
+            match = EVM_ADDRESS_PATTERN.search(value)
+            if match is not None:
+                candidates.add(match.group(0))
+        return candidates
+
+    def _directional_owner_candidate(self, row: dict[str, str]) -> str:
+        value_in = decimal_or_zero(self._value_in(row))
+        value_out = decimal_or_zero(self._value_out(row))
+        if value_in > 0 and value_out == 0:
+            return self._address_from_field(row, "To")
+        if value_out > 0 and value_in == 0:
+            return self._address_from_field(row, "From")
+        return ""
+
+    def _address_from_field(self, row: dict[str, str], field: str) -> str:
+        value = (row.get(field) or "").strip()
+        if not value:
+            return ""
+        match = EVM_ADDRESS_PATTERN.search(value)
+        return match.group(0) if match is not None else ""
 
     def _group_timestamp(self, group: dict[str, list[tuple[Path, int, dict[str, str]]]]) -> str:
         timestamps = [
@@ -2200,7 +2349,7 @@ class EvmExplorerAdapter(SourceAdapter):
             ), None
 
         if "claim" in method.lower() and incoming and not outgoing:
-            events = [
+            return [
                 canonical_event(
                     event_id=event_id,
                     source=profile.source,
@@ -2214,34 +2363,38 @@ class EvmExplorerAdapter(SourceAdapter):
                     description=f"{method} - {tx_hash}",
                     amount_in=decimal_text(incoming[0][1]),
                     asset_in=incoming[0][0],
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
                     tx_hash=tx_hash,
                     render_notes="evm_claim",
                 )
-            ]
-            return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset), None
+            ], None
 
         if incoming and (outgoing or native_out > 0):
             asset_out, amount_out = outgoing[0] if outgoing else (native_asset, native_out)
             asset_in, amount_in = incoming[0]
-            trade_event = canonical_event(
-                event_id=event_id,
-                source=profile.source,
-                adapter=self.name,
-                account=profile.source,
-                wallet=profile.source,
-                raw_file=raw_file,
-                raw_row_ref=raw_row_ref,
-                timestamp=timestamp,
-                event_kind="Trade",
-                description=f"{method} - {tx_hash}",
-                amount_in=decimal_text(amount_in),
-                asset_in=asset_in,
-                amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
-                asset_out=asset_out,
-                tx_hash=tx_hash,
-                render_notes="evm_trade",
-            )
-            return [attach_fee_to_event(trade_event, fee_amount=fee_paid, fee_asset=native_asset)], None
+            return [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Trade",
+                    description=f"{method} - {tx_hash}",
+                    amount_in=decimal_text(amount_in),
+                    asset_in=asset_in,
+                    amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
+                    asset_out=asset_out,
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_trade",
+                )
+            ], None
 
         if suspicious_nft_assets and not incoming and not outgoing and native_in <= 0 and native_out <= 0:
             decision = exception_decisions.get(event_id, {})
@@ -2264,45 +2417,46 @@ class EvmExplorerAdapter(SourceAdapter):
 
         if outgoing:
             asset_out, amount_out = outgoing[0]
-            withdrawal_event = canonical_event(
-                event_id=event_id,
-                source=profile.source,
-                adapter=self.name,
-                account=profile.source,
-                wallet=profile.source,
-                raw_file=raw_file,
-                raw_row_ref=raw_row_ref,
-                timestamp=timestamp,
-                event_kind="Withdrawal",
-                description=f"{method or 'Transfer out'} - {tx_hash}",
-                amount_out=decimal_text(amount_out),
-                asset_out=asset_out,
-                tx_hash=tx_hash,
-                render_notes="evm_out",
-            )
-            return [attach_fee_to_event(withdrawal_event, fee_amount=fee_paid, fee_asset=native_asset)], None
+            return [
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Withdrawal",
+                    description=f"{method or 'Transfer out'} - {tx_hash}",
+                    amount_out=decimal_text(amount_out),
+                    asset_out=asset_out,
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_out",
+                )
+            ], None
 
         if native_out > 0:
             return [
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=profile.source,
-                        adapter=self.name,
-                        account=profile.source,
-                        wallet=profile.source,
-                        raw_file=raw_file,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=timestamp,
-                        event_kind="Withdrawal",
-                        description=f"{method or 'Transfer out'} - {tx_hash}",
-                        amount_out=decimal_text(native_out),
-                        asset_out=native_asset,
-                        tx_hash=tx_hash,
-                        render_notes="evm_native_out",
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Withdrawal",
+                    description=f"{method or 'Transfer out'} - {tx_hash}",
+                    amount_out=decimal_text(native_out),
+                    asset_out=native_asset,
                     fee_amount=fee_paid,
                     fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_native_out",
                 )
             ], None
 
@@ -2310,55 +2464,51 @@ class EvmExplorerAdapter(SourceAdapter):
             asset_in, amount_in = incoming[0]
             event_kind = "Airdrop" if inbound_is_airdrop else "Deposit"
             return [
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=profile.source,
-                        adapter=self.name,
-                        account=profile.source,
-                        wallet=profile.source,
-                        raw_file=raw_file,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=timestamp,
-                        event_kind=event_kind,
-                        description=f"{method or event_kind} - {tx_hash}",
-                        amount_in=decimal_text(amount_in),
-                        asset_in=asset_in,
-                        tx_hash=tx_hash,
-                        render_notes="evm_in",
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind=event_kind,
+                    description=f"{method or event_kind} - {tx_hash}",
+                    amount_in=decimal_text(amount_in),
+                    asset_in=asset_in,
                     fee_amount=fee_paid,
                     fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_in",
                 )
             ], None
 
         if native_in > 0:
             return [
-                attach_fee_to_event(
-                    canonical_event(
-                        event_id=event_id,
-                        source=profile.source,
-                        adapter=self.name,
-                        account=profile.source,
-                        wallet=profile.source,
-                        raw_file=raw_file,
-                        raw_row_ref=raw_row_ref,
-                        timestamp=timestamp,
-                        event_kind="Deposit",
-                        description=f"{method or 'Transfer in'} - {tx_hash}",
-                        amount_in=decimal_text(native_in),
-                        asset_in=native_asset,
-                        tx_hash=tx_hash,
-                        render_notes="evm_native_in",
-                    ),
+                canonical_event(
+                    event_id=event_id,
+                    source=profile.source,
+                    adapter=self.name,
+                    account=profile.source,
+                    wallet=profile.source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    event_kind="Deposit",
+                    description=f"{method or 'Transfer in'} - {tx_hash}",
+                    amount_in=decimal_text(native_in),
+                    asset_in=native_asset,
                     fee_amount=fee_paid,
                     fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_native_in",
                 )
             ], None
 
         if fee_paid > 0:
             return [
-                canonical_event(
+                standalone_fee_event(
                     event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
                     source=profile.source,
                     adapter=self.name,
@@ -2367,10 +2517,9 @@ class EvmExplorerAdapter(SourceAdapter):
                     raw_file=raw_file,
                     raw_row_ref=raw_row_ref,
                     timestamp=timestamp,
-                    event_kind="Other Fee",
                     description=f"{method or 'Explorer tx'} - {tx_hash}",
-                    amount_out=decimal_text(fee_paid),
-                    asset_out=native_asset,
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
                     tx_hash=tx_hash,
                     render_notes="evm_fee_only",
                 )
@@ -2571,7 +2720,29 @@ class EvmExplorerAdapter(SourceAdapter):
                 render_notes="evm_stake_in",
             ),
         ]
-        return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset)
+        if fee_paid > 0:
+            events = attach_fee_to_event_list(
+                events,
+                fee_amount=fee_paid,
+                fee_asset=native_asset,
+                target_event_id=event_id_for(self.name, raw_file, f"{tx_hash}:stake_out"),
+                standalone_event=standalone_fee_event(
+                    event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
+                    source=source,
+                    adapter=self.name,
+                    account=source,
+                    wallet=source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    description=f"Stake {asset} - {tx_hash}",
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_stake_fee",
+                ),
+            )
+        return events
 
     def _unstake_events(
         self,
@@ -2620,7 +2791,29 @@ class EvmExplorerAdapter(SourceAdapter):
                 render_notes="evm_unstake_out",
             ),
         ]
-        return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset)
+        if fee_paid > 0:
+            events = attach_fee_to_event_list(
+                events,
+                fee_amount=fee_paid,
+                fee_asset=native_asset,
+                target_event_id=event_id_for(self.name, raw_file, f"{tx_hash}:unstake_in"),
+                standalone_event=standalone_fee_event(
+                    event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
+                    source=source,
+                    adapter=self.name,
+                    account=source,
+                    wallet=source,
+                    raw_file=raw_file,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    description=f"Unstake {asset} - {tx_hash}",
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                    tx_hash=tx_hash,
+                    render_notes="evm_unstake_fee",
+                ),
+            )
+        return events
 
 
 class ShakepayAdapter(SourceAdapter):
@@ -2934,6 +3127,7 @@ class LedgerLiveAdapter(SourceAdapter):
                         evidence_kind="csv_row",
                         evidence_path=path,
                         confidence="high",
+                        identifier_kind=self._wallet_identifier_kind(identifier_value, account_label),
                     )
                 )
 
@@ -3037,34 +3231,33 @@ class LedgerLiveAdapter(SourceAdapter):
         if len(in_assets) == 1 and len(out_assets) == 1:
             asset_in, amount_in = next(iter(in_assets.items()))
             asset_out, amount_out = next(iter(out_assets.items()))
-            fee_asset = ""
-            fee_amount = ""
-            if len(fee_assets) == 1:
-                fee_asset, fee_total = next(iter(fee_assets.items()))
-                fee_amount = decimal_text(fee_total)
             event_id = event_id_for(self.name, indexed_rows[0][0].name, operation_hash)
-            events.append(
-                canonical_event(
-                    event_id=event_id,
-                    source=source,
-                    adapter=self.name,
-                    account=account_name,
-                    wallet=account_name,
-                    raw_file=indexed_rows[0][0].name,
-                    raw_row_ref=";".join(f"{path.name}:row:{index}" for path, index, _ in indexed_rows),
-                    timestamp=timestamp,
-                    event_kind="Trade",
-                    description=account_name,
-                    amount_in=decimal_text(amount_in),
-                    asset_in=asset_in,
-                    amount_out=decimal_text(amount_out),
-                    asset_out=asset_out,
-                    fee_amount=fee_amount,
-                    fee_asset=fee_asset,
-                    tx_hash=operation_hash,
-                    render_notes="ledger_live_grouped_trade",
-                )
+            fee_asset = ""
+            fee_total = ""
+            if len(fee_assets) == 1:
+                fee_asset, fee_value = next(iter(fee_assets.items()))
+                fee_total = fee_value
+            event = canonical_event(
+                event_id=event_id,
+                source=source,
+                adapter=self.name,
+                account=account_name,
+                wallet=account_name,
+                raw_file=indexed_rows[0][0].name,
+                raw_row_ref=";".join(f"{path.name}:row:{index}" for path, index, _ in indexed_rows),
+                timestamp=timestamp,
+                event_kind="Trade",
+                description=account_name,
+                amount_in=decimal_text(amount_in),
+                asset_in=asset_in,
+                amount_out=decimal_text(amount_out),
+                asset_out=asset_out,
+                fee_amount=fee_total,
+                fee_asset=fee_asset,
+                tx_hash=operation_hash,
+                render_notes="ledger_live_grouped_trade",
             )
+            events.append(event)
             return events
 
         for path, index, row in by_type.get("IN", []):
@@ -3094,6 +3287,7 @@ class LedgerLiveAdapter(SourceAdapter):
             raw_row_ref = f"row:{index}"
             event_id = event_id_for(self.name, path.name, raw_row_ref)
             asset = (row.get("Currency Ticker") or "").strip().upper()
+            fee_paid = decimal_or_zero(row.get("Operation Fees"))
             events.append(
                 canonical_event(
                     event_id=event_id,
@@ -3108,8 +3302,8 @@ class LedgerLiveAdapter(SourceAdapter):
                     description=account_name,
                     amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
                     asset_out=asset,
-                    fee_amount=decimal_text(decimal_or_zero(row.get("Operation Fees"))),
-                    fee_asset=asset if decimal_or_zero(row.get("Operation Fees")) else "",
+                    fee_amount=fee_paid,
+                    fee_asset=asset,
                     tx_hash=f"OUT-{operation_hash}",
                     render_notes="ledger_live_out",
                 )
@@ -3119,6 +3313,7 @@ class LedgerLiveAdapter(SourceAdapter):
             raw_row_ref = f"row:{index}"
             event_id = event_id_for(self.name, path.name, raw_row_ref)
             asset = (row.get("Currency Ticker") or "").strip().upper()
+            fee_paid = decimal_or_zero(row.get("Operation Fees"))
             events.append(
                 canonical_event(
                     event_id=event_id,
@@ -3133,8 +3328,8 @@ class LedgerLiveAdapter(SourceAdapter):
                     description=f"{asset} Staking Deposit - {operation_hash}",
                     amount_out=decimal_text(decimal_or_zero(row.get("Operation Amount"))),
                     asset_out=asset,
-                    fee_amount=decimal_text(decimal_or_zero(row.get("Operation Fees"))),
-                    fee_asset=asset if decimal_or_zero(row.get("Operation Fees")) else "",
+                    fee_amount=fee_paid,
+                    fee_asset=asset,
                     render_notes="ledger_live_delegate",
                 )
             )
@@ -3181,6 +3376,12 @@ class LedgerLiveAdapter(SourceAdapter):
         if "cardano" in account or "ada" in account:
             return "cardano"
         return ""
+
+    def _wallet_identifier_kind(self, identifier_value: str, account_label: str) -> str | None:
+        account = account_label.lower()
+        if "cardano" in account or "ada" in account:
+            return "cardano_account_key"
+        return None
 
 
 class NearAdapter(SourceAdapter):
@@ -3351,12 +3552,17 @@ class NearAdapter(SourceAdapter):
             filename = row.get("filename", "")
             for match in re.finditer(r"[a-f0-9]{64}", filename.lower()):
                 account_paths.setdefault(match.group(0), raw_dir / filename)
+            near_match = re.search(r"([a-z0-9._-]+\.near)(?:_|\.csv)", filename.lower())
+            if near_match:
+                account_paths.setdefault(near_match.group(1), raw_dir / filename)
         if account_paths:
             return sorted(account_paths.items())
         for path in profile_paths(raw_dir, profile, families={"near_transaction_csv", "near_receipt_csv"}, suffixes={".csv"}):
             for row in read_csv_rows(path):
                 for field in ("To", "Affected", "Involved"):
                     value = (row.get(field) or "").strip().lower()
+                    if value.endswith(".near"):
+                        account_paths.setdefault(value, path)
                     if re.fullmatch(r"[a-f0-9]{64}", value):
                         account_paths.setdefault(value, path)
         return sorted(account_paths.items())
@@ -3398,9 +3604,10 @@ class NearAdapter(SourceAdapter):
         deposit_value = decimal_or_zero(row.get("Deposit Value"))
         tx_fee = decimal_or_zero(row.get("Txn Fee"))
         description = f"Stake NEAR - {tx_hash}" if tx_hash else "Stake NEAR"
-        return [
+        wallet_event_id = event_id_for(self.name, path.name, f"{raw_row_ref}:wallet")
+        events = [
             canonical_event(
-                event_id=event_id_for(self.name, path.name, f"{raw_row_ref}:wallet"),
+                event_id=wallet_event_id,
                 source=source,
                 adapter=self.name,
                 account=source,
@@ -3410,10 +3617,8 @@ class NearAdapter(SourceAdapter):
                 timestamp=timestamp,
                 event_kind="Withdrawal",
                 description=description,
-                amount_out=decimal_text(deposit_value + tx_fee),
+                amount_out=decimal_text(deposit_value),
                 asset_out="NEAR",
-                fee_amount=decimal_text(tx_fee),
-                fee_asset="NEAR",
                 tx_hash=tx_hash,
                 render_notes="near_stake_out",
             ),
@@ -3434,6 +3639,29 @@ class NearAdapter(SourceAdapter):
                 render_notes="near_stake_in",
             ),
         ]
+        if tx_fee > 0:
+            events = attach_fee_to_event_list(
+                events,
+                fee_amount=tx_fee,
+                fee_asset="NEAR",
+                target_event_id=wallet_event_id,
+                standalone_event=standalone_fee_event(
+                    event_id=event_id_for(self.name, path.name, f"{raw_row_ref}:fee"),
+                    source=source,
+                    adapter=self.name,
+                    account=source,
+                    wallet=source,
+                    raw_file=path.name,
+                    raw_row_ref=raw_row_ref,
+                    timestamp=timestamp,
+                    description=description,
+                    fee_amount=tx_fee,
+                    fee_asset="NEAR",
+                    tx_hash=tx_hash,
+                    render_notes="near_stake_fee",
+                ),
+            )
+        return events
 
 
 class GTradeAdapter(SourceAdapter):

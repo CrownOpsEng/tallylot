@@ -1,0 +1,2 @@
+transaction_date,settlement_date,account_id,account_type,activity_type,activity_sub_type,direction,symbol,name,currency,quantity,unit_price,commission,net_cash_amount
+2023-09-22,,acct-1,Crypto,Trade,BUY,in,BTC,Bitcoin,CAD,0.50000000,35000,12,-17512

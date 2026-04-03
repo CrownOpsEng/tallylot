@@ -1,0 +1,3 @@
+Timestamp (UTC),Transaction Description,Currency,Amount,To Currency,To Amount,Native Currency,Native Amount,Native Amount (in USD),Transaction Kind,Transaction Hash
+2024-01-03 03:04:05,Crypto buy,CAD,-250,BTC,0.005,CAD,-250,-250,viban_purchase,trade-1
+2024-01-04 03:04:05,Transfer out,BTC,-0.001,,,CAD,-60,-60,crypto_withdrawal,wd-1

@@ -9,11 +9,13 @@ import hashlib
 import json
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, tzinfo
+from datetime import datetime, timedelta, tzinfo
+from functools import lru_cache
 from pathlib import Path
 from typing import Iterable, Sequence
 
 from script_common import (
+    find_required_csv_exports,
     parse_datetime,
     parse_datetime_to_utc_naive,
     read_csv_rows,
@@ -130,6 +132,13 @@ TIMEZONE_ISSUE_HEADERS = (
     "message",
 )
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SOURCE_INVENTORY_PATH = REPO_ROOT / "03_analysis" / "issues" / "source_inventory.csv"
+CANONICAL_BASELINE_EXPORT_DIR = REPO_ROOT / "01_raw_exports" / "cointracking" / "2023-08-05_full_export"
+CANONICAL_BASELINE_REQUIRED_FILES = {"trade_table": "Trade Table"}
+CANONICAL_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S"
+REPO_PROJECT_WINDOW_END = "2025-12-31 23:59:59"
+
 
 @dataclass(frozen=True)
 class SourceProfile:
@@ -141,6 +150,7 @@ class SourceProfile:
     adapter: str
     adapter_supported: bool
     file_inventory: list[dict[str, str]]
+    normalization_hints: dict[str, object] | None = None
     timezone_summary: dict[str, object] | None = None
     timezone_issues: list[dict[str, str]] | None = None
 
@@ -161,6 +171,18 @@ def source_slug(value: str) -> str:
     while "__" in slug:
         slug = slug.replace("__", "_")
     return slug.strip("_")
+
+
+def parse_canonical_timestamp(value: str, *, label: str = "timestamp") -> datetime:
+    text = value.strip()
+    if not text:
+        raise ValueError(f"Blank {label} is not allowed")
+    try:
+        return datetime.strptime(text, CANONICAL_TIMESTAMP_FORMAT)
+    except ValueError as exc:
+        raise ValueError(
+            f"{label} must use {CANONICAL_TIMESTAMP_FORMAT}; got {value!r}"
+        ) from exc
 
 
 def stable_hash_rows(rows: Iterable[dict[str, str]]) -> str:
@@ -287,6 +309,19 @@ def classify_file_family(path: Path, header: Sequence[str]) -> str:
     if "transaction" in name and "history" in name:
         return "custodial_transaction_csv"
     return "unknown"
+
+
+def inspect_json_payload(path: Path) -> tuple[str, str]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return "json", ""
+    if isinstance(payload, dict):
+        header_preview = " | ".join(str(key) for key in list(payload.keys())[:8])
+        if isinstance(payload.get("metamask"), dict):
+            return "metamask_state_json", header_preview
+        return "json", header_preview
+    return "json", type(payload).__name__
 
 
 def parse_candidate_timestamp(value: str, *, source_timezone: tzinfo | None = None) -> datetime | None:
@@ -463,6 +498,8 @@ def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
             data_rows = str(row_count)
         elif suffix == ".pdf":
             family = classify_file_family(path, ())
+        elif suffix == ".json":
+            family, header_preview = inspect_json_payload(path)
         rows.append(
             {
                 "filename": path.name,
@@ -482,6 +519,114 @@ def build_file_inventory(raw_dir: Path) -> list[dict[str, str]]:
     return rows
 
 
+@lru_cache(maxsize=1)
+def repo_source_inventory_rows() -> tuple[dict[str, str], ...]:
+    if not SOURCE_INVENTORY_PATH.exists():
+        return ()
+    return tuple(read_csv_rows(SOURCE_INVENTORY_PATH))
+
+
+@lru_cache(maxsize=1)
+def repo_baseline_cutoff_timestamp() -> str:
+    if not CANONICAL_BASELINE_EXPORT_DIR.exists():
+        return ""
+    try:
+        trade_table = find_required_csv_exports(
+            CANONICAL_BASELINE_EXPORT_DIR,
+            CANONICAL_BASELINE_REQUIRED_FILES,
+            "Canonical baseline export directory",
+        )["trade_table"]
+    except (FileNotFoundError, ValueError):
+        return ""
+    dated_rows = [row["Date"] for row in read_csv_rows(trade_table) if row.get("Date")]
+    if not dated_rows:
+        return ""
+    return max(datetime.strptime(value, CANONICAL_TIMESTAMP_FORMAT) for value in dated_rows).strftime(CANONICAL_TIMESTAMP_FORMAT)
+
+
+@lru_cache(maxsize=1)
+def repo_project_window_start() -> str:
+    baseline_cutoff = repo_baseline_cutoff_timestamp()
+    if not baseline_cutoff:
+        return ""
+    return (parse_canonical_timestamp(baseline_cutoff, label="baseline cutoff") + timedelta(seconds=1)).strftime(
+        CANONICAL_TIMESTAMP_FORMAT
+    )
+
+
+def repo_source_inventory_row(source: str, raw_dir: Path) -> dict[str, str] | None:
+    target_dir = raw_dir.resolve()
+    target_slug = source_slug(source)
+    for row in repo_source_inventory_rows():
+        capture_path = (row.get("capture_path") or "").strip()
+        if not capture_path or source_slug(row.get("source", "")) != target_slug:
+            continue
+        if (REPO_ROOT / capture_path).resolve() == target_dir:
+            return row
+    return None
+
+
+def repo_normalization_hints_for_source(source: str, raw_dir: Path) -> dict[str, object]:
+    row = repo_source_inventory_row(source, raw_dir)
+    hints: dict[str, object] = {}
+    if row is not None:
+        if row.get("capture_path"):
+            hints["repo_capture_path"] = row["capture_path"]
+        if row.get("export_window_start"):
+            hints["capture_window_start"] = row["export_window_start"]
+        if row.get("export_window_end"):
+            hints["capture_window_end"] = row["export_window_end"]
+    if row is not None:
+        baseline_cutoff = repo_baseline_cutoff_timestamp()
+        if baseline_cutoff:
+            hints["project_baseline_cutoff_timestamp"] = baseline_cutoff
+    if row is not None and (row.get("status") or "").strip() == "capture_complete":
+        project_window_start = repo_project_window_start()
+        if project_window_start:
+            hints["project_window_start"] = project_window_start
+        hints["project_window_end"] = REPO_PROJECT_WINDOW_END
+    return hints
+
+
+def normalization_window_from_hints(
+    hints: dict[str, object] | None,
+    *,
+    start_key: str = "normalization_window_start",
+    end_key: str = "normalization_window_end",
+) -> tuple[str, str]:
+    values = hints or {}
+    start = values.get(start_key, "")
+    end = values.get(end_key, "")
+    return (start if isinstance(start, str) else "", end if isinstance(end, str) else "")
+
+
+def filter_rows_by_timestamp_window(
+    rows: Sequence[dict[str, str]],
+    *,
+    timestamp_key: str,
+    window_start: str = "",
+    window_end: str = "",
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    if not window_start and not window_end:
+        return list(rows), []
+
+    start_dt = parse_canonical_timestamp(window_start, label="window_start") if window_start else None
+    end_dt = parse_canonical_timestamp(window_end, label="window_end") if window_end else None
+    included: list[dict[str, str]] = []
+    excluded: list[dict[str, str]] = []
+    for row in rows:
+        timestamp_text = (row.get(timestamp_key) or "").strip()
+        timestamp_dt = parse_canonical_timestamp(timestamp_text, label=timestamp_key)
+        if start_dt is not None and timestamp_dt < start_dt:
+            excluded.append(row)
+            continue
+        if end_dt is not None and timestamp_dt > end_dt:
+            excluded.append(row)
+            continue
+        included.append(row)
+    return included, excluded
+
+
 def build_source_profile(
     *,
     source: str,
@@ -489,11 +634,15 @@ def build_source_profile(
     adapter_name: str,
     adapter_supported: bool,
     manifest_path: Path | None = None,
+    normalization_hints: dict[str, object] | None = None,
 ) -> SourceProfile:
     raw_dir = require_directory(raw_dir.resolve(), "Raw source directory")
     manifest_path = manifest_path.resolve() if manifest_path is not None else find_manifest_for_raw_dir(raw_dir)
     manifest_rows = read_csv_rows(manifest_path) if manifest_path is not None and manifest_path.exists() else []
     fingerprint = manifest_fingerprint_from_rows(manifest_rows) if manifest_rows else stable_hash_rows(build_file_inventory(raw_dir))
+    merged_hints = repo_normalization_hints_for_source(source, raw_dir)
+    if normalization_hints:
+        merged_hints.update(normalization_hints)
     return SourceProfile(
         source=source,
         source_slug=source_slug(source),
@@ -503,6 +652,7 @@ def build_source_profile(
         adapter=adapter_name,
         adapter_supported=adapter_supported,
         file_inventory=build_file_inventory(raw_dir),
+        normalization_hints=merged_hints,
     )
 
 
@@ -527,6 +677,7 @@ def write_profile_artifacts(out_dir: Path, profile: SourceProfile) -> tuple[Path
             "file_count": len(profile.file_inventory),
             "file_inventory": profile.file_inventory,
             "family_counts": summarize_family_counts(profile.file_inventory),
+            "normalization_hints": profile.normalization_hints or {},
             "timezone_summary": timezone_summary,
             "timezone_issue_count": len(timezone_issues),
             "timezone_issues_path": str(timezone_issues_csv),

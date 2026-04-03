@@ -1,0 +1,15 @@
+[
+  {
+    "account_label": "",
+    "confidence": "high",
+    "controller": "NearBlocks export",
+    "display_identifier": "example.near",
+    "evidence_kind": "filename",
+    "identifier_kind": "near_account",
+    "network_scope": "near",
+    "normalized_identifier": "example.near",
+    "note": "",
+    "source": "capture-near",
+    "wallet_id": "near_account:example.near"
+  }
+]

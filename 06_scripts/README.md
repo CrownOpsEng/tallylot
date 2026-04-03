@@ -6,13 +6,13 @@ Current helpers:
 
 - `baseline_check.py` → derive the baseline cutoff, counts, negative balances, and reconciliation artifacts
 - `profile_source.py` → inspect a raw source folder, classify file families, and write `profile.json`, `profile_inventory.csv`, plus `timezone_issues.csv`
-- `normalize_source.py` → convert a raw source folder into canonical events, canonical balances, exceptions, and a cached CoinTracking candidate after timezone validation passes
-- `normalization_common.py` → shared canonical-event helpers, including attached-fee behavior used across adapters
+- `normalize_source.py` → convert a raw source folder into canonical events, canonical balances, exceptions, and a cached CoinTracking candidate after timezone validation; optional normalization-window filters are explicit rather than implicit
+- `normalization_common.py` → shared canonical-event helpers, including deterministic fee attachment and exact-by-default fee matching used across adapters
 - `render_cointracking.py` → translate canonical events into a CoinTracking-ready CSV with reconciliation metadata
-- `stage_import_batch.py` → enforce overlap-screen approval before copying a candidate into `02_working/import_batches/` and optional `04_import_ready/`
+- `stage_import_batch.py` → enforce overlap-screen approval before copying a candidate into `02_working/import_batches/` and optional `04_import_ready/`, reusing the candidate's normalization summary window when present
 - `reconcile_source.py` → compare canonical source outputs against a CoinTracking Trade Table slice and optional Balance by Exchange slice
 - `source_manifest.py` → build a deterministic manifest for one external source capture folder
-- `wallet_inventory.py` → build the canonical wallet inventory, evidence rows, and identifier issues from the raw capture set
+- `wallet_inventory.py` → build the canonical wallet inventory, evidence rows, and identifier issues from the source capture set
 - `overlap_check.py` → screen a CoinTracking-ready import batch for cutoff overlap and baseline duplicate risk
 - `pdf_balance_extract.py` → extract deterministic balance rows from supported statement PDFs without guessing across unrelated PDFs
 - `round_scaffold.py` → create a verification round folder and seed the structured round log
@@ -57,6 +57,8 @@ The preferred prep flow is now:
 6. `stage_import_batch.py`
 7. `reconcile_source.py`
 
+`normalize_source.py` now preserves the full canonical event set by default. Use `--window-start` / `--window-end` only when you intentionally want a trimmed normalization artifact. `stage_import_batch.py` now reuses the sibling `normalization_summary.json` window by default, falls back to `--normalization-summary` when supplied, and only falls back to the repo-default post-baseline import window when no normalization summary is available.
+
 `profile_source.py` no longer refreshes repo-wide wallet inventory as a side effect. Wallet inventory remains required repo workflow state, but it is now refreshed explicitly through `wallet_inventory.py`.
 
 ## Tests
@@ -64,7 +66,7 @@ The preferred prep flow is now:
 Run the script suite from the repo root:
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m pytest
 ```
 
 Coverage is split into:
@@ -72,6 +74,20 @@ Coverage is split into:
 - `tests/unit/` for individual helper and script-function behavior
 - `tests/e2e/` for CLI-level script execution
 - `tests/support/` for shared test helpers
+- `tests/fixtures/adapter_packs/<adapter>/<scenario>/` for adapter-owned raw inputs plus golden normalize and wallet expectations
+
+The suite is fully `pytest` now. The adapter-pack harness enforces that:
+
+- every supported normalization adapter ships at least one normalization pack
+- every adapter with custom wallet extraction ships at least one wallet pack
+- CLI normalization tests assert full golden outputs, not just file creation
+
+Useful focused commands:
+
+- `python3 -m pytest tests/unit/test_source_fixture_packs.py`
+- `python3 -m pytest tests/e2e/test_scripts.py -m e2e`
+
+Open follow-up items that are intentionally out of scope for the current test-strengthening branch are tracked in [00_docs/TEST_SUITE_FOLLOWUPS.md](../00_docs/TEST_SUITE_FOLLOWUPS.md).
 
 ## Timezone Integrity
 
