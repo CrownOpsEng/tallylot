@@ -15,6 +15,7 @@ from tallylot.adapters.support import (
     no_intake_route,
     passed_timezone_summary,
     read_csv_header,
+    skip_files_outside_profile_families,
 )
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -38,7 +39,7 @@ from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 HEADER_FIELDS = {
@@ -70,6 +71,23 @@ class CryptoComAdapter:
             return 100
         return 0
 
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[FileInventoryEntry, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, raw_dir
+        return tuple(
+            FileFamilyClaim(
+                relative_path=item.relative_path,
+                adapter_id=self.manifest.adapter_id,
+                family_id="transaction_export",
+            )
+            for item in inventory
+            if item.header and HEADER_FIELDS.issubset(set(item.header))
+        )
+
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(
             relative_path,
@@ -99,7 +117,12 @@ class CryptoComAdapter:
         drafts, issues = collect_csv_row_results(
             raw_dir,
             lambda row_context: _normalize_row(profile, row_context),
-            skip_file=_skip_unrecognized_csv,
+            skip_file=skip_files_outside_profile_families(
+                raw_dir,
+                profile,
+                family_ids=("transaction_export",),
+                extra_skip=_skip_unrecognized_csv,
+            ),
         )
         return translation_batch_from_drafts(
             drafts,

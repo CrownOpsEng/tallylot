@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import cast
 
 from tallylot.adapters.support import (
-    location_id_from_parts,
+    canonical_location_id_from_identifier,
     location_identifier_kind,
     location_issue,
     location_record,
@@ -23,7 +23,7 @@ from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -37,7 +37,8 @@ class EvmWalletAdapter:
     )
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
-        del raw_dir
+        if self.classify_profile_families(source, raw_dir, inventory):
+            return 100
         lower_source = source.lower()
         if "evm wallet" in lower_source or "wallet state" in lower_source:
             return 100
@@ -46,6 +47,27 @@ class EvmWalletAdapter:
         ):
             return 80
         return 0
+
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[FileInventoryEntry, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, inventory
+        claims: list[FileFamilyClaim] = []
+        for path in matching_file_paths(raw_dir, pattern="*.json"):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            if _wallet_state_root(payload) is None:
+                continue
+            claims.append(
+                FileFamilyClaim(
+                    relative_path=path.relative_to(raw_dir).as_posix(),
+                    adapter_id=self.manifest.adapter_id,
+                    family_id="wallet_state",
+                )
+            )
+        return tuple(claims)
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(
@@ -72,19 +94,22 @@ class EvmWalletAdapter:
     ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
         evidence: list[LocationInventoryRecord] = []
+        issues: list[IssueRecord] = []
         for path in matching_file_paths(raw_dir, pattern="*.json"):
             payload = json.loads(path.read_text(encoding="utf-8"))
-            evidence.extend(_account_records(source, path.name, payload))
-            evidence.extend(_identity_records(source, path.name, payload))
+            account_records, account_issues = _account_records(source, path.name, payload)
+            evidence.extend(account_records)
+            issues.extend(account_issues)
         if evidence:
-            return tuple(evidence), ()
+            return tuple(evidence), tuple(issues)
         return (), (
+            *issues,
             location_issue(
                 LocationIssueSpec(
                     source=source,
                     adapter_id=str(self.manifest.adapter_id),
                     issue_kind="missing_identifier",
-                    message="No wallet identifiers could be extracted from the EVM wallet state export.",
+                    message="No authoritative wallet identifiers could be extracted from the wallet-state export.",
                 )
             ),
         )
@@ -97,18 +122,23 @@ class EvmWalletAdapter:
         )
 
 
-def _account_records(source: str, evidence_path: str, payload: object) -> list[LocationInventoryRecord]:
+def _account_records(
+    source: str,
+    evidence_path: str,
+    payload: object,
+) -> tuple[list[LocationInventoryRecord], list[IssueRecord]]:
     state_root = _wallet_state_root(payload)
     if state_root is None:
-        return []
+        return [], []
     internal_accounts = state_root.get("internalAccounts")
     if not isinstance(internal_accounts, dict):
-        return []
+        return [], []
     internal_accounts_dict = cast(dict[str, object], internal_accounts)
     accounts_container = internal_accounts_dict.get("accounts")
     if not isinstance(accounts_container, dict):
-        return []
+        return [], []
     records: list[LocationInventoryRecord] = []
+    issues: list[IssueRecord] = []
     accounts_dict = cast(dict[str, object], accounts_container)
     for account_payload in accounts_dict.values():
         if not isinstance(account_payload, dict):
@@ -120,16 +150,44 @@ def _account_records(source: str, evidence_path: str, payload: object) -> list[L
         metadata_map = _object_map(account_payload_dict.get("metadata"))
         keyring_map = _object_map(metadata_map.get("keyring"))
         keyring_type = str(keyring_map.get("type", "")).strip()
+        account_type = str(account_payload_dict.get("type", "")).strip()
+        scopes = tuple(
+            str(scope).strip()
+            for scope in cast(list[object], account_payload_dict.get("scopes", []))
+            if isinstance(scope, str) and str(scope).strip()
+        )
+        identifier_kind, network_scope, issue_kind, issue_message = _account_identifier_context(
+            address=address,
+            account_type=account_type,
+            scopes=scopes,
+        )
+        if issue_kind:
+            issues.append(
+                location_issue(
+                    LocationIssueSpec(
+                        source=source,
+                        adapter_id="evm_wallet",
+                        issue_kind=issue_kind,
+                        message=issue_message,
+                        raw_file=evidence_path,
+                    )
+                )
+            )
+            continue
         records.append(
             location_record(
                 LocationRecordSpec(
                     source=source,
-                    location_id=location_id_from_parts(source, "address", address),
+                    location_id=canonical_location_id_from_identifier(
+                        identifier_kind,
+                        address,
+                        network_scope=network_scope,
+                    ),
                     location_kind=LocationKind.ADDRESS,
-                    location_label=str(metadata_map.get("name", "")).strip() or address,
-                    identifier_kind="evm_address",
+                    location_label=_account_label(metadata_map, address),
+                    identifier_kind=identifier_kind,
                     identifier_value=address,
-                    network_scope="ethereum",
+                    network_scope=network_scope,
                     controller=f"EVM wallet {keyring_type}".strip(),
                     evidence_kind="wallet_state",
                     evidence_path=evidence_path,
@@ -137,54 +195,106 @@ def _account_records(source: str, evidence_path: str, payload: object) -> list[L
                 )
             )
         )
-    return records
-
-
-def _identity_records(source: str, evidence_path: str, payload: object) -> list[LocationInventoryRecord]:
-    state_root = _wallet_state_root(payload)
-    if state_root is None:
-        return []
-    identities = state_root.get("identities")
-    if not isinstance(identities, dict):
-        return []
-    records: list[LocationInventoryRecord] = []
-    identities_dict = cast(dict[str, object], identities)
-    for identifier, metadata in identities_dict.items():
-        identifier_value = str(identifier).strip()
-        if not identifier_value:
-            continue
-        identifier_kind = location_identifier_kind(identifier_value)
-        if identifier_kind == "unknown":
-            continue
-        metadata_map = _object_map(metadata)
-        records.append(
-            location_record(
-                LocationRecordSpec(
-                    source=source,
-                    location_id=location_id_from_parts(source, identifier_kind, identifier_value),
-                    location_kind=LocationKind.ADDRESS,
-                    location_label=str(metadata_map.get("name", "")).strip() or identifier_value,
-                    identifier_kind=identifier_kind,
-                    identifier_value=identifier_value,
-                    network_scope=_network_scope(identifier_kind),
-                    controller="EVM wallet state",
-                    evidence_kind="wallet_state",
-                    evidence_path=evidence_path,
-                    confidence="medium",
-                    note="Discovered from the wallet identity map rather than a chain-scoped export.",
-                )
-            )
-        )
-    return records
+    return records, issues
 
 
 def _network_scope(identifier_kind: str) -> str:
     return {
-        "evm_address": "ethereum",
         "tron_address": "tron",
         "btc_address": "bitcoin",
         "solana_address": "solana",
+        "near_account": "near",
     }.get(identifier_kind, "")
+
+
+def _account_identifier_context(
+    *,
+    address: str,
+    account_type: str,
+    scopes: tuple[str, ...],
+) -> tuple[str, str, str, str]:
+    # pylint: disable=too-many-return-statements
+    identifier_kind = location_identifier_kind(address)
+    if identifier_kind == "unknown":
+        return (
+            identifier_kind,
+            "",
+            "unsupported_wallet_identifier",
+            f"Wallet-state account {address} is not a supported canonical identifier.",
+        )
+    namespace = account_type.split(":", 1)[0].strip().lower()
+    if namespace == "eip155":
+        if identifier_kind != "evm_address":
+            return (
+                identifier_kind,
+                "",
+                "unsupported_wallet_identifier",
+                f"Wallet-state account {address} declares EVM ownership but is not an EVM address.",
+            )
+        network_scope = _evm_network_scope(scopes)
+        if not network_scope:
+            return (
+                identifier_kind,
+                "",
+                "ambiguous_wallet_identifier",
+                (
+                    f"Wallet-state account {address} is an EVM address without a single chain-scoped ownership "
+                    "claim; use chain-specific exports for canonical routing."
+                ),
+            )
+        return identifier_kind, network_scope, "", ""
+    expected_kind = {
+        "tron": "tron_address",
+        "bip122": "btc_address",
+        "solana": "solana_address",
+    }.get(namespace, "")
+    if expected_kind:
+        if identifier_kind != expected_kind:
+            return (
+                identifier_kind,
+                "",
+                "unsupported_wallet_identifier",
+                f"Wallet-state account {address} does not match declared wallet namespace {namespace}.",
+            )
+        return identifier_kind, _network_scope(identifier_kind), "", ""
+    if identifier_kind == "evm_address":
+        return (
+            identifier_kind,
+            "",
+            "ambiguous_wallet_identifier",
+            (
+                f"Wallet-state account {address} is an EVM address without chain-scoped ownership evidence; "
+                "use chain-specific exports for canonical routing."
+            ),
+        )
+    return identifier_kind, _network_scope(identifier_kind), "", ""
+
+
+def _evm_network_scope(scopes: tuple[str, ...]) -> str:
+    chain_ids = {
+        scope.split(":", 1)[1]
+        for scope in scopes
+        if scope.lower().startswith("eip155:") and ":" in scope and scope.split(":", 1)[1] != "0"
+    }
+    if len(chain_ids) != 1:
+        return ""
+    return {
+        "1": "ethereum",
+        "10": "optimism",
+        "56": "bsc",
+        "137": "polygon",
+        "8453": "base",
+        "42161": "arbitrum",
+    }.get(next(iter(chain_ids)), "")
+
+
+def _account_label(metadata_map: dict[str, object], address: str) -> str:
+    name = str(metadata_map.get("name", "")).strip()
+    if name:
+        return name
+    snap_map = _object_map(metadata_map.get("snap"))
+    snap_name = str(snap_map.get("name", "")).strip()
+    return snap_name or address
 
 
 def _object_map(value: object) -> dict[str, object]:

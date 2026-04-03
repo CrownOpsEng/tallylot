@@ -25,8 +25,15 @@ PORTFOLIO_ROW_FALLBACK_PATTERN = re.compile(
     r"(?P<price>[0-9.,]+)\s+CAD/(?P<asset>[A-Z0-9]+)\s+"
     r"(?P<value>[0-9.]+)\s+CAD"
 )
-COINBASE_CLOSING_CASH_PATTERN = re.compile(
-    r"Closing Balance\s+(?P<balance>[0-9.,]+)\s+(?P<currency>[A-Z]{3})\s+as of (?P<as_of>[0-9:-]+\s+[0-9:]+\s+UTC)"
+COINBASE_CLOSING_CASH_PATTERNS = (
+    re.compile(
+        r"Closing Balance\s+(?P<balance>[0-9.,]+)\s+(?P<currency>[A-Z]{3})\s+as of "
+        r"(?P<as_of>[0-9:-]+\s+[0-9:]+\s+UTC)"
+    ),
+    re.compile(
+        r"Closing Balance\s+as of (?P<as_of>[0-9:-]+\s+[0-9:]+\s+UTC)\s+"
+        r"(?P<balance>[0-9.,]+)\s+(?P<currency>[A-Z]{3})"
+    ),
 )
 COINBASE_PORTFOLIO_AS_OF_PATTERN = re.compile(
     r"Portfolio summary balances are as of (?P<as_of>[0-9:-]+\s+[0-9:]+\s+UTC)"
@@ -47,7 +54,15 @@ def match_pdf_statement(pdf_path: Path, text: str) -> int:
 def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
     normalized = normalize_whitespace(text)
     rows: list[dict[str, str]] = []
-    cash_match = COINBASE_CLOSING_CASH_PATTERN.search(normalized)
+    cash_match = next(
+        (
+            match
+            for pattern in COINBASE_CLOSING_CASH_PATTERNS
+            for match in (pattern.search(normalized),)
+            if match is not None
+        ),
+        None,
+    )
     if cash_match is not None:
         rows.append(
             {

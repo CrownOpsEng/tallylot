@@ -8,7 +8,7 @@
     "evidence_path": "transactions.csv",
     "identifier_kind": "evm_address",
     "identifier_value": "0x1111111111111111111111111111111111111111",
-    "location_id": "bsc_wallet:address:0x1111111111111111111111111111111111111111",
+    "location_id": "evm:bsc:0x1111111111111111111111111111111111111111",
     "location_kind": "address",
     "location_label": "0x1111111111111111111111111111111111111111",
     "location_path": "",

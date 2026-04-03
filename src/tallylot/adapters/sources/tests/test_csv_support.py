@@ -15,10 +15,12 @@ from tallylot.adapters.support.rows import (
     collect_csv_row_results,
     matching_file_paths,
     read_csv_rows,
+    skip_files_outside_profile_families,
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
-from tallylot.domain.types import LocationId
+from tallylot.domain.types import AdapterId, LocationId, SourceId
+from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 
 
 def test_matching_file_paths_returns_sorted_matches(tmp_path: Path) -> None:
@@ -76,3 +78,49 @@ def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) ->
 
     assert [draft.raw_row_ref for draft in drafts] == ["row:2"]
     assert [issue.raw_row_ref for issue in issues] == ["row:3"]
+
+
+def test_skip_files_outside_profile_families_excludes_manifest_rows(tmp_path: Path) -> None:
+    transactions_path = tmp_path / "transactions.csv"
+    transactions_path.write_text("kind,value\ntransaction,1\n", encoding="utf-8")
+    manifest_path = tmp_path / "manifest.csv"
+    manifest_path.write_text("filename,size_bytes\ntransactions.csv,27\n", encoding="utf-8")
+    profile = SourceProfile(
+        source=SourceId("fixture"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("fixture"),
+        manifest_fingerprint="fixture",
+        supported=True,
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path="transactions.csv",
+                suffix=".csv",
+                size_bytes=transactions_path.stat().st_size,
+                sha256="transactions",
+                family="fixture:transactions",
+            ),
+            FileInventoryEntry(
+                relative_path="manifest.csv",
+                suffix=".csv",
+                size_bytes=manifest_path.stat().st_size,
+                sha256="manifest",
+            ),
+        ),
+    )
+
+    seen_files: list[str] = []
+
+    def parse_row(row_context: CsvRowContext) -> None:
+        seen_files.append(row_context.raw_file)
+
+    collect_csv_row_results(
+        tmp_path,
+        parse_row,
+        skip_file=skip_files_outside_profile_families(
+            tmp_path,
+            profile,
+            family_ids=("transactions",),
+        ),
+    )
+
+    assert seen_files == ["transactions.csv"]

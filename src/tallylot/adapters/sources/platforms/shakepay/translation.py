@@ -29,6 +29,18 @@ def translate_row(
 ) -> EconomicActivityDraft | IssueRecord | None:
     row = row_context.row
     timestamp = _parse_local_timestamp((row.get("Date") or "").strip())
+    if timestamp is None:
+        return issue_record(
+            IssueSpec(
+                source=str(profile.source),
+                adapter_id="shakepay",
+                issue_id=f"shakepay:{row_context.raw_file}:{row_context.raw_row_ref}:invalid_timestamp",
+                kind="unsupported_row",
+                message="Shakepay row is missing a supported local timestamp.",
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
+            )
+        )
     row_type = (row.get("Type") or "").strip()
     transaction_id = f"shakepay:{row_context.raw_file}:{row_context.raw_row_ref}"
     if row_context.raw_file == "cash_transactions_summary.csv":
@@ -250,6 +262,11 @@ def _normalize_crypto_row(
     )
 
 
-def _parse_local_timestamp(value: str) -> datetime:
-    local = datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TORONTO)
+def _parse_local_timestamp(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        local = datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TORONTO)
+    except ValueError:
+        return None
     return local.astimezone(ZoneInfo("UTC"))

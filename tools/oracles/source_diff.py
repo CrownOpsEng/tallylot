@@ -22,13 +22,7 @@ class SourceDiffService:
         candidate_only = _expand_rows(candidate_counts - reference_counts)
         reference_only = _expand_rows(reference_counts - candidate_counts)
         matched_count = sum((candidate_counts & reference_counts).values())
-        header = (
-            tuple(candidate_rows[0].keys())
-            if candidate_rows
-            else tuple(reference_rows[0].keys())
-            if reference_rows
-            else ()
-        )
+        header = _diff_header(candidate_rows, reference_rows)
 
         self._artifacts.write_rows(request.output_dir / "candidate_only.csv", header, candidate_only)
         self._artifacts.write_rows(request.output_dir / "reference_only.csv", header, reference_only)
@@ -59,3 +53,12 @@ def _expand_rows(counter: Counter[tuple[tuple[str, str], ...]]) -> list[dict[str
         for _ in range(count):
             rows.append(row)
     return rows
+
+
+def _diff_header(candidate_rows: list[dict[str, str]], reference_rows: list[dict[str, str]]) -> tuple[str, ...]:
+    ordered_fields: list[str] = []
+    for row in (*candidate_rows, *reference_rows):
+        for field in row:
+            if field not in ordered_fields:
+                ordered_fields.append(field)
+    return tuple(ordered_fields)

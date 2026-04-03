@@ -14,7 +14,7 @@ from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .matching import match_coinbase_inventory
@@ -34,6 +34,25 @@ class CoinbaseAdapter:
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
         return match_coinbase_inventory(source, raw_dir, inventory)
+
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[FileInventoryEntry, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, raw_dir
+        return tuple(
+            FileFamilyClaim(
+                relative_path=item.relative_path,
+                adapter_id=self.manifest.adapter_id,
+                family_id="retail_export",
+            )
+            for item in inventory
+            if {"portfolio", "type", "time", "amount", "balance", "amount/balance unit"}.issubset(
+                {field.lower() for field in item.header}
+            )
+        )
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(

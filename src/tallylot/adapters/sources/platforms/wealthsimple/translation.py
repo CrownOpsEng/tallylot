@@ -185,6 +185,7 @@ def _trade_draft_or_issue(
         context.commission,
         trade_side=trade_side_lower,
     )
+    asset_quantity = abs(context.quantity)
     if cash_amount is None:
         return issue_record(
             IssueSpec(
@@ -223,7 +224,7 @@ def _trade_draft_or_issue(
             economic_leg(
                 leg_id="primary_in" if trade_side == "BUY" else "primary_out",
                 kind=LegKind.PRIMARY,
-                quantity=context.quantity if trade_side == "BUY" else -context.quantity,
+                quantity=asset_quantity if trade_side == "BUY" else -asset_quantity,
                 instrument=symbol_claim(context.symbol, venue="wealthsimple"),
             ),
             economic_leg(

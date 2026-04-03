@@ -5,19 +5,23 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from tallylot.adapters.support.drafts import compile_activity_drafts_with_feedback
+from tallylot.adapters.support.issues import IssueSpec, issue_record
 from tallylot.application.normalization.contracts import NormalizeRequest, NormalizeResponse
 from tallylot.application.normalization.issue_context import (
     enrich_issue_context_timestamps,
     enrich_review_context_timestamps,
 )
 from tallylot.application.profiling.build_profile import BuildProfileUseCase
+from tallylot.application.profiling.families import has_family_for_adapter
 from tallylot.application.resource_refs import path_from_ref
 from tallylot.application.workspace.filesystem import ensure_directory, ensure_output_not_within_input_tree
+from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.evidence import EvidenceRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
-from tallylot.ports.source_adapters import SourceAdapterRegistryPort
+from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .annotations import annotation_records_from_drafts, location_annotation_records
 from .artifacts import write_normalization_artifacts
@@ -62,11 +66,14 @@ class NormalizeSourceUseCase:
         profile = _profile_with_window_hints(profile, request)
         if profile.timezone_issues:
             raise ValueError("source profile contains timezone issues that must be reviewed before normalization")
+        if _blocking_profile_scan_issues(profile):
+            raise ValueError("source profile contains blocking scan issues that must be resolved before normalization")
         self._profile_use_case.write_profile_artifacts(profile, output_dir)
         adapter = self._source_registry.source_adapter(str(profile.adapter_id))
         if not profile.supported:
             raise ValueError(f"source adapter {profile.adapter_id} is not supported for normalization in this phase")
         result = adapter.translate(profile, raw_dir)
+        result = _with_no_supported_activity_issue(profile, adapter, result)
         drafts, facts_outside_window = filter_drafts_by_window(
             result.drafts,
             window_start=request.window_start,
@@ -148,4 +155,42 @@ def _profile_with_window_hints(profile: SourceProfile, request: NormalizeRequest
             **({"normalization_window_start": request.window_start} if request.window_start is not None else {}),
             **({"normalization_window_end": request.window_end} if request.window_end is not None else {}),
         },
+    )
+
+
+def _blocking_profile_scan_issues(profile: SourceProfile) -> bool:
+    return any(issue.kind == "mixed_source_capture" or issue.severity == "high" for issue in profile.scan_issues)
+
+
+def _with_no_supported_activity_issue(
+    profile: SourceProfile,
+    adapter: SourceAdapter,
+    result: SourceTranslationBatch,
+) -> SourceTranslationBatch:
+    if AdapterCapability.SOURCE_TRANSLATE not in adapter.manifest.capabilities:
+        return result
+    if result.drafts or result.issues or result.reviews:
+        return result
+    if not has_family_for_adapter(profile.file_inventory, str(profile.adapter_id)):
+        return result
+    return SourceTranslationBatch(
+        drafts=result.drafts,
+        balance_evidence=result.balance_evidence,
+        issues=(
+            issue_record(
+                IssueSpec(
+                    issue_id=f"{profile.source}:no_supported_activity",
+                    source=str(profile.source),
+                    adapter_id=str(profile.adapter_id),
+                    severity="high",
+                    kind="no_supported_activity",
+                    message=(
+                        "The source matched a supported translation family but emitted no facts or explicit "
+                        "unsupported issues."
+                    ),
+                )
+            ),
+        ),
+        reviews=result.reviews,
+        location_inventory=result.location_inventory,
     )

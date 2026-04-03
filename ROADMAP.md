@@ -12,7 +12,7 @@ decisions that should not be rediscovered from scratch.
 - Filesystem-backed operational storage
 - One concrete CoinTracking CSV output adapter is implemented today
 - Real source adapters are implemented for Coinbase, Wealthsimple, Binance,
-  Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
+  Crypto.com, Shakepay, Ledger Live, Near, Ronin, GTrade, EVM explorer, EVM
   wallet-state, and the generic structured CSV surface
 - Normalization writes `facts.csv`, `fact_annotations.json`, `balances.csv`,
   `balance_evidence.csv`, `exceptions.csv`, and
@@ -47,6 +47,10 @@ decisions that should not be rediscovered from scratch.
 - Build shared adapter-layer support for stable translation chores such as file
   traversal, file-family dispatch, row-context handling, draft compilation, and
   wallet evidence construction so provider adapters stay thin.
+- Build shared adapter-layer support for source-contract numeric validation
+  such as decimal precision expectations so adapters can validate displayed
+  raw-text fractional digits and require exact or minimum scale without
+  duplicating field-scale logic.
 - Keep source adapters translation-only:
   - provider-local parsing
   - provider-local translation rules
@@ -87,6 +91,32 @@ decisions that should not be rediscovered from scratch.
   - execution timestamps and effective-time values are not interchangeable
   - any repo field that may be either date-only or exact-time uses the same
     `*_at` plus `*_precision` convention
+- Keep canonical on-chain location identity identifier-rooted and network- or
+  chain-scoped:
+  - EVM-family locations use `evm:<network>:<address>`
+  - chain-specific non-EVM locations use their chain namespace such as
+    `near:<account>`, `bitcoin:<address>`, `tron:<address>`, or
+    `solana:<address>`
+  - derived on-chain sublocations append a stable suffix such as
+    `near:<account>:staking`
+  - friendly source labels, wallet names, and output labels must not become
+    canonical runtime location ids
+- Keep file-family routing content-first:
+  - source adapters classify recognized export families from schema or content
+    signatures before filename hints
+  - filename or path hints may break ties only when content does not establish
+    ownership
+  - translation support should consume adapter-declared family ids instead of
+    rediscovering provider filenames in each workflow
+- Hard-block mixed raw captures that combine incompatible adapter families in
+  one source directory. Profiles with blocking scan issues must not proceed to
+  normalization.
+- Treat display-rounded numeric exports as non-authoritative when the adapter
+  contract requires more source precision. Adapters may omit affected legs and
+  emit explicit reviews rather than silently booking rounded values.
+- Treat wallet-state evidence as ownership evidence only when the export proves
+  chain-scoped or chain-specific account identity. UI identity maps and
+  friendly labels are labels only, not canonical ownership records.
 - Keep the production layer roots explicit:
   - `domain/`
   - `application/`
@@ -253,6 +283,11 @@ decisions that should not be rediscovered from scratch.
   other fields, surface an issue instead of guessing. When adapters do apply an
   interpretive normalization or fallback default, emit normalization review
   records so users can validate the behavior explicitly.
+- When a source export field is only a display-rounded value, adapters must not
+  silently book it as authoritative economic data. Require the published
+  precision contract when one exists, otherwise emit an issue or review. Ronin
+  explorer `TxnFee(RON)` is a current example: non-zero values with fewer than
+  nine fractional digits are treated as rounded and are omitted from fee legs.
 - Keep source-derived runtime balances application-owned unless the source
   provides true balance evidence. Adapters should not synthesize balance
   snapshots from translated activity rows.
@@ -342,7 +377,9 @@ decisions that should not be rediscovered from scratch.
   facts, with explicit unsupported-item reporting and roadmap capture for
   unimplemented cases.
 - Add more conservative overlap heuristics and duplicate signatures.
-- Expand source profiling to include richer file-family inspection.
+- Evolve the current stable string file-family ids toward stronger schema
+  signatures where needed, while keeping translation and profiling centered on
+  adapter-declared family contracts rather than filename tables.
 - Continue splitting hotspot use-case modules and DTO hubs into bounded
   feature modules before facts, checkpoints, and tax policy add more
   responsibilities.

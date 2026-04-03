@@ -56,6 +56,18 @@ class FileInventoryEntry:
 
 
 @dataclass(frozen=True)
+class FileFamilyClaim:
+    relative_path: str
+    adapter_id: AdapterId
+    family_id: str
+    confidence: str = "high"
+
+    @property
+    def token(self) -> str:
+        return family_claim_token(str(self.adapter_id), self.family_id)
+
+
+@dataclass(frozen=True)
 class SourceProfile:
     source: SourceId
     raw_dir: str
@@ -82,3 +94,19 @@ class SourceProfile:
             "scan_issues": [issue.to_row() for issue in self.scan_issues],
             "file_inventory": [item.__dict__ for item in self.file_inventory],
         }
+
+
+def family_claim_token(adapter_id: str, family_id: str) -> str:
+    return f"{adapter_id}:{family_id}"
+
+
+def parse_family_claim_tokens(value: str) -> tuple[tuple[str, str], ...]:
+    claims: list[tuple[str, str]] = []
+    for token in (item.strip() for item in value.split(";")):
+        if not token or ":" not in token:
+            continue
+        adapter_id, family_id = token.split(":", 1)
+        if not adapter_id or not family_id:
+            continue
+        claims.append((adapter_id, family_id))
+    return tuple(claims)

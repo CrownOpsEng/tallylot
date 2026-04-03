@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from tallylot.adapters.sources.platforms.shakepay.translation import translate_row
+from tallylot.adapters.support import CsvRowContext
 from tallylot.adapters.support.drafts import compile_activity_drafts
+from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 
@@ -49,3 +54,45 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
     assert any(event.description == "shakingsats" for event in facts)
     assert result.balance_evidence == ()
     assert result.issues == ()
+
+
+def test_shakepay_adapter_ignores_manifest_csv(tmp_path: Path) -> None:
+    raw_dir = fixture_raw_dir("shakepay", "cash_crypto_mix")
+    for source_path in raw_dir.iterdir():
+        target_path = tmp_path / source_path.name
+        target_path.write_bytes(source_path.read_bytes())
+    (tmp_path / "manifest.csv").write_text(
+        "filename,size_bytes\ncash_transactions_summary.csv,1\n",
+        encoding="utf-8",
+    )
+
+    profile, adapter = profile_and_adapter("Shakepay", tmp_path)
+    result = adapter.translate(profile, tmp_path)
+    facts = compile_activity_drafts(result.drafts)
+
+    assert len(facts) == 6
+    assert result.issues == ()
+
+
+def test_shakepay_invalid_timestamp_surfaces_issue() -> None:
+    profile, _ = profile_and_adapter("Shakepay", fixture_raw_dir("shakepay", "cash_crypto_mix"))
+
+    parsed = translate_row(
+        profile,
+        CsvRowContext(
+            path=Path("cash_transactions_summary.csv"),
+            row_index=2,
+            row={
+                "Date": "",
+                "Type": "E-Transfer",
+                "Description": "fixture",
+                "Debit": "",
+                "Credit": "10.00",
+            },
+        ),
+    )
+
+    assert parsed is not None
+    assert isinstance(parsed, IssueRecord)
+    assert parsed.kind == "unsupported_row"
+    assert parsed.raw_row_ref == "row:2"

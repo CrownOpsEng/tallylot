@@ -7,6 +7,7 @@ from tallylot.application.intake.file_facts import (
     detect_capture_id,
     inspect_intake_file,
 )
+from tallylot.application.intake.file_facts.inspection import parse_timestamp
 from tallylot.application.intake.routing import detect_source_folder
 from tallylot.infrastructure.discovery import build_registry
 
@@ -134,3 +135,10 @@ def test_detect_source_folder_uses_filename_hints_without_header_match() -> None
         )
         == "wealthsimple"
     )
+
+
+def test_parse_timestamp_accepts_fractional_second_utc_values() -> None:
+    parsed = parse_timestamp("2021-05-10T02:37:18.689Z")
+
+    assert parsed is not None
+    assert parsed.strftime("%Y-%m-%d %H:%M:%S") == "2021-05-10 02:37:18"

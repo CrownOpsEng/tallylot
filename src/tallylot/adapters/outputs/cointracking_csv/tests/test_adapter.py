@@ -97,6 +97,28 @@ def test_cointracking_projection_reads_standard_fee_leg() -> None:
     assert row["Cur..2"] == "symbol:CAD"
 
 
+def test_cointracking_projection_uses_source_label_for_onchain_canonical_locations() -> None:
+    row = cointracking_row(
+        TransactionFact(
+            fact_id=TransactionId("txn-onchain"),
+            source=SourceId("polygon-wallet"),
+            adapter_id=AdapterId("evm_explorer"),
+            timestamp=datetime(2025, 1, 1, tzinfo=UTC),
+            location_id=LocationId("evm:polygon:0x1111111111111111111111111111111111111111"),
+            semantics=FactSemantics(
+                economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
+                projection_hint=ProjectionHint.DEPOSIT,
+                accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+            ),
+            legs=(_leg("primary_bnb", LegKind.PRIMARY, "symbol:BNB@evm_explorer", "1"),),
+            leg_policy=FactLegPolicy(limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1),)),
+        )
+    )
+
+    assert row["Exchange"] == "polygon-wallet"
+
+
 def test_cointracking_projection_rejects_unsupported_multi_leg_shapes() -> None:
     with pytest.raises(ValueError, match="unsupported CoinTracking projection shape"):
         cointracking_row(

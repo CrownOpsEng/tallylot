@@ -6,7 +6,9 @@ from tallylot.adapters.sources.platforms.binance.adapter import BinanceAdapter
 from tallylot.adapters.sources.platforms.binance.csv_rows import is_no_data_row
 from tallylot.adapters.sources.platforms.binance.matching import SPOT_HEADER
 from tallylot.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.ports.source_profiles import FileInventoryEntry
+from tests.support.adapter_packs import profile_and_adapter
 from tests.support.services import build_source_profile
 
 
@@ -106,3 +108,20 @@ def test_binance_adapter_extract_location_inventory_is_empty() -> None:
 def test_is_no_data_row_detects_binance_sentinel() -> None:
     assert is_no_data_row({"User ID": "No data matches the criteria."})
     assert not is_no_data_row({"User ID": "123"})
+
+
+def test_binance_translation_uses_family_classification_without_filename_dependency(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "renamed.csv").write_text(
+        "Time,Pair,Side,Price,Executed,Amount,Fee\n"
+        "23-09-20 18:20:55,ALGOUSDT,SELL,0.0997,103ALGO,10.2691USDT,0.00003593BNB\n",
+        encoding="utf-8",
+    )
+
+    profile, adapter = profile_and_adapter("Unknown Exchange", raw_dir)
+    result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
+
+    assert str(profile.adapter_id) == "binance"
+    assert len(facts) == 1

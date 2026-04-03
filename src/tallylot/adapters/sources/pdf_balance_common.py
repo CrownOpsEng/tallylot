@@ -45,7 +45,7 @@ def normalize_whitespace(text: str) -> str:
 
 
 def decimal_text(value: str, *, places: str | None = None) -> str:
-    parsed = parse_decimal(value)
+    parsed = parse_decimal(value.replace(",", ""))
     if parsed is None:
         return ""
     if places is not None:

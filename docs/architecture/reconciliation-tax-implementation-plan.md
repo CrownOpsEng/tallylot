@@ -132,6 +132,41 @@ Use `pydantic` for:
 Keep domain models as frozen dataclasses, enums, and value objects so business
 rules remain explicit and tool-friendly.
 
+### 9. Keep On-Chain Identity Canonical And Output Labels Separate
+
+On-chain runtime location identity must be identifier-rooted and chain- or
+network-scoped rather than source-label-derived.
+
+Rules:
+
+- EVM-family owned locations use `evm:<network>:<address>`.
+- Non-EVM on-chain locations use their chain namespace such as
+  `near:<account>`, `bitcoin:<address>`, `tron:<address>`, or
+  `solana:<address>`.
+- Derived on-chain sublocations append a stable suffix such as
+  `near:<account>:staking`.
+- Friendly source labels, wallet names, and renderer-facing labels stay in
+  `source`, `location_label`, annotations, and output-adapter display logic.
+- Output adapters such as CoinTracking may render the source label for
+  on-chain facts, but they must not rewrite or own the canonical `location_id`.
+
+### 10. Route Source Families By Content And Block Mixed Captures
+
+Source-family ownership must be established by adapter-declared schema or
+content signatures before filename hints.
+
+Rules:
+
+- profiling records recognized file-family claims per file
+- translation should consume those family claims instead of rediscovering
+  provider filenames
+- path or filename hints are low-confidence tie-breakers only
+- if one raw source directory mixes incompatible adapter families, profiling
+  emits a blocking scan issue and normalization must refuse the capture
+- if a translation-capable adapter recognizes a supported family but emits no
+  facts and no explicit issues or reviews, normalization emits
+  `no_supported_activity` instead of silently succeeding
+
 ## Target Architecture
 
 Core abstractions added from this point forward must stay neutral enough to
@@ -219,6 +254,11 @@ Rules:
   domain code.
 - application services own derived-balance assembly. Adapters return balance
   evidence only when the source actually provides it.
+- adapters may declare numeric precision expectations for source fields when
+  decimal scale is part of the source contract. Shared adapter support should
+  validate displayed raw-text fractional digits and support exact or minimum
+  scale checks so rounded export values are surfaced explicitly rather than
+  normalized silently.
 
 ## Input And Oracle Boundaries
 

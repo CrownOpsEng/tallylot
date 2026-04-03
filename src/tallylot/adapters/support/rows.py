@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import csv
 from collections import defaultdict
-from collections.abc import Callable, Hashable, Iterator
+from collections.abc import Callable, Collection, Hashable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeVar
 
 from tallylot.domain.issues import IssueRecord
+from tallylot.ports.source_profiles import SourceProfile, parse_family_claim_tokens
 
 from .drafts import EconomicActivityDraft
 
@@ -36,6 +37,37 @@ class CsvRowContext:
 
 def matching_file_paths(raw_dir: Path, *, pattern: str = "*.csv") -> tuple[Path, ...]:
     return tuple(sorted(raw_dir.rglob(pattern)))
+
+
+def skip_files_outside_profile_families(
+    raw_dir: Path,
+    profile: SourceProfile,
+    *,
+    adapter_id: str | None = None,
+    family_ids: Collection[str] = (),
+    extra_skip: Callable[[Path], bool] | None = None,
+) -> Callable[[Path], bool]:
+    inventory_by_path = {entry.relative_path: entry for entry in profile.file_inventory}
+    adapter_key = str(profile.adapter_id) if adapter_id is None else adapter_id
+    allowed_families = frozenset(family_ids)
+
+    def skip_file(path: Path) -> bool:
+        if extra_skip is not None and extra_skip(path):
+            return True
+        relative_path = path.relative_to(raw_dir).as_posix()
+        entry = inventory_by_path.get(relative_path)
+        if entry is None:
+            return True
+        claimed_families = {
+            family_id
+            for claim_adapter_id, family_id in parse_family_claim_tokens(entry.family)
+            if claim_adapter_id == adapter_key
+        }
+        if not claimed_families:
+            return True
+        return bool(allowed_families and claimed_families.isdisjoint(allowed_families))
+
+    return skip_file
 
 
 def read_csv_header(path: Path) -> tuple[str, ...]:

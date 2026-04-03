@@ -83,3 +83,51 @@ def test_inventory_file_details_skips_coinbase_retail_preamble_rows(tmp_path: Pa
     assert details.date_field == "Timestamp"
     assert details.min_timestamp == "2024-02-08 16:31:22"
     assert details.timezone_mode == "value_utc"
+
+
+def test_inventory_file_details_accepts_fractional_second_utc_timestamps(tmp_path: Path) -> None:
+    path = tmp_path / "coinbase-pro-statement.csv"
+    path.write_text(
+        "portfolio,type,time,amount,balance,amount/balance unit,transfer id,trade id,order id\n"
+        "default,deposit,2021-05-10T02:37:18.689Z,0.0321777400000000,0.0321777400000000,ETH,tx-1,,\n",
+        encoding="utf-8",
+    )
+
+    _, row_count, details = inventory_file_details(path)
+
+    assert row_count == 1
+    assert details.date_field == "time"
+    assert details.min_timestamp == "2021-05-10 02:37:18"
+    assert details.max_timestamp == "2021-05-10 02:37:18"
+    assert details.timezone_mode == "value_utc"
+
+
+def test_inventory_file_details_ignores_footer_rows_with_as_of_text(tmp_path: Path) -> None:
+    path = tmp_path / "activities-export.csv"
+    path.write_text(
+        'transaction_date,settlement_date,account_type\n2021-05-09,,Crypto\n\n"As of 2026-03-23 15:47 GMT-06:00"\n',
+        encoding="utf-8",
+    )
+
+    _, row_count, details = inventory_file_details(path)
+
+    assert row_count == 2
+    assert details.date_field == "transaction_date"
+    assert details.min_timestamp == "2021-05-09 00:00:00"
+    assert details.max_timestamp == "2021-05-09 00:00:00"
+    assert details.timezone_mode == "date_only"
+
+
+def test_inventory_file_details_converts_explicit_offsets_to_utc(tmp_path: Path) -> None:
+    path = tmp_path / "offset-timestamps.csv"
+    path.write_text(
+        "Timestamp,Amount\n2026-03-23 15:47:00-06:00,1\n",
+        encoding="utf-8",
+    )
+
+    _, row_count, details = inventory_file_details(path)
+
+    assert row_count == 1
+    assert details.date_field == "Timestamp"
+    assert details.min_timestamp == "2026-03-23 21:47:00"
+    assert details.max_timestamp == "2026-03-23 21:47:00"

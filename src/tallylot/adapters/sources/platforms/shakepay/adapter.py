@@ -16,6 +16,7 @@ from tallylot.adapters.support import (
     match_intake_by_path_or_header,
     no_intake_route,
     passed_timezone_summary,
+    skip_files_outside_profile_families,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.domain.issues import IssueRecord
@@ -23,7 +24,7 @@ from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -43,6 +44,34 @@ class ShakepayAdapter:
         if any("crypto_transactions_summary.csv" in item.relative_path for item in inventory):
             return 100
         return 0
+
+    def classify_profile_families(
+        self,
+        source: str,
+        raw_dir: Path,
+        inventory: tuple[FileInventoryEntry, ...],
+    ) -> tuple[FileFamilyClaim, ...]:
+        del source, raw_dir
+        claims: list[FileFamilyClaim] = []
+        for item in inventory:
+            lower_path = item.relative_path.lower()
+            if "crypto_transactions_summary.csv" in lower_path:
+                claims.append(
+                    FileFamilyClaim(
+                        relative_path=item.relative_path,
+                        adapter_id=self.manifest.adapter_id,
+                        family_id="crypto_summary",
+                    )
+                )
+            elif "cash_transactions_summary.csv" in lower_path:
+                claims.append(
+                    FileFamilyClaim(
+                        relative_path=item.relative_path,
+                        adapter_id=self.manifest.adapter_id,
+                        family_id="cash_summary",
+                    )
+                )
+        return tuple(claims)
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(
@@ -76,7 +105,15 @@ class ShakepayAdapter:
         return _extract_pdf_balances(text, pdf_path.name)
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
-        drafts, issues = collect_csv_row_results(raw_dir, lambda row_context: translate_row(profile, row_context))
+        drafts, issues = collect_csv_row_results(
+            raw_dir,
+            lambda row_context: translate_row(profile, row_context),
+            skip_file=skip_files_outside_profile_families(
+                raw_dir,
+                profile,
+                family_ids=("cash_summary", "crypto_summary"),
+            ),
+        )
         return translation_batch_from_drafts(
             drafts,
             issues=issues,

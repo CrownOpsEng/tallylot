@@ -1,20 +1,20 @@
-"""EVM explorer adapter."""
+"""Ronin explorer adapter."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.adapters.sources.explorers.evm_explorer.families import classify_inventory_families
-from tallylot.adapters.sources.explorers.evm_explorer.translation import translate_transactions
+from tallylot.adapters.sources.explorers.ronin.families import classified_csv_paths, classify_inventory_families
+from tallylot.adapters.sources.explorers.ronin.translation import translate_transactions
 from tallylot.adapters.support import (
     EVM_ADDRESS_PATTERN,
+    IssueSpec,
     canonical_location_id_from_identifier,
+    issue_record,
     location_issue,
     location_record,
     match_intake_by_path_or_header,
-    matching_file_paths,
     no_intake_route,
-    passed_timezone_summary,
     read_csv_rows,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
@@ -25,33 +25,26 @@ from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile, parse_family_claim_tokens
 from tallylot.ports.source_translation import SourceTranslationBatch
 
-TRANSACTION_HEADER_FIELDS = {"Transaction Hash", "DateTime (UTC)"}
 
-
-class EvmExplorerAdapter:
+class RoninAdapter:
     manifest = AdapterManifest(
-        adapter_id=AdapterId("evm_explorer"),
-        display_name="EVM Explorer",
+        adapter_id=AdapterId("ronin"),
+        display_name="Ronin",
         version="1.0.0",
         capabilities=frozenset(
             {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}
         ),
-        description="Normalizes EVM explorer exports and extracts owned EVM addresses.",
+        description="Normalizes Ronin explorer exports and extracts owned wallet identifiers.",
     )
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
         if self.classify_profile_families(source, raw_dir, inventory):
             return 100
-        lower_source = source.lower()
-        if "explorer" in lower_source or any(chain in lower_source for chain in ("bsc", "ethereum", "polygon", "arb")):
+        if "ronin" in source.lower():
             return 100
-        if any(TRANSACTION_HEADER_FIELDS.issubset(set(item.header)) for item in inventory if item.header):
-            return 75
-        if any("explorer" in item.relative_path.lower() for item in inventory):
-            return 75
         return 0
 
     def classify_profile_families(
@@ -64,11 +57,7 @@ class EvmExplorerAdapter:
         return classify_inventory_families(inventory, adapter_id=self.manifest.adapter_id)
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
-        return match_intake_by_path_or_header(
-            relative_path,
-            facts,
-            path_hints=("etherscan", "arbiscan", "polygonscan", "bsc", "evm"),
-        )
+        return match_intake_by_path_or_header(relative_path, facts, path_hints=("ronin",))
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
         return no_intake_route(request)
@@ -77,7 +66,45 @@ class EvmExplorerAdapter:
         self,
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-        return passed_timezone_summary(profile, mode="header_utc")
+        raw_files = [item for item in profile.file_inventory if _has_family(item, "explorer_export")]
+        summary_files = [item for item in profile.file_inventory if _has_family(item, "action_summary")]
+        if summary_files and not raw_files:
+            issues = tuple(
+                issue_record(
+                    IssueSpec(
+                        issue_id=f"ronin:{item.relative_path}:timezone_review_required",
+                        source=str(profile.source),
+                        adapter_id="ronin",
+                        severity="high",
+                        kind="timezone_review_required",
+                        message=(
+                            "Ronin summary exports use local wall-clock timestamps and require a companion raw "
+                            "explorer export in the same capture to infer UTC timestamps."
+                        ),
+                        raw_file=item.relative_path,
+                    )
+                )
+                for item in summary_files
+            )
+            return {
+                "status": "needs_review",
+                "issue_count": len(issues),
+                "rows_with_dates": len(raw_files) + len(summary_files),
+                "mode_counts": {"companion_inferred_local": len(summary_files)},
+            }, issues
+        return {
+            "status": "passed",
+            "issue_count": 0,
+            "rows_with_dates": len(raw_files) + len(summary_files),
+            "mode_counts": {
+                key: value
+                for key, value in {
+                    "header_utc": len(raw_files),
+                    "companion_inferred_local": len(summary_files),
+                }.items()
+                if value
+            },
+        }, ()
 
     def extract_location_inventory(
         self,
@@ -95,7 +122,7 @@ class EvmExplorerAdapter:
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="missing_identifier",
-                        message="No EVM address could be extracted from the profiled explorer capture.",
+                        message="No Ronin wallet address could be extracted from the profiled explorer capture.",
                     )
                 ),
             )
@@ -106,7 +133,7 @@ class EvmExplorerAdapter:
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="multiple_primary_identifiers",
-                        message="The profiled explorer capture exposed more than one owned EVM address.",
+                        message="The profiled Ronin capture exposed more than one owned wallet address.",
                     )
                 )
             )
@@ -117,14 +144,14 @@ class EvmExplorerAdapter:
                     location_id=canonical_location_id_from_identifier(
                         "evm_address",
                         address,
-                        network_scope=_network_scope(source),
+                        network_scope="ronin",
                     ),
                     location_kind=LocationKind.ADDRESS,
                     location_label=address,
                     identifier_kind="evm_address",
                     identifier_value=address,
-                    network_scope=_network_scope(source),
-                    controller="Explorer export",
+                    network_scope="ronin",
+                    controller="Ronin explorer export",
                     evidence_kind="filename",
                     evidence_path=_evidence_filename(raw_dir, address),
                     confidence="high",
@@ -136,55 +163,46 @@ class EvmExplorerAdapter:
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
         location_inventory, location_issues = self.extract_location_inventory(str(profile.source), raw_dir, profile)
-        drafts, issues = translate_transactions(
+        drafts, issues, reviews = translate_transactions(
             profile,
             raw_dir,
             owned_addresses=_owned_addresses(raw_dir),
-            network_scope=_network_scope(str(profile.source)),
         )
         return translation_batch_from_drafts(
             drafts,
             issues=(*issues, *location_issues),
+            reviews=reviews,
             location_inventory=location_inventory,
         )
 
 
 def _owned_addresses(raw_dir: Path) -> set[str]:
     addresses: set[str] = set()
-    for path in matching_file_paths(raw_dir):
+    for path, family_id in classified_csv_paths(raw_dir):
         for match in EVM_ADDRESS_PATTERN.finditer(path.name):
             addresses.add(match.group(0).lower())
-    if addresses:
-        return addresses
-    for path in matching_file_paths(raw_dir):
-        rows = read_csv_rows(path)
-        to_addresses = {
-            (row.get("To") or "").strip().lower()
-            for row in rows
-            if EVM_ADDRESS_PATTERN.fullmatch((row.get("To") or "").strip())
-        }
-        if len(to_addresses) == 1:
-            return to_addresses
-    return set()
-
-
-def _network_scope(source: str) -> str:
-    lower_source = source.lower()
-    if "bsc" in lower_source:
-        return "bsc"
-    if "polygon" in lower_source:
-        return "polygon"
-    if "arb" in lower_source:
-        return "arbitrum"
-    return "ethereum"
+        if family_id != "action_summary":
+            continue
+        for row in read_csv_rows(path):
+            ronin_address = (row.get("RoninAddress") or "").strip().lower()
+            if ronin_address.startswith("ronin:"):
+                addresses.add(f"0x{ronin_address.split(':', 1)[1]}")
+    return addresses
 
 
 def _evidence_filename(raw_dir: Path, address: str) -> str:
-    for path in matching_file_paths(raw_dir):
+    for path, _ in classified_csv_paths(raw_dir):
         if address in path.name.lower():
             return path.name
-    first = matching_file_paths(raw_dir)
-    return first[0].name if first else ""
+    first = classified_csv_paths(raw_dir)
+    return first[0][0].name if first else ""
 
 
-ADAPTER = EvmExplorerAdapter()
+ADAPTER = RoninAdapter()
+
+
+def _has_family(item: FileInventoryEntry, family_id: str) -> bool:
+    return any(
+        adapter_id == "ronin" and claim_family_id == family_id
+        for adapter_id, claim_family_id in parse_family_claim_tokens(item.family)
+    )

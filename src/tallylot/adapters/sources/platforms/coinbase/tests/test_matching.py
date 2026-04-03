@@ -29,6 +29,12 @@ def test_parse_retail_timestamp_preserves_utc_clock_time() -> None:
     assert parsed.strftime("%Y-%m-%d %H:%M:%S") == "2025-10-17 13:38:17"
 
 
+def test_parse_retail_timestamp_accepts_fractional_second_z_suffix() -> None:
+    parsed = parse_retail_timestamp("2021-05-10T02:37:18.689Z")
+
+    assert parsed.strftime("%Y-%m-%d %H:%M:%S") == "2021-05-10 02:37:18"
+
+
 def test_coinbase_adapter_matches_retail_header_without_source_label(tmp_path: Path) -> None:
     inventory = (
         FileInventoryEntry(

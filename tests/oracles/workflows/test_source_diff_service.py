@@ -64,3 +64,35 @@ def test_source_reconciliation_service_preserves_duplicate_row_multiplicity(tmp_
     assert response.reference_only_count == 0
     assert response.matched_count == 1
     assert candidate_only_rows == [duplicate_row]
+
+
+def test_source_reconciliation_service_handles_mismatched_candidate_and_reference_headers(tmp_path: Path) -> None:
+    candidate_path = tmp_path / "candidate.csv"
+    reference_path = tmp_path / "reference.csv"
+    output_dir = tmp_path / "reconcile"
+    write_rows(candidate_path, ("Type", "Date", "Tx-ID"), ({"Type": "trade", "Date": "2024-01-01", "Tx-ID": "tx-1"},))
+    write_rows(
+        reference_path,
+        ("Type", "Trade Date", "Trade Group", "Tx Hash"),
+        ({"Type": "trade", "Trade Date": "2024-01-01", "Trade Group": "spot", "Tx Hash": "hash-1"},),
+    )
+
+    response = SourceDiffService(FilesystemArtifactStore()).execute(
+        SourceDiffRequest(candidate_path=candidate_path, reference_path=reference_path, output_dir=output_dir)
+    )
+
+    reference_only_rows = FilesystemArtifactStore().read_rows(output_dir / "reference_only.csv")
+
+    assert response.candidate_only_count == 1
+    assert response.reference_only_count == 1
+    assert response.matched_count == 0
+    assert reference_only_rows == [
+        {
+            "Type": "trade",
+            "Date": "",
+            "Tx-ID": "",
+            "Trade Date": "2024-01-01",
+            "Trade Group": "spot",
+            "Tx Hash": "hash-1",
+        }
+    ]

@@ -23,17 +23,18 @@ def test_near_adapter_extracts_location_inventory_and_staking_split_events(tmp_p
     )
 
     adapter = NearAdapter()
-    profile = build_source_profile(adapter_id="near", source="near-main", raw_dir=str(raw_dir))
+    profile = build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir))
 
-    location_inventory, location_issues = adapter.extract_location_inventory("near-main", raw_dir, profile)
+    location_inventory, location_issues = adapter.extract_location_inventory("wallet-a", raw_dir, profile)
     result = adapter.translate(profile, raw_dir)
     facts = compile_activity_drafts(result.drafts)
 
     assert not location_issues
     assert location_inventory[0].identifier_kind == "near_account"
     assert location_inventory[0].identifier_value == "example.near"
+    assert str(location_inventory[0].location_id) == "near:example.near"
     assert len(facts) == 3
-    assert any(str(event.source) == "near-main - Staking" for event in facts)
+    assert any(str(event.location_id) == "near:example.near:staking" for event in facts)
 
 
 def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path) -> None:
@@ -46,7 +47,7 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
     )
 
     result = NearAdapter().translate(
-        build_source_profile(adapter_id="near", source="near-main", raw_dir=str(raw_dir)),
+        build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)),
         raw_dir,
     )
     facts = compile_activity_drafts(result.drafts)
@@ -93,7 +94,7 @@ def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
     assert str(facts[0].legs[0].instrument_id) == "symbol:NEAR@near"
     assert transfer_charge_legs[0].leg_id == "charge"
     assert transfer_charge_legs[0].quantity == Decimal("-0.01")
-    assert any(str(event.source).endswith("Staking") for event in facts)
+    assert any(str(event.location_id).endswith(":staking") for event in facts)
     assert result.issues == ()
 
 
@@ -106,6 +107,7 @@ def test_near_wallet_capture_extracts_near_account_identifiers() -> None:
     assert str(profile.adapter_id) == "near"
     assert issues == ()
     assert any(row.identifier_kind == "near_account" for row in evidence)
+    assert {str(row.location_id) for row in evidence} == {"near:example.near"}
 
 
 def test_near_adapter_surfaces_unsupported_methods_without_crashing(tmp_path: Path) -> None:
@@ -118,7 +120,7 @@ def test_near_adapter_surfaces_unsupported_methods_without_crashing(tmp_path: Pa
     )
 
     result = NearAdapter().translate(
-        build_source_profile(adapter_id="near", source="near-main", raw_dir=str(raw_dir)),
+        build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)),
         raw_dir,
     )
 
