@@ -91,17 +91,13 @@ class BalanceAssertion:
                 self.snapshot_as_of_precision,
                 label="balance assertion snapshot_as_of_at",
             ),
-            "snapshot_as_of_precision": _precision_text(
-                self.snapshot_as_of_precision
-            ),
+            "snapshot_as_of_precision": _precision_text(self.snapshot_as_of_precision),
             "evidence_as_of_at": _temporal_text(
                 self.evidence_as_of_at,
                 self.evidence_as_of_precision,
                 label="balance assertion evidence_as_of_at",
             ),
-            "evidence_as_of_precision": _precision_text(
-                self.evidence_as_of_precision
-            ),
+            "evidence_as_of_precision": _precision_text(self.evidence_as_of_precision),
             "evidence_ref": self.evidence_ref,
             "notes": self.notes,
         }
@@ -129,12 +125,10 @@ def assert_balance_snapshots(
 ) -> BalanceAssertionResult:
     """Compare derived balance snapshots against source-backed balance evidence."""
 
-    snapshots_by_key = {
-        _snapshot_key(snapshot): snapshot for snapshot in snapshots
-    }
-    evidence_by_key = {_evidence_key(record): record for record in evidence}
+    snapshots_by_key, snapshot_issues = _index_snapshots(snapshots)
+    evidence_by_key, evidence_issues = _index_evidence(evidence)
     assertions: list[BalanceAssertion] = []
-    issues: list[IssueRecord] = []
+    issues: list[IssueRecord] = [*snapshot_issues, *evidence_issues]
     for key in sorted(set(snapshots_by_key) | set(evidence_by_key)):
         snapshot = snapshots_by_key.get(key)
         evidence_record = evidence_by_key.get(key)
@@ -197,6 +191,7 @@ def _assertion_status(
 
 
 def _issue_for_assertion(assertion: BalanceAssertion) -> IssueRecord:
+    issue_kind = f"balance_{assertion.status.value}"
     return IssueRecord(
         issue_id=":".join(
             (
@@ -204,21 +199,20 @@ def _issue_for_assertion(assertion: BalanceAssertion) -> IssueRecord:
                 str(assertion.location_id),
                 str(assertion.instrument_id),
                 assertion.balance_kind,
-                assertion.status.value,
+                issue_kind,
             )
         ),
         source=str(assertion.source),
         adapter_id="reconciliation",
         severity="high",
-        kind=f"balance_{assertion.status.value}",
+        kind=issue_kind,
         message=(
             f"Balance assertion {assertion.status.value} for "
             f"{assertion.location_id} {assertion.instrument_id}."
         ),
         context_timestamp=_temporal_text(
             assertion.snapshot_as_of_at or assertion.evidence_as_of_at,
-            assertion.snapshot_as_of_precision
-            or assertion.evidence_as_of_precision,
+            assertion.snapshot_as_of_precision or assertion.evidence_as_of_precision,
             label="balance assertion issue timestamp",
         ),
         raw_file=assertion.evidence_ref,
@@ -240,6 +234,93 @@ def _evidence_key(record: BalanceEvidence) -> _BalanceAssertionKey:
         location_id=str(record.location_id),
         instrument_id=str(record.instrument_id),
         balance_kind=record.balance_kind,
+    )
+
+
+def _index_snapshots(
+    snapshots: tuple[BalanceSnapshot, ...],
+) -> tuple[dict[_BalanceAssertionKey, BalanceSnapshot], tuple[IssueRecord, ...]]:
+    snapshots_by_key: dict[_BalanceAssertionKey, BalanceSnapshot] = {}
+    duplicate_counts: dict[_BalanceAssertionKey, int] = {}
+    issues: list[IssueRecord] = []
+    for snapshot in snapshots:
+        key = _snapshot_key(snapshot)
+        if key in snapshots_by_key:
+            duplicate_counts[key] = duplicate_counts.get(key, 0) + 1
+            issues.append(
+                _duplicate_input_issue(
+                    key,
+                    kind="duplicate_balance_snapshot",
+                    duplicate_index=duplicate_counts[key],
+                    context_timestamp=_temporal_text(
+                        snapshot.as_of_at,
+                        snapshot.as_of_precision,
+                        label="duplicate balance issue timestamp",
+                    ),
+                )
+            )
+            continue
+        snapshots_by_key[key] = snapshot
+    return snapshots_by_key, tuple(issues)
+
+
+def _index_evidence(
+    evidence: tuple[BalanceEvidence, ...],
+) -> tuple[dict[_BalanceAssertionKey, BalanceEvidence], tuple[IssueRecord, ...]]:
+    evidence_by_key: dict[_BalanceAssertionKey, BalanceEvidence] = {}
+    duplicate_counts: dict[_BalanceAssertionKey, int] = {}
+    issues: list[IssueRecord] = []
+    for record in evidence:
+        key = _evidence_key(record)
+        if key in evidence_by_key:
+            duplicate_counts[key] = duplicate_counts.get(key, 0) + 1
+            issues.append(
+                _duplicate_input_issue(
+                    key,
+                    kind="duplicate_balance_evidence",
+                    duplicate_index=duplicate_counts[key],
+                    context_timestamp=_temporal_text(
+                        record.as_of_at,
+                        record.as_of_precision,
+                        label="duplicate balance issue timestamp",
+                    ),
+                    raw_file=record.evidence_ref,
+                )
+            )
+            continue
+        evidence_by_key[key] = record
+    return evidence_by_key, tuple(issues)
+
+
+def _duplicate_input_issue(
+    key: _BalanceAssertionKey,
+    *,
+    kind: str,
+    duplicate_index: int,
+    context_timestamp: str,
+    raw_file: str = "",
+) -> IssueRecord:
+    return IssueRecord(
+        issue_id=":".join(
+            (
+                key.source,
+                key.location_id,
+                key.instrument_id,
+                key.balance_kind,
+                kind,
+                str(duplicate_index),
+            )
+        ),
+        source=key.source,
+        adapter_id="reconciliation",
+        severity="high",
+        kind=kind,
+        message=(
+            f"Duplicate {key.balance_kind} balance input for "
+            f"{key.location_id} {key.instrument_id}."
+        ),
+        context_timestamp=context_timestamp,
+        raw_file=raw_file,
     )
 
 

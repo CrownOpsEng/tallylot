@@ -7,6 +7,9 @@ from tallylot.application.reconciliation.contracts import (
     BalanceAssertionResponse,
 )
 from tallylot.application.resource_refs import path_from_ref
+from tallylot.application.workspace.filesystem import (
+    ensure_output_not_within_input_tree,
+)
 from tallylot.domain.reconciliation import assert_balance_snapshots
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.evidence import EvidenceRepositoryPort
@@ -40,12 +43,22 @@ class AssertBalancesUseCase:
 
     def execute(self, request: BalanceAssertionRequest) -> BalanceAssertionResponse:
         assertion_output_path = path_from_ref(request.assertion_output_ref)
-        snapshots = self._evidence.read_balance_snapshots(
-            path_from_ref(request.snapshot_input_ref)
+        snapshot_path = path_from_ref(request.snapshot_input_ref)
+        evidence_path = path_from_ref(request.evidence_input_ref)
+        ensure_output_not_within_input_tree(
+            snapshot_path,
+            assertion_output_path,
+            input_label="balance snapshot input",
+            output_label="balance assertion output",
         )
-        evidence = self._evidence.read_balance_evidence(
-            path_from_ref(request.evidence_input_ref)
+        ensure_output_not_within_input_tree(
+            evidence_path,
+            assertion_output_path,
+            input_label="balance evidence input",
+            output_label="balance assertion output",
         )
+        snapshots = self._evidence.read_balance_snapshots(snapshot_path)
+        evidence = self._evidence.read_balance_evidence(evidence_path)
         result = assert_balance_snapshots(snapshots, evidence)
 
         self._artifacts.write_rows(

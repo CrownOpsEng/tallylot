@@ -131,6 +131,83 @@ def test_assert_balance_snapshots_flags_timestamp_mismatch() -> None:
     assert result.issues[0].kind == "balance_timestamp_mismatch"
 
 
+def test_assert_balance_snapshots_surfaces_duplicate_inputs() -> None:
+    result = assert_balance_snapshots(
+        snapshots=(
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("2"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+        ),
+        evidence=(
+            BalanceEvidence(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+        ),
+    )
+
+    assert result.assertions[0].status is BalanceAssertionStatus.MATCHED
+    assert [issue.kind for issue in result.issues] == ["duplicate_balance_snapshot"]
+    assert [issue.issue_id for issue in result.issues] == [
+        "coinbase:coinbase:BTC:available:duplicate_balance_snapshot:1"
+    ]
+
+
+def test_assert_balance_snapshots_assigns_distinct_duplicate_issue_ids() -> None:
+    result = assert_balance_snapshots(
+        snapshots=(
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("2"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("3"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+        ),
+        evidence=(),
+    )
+
+    assert [issue.issue_id for issue in result.issues] == [
+        "coinbase:coinbase:BTC:available:duplicate_balance_snapshot:1",
+        "coinbase:coinbase:BTC:available:duplicate_balance_snapshot:2",
+        "coinbase:coinbase:BTC:available:balance_missing_evidence",
+    ]
+
+
 def test_balance_assertion_requires_valid_temporal_pairs() -> None:
     with pytest.raises(
         ValueError,

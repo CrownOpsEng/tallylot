@@ -5,6 +5,8 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
 from tallylot.application.reconciliation import (
     AssertBalancesUseCase,
     BalanceAssertionRequest,
@@ -79,3 +81,32 @@ def test_assert_balances_use_case_writes_assertions_and_issues(
     assert issue_rows[0]["kind"] == "balance_drift"
     assert summary["assertion_count"] == 1
     assert summary["issue_count"] == 1
+
+
+def test_assert_balances_use_case_rejects_output_overwriting_input_file(
+    tmp_path: Path,
+) -> None:
+    snapshot_path = tmp_path / "balances.csv"
+    evidence_path = tmp_path / "balance_evidence.csv"
+    evidence_repo = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    snapshot_path.write_text(
+        "source,location_id,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,notes\n",
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        "source,location_id,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,evidence_ref,notes\n",
+        encoding="utf-8",
+    )
+
+    request = BalanceAssertionRequest(
+        snapshot_input_ref=to_resource_ref(snapshot_path),
+        evidence_input_ref=to_resource_ref(evidence_path),
+        assertion_output_ref=to_resource_ref(snapshot_path),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="balance assertion output must not be inside balance snapshot input",
+    ):
+        AssertBalancesUseCase(evidence_repo, artifacts).execute(request)

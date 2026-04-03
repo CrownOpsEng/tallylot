@@ -46,7 +46,7 @@ def balance_snapshot_from_row(row: dict[str, str]) -> BalanceSnapshot:
         quantity=quantity,
         as_of_at=parse_temporal_value(row["as_of_at"], precision=precision),
         as_of_precision=precision,
-        balance_kind=row.get("balance_kind", "available"),
+        balance_kind=_balance_kind_from_row(row),
         notes=row.get("notes", ""),
     )
 
@@ -65,7 +65,11 @@ def balance_evidence_from_row(row: dict[str, str]) -> BalanceEvidence:
         quantity=quantity,
         as_of_at=parse_temporal_value(row["as_of_at"], precision=precision),
         as_of_precision=precision,
-        balance_kind=row.get("balance_kind", "available"),
+        balance_kind=_balance_kind_from_row(row),
         evidence_ref=row.get("evidence_ref", ""),
         notes=row.get("notes", ""),
     )
+
+
+def _balance_kind_from_row(row: dict[str, str]) -> str:
+    return row.get("balance_kind", "").strip() or "available"

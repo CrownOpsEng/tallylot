@@ -36,6 +36,8 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - checkpoint location inventory rebuild with evidence, issues, and summary
   artifacts
 - checkpoint PDF balance extraction for supported statement families
+- reconciliation balance assertions with explicit drift, missing-side, and
+  duplicate-input issues
 - dev-only oracle baseline validation with the documented artifact package
 - dev-only oracle batch screening and staging with explicit issues, overlap
   summaries, and normalization window enforcement

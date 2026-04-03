@@ -506,6 +506,7 @@ Required fields:
 - `TemporalPrecision`
 - `Valuation`
 - `TransferLink`
+- `BalanceAssertion`
 - `CorrectionRecord`
 - `CheckpointAssertion`
 - `JournalEntryModel`
@@ -653,6 +654,8 @@ Estimated effort: `18` to `28` hours
 
 Deliverables:
 
+- exact balance assertion artifacts comparing derived snapshots to source-backed
+  evidence
 - transfer linking
 - balance assertions
 - checkpoint builder around `2026-03-23`
@@ -768,6 +771,8 @@ Do not:
 ### Reconciliation
 
 - transfer pairing across owned wallets and exchanges
+- exact balance assertion workflow over `balances.csv` and
+  `balance_evidence.csv`
 - redistribution corrections
 - checkpoint balance assertions
 - forward continuity from oracle boundary to checkpoint
