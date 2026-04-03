@@ -152,6 +152,29 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames(tmp_path: P
     assert result.canonical_events[0]["amount_in"] == "1.50000000"
 
 
+def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "bsc_wallet_capture" / "raw"
+    nested = raw_dir / "2024-03" / "bundle-01"
+    nested.mkdir(parents=True)
+    owned = "0x1111111111111111111111111111111111111111"
+    counterparty = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    (nested / "transactions.csv").write_text(
+        (
+            "Transaction Hash,Blockno,UnixTimestamp,DateTime (UTC),From,To,Value_IN(BNB),Value_OUT(BNB),TxnFee(BNB),Method,ErrCode\n"
+            f"0xabc,1,1700000000,2023-11-14 12:00:00,{counterparty},{owned},1.50000000,0.00000000,0.00021000,Transfer,\n"
+        ),
+        encoding="utf-8",
+    )
+
+    adapter, profile = _build_profile("bsc-wallet", raw_dir)
+    result = adapter.normalize(raw_dir, profile, exception_decisions={})
+
+    assert adapter.name == "evm_explorer"
+    assert len(result.canonical_events) == 1
+    assert result.canonical_events[0]["event_kind"] == "Deposit"
+    assert result.exceptions == []
+
+
 def test_evm_explorer_suspicious_nft_fixture_surfaces_review_without_auto_import(copy_fixture_tree) -> None:
     raw_dir = copy_fixture_tree("raw_sources/evm_explorer_suspicious_nft/raw", destination_name="bsc_wallet_capture")
     adapter, profile = _build_profile("bsc-wallet", raw_dir)

@@ -2,7 +2,7 @@
 
 This repo is built around the canonical CoinTracking full export stored in:
 
-`01_raw_exports/cointracking/2023-08-05_full_export/`
+`01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 
 ## Control documents
 

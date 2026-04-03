@@ -4,14 +4,13 @@ Track only the remaining work that was intentionally left out of the current ada
 
 ## Pack Tooling
 
-- Add a small scaffold helper that creates `tests/fixtures/adapter_packs/<adapter>/<scenario>/` with the right metadata and expected-file layout.
-- Add an explicit golden-refresh command so fixture authors do not need ad-hoc local scripts to regenerate expected JSON after adapter changes.
+- Keep the scaffold and golden-refresh commands aligned with any future pack-layout move so fixture authors still have one canonical toolchain.
 
 ## Refactor Alignment
 
-- When the repo refactor begins, colocate adapter packs with the adapter modules or a first-class plugin package instead of keeping them under the current monorepo test tree.
-- Split adapter-pure tests from pipeline-orchestration tests so future plugin extraction can happen without reworking the golden fixtures again.
+- Continue moving adapter packs toward adapter-owned layout so plugin extraction can happen without another test-tree rewrite.
+- Keep adapter-pure tests and pipeline-orchestration tests separated as the suite grows.
 
 ## CI Profiles
 
-- Add a CI matrix that runs adapter-pack unit coverage separately from broader CLI/e2e coverage so failures localize faster.
+- Expand the current split test profiles when additional CI infrastructure is introduced.

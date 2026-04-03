@@ -16,7 +16,7 @@ This repo is the evidence, staging, and verification workspace for that process.
 
 - **CoinTracking remains the system of record for imports and corrections.**
 - **CRA primary guidance is the tax-law anchor for Canadian treatment questions.**
-- **The canonical baseline is the full export in `01_raw_exports/cointracking/2023-08-05_full_export/`.**
+- **The canonical baseline is the full export in `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`.**
 - **The authoritative cutoff is the latest Trade Table timestamp: `2023-08-05 08:34:04`.**
 - **The delta window starts strictly after that cutoff.**
 - **Raw exports are immutable.**
@@ -32,9 +32,12 @@ This repo is the evidence, staging, and verification workspace for that process.
 
 ### Raw data
 
-- `01_raw_exports/cointracking/2023-08-05_full_export/` → canonical CoinTracking baseline export
-- `01_raw_exports/external/<source>/<capture_id>/` → untouched external source capture
-- `01_raw_exports/external/<source>/<capture_id>/manifest.csv` → file manifest for that source capture
+- `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/` → canonical CoinTracking baseline export
+- `01_raw_exports/portfolio/cointracking/history/<capture_id>/` → later CoinTracking portfolio-system exports and saved report bundles
+- `01_raw_exports/source/<source>/<capture_id>/` → untouched external source capture
+- `01_raw_exports/source/<source>/<capture_id>/manifest.csv` → file manifest for that source capture
+
+The `source` and `portfolio` branches are sibling roots by design. Portfolio-system outputs are verification and reconciliation evidence, not import-source truth.
 
 ### Working area
 
@@ -81,7 +84,7 @@ Use:
 - `03_analysis/reconciliation/baseline_source_activity.csv`
 - `03_analysis/reconciliation/baseline_cad_flow_by_type.csv`
 - `03_analysis/reconciliation/baseline_cad_balance_by_exchange.csv`
-- the canonical exports in `01_raw_exports/cointracking/2023-08-05_full_export/`
+- the canonical exports in `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 
 Do:
 
@@ -107,8 +110,8 @@ Purpose: clear or classify baseline exceptions before delta imports.
 Use:
 
 - `03_analysis/issues/issue_log.csv`
-- `01_raw_exports/external/<source>/<capture_id>/`
-- `01_raw_exports/external/<source>/<capture_id>/manifest.csv`
+- `01_raw_exports/source/<source>/<capture_id>/`
+- `01_raw_exports/source/<source>/<capture_id>/manifest.csv`
 - `Validate Transactions`
 - `Missing Transactions` reviewed with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
 - `Trade Table`
@@ -117,7 +120,7 @@ Do:
 
 1. Review all open P1 issues first.
 2. Pull the exact external evidence needed for each item, including fiat deposit, withdrawal, bank, or e-transfer evidence for **FIAT-001**.
-3. Save raw files into `01_raw_exports/external/<source>/<capture_id>/`.
+3. Save raw files into `01_raw_exports/source/<source>/<capture_id>/`.
 4. Run `06_scripts/source_manifest.py` to capture a manifest for each new raw source folder.
 5. Update `proof_path` and `proof_summary` in the issue log before changing CoinTracking.
 
@@ -200,7 +203,7 @@ Target window:
 Do:
 
 1. Export raw activity for one source at a time.
-2. Save untouched files into `01_raw_exports/external/<source>/<capture_id>/`.
+2. Save untouched files into `01_raw_exports/source/<source>/<capture_id>/`.
 3. Run `06_scripts/source_manifest.py`.
 4. Update `source_inventory.csv` with the export window and capture path.
 5. Do not import yet.

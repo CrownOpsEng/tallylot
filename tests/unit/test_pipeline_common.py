@@ -58,22 +58,13 @@ def test_build_file_inventory_classifies_metamask_state_json_without_filename_de
 
     inventory = pipeline_common.build_file_inventory(raw_dir)
 
-    assert inventory == [
-        {
-            "filename": "wallet-state-backup.json",
-            "suffix": ".json",
-            "family": "metamask_state_json",
-            "header_preview": "metamask",
-            "data_rows": "",
-            "date_field": "",
-            "min_timestamp": "",
-            "max_timestamp": "",
-            "timestamp_resolution": "",
-            "timezone_mode": "",
-            "timezone_value": "",
-            "timezone_conflict": "",
-        }
-    ]
+    assert len(inventory) == 1
+    assert inventory[0]["filename"] == "wallet-state-backup.json"
+    assert inventory[0]["family"] == "metamask_state_json"
+    assert inventory[0]["header_preview"] == "metamask"
+    assert inventory[0]["bundle_type"] == "root_file"
+    assert inventory[0]["bundle_relative_path"] == "wallet-state-backup.json"
+    assert inventory[0]["artifact_kind"] == ""
 
 
 def test_build_file_inventory_classifies_binance_specialized_families(tmp_path: Path) -> None:

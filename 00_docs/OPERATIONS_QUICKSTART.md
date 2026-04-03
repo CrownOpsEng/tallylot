@@ -45,13 +45,13 @@ Default rule:
 ## Baseline repair round
 
 1. Pick the specific issue IDs you are resolving.
-2. Pull raw source evidence into `01_raw_exports/external/<source>/<capture_id>/`.
+2. Pull raw source evidence into `01_raw_exports/source/<source>/<capture_id>/`.
 3. Run:
 
    ```bash
    python3 06_scripts/source_manifest.py \
-     --source-dir 01_raw_exports/external/<source>/<capture_id> \
-     --output 01_raw_exports/external/<source>/<capture_id>/manifest.csv
+     --source-dir 01_raw_exports/source/<source>/<capture_id> \
+     --output 01_raw_exports/source/<source>/<capture_id>/manifest.csv
    ```
 
 4. Update `proof_path` and `proof_summary` in `03_analysis/issues/issue_log.csv`.
@@ -84,14 +84,14 @@ Default rule:
 
 1. Confirm the source row exists in `03_analysis/issues/source_inventory.csv`.
 2. Confirm the source export window begins strictly after `2023-08-05 08:34:04`.
-3. Pull the raw export into `01_raw_exports/external/<source>/<capture_id>/`.
+3. Pull the raw export into `01_raw_exports/source/<source>/<capture_id>/`.
 4. Run `source_manifest.py`.
 5. Profile the raw source into `02_working/normalized/<source>/`:
 
    ```bash
    python3 06_scripts/profile_source.py \
      --source "<Source Name>" \
-     --raw-dir 01_raw_exports/external/<source>/<capture_id> \
+     --raw-dir 01_raw_exports/source/<source>/<capture_id> \
      --out-dir 02_working/normalized/<source>
    ```
 
@@ -109,7 +109,7 @@ Default rule:
    ```bash
    python3 06_scripts/normalize_source.py \
      --source "<Source Name>" \
-     --raw-dir 01_raw_exports/external/<source>/<capture_id> \
+     --raw-dir 01_raw_exports/source/<source>/<capture_id> \
      --out-dir 02_working/normalized/<source> \
      --profile-json 02_working/normalized/<source>/profile.json
    ```
@@ -119,7 +119,7 @@ Default rule:
    ```bash
    python3 06_scripts/stage_import_batch.py \
      --candidate 02_working/normalized/<source>/cointracking_candidate.csv \
-     --baseline-export-dir 01_raw_exports/cointracking/2023-08-05_full_export \
+     --baseline-export-dir 01_raw_exports/portfolio/cointracking/2023-08-05_full_export \
      --out-dir 02_working/import_batches/<source>
    ```
 
@@ -168,7 +168,7 @@ Refresh the baseline artifact package:
 
 ```bash
 python3 06_scripts/baseline_check.py \
-  --export-dir 01_raw_exports/cointracking/2023-08-05_full_export \
+  --export-dir 01_raw_exports/portfolio/cointracking/2023-08-05_full_export \
   --out-dir 03_analysis/reconciliation
 ```
 

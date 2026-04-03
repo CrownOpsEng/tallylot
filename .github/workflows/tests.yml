@@ -1,0 +1,59 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  adapter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Install test dependencies
+        run: python -m pip install pytest hypothesis pytest-cov
+      - name: Run adapter coverage
+        run: |
+          python -m pytest \
+            tests/adapters \
+            tests/unit/test_source_adapters.py \
+            tests/unit/test_source_adapters_fixtures.py \
+            tests/unit/test_source_fixture_packs.py
+
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Install test dependencies
+        run: python -m pip install pytest hypothesis pytest-cov
+      - name: Run pipeline coverage
+        run: |
+          python -m pytest \
+            tests/pipeline \
+            tests/unit \
+            --ignore=tests/unit/test_source_adapters.py \
+            --ignore=tests/unit/test_source_adapters_fixtures.py \
+            --ignore=tests/unit/test_source_fixture_packs.py
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - name: Install test dependencies
+        run: python -m pip install pytest hypothesis pytest-cov
+      - name: Run CLI coverage
+        run: python -m pytest tests/e2e

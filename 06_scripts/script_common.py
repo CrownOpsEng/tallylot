@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import re
 import subprocess
@@ -26,6 +27,7 @@ CANONICAL_TIMEZONE = "UTC"
 COINTRACKING_IMPORT_TIMEZONE = "UTC"
 
 UTC_LABEL_PATTERN = re.compile(r"\(UTC(?P<offset>[^)]*)\)")
+SUPPORTED_CSV_DELIMITERS = ",;\t"
 
 COINTRACKING_FILE_HEADERS = (
     "Type",
@@ -89,9 +91,26 @@ def require_file(path: Path, label: str) -> Path:
     return path
 
 
+def sha256sum(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def sniff_csv_dialect(path: Path) -> csv.Dialect:
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        sample = handle.read(8192)
+    try:
+        return csv.Sniffer().sniff(sample, delimiters=SUPPORTED_CSV_DELIMITERS)
+    except csv.Error:
+        return csv.get_dialect("excel")
+
+
 def read_csv_rows(path: Path) -> list[dict[str, str]]:
     with path.open(newline="", encoding="utf-8-sig") as handle:
-        return list(csv.DictReader(handle))
+        return list(csv.DictReader(handle, dialect=sniff_csv_dialect(path)))
 
 
 def find_matching_csv_files(export_dir: Path, marker: str) -> list[Path]:

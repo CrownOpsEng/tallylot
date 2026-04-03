@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import wallet_inventory
+from wallet_inventory_common import infer_identifier_kind
 from tests.support.helpers import write_csv
 
 
@@ -87,3 +88,8 @@ def test_profile_wallet_identifiers_resolves_adapter_from_profile_without_hint(c
     assert any(row["identifier_kind"] == "near_account" for row in evidence)
     assert issues == []
     assert summary["adapter"] == "near"
+
+
+def test_infer_identifier_kind_keeps_named_near_and_cardano_public_keys_distinct() -> None:
+    assert infer_identifier_kind("example.near") == "near_account"
+    assert infer_identifier_kind("a" * 64) == "cardano_account_key"

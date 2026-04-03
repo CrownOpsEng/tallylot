@@ -82,10 +82,7 @@ def load_adapter_packs(capability: str | None = None) -> list[AdapterPack]:
 def stage_adapter_pack(pack: AdapterPack, destination_root: Path) -> Path:
     capture_dir_name = pack.capture_dir_name or f"{pack.adapter}_{pack.name}"
     target = destination_root / capture_dir_name / "raw"
-    if pack.raw_dir.exists():
-        shutil.copytree(pack.raw_dir, target)
-    else:
-        target.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(pack.raw_dir, target)
     return target
 
 

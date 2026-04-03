@@ -1,4 +1,4 @@
 source,activity_after_cutoff,first_post_cutoff_tx,export_window_start,export_window_end,import_order,status,capture_path,profile_status,adapter,normalization_status,exception_count,candidate_path,notes
-MetaMask app,,,,,,capture_complete,01_raw_exports/external/metamask/raw,,metamask_app,,,,fixture metamask capture
-GTrade 1CT,,,,,,capture_complete,01_raw_exports/external/gtrade/raw,,gtrade,,,,fixture alias capture
-Missing Capture,,,,,,capture_complete,01_raw_exports/external/missing/raw,,ledger_live,,,,fixture missing capture
+MetaMask app,,,,,,capture_complete,01_raw_exports/source/metamask/raw,,metamask_app,,,,fixture metamask capture
+GTrade 1CT,,,,,,capture_complete,01_raw_exports/source/gtrade/raw,,gtrade,,,,fixture alias capture
+Missing Capture,,,,,,capture_complete,01_raw_exports/source/missing/raw,,ledger_live,,,,fixture missing capture

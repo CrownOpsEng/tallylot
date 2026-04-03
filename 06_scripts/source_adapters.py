@@ -518,6 +518,8 @@ def profile_paths(
     *,
     families: set[str] | None = None,
     suffixes: set[str] | None = None,
+    bundle_ids: set[str] | None = None,
+    path_contains: str | None = None,
     predicate=None,
 ) -> list[Path]:
     paths: list[Path] = []
@@ -526,12 +528,24 @@ def profile_paths(
             continue
         if suffixes is not None and row.get("suffix") not in suffixes:
             continue
+        if bundle_ids is not None and row.get("bundle_id") not in bundle_ids:
+            continue
+        if path_contains is not None and path_contains.lower() not in row.get("filename", "").lower():
+            continue
         path = raw_dir / row["filename"]
         if predicate is not None and not predicate(path, row):
             continue
         if path.exists() and path.is_file():
             paths.append(path)
     return sorted(paths)
+
+
+def profile_row_for_path(raw_dir: Path, profile: SourceProfile, path: Path) -> dict[str, str]:
+    try:
+        relative = str(path.relative_to(raw_dir))
+    except ValueError:
+        return {}
+    return next((row for row in profile.file_inventory if row.get("filename") == relative), {})
 
 
 def profile_has_row(
@@ -552,8 +566,8 @@ def profile_has_row(
     return False
 
 
-def first_matching_json_file(raw_dir: Path, *, predicate) -> Path | None:
-    for path in sorted(raw_dir.glob("*.json")):
+def first_matching_json_file(raw_dir: Path, profile: SourceProfile, *, predicate) -> Path | None:
+    for path in profile_paths(raw_dir, profile, suffixes={".json"}):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
@@ -644,6 +658,7 @@ class MetamaskAppAdapter(SourceAdapter):
     ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         state_path = first_matching_json_file(
             raw_dir,
+            profile,
             predicate=lambda payload: isinstance(payload, dict) and isinstance(payload.get("metamask"), dict),
         )
         if state_path is None:
@@ -1040,13 +1055,21 @@ class BinanceAdapter(SourceAdapter):
         exceptions: list[dict[str, str]] = []
         balances: list[dict[str, str]] = []
         covered_timestamps: set[str] = set()
-        has_c2c_history = any(path.name.startswith("Binance-C2C-Order-History-") for path in raw_dir.glob("*.csv"))
+        csv_paths = profile_paths(raw_dir, profile, suffixes={".csv"})
+        profile_rows_by_path = {raw_dir / row["filename"]: row for row in profile.file_inventory}
+        pdf_paths = profile_paths(raw_dir, profile, suffixes={".pdf"}, predicate=lambda path, _row: path.name.startswith("AccountStatementPeriod_"))
+        has_c2c_history = any(
+            path.name.startswith("Binance-C2C-Order-History-") or profile_rows_by_path.get(path, {}).get("family") == "p2p_order_csv"
+            for path in csv_paths
+        )
 
-        for pdf_path in sorted(raw_dir.glob("AccountStatementPeriod_*.pdf")):
+        for pdf_path in pdf_paths:
             balances.extend(binance_balance_rows_from_text(extract_pdf_text(pdf_path), pdf_path.name))
 
-        for path in sorted(raw_dir.glob("*.csv")):
+        for path in csv_paths:
             name = path.name
+            row = profile_rows_by_path.get(path, {})
+            family = row.get("family", "")
             if name.startswith("Binance-Spot-Trade-History-"):
                 events.extend(self._spot_trade_events(path, profile.source))
                 covered_timestamps.update(self._timestamps_for_file(path, "Time", status_field=None, allowed_statuses=None))
@@ -1065,10 +1088,14 @@ class BinanceAdapter(SourceAdapter):
             elif name.startswith("Binance-Fiat-Sell-History-"):
                 events.extend(self._fiat_sell_history_events(path, profile.source))
                 covered_timestamps.update(self._timestamps_for_file(path, "Time", status_field="Status", allowed_statuses={"Successful"}))
-            elif name.startswith("Binance-C2C-Order-History-"):
+            elif name.startswith("Binance-C2C-Order-History-") or family == "p2p_order_csv":
                 events.extend(self._c2c_order_events(path, profile.source))
                 covered_timestamps.update(self._timestamps_for_file(path, "Created Time", status_field="Status", allowed_statuses={"Completed"}))
-            elif name.startswith("Binance-Transaction-History-") or re.match(r"^Binance Transactions \d{4}\.csv$", name):
+            elif (
+                name.startswith("Binance-Transaction-History-")
+                or re.match(r"^Binance Transactions \d{4}\.csv$", name)
+                or family == "custodial_transaction_csv"
+            ):
                 events.extend(
                     self._transaction_history_events(
                         path,
@@ -2091,7 +2118,7 @@ class EvmExplorerAdapter(SourceAdapter):
             lambda: {"normal": [], "token": [], "internal": [], "nft": []}
         )
         for path in selected_paths:
-            profile_row = next((row for row in profile.file_inventory if row.get("filename") == path.name), {})
+            profile_row = profile_row_for_path(raw_dir, profile, path)
             family = self._family_for_profile_row(profile_row)
             if family is None:
                 continue
@@ -3127,7 +3154,6 @@ class LedgerLiveAdapter(SourceAdapter):
                         evidence_kind="csv_row",
                         evidence_path=path,
                         confidence="high",
-                        identifier_kind=self._wallet_identifier_kind(identifier_value, account_label),
                     )
                 )
 
@@ -3377,12 +3403,6 @@ class LedgerLiveAdapter(SourceAdapter):
             return "cardano"
         return ""
 
-    def _wallet_identifier_kind(self, identifier_value: str, account_label: str) -> str | None:
-        account = account_label.lower()
-        if "cardano" in account or "ada" in account:
-            return "cardano_account_key"
-        return None
-
 
 class NearAdapter(SourceAdapter):
     name = "near"
@@ -3550,21 +3570,24 @@ class NearAdapter(SourceAdapter):
         account_paths: dict[str, Path] = {}
         for row in profile.file_inventory:
             filename = row.get("filename", "")
-            for match in re.finditer(r"[a-f0-9]{64}", filename.lower()):
-                account_paths.setdefault(match.group(0), raw_dir / filename)
-            near_match = re.search(r"([a-z0-9._-]+\.near)(?:_|\.csv)", filename.lower())
-            if near_match:
-                account_paths.setdefault(near_match.group(1), raw_dir / filename)
+            candidates = {
+                *{match.group(0) for match in re.finditer(r"[a-f0-9]{64}", filename.lower())},
+                *{match.group(0) for match in re.finditer(r"[a-z0-9][a-z0-9_.-]{1,62}\.near", filename.lower())},
+            }
+            for candidate in sorted(candidates):
+                account_paths.setdefault(normalize_identifier("near_account", candidate), raw_dir / filename)
         if account_paths:
             return sorted(account_paths.items())
         for path in profile_paths(raw_dir, profile, families={"near_transaction_csv", "near_receipt_csv"}, suffixes={".csv"}):
             for row in read_csv_rows(path):
                 for field in ("To", "Affected", "Involved"):
-                    value = (row.get(field) or "").strip().lower()
-                    if value.endswith(".near"):
-                        account_paths.setdefault(value, path)
-                    if re.fullmatch(r"[a-f0-9]{64}", value):
-                        account_paths.setdefault(value, path)
+                    value = (row.get(field) or "").strip()
+                    if not re.fullmatch(r"[a-f0-9]{64}", value.lower()) and not re.fullmatch(
+                        r"[a-z0-9][a-z0-9_.-]{1,62}\.near",
+                        value.lower(),
+                    ):
+                        continue
+                    account_paths.setdefault(normalize_identifier("near_account", value), path)
         return sorted(account_paths.items())
 
     def _near_deposit_event(self, path: Path, source: str, index: int, row: dict[str, str]) -> dict[str, str]:

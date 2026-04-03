@@ -5,11 +5,10 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 from pathlib import Path
 from typing import Sequence
 
-from script_common import require_directory, write_csv_rows
+from script_common import require_directory, sha256sum, write_csv_rows
 
 
 IGNORED_NAMES = {"README.md", ".gitkeep"}
@@ -17,15 +16,6 @@ IGNORED_NAMES = {"README.md", ".gitkeep"}
 
 def validate_source_dir(source_dir: Path) -> Path:
     return require_directory(source_dir.resolve(), "Source directory")
-
-
-def sha256sum(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
 
 def build_manifest_rows(
     source_dir: Path,
@@ -42,6 +32,12 @@ def build_manifest_rows(
         rows.append(
             {
                 "filename": str(path.relative_to(source_dir)),
+                "bundle_id": "",
+                "bundle_type": "",
+                "bundle_relative_path": str(path.relative_to(source_dir)),
+                "source_paths": "",
+                "alias_group": "",
+                "collision_status": "",
                 "size_bytes": path.stat().st_size,
                 "sha256": sha256sum(path),
             }
@@ -50,7 +46,11 @@ def build_manifest_rows(
 
 
 def write_manifest(output: Path, rows: list[dict[str, object]]) -> None:
-    write_csv_rows(output, ["filename", "size_bytes", "sha256"], rows)
+    write_csv_rows(
+        output,
+        ["filename", "bundle_id", "bundle_type", "bundle_relative_path", "source_paths", "alias_group", "collision_status", "size_bytes", "sha256"],
+        rows,
+    )
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:

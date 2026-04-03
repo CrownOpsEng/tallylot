@@ -6,13 +6,15 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 from pathlib import Path
 from typing import Sequence
 
-from overlap_check import summarize_overlap, write_overlap_artifacts
-from pipeline_common import REPO_PROJECT_WINDOW_END, parse_canonical_timestamp, repo_project_window_start
-from script_common import CANONICAL_TIMEZONE, COINTRACKING_IMPORT_TIMEZONE, read_cointracking_rows, require_file, write_json
+from pipeline import (
+    count_candidate_rows_outside_window,
+    read_normalization_summary,
+    resolve_normalization_window,
+    stage_import_candidate,
+)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -93,85 +95,16 @@ def stage_import_batch(
     window_start: str | None = None,
     window_end: str | None = None,
 ) -> dict[str, object]:
-    candidate = require_file(candidate.resolve(), "CoinTracking candidate")
-    out_dir = out_dir.resolve()
-    overlap_dir = out_dir / "overlap_check"
-    effective_window_start, effective_window_end, normalization_summary_path = resolve_normalization_window(
-        candidate=candidate,
+    return stage_import_candidate(
+        candidate,
+        baseline_export_dir,
+        out_dir,
+        staged_name=staged_name,
+        import_ready_dir=import_ready_dir,
         normalization_summary=normalization_summary,
         window_start=window_start,
         window_end=window_end,
     )
-    summary, flagged_rows = summarize_overlap(baseline_export_dir, candidate)
-    write_overlap_artifacts(overlap_dir, summary, flagged_rows)
-
-    if summary["status"] != "pass":
-        result = {
-            "status": "blocked",
-            "candidate": str(candidate),
-            "canonical_timezone": CANONICAL_TIMEZONE,
-            "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
-            "normalization_summary": normalization_summary_path,
-            "normalization_window_start": effective_window_start,
-            "normalization_window_end": effective_window_end,
-            "overlap_summary": str(overlap_dir / "overlap_summary.json"),
-            "rows_flagged": summary["rows_flagged"],
-            "rows_outside_normalization_window": 0,
-            "message": "Candidate failed overlap screening and was not staged.",
-        }
-        write_json(out_dir / "stage_summary.json", result)
-        return result
-
-    rows_outside_window = count_candidate_rows_outside_window(
-        candidate,
-        window_start=effective_window_start,
-        window_end=effective_window_end,
-    )
-    if rows_outside_window:
-        result = {
-            "status": "blocked",
-            "candidate": str(candidate),
-            "canonical_timezone": CANONICAL_TIMEZONE,
-            "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
-            "normalization_summary": normalization_summary_path,
-            "normalization_window_start": effective_window_start,
-            "normalization_window_end": effective_window_end,
-            "overlap_summary": str(overlap_dir / "overlap_summary.json"),
-            "rows_flagged": 0,
-            "rows_outside_normalization_window": rows_outside_window,
-            "message": "Candidate contains row(s) outside the approved normalization window and was not staged.",
-        }
-        write_json(out_dir / "stage_summary.json", result)
-        return result
-
-    out_dir.mkdir(parents=True, exist_ok=True)
-    staged_path = out_dir / (staged_name or candidate.name)
-    shutil.copy2(candidate, staged_path)
-
-    import_ready_path = ""
-    if import_ready_dir is not None:
-        import_ready_dir = import_ready_dir.resolve()
-        import_ready_dir.mkdir(parents=True, exist_ok=True)
-        ready_path = import_ready_dir / staged_path.name
-        shutil.copy2(staged_path, ready_path)
-        import_ready_path = str(ready_path)
-
-    result = {
-        "status": "staged",
-        "candidate": str(candidate),
-        "canonical_timezone": CANONICAL_TIMEZONE,
-        "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
-        "normalization_summary": normalization_summary_path,
-        "normalization_window_start": effective_window_start,
-        "normalization_window_end": effective_window_end,
-        "staged_path": str(staged_path),
-        "import_ready_path": import_ready_path,
-        "overlap_summary": str(overlap_dir / "overlap_summary.json"),
-        "rows_flagged": 0,
-        "rows_outside_normalization_window": 0,
-    }
-    write_json(out_dir / "stage_summary.json", result)
-    return result
 
 
 def main(argv: Sequence[str] | None = None) -> int:

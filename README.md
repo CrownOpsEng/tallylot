@@ -4,9 +4,15 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 
 ## Canonical baseline
 
-- source folder: `01_raw_exports/cointracking/2023-08-05_full_export/`
+- baseline export folder: `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 - authoritative cutoff from Trade Table: `2023-08-05 08:34:04`
 - delta window starts strictly after that timestamp unless a newer baseline is intentionally adopted
+
+## Raw export branches
+
+- `01_raw_exports/source/` holds external exchange, wallet, explorer, and bot evidence
+- `01_raw_exports/portfolio/` holds CoinTracking portfolio-system exports and saved report bundles
+- the two branches are siblings on purpose; portfolio outputs are not source evidence and must not be mixed into source intake
 
 ## What this package includes
 
@@ -15,8 +21,11 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 - a populated issue log for known baseline exceptions
 - an active source inventory and structured round log
 - a universal source-intake pipeline for profiling, canonical normalization, CoinTracking rendering, and reconciliation
-- shared normalization helpers for fee-aware canonical events and output rendering
-- lightweight helper scripts for baseline checks, raw-source manifests, overlap screening, and verification comparison
+- shared inspection, archive handling, routing, overlap, and orchestration modules used across intake, profiling, normalization, staging, and verification
+- content-first scope identification and inventory-backed source resolution so wallet exports reuse existing repo source/account naming when the evidence matches, and fall back to generic address-based naming when it does not
+- shared package-resolution logic that handles strict duplicate bundles, same-cycle near-duplicate merges, and mixed-cycle review without duplicating those rules across scripts
+- source-aware supporting-artifact routing so screenshots, scratch sheets, mixed user workbooks, and unsupported documents are kept out of raw evidence while still staying attached to the right source and historical bundle context
+- lightweight helper scripts for baseline checks, raw-source manifests, intake sorting, overlap screening, fixture scaffolding, golden refresh, and verification comparison
 - repo-local AI skills under `07_skills/` for source intake, adapter authoring, normalization exceptions, round verification, and wallet inventory
 
 ## Start here
@@ -37,23 +46,29 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 1. validate and lock the baseline
 2. resolve or document baseline exceptions with evidence
 3. inventory post-cutoff sources
-4. profile one raw source at a time
-5. normalize into canonical events and balances
-6. stage and overlap-screen one CoinTracking candidate at a time
-7. import one source at a time into CoinTracking
-8. capture fresh verification exports after each round
-9. stop on unexplained drift and close out at `2025-12-31`
+4. sort mixed dumps into canonical historical capture folders and archive bundles
+   The intake report also consolidates fully redundant package copies when one bundle is a strict superset of another, and only merges near-duplicate bundles when the package-resolution engine can justify that they are from the same export cycle.
+   Wallet-style exports are resolved from contents before labels. Existing wallet inventory and source inventory entries win when the scope matches; otherwise intake keeps a generic deterministic wallet folder instead of inventing a user-facing alias.
+   Saved HTML export sidecars inherit the parent export timestamp, and supporting artifacts are routed beside the source rather than left in raw evidence.
+5. profile one raw source capture at a time
+6. normalize into canonical events and balances
+7. stage and overlap-screen one CoinTracking candidate at a time
+8. import one source at a time into CoinTracking
+9. capture fresh verification exports after each round
+10. stop on unexplained drift and close out at `2025-12-31`
 
 ## Testing
 
 Run the full script test suite with:
 
 ```bash
-python3 -m unittest discover -s tests -v
+python3 -m pytest
 ```
 
 The suite is structured as:
 
+- `tests/adapters/` for adapter-boundary and adapter-pack expectations
+- `tests/pipeline/` for orchestration and intake coverage
 - `tests/unit/` for helper-level behavior
 - `tests/e2e/` for CLI execution against real script entrypoints
 - `tests/support/` for shared test harness utilities

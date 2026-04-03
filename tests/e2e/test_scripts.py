@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import zipfile
 from pathlib import Path
 
@@ -276,6 +277,75 @@ def test_overlap_check_cli_writes_summary(tmp_path: Path) -> None:
 
     assert summary["status"] == "pass"
     assert (out_dir / "overlap_summary.json").exists()
+
+
+def test_golden_refresh_cli_respects_pack_capture_dir_name(tmp_path: Path) -> None:
+    source_pack = Path("tests/fixtures/adapter_packs/evm_explorer/suspicious_nft_review")
+    temp_pack = tmp_path / "suspicious_nft_review"
+    shutil.copytree(source_pack, temp_pack)
+    workspace = tmp_path / "workspace"
+
+    result = run_script(
+        "golden_refresh.py",
+        "--pack",
+        str(temp_pack),
+        "--workspace",
+        str(workspace),
+    )
+    summary = json.loads(result.stdout)
+    exceptions = read_json(temp_pack / "expected" / "exceptions.json")
+
+    assert str(temp_pack) == summary["pack"]
+    assert any("exceptions.json" in written for written in summary["written"])
+    assert exceptions[0]["exception_kind"] == "review_required"
+    assert "suspicious NFT airdrop" in exceptions[0]["message"]
+
+
+def test_intake_sort_cli_plans_historical_dump(tmp_path: Path) -> None:
+    incoming = tmp_path / "incoming"
+    incoming.mkdir()
+    (incoming / "borrow.csv").write_text(
+        "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n",
+        encoding="utf-8",
+    )
+    report_dir = tmp_path / "reports"
+
+    result = run_script(
+        "intake_sort.py",
+        "--incoming-dir",
+        str(incoming),
+        "--report-dir",
+        str(report_dir),
+        "--repo-root",
+        str(tmp_path),
+    )
+    summary = json.loads(result.stdout)
+
+    assert summary["status"] == "planned"
+    assert (report_dir / "intake_plan.csv").exists()
+
+
+def test_adapter_pack_scaffold_cli_creates_pack_layout(tmp_path: Path) -> None:
+    fixtures_root = tmp_path / "fixtures"
+
+    result = run_script(
+        "adapter_pack_scaffold.py",
+        "--adapter",
+        "demo",
+        "--scenario",
+        "basic",
+        "--source",
+        "Demo Source",
+        "--capability",
+        "normalize",
+        "--fixtures-root",
+        str(fixtures_root),
+    )
+    summary = json.loads(result.stdout)
+
+    pack_root = Path(summary["pack_root"])
+    assert (pack_root / "pack.json").exists()
+    assert (pack_root / "expected" / "canonical_events.json").exists()
 
 
 def test_verification_compare_cli_writes_summary(tmp_path: Path) -> None:

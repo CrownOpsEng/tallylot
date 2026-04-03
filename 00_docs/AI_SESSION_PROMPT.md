@@ -4,18 +4,18 @@ Use CoinTracking.info as the live ledger and this repo as the evidence and verif
 
 Always anchor to these facts first:
 
-1. canonical baseline folder: `01_raw_exports/cointracking/2023-08-05_full_export/`
+1. canonical baseline folder: `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 2. authoritative cutoff timestamp: `2023-08-05 08:34:04`
 3. delta work begins strictly after that timestamp unless a newer baseline is intentionally adopted
 
 Source order for analysis:
 
-1. canonical baseline exports in `01_raw_exports/cointracking/2023-08-05_full_export/`
+1. canonical baseline exports in `01_raw_exports/portfolio/cointracking/2023-08-05_full_export/`
 2. CRA-aligned tax guidance in `00_docs/CANADIAN_CRYPTOCURRENCY_TAXATION_GUIDE.md`
 3. targeted CRA source lookup via `00_docs/TAX_REFERENCE_MAP.md` when the guide is not enough
 4. durable baseline validation in `00_docs/BASELINE_VALIDATION.md`
 5. fresh verification exports in `02_working/verification/`
-6. raw external source exports in `01_raw_exports/external/`
+6. raw external source exports in `01_raw_exports/source/`
 7. working derivatives in `02_working/`
 
 Operational rules:
