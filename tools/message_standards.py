@@ -63,6 +63,13 @@ def _validate_section_bullets(
             break
         bullet_count += 1
         index += 1
+        while (
+            index < len(lines)
+            and lines[index] != ""
+            and not lines[index].startswith("- ")
+            and LABEL_PATTERN.fullmatch(lines[index]) is None
+        ):
+            index += 1
 
     if bullet_count == 0:
         errors.append(f"`{section}:` must contain at least one bullet")

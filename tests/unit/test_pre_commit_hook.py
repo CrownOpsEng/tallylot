@@ -35,9 +35,10 @@ def test_skip_value_appends_formatter_hooks_once() -> None:
 
 def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:
     assert "-m tools.pre_commit_hook" in HOOK_TEMPLATE
-    assert 'REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"' in HOOK_TEMPLATE
+    assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in HOOK_TEMPLATE
     assert 'export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"' in HOOK_TEMPLATE
     assert "--hook-type=commit-msg" in COMMIT_MSG_HOOK_TEMPLATE
+    assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in COMMIT_MSG_HOOK_TEMPLATE
 
 
 def test_install_hooks_uses_pre_commit_overwrite_mode(
