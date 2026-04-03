@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from repo_support import paths as repo_paths
 from tools.adapter_packs import load_adapter_packs, select_adapter_packs
-from tools.scaffold_adapter import AdapterScaffoldSpec, scaffold_adapter
+from tools.scaffold_adapter import AdapterScaffoldSpec, _build_argument_parser, scaffold_adapter
 
 
 def test_load_adapter_packs_discovers_structured_csv_pack() -> None:
@@ -23,6 +24,35 @@ def test_select_adapter_packs_rejects_unknown_id() -> None:
         assert "missing/pack" in str(exc)
     else:
         raise AssertionError("expected missing pack selection to fail")
+
+
+def test_load_adapter_packs_uses_active_repo_root_by_default(tmp_path: Path) -> None:
+    pack_root = tmp_path / "tests" / "fixtures" / "adapter_packs" / "example" / "basic"
+    (pack_root / "raw").mkdir(parents=True)
+    (pack_root / "expected").mkdir()
+    (pack_root / "pack.json").write_text(
+        '{"adapter":"example","source":"Example","expected_adapter":"example","capabilities":["normalize"]}\n',
+        encoding="utf-8",
+    )
+
+    with repo_paths.override_repo_root(tmp_path):
+        packs = load_adapter_packs()
+
+    assert len(packs) == 1
+    assert packs[0].id == "example/basic"
+
+
+def test_scaffold_parser_uses_active_repo_root_by_default(tmp_path: Path) -> None:
+    with repo_paths.override_repo_root(tmp_path):
+        args = _build_argument_parser().parse_args(
+            [
+                "source",
+                "platforms/example_exchange",
+                "Example Exchange",
+            ]
+        )
+
+    assert args.repo_root is None
 
 
 def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:

@@ -9,64 +9,86 @@ from typing import cast
 from typer.main import Typer
 from typer.models import CommandInfo
 
+from repo_support.paths import adapter_packs_root, agents_root, claude_commands_root, docs_root, repo_root
 from tallylot.infrastructure.workspace.layout import SEED_FILES
 from tallylot.interfaces.cli import app
 from tools.oracles.cli import app as oracle_app
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-PRODUCTION_ROUTE_DOC_PATHS = [
-    REPO_ROOT / "README.md",
-    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
-    REPO_ROOT / "docs" / "guides" / "source-intake.md",
-    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
-    REPO_ROOT / "docs" / "reference" / "wallet-inventory-artifacts.md",
-    REPO_ROOT / "docs" / "workspace" / "analysis" / "inventory" / "README.md",
-    REPO_ROOT / ".claude" / "commands" / "source-intake.md",
-    REPO_ROOT / ".claude" / "commands" / "wallet-inventory.md",
-    REPO_ROOT / ".claude" / "commands" / "supporting-artifacts.md",
-]
-ORACLE_ROUTE_DOC_PATHS = [
-    REPO_ROOT / "docs" / "reference" / "baseline-validation-contract.md",
-    REPO_ROOT / "docs" / "reference" / "export-checklist.md",
-    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
-    REPO_ROOT / "docs" / "guides" / "full-operator-workflow.md",
-    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
-    REPO_ROOT / "docs" / "guides" / "verify-a-round.md",
-    REPO_ROOT / ".claude" / "commands" / "round-verification.md",
-    REPO_ROOT / ".claude" / "commands" / "source-diff.md",
-]
-ARCHITECTURE_DOC_PATHS = [
-    REPO_ROOT / "README.md",
-    REPO_ROOT / "ROADMAP.md",
-    REPO_ROOT / "docs" / "standards" / "engineering.md",
-    REPO_ROOT / "docs" / "concepts" / "reconciliation-tax-architecture.md",
-    REPO_ROOT / ".claude" / "commands" / "source-intake.md",
-]
-ENV_PREFIX_REQUIRED_DOC_PATHS = (
-    REPO_ROOT / "README.md",
-    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
-    REPO_ROOT / "docs" / "guides" / "full-operator-workflow.md",
-    REPO_ROOT / "docs" / "guides" / "source-intake.md",
-    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
-    REPO_ROOT / "docs" / "guides" / "verify-a-round.md",
-    REPO_ROOT / "docs" / "reference" / "baseline-validation-contract.md",
-    REPO_ROOT / "docs" / "reference" / "export-checklist.md",
-    REPO_ROOT / "docs" / "reference" / "wallet-inventory-artifacts.md",
-    REPO_ROOT / "docs" / "workspace" / "analysis" / "inventory" / "README.md",
-    REPO_ROOT / ".claude" / "commands" / "adapter-authoring.md",
-    REPO_ROOT / ".claude" / "commands" / "implementation-checkpoint.md",
-    REPO_ROOT / ".claude" / "commands" / "normalization-exceptions.md",
-    REPO_ROOT / ".claude" / "commands" / "reconciliation-tax-build.md",
-    REPO_ROOT / ".claude" / "commands" / "round-verification.md",
-    REPO_ROOT / ".claude" / "commands" / "source-diff.md",
-    REPO_ROOT / ".claude" / "commands" / "source-intake.md",
-    REPO_ROOT / ".claude" / "commands" / "supporting-artifacts.md",
-    REPO_ROOT / ".claude" / "commands" / "wallet-inventory.md",
-)
 PRODUCTION_COMMAND_ROUTE_PATTERN = re.compile(
     r'(?:UV_PROJECT_ENVIRONMENT="\$HOME/\.venvs/tallylot-py312" )?uv run tallylot '
     r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
 )
+
+
+def production_route_doc_paths() -> list[Path]:
+    commands_root = claude_commands_root()
+    docs = docs_root()
+    return [
+        repo_root() / "README.md",
+        docs / "guides" / "operator-quickstart.md",
+        docs / "guides" / "source-intake.md",
+        docs / "guides" / "normalize-screen-stage.md",
+        docs / "reference" / "wallet-inventory-artifacts.md",
+        docs / "workspace" / "analysis" / "inventory" / "README.md",
+        commands_root / "source-intake.md",
+        commands_root / "wallet-inventory.md",
+        commands_root / "supporting-artifacts.md",
+    ]
+
+
+def oracle_route_doc_paths() -> list[Path]:
+    commands_root = claude_commands_root()
+    docs = docs_root()
+    return [
+        docs / "reference" / "baseline-validation-contract.md",
+        docs / "reference" / "export-checklist.md",
+        docs / "guides" / "operator-quickstart.md",
+        docs / "guides" / "full-operator-workflow.md",
+        docs / "guides" / "normalize-screen-stage.md",
+        docs / "guides" / "verify-a-round.md",
+        commands_root / "round-verification.md",
+        commands_root / "source-diff.md",
+    ]
+
+
+def architecture_doc_paths() -> list[Path]:
+    commands_root = claude_commands_root()
+    docs = docs_root()
+    return [
+        repo_root() / "README.md",
+        repo_root() / "ROADMAP.md",
+        docs / "standards" / "engineering.md",
+        docs / "concepts" / "reconciliation-tax-architecture.md",
+        commands_root / "source-intake.md",
+    ]
+
+
+def env_prefix_required_doc_paths() -> tuple[Path, ...]:
+    commands_root = claude_commands_root()
+    docs = docs_root()
+    return (
+        repo_root() / "README.md",
+        docs / "guides" / "operator-quickstart.md",
+        docs / "guides" / "full-operator-workflow.md",
+        docs / "guides" / "source-intake.md",
+        docs / "guides" / "normalize-screen-stage.md",
+        docs / "guides" / "verify-a-round.md",
+        docs / "reference" / "baseline-validation-contract.md",
+        docs / "reference" / "export-checklist.md",
+        docs / "reference" / "wallet-inventory-artifacts.md",
+        docs / "workspace" / "analysis" / "inventory" / "README.md",
+        commands_root / "adapter-authoring.md",
+        commands_root / "implementation-checkpoint.md",
+        commands_root / "normalization-exceptions.md",
+        commands_root / "reconciliation-tax-build.md",
+        commands_root / "round-verification.md",
+        commands_root / "source-diff.md",
+        commands_root / "source-intake.md",
+        commands_root / "supporting-artifacts.md",
+        commands_root / "wallet-inventory.md",
+    )
+
+
 ORACLE_COMMAND_ROUTE_PATTERN = re.compile(
     r'(?:UV_PROJECT_ENVIRONMENT="\$HOME/\.venvs/tallylot-py312" )?uv run python -m tools\.oracles\.cli '
     r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
@@ -103,7 +125,7 @@ def _registered_routes(typer_app: Typer) -> set[str]:
 
 
 def test_documented_cli_routes_exist() -> None:
-    documented_routes = _documented_routes(PRODUCTION_ROUTE_DOC_PATHS, PRODUCTION_COMMAND_ROUTE_PATTERN)
+    documented_routes = _documented_routes(production_route_doc_paths(), PRODUCTION_COMMAND_ROUTE_PATTERN)
     registered_routes = _registered_routes(app)
 
     missing_routes = sorted(documented_routes - registered_routes)
@@ -112,7 +134,7 @@ def test_documented_cli_routes_exist() -> None:
 
 
 def test_documented_oracle_cli_routes_exist() -> None:
-    documented_routes = _documented_routes(ORACLE_ROUTE_DOC_PATHS, ORACLE_COMMAND_ROUTE_PATTERN)
+    documented_routes = _documented_routes(oracle_route_doc_paths(), ORACLE_COMMAND_ROUTE_PATTERN)
     registered_routes = _registered_routes(oracle_app)
 
     missing_routes = sorted(documented_routes - registered_routes)
@@ -134,7 +156,7 @@ def test_documented_claude_command_routes_exist() -> None:
     )
 
     for relative_path in command_paths:
-        assert (REPO_ROOT / relative_path).exists(), f"missing documented command route: {relative_path}"
+        assert (repo_root() / relative_path).exists(), f"missing documented command route: {relative_path}"
 
 
 def test_documented_claude_command_routes_are_not_ignored() -> None:
@@ -153,7 +175,7 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
     for relative_path in command_paths:
         result = subprocess.run(
             ("git", "check-ignore", "-q", relative_path),
-            cwd=REPO_ROOT,
+            cwd=repo_root(),
             capture_output=True,
             text=True,
             check=False,
@@ -162,7 +184,7 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
 
 
 def test_source_intake_route_mentions_current_typed_commands() -> None:
-    text = (REPO_ROOT / ".claude" / "commands" / "source-intake.md").read_text(encoding="utf-8")
+    text = (claude_commands_root() / "source-intake.md").read_text(encoding="utf-8")
 
     for command in (
         "source intake plan",
@@ -177,7 +199,7 @@ def test_source_intake_route_mentions_current_typed_commands() -> None:
 
 
 def test_round_verification_route_mentions_oracle_cli_commands() -> None:
-    text = (REPO_ROOT / ".claude" / "commands" / "round-verification.md").read_text(encoding="utf-8")
+    text = (claude_commands_root() / "round-verification.md").read_text(encoding="utf-8")
 
     scaffold_command = (
         'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli round scaffold'
@@ -191,13 +213,13 @@ def test_round_verification_route_mentions_oracle_cli_commands() -> None:
 
 
 def test_supporting_route_mentions_checkpoint_pdf_balance_extraction_command() -> None:
-    text = (REPO_ROOT / ".claude" / "commands" / "supporting-artifacts.md").read_text(encoding="utf-8")
+    text = (claude_commands_root() / "supporting-artifacts.md").read_text(encoding="utf-8")
 
     assert "checkpoint extract-pdf-balances" in text
 
 
 def test_location_inventory_route_mentions_checkpoint_command() -> None:
-    text = (REPO_ROOT / ".claude" / "commands" / "wallet-inventory.md").read_text(encoding="utf-8")
+    text = (claude_commands_root() / "wallet-inventory.md").read_text(encoding="utf-8")
 
     assert "checkpoint rebuild-location-inventory" in text
 
@@ -216,14 +238,14 @@ def test_docs_do_not_reference_retired_service_or_model_buckets() -> None:
         "supporting extract-pdf-balances",
         "wallet inventory rebuild",
     )
-    for path in ARCHITECTURE_DOC_PATHS:
+    for path in architecture_doc_paths():
         text = path.read_text(encoding="utf-8").lower()
         for needle in forbidden:
             assert needle not in text, f"{path} still references retired surface {needle!r}"
 
 
 def test_docs_use_lowercase_filenames_except_readmes() -> None:
-    for path in sorted((REPO_ROOT / "docs").rglob("*")):
+    for path in sorted(docs_root().rglob("*")):
         if not path.is_file():
             continue
         if path.name == "README.md":
@@ -238,12 +260,12 @@ def test_repo_docs_do_not_reference_personal_workspace_roots() -> None:
         "~/Documents/",
     )
     paths = (
-        REPO_ROOT / "README.md",
-        REPO_ROOT / "AGENTS.md",
-        REPO_ROOT / "tallylot.toml",
-        *sorted((REPO_ROOT / "docs").rglob("*.md")),
-        *sorted((REPO_ROOT / "agents").rglob("*.md")),
-        *sorted((REPO_ROOT / ".claude").rglob("*.md")),
+        repo_root() / "README.md",
+        repo_root() / "AGENTS.md",
+        repo_root() / "tallylot.toml",
+        *sorted(docs_root().rglob("*.md")),
+        *sorted(agents_root().rglob("*.md")),
+        *sorted((repo_root() / ".claude").rglob("*.md")),
     )
 
     for path in paths:
@@ -253,12 +275,12 @@ def test_repo_docs_do_not_reference_personal_workspace_roots() -> None:
 
 
 def test_private_oracle_manifest_is_not_checked_in() -> None:
-    assert not (REPO_ROOT / "docs" / "reference" / "cointracking-full-export-manifest.csv").exists()
+    assert not (docs_root() / "reference" / "cointracking-full-export-manifest.csv").exists()
 
 
 def test_workspace_issue_log_seed_header_matches_template() -> None:
     template_header = (
-        (REPO_ROOT / "docs" / "workspace" / "analysis" / "issues" / "issue-log-template.csv")
+        (docs_root() / "workspace" / "analysis" / "issues" / "issue-log-template.csv")
         .read_text(encoding="utf-8")
         .splitlines()[0]
     )
@@ -271,7 +293,7 @@ def test_workspace_issue_log_seed_header_matches_template() -> None:
 
 def test_workspace_source_inventory_seed_header_matches_template() -> None:
     template_header = (
-        (REPO_ROOT / "docs" / "workspace" / "analysis" / "issues" / "source-inventory-template.csv")
+        (docs_root() / "workspace" / "analysis" / "issues" / "source-inventory-template.csv")
         .read_text(encoding="utf-8")
         .splitlines()[0]
     )
@@ -283,7 +305,7 @@ def test_workspace_source_inventory_seed_header_matches_template() -> None:
 
 
 def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
-    text = (REPO_ROOT / "docs" / "standards" / "commits.md").read_text(encoding="utf-8")
+    text = (docs_root() / "standards" / "commits.md").read_text(encoding="utf-8")
 
     assert "Do not describe `mypy` or `pyright` as covering `pylint` findings." in text
     assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>' in text
@@ -293,8 +315,8 @@ def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
 
 def test_implementation_anchor_references_use_explicit_doc_paths() -> None:
     paths = (
-        REPO_ROOT / "AGENTS.md",
-        REPO_ROOT / "docs" / "standards" / "implementation.md",
+        repo_root() / "AGENTS.md",
+        docs_root() / "standards" / "implementation.md",
     )
 
     for path in paths:
@@ -305,7 +327,7 @@ def test_implementation_anchor_references_use_explicit_doc_paths() -> None:
 def test_reference_docs_do_not_check_in_oracle_data_files() -> None:
     forbidden_suffixes = {".csv", ".json", ".zip", ".html", ".pdf"}
 
-    for path in sorted((REPO_ROOT / "docs" / "reference").rglob("*")):
+    for path in sorted((docs_root() / "reference").rglob("*")):
         if not path.is_file():
             continue
         assert path.suffix not in forbidden_suffixes, (
@@ -316,7 +338,7 @@ def test_reference_docs_do_not_check_in_oracle_data_files() -> None:
 def test_adapter_pack_goldens_do_not_embed_absolute_home_paths() -> None:
     forbidden = ("/home/user/", "CoinTracking.info/tallylot-2025")
 
-    for path in sorted((REPO_ROOT / "tests" / "fixtures" / "adapter_packs").rglob("*.json")):
+    for path in sorted(adapter_packs_root().rglob("*.json")):
         text = path.read_text(encoding="utf-8")
         for needle in forbidden:
             assert needle not in text, f"{path} still embeds absolute local path content"

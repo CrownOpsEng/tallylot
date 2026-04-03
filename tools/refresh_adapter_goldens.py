@@ -6,12 +6,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import cast
 
+from repo_support.paths import adapter_packs_root
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.composition import build_profile_use_case, normalize_source_use_case
 from tallylot.infrastructure.discovery.adapters import build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
-from tools.adapter_packs import DEFAULT_PACK_ROOT, AdapterPack, select_adapter_packs
+from tools.adapter_packs import AdapterPack, select_adapter_packs
 
 EXPECTED_NORMALIZATION_ARTIFACTS = (
     "facts",
@@ -54,7 +55,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--pack-root",
         type=Path,
-        default=DEFAULT_PACK_ROOT,
+        default=None,
         help="Root containing adapter pack fixtures.",
     )
     parser.add_argument(
@@ -135,8 +136,9 @@ def refresh_pack(pack: AdapterPack) -> tuple[Path, ...]:
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_argument_parser().parse_args(argv)
+    pack_root = adapter_packs_root() if args.pack_root is None else args.pack_root.resolve()
     packs = select_adapter_packs(
-        pack_root=args.pack_root.resolve(),
+        pack_root=pack_root,
         selected_ids=tuple(args.packs),
         capability=args.capability,
     )

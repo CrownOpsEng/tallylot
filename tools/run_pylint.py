@@ -19,7 +19,7 @@ TARGETS = (
     ),
     PylintTarget(
         name="tests",
-        command=(sys.executable, "-m", "pylint", "--disable=protected-access", "tests"),
+        command=(sys.executable, "-m", "pylint", "--rcfile=.pylintrc-tests", "tests"),
     ),
 )
 

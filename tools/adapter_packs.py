@@ -5,8 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PACK_ROOT = REPO_ROOT / "tests" / "fixtures" / "adapter_packs"
+from repo_support.paths import adapter_packs_root
 
 
 @dataclass(frozen=True)
@@ -40,11 +39,12 @@ class AdapterPack:
 
 def load_adapter_packs(
     *,
-    pack_root: Path = DEFAULT_PACK_ROOT,
+    pack_root: Path | None = None,
     capability: str | None = None,
 ) -> tuple[AdapterPack, ...]:
+    resolved_pack_root = adapter_packs_root() if pack_root is None else pack_root.resolve()
     packs: list[AdapterPack] = []
-    for manifest in sorted(pack_root.glob("*/*/pack.json")):
+    for manifest in sorted(resolved_pack_root.glob("*/*/pack.json")):
         pack = _load_adapter_pack(manifest)
         if capability is not None and not pack.supports(capability):
             continue
@@ -54,7 +54,7 @@ def load_adapter_packs(
 
 def select_adapter_packs(
     *,
-    pack_root: Path = DEFAULT_PACK_ROOT,
+    pack_root: Path | None = None,
     selected_ids: tuple[str, ...] = (),
     capability: str | None = None,
 ) -> tuple[AdapterPack, ...]:

@@ -8,10 +8,10 @@ import tomllib
 from collections import defaultdict
 from pathlib import Path
 
+from repo_support.paths import repo_root
 from tallylot.adapters.support.drafts import economic_leg
 from tallylot.domain.transactions import EconomicLeg, ProjectionHint, TransactionFact
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
 CLASSIFICATION_KEYWORDS = frozenset(
     {
         "economic_kind",
@@ -28,6 +28,21 @@ def _module(path: Path) -> ast.Module:
 
 def _python_files(root: Path) -> tuple[Path, ...]:
     return tuple(sorted(root.rglob("*.py")))
+
+
+def _repo_side_python_files() -> tuple[Path, ...]:
+    root = repo_root()
+    repo_side_paths = (
+        root / "conftest.py",
+        *sorted((root / "repo_support").rglob("*.py")),
+        *sorted((root / "tools").rglob("*.py")),
+        *sorted((root / "tests").rglob("*.py")),
+        *sorted((root / "src" / "tallylot").rglob("tests/**/*.py")),
+    )
+    seen: dict[Path, None] = {}
+    for path in repo_side_paths:
+        seen[path] = None
+    return tuple(seen)
 
 
 def _production_python_files(root: Path) -> tuple[Path, ...]:
@@ -61,12 +76,91 @@ def _assert_no_imports(root: Path, forbidden_modules: tuple[str, ...], *, produc
                         )
 
 
+def _uses_direct_repo_root_derivation(path: Path) -> bool:
+    def is_dunder_file_expr(node: ast.expr) -> bool:
+        return isinstance(node, ast.Name) and node.id == "__file__"
+
+    def is_path_dunder_file_expr(node: ast.expr) -> bool:
+        return (
+            isinstance(node, ast.Call)
+            and _is_named_call(node.func, "Path")
+            and len(node.args) == 1
+            and is_dunder_file_expr(node.args[0])
+        )
+
+    def is_resolve_call(node: ast.expr) -> bool:
+        return (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "resolve"
+            and is_path_dunder_file_expr(node.func.value)
+        )
+
+    def is_repo_root_derivation(node: ast.expr) -> bool:
+        current = node
+        if (
+            isinstance(current, ast.Subscript)
+            and isinstance(current.value, ast.Attribute)
+            and current.value.attr == "parents"
+        ):
+            return is_resolve_call(current.value.value)
+        while isinstance(current, ast.Attribute) and current.attr == "parent":
+            current = current.value
+        return is_resolve_call(current)
+
+    module = _module(path)
+    for node in ast.walk(module):
+        if not isinstance(node, ast.Assign | ast.AnnAssign | ast.NamedExpr | ast.Call | ast.Attribute | ast.Subscript):
+            continue
+        candidate: ast.expr | None = (
+            node.value if isinstance(node, ast.Assign | ast.AnnAssign | ast.NamedExpr) else node
+        )
+        if candidate is not None and is_repo_root_derivation(candidate):
+            return True
+    return False
+
+
+def test_repo_root_derivation_guard_catches_parent_and_parents_forms(tmp_path: Path) -> None:
+    parent_form = tmp_path / "parent_form.py"
+    parent_form.write_text(
+        "from pathlib import Path\nREPO = Path(__file__).resolve().parent.parent\n",
+        encoding="utf-8",
+    )
+    parents_form = tmp_path / "parents_form.py"
+    parents_form.write_text(
+        "from pathlib import Path\nREPO = Path(__file__).resolve().parents[1]\n",
+        encoding="utf-8",
+    )
+    allowed = tmp_path / "allowed.py"
+    allowed.write_text(
+        "from repo_support.paths import repo_root\nROOT = repo_root()\n",
+        encoding="utf-8",
+    )
+
+    assert _uses_direct_repo_root_derivation(parent_form) is True
+    assert _uses_direct_repo_root_derivation(parents_form) is True
+    assert _uses_direct_repo_root_derivation(allowed) is False
+
+
+def _defines_root_constants(path: Path) -> bool:
+    constant_names = {"REPO_ROOT", "DOCS_ROOT", "AGENTS_ROOT"}
+    module = _module(path)
+    for node in module.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id in constant_names for target in node.targets
+        ):
+            return True
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id in constant_names:
+            return True
+    return False
+
+
 def test_repo_has_no_type_ignore_comments() -> None:
     python_files = (
-        REPO_ROOT / "conftest.py",
-        *_python_files(REPO_ROOT / "src"),
-        *_python_files(REPO_ROOT / "tests"),
-        *_python_files(REPO_ROOT / "tools"),
+        repo_root() / "conftest.py",
+        *_python_files(repo_root() / "src"),
+        *_python_files(repo_root() / "tests"),
+        *_python_files(repo_root() / "tools"),
     )
     forbidden = ("type:" + " ignore", "pyright:" + " ignore")
 
@@ -76,14 +170,46 @@ def test_repo_has_no_type_ignore_comments() -> None:
             assert needle not in text, f"{path} contains forbidden typing bypass {needle!r}"
 
 
+def test_repo_root_derivation_is_centralized_in_repo_support_paths() -> None:
+    approved = repo_root() / "repo_support" / "paths.py"
+
+    offenders = [
+        path for path in _repo_side_python_files() if path != approved and _uses_direct_repo_root_derivation(path)
+    ]
+
+    assert not offenders, f"repo-side python still derives repo root outside repo_support.paths: {offenders}"
+
+
+def test_repo_side_python_does_not_define_repo_root_constants() -> None:
+    offenders = [path for path in _repo_side_python_files() if _defines_root_constants(path)]
+
+    assert not offenders, f"repo-side python still defines local root constants: {offenders}"
+
+
+def test_production_code_does_not_import_repo_support_or_tools() -> None:
+    src_root = repo_root() / "src" / "tallylot"
+
+    _assert_no_imports(src_root, ("repo_support", "tools"), production_only=True)
+
+
+def test_repo_support_avoids_generic_sink_modules() -> None:
+    forbidden = {"helpers.py", "utils.py", "common.py", "misc.py"}
+    support_root = repo_root() / "repo_support"
+    if not support_root.exists():
+        raise AssertionError("repo_support package is missing")
+    offenders = sorted(path.name for path in support_root.rglob("*.py") if path.name in forbidden)
+
+    assert not offenders, f"repo_support contains forbidden generic sink modules: {offenders}"
+
+
 def test_markdownlint_only_disables_md013() -> None:
-    config = json.loads((REPO_ROOT / ".markdownlint.json").read_text(encoding="utf-8"))
+    config = json.loads((repo_root() / ".markdownlint.json").read_text(encoding="utf-8"))
     assert config == {"default": True, "MD013": False}
 
 
 def test_module_size_policy_remains_aligned() -> None:
-    pylint_text = (REPO_ROOT / ".pylintrc").read_text(encoding="utf-8")
-    standards_text = (REPO_ROOT / "docs/standards/engineering.md").read_text(encoding="utf-8")
+    pylint_text = (repo_root() / ".pylintrc").read_text(encoding="utf-8")
+    standards_text = (repo_root() / "docs/standards/engineering.md").read_text(encoding="utf-8")
 
     assert "max-module-lines = 450" in pylint_text
     assert re.search(r"Refactor before extending beyond 300 lines", standards_text) is not None
@@ -92,7 +218,7 @@ def test_module_size_policy_remains_aligned() -> None:
 
 
 def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:
-    source_root = REPO_ROOT / "src" / "tallylot"
+    source_root = repo_root() / "src" / "tallylot"
 
     for directory in sorted({path.parent for path in source_root.rglob("*.py")}):
         prefix_groups: dict[str, list[str]] = defaultdict(list)
@@ -108,7 +234,7 @@ def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:
 
 
 def test_retired_bucket_directories_do_not_exist() -> None:
-    src_root = REPO_ROOT / "src" / "tallylot"
+    src_root = repo_root() / "src" / "tallylot"
 
     assert not (src_root / "application" / "services").exists()
     assert not (src_root / "application" / "models").exists()
@@ -119,7 +245,7 @@ def test_retired_bucket_directories_do_not_exist() -> None:
 
 
 def test_oracle_code_is_not_in_production_package() -> None:
-    src_root = REPO_ROOT / "src" / "tallylot"
+    src_root = repo_root() / "src" / "tallylot"
     forbidden = (
         src_root / "application" / "oracle_review",
         src_root / "adapters" / "oracles",
@@ -135,7 +261,7 @@ def test_oracle_code_is_not_in_production_package() -> None:
 
 
 def test_future_capability_roots_remain_available_for_next_phase() -> None:
-    src_root = REPO_ROOT / "src" / "tallylot"
+    src_root = repo_root() / "src" / "tallylot"
 
     required_packages = (
         src_root / "application" / "reconciliation",
@@ -166,7 +292,7 @@ def test_future_capability_roots_remain_available_for_next_phase() -> None:
 
 
 def test_production_packaging_excludes_dev_only_oracle_tooling() -> None:
-    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    pyproject = tomllib.loads((repo_root() / "pyproject.toml").read_text(encoding="utf-8"))
 
     scripts = pyproject["project"]["scripts"]
     wheel_packages = pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"]
@@ -177,8 +303,8 @@ def test_production_packaging_excludes_dev_only_oracle_tooling() -> None:
 
 
 def test_typecheck_configs_remain_strict() -> None:
-    mypy_text = (REPO_ROOT / "mypy.ini").read_text(encoding="utf-8")
-    pyright_config = json.loads((REPO_ROOT / "pyrightconfig.json").read_text(encoding="utf-8"))
+    mypy_text = (repo_root() / "mypy.ini").read_text(encoding="utf-8")
+    pyright_config = json.loads((repo_root() / "pyrightconfig.json").read_text(encoding="utf-8"))
 
     assert "strict = true" in mypy_text
     assert "warn_unused_ignores = true" in mypy_text
@@ -187,13 +313,13 @@ def test_typecheck_configs_remain_strict() -> None:
 
 
 def test_application_modules_do_not_import_infrastructure() -> None:
-    application_root = REPO_ROOT / "src" / "tallylot" / "application"
+    application_root = repo_root() / "src" / "tallylot" / "application"
 
     _assert_no_imports(application_root, ("tallylot.infrastructure",))
 
 
 def test_domain_modules_do_not_import_outer_layers_or_pydantic() -> None:
-    domain_root = REPO_ROOT / "src" / "tallylot" / "domain"
+    domain_root = repo_root() / "src" / "tallylot" / "domain"
 
     _assert_no_imports(
         domain_root,
@@ -208,7 +334,7 @@ def test_domain_modules_do_not_import_outer_layers_or_pydantic() -> None:
 
 
 def test_ports_modules_do_not_import_implementation_layers() -> None:
-    ports_root = REPO_ROOT / "src" / "tallylot" / "ports"
+    ports_root = repo_root() / "src" / "tallylot" / "ports"
 
     _assert_no_imports(
         ports_root,
@@ -222,7 +348,7 @@ def test_ports_modules_do_not_import_implementation_layers() -> None:
 
 
 def test_adapter_production_modules_do_not_import_application_or_infrastructure() -> None:
-    adapters_root = REPO_ROOT / "src" / "tallylot" / "adapters"
+    adapters_root = repo_root() / "src" / "tallylot" / "adapters"
 
     _assert_no_imports(
         adapters_root,
@@ -258,13 +384,13 @@ def test_economic_leg_fee_specific_helper_and_flag_are_removed() -> None:
 
 def test_repo_does_not_reference_fact_category_attribute() -> None:
     guarded_roots = (
-        REPO_ROOT / "src" / "tallylot" / "adapters",
-        REPO_ROOT / "src" / "tallylot" / "application" / "outputs",
-        REPO_ROOT / "src" / "tallylot" / "infrastructure" / "storage",
-        REPO_ROOT / "src" / "tallylot" / "adapters" / "support",
-        REPO_ROOT / "tests" / "unit" / "domain",
-        REPO_ROOT / "tests" / "unit" / "application" / "outputs",
-        REPO_ROOT / "tests" / "contract",
+        repo_root() / "src" / "tallylot" / "adapters",
+        repo_root() / "src" / "tallylot" / "application" / "outputs",
+        repo_root() / "src" / "tallylot" / "infrastructure" / "storage",
+        repo_root() / "src" / "tallylot" / "adapters" / "support",
+        repo_root() / "tests" / "unit" / "domain",
+        repo_root() / "tests" / "unit" / "application" / "outputs",
+        repo_root() / "tests" / "contract",
     )
 
     for root in guarded_roots:
@@ -276,8 +402,8 @@ def test_repo_does_not_reference_fact_category_attribute() -> None:
 
 def test_repo_does_not_reference_removed_single_leg_fact_attributes() -> None:
     guarded_roots = (
-        REPO_ROOT / "src" / "tallylot",
-        REPO_ROOT / "tests",
+        repo_root() / "src" / "tallylot",
+        repo_root() / "tests",
     )
     forbidden_attributes = {
         "asset_in",
@@ -300,7 +426,7 @@ def test_repo_does_not_reference_removed_single_leg_fact_attributes() -> None:
 
 
 def test_source_adapters_do_not_pass_string_classification_values() -> None:
-    adapters_root = REPO_ROOT / "src" / "tallylot" / "adapters" / "sources"
+    adapters_root = repo_root() / "src" / "tallylot" / "adapters" / "sources"
 
     for path in _python_files(adapters_root):
         for node in ast.walk(_module(path)):
@@ -326,14 +452,14 @@ def test_projection_hint_runtime_values_remain_machine_oriented() -> None:
 
 def test_balance_evidence_has_single_production_owner() -> None:
     occurrences = 0
-    for path in _python_files(REPO_ROOT / "src" / "tallylot"):
+    for path in _python_files(repo_root() / "src" / "tallylot"):
         text = path.read_text(encoding="utf-8")
         occurrences += text.count("class BalanceEvidence")
     assert occurrences == 1
 
 
 def test_transaction_classification_matrix_describes_runtime_projection_values() -> None:
-    matrix_text = (REPO_ROOT / "docs" / "concepts" / "transaction-classification.md").read_text(encoding="utf-8")
+    matrix_text = (repo_root() / "docs" / "concepts" / "transaction-classification.md").read_text(encoding="utf-8")
 
     assert "| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` |" in matrix_text
     assert "| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` |" in matrix_text

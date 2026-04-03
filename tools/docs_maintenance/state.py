@@ -2,29 +2,36 @@ from __future__ import annotations
 
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DOCS_ROOT = REPO_ROOT / "docs"
-AGENTS_ROOT = REPO_ROOT / "agents"
+from repo_support.paths import (
+    agents_root as shared_agents_root,
+)
+from repo_support.paths import (
+    display_repo_path,
+    relative_repo_path,
+)
+from repo_support.paths import (
+    docs_root as shared_docs_root,
+)
+from repo_support.paths import (
+    repo_root as shared_repo_root,
+)
 
 
 def repo_root() -> Path:
-    return REPO_ROOT
+    return shared_repo_root()
 
 
 def docs_root() -> Path:
-    return DOCS_ROOT
+    return shared_docs_root()
 
 
 def agents_root() -> Path:
-    return AGENTS_ROOT
+    return shared_agents_root()
 
 
 def relative_path(path: Path) -> str:
-    return path.relative_to(repo_root()).as_posix()
+    return relative_repo_path(path)
 
 
 def display_path(path: Path) -> str:
-    try:
-        return relative_path(path)
-    except ValueError:
-        return str(path)
+    return display_repo_path(path)

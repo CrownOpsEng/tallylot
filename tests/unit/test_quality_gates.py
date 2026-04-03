@@ -6,9 +6,8 @@ from pathlib import Path
 import pytest
 
 import tools.run_quality_gates
+from repo_support.paths import repo_root
 from tools.run_quality_gates import DEFAULT_TEST_COMMAND, FULL_TEST_COMMAND, _quality_gates
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
@@ -61,7 +60,7 @@ def test_run_gate_exports_external_uv_project_environment(monkeypatch: pytest.Mo
 
 
 def test_pre_commit_config_excludes_pylint_hook() -> None:
-    config_text = (REPO_ROOT / ".pre-commit-config.yaml").read_text(encoding="utf-8")
+    config_text = (repo_root() / ".pre-commit-config.yaml").read_text(encoding="utf-8")
 
     assert "id: pylint" not in config_text
     assert "name: pytest-fast" in config_text
