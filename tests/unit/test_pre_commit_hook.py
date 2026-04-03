@@ -44,11 +44,17 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    commands: list[tuple[tuple[str, ...], Path]] = []
+    commands: list[tuple[tuple[str, ...], Path, str | None]] = []
 
-    def fake_run(command: list[str], *, check: bool, cwd: Path) -> subprocess.CompletedProcess[str]:
+    def fake_run(
+        command: list[str],
+        *,
+        check: bool,
+        cwd: Path,
+        env: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[str]:
         assert check is True
-        commands.append((tuple(command), cwd))
+        commands.append((tuple(command), cwd, None if env is None else env.get("UV_PROJECT_ENVIRONMENT")))
         return subprocess.CompletedProcess(command, 0)
 
     hook_path = tmp_path / ".git" / "hooks" / "pre-commit"
@@ -67,7 +73,7 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
     tools.install_git_hooks.install_hooks(tmp_path)
 
     assert commands == [
-        (("git", "config", "--local", "commit.template", ".gitmessage.txt"), tmp_path),
+        (("git", "config", "--local", "commit.template", ".gitmessage.txt"), tmp_path, None),
         (
             (
                 "uv",
@@ -81,6 +87,7 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
                 "commit-msg",
             ),
             tmp_path,
+            str(Path.home() / ".venvs" / "tallylot-py312"),
         ),
     ]
     hook_text = hook_path.read_text(encoding="utf-8")
@@ -89,3 +96,34 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
     commit_msg_hook_text = commit_msg_hook_path.read_text(encoding="utf-8")
     assert f"PROJECT_ENVIRONMENT={environment_root}" in commit_msg_hook_text
     assert "--hook-type=commit-msg" in commit_msg_hook_text
+
+
+def test_install_hooks_falls_back_to_default_external_environment(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    hook_path = tmp_path / ".git" / "hooks" / "pre-commit"
+    hook_path.parent.mkdir(parents=True)
+    hook_path.write_text("", encoding="utf-8")
+    commit_msg_hook_path = tmp_path / ".git" / "hooks" / "commit-msg"
+    commit_msg_hook_path.write_text("", encoding="utf-8")
+
+    def fake_run(
+        command: list[str],
+        *,
+        check: bool,
+        cwd: Path,
+        env: dict[str, str] | None = None,
+    ) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr("tools.install_git_hooks.sys.executable", "/usr/bin/python3")
+    monkeypatch.setattr("tools.install_git_hooks.sys.prefix", "/usr")
+    monkeypatch.setattr("tools.install_git_hooks.sys.base_prefix", "/usr")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    tools.install_git_hooks.install_hooks(tmp_path)
+
+    expected_environment = Path.home() / ".venvs" / "tallylot-py312"
+    assert f"PROJECT_ENVIRONMENT={expected_environment}" in hook_path.read_text(encoding="utf-8")
+    assert f"PROJECT_ENVIRONMENT={expected_environment}" in commit_msg_hook_path.read_text(encoding="utf-8")

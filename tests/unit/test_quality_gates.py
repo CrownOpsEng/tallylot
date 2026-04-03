@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
+import pytest
+
+import tools.run_quality_gates
 from tools.run_quality_gates import DEFAULT_TEST_COMMAND, FULL_TEST_COMMAND, _quality_gates
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -19,6 +23,31 @@ def test_quality_gates_can_switch_to_full_pytest() -> None:
     gates = _quality_gates(full_tests=True)
 
     assert gates[-1].command == FULL_TEST_COMMAND
+
+
+def test_run_gate_exports_external_uv_project_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured_environment: dict[str, str] = {}
+
+    def fake_run(
+        command: tuple[str, ...],
+        *,
+        capture_output: bool,
+        text: bool,
+        check: bool,
+        env: dict[str, str],
+    ) -> subprocess.CompletedProcess[str]:
+        assert capture_output is True
+        assert text is True
+        assert check is False
+        captured_environment.update(env)
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    gate = _quality_gates(full_tests=False)[0]
+    tools.run_quality_gates._run_gate(gate)
+
+    assert captured_environment["UV_PROJECT_ENVIRONMENT"] == str(Path.home() / ".venvs" / "tallylot-py312")
 
 
 def test_pre_commit_config_excludes_pylint_hook() -> None:
