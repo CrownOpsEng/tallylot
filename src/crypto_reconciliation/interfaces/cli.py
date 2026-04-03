@@ -16,7 +16,7 @@ from crypto_reconciliation.application.dtos import (
     NormalizeRequest,
     PdfBalanceExtractRequest,
     ProfileRequest,
-    RenderCoinTrackingRequest,
+    RenderOutputRequest,
     RoundScaffoldRequest,
     ScreenBatchRequest,
     SourceReconcileRequest,
@@ -29,9 +29,9 @@ from crypto_reconciliation.application.services import (
     BaselineValidationService,
     BatchScreeningService,
     BatchStagingService,
-    CoinTrackingRenderService,
     ManifestService,
     NormalizationService,
+    OutputRenderService,
     PdfBalanceExtractionService,
     ProfileService,
     RoundScaffoldingService,
@@ -98,9 +98,9 @@ def _normalization_service() -> NormalizationService:
     )
 
 
-def _render_service() -> CoinTrackingRenderService:
+def _render_service() -> OutputRenderService:
     registry, artifacts, _ = _runtime_dependencies()
-    return CoinTrackingRenderService(registry, artifacts)
+    return OutputRenderService(registry, artifacts)
 
 
 def _emit_response(payload: object) -> None:
@@ -132,7 +132,7 @@ def baseline_validate(
     export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = BaselineValidationService(FilesystemArtifactStore()).execute(
+    response = BaselineValidationService(build_registry(), FilesystemArtifactStore()).execute(
         BaselineValidateRequest(export_dir=export_dir, output_dir=output_dir)
     )
     _emit_response(response.__dict__)
@@ -245,13 +245,18 @@ def wallet_inventory_rebuild(
     _emit_response(response.__dict__)
 
 
-@output_render_app.command("cointracking")
-def render_cointracking(
+@output_render_app.command("file")
+def render_output_file(
+    output_adapter: Annotated[str, typer.Option()],
     canonical_events: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
     response = _render_service().execute(
-        RenderCoinTrackingRequest(canonical_events_path=canonical_events, output_path=output)
+        RenderOutputRequest(
+            output_adapter=output_adapter,
+            canonical_events_path=canonical_events,
+            output_path=output,
+        )
     )
     _emit_response(response.__dict__)
 
@@ -278,7 +283,7 @@ def batch_screen(
     baseline_export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = BatchScreeningService(FilesystemArtifactStore()).execute(
+    response = BatchScreeningService(build_registry(), FilesystemArtifactStore()).execute(
         ScreenBatchRequest(
             candidate_path=candidate,
             baseline_export_dir=baseline_export_dir,
@@ -308,7 +313,7 @@ def batch_stage(
     window_start: Annotated[str | None, typer.Option()] = None,
     window_end: Annotated[str | None, typer.Option()] = None,
 ) -> None:
-    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
+    response = BatchStagingService(BatchScreeningService(build_registry(), FilesystemArtifactStore())).execute(
         StageBatchRequest(
             candidate_path=candidate,
             baseline_export_dir=baseline_export_dir,
@@ -353,7 +358,7 @@ def extract_pdf_balances(
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     statement_kind: Annotated[str | None, typer.Option()] = None,
 ) -> None:
-    response = PdfBalanceExtractionService(FilesystemArtifactStore()).execute(
+    response = PdfBalanceExtractionService(build_registry(), FilesystemArtifactStore()).execute(
         PdfBalanceExtractRequest(pdf_path=pdf, output_path=output, statement_kind=statement_kind)
     )
     _emit_response(response.__dict__)

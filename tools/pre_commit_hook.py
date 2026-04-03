@@ -1,0 +1,95 @@
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+PYTHON_SUFFIXES = {".py", ".pyi"}
+
+
+def _git_paths(*args: str) -> tuple[str, ...]:
+    result = subprocess.run(
+        ["git", *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return tuple(lines)
+
+
+def _format_candidates(
+    *,
+    initially_staged: tuple[str, ...],
+    initially_unstaged: tuple[str, ...],
+) -> tuple[str, ...]:
+    partially_staged = set(initially_staged) & set(initially_unstaged)
+    candidates = [
+        path for path in initially_staged if Path(path).suffix in PYTHON_SUFFIXES and path not in partially_staged
+    ]
+    return tuple(candidates)
+
+
+def _skip_value(existing: str | None) -> str:
+    entries = [entry for entry in (existing or "").split(",") if entry]
+    for hook_id in ("ruff", "ruff-format"):
+        if hook_id not in entries:
+            entries.append(hook_id)
+    return ",".join(entries)
+
+
+def _run_command(command: list[str], *, env: dict[str, str] | None = None) -> int:
+    return subprocess.run(command, check=False, env=env).returncode
+
+
+def _run_pre_commit(hook_args: list[str]) -> int:
+    env = os.environ.copy()
+    env["SKIP"] = _skip_value(env.get("SKIP"))
+    command = [
+        sys.executable,
+        "-m",
+        "pre_commit",
+        "hook-impl",
+        "--config=.pre-commit-config.yaml",
+        "--hook-type=pre-commit",
+        "--hook-dir",
+        str(Path(".git/hooks").resolve()),
+        "--",
+        *hook_args,
+    ]
+    return _run_command(command, env=env)
+
+
+def _format_and_stage(paths: tuple[str, ...]) -> int:
+    if not paths:
+        return 0
+    print("running staged ruff autofixes before pre-commit", file=sys.stderr)
+    for command in (
+        [sys.executable, "-m", "ruff", "check", "--fix", *paths],
+        [sys.executable, "-m", "ruff", "format", *paths],
+        ["git", "add", "--", *paths],
+    ):
+        status = _run_command(command)
+        if status != 0:
+            return status
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    hook_args = list(sys.argv[1:] if argv is None else argv)
+    initially_staged = _git_paths("diff", "--cached", "--name-only", "--diff-filter=ACMR")
+    initially_unstaged = _git_paths("diff", "--name-only", "--diff-filter=ACMR")
+    format_status = _format_and_stage(
+        _format_candidates(
+            initially_staged=initially_staged,
+            initially_unstaged=initially_unstaged,
+        )
+    )
+    if format_status != 0:
+        return format_status
+    return _run_pre_commit(hook_args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -19,8 +19,8 @@ workflow around it.
 
 - [`PROJECT_STATE.md`](PROJECT_STATE.md): current runtime and project-surface
   status
-- [`MASTER_PARITY_LEDGER.md`](MASTER_PARITY_LEDGER.md): `master` capability
-  parity status and typed recovery ledger
+- [`MASTER_PARITY_LEDGER.md`](MASTER_PARITY_LEDGER.md): sole legacy-family
+  behavior-parity ledger and typed recovery map
 - [`OPERATIONS_QUICKSTART.md`](OPERATIONS_QUICKSTART.md): shortest safe path
   through the current workflow
 - [`MOP.md`](MOP.md): full manual of procedure for the current typed package

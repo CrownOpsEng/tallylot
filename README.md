@@ -27,7 +27,7 @@ in the external workspace.
   Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
   wallet-state, and the generic structured CSV adapter
 - blockchain, platform API, SQLite, and provider-backed AI remain stubbed
-- restored `master` parity status is tracked in `docs/MASTER_PARITY_LEDGER.md`
+- restored legacy parity status is tracked in `docs/MASTER_PARITY_LEDGER.md`
 
 ## Workspace Model
 
@@ -73,8 +73,7 @@ uv run crypto-reconciliation supporting extract-pdf-balances --pdf <path> --outp
 
 ```bash
 uv sync --python 3.12
-git config --local commit.template .gitmessage.txt
-uv run pre-commit install --hook-type pre-commit --hook-type commit-msg
+uv run python -m tools.install_git_hooks
 uv run pre-commit run markdownlint --all-files
 uv run python -m tools.run_quality_gates
 uv run python -m tools.run_quality_gates --full-tests
@@ -86,6 +85,10 @@ of the expected quality baseline.
 Commit-time `pytest` hooks intentionally run only `unit and not slow` without
 coverage so local commits stay responsive. Use the full `uv run pytest` command
 for complete verification.
+
+The installed `pre-commit` wrapper runs Ruff autofix and formatting on safe
+staged Python files before the rest of the hook suite, then stages those
+formatter edits automatically. Partially staged Python files are left alone.
 
 The parallel quality-gate runner is the preferred explicit verification path.
 Do not also run `uv run pre-commit run --all-files` unless you specifically

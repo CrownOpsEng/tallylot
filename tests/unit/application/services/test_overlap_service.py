@@ -5,8 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.application.services.overlap import (
-    OverlapResult,
+from crypto_reconciliation.adapters.outputs.cointracking_csv.screening import (
     _build_cointracking_column_map,
     _find_trade_table,
     parse_overlap_datetime,
@@ -15,6 +14,7 @@ from crypto_reconciliation.application.services.overlap import (
 )
 from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
 from crypto_reconciliation.infrastructure.serialization.json_io import write_json
+from crypto_reconciliation.ports.output_workflows import OverlapResult
 
 
 def test_find_trade_table_rejects_missing_file(tmp_path: Path) -> None:

@@ -117,13 +117,14 @@ class WalletInventoryResponse:
 
 
 @dataclass(frozen=True)
-class RenderCoinTrackingRequest:
+class RenderOutputRequest:
+    output_adapter: str
     canonical_events_path: Path
     output_path: Path
 
 
 @dataclass(frozen=True)
-class RenderCoinTrackingResponse:
+class RenderOutputResponse:
     output_path: Path
     row_count: int
 

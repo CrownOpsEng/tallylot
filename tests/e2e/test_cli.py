@@ -56,7 +56,9 @@ def test_profile_normalize_and_render_cli(structured_source_dir: Path, tmp_path:
         [
             "output",
             "render",
-            "cointracking",
+            "file",
+            "--output-adapter",
+            "cointracking_csv",
             "--canonical-events",
             str(normalized_dir / "canonical_events.csv"),
             "--output",

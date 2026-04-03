@@ -14,6 +14,12 @@ from crypto_reconciliation.adapters.sources.mapped_event_support import (
     mapped_event,
     normalization_issue,
 )
+from crypto_reconciliation.adapters.sources.shakepay_pdf_balances import (
+    extract_pdf_balances as _extract_pdf_balances,
+)
+from crypto_reconciliation.adapters.sources.shakepay_pdf_balances import (
+    match_pdf_statement as _match_pdf_statement,
+)
 from crypto_reconciliation.domain.models import (
     AdapterCapability,
     AdapterManifest,
@@ -67,6 +73,12 @@ class ShakepayAdapter:
     ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del source, raw_dir, profile
         return (), ()
+
+    def match_pdf_statement(self, pdf_path: Path, text: str) -> int:
+        return _match_pdf_statement(pdf_path, text)
+
+    def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
+        return _extract_pdf_balances(text, pdf_path.name)
 
     def normalize(self, profile: SourceProfile, raw_dir: Path) -> NormalizationResult:
         events: list[CanonicalEvent] = []

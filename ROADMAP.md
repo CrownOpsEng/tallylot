@@ -130,3 +130,12 @@ decisions that should not be rediscovered from scratch.
 - Expand source profiling to include richer file-family inspection.
 - Decompose the current hotspot modules into smaller, bounded packages or
   modules before they accumulate more responsibilities.
+- Complete the remaining source-intake boundary refactor so provider-family
+  detection does not leak from adapters into `application/`:
+  - move source-family intake classification rules out of
+    `application/services/intake/routing/classification.py` and into
+    source-adapter-owned manifests or adapter-local intake classifiers
+  - move portfolio-capture routing rules out of
+    `application/services/intake/routing/portfolio.py` and into an adapter-
+    owned intake surface instead of hardcoded provider-name matching in
+    application services

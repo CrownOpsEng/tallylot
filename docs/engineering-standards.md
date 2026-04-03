@@ -64,11 +64,51 @@ When a capability grows, split by stable seams:
 - `domain/`: separate models, value objects, and typed aliases by concept.
 - `application/services/`: keep one workflow per service module; extract shared
   parsing, validation, or assembly logic into specifically named siblings.
+  Once a workflow area grows beyond a few related siblings or starts building a
+  flat pile of same-prefix modules such as `intake_*`, move it into a feature
+  package such as `application/services/intake/`.
 - `interfaces/`: keep command parsing and command execution thin; move real work
   into services.
 - `adapters/`: move larger adapters to package-style modules with an
   `adapter.py` or `__init__.py` entry point plus local parser, mapper, issue,
   and fixture modules.
+
+Mirror that structure in tests:
+
+- place unit tests under the matching package path when a feature owns a
+  package
+- prefer `tests/unit/application/services/intake/...` over scattering
+  `test_intake_*` files across unrelated directories
+
+### Package Escalation Rules
+
+Do not keep flattening files forever once a feature package exists.
+
+- Use a feature package when a flat layer directory would otherwise collect
+  more than 3 same-prefix files for one capability.
+- Inside an existing feature package, create a nested subpackage when one
+  bounded sub-capability meets any of these conditions:
+  - 4 or more files share the same concept or repeated prefix
+  - the cluster has its own models, decision rules, and entry point
+  - the tests naturally group under that sub-capability rather than under the
+    parent feature as a whole
+- Do not create a nested package on the first split. Keep 2 or 3 tightly
+  related files flat unless they already represent a stable subdomain.
+- Prefer one clear level of nesting over long flat prefixes. `intake/packages/`
+  is better than `intake/package_*.py` once the package-rule cluster becomes a
+  subsystem.
+- Prefer at most 2 package levels below the layer root unless a deeper tree is
+  clearly justified by external contracts or provider boundaries.
+
+Current application of this rule:
+
+- `application/services/intake/` is the correct top-level feature package for
+  intake.
+- `intake/packages/`, `intake/archive/`, `intake/file_facts/`, and
+  `intake/routing/` are the correct nested packages for the intake subdomains
+  that now own their own models, rules, and entry points.
+- The plan-building support files should stay flat until they form a clearer
+  subdomain than “helpers used by the intake service”.
 
 ## Naming Rules
 
@@ -83,7 +123,9 @@ When a capability grows, split by stable seams:
 
 Split these modules before adding materially new behavior:
 
-- `src/crypto_reconciliation/adapters/sources/structured_csv.py`
+- `src/crypto_reconciliation/application/services/intake/packages/resolution.py`
+- `src/crypto_reconciliation/adapters/sources/binance/adapter.py`
+- `src/crypto_reconciliation/adapters/sources/coinbase/adapter.py`
 - `src/crypto_reconciliation/domain/models.py`
 - `src/crypto_reconciliation/interfaces/cli.py`
 - `src/crypto_reconciliation/infrastructure/discovery/adapters.py`

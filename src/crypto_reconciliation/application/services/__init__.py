@@ -7,7 +7,7 @@ from .normalize import NormalizationService
 from .pdf_extract import PdfBalanceExtractionService
 from .profile import ProfileService
 from .reconcile import SourceReconciliationService
-from .render import CoinTrackingRenderService
+from .render import OutputRenderService
 from .rounds import RoundScaffoldingService
 from .staging import BatchScreeningService, BatchStagingService
 from .verification import VerificationCompareService
@@ -18,9 +18,9 @@ __all__ = [
     "BaselineValidationService",
     "BatchScreeningService",
     "BatchStagingService",
-    "CoinTrackingRenderService",
     "ManifestService",
     "NormalizationService",
+    "OutputRenderService",
     "PdfBalanceExtractionService",
     "ProfileService",
     "RoundScaffoldingService",

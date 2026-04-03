@@ -1,6 +1,6 @@
 # Adapter Authoring
 
-Use `docs/architecture/adapter-authoring.md` as the primary contract.
+Use `docs/adapter-authoring.md` as the primary contract.
 
 When repairing or extending an adapter:
 

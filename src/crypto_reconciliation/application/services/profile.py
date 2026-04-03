@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import cast
 
 from crypto_reconciliation.application.dtos import ProfileRequest, ProfileResponse
-from crypto_reconciliation.application.services.archive_scan import scanned_tree_files
 from crypto_reconciliation.application.services.common import ensure_directory
 from crypto_reconciliation.application.services.csv_inventory import (
     filename_timezone,
@@ -20,6 +19,7 @@ from crypto_reconciliation.application.services.csv_inventory import (
     timestamp_resolution,
     value_has_non_utc_offset,
 )
+from crypto_reconciliation.application.services.intake import scanned_tree_files
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
 from crypto_reconciliation.domain.models import FileInventoryEntry, IssueRecord, SourceProfile
 from crypto_reconciliation.domain.types import AdapterId, JsonValue, SourceId

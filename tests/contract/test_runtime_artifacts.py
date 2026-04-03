@@ -27,7 +27,7 @@ def test_baseline_validation_emits_documented_artifact_package(
 ) -> None:
     output_dir = tmp_path / "baseline"
 
-    BaselineValidationService(FilesystemArtifactStore()).execute(
+    BaselineValidationService(build_registry(), FilesystemArtifactStore()).execute(
         BaselineValidateRequest(export_dir=baseline_export_dir, output_dir=output_dir)
     )
 

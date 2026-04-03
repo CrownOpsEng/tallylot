@@ -38,7 +38,7 @@ def test_find_required_csv_export_rejects_ambiguous_match(tmp_path: Path) -> Non
     (export_dir / "Trade Table A.csv").write_text("x\n", encoding="utf-8")
     (export_dir / "Trade Table B.csv").write_text("x\n", encoding="utf-8")
 
-    with pytest.raises(FileNotFoundError, match="exactly one export"):
+    with pytest.raises(ValueError, match="Ambiguous export"):
         find_required_csv_export(export_dir, "Trade Table")
 
 

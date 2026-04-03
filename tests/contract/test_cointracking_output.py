@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from crypto_reconciliation.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
-from crypto_reconciliation.application.dtos import NormalizeRequest, RenderCoinTrackingRequest
+from crypto_reconciliation.application.dtos import NormalizeRequest, RenderOutputRequest
 from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service, build_render_service
@@ -27,7 +27,8 @@ def test_cointracking_output_matches_expected_schema(
     )
     output_path = tmp_path / "cointracking.csv"
     render.execute(
-        RenderCoinTrackingRequest(
+        RenderOutputRequest(
+            output_adapter="cointracking_csv",
             canonical_events_path=normalized_dir / "canonical_events.csv",
             output_path=output_path,
         )

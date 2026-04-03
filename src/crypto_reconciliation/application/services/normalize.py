@@ -15,9 +15,9 @@ from crypto_reconciliation.application.services.normalization_window import (
 )
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.application.services.scan import ensure_output_not_within_input_tree
-from crypto_reconciliation.domain.models import NormalizationReviewRecord, SourceProfile
+from crypto_reconciliation.domain.models import AdapterCapability, NormalizationReviewRecord, SourceProfile
 from crypto_reconciliation.domain.types import JsonValue
-from crypto_reconciliation.ports.adapters import OutputAdapterRegistryPort, SourceAdapterRegistryPort
+from crypto_reconciliation.ports.adapters import OutputAdapter, OutputAdapterRegistryPort, SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 from crypto_reconciliation.ports.storage import StoragePort
 
@@ -110,8 +110,8 @@ class NormalizationService:
             ),
             (record.to_row() for record in result.wallet_inventory),
         )
-        output_adapter = self._output_registry.output_adapter("cointracking_csv")
-        output_adapter.render(canonical_events, request.output_dir / "cointracking_candidate.csv")
+        output_adapter = _default_output_adapter(self._output_registry)
+        output_adapter.render(canonical_events, request.output_dir / output_adapter.candidate_artifact_name())
         self._artifacts.write_json(
             request.output_dir / "normalization_summary.json",
             cast(
@@ -181,3 +181,17 @@ def _profile_with_window_hints(profile: SourceProfile, request: NormalizeRequest
             **({"normalization_window_end": request.window_end} if request.window_end is not None else {}),
         },
     )
+
+
+def _default_output_adapter(registry: OutputAdapterRegistryPort) -> OutputAdapter:
+    supported = [
+        adapter
+        for adapter in registry.output_adapters
+        if adapter.manifest.supported and AdapterCapability.OUTPUT_RENDER in adapter.manifest.capabilities
+    ]
+    if not supported:
+        raise ValueError("no supported output adapters are available for rendering")
+    if len(supported) > 1:
+        adapter_ids = ", ".join(sorted(str(adapter.manifest.adapter_id) for adapter in supported))
+        raise ValueError(f"multiple supported output adapters require explicit selection: {adapter_ids}")
+    return supported[0]

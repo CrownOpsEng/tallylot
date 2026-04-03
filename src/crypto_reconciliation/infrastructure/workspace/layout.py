@@ -44,7 +44,7 @@ SEED_FILES = (
     SeedFile(
         "outputs/logs/round_log.csv",
         (
-            "round_id,phase,source,date,goal,cointracking_change,exports_captured,"
+            "round_id,phase,source,date,goal,output_change,exports_captured,"
             "issues_opened_or_closed,gate_result,next_action\n"
         ),
     ),
