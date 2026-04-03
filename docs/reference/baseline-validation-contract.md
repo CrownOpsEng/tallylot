@@ -1,4 +1,12 @@
-# Baseline Validation
+---
+title: "Baseline Validation Contract"
+summary: "Baseline oracle package, artifact list, and intent for validation output."
+doc_type: reference
+audience: human
+owner: repo
+status: active
+nav_order: 10
+---
 
 ## Oracle Baseline
 

@@ -1,4 +1,12 @@
-# Reconciliation And Tax Implementation Plan
+---
+title: "Reconciliation And Tax Architecture"
+summary: "Design anchor for the provider-neutral reconciliation, accounting, checkpoint, and tax system."
+doc_type: concept
+audience: human
+owner: repo
+status: active
+nav_order: 20
+---
 
 This document is the implementation anchor for evolving the repo away from
 tracker-dependent historical workflows and into an independent reconciliation,

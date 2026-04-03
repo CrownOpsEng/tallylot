@@ -1,4 +1,12 @@
-# Canadian Cryptocurrency Taxation Guide
+---
+title: "Canadian Crypto Tax Guide"
+summary: "Working CRA-aligned tax reference for the repo's Canadian crypto workflow."
+doc_type: reference
+audience: human
+owner: repo
+status: active
+nav_order: 50
+---
 
 This document replaces the imported 2022 article as the repo's working tax reference.
 
@@ -16,7 +24,7 @@ Scope:
 
 This is not legal advice. When this guide conflicts with primary CRA guidance, follow the CRA source.
 
-This guide is intentionally not exhaustive. Use it for the default working position, then escalate to `docs/reference/tax-reference-map.md` when a fact pattern falls outside the ordinary path.
+This guide is intentionally not exhaustive. Use it for the default working position, then escalate to `docs/reference/tax-source-map.md` when a fact pattern falls outside the ordinary path.
 
 ## Current status
 
@@ -236,7 +244,7 @@ When one of those appears:
 
 1. log the issue in `analysis/issues/issue_log.csv`
 2. collect the raw records first
-3. use `docs/reference/tax-reference-map.md` to jump to the relevant CRA source
+3. use `docs/reference/tax-source-map.md` to jump to the relevant CRA source
 4. keep the issue open until the treatment is supportable
 
 ## Repo execution rules derived from tax compliance

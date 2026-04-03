@@ -1,4 +1,11 @@
-# Wallet Inventory Artifacts
+---
+title: "Wallet Inventory Artifacts"
+summary: "Mirrored workspace contract for aggregate location inventory outputs and refresh commands."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 This folder holds the aggregate location inventory rebuilt from normalized source
 artifacts.

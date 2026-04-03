@@ -14,42 +14,44 @@ from tallylot.interfaces.cli import app
 from tools.oracles.cli import app as oracle_app
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DOC_PATHS = [
-    REPO_ROOT / "README.md",
-    *sorted((REPO_ROOT / "docs").rglob("*.md")),
-    *sorted((REPO_ROOT / ".claude").rglob("*.md")),
-]
 PRODUCTION_ROUTE_DOC_PATHS = [
     REPO_ROOT / "README.md",
-    REPO_ROOT / "docs" / "operations" / "operations-quickstart.md",
-    REPO_ROOT / "docs" / "operations" / "wallet-inventory.md",
+    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
+    REPO_ROOT / "docs" / "guides" / "source-intake.md",
+    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
+    REPO_ROOT / "docs" / "reference" / "wallet-inventory-artifacts.md",
     REPO_ROOT / "docs" / "workspace" / "analysis" / "inventory" / "README.md",
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
     REPO_ROOT / ".claude" / "commands" / "wallet-inventory.md",
     REPO_ROOT / ".claude" / "commands" / "supporting-artifacts.md",
 ]
 ORACLE_ROUTE_DOC_PATHS = [
-    REPO_ROOT / "docs" / "operations" / "baseline-validation.md",
-    REPO_ROOT / "docs" / "operations" / "export-checklist.md",
-    REPO_ROOT / "docs" / "operations" / "operations-quickstart.md",
-    REPO_ROOT / "docs" / "operations" / "mop.md",
+    REPO_ROOT / "docs" / "reference" / "baseline-validation-contract.md",
+    REPO_ROOT / "docs" / "reference" / "export-checklist.md",
+    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
+    REPO_ROOT / "docs" / "guides" / "full-operator-workflow.md",
+    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
+    REPO_ROOT / "docs" / "guides" / "verify-a-round.md",
     REPO_ROOT / ".claude" / "commands" / "round-verification.md",
     REPO_ROOT / ".claude" / "commands" / "source-diff.md",
 ]
 ARCHITECTURE_DOC_PATHS = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "ROADMAP.md",
-    REPO_ROOT / "docs" / "architecture" / "engineering-standards.md",
-    REPO_ROOT / "docs" / "architecture" / "reconciliation-tax-implementation-plan.md",
+    REPO_ROOT / "docs" / "standards" / "engineering.md",
+    REPO_ROOT / "docs" / "concepts" / "reconciliation-tax-architecture.md",
     REPO_ROOT / ".claude" / "commands" / "source-intake.md",
 ]
 ENV_PREFIX_REQUIRED_DOC_PATHS = (
     REPO_ROOT / "README.md",
-    REPO_ROOT / "docs" / "operations" / "operations-quickstart.md",
-    REPO_ROOT / "docs" / "operations" / "mop.md",
-    REPO_ROOT / "docs" / "operations" / "baseline-validation.md",
-    REPO_ROOT / "docs" / "operations" / "export-checklist.md",
-    REPO_ROOT / "docs" / "operations" / "wallet-inventory.md",
+    REPO_ROOT / "docs" / "guides" / "operator-quickstart.md",
+    REPO_ROOT / "docs" / "guides" / "full-operator-workflow.md",
+    REPO_ROOT / "docs" / "guides" / "source-intake.md",
+    REPO_ROOT / "docs" / "guides" / "normalize-screen-stage.md",
+    REPO_ROOT / "docs" / "guides" / "verify-a-round.md",
+    REPO_ROOT / "docs" / "reference" / "baseline-validation-contract.md",
+    REPO_ROOT / "docs" / "reference" / "export-checklist.md",
+    REPO_ROOT / "docs" / "reference" / "wallet-inventory-artifacts.md",
     REPO_ROOT / "docs" / "workspace" / "analysis" / "inventory" / "README.md",
     REPO_ROOT / ".claude" / "commands" / "adapter-authoring.md",
     REPO_ROOT / ".claude" / "commands" / "implementation-checkpoint.md",
@@ -100,22 +102,6 @@ def _registered_routes(typer_app: Typer) -> set[str]:
     return routes
 
 
-def _bare_uv_command_examples(path: Path) -> tuple[str, ...]:
-    offenders: list[str] = []
-
-    for line in path.read_text(encoding="utf-8").splitlines():
-        stripped = line.strip()
-        if stripped.startswith("UV_PROJECT_ENVIRONMENT="):
-            continue
-        if re.match(r"^uv (run|sync)\b", stripped):
-            offenders.append(stripped)
-            continue
-        for match in re.finditer(r"`(uv (?:run|sync)\b[^`]*)`", line):
-            offenders.append(match.group(1))
-
-    return tuple(offenders)
-
-
 def test_documented_cli_routes_exist() -> None:
     documented_routes = _documented_routes(PRODUCTION_ROUTE_DOC_PATHS, PRODUCTION_COMMAND_ROUTE_PATTERN)
     registered_routes = _registered_routes(app)
@@ -132,15 +118,6 @@ def test_documented_oracle_cli_routes_exist() -> None:
     missing_routes = sorted(documented_routes - registered_routes)
 
     assert not missing_routes, f"documented oracle CLI routes do not exist: {missing_routes}"
-
-
-def test_docs_do_not_reference_removed_legacy_paths() -> None:
-    forbidden = ("06_scripts/", "07_skills/")
-
-    for path in DOC_PATHS:
-        text = path.read_text(encoding="utf-8")
-        for needle in forbidden:
-            assert needle not in text, f"{path} still references {needle}"
 
 
 def test_documented_claude_command_routes_exist() -> None:
@@ -225,17 +202,6 @@ def test_location_inventory_route_mentions_checkpoint_command() -> None:
     assert "checkpoint rebuild-location-inventory" in text
 
 
-def test_known_command_docs_use_env_prefixed_uv_examples() -> None:
-    offenders: dict[str, tuple[str, ...]] = {}
-
-    for path in ENV_PREFIX_REQUIRED_DOC_PATHS:
-        examples = _bare_uv_command_examples(path)
-        if examples:
-            offenders[str(path.relative_to(REPO_ROOT))] = examples
-
-    assert not offenders, f"command docs contain bare uv examples: {offenders}"
-
-
 def test_docs_do_not_reference_retired_service_or_model_buckets() -> None:
     forbidden = (
         "application/services",
@@ -276,6 +242,7 @@ def test_repo_docs_do_not_reference_personal_workspace_roots() -> None:
         REPO_ROOT / "AGENTS.md",
         REPO_ROOT / "tallylot.toml",
         *sorted((REPO_ROOT / "docs").rglob("*.md")),
+        *sorted((REPO_ROOT / "agents").rglob("*.md")),
         *sorted((REPO_ROOT / ".claude").rglob("*.md")),
     )
 
@@ -316,12 +283,23 @@ def test_workspace_source_inventory_seed_header_matches_template() -> None:
 
 
 def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
-    text = (REPO_ROOT / "docs" / "architecture" / "commit-standards.md").read_text(encoding="utf-8")
+    text = (REPO_ROOT / "docs" / "standards" / "commits.md").read_text(encoding="utf-8")
 
     assert "Do not describe `mypy` or `pyright` as covering `pylint` findings." in text
     assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>' in text
     assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>' in text
     assert "git show HEAD:<path>" in text
+
+
+def test_implementation_anchor_references_use_explicit_doc_paths() -> None:
+    paths = (
+        REPO_ROOT / "AGENTS.md",
+        REPO_ROOT / "docs" / "standards" / "implementation.md",
+    )
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        assert "implementation plan" not in text.lower(), f"{path} still uses vague implementation-plan wording"
 
 
 def test_reference_docs_do_not_check_in_oracle_data_files() -> None:

@@ -1,4 +1,12 @@
-# Commit Standards
+---
+title: "Commit Standards"
+summary: "Conventional Commit, checkpoint, and PR body rules for stable repo history."
+doc_type: standard
+audience: human
+owner: repo
+status: active
+nav_order: 30
+---
 
 Use Conventional Commits for all authored commits. Keep commit history small,
 cohesive, and checkpoint-oriented.
@@ -138,9 +146,16 @@ Heuristics:
 - trivial one-file or one-concern task: usually one commit
 - medium multi-part task: usually 1 to 3 commits by concern
 - larger risky refactor: split only where rollback or review value is real
+- broad but separable docs or repo-structure refactor: checkpoint each stable
+  slice instead of batching everything into one umbrella commit
 
 Do not batch unrelated fixes together. Do not split one bounded change into a
 series of micro-commits with no practical review value.
+
+For multi-slice refactors, use designated checkpoint commits whenever the slice
+already leaves the tree coherent, linked, and narrow-check verified. A giant
+single-commit rewrite is only acceptable when the change cannot be reviewed or
+validated incrementally.
 
 ## Local Setup
 

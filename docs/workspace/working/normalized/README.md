@@ -1,4 +1,11 @@
-# Normalized Files
+---
+title: "Normalized Files"
+summary: "Artifact contract for deterministic per-source normalized outputs and working candidates."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 Place deterministic normalized source artifacts here after profiling and field normalization.
 

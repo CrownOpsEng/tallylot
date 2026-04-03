@@ -1,4 +1,12 @@
-# CoinTracking Oracle Artifacts
+---
+title: "CoinTracking Oracle Artifacts"
+summary: "Repo-safe reference for CoinTracking artifact families used only for development and validation."
+doc_type: reference
+audience: human
+owner: repo
+status: active
+nav_order: 70
+---
 
 Use this document as the repo-safe reference for CoinTracking oracle support.
 

@@ -83,7 +83,7 @@ def test_markdownlint_only_disables_md013() -> None:
 
 def test_module_size_policy_remains_aligned() -> None:
     pylint_text = (REPO_ROOT / ".pylintrc").read_text(encoding="utf-8")
-    standards_text = (REPO_ROOT / "docs/architecture/engineering-standards.md").read_text(encoding="utf-8")
+    standards_text = (REPO_ROOT / "docs/standards/engineering.md").read_text(encoding="utf-8")
 
     assert "max-module-lines = 450" in pylint_text
     assert re.search(r"Refactor before extending beyond 300 lines", standards_text) is not None
@@ -333,9 +333,7 @@ def test_balance_evidence_has_single_production_owner() -> None:
 
 
 def test_transaction_classification_matrix_describes_runtime_projection_values() -> None:
-    matrix_text = (REPO_ROOT / "docs" / "architecture" / "transaction-classification-matrix.md").read_text(
-        encoding="utf-8"
-    )
+    matrix_text = (REPO_ROOT / "docs" / "concepts" / "transaction-classification.md").read_text(encoding="utf-8")
 
     assert "| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` |" in matrix_text
     assert "| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` |" in matrix_text

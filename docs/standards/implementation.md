@@ -1,4 +1,12 @@
-# Implementation Working Agreement
+---
+title: "Implementation Working Agreement"
+summary: "Execution rules for shaping, verifying, refactoring, and checkpointing repo work."
+doc_type: standard
+audience: human
+owner: repo
+status: active
+nav_order: 20
+---
 
 Use this document when actively coding in the repo. It is the execution
 contract for how work should be shaped, verified, refactored, and committed so
@@ -6,10 +14,10 @@ future sessions do not depend on repeated reminders from the user.
 
 This document complements:
 
-- `docs/architecture/engineering-standards.md` for placement and modularity rules
-- `docs/architecture/commit-standards.md` for commit format and checkpoint policy
-- `docs/architecture/reconciliation-tax-implementation-plan.md` for architecture direction
-- `docs/architecture/implementation-migration-sequence.md` for no-big-bang migration order
+- `docs/standards/engineering.md` for placement and modularity rules
+- `docs/standards/commits.md` for commit format and checkpoint policy
+- `docs/concepts/reconciliation-tax-architecture.md` for architecture direction
+- `docs/status/migration-sequence.md` for no-big-bang migration order
 
 ## Repo-Native Tooling To Use
 
@@ -48,7 +56,8 @@ supported path.
 Agents should assume all of these are expected unless the task explicitly says
 otherwise:
 
-- keep the architecture aligned with the implementation plan
+- keep the architecture aligned with
+  `docs/concepts/reconciliation-tax-architecture.md`
 - refactor when a clearer shared seam is already visible
 - extract shared components before copy-paste patterns harden
 - create or update tests alongside the implementation
@@ -150,20 +159,29 @@ Expected behavior:
 
 - make a commit when a bounded slice is stable and verified
 - keep commits cohesive and reviewable
+- prefer one commit per coherent reshape slice, not one commit per file
 - do not bundle unrelated fixes
 - do not wait for the user to remind you to commit once the task has reached a
   real checkpoint
+- when a refactor spans structure, routing, tooling, and tests, checkpoint each
+  stable slice that already passes the narrow checks for that slice
 - when opening a PR, use a Conventional Commit title and the structured PR body
-  defined in `docs/architecture/commit-standards.md` because that metadata
+  defined in `docs/standards/commits.md` because that metadata
   becomes the squash commit on `main`
 - before closing a non-trivial task, ensure the commit already exists rather
   than leaving commit creation as follow-up work
+- keep repo cleanup forward-only by default: do not use destructive rollback
+  commands such as `rm -rf`, `git restore`, `git reset`, or `git checkout --`
+  unless the user explicitly requests that cleanup in the current thread
 
 When not to commit:
 
 - the worktree is inconsistent
 - the tests for the slice are failing
 - the checkpoint would be hard to review or roll back
+
+Do not collapse a broad but separable refactor into one giant commit unless
+the slice truly cannot be reviewed or validated incrementally.
 
 ## Quality Gates
 
@@ -205,6 +223,23 @@ When a task touches a migrating surface:
 If the change would force a big-bang rewrite, the migration sequence is wrong.
 Split the work into a smaller compatible slice.
 
+## Workflow Integrity Rules
+
+Keep workflow integrity rules explicit while the repo continues migrating.
+
+- filesystem scans that enumerate user evidence must be deterministic
+- tree-walking services should use the shared scan path with explicit output
+  exclusions rather than ad hoc `rglob()` behavior
+- archive inspection, archive safety limits, and archive-member issue reporting
+  belong in the shared intake scan layer rather than in source adapters or CLI
+  commands
+- profiling and normalization outputs must not be written inside raw evidence
+  trees
+- evidence references recorded in normalized or checkpoint-supporting artifacts
+  must stay source-relative and portable across workspaces
+- docs, command routes, and agent entrypoints must stay aligned with the
+  implemented runtime surface
+
 ## Adapter And Artifact Discipline
 
 When adding or changing adapters:
@@ -244,7 +279,7 @@ Pause feature work and fix the structure first when:
 
 - a new change would require importing across a forbidden layer boundary
 - a module is becoming a new catch-all
-- a hotspot module called out in `docs/architecture/engineering-standards.md` is about to
+- a hotspot module called out in `docs/standards/engineering.md` is about to
   absorb materially new behavior without first being split
 - a flat directory would end up with more than 2 same-prefix files for one
   capability

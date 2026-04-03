@@ -1,4 +1,12 @@
-# Project State
+---
+title: "Current State"
+summary: "Implemented runtime capabilities, current operational surface, and deferred areas."
+doc_type: status
+audience: human
+owner: repo
+status: active
+nav_order: 10
+---
 
 ## Current Runtime
 
@@ -9,7 +17,7 @@
 - Generic file output renderer with one implemented CSV edge adapter:
   `cointracking_csv`
 - Restored real source adapters for Coinbase, Wealthsimple, Binance,
-  Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
+  Crypto.com, Shakepay, Ledger Live, Near, Ronin, GTrade, EVM explorer, EVM
   wallet-state, plus the generic structured CSV adapter
 - Universal ZIP inspection enabled by default for source scanning workflows
 - Blockchain, platform API, SQLite, and provider-backed AI remain stubs behind

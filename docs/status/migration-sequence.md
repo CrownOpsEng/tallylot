@@ -1,4 +1,12 @@
-# Implementation Migration Sequence
+---
+title: "Migration Sequence"
+summary: "Incremental migration order from the legacy normalized flow to the provider-neutral fact model."
+doc_type: status
+audience: human
+owner: repo
+status: active
+nav_order: 20
+---
 
 Use this document to implement the next phase without a big-bang refactor. The
 goal is to move from the current normalized-transaction flow to a
@@ -203,6 +211,6 @@ Do not remove an older path until all relevant gates pass:
 
 When a task changes architecture, schema, or migration order:
 
-- update `docs/architecture/reconciliation-tax-implementation-plan.md`
+- update `docs/concepts/reconciliation-tax-architecture.md`
 - update `ROADMAP.md`
 - update this migration sequence if the checkpoint order changed

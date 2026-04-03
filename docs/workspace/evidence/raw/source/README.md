@@ -1,4 +1,11 @@
-# Source Raw Exports
+---
+title: "Source Raw Exports"
+summary: "Rules for untouched upstream source evidence stored under the mirrored workspace source tree."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 Store untouched external source evidence here. This branch is only for exchange, wallet, explorer, bot, and other upstream-system exports.
 

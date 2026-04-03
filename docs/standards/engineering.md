@@ -1,4 +1,12 @@
-# Engineering Standards
+---
+title: "Engineering Standards"
+summary: "Code placement, typing, modularity, and naming rules for the typed application."
+doc_type: standard
+audience: human
+owner: repo
+status: active
+nav_order: 10
+---
 
 Use this document for code-focused decisions only: placement, typing,
 modularization, and naming.

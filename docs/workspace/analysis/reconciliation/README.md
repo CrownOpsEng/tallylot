@@ -1,4 +1,11 @@
-# Reconciliation Artifacts
+---
+title: "Reconciliation Artifacts"
+summary: "Durable baseline and drift-analysis artifacts kept under the mirrored reconciliation subtree."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 This folder stores durable baseline and drift-analysis artifacts.
 

@@ -1,4 +1,12 @@
-# Adapter Authoring
+---
+title: "Write An Adapter"
+summary: "Rules, shape, testing, and tooling guidance for source and output adapters."
+doc_type: guide
+audience: human
+owner: repo
+status: active
+nav_order: 60
+---
 
 Adapters are first-class modules inside the repo and are discovered
 automatically.

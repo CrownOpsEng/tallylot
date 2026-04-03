@@ -1,109 +1,88 @@
-# Docs
+---
+title: "Documentation"
+summary: "Human-facing entrypoint for concepts, guides, reference material, standards, and current status."
+doc_type: reference
+audience: human
+owner: repo
+status: active
+---
 
-Use this index to find the smallest useful document instead of browsing the
-whole folder.
+The TallyLot docs cover the typed runtime, operator workflows, workspace
+model, artifact contracts, and repo standards.
 
-Naming convention:
+## How Docs Are Organized
 
-- top-level docs and section docs use lowercase kebab-case
-- `README.md` remains the deliberate exception for directory entrypoints
-- `docs/workspace/` mirrors the runtime workspace structure, so directory names
-  there may keep underscores when the runtime paths do
+- Concepts explain why the system is shaped the way it is.
+- Guides describe how to perform a task.
+- Reference pages define factual contracts, artifacts, and workspace semantics.
+- Standards capture repo implementation rules.
+- Status pages describe the current implemented surface and active migration
+  state.
 
 ## Start Here
 
-- Coding or architecture work: start with [AGENTS.md](../AGENTS.md), then use
-  [architecture/README.md](architecture/README.md)
-- Manual or operator workflow: use
-  [operations/README.md](operations/README.md)
-- Tax, oracle, or historical reference material: use
-  [reference/README.md](reference/README.md)
-- Need a specific command, artifact, or route quickly: use
-  [file-map.md](file-map.md)
+- [Current state](status/current-state.md)
+- [Operator quickstart](guides/operator-quickstart.md)
+- [Architecture overview](concepts/architecture-overview.md)
+- [Reconciliation and tax architecture](concepts/reconciliation-tax-architecture.md)
+- [Engineering standards](standards/engineering.md)
+- [Workspace model](concepts/workspace-model.md)
 
-## Build And Architecture
+Agent-specific routing and repo execution rules live in
+[AGENTS.md](../AGENTS.md), not in the human docs homepage.
 
-- [`architecture/README.md`](architecture/README.md): route through the build
-  and architecture docs
-- [`architecture/engineering-standards.md`](architecture/engineering-standards.md):
-  code placement, typing, modularization, and naming
-- [`architecture/implementation-working-agreement.md`](architecture/implementation-working-agreement.md):
-  coding-time execution contract for structure, tests, refactors, and commits
-- [`architecture/reconciliation-tax-implementation-plan.md`](architecture/reconciliation-tax-implementation-plan.md):
-  implementation anchor for reconciliation, checkpointing, accounting, and tax
-- [`architecture/oracle-and-input-boundaries.md`](architecture/oracle-and-input-boundaries.md):
-  platform-agnostic runtime-versus-oracle boundary rules
-- [`architecture/transaction-classification-matrix.md`](architecture/transaction-classification-matrix.md):
-  layered classification mapping and support tiers
-- [`architecture/implementation-migration-sequence.md`](architecture/implementation-migration-sequence.md):
-  migration order, dual-write strategy, and retirement gates
-- [`architecture/adapter-authoring.md`](architecture/adapter-authoring.md):
-  source and output adapter contracts and conventions
-- [`architecture/commit-standards.md`](architecture/commit-standards.md):
-  commit message format and checkpoint rules
+## Core Concepts
 
-## Operations And Runbooks
+<!-- docs-maintenance:start concepts -->
+- [Architecture Overview](concepts/architecture-overview.md): High-level map of the typed application layers, workflow capabilities, and external workspace model.
+- [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for the provider-neutral reconciliation, accounting, checkpoint, and tax system.
+- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts.
+- [Transaction Classification](concepts/transaction-classification.md): Canonical layered classification vocabulary for facts, projections, accounting, and tax.
+- [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
+<!-- docs-maintenance:end concepts -->
 
-- [`operations/README.md`](operations/README.md): route through runtime,
-  runbook, and artifact-contract docs
-- [`operations/project-state.md`](operations/project-state.md): current runtime
-  and implemented surface
-- [`operations/operations-quickstart.md`](operations/operations-quickstart.md):
-  shortest safe path through a normal working session
-- [`operations/mop.md`](operations/mop.md): detailed procedure and round
-  workflow
-- [`file-map.md`](file-map.md): task-oriented route to docs, commands, and
-  artifacts
-- [`operations/export-checklist.md`](operations/export-checklist.md):
-  verification export and staging checklist
-- [`operations/ai-session-prompt.md`](operations/ai-session-prompt.md):
-  compact repo-specific agent context
+## Common Tasks
 
-## Reference
+Use the quickstart for the shortest session path, then use the task guides
+below when you need the detailed procedure for one stage of the workflow.
 
-- [`reference/README.md`](reference/README.md): route through tax references,
-  repo-safe oracle guidance, and deferred follow-ups
-- [`operations/baseline-validation.md`](operations/baseline-validation.md):
-  baseline artifact package and validation contract
-- [`operations/wallet-inventory.md`](operations/wallet-inventory.md): wallet
-  inventory artifact semantics
-- [`operations/timezone-validation.md`](operations/timezone-validation.md):
-  timezone provenance and profile artifact contract
-- [`reference/canadian-cryptocurrency-taxation-guide.md`](reference/canadian-cryptocurrency-taxation-guide.md):
-  CRA-aligned working tax reference
-- [`reference/tax-reference-map.md`](reference/tax-reference-map.md): targeted
-  tax source routing
-- [`reference/test-suite-followups.md`](reference/test-suite-followups.md):
-  deferred test work
-- [`reference/cointracking-oracle-artifacts.md`](reference/cointracking-oracle-artifacts.md):
-  generic guide to supported oracle artifact families for the historical
-  portfolio-tracker baseline
+<!-- docs-maintenance:start guides -->
+- [Operator Quickstart](guides/operator-quickstart.md): Shortest safe path through intake, normalization, staging, and verification.
+- [Source Intake](guides/source-intake.md): Detailed procedure for planning, applying, manifesting, and profiling a settled source capture.
+- [Normalize, Screen, And Stage](guides/normalize-screen-stage.md): Detailed procedure for normalization review, candidate rendering, oracle screening, and staging.
+- [Verify A Round](guides/verify-a-round.md): Detailed procedure for scaffolding, exporting, comparing, and closing a verification round.
+- [Full Operator Workflow](guides/full-operator-workflow.md): Long-form runbook for the current operator workflow and round-close process.
+- [Write An Adapter](guides/write-an-adapter.md): Rules, shape, testing, and tooling guidance for source and output adapters.
+<!-- docs-maintenance:end guides -->
 
-## Workspace Guides
+## Reference Material
 
-- [`workspace/README.md`](workspace/README.md): repo-owned guidance and
-  templates for workspace subtrees
-- [`operations/workspace-layout.md`](operations/workspace-layout.md): external
-  workspace shape and seeded files
+<!-- docs-maintenance:start reference -->
+- [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
+- [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
+- [Wallet Inventory Artifacts](reference/wallet-inventory-artifacts.md): Artifact contract for location inventory outputs and evidence rows.
+- [Timezone Validation Artifacts](reference/timezone-validation-artifacts.md): Artifact contract for timezone provenance outputs and validation issues.
+- [Canadian Crypto Tax Guide](reference/canadian-crypto-tax-guide.md): Working CRA-aligned tax reference for the repo's Canadian crypto workflow.
+- [Tax Source Map](reference/tax-source-map.md): Targeted routing from repo tax questions to CRA-aligned reference sources.
+- [CoinTracking Oracle Artifacts](reference/cointracking-oracle-artifacts.md): Repo-safe reference for CoinTracking artifact families used only for development and validation.
+<!-- docs-maintenance:end reference -->
 
-## Agent Routes
+## Workspace Guidance
 
-- [`.claude/commands/source-intake.md`](../.claude/commands/source-intake.md):
-  intake, profile, normalize, checkpoint, and render route
-- [`.claude/commands/round-verification.md`](../.claude/commands/round-verification.md):
-  dev-only oracle round scaffold and verification compare route
-- [`.claude/commands/wallet-inventory.md`](../.claude/commands/wallet-inventory.md):
-  checkpoint location inventory rebuild route
-- [`.claude/commands/normalization-exceptions.md`](../.claude/commands/normalization-exceptions.md):
-  normalization review route
-- [`.claude/commands/source-diff.md`](../.claude/commands/source-diff.md):
-  dev-only oracle candidate-versus-reference diff route
-- [`.claude/commands/reconciliation-tax-build.md`](../.claude/commands/reconciliation-tax-build.md):
-  architecture and implementation route for reconciliation, checkpointing,
-  accounting, and tax
-- [`.claude/commands/implementation-checkpoint.md`](../.claude/commands/implementation-checkpoint.md):
-  final coding-quality, refactor, and commit checkpoint route
-- [`.claude/commands/supporting-artifacts.md`](../.claude/commands/supporting-artifacts.md):
-  PDF balance extraction and supporting evidence route
-- [`.claude/commands/adapter-authoring.md`](../.claude/commands/adapter-authoring.md):
-  adapter authoring and repair route
+Use [workspace/README.md](workspace/README.md) for the mirrored repo guidance
+that follows the external workspace layout.
+
+## Current Status
+
+<!-- docs-maintenance:start status -->
+- [Current State](status/current-state.md): Implemented runtime capabilities, current operational surface, and deferred areas.
+- [Migration Sequence](status/migration-sequence.md): Incremental migration order from the legacy normalized flow to the provider-neutral fact model.
+<!-- docs-maintenance:end status -->
+
+## Standards
+
+<!-- docs-maintenance:start standards -->
+- [Engineering Standards](standards/engineering.md): Code placement, typing, modularity, and naming rules for the typed application.
+- [Implementation Working Agreement](standards/implementation.md): Execution rules for shaping, verifying, refactoring, and checkpointing repo work.
+- [Commit Standards](standards/commits.md): Conventional Commit, checkpoint, and PR body rules for stable repo history.
+<!-- docs-maintenance:end standards -->

@@ -1,4 +1,12 @@
-# Wallet Inventory
+---
+title: "Wallet Inventory Artifacts"
+summary: "Artifact contract for location inventory outputs and evidence rows."
+doc_type: reference
+audience: human
+owner: repo
+status: active
+nav_order: 30
+---
 
 The aggregate location inventory is rebuilt from the normalized per-source wallet
 artifacts.

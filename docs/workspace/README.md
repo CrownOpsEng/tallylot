@@ -1,12 +1,30 @@
-# Workspace Guides
+---
+title: "Workspace Guides"
+summary: "Mirrored repo guidance for the external workspace layout, templates, and subtree contracts."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 This subtree holds repo-owned guidance and templates for the external
 workspace. Keep live evidence and operator outputs in the workspace itself, but
 keep the guidance that explains those paths versioned here.
 
+Use [`docs/concepts/workspace-model.md`](../concepts/workspace-model.md) for
+the overall workspace shape and seeded files. Use this subtree when you need
+rules for one specific workspace area.
+
 This subtree intentionally mirrors the runtime workspace shape. Unlike the
 top-level docs, some directory names here keep underscores because the runtime
 paths keep them too.
+
+## Scope
+
+- This subtree owns repo-side guidance and templates for workspace paths.
+- It does not own the live contents of the external workspace.
+- It does not replace the higher-level runtime and workflow docs under
+  `docs/guides/` and `docs/reference/`.
 
 ## Evidence
 

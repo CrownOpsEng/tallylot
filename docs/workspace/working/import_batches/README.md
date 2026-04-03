@@ -1,4 +1,11 @@
-# Import Batches
+---
+title: "Import Batches"
+summary: "Contract for approved per-source import candidates and their required supporting artifacts."
+doc_type: reference
+audience: both
+owner: repo
+status: active
+---
 
 Place the next approved import batch for a single source here.
 
@@ -9,5 +16,5 @@ Every file here should have:
 
 - an upstream raw source export
 - a reviewed normalization path
-- a passing `uv run python -m tools.oracles.cli batch screen` result saved beside the candidate
+- a passing `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen` result saved beside the candidate
 - a matching entry in the round log before import

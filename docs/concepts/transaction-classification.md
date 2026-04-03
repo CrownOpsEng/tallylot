@@ -1,4 +1,12 @@
-# Transaction Classification Matrix
+---
+title: "Transaction Classification"
+summary: "Canonical layered classification vocabulary for facts, projections, accounting, and tax."
+doc_type: concept
+audience: human
+owner: repo
+status: active
+nav_order: 40
+---
 
 Use this document to lock the current canonical classification vocabulary
 before deeper fact, checkpoint, accounting, and tax work lands.
