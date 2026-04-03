@@ -6,7 +6,8 @@
 - External workspace model only
 - CLI and library interfaces only
 - Filesystem-backed storage implementation
-- Generic file output renderer with the CoinTracking CSV adapter implemented
+- Generic file output renderer with one implemented CSV edge adapter:
+  `cointracking_csv`
 - Restored real source adapters for Coinbase, Wealthsimple, Binance,
   Crypto.com, Shakepay, Ledger Live, Near, GTrade, EVM explorer, EVM
   wallet-state, plus the generic structured CSV adapter

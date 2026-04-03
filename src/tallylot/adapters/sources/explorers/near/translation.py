@@ -14,6 +14,7 @@ from tallylot.adapters.support.drafts import (
     fee_leg,
 )
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -76,10 +77,10 @@ def translate_transactions(
                         wallet=str(profile.source),
                         timestamp=timestamp,
                         classification=classification(
-                            economic_kind="chain_transfer_in",
-                            projection_type="Deposit",
-                            journal_intent="funding_inflow",
-                            tax_treatment_code="non_taxable_transfer_in",
+                            economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
+                            projection_type=ProjectionType.DEPOSIT,
+                            journal_intent=JournalIntent.FUNDING_INFLOW,
+                            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                         ),
                         description=f"Transfer into {profile.source} - {tx_hash}",
                         raw_file=path.name,
@@ -103,10 +104,10 @@ def translate_transactions(
                             wallet=str(profile.source),
                             timestamp=timestamp,
                             classification=classification(
-                                economic_kind="staking_transfer_out",
-                                projection_type="Withdrawal",
-                                journal_intent="funding_outflow",
-                                tax_treatment_code="non_taxable_transfer_out",
+                                economic_kind=EconomicKind.STAKING_TRANSFER_OUT,
+                                projection_type=ProjectionType.WITHDRAWAL,
+                                journal_intent=JournalIntent.FUNDING_OUTFLOW,
+                                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
                             ),
                             description=description,
                             raw_file=path.name,
@@ -124,10 +125,10 @@ def translate_transactions(
                             wallet=f"{profile.source} - Staking",
                             timestamp=timestamp,
                             classification=classification(
-                                economic_kind="staking_transfer_in",
-                                projection_type="Deposit",
-                                journal_intent="funding_inflow",
-                                tax_treatment_code="non_taxable_transfer_in",
+                                economic_kind=EconomicKind.STAKING_TRANSFER_IN,
+                                projection_type=ProjectionType.DEPOSIT,
+                                journal_intent=JournalIntent.FUNDING_INFLOW,
+                                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                             ),
                             description=description,
                             raw_file=path.name,

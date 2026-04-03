@@ -1,20 +1,47 @@
 from __future__ import annotations
 
+import ast
 import json
 import re
 import tomllib
 from collections import defaultdict
 from pathlib import Path
 
+from tallylot.domain.transactions import ProjectionType, TransactionFact
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
+CLASSIFICATION_KEYWORDS = frozenset(
+    {
+        "economic_kind",
+        "projection_type",
+        "journal_intent",
+        "tax_treatment_code",
+    }
+)
+
+
+def _module(path: Path) -> ast.Module:
+    return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+
+def _python_files(root: Path) -> tuple[Path, ...]:
+    return tuple(sorted(root.rglob("*.py")))
+
+
+def _is_named_call(node: ast.expr, name: str) -> bool:
+    if isinstance(node, ast.Name):
+        return node.id == name
+    if isinstance(node, ast.Attribute):
+        return node.attr == name
+    return False
 
 
 def test_repo_has_no_type_ignore_comments() -> None:
     python_files = (
         REPO_ROOT / "conftest.py",
-        *sorted((REPO_ROOT / "src").rglob("*.py")),
-        *sorted((REPO_ROOT / "tests").rglob("*.py")),
-        *sorted((REPO_ROOT / "tools").rglob("*.py")),
+        *_python_files(REPO_ROOT / "src"),
+        *_python_files(REPO_ROOT / "tests"),
+        *_python_files(REPO_ROOT / "tools"),
     )
     forbidden = ("type:" + " ignore", "pyright:" + " ignore")
 
@@ -129,3 +156,83 @@ def test_typecheck_configs_remain_strict() -> None:
     assert "warn_unused_ignores = true" in mypy_text
     assert pyright_config["typeCheckingMode"] == "strict"
     assert pyright_config["reportUnnecessaryTypeIgnoreComment"] is True
+
+
+def test_application_modules_do_not_import_infrastructure() -> None:
+    application_root = REPO_ROOT / "src" / "tallylot" / "application"
+
+    for path in _python_files(application_root):
+        module = _module(path)
+        for node in ast.walk(module):
+            if isinstance(node, ast.ImportFrom) and node.module is not None:
+                assert not (
+                    node.module == "tallylot.infrastructure" or node.module.startswith("tallylot.infrastructure.")
+                ), f"{path} imports infrastructure from the application layer"
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert not (
+                        alias.name == "tallylot.infrastructure" or alias.name.startswith("tallylot.infrastructure.")
+                    ), f"{path} imports infrastructure from the application layer"
+
+
+def test_transaction_fact_category_bridge_is_removed() -> None:
+    assert not hasattr(TransactionFact, "category")
+
+
+def test_repo_does_not_reference_fact_category_attribute() -> None:
+    guarded_roots = (
+        REPO_ROOT / "src" / "tallylot" / "adapters",
+        REPO_ROOT / "src" / "tallylot" / "application" / "outputs",
+        REPO_ROOT / "src" / "tallylot" / "infrastructure" / "storage",
+        REPO_ROOT / "src" / "tallylot" / "adapters" / "support",
+        REPO_ROOT / "tests" / "unit" / "domain",
+        REPO_ROOT / "tests" / "unit" / "application" / "outputs",
+        REPO_ROOT / "tests" / "contract",
+    )
+
+    for root in guarded_roots:
+        for path in _python_files(root):
+            for node in ast.walk(_module(path)):
+                if isinstance(node, ast.Attribute):
+                    assert node.attr != "category", f"{path} references removed fact category attribute"
+
+
+def test_source_adapters_do_not_pass_string_classification_values() -> None:
+    adapters_root = REPO_ROOT / "src" / "tallylot" / "adapters" / "sources"
+
+    for path in _python_files(adapters_root):
+        for node in ast.walk(_module(path)):
+            if not isinstance(node, ast.Call):
+                continue
+            if not _is_named_call(node.func, "classification"):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg not in CLASSIFICATION_KEYWORDS:
+                    continue
+                if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
+                    raise AssertionError(
+                        f"{path} passes string classification value {keyword.arg}={keyword.value.value!r} "
+                        "through shared draft helpers"
+                    )
+
+
+def test_projection_type_runtime_values_remain_machine_oriented() -> None:
+    assert ProjectionType.TRADE.value == "trade"
+    assert ProjectionType.DEPOSIT.value == "deposit"
+    assert ProjectionType.WITHDRAWAL.value == "withdrawal"
+
+
+def test_transaction_classification_matrix_describes_runtime_projection_values() -> None:
+    matrix_text = (REPO_ROOT / "docs" / "architecture" / "transaction-classification-matrix.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` |" in matrix_text
+    assert "| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` |" in matrix_text
+    assert (
+        "| `withdrawal` | `withdrawal` | `asset_withdrawal` | `non_taxable_transfer_out` | `funding_outflow` |"
+        in matrix_text
+    )
+    assert "enum members such as `ProjectionType.TRADE`" in matrix_text
+    assert "stored/runtime values such as `trade`" in matrix_text
+    assert "renderer labels such as `Trade`" in matrix_text

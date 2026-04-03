@@ -22,9 +22,10 @@ Per-source folders should use the typed pipeline artifact set:
 adapter actually provides it.
 
 `cointracking_candidate.csv` is optional. Create it with `output render file`
-when you need a CoinTracking adapter export, and keep it beside the normalized
-artifacts only as a working file. Only `working/import_batches/` should hold
-files that have passed overlap screening and are approved for import.
+when the round needs it, and keep it beside the
+normalized artifacts only as a working file. Only
+`working/import_batches/` should hold files that have passed overlap
+screening and are approved for import.
 
 `profile_inventory.csv` includes timezone provenance columns so agents and users
 can inspect timestamp semantics without reopening raw files.

@@ -10,7 +10,7 @@ manifests belong in the external workspace, not in the repo.
 These artifacts are useful for development and validation only:
 
 - black-box comparison against internal reconciliation and tax outputs
-- regression checks during migration away from CoinTracking-centered workflows
+- regression checks against the historical portfolio-tracker baseline
 - investigating mismatches that simple source-backed evidence cannot explain
 
 They are not production/runtime inputs for reconstruction, checkpoint

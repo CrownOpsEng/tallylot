@@ -8,8 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tallylot.application.intake.archive import scanned_tree_files
-from tallylot.domain.issues import IssueRecord
-from tallylot.infrastructure.serialization.csv_inventory import (
+from tallylot.application.profiling.csv_inventory import (
     filename_timezone,
     format_timezone_value,
     inventory_csv_content,
@@ -18,6 +17,7 @@ from tallylot.infrastructure.serialization.csv_inventory import (
     timestamp_resolution,
     value_has_non_utc_offset,
 )
+from tallylot.domain.issues import IssueRecord
 from tallylot.ports.source_profiles import FileInventoryEntry
 
 

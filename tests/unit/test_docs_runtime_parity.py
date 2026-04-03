@@ -9,6 +9,7 @@ from typing import cast
 from typer.main import Typer
 from typer.models import CommandInfo
 
+from tallylot.infrastructure.workspace.layout import SEED_FILES
 from tallylot.interfaces.cli import app
 from tools.oracles.cli import app as oracle_app
 
@@ -232,6 +233,32 @@ def test_repo_docs_do_not_reference_personal_workspace_roots() -> None:
 
 def test_private_oracle_manifest_is_not_checked_in() -> None:
     assert not (REPO_ROOT / "docs" / "reference" / "cointracking-full-export-manifest.csv").exists()
+
+
+def test_workspace_issue_log_seed_header_matches_template() -> None:
+    template_header = (
+        (REPO_ROOT / "docs" / "workspace" / "analysis" / "issues" / "issue-log-template.csv")
+        .read_text(encoding="utf-8")
+        .splitlines()[0]
+    )
+    seeded_header = next(
+        seed.content.strip() for seed in SEED_FILES if seed.relative_path == "analysis/issues/issue_log.csv"
+    )
+
+    assert seeded_header == template_header
+
+
+def test_workspace_source_inventory_seed_header_matches_template() -> None:
+    template_header = (
+        (REPO_ROOT / "docs" / "workspace" / "analysis" / "issues" / "source-inventory-template.csv")
+        .read_text(encoding="utf-8")
+        .splitlines()[0]
+    )
+    seeded_header = next(
+        seed.content.strip() for seed in SEED_FILES if seed.relative_path == "analysis/issues/source_inventory.csv"
+    )
+
+    assert seeded_header == template_header
 
 
 def test_commit_standards_require_explicit_lint_amend_reverification() -> None:

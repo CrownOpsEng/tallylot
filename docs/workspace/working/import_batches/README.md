@@ -2,9 +2,8 @@
 
 Place the next approved import batch for a single source here.
 
-In the current runtime, this is usually a CoinTracking-ready CSV candidate.
-Keep the folder semantics tracker-agnostic even while the implemented operator
-workflow still targets CoinTracking.
+In the current runtime, this is usually an approved external-import artifact.
+Keep the folder semantics generic even when a round uses one concrete adapter.
 
 Every file here should have:
 

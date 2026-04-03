@@ -11,6 +11,8 @@ depending on any one portfolio tracker.
 ## Design Rules
 
 - The core system of record is the provider-neutral transaction fact model.
+- The internal core should remain asset-class-agnostic even when current
+  adapters or policies are crypto-first.
 - Source evidence and source-backed checkpoints are first-class.
 - Output and import adapters are optional edges, not central dependencies.
 - Oracle artifacts are comparison aids only.
@@ -47,7 +49,8 @@ available.
 CoinTracking support is intentionally narrow:
 
 - CoinTracking import/export shapes may be supported as adapters.
-- CoinTracking transaction types may be represented in output projection metadata.
+- CoinTracking row types may be targeted by adapter-local renderer mappings
+  when producing that export surface.
 - CoinTracking reports may be parsed for comparison by dev-only tooling.
 - CoinTracking tax outputs may be used as black-box oracles during validation.
 
@@ -107,6 +110,8 @@ Those artifacts may support comparison, but not checkpoint existence.
   `src/tallylot/`.
 - Keep import-shape parsing behind adapter boundaries.
 - Keep domain services unaware of CoinTracking report schemas.
+- Keep crypto-, FX-, and security-specific terms out of shared core abstractions
+  unless the concept is inherently specific to that surface.
 - Keep tax policy operating on reconciled facts and checkpoint state only.
 - Keep journal rendering operating on facts and accounting intents only.
 

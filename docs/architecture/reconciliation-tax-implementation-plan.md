@@ -1,8 +1,8 @@
 # Reconciliation And Tax Implementation Plan
 
-This document is the implementation anchor for evolving the repo from a
-CoinTracking-centered reconciliation workflow into an independent
-reconciliation, accounting, and Canadian tax computation system.
+This document is the implementation anchor for evolving the repo away from
+tracker-dependent historical workflows and into an independent reconciliation,
+accounting, and Canadian tax computation system.
 
 Use this plan when making structural decisions that affect normalization,
 checkpointing, journaling, or tax computation. Treat it as a design contract,
@@ -10,9 +10,9 @@ not as a loose idea list.
 
 ## Objective
 
-Deliver a filing-ready `2023` to `2025` workflow without relying on CoinTracking
-as the central runtime ledger, while preserving the repo's current typing,
-layering, and evidence discipline.
+Deliver a filing-ready `2023` to `2025` workflow without treating CoinTracking
+as a required runtime ledger or organizing model, while preserving the repo's
+current typing, layering, and evidence discipline.
 
 The system must:
 
@@ -31,6 +31,8 @@ Normal runtime operation must stay platform-agnostic:
   for dev-only comparison workflows
 - CoinTracking tax and accounting reports are oracle-only support artifacts for
   comparison and regression, not normal runtime dependencies
+- the internal engine should stay asset-class-agnostic so crypto, FX,
+  securities, and similar surfaces can remain adapter- and policy-driven
 
 ## Key Decisions
 
@@ -47,7 +49,7 @@ Reason:
 
 ### 2. Keep CoinTracking At The Edge
 
-CoinTracking remains useful for:
+CoinTracking remains supported for:
 
 - one concrete CSV output adapter
 - historical regression through dev-only oracle tooling
@@ -84,18 +86,34 @@ Every transaction fact should support distinct classification layers:
 - `TaxTreatmentCode`: jurisdiction-neutral tax intent
 - `JournalIntent`: accounting intent
 
-### 5. Keep The Ledger Replaceable
+### 5. Keep The Core Runtime Asset-Class Agnostic
+
+The internal runtime should generalize across financial asset classes even when
+the current adapters and policies are crypto-first.
+
+Rules:
+
+- core facts, checkpoints, accounting, and tax seams should avoid
+  crypto-exclusive semantics unless the concept is truly crypto-specific
+- crypto, FX, securities, and later import or output surfaces should enter
+  through adapters and policy contracts rather than through domain renames or
+  special-case compatibility shims
+- repo, package, and CLI naming may remain stable for now; internal abstractions
+  should still be chosen so later generalization does not require another core
+  rewrite
+
+### 6. Keep The Ledger Replaceable
 
 Use Ledger CLI first because it is permissive, mature, and scriptable, but keep
 all journaling behind a renderer port so later Beancount or hledger adapters do
 not require domain refactors.
 
-### 6. Keep The Tax Layer Replaceable
+### 7. Keep The Tax Layer Replaceable
 
 Implement Canadian capital-account handling first, but keep policy behind a tax
 policy port so future jurisdictions do not require a domain rewrite.
 
-### 7. Expand `pydantic` At Boundaries, Not In The Core Domain
+### 8. Expand `pydantic` At Boundaries, Not In The Core Domain
 
 Use `pydantic` for:
 
@@ -109,6 +127,11 @@ Keep domain models as frozen dataclasses, enums, and value objects so business
 rules remain explicit and tool-friendly.
 
 ## Target Architecture
+
+Core abstractions added from this point forward must stay neutral enough to
+support multiple asset classes. If a term is only correct for one provider,
+chain, or asset class, keep it adapter-local unless the domain concept itself
+is inherently specific.
 
 ### Domain Packages
 
@@ -322,12 +345,12 @@ Lock these early:
 - `TaxTreatmentCode`
 - `JournalIntent`
 
-## CoinTracking Output Contract
+## Current CoinTracking Adapter Contract
 
 ### Full Type Surface
 
-Lock the full CoinTracking output taxonomy now so the projection metadata used
-by the output adapter does not churn later.
+Lock the current CoinTracking output taxonomy now so the projection metadata
+used by that adapter does not churn later.
 
 Trade types:
 

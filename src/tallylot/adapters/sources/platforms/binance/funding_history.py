@@ -11,6 +11,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
     fee_leg,
 )
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -37,10 +38,10 @@ def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[EconomicA
                 wallet="Funding",
                 timestamp=parse_export_timestamp((row.get("Time") or "").strip(), path.name),
                 classification=classification(
-                    economic_kind="asset_deposit",
-                    projection_type="Deposit",
-                    journal_intent="funding_inflow",
-                    tax_treatment_code="non_taxable_transfer_in",
+                    economic_kind=EconomicKind.ASSET_DEPOSIT,
+                    projection_type=ProjectionType.DEPOSIT,
+                    journal_intent=JournalIntent.FUNDING_INFLOW,
+                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                 ),
                 description=f"Binance deposit via {(row.get('Network') or '').strip()}",
                 raw_file=path.name,
@@ -73,10 +74,10 @@ def normalize_withdraw_rows(profile: SourceProfile, path: Path) -> list[Economic
                 wallet="Funding",
                 timestamp=parse_export_timestamp((row.get("Time") or "").strip(), path.name),
                 classification=classification(
-                    economic_kind="asset_withdrawal",
-                    projection_type="Withdrawal",
-                    journal_intent="funding_outflow",
-                    tax_treatment_code="non_taxable_transfer_out",
+                    economic_kind=EconomicKind.ASSET_WITHDRAWAL,
+                    projection_type=ProjectionType.WITHDRAWAL,
+                    journal_intent=JournalIntent.FUNDING_OUTFLOW,
+                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
                 ),
                 description=f"Binance withdrawal via {(row.get('Network') or '').strip()}",
                 raw_file=path.name,

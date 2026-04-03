@@ -20,6 +20,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.ports.source_profiles import SourceProfile
 
 
@@ -117,16 +118,16 @@ def translate_transactions(
 def _classification_for_pnl(pnl: Decimal) -> ActivityClassification:
     if pnl > 0:
         return classification(
-            economic_kind="derivative_realized_profit",
-            projection_type="Derivatives / Futures Profit",
-            journal_intent="income_recognition",
-            tax_treatment_code="derivative_realized_gain",
+            economic_kind=EconomicKind.DERIVATIVE_REALIZED_PROFIT,
+            projection_type=ProjectionType.DERIVATIVES_FUTURES_PROFIT,
+            journal_intent=JournalIntent.INCOME_RECOGNITION,
+            tax_treatment_code=TaxTreatmentCode.DERIVATIVE_REALIZED_GAIN,
         )
     return classification(
-        economic_kind="derivative_realized_loss",
-        projection_type="Derivatives / Futures Loss",
-        journal_intent="expense_recognition",
-        tax_treatment_code="derivative_realized_loss",
+        economic_kind=EconomicKind.DERIVATIVE_REALIZED_LOSS,
+        projection_type=ProjectionType.DERIVATIVES_FUTURES_LOSS,
+        journal_intent=JournalIntent.EXPENSE_RECOGNITION,
+        tax_treatment_code=TaxTreatmentCode.DERIVATIVE_REALIZED_LOSS,
     )
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.binance.adapter import BinanceAdapter
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.services import build_source_profile
 
 
@@ -40,11 +41,15 @@ def test_binance_adapter_handles_supported_and_review_required_rows(tmp_path: Pa
 
     assert len(result.facts) == 5
     assert len(result.issues) == 3
-    kinds = [row.category for row in result.facts]
-    assert "trade" in kinds
-    assert "deposit" in kinds
-    assert "withdrawal" in kinds
-    assert "staking_reward" in kinds
+    projection_types = {row.projection_type for row in result.facts}
+    assert ProjectionType.TRADE in projection_types
+    assert ProjectionType.DEPOSIT in projection_types
+    assert ProjectionType.WITHDRAWAL in projection_types
+    assert ProjectionType.STAKING in projection_types
+    economic_kinds = {row.economic_kind for row in result.facts}
+    assert EconomicKind.STAKING_REWARD in economic_kinds
+    assert JournalIntent.INCOME_RECOGNITION in {row.journal_intent for row in result.facts}
+    assert TaxTreatmentCode.STAKING_INCOME in {row.tax_treatment_code for row in result.facts}
     assert any("Transfer Between Spot Account and UM Futures Account" in row.message for row in result.issues)
 
 
@@ -88,7 +93,10 @@ def test_binance_transaction_history_skips_p2p_rows_when_c2c_history_exists(tmp_
     )
 
     assert len(result.facts) == 1
-    assert result.facts[0].category == "trade"
+    assert result.facts[0].economic_kind == EconomicKind.P2P_TRADE
+    assert result.facts[0].projection_type == ProjectionType.TRADE
+    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert len(result.issues) == 0
 
 
@@ -113,7 +121,10 @@ def test_binance_adapter_reads_nested_bundle_paths(tmp_path: Path) -> None:
     )
 
     assert len(result.facts) == 1
-    assert result.facts[0].category == "trade"
+    assert result.facts[0].economic_kind == EconomicKind.P2P_TRADE
+    assert result.facts[0].projection_type == ProjectionType.TRADE
+    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert not result.issues
 
 

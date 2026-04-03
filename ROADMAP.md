@@ -10,10 +10,9 @@ decisions that should not be rediscovered from scratch.
 - External workspace model only
 - CLI and library runtime only
 - Filesystem-backed operational storage
-- CoinTracking CSV as the only implemented output adapter
+- One concrete CoinTracking CSV edge adapter is implemented today
 - Normalization writes `facts.csv`, `balances.csv`, and
-  `balance_evidence.csv` as active runtime artifacts; CoinTracking CSV exports
-  run as explicit output adapters with no repo-level legacy aliases
+  `balance_evidence.csv` as active runtime artifacts
 - Dev-only oracle workflows run through `uv run python -m tools.oracles.cli`
   and stay outside the production package and production CLI surface
 - Archive-aware source scanning and intake plan/apply workflows
@@ -29,6 +28,9 @@ decisions that should not be rediscovered from scratch.
   family, not as the central business model.
 - Keep CoinTracking rendering isolated to output-adapter packages and keep
   oracle comparison code outside `src/tallylot/`.
+- Keep repo-owned workspace control files generic and operator-facing.
+  CoinTracking-specific workflow naming belongs only in concrete edge adapter,
+  oracle, or historical baseline references.
 - Build shared adapter-layer support for stable translation chores such as file
   traversal, file-family dispatch, row-context handling, draft compilation, and
   wallet evidence construction so provider adapters stay thin.
@@ -46,6 +48,10 @@ decisions that should not be rediscovered from scratch.
 - Keep the core runtime platform-agnostic: normal reconstruction, checkpoint,
   accounting, and tax workflows must run from source evidence and intentional
   checkpoints without requiring CoinTracking tax or accounting outputs.
+- Keep the internal engine asset-class-agnostic. Crypto may remain the first
+  implemented policy surface, but new core abstractions should be chosen so FX,
+  securities, and similar tracking or tax workflows can fit through adapters
+  and policy seams without another domain-center rewrite.
 - Introduce a provider-neutral transaction fact model as the new system of
   record. Replace the current normalized transaction shape directly instead of
   carrying forward compatibility wrappers or parallel legacy names.
@@ -78,6 +84,9 @@ decisions that should not be rediscovered from scratch.
   - discovery-time manifest validation
 - Keep the domain centered on frozen dataclasses, enums, and value objects so
   business invariants remain explicit and independent of framework behavior.
+- Keep internal projection metadata neutral. Renderer-specific labels such as
+  CoinTracking row types belong in output adapters rather than in domain enum
+  values, source adapters, or stored fact artifacts.
 - Support the required CoinTracking output taxonomy inside output adapters and
   shared projection contracts without requiring provider-local mapping helpers.
 - Keep CoinTracking tax reports, roll-forward outputs, average purchase price,
@@ -152,6 +161,8 @@ decisions that should not be rediscovered from scratch.
   commits without forcing micro-commit overhead.
 - Keep application services on port contracts for adapter resolution and artifact
   persistence; do not import infrastructure modules from `application/`.
+- Keep pure workflow helper logic in the owning application capability package
+  instead of importing infrastructure convenience modules just to share code.
 - Keep filesystem scans deterministic. Services that enumerate trees must use a
   stable scan contract with explicit output exclusions rather than ad hoc
   `rglob()` behavior.
@@ -168,6 +179,9 @@ decisions that should not be rediscovered from scratch.
 - Keep transaction facts structurally strict: every fact must retain at least
   one positive-value economic leg, and leg direction must be modeled
   explicitly rather than by signed magnitudes.
+- Do not reintroduce a legacy fact `category` bridge. Layered classification
+  fields are the stable center; compatibility labels belong only at adapter
+  edges.
 - Normalize raw sign conventions inside adapters when direction is otherwise
   explicit. If the sign is the only direction signal or it conflicts with other
   fields, surface an issue instead of guessing. When adapters do apply an

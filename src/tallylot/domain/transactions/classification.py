@@ -28,16 +28,16 @@ class EconomicKind(StrEnum):
 
 
 class ProjectionType(StrEnum):
-    DEPOSIT = "Deposit"
-    DERIVATIVES_FUTURES_LOSS = "Derivatives / Futures Loss"
-    DERIVATIVES_FUTURES_PROFIT = "Derivatives / Futures Profit"
-    EXPENSE_NON_TAXABLE = "Expense (non taxable)"
-    INTEREST_INCOME = "Interest Income"
-    REWARD_BONUS = "Reward / Bonus"
-    STAKING = "Staking"
-    SWAP_NON_TAXABLE = "Swap (non taxable)"
-    TRADE = "Trade"
-    WITHDRAWAL = "Withdrawal"
+    DEPOSIT = "deposit"
+    DERIVATIVES_FUTURES_LOSS = "derivatives_futures_loss"
+    DERIVATIVES_FUTURES_PROFIT = "derivatives_futures_profit"
+    EXPENSE_NON_TAXABLE = "expense_non_taxable"
+    INTEREST_INCOME = "interest_income"
+    REWARD_BONUS = "reward_bonus"
+    STAKING = "staking"
+    SWAP_NON_TAXABLE = "swap_non_taxable"
+    TRADE = "trade"
+    WITHDRAWAL = "withdrawal"
 
 
 class JournalIntent(StrEnum):

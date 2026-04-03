@@ -9,7 +9,7 @@ provider-neutral fact model with explicit parity gates.
 - preserve current working behavior while new foundations land
 - avoid pushing more semantics into the current normalized transaction model
 - keep adapters and services shippable at every checkpoint
-- keep CoinTracking as an output projection, not the center
+- keep CoinTracking as one edge projection, not a migration anchor
 
 ## Phase 0. Schema Lock
 
@@ -156,7 +156,7 @@ Retire or demote the current normalized-transaction-first path only after:
 
 After this phase, new behavior must land in fact-based services first and the
 temporary normalized transaction shape should not continue as a second active
-center.
+runtime model.
 
 ## Parity Gates
 

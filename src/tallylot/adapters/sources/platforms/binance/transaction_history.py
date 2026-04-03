@@ -14,6 +14,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -85,10 +86,10 @@ def normalize_transaction_rows(
                     wallet=account,
                     timestamp=parsed_time,
                     classification=classification(
-                        economic_kind="staking_reward",
-                        projection_type="Staking",
-                        journal_intent="income_recognition",
-                        tax_treatment_code="staking_income",
+                        economic_kind=EconomicKind.STAKING_REWARD,
+                        projection_type=ProjectionType.STAKING,
+                        journal_intent=JournalIntent.INCOME_RECOGNITION,
+                        tax_treatment_code=TaxTreatmentCode.STAKING_INCOME,
                     ),
                     description=operation,
                     raw_file=path.name,
@@ -116,10 +117,10 @@ def normalize_transaction_rows(
                     wallet=account,
                     timestamp=parsed_time,
                     classification=classification(
-                        economic_kind="asset_conversion",
-                        projection_type="Trade",
-                        journal_intent="asset_exchange",
-                        tax_treatment_code="capital_exchange",
+                        economic_kind=EconomicKind.ASSET_CONVERSION,
+                        projection_type=ProjectionType.TRADE,
+                        journal_intent=JournalIntent.ASSET_EXCHANGE,
+                        tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                     ),
                     description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",
                     raw_file=path.name,

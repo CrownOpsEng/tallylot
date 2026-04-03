@@ -26,6 +26,7 @@ from tallylot.adapters.support.drafts import (
 )
 from tallylot.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import WalletInventoryRecord
@@ -164,10 +165,10 @@ class LedgerLiveAdapter:
                     wallet=account_label,
                     timestamp=timestamp,
                     classification=classification(
-                        economic_kind="asset_swap",
-                        projection_type="Trade",
-                        journal_intent="asset_exchange",
-                        tax_treatment_code="capital_exchange",
+                        economic_kind=EconomicKind.ASSET_SWAP,
+                        projection_type=ProjectionType.TRADE,
+                        journal_intent=JournalIntent.ASSET_EXCHANGE,
+                        tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                     ),
                     description=account_label,
                     raw_file=raw_file,

@@ -8,7 +8,8 @@ Use this route before closing any non-trivial coding task.
 2. Confirm the change still respects:
    - layer ownership
    - provider-neutral core design
-   - oracle-only treatment for CoinTracking tax and accounting reports
+   - CoinTracking tax and accounting reports stay in comparison tooling, not
+     runtime state
    - `Decimal`-only financial handling
 3. Check whether the task should have triggered a bounded refactor:
    - duplicate logic appeared
@@ -30,5 +31,5 @@ Use this route before closing any non-trivial coding task.
 7. Create the stable checkpoint commit when the slice is coherent and verified.
    Do not close the task first and plan to commit afterward.
 
-Do not close the task with "I'll clean that up later" if the needed structural
-fix is already obvious and bounded.
+If a needed structural fix is already obvious and bounded, include it in the
+same checkpoint instead of deferring it.

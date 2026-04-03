@@ -1,8 +1,11 @@
 # Issues And Inventory Guide
 
-This folder holds the two live issue-tracking control files that must stay current during execution.
+This folder holds the two live issue-tracking control files that must stay
+current during execution.
 
-Related generated inventory artifacts now live beside them in `analysis/inventory/`, especially `wallet_inventory.csv` and `wallet_inventory_issues.csv`.
+Related generated inventory artifacts now live beside them in
+`analysis/inventory/`, especially `wallet_inventory.csv` and
+`wallet_inventory_issues.csv`.
 
 ## `issue_log.csv`
 
@@ -34,7 +37,7 @@ Key fields:
 
 - `proof_path` → exact raw file, explorer record, or evidence location used to justify a decision
 - `proof_summary` → short explanation of what the proof establishes
-- `cointracking_action` → exact manual change made inside CoinTracking
+- `external_action` → exact manual change made in the external verification tool
 - `verification_path` → round folder containing the fresh post-change exports
 - `gate_result` → outcome after reviewing the fresh exports
 
@@ -46,13 +49,17 @@ Suggested `gate_result` values:
 - `failed_needs_repair`
 - `accepted_exception`
 
-`FIAT-001` is the baseline fiat-layer completeness issue. Keep it open until the CAD funding and withdrawal chain is either repaired inside CoinTracking or explicitly documented with supporting evidence.
+`FIAT-001` is the baseline fiat-layer completeness issue. Keep it open until
+the CAD funding and withdrawal chain is either repaired in the current
+external verification tool or explicitly documented with supporting evidence.
 
 Prefix guidance:
 
 - Coinbase-specific issues belong under `SRC-*`, not a Coinbase-only prefix.
 - Binance-specific issues belong under `SRC-*` unless they are literally a Missing Transactions or Validate Transactions issue, in which case they stay under `MISS-*` or `VAL-*`.
-- Balance mismatches or residual balances that are visible in source or CoinTracking reports but do not yet prove where the error originates belong under `BAL-*`, not `SRC-*`.
+- Balance mismatches or residual balances that are visible in source or external verification
+  reports but do not yet prove where the error originates belong under
+  `BAL-*`, not `SRC-*`.
 - Prefixes classify workflow family, not exchange.
 
 ## `source_inventory.csv`
@@ -68,12 +75,15 @@ Update the row continuously as facts are confirmed:
 
 Suggested `status` values:
 
+These values describe the current external import and verification workflow.
+
 - `needs_user_confirmation` → source is known from the baseline, but post-cutoff activity is not yet confirmed
 - `pending_inventory_confirmation` → source is expected to be active, but timing or scope still needs confirmation
 - `confirmed_active_pending_export` → post-cutoff activity is confirmed and the source is in scope, but capture files have not been pulled yet
 - `capture_complete` → the capture folder and manifest are present
 - `ready_for_import` → cleaned import file is prepared and overlap-screened
-- `imported_pending_verification` → source was imported into CoinTracking and fresh exports still need review
+- `imported_pending_verification` → source was imported into the current
+  external verification workflow and fresh exports still need review
 - `complete` → source import is verified and closed
 - `excluded_no_activity` → confirmed no post-cutoff activity
 - `excluded_dust_balance` → confirmed post-cutoff activity exists, but the source is excluded from the initial queue because its baseline balance is within the agreed dust threshold

@@ -9,6 +9,7 @@ from tallylot.adapters.support.drafts import (
     classification,
     economic_leg,
 )
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -48,10 +49,10 @@ def normalize_asset_migration(
         wallet="Coinbase",
         timestamp=parse_retail_timestamp(timestamp),
         classification=classification(
-            economic_kind="asset_migration",
-            projection_type="Swap (non taxable)",
-            journal_intent="asset_exchange",
-            tax_treatment_code="non_taxable_asset_migration",
+            economic_kind=EconomicKind.ASSET_MIGRATION,
+            projection_type=ProjectionType.SWAP_NON_TAXABLE,
+            journal_intent=JournalIntent.ASSET_EXCHANGE,
+            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_ASSET_MIGRATION,
         ),
         description="Coinbase Asset Migration",
         raw_file=raw_file,

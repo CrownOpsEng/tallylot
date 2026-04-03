@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from tallylot.application.checkpoints.contracts import WalletInventoryRequest, WalletInventoryResponse
 from tallylot.application.checkpoints.wallet_inventory_summary import summarize_wallet_inventory
-from tallylot.infrastructure.filesystem import ensure_output_not_within_input_tree, iter_tree_files
+from tallylot.application.workspace.filesystem import ensure_output_not_within_input_tree, iter_tree_files
 from tallylot.ports.artifacts import ArtifactStorePort
 
 INVENTORY_HEADER = (

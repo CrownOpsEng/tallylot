@@ -1,4 +1,4 @@
-"""CSV inventory parsing and timestamp helpers."""
+"""CSV inventory parsing and timestamp helpers for profiling workflows."""
 
 from __future__ import annotations
 

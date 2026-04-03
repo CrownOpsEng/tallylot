@@ -8,6 +8,12 @@ layered terms live in `domain/transactions/classification.py`. Adapters should
 populate layered classifications first. Output adapters own any mapping from
 fact metadata into external row types such as the CoinTracking `Type` column.
 
+Naming convention:
+
+- enum members such as `ProjectionType.TRADE` stay Python-style uppercase names
+- stored/runtime values such as `trade` stay lowercase snake_case machine identifiers
+- renderer labels such as `Trade` stay adapter-local presentation strings
+
 ## Classification Layers
 
 - `EconomicKind`: provider-neutral semantic meaning
@@ -31,16 +37,16 @@ aligned on these values exactly.
 
 | Normalized Category | ProjectionType | EconomicKind | TaxTreatmentCode | JournalIntent | Tier | Notes |
 | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
-| `trade` | `Trade` | `spot_trade` | `capital_exchange` | `asset_exchange` | `T1` | Main spot trade path |
-| `deposit` | `Deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` | `T1` | Compatibility deposit before later transfer-linking |
-| `withdrawal` | `Withdrawal` | `asset_withdrawal` | `non_taxable_transfer_out` | `funding_outflow` | `T1` | Compatibility withdrawal before later transfer-linking |
-| `interest_income` | `Interest Income` | `interest_income` | `ordinary_income` | `income_recognition` | `T1` | Generic interest or similar income receipt |
-| `reward` | `Reward / Bonus` | `platform_reward` | `ordinary_income` | `income_recognition` | `T1` | Platform and promotional rewards |
-| `expense` | `Expense (non taxable)` | `cash_expense` | `non_taxable_expense` | `expense_recognition` | `T1` | Current non-taxable expense bridge path |
-| `swap` | `Swap (non taxable)` | `asset_swap` | `non_taxable_asset_migration` | `asset_exchange` | `T1` | Current non-taxable asset migration bridge path |
-| `staking_reward` | `Staking` | `staking_reward` | `staking_income` | `income_recognition` | `T1` | MVP staking-reward support |
-| `derivatives_profit` | `Derivatives / Futures Profit` | `derivative_realized_profit` | `derivative_realized_gain` | `income_recognition` | `T1` | Current realized profit bridge path |
-| `derivatives_loss` | `Derivatives / Futures Loss` | `derivative_realized_loss` | `derivative_realized_loss` | `expense_recognition` | `T1` | Current realized loss bridge path |
+| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` | `T1` | Main spot trade path |
+| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` | `T1` | Compatibility deposit before later transfer-linking |
+| `withdrawal` | `withdrawal` | `asset_withdrawal` | `non_taxable_transfer_out` | `funding_outflow` | `T1` | Compatibility withdrawal before later transfer-linking |
+| `interest_income` | `interest_income` | `interest_income` | `ordinary_income` | `income_recognition` | `T1` | Generic interest or similar income receipt |
+| `reward` | `reward_bonus` | `platform_reward` | `ordinary_income` | `income_recognition` | `T1` | Platform and promotional rewards |
+| `expense` | `expense_non_taxable` | `cash_expense` | `non_taxable_expense` | `expense_recognition` | `T1` | Current non-taxable expense bridge path |
+| `swap` | `swap_non_taxable` | `asset_swap` | `non_taxable_asset_migration` | `asset_exchange` | `T1` | Current non-taxable asset migration bridge path |
+| `staking_reward` | `staking` | `staking_reward` | `staking_income` | `income_recognition` | `T1` | MVP staking-reward support |
+| `derivatives_profit` | `derivatives_futures_profit` | `derivative_realized_profit` | `derivative_realized_gain` | `income_recognition` | `T1` | Current realized profit bridge path |
+| `derivatives_loss` | `derivatives_futures_loss` | `derivative_realized_loss` | `derivative_realized_loss` | `expense_recognition` | `T1` | Current realized loss bridge path |
 
 ## Future Expansion Rules
 
@@ -60,6 +66,8 @@ aligned on these values exactly.
   families when they need them.
 - `ProjectionType` is output metadata, not the long-term core driver of
   business behavior.
+- Machine-oriented runtime values should stay lowercase snake_case even when an
+  output adapter renders them as title-style labels.
 - If an adapter cannot determine a safe layered classification, it must emit an
   explicit issue instead of guessing.
 

@@ -7,13 +7,13 @@ from collections import defaultdict
 from dataclasses import replace
 from pathlib import Path
 
-from tallylot.domain.issues import IssueRecord
-from tallylot.domain.value_objects import format_timestamp
-from tallylot.infrastructure.serialization.csv_inventory import (
+from tallylot.application.profiling.csv_inventory import (
     filename_timezone,
     inventory_csv_content,
     parse_inventory_timestamp,
 )
+from tallylot.domain.issues import IssueRecord
+from tallylot.domain.value_objects import format_timestamp
 from tallylot.ports.source_profiles import FileInventoryEntry
 
 _ROW_NUMBER_PATTERN = re.compile(r"(?:^|[^0-9])row:(?P<row>\d+)\b")

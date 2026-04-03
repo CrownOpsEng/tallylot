@@ -74,7 +74,7 @@ For crypto-asset users, that includes:
 Repo implication:
 
 - unexplained negative fiat balances are not acceptable just because they are analytically convenient
-- if the fiat leg exists outside CoinTracking, it still must be documented well enough to support the tax record
+- if the fiat leg exists outside the portfolio-tracker export, it still must be documented well enough to support the tax record
 
 ## Capital vs. business treatment
 

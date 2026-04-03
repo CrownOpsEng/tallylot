@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.services import build_source_profile
 
 
@@ -38,7 +39,10 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: 
     event = result.facts[0]
 
     assert len(result.facts) == 1
-    assert event.category == "trade"
+    assert event.economic_kind == EconomicKind.SPOT_TRADE
+    assert event.projection_type == ProjectionType.TRADE
+    assert event.journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert event.tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert str(event.asset_in) == "BTC"
     assert str(event.asset_out) == "CAD"
     assert str(event.amount_in) == "0.01"
@@ -70,12 +74,15 @@ def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) 
     sell_event, send_event, receive_event = result.facts
 
     assert len(result.facts) == 3
-    assert sell_event.category == "trade"
+    assert sell_event.economic_kind == EconomicKind.SPOT_TRADE
+    assert sell_event.projection_type == ProjectionType.TRADE
     assert str(sell_event.asset_in) == "CAD"
     assert str(sell_event.asset_out) == "BTC"
-    assert send_event.category == "withdrawal"
+    assert send_event.economic_kind == EconomicKind.ASSET_WITHDRAWAL
+    assert send_event.projection_type == ProjectionType.WITHDRAWAL
     assert str(send_event.asset_out) == "ETH"
-    assert receive_event.category == "deposit"
+    assert receive_event.economic_kind == EconomicKind.ASSET_DEPOSIT
+    assert receive_event.projection_type == ProjectionType.DEPOSIT
     assert str(receive_event.asset_in) == "ETH"
     assert not result.issues
 
@@ -101,7 +108,7 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
     )
 
     assert len(result.facts) == 1
-    assert result.facts[0].category == "trade"
+    assert result.facts[0].projection_type == ProjectionType.TRADE
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
 
@@ -129,9 +136,11 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_
     reward_event, migration_event = result.facts
 
     assert len(result.facts) == 2
-    assert reward_event.category == "interest_income"
+    assert reward_event.economic_kind == EconomicKind.INTEREST_INCOME
+    assert reward_event.projection_type == ProjectionType.INTEREST_INCOME
     assert str(reward_event.asset_in) == "ADA"
-    assert migration_event.category == "swap"
+    assert migration_event.economic_kind == EconomicKind.ASSET_MIGRATION
+    assert migration_event.projection_type == ProjectionType.SWAP_NON_TAXABLE
     assert migration_event.description == "Coinbase Asset Migration"
     assert str(migration_event.asset_in) == "POL"
     assert str(migration_event.asset_out) == "MATIC"

@@ -8,8 +8,8 @@
 - [ ] Pull external evidence for each targeted issue
 - [ ] Save raw source files to `evidence/raw/source/<source>/<capture_id>/`
 - [ ] Generate or refresh `evidence/raw/source/<source>/<capture_id>/manifest.csv`
-- [ ] Update `proof_path` and `proof_summary` before editing CoinTracking
-- [ ] Make repair(s) in CoinTracking
+- [ ] Update `proof_path` and `proof_summary` before editing the external verification tool state
+- [ ] Make repair(s) in the external verification tool
 - [ ] Export Validate Transactions
 - [ ] Export Missing Transactions with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
 - [ ] Export Duplicate Transactions
@@ -17,7 +17,7 @@
 - [ ] Export Balance by Exchange
 - [ ] Export Trade Table, Roll Forward, or Double-entry only if needed
 - [ ] Store exports under `working/verification/<round_id>/`
-- [ ] Update `cointracking_action`, `verification_path`, `gate_result`, and `closed_at` in the issue log
+- [ ] Update `external_action`, `verification_path`, `gate_result`, and `closed_at` in the issue log
 - [ ] Update `outputs/logs/round_log.csv`
 - [ ] Confirm whether `FIAT-001` changed and update it if needed
 
@@ -29,10 +29,11 @@
 - [ ] Generate or refresh `evidence/raw/source/<source>/<capture_id>/manifest.csv`
 - [ ] Run `source profile` and review timezone artifacts
 - [ ] Run `source normalize` and review exception and review artifacts
-- [ ] Run `uv run python -m tools.oracles.cli batch screen` on the CoinTracking-ready candidate and review the output
+- [ ] Render `cointracking_candidate.csv` when needed
+- [ ] Run `uv run python -m tools.oracles.cli batch screen` on the candidate CSV and review the output
 - [ ] Run `uv run python -m tools.oracles.cli batch stage` only after the screen passes
 - [ ] Run `uv run python -m tools.oracles.cli round scaffold`
-- [ ] Import exactly one source into CoinTracking
+- [ ] Import exactly one source into the external verification workflow
 - [ ] Export Validate Transactions
 - [ ] Export Missing Transactions with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
 - [ ] Export Duplicate Transactions

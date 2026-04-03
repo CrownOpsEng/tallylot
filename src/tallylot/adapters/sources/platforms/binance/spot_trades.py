@@ -10,6 +10,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
     fee_leg,
 )
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.ports.source_profiles import SourceProfile
 
 from .csv_rows import read_rows
@@ -42,10 +43,10 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                     wallet="Spot",
                     timestamp=timestamp,
                     classification=classification(
-                        economic_kind="spot_trade",
-                        projection_type="Trade",
-                        journal_intent="asset_exchange",
-                        tax_treatment_code="capital_exchange",
+                        economic_kind=EconomicKind.SPOT_TRADE,
+                        projection_type=ProjectionType.TRADE,
+                        journal_intent=JournalIntent.ASSET_EXCHANGE,
+                        tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                     ),
                     description=f"Binance spot sell {pair}",
                     raw_file=path.name,
@@ -68,10 +69,10 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                     wallet="Spot",
                     timestamp=timestamp,
                     classification=classification(
-                        economic_kind="spot_trade",
-                        projection_type="Trade",
-                        journal_intent="asset_exchange",
-                        tax_treatment_code="capital_exchange",
+                        economic_kind=EconomicKind.SPOT_TRADE,
+                        projection_type=ProjectionType.TRADE,
+                        journal_intent=JournalIntent.ASSET_EXCHANGE,
+                        tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
                     ),
                     description=f"Binance spot buy {pair}",
                     raw_file=path.name,

@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 from tallylot.adapters.support import CsvRowContext, IssueSpec, issue_record
 from tallylot.adapters.support.drafts import EconomicActivityDraft, classification, economic_leg
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -48,10 +49,10 @@ def _normalize_cash_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                economic_kind="fiat_deposit",
-                projection_type="Deposit",
-                journal_intent="funding_inflow",
-                tax_treatment_code="non_taxable_transfer_in",
+                economic_kind=EconomicKind.FIAT_DEPOSIT,
+                projection_type=ProjectionType.DEPOSIT,
+                journal_intent=JournalIntent.FUNDING_INFLOW,
+                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
             ),
             description=description,
             raw_file=row_context.raw_file,
@@ -71,10 +72,10 @@ def _normalize_cash_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                economic_kind="cash_expense",
-                projection_type="Expense (non taxable)",
-                journal_intent="expense_recognition",
-                tax_treatment_code="non_taxable_expense",
+                economic_kind=EconomicKind.CASH_EXPENSE,
+                projection_type=ProjectionType.EXPENSE_NON_TAXABLE,
+                journal_intent=JournalIntent.EXPENSE_RECOGNITION,
+                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_EXPENSE,
             ),
             description=description,
             raw_file=row_context.raw_file,
@@ -91,10 +92,10 @@ def _normalize_cash_row(
         wallet="Shakepay",
         timestamp=timestamp,
         classification=classification(
-            economic_kind="cash_withdrawal",
-            projection_type="Withdrawal",
-            journal_intent="funding_outflow",
-            tax_treatment_code="non_taxable_transfer_out",
+            economic_kind=EconomicKind.CASH_WITHDRAWAL,
+            projection_type=ProjectionType.WITHDRAWAL,
+            journal_intent=JournalIntent.FUNDING_OUTFLOW,
+            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
         ),
         description=description,
         raw_file=row_context.raw_file,
@@ -127,10 +128,10 @@ def _normalize_crypto_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                economic_kind="platform_reward",
-                projection_type="Reward / Bonus",
-                journal_intent="income_recognition",
-                tax_treatment_code="ordinary_income",
+                economic_kind=EconomicKind.PLATFORM_REWARD,
+                projection_type=ProjectionType.REWARD_BONUS,
+                journal_intent=JournalIntent.INCOME_RECOGNITION,
+                tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
             ),
             description=description,
             raw_file=row_context.raw_file,
@@ -148,10 +149,10 @@ def _normalize_crypto_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                economic_kind="spot_trade",
-                projection_type="Trade",
-                journal_intent="asset_exchange",
-                tax_treatment_code="capital_exchange",
+                economic_kind=EconomicKind.SPOT_TRADE,
+                projection_type=ProjectionType.TRADE,
+                journal_intent=JournalIntent.ASSET_EXCHANGE,
+                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
             description=(row.get("Description") or "").strip(),
             raw_file=row_context.raw_file,
@@ -172,10 +173,10 @@ def _normalize_crypto_row(
             wallet="Shakepay",
             timestamp=timestamp,
             classification=classification(
-                economic_kind="asset_withdrawal",
-                projection_type="Withdrawal",
-                journal_intent="funding_outflow",
-                tax_treatment_code="non_taxable_transfer_out",
+                economic_kind=EconomicKind.ASSET_WITHDRAWAL,
+                projection_type=ProjectionType.WITHDRAWAL,
+                journal_intent=JournalIntent.FUNDING_OUTFLOW,
+                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
             ),
             description=(row.get("Description") or "").strip(),
             raw_file=row_context.raw_file,

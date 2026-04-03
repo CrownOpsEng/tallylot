@@ -15,6 +15,7 @@ from tallylot.adapters.support.drafts import (
 )
 from tallylot.adapters.support.wallets import normalized_identifier, wallet_identifier_kind
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
 from tests.support.services import build_source_profile
 
 
@@ -28,10 +29,10 @@ def test_draft_compiler_preserves_internal_fields() -> None:
             wallet="Primary",
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
-                economic_kind="asset_deposit",
-                projection_type="Deposit",
-                journal_intent="funding_inflow",
-                tax_treatment_code="non_taxable_transfer_in",
+                economic_kind=EconomicKind.ASSET_DEPOSIT,
+                projection_type=ProjectionType.DEPOSIT,
+                journal_intent=JournalIntent.FUNDING_INFLOW,
+                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
             ),
             description="Fixture deposit",
             raw_file="fixture.csv",
@@ -40,7 +41,10 @@ def test_draft_compiler_preserves_internal_fields() -> None:
         )
     )
 
-    assert event.category == "deposit"
+    assert event.economic_kind == EconomicKind.ASSET_DEPOSIT
+    assert event.projection_type == ProjectionType.DEPOSIT
+    assert event.journal_intent == JournalIntent.FUNDING_INFLOW
+    assert event.tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
     assert event.description == "Fixture deposit"
     assert str(event.asset_in) == "BTC"
 
@@ -60,10 +64,10 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
             wallet="Primary",
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
-                economic_kind="spot_trade",
-                projection_type="Trade",
-                journal_intent="asset_exchange",
-                tax_treatment_code="capital_exchange",
+                economic_kind=EconomicKind.SPOT_TRADE,
+                projection_type=ProjectionType.TRADE,
+                journal_intent=JournalIntent.ASSET_EXCHANGE,
+                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
             ),
             legs=(
                 economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),
@@ -72,10 +76,15 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
         )
     )
 
-    assert fact.classification.economic_kind == "spot_trade"
+    assert fact.economic_kind == EconomicKind.SPOT_TRADE
+    assert fact.projection_type == ProjectionType.TRADE
+    assert fact.journal_intent == JournalIntent.ASSET_EXCHANGE
+    assert fact.tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
     assert len(fact.legs) == 2
     assert fact.legs[0].asset == "BTC"
     assert fact.legs[1].asset == "CAD"
+    assert fact.legs[0].direction == "in"
+    assert fact.legs[1].direction == "out"
 
 
 def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_channels() -> None:
@@ -89,10 +98,10 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
                 wallet="Primary",
                 timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
                 classification=classification(
-                    economic_kind="asset_deposit",
-                    projection_type="Deposit",
-                    journal_intent="funding_inflow",
-                    tax_treatment_code="non_taxable_transfer_in",
+                    economic_kind=EconomicKind.ASSET_DEPOSIT,
+                    projection_type=ProjectionType.DEPOSIT,
+                    journal_intent=JournalIntent.FUNDING_INFLOW,
+                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
                 ),
                 raw_file="fixture.csv",
                 raw_row_ref="row:2",
@@ -105,7 +114,10 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
     )
 
     assert len(result.facts) == 1
-    assert result.facts[0].projection_type == "Deposit"
+    assert result.facts[0].economic_kind == EconomicKind.ASSET_DEPOSIT
+    assert result.facts[0].projection_type == ProjectionType.DEPOSIT
+    assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
+    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
     assert not result.issues
 
 

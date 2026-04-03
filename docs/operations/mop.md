@@ -8,13 +8,13 @@ supporting detail.
 
 Use this runbook for the current operator workflow. The typed package manages
 evidence, normalization, staging, verification, and review artifacts in the
-external workspace, while manual CoinTracking steps still remain part of the
-current round-close process.
+external workspace, while manual import and verification steps still
+remain part of the current round-close process.
 
 ## Working Principles
 
-- CoinTracking remains part of the current operator workflow for repairs and
-  imports, but it is not the long-term architecture center.
+- The current operator workflow still includes manual repair and import
+  steps, but those are not the long-term architecture center.
 - Raw exports are immutable.
 - One source at a time. No multi-source imports before verification.
 - The typed package should do the mechanical work; ambiguous cases stay visible
@@ -26,7 +26,7 @@ current round-close process.
 ### 1. Lock The Baseline
 
 Run `uv run python -m tools.oracles.cli baseline validate` against the oracle
-CoinTracking export folder and review the generated reconciliation package.
+baseline export folder and review the generated reconciliation package.
 
 ### 2. Capture Raw Evidence
 
@@ -42,7 +42,7 @@ CoinTracking export folder and review the generated reconciliation package.
 - review `profile.json`, `profile_inventory.csv`, and `timezone_issues.csv`
 - run `source normalize`
 - review `exceptions.csv` and `normalization_reviews.csv`
-- run `output render file` when you need `cointracking_candidate.csv`
+- run `output render file` when the round needs `cointracking_candidate.csv`
 
 ### 4. Screen And Stage
 
@@ -53,7 +53,7 @@ CoinTracking export folder and review the generated reconciliation package.
 ### 5. Seed And Execute The Round
 
 - run `uv run python -m tools.oracles.cli round scaffold`
-- make the manual CoinTracking repair or import
+- make the manual repair or import in the external verification tool
 - save the fresh verification export set in `working/verification/<round_id>/`
 
 ### 6. Verify

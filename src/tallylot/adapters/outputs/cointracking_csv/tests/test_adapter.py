@@ -3,14 +3,20 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
+from tallylot.adapters.outputs.cointracking_csv.projection import COINTRACKING_TYPE_LABELS
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.outputs import RenderOutputRequest
+from tallylot.domain.transactions import ProjectionType
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service, build_render_service
 
 
-def test_cointracking_output_matches_expected_schema(
+def test_cointracking_projection_mapping_covers_every_runtime_projection_type() -> None:
+    assert set(COINTRACKING_TYPE_LABELS) == set(ProjectionType)
+
+
+def test_cointracking_output_matches_expected_schema_and_projection_mapping(
     structured_source_dir: Path,
     tmp_path: Path,
 ) -> None:
@@ -36,7 +42,10 @@ def test_cointracking_output_matches_expected_schema(
     )
 
     rows = read_rows(output_path)
+    fact_rows = artifacts.read_rows(normalized_dir / "facts.csv")
 
     assert tuple(rows[0]) == COINTRACKING_HEADER
     assert len(rows) == 2
+    assert {row["projection_type"] for row in fact_rows} == {"reward_bonus", "trade"}
+    assert {row["Type"] for row in rows} == {"Reward / Bonus", "Trade"}
     assert not (normalized_dir / "cointracking_candidate.csv").exists()

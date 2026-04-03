@@ -76,7 +76,8 @@ Naming convention:
 - [`reference/test-suite-followups.md`](reference/test-suite-followups.md):
   deferred test work
 - [`reference/cointracking-oracle-artifacts.md`](reference/cointracking-oracle-artifacts.md):
-  generic guide to supported CoinTracking oracle artifact families
+  generic guide to supported oracle artifact families for the historical
+  portfolio-tracker baseline
 
 ## Workspace Guides
 
