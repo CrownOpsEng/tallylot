@@ -69,6 +69,67 @@ class PipelineCommonTests(unittest.TestCase):
         self.assertIsNotNone(parsed)
         self.assertEqual("2023-09-20 18:20:55", parsed.strftime("%Y-%m-%d %H:%M:%S"))
 
+    def test_parse_candidate_timestamp_applies_source_timezone(self) -> None:
+        parsed = pipeline_common.parse_candidate_timestamp(
+            "23-09-20 18:20:55",
+            source_timezone=pipeline_common.source_timezone_from_filename("Binance-Spot-Trade-History-202603230406(UTC--6)_5d63c10c.csv"),
+        )
+
+        self.assertIsNotNone(parsed)
+        self.assertEqual("2023-09-21 00:20:55", parsed.strftime("%Y-%m-%d %H:%M:%S"))
+
+    def test_build_file_inventory_converts_binance_filename_timezone_to_utc(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "Binance-Spot-Trade-History-202603230406(UTC--6)_abcd.csv").write_text(
+                "Time,Pair,Side,Price,Executed,Amount,Fee\n"
+                "23-09-20 18:20:55,ALGOUSDT,SELL,0.0997,103ALGO,10.2691USDT,0.00003593BNB\n",
+                encoding="utf-8",
+            )
+
+            inventory = pipeline_common.build_file_inventory(raw_dir)
+
+        row = inventory[0]
+        self.assertEqual("2023-09-21 00:20:55", row["min_timestamp"])
+        self.assertEqual("2023-09-21 00:20:55", row["max_timestamp"])
+        self.assertEqual("filename_offset", row["timezone_mode"])
+        self.assertEqual("UTC-06:00", row["timezone_value"])
+
+    def test_build_file_inventory_detects_header_utc_and_date_only_modes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "crypto_transactions.csv").write_text(
+                "Timestamp (UTC),Amount\n2021-07-06 17:37:09,1\n",
+                encoding="utf-8",
+            )
+            (raw_dir / "activities-export.csv").write_text(
+                "transaction_date,settlement_date,account_type\n2021-05-09,,Crypto\n",
+                encoding="utf-8",
+            )
+
+            inventory = pipeline_common.build_file_inventory(raw_dir)
+
+        by_name = {row["filename"]: row for row in inventory}
+        self.assertEqual("header_utc", by_name["crypto_transactions.csv"]["timezone_mode"])
+        self.assertEqual("UTC", by_name["crypto_transactions.csv"]["timezone_value"])
+        self.assertEqual("date_only", by_name["activities-export.csv"]["timezone_mode"])
+        self.assertEqual("date_only", by_name["activities-export.csv"]["timestamp_resolution"])
+
+    def test_build_file_inventory_ignores_placeholder_no_data_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "Binance-Futures-Order-History-202603230503(UTC--6)_abcd.csv").write_text(
+                "Uid,Time,Order No\nNo data matches the criteria.\n",
+                encoding="utf-8",
+            )
+
+            inventory = pipeline_common.build_file_inventory(raw_dir)
+
+        row = inventory[0]
+        self.assertEqual("0", row["data_rows"])
+        self.assertEqual("", row["date_field"])
+        self.assertEqual("", row["timezone_mode"])
+
     def test_validate_canonical_event_row_requires_minimum_fields(self) -> None:
         row = {header: "" for header in pipeline_common.CANONICAL_EVENT_HEADERS}
         row.update(

@@ -4,7 +4,7 @@ import json
 import tempfile
 import unittest
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import script_common
@@ -129,6 +129,43 @@ class ScriptCommonTests(unittest.TestCase):
     def test_parse_datetime_uses_first_matching_format(self) -> None:
         parsed = script_common.parse_datetime("2026-03-24 10:11:12", ("%Y-%m-%d %H:%M:%S",))
         self.assertEqual(datetime(2026, 3, 24, 10, 11, 12), parsed)
+
+    def test_parse_datetime_to_utc_naive_handles_literal_utc_and_offsets(self) -> None:
+        literal_utc = script_common.parse_datetime_to_utc_naive(
+            "2026-03-24 10:11:12 UTC",
+            ("%Y-%m-%d %H:%M:%S UTC",),
+        )
+        offset_value = script_common.parse_datetime_to_utc_naive(
+            "2026-03-24 10:11:12-0600",
+            ("%Y-%m-%d %H:%M:%S%z",),
+        )
+
+        self.assertEqual(datetime(2026, 3, 24, 10, 11, 12), literal_utc)
+        self.assertEqual(datetime(2026, 3, 24, 16, 11, 12), offset_value)
+
+    def test_parse_datetime_to_utc_naive_applies_source_timezone_when_needed(self) -> None:
+        parsed = script_common.parse_datetime_to_utc_naive(
+            "2026-03-24 10:11:12",
+            ("%Y-%m-%d %H:%M:%S",),
+            source_timezone=timezone.utc,
+        )
+
+        self.assertEqual(datetime(2026, 3, 24, 10, 11, 12), parsed)
+
+    def test_parse_utc_offset_label_supports_binance_style_negative_offsets(self) -> None:
+        negative = script_common.parse_utc_offset_label("--6")
+        zero = script_common.parse_utc_offset_label("0")
+        half_hour = script_common.parse_utc_offset_label("+05:30")
+
+        self.assertEqual("-0600", datetime.now(negative).strftime("%z"))
+        self.assertEqual("+0000", datetime.now(zero).strftime("%z"))
+        self.assertEqual("+0530", datetime.now(half_hour).strftime("%z"))
+
+    def test_source_timezone_from_filename_reads_embedded_utc_offset(self) -> None:
+        parsed = script_common.source_timezone_from_filename("Binance-Spot-Trade-History-202603230406(UTC--6)_5d63c10c.csv")
+
+        self.assertIsNotNone(parsed)
+        self.assertEqual("-0600", datetime.now(parsed).strftime("%z"))
 
     def test_normalize_whitespace_collapses_runs(self) -> None:
         self.assertEqual("a b c", script_common.normalize_whitespace(" a \n b\tc "))

@@ -47,6 +47,15 @@ class BinanceUnwrapTests(unittest.TestCase):
         self.assertIsNotNone(parsed)
         self.assertEqual("2025-12-31 00:00:00", parsed.strftime("%Y-%m-%d %H:%M:%S"))
 
+    def test_parse_timestamp_applies_source_timezone(self) -> None:
+        parsed = binance_unwrap.parse_timestamp(
+            "2024-01-01 01:02:03",
+            source_timezone=binance_unwrap.source_timezone_from_filename("Binance-Futures-Trade-History-202603230520(UTC--6)_aaaa1111.csv"),
+        )
+
+        self.assertIsNotNone(parsed)
+        self.assertEqual("2024-01-01 07:02:03", parsed.strftime("%Y-%m-%d %H:%M:%S"))
+
     def test_unwrap_binance_exports_extracts_inventory_and_combines_rows(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = Path(tmpdir)
@@ -99,7 +108,7 @@ class BinanceUnwrapTests(unittest.TestCase):
             self.assertTrue(inventory_csv.exists())
             self.assertTrue(combined_summary_csv.exists())
             self.assertEqual(2, summary["zip_files_processed"])
-            self.assertEqual("2024-01-01 01:02:03", summary["earliest_timestamp"])
+            self.assertEqual("2024-01-01 07:02:03", summary["earliest_timestamp"])
             self.assertEqual("2024-09-10 12:09:17", summary["latest_timestamp"])
 
             combined_rows = read_dict_rows(combined_csv)

@@ -13,6 +13,7 @@ This repo is built around the canonical CoinTracking full export stored in:
 | `00_docs/TAX_REFERENCE_MAP.md` | Compact source-routing map to the relevant CRA authority for edge cases |
 | `00_docs/OPERATIONS_QUICKSTART.md` | Shortest safe execution path for manual work plus AI/script support |
 | `00_docs/BASELINE_VALIDATION.md` | Durable summary of baseline integrity and cutoff facts |
+| `00_docs/TIMEZONE_VALIDATION.md` | Source-by-source timezone evidence, platform doc links, and intake-gate rules |
 | `00_docs/NEXT_PHASE_EXECUTION_PLAN.md` | Source-by-source execution queue and round checklist for the post-baseline phase |
 | `00_docs/PROJECT_STATE.md` | Current baseline counts, constraints, and decision boundary |
 | `00_docs/EXPORT_CHECKLIST.md` | Smallest efficient export set for each round |

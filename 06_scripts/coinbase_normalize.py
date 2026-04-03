@@ -17,7 +17,7 @@ from coinbase_common import (
     normalize_coinbase_transactions,
     retail_csv_rows,
 )
-from script_common import extract_pdf_text, write_cointracking_rows, write_csv_rows
+from script_common import CANONICAL_TIMEZONE, COINTRACKING_IMPORT_TIMEZONE, extract_pdf_text, write_cointracking_rows, write_csv_rows
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -69,6 +69,8 @@ def normalize_coinbase_exports(
     return {
         "normalized_transaction_rows": len(normalized_transactions),
         "normalized_balance_rows": len(balance_rows),
+        "canonical_timezone": CANONICAL_TIMEZONE,
+        "cointracking_import_timezone": COINTRACKING_IMPORT_TIMEZONE,
         "tx_output": str(tx_output),
         "balance_output": str(balance_output) if balance_output is not None else "",
     }

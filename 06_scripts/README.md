@@ -5,8 +5,8 @@ Use this folder for small helpers that reduce manual work without hiding logic.
 Current helpers:
 
 - `baseline_check.py` → derive the baseline cutoff, counts, negative balances, and reconciliation artifacts
-- `profile_source.py` → inspect a raw source folder, classify file families, and write `profile.json` plus `profile_inventory.csv`
-- `normalize_source.py` → convert a raw source folder into canonical events, canonical balances, exceptions, and a cached CoinTracking candidate
+- `profile_source.py` → inspect a raw source folder, classify file families, and write `profile.json`, `profile_inventory.csv`, plus `timezone_issues.csv`
+- `normalize_source.py` → convert a raw source folder into canonical events, canonical balances, exceptions, and a cached CoinTracking candidate after timezone validation passes
 - `render_cointracking.py` → translate canonical events into a CoinTracking-ready CSV with reconciliation metadata
 - `stage_import_batch.py` → enforce overlap-screen approval before copying a candidate into `02_working/import_batches/` and optional `04_import_ready/`
 - `reconcile_source.py` → compare canonical source outputs against a CoinTracking Trade Table slice and optional Balance by Exchange slice
@@ -62,3 +62,7 @@ Coverage is split into:
 - `tests/unit/` for individual helper and script-function behavior
 - `tests/e2e/` for CLI-level script execution
 - `tests/support/` for shared test helpers
+
+## Timezone Integrity
+
+The profiling and normalization flow now records timezone provenance per dated file and refuses normalization when a source presents unresolved timezone conflicts or unsupported timestamp semantics. See `00_docs/TIMEZONE_VALIDATION.md` for the current source-by-source policy map.

@@ -7,16 +7,17 @@ from __future__ import annotations
 import csv
 import re
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Iterable
 
 from script_common import (
     COINTRACKING_HEADERS,
+    coerce_datetime_to_utc_naive,
     decimal_text,
     normalize_whitespace,
-    parse_datetime,
+    parse_datetime_to_utc_naive,
     parse_decimal,
     require_file,
 )
@@ -91,15 +92,15 @@ def compact_decimal_text(value: Decimal) -> str:
 
 
 def ct_date_text(value: datetime) -> str:
-    return value.strftime(COINTRACKING_TIME_FORMAT)
+    return coerce_datetime_to_utc_naive(value).strftime(COINTRACKING_TIME_FORMAT)
 
 
 def parse_coinbase_retail_timestamp(value: str) -> datetime:
-    return parse_datetime(value, (COINBASE_RETAIL_TIME_FORMAT,))
+    return parse_datetime_to_utc_naive(value, (COINBASE_RETAIL_TIME_FORMAT,))
 
 
 def parse_coinbase_pro_timestamp(value: str) -> datetime:
-    return parse_datetime(value, (COINBASE_PRO_TIME_FORMAT,))
+    return parse_datetime_to_utc_naive(value, (COINBASE_PRO_TIME_FORMAT,))
 
 
 def format_amount(value: Decimal | None) -> str:
@@ -547,13 +548,21 @@ def coinbase_balance_rows_from_text(text: str, pdf_file: str) -> list[dict[str, 
                 "value_currency": "",
                 "price_amount": "",
                 "price_currency": "",
-                "as_of": cash_match.group("as_of").replace(" UTC", ""),
+                "as_of": parse_datetime_to_utc_naive(
+                    cash_match.group("as_of"),
+                    ("%Y-%m-%d %H:%M:%S UTC",),
+                    source_timezone=timezone.utc,
+                ).strftime(COINTRACKING_TIME_FORMAT),
                 "pdf_file": pdf_file,
                 "notes": "Closing fiat balance from Coinbase statement PDF",
             }
         )
     if portfolio_match:
-        as_of = portfolio_match.group("as_of").replace(" UTC", "")
+        as_of = parse_datetime_to_utc_naive(
+            portfolio_match.group("as_of"),
+            ("%Y-%m-%d %H:%M:%S UTC",),
+            source_timezone=timezone.utc,
+        ).strftime(COINTRACKING_TIME_FORMAT)
         seen_assets: set[str] = set()
         for pattern in (PORTFOLIO_ROW_PATTERN, PORTFOLIO_ROW_FALLBACK_PATTERN):
             for match in pattern.finditer(normalized):
