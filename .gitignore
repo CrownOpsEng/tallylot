@@ -6,18 +6,24 @@ Desktop.ini
 *.swo
 *~
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.ipynb_checkpoints/
 
 # Python bytecode and tooling caches
 __pycache__/
 *.py[cod]
 *.pyd
 .mypy_cache/
+.dmypy.json
 .pytest_cache/
 .ruff_cache/
 .hypothesis/
 .tox/
 .nox/
+.pyre/
+.pytype/
 
 # Virtual environments
 .venv/
@@ -32,8 +38,23 @@ ENV/
 coverage.xml
 htmlcov/
 
+# Packaging artifacts
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Local environment files
+.env
+.env.*
+
 # Temporary scratch files
 *.tmp
 *.temp
 .cache/
 tmp/
+
+# Repo-local scratch and live artifact spillover
+.tmp_golden_refresh/
+01_raw_exports/incoming/
+02_working/intake_reports/

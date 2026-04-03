@@ -1,1 +1,0 @@
-{"capabilities":["normalize"],"source":"bsc-wallet","expected_adapter":"evm_explorer","expected_timezone_status":"passed","expected_normalization_status":"needs_review","capture_dir_name":"bsc_wallet_capture"}

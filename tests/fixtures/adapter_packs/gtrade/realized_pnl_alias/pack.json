@@ -1,1 +1,0 @@
-{"capabilities":["normalize","wallet"],"source":"GTrade 1CT","expected_adapter":"gtrade","expected_timezone_status":"passed","expected_normalization_status":"needs_review"}

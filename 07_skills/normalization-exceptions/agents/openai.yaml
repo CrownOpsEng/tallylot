@@ -1,4 +1,0 @@
-interface:
-  display_name: "Normalization Exceptions"
-  short_description: "Repair durable normalization failures"
-  default_prompt: "Use $normalization-exceptions to classify these unresolved normalization exceptions and propose a durable repair."

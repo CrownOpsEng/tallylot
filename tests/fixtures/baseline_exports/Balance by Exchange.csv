@@ -1,0 +1,3 @@
+Amount,Currency,Current value in CAD,Current value in BTC,Exchange
+1.00000000,BTC,10.00,0.1,Fixture
+-10.10000000,CAD,-10.10,-0.1,Fixture
