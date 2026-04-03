@@ -30,7 +30,7 @@ an interpretive choice, in `normalization_reviews.csv`.
 
 ## Current Structured CSV Behavior
 
-The working structured CSV adapter uses naive timestamps in `transactions.csv`.
+The working structured CSV adapter uses naive timestamps in its source export.
 Profiling records those files as `timezone_mode=naive`, and normalization emits
 the dataset review `timestamp_timezone_assumed_utc` so the assumption is
 explicit before staging.

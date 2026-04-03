@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from crypto_reconciliation.infrastructure.serialization.csv_io import write_rows
+from tallylot.infrastructure.serialization.csv_io import write_rows
 
 
 @dataclass(frozen=True)

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows, write_rows
-from crypto_reconciliation.infrastructure.serialization.json_io import write_json
+from tallylot.infrastructure.serialization.csv_io import read_rows, write_rows
+from tallylot.infrastructure.serialization.json_io import write_json
 
 
 def test_read_and_write_csv_rows_round_trip(tmp_path: Path) -> None:

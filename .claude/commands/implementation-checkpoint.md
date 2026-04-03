@@ -27,7 +27,8 @@ Use this route before closing any non-trivial coding task.
    - `ROADMAP.md`
    - `docs/architecture/reconciliation-tax-implementation-plan.md`
    - any boundary, matrix, or migration docs affected
-7. Create a stable checkpoint commit when the slice is coherent and verified.
+7. Create the stable checkpoint commit when the slice is coherent and verified.
+   Do not close the task first and plan to commit afterward.
 
 Do not close the task with "I'll clean that up later" if the needed structural
 fix is already obvious and bounded.

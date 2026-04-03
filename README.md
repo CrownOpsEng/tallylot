@@ -3,14 +3,14 @@
 Typed crypto ledger reconciliation tooling with a strict layered architecture
 and an external workspace model.
 
-This repository ships the `crypto_reconciliation` library package and the
-`crypto-reconciliation` CLI entry point. The repo owns code, tests, docs,
+This repository ships the `tallylot` library package and the
+`tallylot` CLI entry point. The repo owns code, tests, docs,
 templates, and agent guidance. Live evidence and operational artifacts belong
 in the external workspace.
 
 ## Principles
 
-- Keep business logic in the typed package under `src/crypto_reconciliation/`.
+- Keep business logic in the typed package under `src/tallylot/`.
 - Keep financial values in `Decimal`.
 - Surface ambiguous or unsupported data as explicit issues.
 - Keep repo docs and agent entrypoints aligned with the actual runtime.
@@ -33,39 +33,33 @@ in the external workspace.
 Default workspace root:
 
 ```text
-~/crypto-reconciliation-workspace
+~/tallylot-workspace
 ```
 
 Resolution order:
 
 1. `CRYPTO_RECON_WORKSPACE_ROOT`
-2. `crypto-reconciliation.toml` `[workspace].root`
+2. `tallylot.toml` `[workspace].root`
 3. built-in default
 
 Initialize a workspace with:
 
 ```bash
-uv run crypto-reconciliation workspace init
+uv run tallylot workspace init
 ```
 
 ## Commands
 
 ```bash
-uv run crypto-reconciliation workspace init
-uv run crypto-reconciliation baseline validate --export-dir <path> --output-dir <path>
-uv run crypto-reconciliation source manifest --source-dir <path> --output <path>
-uv run crypto-reconciliation source intake plan --incoming-dir <path> --report-dir <path>
-uv run crypto-reconciliation source intake apply --incoming-dir <path> --report-dir <path>
-uv run crypto-reconciliation source profile --source <name> --raw-dir <path> --output-dir <path>
-uv run crypto-reconciliation source normalize --source <name> --raw-dir <path> --output-dir <path>
-uv run crypto-reconciliation source reconcile --candidate <path> --reference <path> --output-dir <path>
-uv run crypto-reconciliation wallet inventory rebuild --normalized-root <path> --output <path>
-uv run crypto-reconciliation output render file --output-adapter cointracking_csv --canonical-events <path> --output <path>
-uv run crypto-reconciliation verification compare --previous-dir <path> --current-dir <path> --output-dir <path>
-uv run crypto-reconciliation batch screen --candidate <path> --baseline-export-dir <path> --output-dir <path>
-uv run crypto-reconciliation batch stage --candidate <path> --baseline-export-dir <path> --output-dir <path>
-uv run crypto-reconciliation round scaffold --round-id <id> --phase <phase> --source <source>
-uv run crypto-reconciliation supporting extract-pdf-balances --pdf <path> --output <path> --statement-kind <kind>
+uv run tallylot workspace init
+uv run tallylot source manifest --source-dir <path> --output <path>
+uv run tallylot source intake plan --incoming-dir <path> --report-dir <path>
+uv run tallylot source intake apply --incoming-dir <path> --report-dir <path>
+uv run tallylot source profile --source <name> --raw-dir <path> --output-dir <path>
+uv run tallylot source normalize --source <name> --raw-dir <path> --output-dir <path>
+uv run tallylot checkpoint rebuild-wallet-inventory --normalized-root <path> --output <path>
+uv run tallylot checkpoint extract-pdf-balances --pdf <path> --output <path> --statement-kind <kind>
+uv run tallylot output render file --output-adapter cointracking_csv --facts <path> --output <path>
 ```
 
 ## Development

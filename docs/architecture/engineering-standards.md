@@ -51,8 +51,10 @@ Default to one responsibility per module.
 
 - Keep most modules under roughly 150 lines.
 - Start a split review once a module approaches 200 lines.
-- Refactor before extending beyond 250 lines unless the file is mostly
+- Refactor before extending beyond 300 lines unless the file is mostly
   declarative models, typed schemas, or protocol definitions.
+- Treat `300` lines as the official repo refactor limit.
+- Treat `450` lines as the hard-stop lint ceiling (`150%` of the repo limit).
 - Refactor by bounded concept, not by arbitrary suffixes.
 - Do not add new dumping-ground modules such as `helpers.py`, `utils.py`,
   `misc.py`, or another catch-all `common.py`.
@@ -62,22 +64,27 @@ Default to one responsibility per module.
 When a capability grows, split by stable seams:
 
 - `domain/`: separate models, value objects, and typed aliases by concept.
-- `application/services/`: keep one workflow per service module; extract shared
-  parsing, validation, or assembly logic into specifically named siblings.
-  Once a workflow area grows beyond a few related siblings or starts building a
-  flat pile of same-prefix modules such as `intake_*`, move it into a feature
-  package such as `application/services/intake/`.
+- `application/`: organize by bounded capability packages such as
+  `application/intake/`, `application/profiling/`, `application/normalization/`,
+  `application/checkpoints/`, and `application/outputs/`. Keep request and
+  response contracts in capability-local `contracts.py` files and keep
+  orchestration entry points in explicitly named use-case modules such as
+  `build_profile.py`, `normalize_source.py`, or `render_output.py`.
 - `interfaces/`: keep command parsing and command execution thin; move real work
-  into services.
+  into application use cases.
 - `adapters/`: move larger adapters to package-style modules with an
   `adapter.py` or `__init__.py` entry point plus local parser, mapper, issue,
   and fixture modules.
+- `infrastructure/`: host reusable primitives only when they are genuinely
+  cross-capability concerns such as filesystem guards, serialization, workspace
+  persistence, or composition-root wiring. Do not push application policy down
+  here just to share code.
 
 Mirror that structure in tests:
 
 - place unit tests under the matching package path when a feature owns a
   package
-- prefer `tests/unit/application/services/intake/...` over scattering
+- prefer `tests/unit/application/intake/...` over scattering
   `test_intake_*` files across unrelated directories
 
 ### Package Escalation Rules
@@ -85,15 +92,18 @@ Mirror that structure in tests:
 Do not keep flattening files forever once a feature package exists.
 
 - Use a feature package when a flat layer directory would otherwise collect
-  more than 3 same-prefix files for one capability.
+  more than 2 same-prefix files for one capability.
+- Treat this as a hard refactor trigger, not a style preference. The third
+  same-prefix sibling is the trigger. Regroup the capability in the same task
+  instead of leaving a flat prefix cluster behind.
 - Inside an existing feature package, create a nested subpackage when one
   bounded sub-capability meets any of these conditions:
-  - 4 or more files share the same concept or repeated prefix
+  - 3 or more files share the same concept or repeated prefix
   - the cluster has its own models, decision rules, and entry point
   - the tests naturally group under that sub-capability rather than under the
     parent feature as a whole
-- Do not create a nested package on the first split. Keep 2 or 3 tightly
-  related files flat unless they already represent a stable subdomain.
+- Do not create a nested package on the first split. Keep 2 tightly related
+  files flat unless they already represent a stable subdomain.
 - Prefer one clear level of nesting over long flat prefixes. `intake/packages/`
   is better than `intake/package_*.py` once the package-rule cluster becomes a
   subsystem.
@@ -102,13 +112,19 @@ Do not keep flattening files forever once a feature package exists.
 
 Current application of this rule:
 
-- `application/services/intake/` is the correct top-level feature package for
-  intake.
+- `application/intake/` is the correct top-level feature package for intake.
+- `application/profiling/` is the correct top-level feature package for source
+  profiling workflows and profile artifact helpers.
 - `intake/packages/`, `intake/archive/`, `intake/file_facts/`, and
   `intake/routing/` are the correct nested packages for the intake subdomains
   that now own their own models, rules, and entry points.
-- The plan-building support files should stay flat until they form a clearer
-  subdomain than “helpers used by the intake service”.
+- `intake/plan/` is the correct nested package for intake planning workflows,
+  planned-item models, review assembly, and report rendering.
+- Normalization window and derived-balance helpers belong under
+  `application/normalization/` rather than as nearby flat siblings.
+- Output rendering belongs under `application/outputs/`; CoinTracking is one
+  output adapter, not an application-center compatibility lane.
+- Dev-only oracle tooling must live outside `src/tallylot/`.
 
 ## Naming Rules
 
@@ -126,13 +142,13 @@ Current application of this rule:
 
 Split these modules before adding materially new behavior:
 
-- `src/crypto_reconciliation/application/services/intake/packages/resolution.py`
-- `src/crypto_reconciliation/adapters/sources/platforms/binance/adapter.py`
-- `src/crypto_reconciliation/adapters/sources/platforms/coinbase/adapter.py`
+- `src/tallylot/application/intake/packages/resolution.py`
+- `src/tallylot/adapters/sources/platforms/binance/adapter.py`
+- `src/tallylot/adapters/sources/platforms/coinbase/adapter.py`
 
 Preserve these shared-surface package seams instead of collapsing them back
 into single modules:
 
-- `src/crypto_reconciliation/domain/models/`
-- `src/crypto_reconciliation/interfaces/cli/`
-- `src/crypto_reconciliation/infrastructure/discovery/adapters/`
+- `src/tallylot/domain/transactions/`
+- `src/tallylot/interfaces/cli/`
+- `src/tallylot/infrastructure/discovery/adapters/`

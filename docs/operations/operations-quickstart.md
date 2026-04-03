@@ -23,7 +23,7 @@ supporting detail.
 2. Plan the intake first:
 
    ```bash
-   uv run crypto-reconciliation source intake plan \
+   uv run tallylot source intake plan \
      --incoming-dir <incoming_dump> \
      --workspace-root <workspace> \
      --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
@@ -33,7 +33,7 @@ supporting detail.
 4. Apply the intake only after the plan looks correct:
 
    ```bash
-   uv run crypto-reconciliation source intake apply \
+   uv run tallylot source intake apply \
      --incoming-dir <incoming_dump> \
      --workspace-root <workspace> \
      --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
@@ -43,7 +43,7 @@ supporting detail.
    build the capture manifest:
 
    ```bash
-   uv run crypto-reconciliation source manifest \
+   uv run tallylot source manifest \
      --source-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
      --output <workspace>/evidence/raw/source/<source>/<capture_id>/manifest.csv
    ```
@@ -51,7 +51,7 @@ supporting detail.
 6. Profile the capture:
 
    ```bash
-   uv run crypto-reconciliation source profile \
+   uv run tallylot source profile \
      --source <source> \
      --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
      --output-dir <workspace>/working/normalized/<source>
@@ -64,39 +64,51 @@ supporting detail.
 1. Normalize the capture:
 
    ```bash
-   uv run crypto-reconciliation source normalize \
+   uv run tallylot source normalize \
      --source <source> \
      --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
      --output-dir <workspace>/working/normalized/<source>
    ```
 
 2. Review:
-   - `canonical_events.csv`
+   - `facts.csv`
+   - `balances.csv`
+   - `balance_evidence.csv`
    - `exceptions.csv`
    - `normalization_reviews.csv`
-   - `cointracking_candidate.csv`
+   - `normalization_summary.json`
 
-3. Screen the candidate:
+3. Render a CoinTracking candidate when needed:
 
    ```bash
-   uv run crypto-reconciliation batch screen \
+   uv run tallylot output render file \
+     --output-adapter cointracking_csv \
+     --facts <workspace>/working/normalized/<source>/facts.csv \
+     --output <workspace>/working/normalized/<source>/cointracking_candidate.csv
+   ```
+
+4. Screen the candidate:
+
+   ```bash
+   uv run python -m tools.oracles.cli batch screen \
      --candidate <workspace>/working/normalized/<source>/cointracking_candidate.csv \
      --baseline-export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
      --output-dir <workspace>/working/import_batches/<source>
    ```
 
-4. If the screen passes, stage the same candidate with `batch stage`.
-5. If it blocks, review `stage_issues.csv` and `stage_summary.json` before
+5. If the screen passes, stage the same candidate with
+   `uv run python -m tools.oracles.cli batch stage`.
+6. If it blocks, review `stage_issues.csv` and `stage_summary.json` before
    changing anything manually.
-6. Use `source reconcile` when the candidate needs a direct row diff against a
-   reference export before import.
+7. Use `uv run python -m tools.oracles.cli source diff` when the candidate
+   needs a direct row diff against a reference export before import.
 
 ## Seed And Verify A Round
 
 1. Seed the round:
 
    ```bash
-   uv run crypto-reconciliation round scaffold \
+   uv run python -m tools.oracles.cli round scaffold \
      --round-id <round_id> \
      --phase <phase> \
      --source <source>
@@ -107,7 +119,7 @@ supporting detail.
 4. Compare against the prior verified state:
 
    ```bash
-   uv run crypto-reconciliation verification compare \
+   uv run python -m tools.oracles.cli verification compare \
      --previous-dir <prior_verification_dir> \
      --current-dir <workspace>/working/verification/<round_id> \
      --output-dir <workspace>/working/verification/<round_id>/comparison

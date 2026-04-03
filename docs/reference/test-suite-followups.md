@@ -4,7 +4,7 @@ Track only the remaining work that was intentionally left out of the current ada
 
 ## Pack Tooling
 
-- Keep the scaffold and golden-refresh commands aligned with any future pack-layout move so fixture authors still have one canonical toolchain.
+- Keep the scaffold and golden-refresh commands aligned with any future pack-layout move so fixture authors still have one stable toolchain.
 
 ## Refactor Alignment
 

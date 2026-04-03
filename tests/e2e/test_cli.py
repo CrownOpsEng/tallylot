@@ -6,8 +6,8 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 from typer.testing import CliRunner
 
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.interfaces.cli import app
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.interfaces.cli import app
 
 runner = CliRunner()
 
@@ -59,8 +59,8 @@ def test_profile_normalize_and_render_cli(structured_source_dir: Path, tmp_path:
             "file",
             "--output-adapter",
             "cointracking_csv",
-            "--canonical-events",
-            str(normalized_dir / "canonical_events.csv"),
+            "--facts",
+            str(normalized_dir / "facts.csv"),
             "--output",
             str(rendered_path),
         ],
@@ -70,29 +70,8 @@ def test_profile_normalize_and_render_cli(structured_source_dir: Path, tmp_path:
     assert normalize_result.exit_code == 0
     assert render_result.exit_code == 0
     assert rendered_path.exists()
+    assert (normalized_dir / "facts.csv").exists()
     assert (normalized_dir / "normalization_reviews.csv").exists()
-    assert (normalized_dir / "timezone_issues.csv").exists()
-    assert (normalized_dir / "cointracking_candidate.csv").exists()
-
-
-def test_baseline_validate_cli(baseline_export_dir: Path, tmp_path: Path) -> None:
-    output_dir = tmp_path / "baseline"
-
-    result = runner.invoke(
-        app,
-        [
-            "baseline",
-            "validate",
-            "--export-dir",
-            str(baseline_export_dir),
-            "--output-dir",
-            str(output_dir),
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert (output_dir / "baseline_summary.json").exists()
-    assert (output_dir / "baseline_exchange_reconciliation.csv").exists()
 
 
 def test_source_manifest_cli(tmp_path: Path) -> None:
@@ -120,89 +99,7 @@ def test_source_manifest_cli(tmp_path: Path) -> None:
     assert output_path.exists()
 
 
-def test_verification_compare_cli(
-    verification_previous_dir: Path,
-    verification_current_dir: Path,
-    tmp_path: Path,
-) -> None:
-    output_dir = tmp_path / "verification"
-
-    result = runner.invoke(
-        app,
-        [
-            "verification",
-            "compare",
-            "--previous-dir",
-            str(verification_previous_dir),
-            "--current-dir",
-            str(verification_current_dir),
-            "--output-dir",
-            str(output_dir),
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert (output_dir / "verification_summary.json").exists()
-
-
-def test_batch_stage_cli(baseline_export_dir: Path, tmp_path: Path) -> None:
-    candidate_path = tmp_path / "candidate.csv"
-    candidate_path.write_text(
-        "Type,Buy,Cur.,Sell,Cur..1,Fee,Cur..2,Exchange,Group,Comment,Date,Tx-ID\n"
-        "Trade,1.0,BTC,10.0,CAD,0.1,CAD,Fixture,,import,2023-08-06 10:00:00,tx-2\n",
-        encoding="utf-8",
-    )
-    output_dir = tmp_path / "batch"
-
-    result = runner.invoke(
-        app,
-        [
-            "batch",
-            "stage",
-            "--candidate",
-            str(candidate_path),
-            "--baseline-export-dir",
-            str(baseline_export_dir),
-            "--output-dir",
-            str(output_dir),
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert (output_dir / "stage_summary.json").exists()
-
-
-def test_batch_screen_cli_returns_nonzero_for_blocked_candidates(
-    baseline_export_dir: Path,
-    tmp_path: Path,
-) -> None:
-    candidate_path = tmp_path / "candidate.csv"
-    candidate_path.write_text(
-        "Type,Buy,Cur.,Sell,Cur..1,Fee,Cur..2,Exchange,Group,Comment,Date,Tx-ID\n"
-        "Trade,1.0,BTC,10.0,CAD,0.1,CAD,Fixture,,import,,tx-2\n",
-        encoding="utf-8",
-    )
-    output_dir = tmp_path / "screen"
-
-    result = runner.invoke(
-        app,
-        [
-            "batch",
-            "screen",
-            "--candidate",
-            str(candidate_path),
-            "--baseline-export-dir",
-            str(baseline_export_dir),
-            "--output-dir",
-            str(output_dir),
-        ],
-    )
-
-    assert result.exit_code == 1
-    assert (output_dir / "stage_issues.csv").exists()
-
-
-def test_wallet_inventory_rebuild_cli(structured_source_dir: Path, tmp_path: Path) -> None:
+def test_checkpoint_wallet_inventory_rebuild_cli(structured_source_dir: Path, tmp_path: Path) -> None:
     normalized_dir = tmp_path / "normalized"
     output_path = tmp_path / "wallet_inventory.csv"
 
@@ -223,9 +120,8 @@ def test_wallet_inventory_rebuild_cli(structured_source_dir: Path, tmp_path: Pat
     result = runner.invoke(
         app,
         [
-            "wallet",
-            "inventory",
-            "rebuild",
+            "checkpoint",
+            "rebuild-wallet-inventory",
             "--normalized-root",
             str(normalized_dir),
             "--output",
@@ -238,38 +134,14 @@ def test_wallet_inventory_rebuild_cli(structured_source_dir: Path, tmp_path: Pat
     assert (tmp_path / "wallet_inventory_summary.json").exists()
 
 
-def test_round_scaffold_cli(tmp_path: Path) -> None:
-    workspace_root = tmp_path / "workspace"
-    runner.invoke(app, ["workspace", "init", "--workspace-root", str(workspace_root)], catch_exceptions=False)
-
-    result = runner.invoke(
-        app,
-        [
-            "round",
-            "scaffold",
-            "--round-id",
-            "post_import_fixture_01",
-            "--phase",
-            "post_import",
-            "--source",
-            "fixture",
-            "--workspace-root",
-            str(workspace_root),
-        ],
-    )
-
-    assert result.exit_code == 0
-    assert (workspace_root / "working/verification/post_import_fixture_01").exists()
-
-
-def test_source_intake_plan_cli(tmp_path: Path) -> None:
+def test_source_intake_plan_and_apply_cli(tmp_path: Path) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    result = runner.invoke(
+    plan_result = runner.invoke(
         app,
         [
             "source",
@@ -283,19 +155,7 @@ def test_source_intake_plan_cli(tmp_path: Path) -> None:
             str(report_dir),
         ],
     )
-
-    assert result.exit_code == 0
-    assert (report_dir / "intake_plan.csv").exists()
-
-
-def test_source_intake_apply_cli(tmp_path: Path) -> None:
-    incoming_dir = tmp_path / "incoming"
-    incoming_dir.mkdir()
-    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
-    workspace_root = tmp_path / "workspace"
-    report_dir = tmp_path / "reports"
-
-    result = runner.invoke(
+    apply_result = runner.invoke(
         app,
         [
             "source",
@@ -310,44 +170,16 @@ def test_source_intake_apply_cli(tmp_path: Path) -> None:
         ],
     )
 
-    payload = json.loads(result.stdout)
+    payload = json.loads(apply_result.stdout)
 
-    assert result.exit_code == 0
+    assert plan_result.exit_code == 0
+    assert apply_result.exit_code == 0
+    assert (report_dir / "intake_plan.csv").exists()
     assert payload["copied_count"] == 1
-    assert (report_dir / "intake_summary.json").exists()
     assert (workspace_root / "evidence/raw/source/unclassified/incoming/transactions.csv").exists()
 
 
-def test_source_reconcile_cli(tmp_path: Path) -> None:
-    candidate_path = tmp_path / "candidate.csv"
-    reference_path = tmp_path / "reference.csv"
-    candidate_path.write_text("Type,Date,Tx-ID\nTrade,2023-08-06 10:00:00,tx-1\n", encoding="utf-8")
-    reference_path.write_text("Type,Date,Tx-ID\nTrade,2023-08-07 10:00:00,tx-2\n", encoding="utf-8")
-    output_dir = tmp_path / "reconcile"
-
-    result = runner.invoke(
-        app,
-        [
-            "source",
-            "reconcile",
-            "--candidate",
-            str(candidate_path),
-            "--reference",
-            str(reference_path),
-            "--output-dir",
-            str(output_dir),
-        ],
-    )
-
-    payload = json.loads(result.stdout)
-
-    assert result.exit_code == 0
-    assert payload["candidate_only_count"] == 1
-    assert (output_dir / "candidate_only.csv").exists()
-    assert (output_dir / "reference_only.csv").exists()
-
-
-def test_supporting_extract_pdf_balances_cli(tmp_path: Path) -> None:
+def test_checkpoint_extract_pdf_balances_cli(tmp_path: Path) -> None:
     pdf_path = tmp_path / "shakepay_Performance report_2025.pdf"
     output_path = tmp_path / "balances.csv"
     pdf = canvas.Canvas(str(pdf_path))
@@ -360,7 +192,7 @@ def test_supporting_extract_pdf_balances_cli(tmp_path: Path) -> None:
     result = runner.invoke(
         app,
         [
-            "supporting",
+            "checkpoint",
             "extract-pdf-balances",
             "--pdf",
             str(pdf_path),

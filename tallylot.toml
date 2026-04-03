@@ -1,0 +1,6 @@
+[project]
+name = "tallylot"
+python = "3.12"
+
+[workspace]
+# root = "~/tallylot-workspace"

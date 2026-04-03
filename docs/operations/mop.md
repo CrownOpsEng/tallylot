@@ -25,8 +25,8 @@ current round-close process.
 
 ### 1. Lock The Baseline
 
-Run `baseline validate` against the canonical CoinTracking export folder and
-review the generated reconciliation package.
+Run `uv run python -m tools.oracles.cli baseline validate` against the oracle
+CoinTracking export folder and review the generated reconciliation package.
 
 ### 2. Capture Raw Evidence
 
@@ -41,33 +41,35 @@ review the generated reconciliation package.
 - run `source profile`
 - review `profile.json`, `profile_inventory.csv`, and `timezone_issues.csv`
 - run `source normalize`
-- review `exceptions.csv`, `normalization_reviews.csv`, and `cointracking_candidate.csv`
+- review `exceptions.csv` and `normalization_reviews.csv`
+- run `output render file` when you need `cointracking_candidate.csv`
 
 ### 4. Screen And Stage
 
-- run `batch screen`
+- run `uv run python -m tools.oracles.cli batch screen`
 - do not proceed while `stage_summary.json` reports `passed: false`
-- run `batch stage` only after the candidate passes the screen
+- run `uv run python -m tools.oracles.cli batch stage` only after the candidate passes the screen
 
 ### 5. Seed And Execute The Round
 
-- run `round scaffold`
+- run `uv run python -m tools.oracles.cli round scaffold`
 - make the manual CoinTracking repair or import
 - save the fresh verification export set in `working/verification/<round_id>/`
 
 ### 6. Verify
 
-- run `verification compare`
+- run `uv run python -m tools.oracles.cli verification compare`
 - review the comparison package
 - update issue and source-tracking files
 - update the round log
 
 ### 7. Reconcile When Needed
 
-Use `source reconcile` when you need a deterministic comparison between the
-candidate or canonical source slice and a reference ledger slice.
+Use `uv run python -m tools.oracles.cli source diff` when you need a
+deterministic comparison between the candidate or reference source slice and a
+reference ledger slice.
 
 ## Supporting Artifacts
 
-Use `supporting extract-pdf-balances` for supported Coinbase, Binance, and
+Use `checkpoint extract-pdf-balances` for supported Coinbase, Binance, and
 Shakepay PDF statements when balance evidence is only available in PDF form.

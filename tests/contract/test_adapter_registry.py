@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from crypto_reconciliation.infrastructure.discovery import build_registry
+from tallylot.infrastructure.discovery import build_registry
 
 
 def test_adapter_registry_discovers_expected_adapters() -> None:

@@ -1,23 +1,15 @@
 {
   "adapter_id": "structured_csv",
   "balance_count": 3,
-  "event_count": 2,
-  "events_outside_normalization_window": 0,
+  "balance_evidence_count": 0,
+  "fact_count": 2,
+  "facts_outside_normalization_window": 0,
   "issue_count": 0,
   "issues_outside_normalization_window": 0,
   "normalization_window_end": "",
   "normalization_window_start": "",
-  "review_count": 2,
+  "review_count": 1,
   "review_summary": [
-    {
-      "count": 1,
-      "field_names": [],
-      "kind": "default_render_mapping",
-      "messages": [
-        "Structured CSV normalization defaults CoinTracking render fields to render_type<-event_kind, render_exchange<-account, and render_comment<-description; validate those mappings before import."
-      ],
-      "scope": "dataset"
-    },
     {
       "count": 1,
       "field_names": [],

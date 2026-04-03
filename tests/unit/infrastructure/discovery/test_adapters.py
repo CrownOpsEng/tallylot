@@ -8,9 +8,9 @@ from typing import cast
 
 import pytest
 
-from crypto_reconciliation.domain.models import AdapterCapability, AdapterManifest
-from crypto_reconciliation.domain.types import AdapterId
-from crypto_reconciliation.infrastructure.discovery.adapters import modules, registry
+from tallylot.domain.types import AdapterId
+from tallylot.infrastructure.discovery.adapters import modules, registry
+from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 
 
 class AdapterModule(ModuleType):
@@ -41,7 +41,10 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
 
     monkeypatch.setattr(registry, "iter_discoverable_modules", fake_iter_discoverable_modules)
 
-    with pytest.raises(ValueError, match="must declare intake route, normalize, or wallet inventory capability"):
+    with pytest.raises(
+        ValueError,
+        match="must declare intake route, source translation, or wallet inventory capability",
+    ):
         registry.collect_source_adapters("fixture.sources")
 
 
@@ -54,7 +57,7 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
             adapter_id=AdapterId("shared_adapter"),
             display_name="Shared Source",
             version="1.0.0",
-            capabilities=frozenset({AdapterCapability.NORMALIZE}),
+            capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE}),
         )
 
         def match(self, source: str, raw_dir: object, inventory: tuple[object, ...]) -> int:
@@ -82,7 +85,7 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
             del source, raw_dir, profile
             return (), ()
 
-        def normalize(self, profile: object, raw_dir: object) -> object:
+        def translate(self, profile: object, raw_dir: object) -> object:
             del profile, raw_dir
             raise NotImplementedError
 

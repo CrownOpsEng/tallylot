@@ -1,0 +1,1 @@
+"""Intake package-rule tests."""

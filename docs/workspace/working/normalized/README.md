@@ -9,17 +9,22 @@ Per-source folders should use the typed pipeline artifact set:
 - `profile.json`
 - `profile_inventory.csv`
 - `timezone_issues.csv`
-- `canonical_events.csv`
-- `canonical_balances.csv`
+- `facts.csv`
+- `balances.csv`
+- `balance_evidence.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
-- `cointracking_candidate.csv`
 - `wallet_inventory.csv`
 - `normalization_summary.json`
 
-`cointracking_candidate.csv` is a rendered working candidate, not an approved import batch.
-Only `working/import_batches/` should hold files that have passed overlap
-screening and are approved for import.
+`balances.csv` contains application-derived balances from transaction facts.
+`balance_evidence.csv` contains source-backed checkpoint evidence when the
+adapter actually provides it.
+
+`cointracking_candidate.csv` is optional. Create it with `output render file`
+when you need a CoinTracking adapter export, and keep it beside the normalized
+artifacts only as a working file. Only `working/import_batches/` should hold
+files that have passed overlap screening and are approved for import.
 
 `profile_inventory.csv` includes timezone provenance columns so agents and users
 can inspect timestamp semantics without reopening raw files.

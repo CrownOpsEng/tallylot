@@ -1,13 +1,13 @@
 # AI Session Working Prompt
 
 Use this repo as the typed evidence, reconciliation, checkpoint, accounting,
-and tax-computation toolchain. Treat CoinTracking as a compatibility and
+and tax-computation toolchain. Treat CoinTracking as an output adapter and
 historical oracle layer, not as the live ledger target for new architecture
 work.
 
 Anchor to these facts first:
 
-1. Canonical baseline folder:
+1. Oracle baseline folder:
    `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
 2. Authoritative cutoff timestamp: `2023-08-05 08:34:04`
 3. Delta work begins strictly after that timestamp unless a new baseline is
@@ -38,11 +38,11 @@ Operational rules:
 2. do not stage or import a source while `timezone_issues.csv`, `exceptions.csv`,
    or `stage_summary.json` show unresolved blockers
 3. update the round log after each seeded round and verification cycle
-4. use `source reconcile` when a candidate or reference slice needs a
-   deterministic row comparison
+4. use `uv run python -m tools.oracles.cli source diff` when a candidate or
+   reference slice needs a deterministic row comparison
 5. for new architecture work, build reconciliation before tax computation
 6. keep the system centered on provider-neutral transaction facts, not the
-   current canonical event shape
+   current normalized transaction shape
 7. keep journaling behind a renderer port and tax behavior behind a policy port
 8. expand `pydantic` only at repo boundaries, not through the core domain
 9. do not silently suppress unsupported or ambiguous facts; log them as issues

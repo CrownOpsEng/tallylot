@@ -3,7 +3,7 @@
 ## Objective
 
 Work in the rebuilt typed application architecture under
-`src/crypto_reconciliation/`. Treat the repo as code, tests, docs, templates,
+`src/tallylot/`. Treat the repo as code, tests, docs, templates,
 and automation. Treat the live workspace as external to the repo.
 
 ## Invariants
@@ -44,6 +44,8 @@ Do not pre-load every repo doc by default.
   - `uv run python -m tools.install_git_hooks`
 - Do not consider work ready until `markdownlint`, `ruff`, `mypy`, `pyright`,
   `pylint`, and `pytest` pass.
+- Do not consider non-trivial work ready until the verified checkpoint commit
+  already exists.
 - Bootstrap the checked-in hooks:
   - `uv run python -m tools.install_git_hooks`
 - For explicit local verification, prefer:
@@ -60,14 +62,18 @@ Do not pre-load every repo doc by default.
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value
   - end the task on a clean, meaningful checkpoint commit
+- If a flat directory would exceed 2 same-prefix files for one capability,
+  regroup that capability into a package in the same task.
+- If a feature already has a package, keep new helpers inside that package
+  instead of beside it as flat sibling modules.
 
 ## Workspace Configuration
 
 Workspace resolution order:
 
 1. `CRYPTO_RECON_WORKSPACE_ROOT`
-2. repo config in `crypto-reconciliation.toml`
-3. default `~/crypto-reconciliation-workspace`
+2. repo config in `tallylot.toml`
+3. default `~/tallylot-workspace`
 
 ## Current Runtime
 

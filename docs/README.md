@@ -88,15 +88,15 @@ Naming convention:
 ## Agent Routes
 
 - [`.claude/commands/source-intake.md`](../.claude/commands/source-intake.md):
-  intake, profile, normalize, screen, stage, and reconcile route
+  intake, profile, normalize, checkpoint, and render route
 - [`.claude/commands/round-verification.md`](../.claude/commands/round-verification.md):
-  round scaffold and verification compare route
+  dev-only oracle round scaffold and verification compare route
 - [`.claude/commands/wallet-inventory.md`](../.claude/commands/wallet-inventory.md):
-  wallet inventory rebuild route
+  checkpoint wallet inventory rebuild route
 - [`.claude/commands/normalization-exceptions.md`](../.claude/commands/normalization-exceptions.md):
   normalization review route
-- [`.claude/commands/source-reconcile.md`](../.claude/commands/source-reconcile.md):
-  candidate-versus-reference diff route
+- [`.claude/commands/source-diff.md`](../.claude/commands/source-diff.md):
+  dev-only oracle candidate-versus-reference diff route
 - [`.claude/commands/reconciliation-tax-build.md`](../.claude/commands/reconciliation-tax-build.md):
   architecture and implementation route for reconciliation, checkpointing,
   accounting, and tax

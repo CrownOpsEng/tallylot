@@ -27,7 +27,8 @@ Normal runtime operation must stay platform-agnostic:
 
 - raw source exports, wallet statements, and checkpoint evidence are the normal
   reconstruction inputs
-- CoinTracking adapters are optional compatibility inputs and projections
+- CoinTracking is one ordinary output adapter and one optional oracle family
+  for dev-only comparison workflows
 - CoinTracking tax and accounting reports are oracle-only support artifacts for
   comparison and regression, not normal runtime dependencies
 
@@ -44,20 +45,21 @@ Reason:
 - tax computation is not trustworthy until the fact set lands on a confirmed
   checkpoint
 
-### 2. Keep CoinTracking As A Compatibility And Oracle Layer
+### 2. Keep CoinTracking At The Edge
 
 CoinTracking remains useful for:
 
-- historical regression
-- report comparison
-- import/export compatibility
+- one concrete CSV output adapter
+- historical regression through dev-only oracle tooling
 
-CoinTracking must not remain the core ledger model.
-CoinTracking tax outputs must not become required operational inputs.
+CoinTracking must not remain the core ledger model, core schema vocabulary, or
+required runtime input surface. Production code may render CoinTracking CSV,
+but report readers, comparison tolerances, and oracle heuristics must stay
+outside `src/tallylot/`.
 
-### 3. Replace The Canonical Event Center With A Richer Fact Model
+### 3. Replace The Current Transaction Center With A Richer Fact Model
 
-The current canonical event model is too narrow for:
+The current normalized transaction model is too narrow for:
 
 - multi-leg transactions
 - collateral, loan, and liquidity flows
@@ -66,17 +68,19 @@ The current canonical event model is too narrow for:
 - independent journaling
 - jurisdiction-neutral tax policy
 
-The repo should introduce a new provider-neutral fact model and keep the
-current canonical event model as a compatibility projection during migration.
+The repo should introduce a new provider-neutral fact model and replace the
+current normalized transaction model directly. Do not add compatibility
+wrappers, parallel legacy names, or dual-write shims just to preserve the old
+shape.
 
 ### 4. Use Layered Classification
 
-A single `event_kind` string is not a stable center for the next phase.
+A single `category` string is not a stable center for the next phase.
 
-Every normalized fact should support distinct classification layers:
+Every transaction fact should support distinct classification layers:
 
 - `EconomicKind`: provider-neutral semantics
-- `CoinTrackingType`: compatibility projection
+- `ProjectionType`: output projection metadata for external renderers
 - `TaxTreatmentCode`: jurisdiction-neutral tax intent
 - `JournalIntent`: accounting intent
 
@@ -109,7 +113,7 @@ rules remain explicit and tool-friendly.
 ### Domain Packages
 
 - `domain/transactions/`
-  - transaction facts, legs, valuations, ids, corrections, compatibility enums
+  - transaction facts, legs, valuations, ids, corrections, projection enums
 - `domain/reconciliation/`
   - balance assertions, transfer links, checkpoint continuity, materiality rules
 - `domain/accounting/`
@@ -117,34 +121,55 @@ rules remain explicit and tool-friendly.
 - `domain/tax/`
   - tax records, pool state, policy contracts, unsupported tax items
 
-### Application Services
+### Application Capabilities
 
-- `application/services/normalize/`
-  - orchestrate source normalization into fact artifacts
-- `application/services/reconciliation/`
-  - transfer linking, oracle comparison, drift detection, issue assembly
-- `application/services/checkpoints/`
-  - build and validate source-backed checkpoints
-- `application/services/accounting/`
-  - journal assembly, ledger validation, accounting summaries
-- `application/services/tax/`
-  - policy application, ACB updates, disposition and income outputs
-- `application/services/projections/`
-  - CoinTracking CSV projection and compatibility rendering
+- `application/intake/`
+  - manifest generation plus intake planning and apply workflows
+- `application/profiling/`
+  - source profile construction, inventory inspection, and timezone review
+- `application/normalization/`
+  - orchestrate source translation into fact artifacts and source-backed
+    evidence
+- `application/reconciliation/`
+  - reserve for transfer linking, checkpoint continuity, and fact-level drift
+    detection
+- `application/checkpoints/`
+  - build source-backed checkpoint evidence and checkpoint-supporting wallet
+    aggregates
+- `application/accounting/`
+  - journal assembly, ledger validation, and accounting summaries
+- `application/tax/`
+  - policy application, ACB updates, and disposition or income outputs
+- `application/outputs/`
+  - render external artifacts from facts, journals, or tax results
 
 ### Ports
 
-- `JournalRendererPort`
-- `TaxPolicyPort`
-- `CheckpointEvidencePort`
-- `OracleReviewPort`
+- typed source translation contracts under `ports/source_translation.py`
+- typed fact and evidence repositories under `ports/facts.py` and
+  `ports/evidence.py`
+- typed adapter contracts under `ports/source_adapters.py`,
+  `ports/output_adapters.py`, and `ports/adapter_contracts.py`
+- future journal, checkpoint, and tax ports by capability instead of generic
+  catch-all storage contracts
 
 ### Adapter Responsibilities
 
-- source adapters normalize raw exports into transaction facts and issues
+- source adapters translate raw exports into the shared adapter draft model and
+  surface explicit issues or reviews
 - output adapters render facts into CoinTracking, Ledger CLI, and report
   artifacts
+- source adapters return `SourceTranslationBatch`; they do not emit output
+  rows, checkpoint decisions, or tax policy decisions directly
+- CoinTracking-specific column defaults, `Tx-ID` behavior, and row-shape
+  metadata stay inside the CoinTracking output adapter package rather than in
+  provider-local source code
 - adapters do not own tax logic, checkpoint policy, or reconciliation rules
+- adapters should stay focused on source/output translation. Core data
+  manipulation, verification, and workflow policy belong in application and
+  domain code.
+- application services own derived-balance assembly. Adapters return balance
+  evidence only when the source actually provides it.
 
 ## Input And Oracle Boundaries
 
@@ -162,7 +187,7 @@ computation:
 - deterministic checkpoint packages intentionally created by this system
 - opening-state imports intentionally adopted as checkpoints
 
-### Optional Compatibility Inputs
+### Optional External Input Formats
 
 These may be supported through adapters, but the system must not require them
 for normal operation:
@@ -182,7 +207,8 @@ These are comparison inputs only:
 - historical CoinTracking tax reports
 
 Do not wire business logic so these artifacts are required to reconstruct facts,
-balances, journal entries, or tax state.
+balances, journal entries, or tax state. Keep oracle code outside
+`src/tallylot/`, preferably under `tools/oracles/`.
 
 ### Boundary Rule
 
@@ -198,6 +224,40 @@ to:
 The only lost capability should be comparison against the external oracle.
 
 ## Schema Contract
+
+### Transitional Adapter Draft Seam
+
+Source normalization should translate through `EconomicActivityDraft` until all
+adapters emit `TransactionFact` artifacts directly.
+
+Required draft responsibilities:
+
+- stable identity plus evidence references
+- timestamp and provenance
+- account and wallet scope
+- one or more economic legs plus optional fee legs
+- provider operation key and grouped-row support
+- layered classification hints:
+  - economic kind
+  - projection type
+  - journal intent
+  - tax treatment code
+- explicit review or ambiguity markers
+
+Rules:
+
+- provider modules translate into drafts only; they do not assemble
+  CoinTracking rows or other output-adapter payloads directly
+- shared fact builders may derive `TransactionFact` objects from drafts, but
+  that derivation stays in shared support rather than provider-local code
+- shared support stays adapter-agnostic and registry-driven; adapters publish
+  manifests, translation registries, and provider-local coverage metadata
+- one shared fact builder owns draft-to-fact conversion
+- one shared projection mapper owns the mapping from layered classifications
+  into concrete output-adapter row types
+- one shared projection mapper owns CoinTracking CSV row construction
+- grouped operations and provider-local export families must resolve through
+  explicit translation registries, not ad hoc adapter entry-point branching
 
 ### Core Fact Model
 
@@ -228,8 +288,8 @@ Required fields:
 - valuation
   - `tuple[Valuation, ...]`
   - currency, amount, method, provenance, confidence
-- compatibility and policy hints
-  - optional `CoinTrackingType`
+- projection and policy hints
+  - optional `ProjectionType`
   - optional `TaxTreatmentCode`
   - optional `JournalIntent`
 - status
@@ -258,16 +318,16 @@ Lock these early:
 - `OwnershipChange`
 - `ValuationMethod`
 - `CorrectionReason`
-- `CoinTrackingType`
+- `ProjectionType`
 - `TaxTreatmentCode`
 - `JournalIntent`
 
-## CoinTracking Compatibility Contract
+## CoinTracking Output Contract
 
 ### Full Type Surface
 
-Lock the full CoinTracking import taxonomy now so the internal compatibility
-enum does not churn later.
+Lock the full CoinTracking output taxonomy now so the projection metadata used
+by the output adapter does not churn later.
 
 Trade types:
 
@@ -323,13 +383,13 @@ Outgoing types:
 - `Repay Loan`
 - `Liquidation`
 
-### Compatibility Notes
+### Oracle And Projection Notes
 
 - normalize label aliases such as `Gift / Tip` and `Gift/Tip`
 - treat Double-entry report labels such as `Deposit (IN)` as report-only labels,
-  not canonical type values
-- preserve optional CoinTracking valuation and `Tx-ID` fields in compatibility
-  projections
+  not core transaction labels
+- preserve optional CoinTracking valuation and `Tx-ID` fields inside
+  CoinTracking-only projection adapters
 
 ### Oracle Inputs To Support
 
@@ -345,8 +405,8 @@ Add dedicated readers for:
 Use these for comparison and regression only. Do not normalize them into the
 same source-fact path as exchange and wallet exports.
 
-Keep them behind review or oracle ports so production state does not depend on
-their presence.
+Keep them in dev-only tooling under `tools/oracles/` so production state does
+not depend on their presence.
 
 ## Delivery Sequence
 
@@ -358,29 +418,29 @@ Deliverables:
 
 - final schema and package decisions
 - roadmap updates
-- migration plan from canonical events to transaction facts
+- migration plan from normalized transactions to transaction facts
 - provenance policy for external ideas and direct code reuse
 
-### Phase 1. Boundary Models And Oracle Readers
+### Phase 1. Boundary Models And Dev-Only Oracle Readers
 
 Estimated effort: `14` to `22` hours
 
 Deliverables:
 
 - Pydantic row models for CoinTracking report families
-- parser services for all oracle exports
-- compatibility enum and alias normalization
+- parser services for all oracle exports under `tools/oracles/`
+- projection-type enum and alias normalization for current output adapters
 - comparison-ready artifact contracts
 
-### Phase 2. Core Fact Model And Dual-Write Normalization
+### Phase 2. Core Fact Model And Direct Normalization Replacement
 
 Estimated effort: `18` to `28` hours
 
 Deliverables:
 
 - transaction fact domain package
-- normalization result evolution to include fact artifacts
-- compatibility projection back to legacy canonical event artifacts
+- normalization result evolution to emit fact artifacts directly
+- downstream service updates to consume fact artifacts without wrappers
 - parity tests for current adapters
 
 ### Phase 3. Deterministic Reconciliation And Checkpointing
@@ -528,10 +588,14 @@ Do not:
 Perform only the refactors required to support the new architecture:
 
 - split new domain concepts into dedicated packages rather than expanding
-  `domain/models/`
+  `domain/transactions/` or sibling domain capability packages
+- promote workflow helper clusters into a package once a third related sibling
+  would otherwise be added; do not let facts, checkpoints, or tax policy land
+  in new flat prefix piles
 - introduce transaction facts before expanding tax services
-- dual-write legacy compatibility artifacts while migrating downstream services
-- retire legacy canonical-first workflows only after parity coverage exists
+- replace normalized transaction artifacts directly while migrating downstream
+  services
+- remove normalized-transaction-first workflows once fact consumers land
 
 Do not:
 
@@ -539,7 +603,7 @@ Do not:
 - add a web UI
 - add generic workflow engines
 - re-centralize business rules in adapters
-- keep pushing new semantics into one `event_kind` string
+- keep pushing new semantics into one `category` string
 
 ## Time Summary
 

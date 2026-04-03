@@ -41,6 +41,7 @@ otherwise:
 - extract shared components before copy-paste patterns harden
 - create or update tests alongside the implementation
 - commit at stable checkpoints without waiting to be reminded
+- do not close a non-trivial task until the verified checkpoint commit exists
 - prefer typed, explicit models over loose dictionaries and convenience code
 
 ## Work Sequence
@@ -140,6 +141,8 @@ Expected behavior:
 - do not bundle unrelated fixes
 - do not wait for the user to remind you to commit once the task has reached a
   real checkpoint
+- before closing a non-trivial task, ensure the commit already exists rather
+  than leaving commit creation as follow-up work
 
 When not to commit:
 
@@ -173,7 +176,7 @@ instead of guessing:
 When a task touches a migrating surface:
 
 - implement on the fact-based path first
-- preserve compatibility projections only as needed
+- preserve external output projections only as needed
 - do not add new behavior to the legacy center unless required for migration
 - add parity coverage before retiring older paths
 
@@ -194,7 +197,7 @@ When adding or changing adapters:
 When adding artifacts:
 
 - define the schema explicitly first
-- decide whether it is a runtime artifact, compatibility artifact, or
+- decide whether it is a runtime artifact, output-adapter artifact, or
   oracle-only artifact
 - add contract coverage for parsers and renderers
 
@@ -221,6 +224,10 @@ Pause feature work and fix the structure first when:
 - a module is becoming a new catch-all
 - a hotspot module called out in `docs/architecture/engineering-standards.md` is about to
   absorb materially new behavior without first being split
+- a flat directory would end up with more than 2 same-prefix files for one
+  capability
+- a feature already owns a package but new helpers are being left beside it as
+  flat sibling modules
 - CoinTracking-specific semantics are drifting into the core domain
 - an oracle-only artifact is being treated like a required runtime input
 - a quick patch would hide unsupported behavior instead of surfacing it

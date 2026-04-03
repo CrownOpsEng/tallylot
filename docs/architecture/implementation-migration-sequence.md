@@ -1,15 +1,15 @@
 # Implementation Migration Sequence
 
 Use this document to implement the next phase without a big-bang refactor. The
-goal is to move from the current canonical-event-centered flow to a
+goal is to move from the current normalized-transaction flow to a
 provider-neutral fact model with explicit parity gates.
 
 ## Migration Objectives
 
 - preserve current working behavior while new foundations land
-- avoid pushing more semantics into the legacy canonical event model
+- avoid pushing more semantics into the current normalized transaction model
 - keep adapters and services shippable at every checkpoint
-- make CoinTracking compatibility a projection, not the center
+- keep CoinTracking as an output projection, not the center
 
 ## Phase 0. Schema Lock
 
@@ -22,7 +22,7 @@ Deliver before broad code changes:
 
 Do not start tax-engine work before these contracts are written down.
 
-## Phase 1. Boundary Models And Oracle Readers
+## Phase 1. Boundary Models And Dev-Only Oracle Readers
 
 Introduce boundary-only models for:
 
@@ -37,6 +37,8 @@ Rules:
 - use `pydantic` here
 - keep these models out of the core domain
 - do not let oracle readers create production facts automatically
+- keep CoinTracking-specific metadata out of the transaction fact core while
+  this phase lands
 
 Exit criteria:
 
@@ -45,23 +47,39 @@ Exit criteria:
 
 ## Phase 2. Introduce Transaction Facts
 
-Add the new domain packages and services for facts without removing the current
-canonical path yet.
+Add the new domain packages and services for facts without adding compatibility
+wrappers around the current normalized transaction path.
 
 Implementation rule:
 
+- first land a fact-aligned adapter draft seam so working adapters stop
+  constructing the temporary normalized artifact directly
 - normalization writes transaction facts first
-- compatibility projections may still emit legacy canonical artifacts
-- the old canonical shape becomes a downstream projection target
+- replace the normalized transaction artifact set directly once the fact path is
+  ready
+- CoinTracking output remains an adapter projection, not a second core model
+- until fact services land, keep CoinTracking candidate rendering as an
+  explicit projection step rather than a normalization side effect
+
+Bridge rule for the current branch:
+
+- source adapters translate provider exports into `EconomicActivityDraft`
+- adapter resolution remains registry-driven; shared support must not depend on
+  concrete adapter ids or hand-maintained provider lists
+- shared compiler code produces transaction facts
+- shared projection code produces CoinTracking CSV rows
+- application services, not adapters, derive runtime balances from translated
+  activity unless the source provides real balance evidence
 
 Exit criteria:
 
-- at least one adapter writes fact artifacts and legacy artifacts in parallel
-- parity tests prove the legacy outputs still match current expectations
+- at least one adapter writes fact artifacts end to end
+- projection tests prove the CoinTracking adapter still renders the expected
+  external shape from the new facts
 
 ## Phase 3. Migrate Reconciliation To Facts
 
-Move these capabilities off canonical events:
+Move these capabilities off normalized transactions:
 
 - transfer linking
 - balance assertions
@@ -75,11 +93,14 @@ Rules:
 - CoinTracking tax outputs stay in oracle comparison services
 - deterministic corrections such as redistributions must live in typed rules or
   fact metadata, not operator notes
+- row-level candidate-versus-reference CSV comparison is a `source diff`
+  utility, not the reconciliation service surface
 
 Exit criteria:
 
 - checkpoint assembly works from facts and source-backed evidence
-- reconciliation artifacts no longer depend on canonical-event-specific fields
+- reconciliation artifacts no longer depend on normalized-transaction-specific
+  stopgaps
 
 ## Phase 4. Add Accounting Layer
 
@@ -123,19 +144,19 @@ Exit criteria:
 - internal year-end and carry-forward logic is reproducible without CoinTracking
   tax reports
 
-## Phase 6. Retire Canonical-First Workflows
+## Phase 6. Retire The Current Normalized Workflow
 
-Retire or demote the canonical-event-first path only after:
+Retire or demote the current normalized-transaction-first path only after:
 
 - adapter parity tests exist
-- reconciliation no longer depends on canonical-event-specific assumptions
+- reconciliation no longer depends on normalized-transaction-specific
+  assumptions
 - accounting and tax consume facts directly
-- CoinTracking output remains available as a compatibility projection
+- CoinTracking output remains available as an ordinary output adapter
 
-After this phase:
-
-- canonical events remain a compatibility/output shape only
-- new behavior must land in fact-based services first
+After this phase, new behavior must land in fact-based services first and the
+temporary normalized transaction shape should not continue as a second active
+center.
 
 ## Parity Gates
 
@@ -150,6 +171,8 @@ Do not remove an older path until all relevant gates pass:
 
 - no big-bang rewrite
 - no temporary wrappers that become permanent
+- no provider-local adapter glue for compilation, projection, or synthetic
+  balance assembly
 - no new tax logic in adapters
 - no new checkpoint logic in CoinTracking-specific code
 - no direct use of CoinTracking tax reports as production state

@@ -2,79 +2,85 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import Any
 
-from crypto_reconciliation.application.services.normalize import (
-    NormalizationDependencies,
-    NormalizationService,
-)
-from crypto_reconciliation.application.services.profile import ProfileService
-from crypto_reconciliation.application.services.render import OutputRenderService
-from crypto_reconciliation.domain.models import (
-    AdapterCapability,
-    AdapterManifest,
-    FileInventoryEntry,
-    IssueRecord,
-    SourceProfile,
-    WalletInventoryRecord,
-)
-from crypto_reconciliation.domain.types import AdapterId, JsonValue, SourceId
-from crypto_reconciliation.infrastructure.discovery import build_registry
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from crypto_reconciliation.infrastructure.storage import FilesystemStorage
-from crypto_reconciliation.ports.adapters import NormalizationResult, SourceAdapter, SourceAdapterRegistryPort
-from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from tallylot.application.normalization import NormalizationDependencies, NormalizeSourceUseCase
+from tallylot.application.outputs import RenderOutputUseCase
+from tallylot.application.profiling import BuildProfileUseCase
+from tallylot.domain.issues import IssueRecord
+from tallylot.domain.types import AdapterId, JsonValue, SourceId
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization import FilesystemArtifactStore
+from tallylot.infrastructure.storage import FilesystemEvidenceRepository, FilesystemFactRepository
+from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
+from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
+from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_translation import SourceTranslationBatch
 
 
 def build_source_profile(
     *,
-    source: str = "fixture_source",
     adapter_id: str,
+    source: str = "fixture",
     raw_dir: str = "/tmp/raw",
-    normalization_hints: dict[str, JsonValue] | None = None,
+    **profile_fields: Any,
 ) -> SourceProfile:
+    metadata = profile_fields.pop("metadata", {})
+    normalization_hints = profile_fields.pop("normalization_hints", {})
+    timezone_summary = profile_fields.pop("timezone_summary", {})
     return SourceProfile(
         source=SourceId(source),
         raw_dir=raw_dir,
         adapter_id=AdapterId(adapter_id),
-        manifest_fingerprint="fixture-fingerprint",
+        manifest_fingerprint="fixture",
         file_inventory=(),
         supported=True,
-        normalization_hints=normalization_hints or {},
+        metadata=metadata,
+        normalization_hints=normalization_hints,
+        timezone_summary=timezone_summary,
+        **profile_fields,
     )
 
 
 def build_profile_service(
     *,
     artifacts: FilesystemArtifactStore | None = None,
-) -> ProfileService:
+) -> BuildProfileUseCase:
     runtime_registry = build_registry()
-    return ProfileService(runtime_registry, artifacts or FilesystemArtifactStore())
+    return BuildProfileUseCase(runtime_registry, artifacts or FilesystemArtifactStore())
 
 
 def build_normalization_service(
     *,
     artifacts: FilesystemArtifactStore | None = None,
-) -> NormalizationService:
-    runtime_registry = build_registry()
+    registry: SourceAdapterRegistryPort | None = None,
+) -> NormalizeSourceUseCase:
+    runtime_registry = build_registry() if registry is None else registry
     resolved_artifacts = artifacts or FilesystemArtifactStore()
-    return NormalizationService(
+    return NormalizeSourceUseCase(
         NormalizationDependencies(
             source_registry=runtime_registry,
-            output_registry=runtime_registry,
-            profile_service=ProfileService(runtime_registry, resolved_artifacts),
-            storage=FilesystemStorage(),
+            profile_use_case=BuildProfileUseCase(runtime_registry, resolved_artifacts),
+            facts=FilesystemFactRepository(),
+            evidence=FilesystemEvidenceRepository(),
             artifacts=resolved_artifacts,
         )
     )
 
 
-def build_render_service(
+def build_registry_backed_normalization_service(
     *,
     artifacts: FilesystemArtifactStore | None = None,
-) -> OutputRenderService:
+    registry: SourceAdapterRegistryPort,
+) -> NormalizeSourceUseCase:
+    return build_normalization_service(artifacts=artifacts, registry=registry)
+
+
+def build_render_service() -> RenderOutputUseCase:
     runtime_registry = build_registry()
-    return OutputRenderService(runtime_registry, artifacts or FilesystemArtifactStore())
+    return RenderOutputUseCase(runtime_registry, FilesystemFactRepository())
 
 
 @dataclass(frozen=True)
@@ -94,11 +100,11 @@ class MatchingSourceAdapter:
             adapter_id=AdapterId(adapter_id),
             display_name=adapter_id,
             version="1.0.0",
-            capabilities=frozenset({AdapterCapability.NORMALIZE}),
+            capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE}),
             supported=supported,
         )
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(self, source: str, raw_dir: Path, inventory: tuple[object, ...]) -> int:
         del source, raw_dir, inventory
         return 100
 
@@ -108,11 +114,8 @@ class MatchingSourceAdapter:
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
         del request
-        return cast(IntakeRoute | None, None)
-
-    def normalize(self, profile: object, raw_dir: Path) -> NormalizationResult:
-        del profile, raw_dir
-        raise AssertionError("normalize should not be called in this test")
+        route: IntakeRoute | None = None
+        return route
 
     def validate_profile_timezones(
         self,
@@ -130,19 +133,6 @@ class MatchingSourceAdapter:
         del source, raw_dir, profile
         return (), ()
 
-
-def build_registry_backed_normalization_service(
-    *,
-    registry: SourceAdapterRegistryPort,
-    artifacts: FilesystemArtifactStore,
-) -> NormalizationService:
-    runtime_registry = build_registry()
-    return NormalizationService(
-        NormalizationDependencies(
-            source_registry=registry,
-            output_registry=runtime_registry,
-            profile_service=ProfileService(registry, artifacts),
-            storage=FilesystemStorage(),
-            artifacts=artifacts,
-        )
-    )
+    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+        del profile, raw_dir
+        raise AssertionError("translate should not be called in this test")

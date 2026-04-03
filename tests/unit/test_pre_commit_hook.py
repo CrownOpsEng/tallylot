@@ -45,6 +45,7 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
     commands: list[tuple[tuple[str, ...], Path]] = []
 
     def fake_run(command: list[str], *, check: bool, cwd: Path) -> subprocess.CompletedProcess[str]:
+        assert check is True
         commands.append((tuple(command), cwd))
         return subprocess.CompletedProcess(command, 0)
 

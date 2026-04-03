@@ -1,0 +1,1 @@
+"""Shakepay adapter tests."""

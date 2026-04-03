@@ -88,6 +88,17 @@ def scaffold_adapter(
             ),
             force=force,
         ),
+        *(
+            (
+                _write_file(
+                    adapter_root / "translation.py",
+                    _source_translation_template(adapter_name=adapter_name),
+                    force=force,
+                ),
+            )
+            if spec.kind == "source"
+            else ()
+        ),
         _write_file(
             adapter_root / "tests" / "__init__.py",
             "",
@@ -108,7 +119,7 @@ def scaffold_adapter(
 
 def _adapter_root(repo_root: Path, kind: str, module_parts: tuple[str, ...]) -> Path:
     namespace = "sources" if kind == "source" else "outputs"
-    return repo_root / "src" / "crypto_reconciliation" / "adapters" / namespace / Path(*module_parts)
+    return repo_root / "src" / "tallylot" / "adapters" / namespace / Path(*module_parts)
 
 
 def _adapter_template(
@@ -120,7 +131,7 @@ def _adapter_template(
     capability_block = (
         "        capabilities=frozenset(\n"
         "            {\n"
-        "                AdapterCapability.NORMALIZE,\n"
+        "                AdapterCapability.SOURCE_TRANSLATE,\n"
         "                AdapterCapability.WALLET_INVENTORY,\n"
         "            }\n"
         "        ),\n"
@@ -136,24 +147,24 @@ def _adapter_template(
 
             from pathlib import Path
 
-            from crypto_reconciliation.domain.models import (
-                AdapterCapability,
-                AdapterManifest,
-                FileInventoryEntry,
-                IssueRecord,
-                SourceProfile,
-                WalletInventoryRecord,
-            )
-            from crypto_reconciliation.domain.types import AdapterId, JsonValue
-            from crypto_reconciliation.ports.adapters import (
-                NormalizationResult,
-                RenderedArtifact,
-            )
-            from crypto_reconciliation.ports.intake_routing import (
+            from tallylot.domain.issues import IssueRecord
+            from tallylot.domain.transactions import TransactionFact
+            from tallylot.domain.types import AdapterId, JsonValue
+            from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
+            from tallylot.ports.evidence import WalletInventoryRecord
+            from tallylot.ports.intake_routing import (
                 IntakeFileFacts,
                 IntakeRoute,
                 IntakeRoutingRequest,
             )
+            from tallylot.ports.output_adapters import RenderedArtifact
+            from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
+            from tallylot.ports.source_translation import SourceTranslationBatch
+            """
+        )
+        + ("from .translation import translate_source_batches\n\n" if spec.kind == "source" else "\n")
+        + dedent(
+            f"""
 
 
             class {adapter_class_name}:
@@ -209,15 +220,12 @@ def _adapter_template(
                     del source, raw_dir, profile
                     return (), ()
 
-                def normalize(
+                def translate(
                     self,
                     profile: SourceProfile,
                     raw_dir: Path,
-                ) -> NormalizationResult:
-                    del profile, raw_dir
-                    raise NotImplementedError(
-                        "Implement adapter normalization before enabling this adapter."
-                    )
+                ) -> SourceTranslationBatch:
+                    return translate_source_batches(profile, raw_dir)
             """
         )
     else:
@@ -225,10 +233,10 @@ def _adapter_template(
             """
                 def render(
                     self,
-                    events: tuple[object, ...],
+                    facts: tuple[TransactionFact, ...],
                     output_path: Path,
                 ) -> RenderedArtifact:
-                    del events, output_path
+                    del facts, output_path
                     raise NotImplementedError(
                         "Implement output rendering before enabling this adapter."
                     )
@@ -245,6 +253,63 @@ def _adapter_template(
     return body
 
 
+def _source_translation_template(*, adapter_name: str) -> str:
+    return dedent(
+        f"""
+        \"\"\"Provider-local translation rules for the {adapter_name} source adapter.\"\"\"
+
+        from __future__ import annotations
+
+        from pathlib import Path
+
+        from tallylot.adapters.support import (
+            FileTranslationContext,
+            FileTranslationRule,
+            translate_file_families,
+        )
+        from tallylot.adapters.support.drafts import (
+            EconomicActivityDraft,
+            translation_batch_from_drafts,
+        )
+        from tallylot.domain.issues import IssueRecord
+        from tallylot.ports.source_profiles import SourceProfile
+        from tallylot.ports.source_translation import SourceTranslationBatch
+
+        FILE_TRANSLATION_RULES = (
+            FileTranslationRule(
+                family="example_export",
+                matches_path=lambda path: path.name == "example.csv",
+                translate=_translate_example_export,
+            ),
+        )
+
+
+        def translate_source_batches(
+            profile: SourceProfile,
+            raw_dir: Path,
+        ) -> SourceTranslationBatch:
+            translation = translate_file_families(
+                raw_dir,
+                profile=profile,
+                rules=FILE_TRANSLATION_RULES,
+            )
+            return translation_batch_from_drafts(
+                translation.drafts,
+                issues=translation.issues,
+            )
+
+
+        def _translate_example_export(
+            context: FileTranslationContext,
+        ) -> tuple[tuple[EconomicActivityDraft, ...], tuple[IssueRecord, ...]]:
+            del context
+            raise NotImplementedError(
+                "Implement provider-local parsing and translation rules before enabling this adapter."
+            )
+        """
+    )
+
+
 def _contract_test_template(*, kind: str, module_parts: tuple[str, ...]) -> str:
     namespace = "sources" if kind == "source" else "outputs"
     module_name = ".".join(module_parts)
@@ -253,7 +318,7 @@ def _contract_test_template(*, kind: str, module_parts: tuple[str, ...]) -> str:
         f"""
         from __future__ import annotations
 
-        from crypto_reconciliation.adapters.{namespace}.{module_name} import ADAPTER
+        from tallylot.adapters.{namespace}.{module_name} import ADAPTER
 
 
         def test_manifest_adapter_id_matches_package_name() -> None:

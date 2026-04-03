@@ -9,10 +9,9 @@ Use this route for a full typed intake pass:
 5. `source profile`
 6. review `profile.json`, `profile_inventory.csv`, `timezone_issues.csv`
 7. `source normalize`
-8. review `exceptions.csv`, `normalization_reviews.csv`, `cointracking_candidate.csv`
-9. `batch screen`
-10. `batch stage` only if the screen passes
-11. `source reconcile` when the candidate or a support slice needs a direct ledger comparison
+8. review `facts.csv`, `exceptions.csv`, `normalization_reviews.csv`, and `normalization_summary.json`
+9. `checkpoint rebuild-wallet-inventory` when normalization emitted wallet evidence
+10. `output render file` when you need an external output artifact such as CoinTracking CSV
 
 Use `docs/operations/operations-quickstart.md` for the short operator route and
 `docs/operations/mop.md` for the full workflow.

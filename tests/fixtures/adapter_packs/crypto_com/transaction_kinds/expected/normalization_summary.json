@@ -1,8 +1,9 @@
 {
   "adapter_id": "crypto_com",
-  "balance_count": 0,
-  "event_count": 3,
-  "events_outside_normalization_window": 0,
+  "balance_count": 2,
+  "balance_evidence_count": 0,
+  "fact_count": 3,
+  "facts_outside_normalization_window": 0,
   "issue_count": 0,
   "issues_outside_normalization_window": 0,
   "normalization_window_end": "",

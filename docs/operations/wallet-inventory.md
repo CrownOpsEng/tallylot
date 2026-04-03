@@ -7,7 +7,7 @@ artifacts.
 
 | File | Purpose |
 | ---- | ------- |
-| `wallet_inventory.csv` | One row per canonical wallet identifier |
+| `wallet_inventory.csv` | One row per normalized wallet identifier |
 | `wallet_inventory_evidence.csv` | Evidence rows showing where each identifier came from |
 | `wallet_inventory_issues.csv` | Deterministic review items such as conflicting wallet IDs or missing evidence paths |
 | `wallet_inventory_summary.json` | High-level counts for agents and scripts |
@@ -15,7 +15,7 @@ artifacts.
 ## Rebuild
 
 ```bash
-uv run crypto-reconciliation wallet inventory rebuild \
+uv run tallylot checkpoint rebuild-wallet-inventory \
   --normalized-root <workspace>/working/normalized \
   --output <workspace>/analysis/inventory/wallet_inventory.csv
 ```

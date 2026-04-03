@@ -1,0 +1,12 @@
+[
+  {
+    "account": "GTrade 1CT",
+    "as_of": "2023-05-07 00:00:00",
+    "asset": "DAI",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "5",
+    "source": "GTrade 1CT",
+    "wallet": "GTrade 1CT"
+  }
+]

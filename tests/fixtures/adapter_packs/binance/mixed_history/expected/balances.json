@@ -1,0 +1,72 @@
+[
+  {
+    "account": "Binance",
+    "as_of": "2023-09-21 04:25:57",
+    "asset": "HNT",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "-12.123",
+    "source": "Binance",
+    "wallet": "Funding"
+  },
+  {
+    "account": "Binance",
+    "as_of": "2023-09-21 04:25:57",
+    "asset": "USDT",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "125.564991",
+    "source": "Binance",
+    "wallet": "Funding"
+  },
+  {
+    "account": "Spot",
+    "as_of": "2023-09-21 04:25:57",
+    "asset": "ALGO",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "-103",
+    "source": "Binance",
+    "wallet": "Spot"
+  },
+  {
+    "account": "Spot",
+    "as_of": "2023-09-21 04:25:57",
+    "asset": "BETH",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "0.00000599",
+    "source": "Binance",
+    "wallet": "Spot"
+  },
+  {
+    "account": "Spot",
+    "as_of": "2023-09-21 04:25:57",
+    "asset": "BNB",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "0.00038174",
+    "source": "Binance",
+    "wallet": "Spot"
+  },
+  {
+    "account": "Spot",
+    "as_of": "2023-09-21 04:25:57",
+    "asset": "ETH",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "-0.00005643",
+    "source": "Binance",
+    "wallet": "Spot"
+  },
+  {
+    "account": "Spot",
+    "as_of": "2023-09-21 04:25:57",
+    "asset": "USDT",
+    "balance_kind": "available",
+    "notes": "",
+    "quantity": "10.2691",
+    "source": "Binance",
+    "wallet": "Spot"
+  }
+]

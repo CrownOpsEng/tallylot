@@ -84,6 +84,7 @@ Thumbs.db
 !.claude/commands/*.md
 .tmp_golden_refresh/
 tmp/
+.codex
 
 # Repo-local scratch and live artifact spillover
 01_raw_exports/incoming/

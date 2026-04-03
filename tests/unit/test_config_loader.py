@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_reconciliation.infrastructure.config.loader import (
+from tallylot.infrastructure.config.loader import (
     DEFAULT_WORKSPACE_ROOT,
     load_app_config,
 )
@@ -14,8 +14,8 @@ def test_load_app_config_uses_default_when_project_config_has_no_root(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    config_path = tmp_path / "crypto-reconciliation.toml"
-    config_path.write_text("[project]\nname = 'crypto-reconciliation'\n", encoding="utf-8")
+    config_path = tmp_path / "tallylot.toml"
+    config_path.write_text("[project]\nname = 'tallylot'\n", encoding="utf-8")
     monkeypatch.delenv("CRYPTO_RECON_WORKSPACE_ROOT", raising=False)
 
     config = load_app_config(repo_root=tmp_path)
@@ -28,7 +28,7 @@ def test_load_app_config_prefers_environment_override(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    config_path = tmp_path / "crypto-reconciliation.toml"
+    config_path = tmp_path / "tallylot.toml"
     config_path.write_text("[workspace]\nroot = '~/Documents/ignored'\n", encoding="utf-8")
     override = tmp_path / "external-workspace"
     monkeypatch.setenv("CRYPTO_RECON_WORKSPACE_ROOT", str(override))

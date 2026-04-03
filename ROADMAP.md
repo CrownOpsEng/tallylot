@@ -6,11 +6,16 @@ decisions that should not be rediscovered from scratch.
 
 ## Current Phase
 
-- Single-package Python architecture under `src/crypto_reconciliation/`
+- Single-package Python architecture under `src/tallylot/`
 - External workspace model only
 - CLI and library runtime only
 - Filesystem-backed operational storage
 - CoinTracking CSV as the only implemented output adapter
+- Normalization writes `facts.csv`, `balances.csv`, and
+  `balance_evidence.csv` as active runtime artifacts; CoinTracking CSV exports
+  run as explicit output adapters with no repo-level legacy aliases
+- Dev-only oracle workflows run through `uv run python -m tools.oracles.cli`
+  and stay outside the production package and production CLI surface
 - Archive-aware source scanning and intake plan/apply workflows
 - Provider-agnostic AI interfaces with stub implementations
 - MIT-licensed package with CI-verified wheel and source distribution builds
@@ -20,17 +25,43 @@ decisions that should not be rediscovered from scratch.
 - Build deterministic reconciliation and source-backed checkpoints before tax
   computation. The `2023-08-05` CoinTracking export remains a historical oracle
   boundary, not a hard checkpoint.
-- Treat CoinTracking as a compatibility and oracle layer, not as the central
-  business model.
+- Treat CoinTracking as one ordinary output adapter plus one dev-only oracle
+  family, not as the central business model.
+- Keep CoinTracking rendering isolated to output-adapter packages and keep
+  oracle comparison code outside `src/tallylot/`.
+- Build shared adapter-layer support for stable translation chores such as file
+  traversal, file-family dispatch, row-context handling, draft compilation, and
+  wallet evidence construction so provider adapters stay thin.
+- Keep source adapters translation-only:
+  - provider-local parsing
+  - provider-local translation rules
+  - optional provider-local wallet evidence rules
+- Keep shared adapter support adapter-agnostic. It may operate on manifests,
+  capabilities, translation contracts, and projection contracts resolved
+  through registries, but it must not hard-code knowledge of concrete adapter
+  ids or provider families.
+- Keep adapter glue out of provider modules. The core and shared adapter
+  support layers should own repetitive compilation, projection, and
+  balance-derivation behavior.
 - Keep the core runtime platform-agnostic: normal reconstruction, checkpoint,
   accounting, and tax workflows must run from source evidence and intentional
   checkpoints without requiring CoinTracking tax or accounting outputs.
 - Introduce a provider-neutral transaction fact model as the new system of
-  record. Keep the current canonical event model as a compatibility projection
-  during migration instead of expanding it into a multi-purpose ledger object.
+  record. Replace the current normalized transaction shape directly instead of
+  carrying forward compatibility wrappers or parallel legacy names.
+- Keep the production layer roots explicit:
+  - `domain/`
+  - `application/`
+  - `ports/`
+  - `adapters/sources/`
+  - `adapters/outputs/`
+  - `infrastructure/`
+  - `interfaces/`
+- Keep `application/` capability-first rather than bucketed by generic role
+  names such as `services` or `models`.
 - Keep classification layered:
   - provider-neutral economic kind
-  - CoinTracking compatibility type
+  - output projection type
   - journal intent
   - tax treatment code
 - Keep journaling replaceable behind a renderer port. Ledger CLI is the first
@@ -47,10 +78,8 @@ decisions that should not be rediscovered from scratch.
   - discovery-time manifest validation
 - Keep the domain centered on frozen dataclasses, enums, and value objects so
   business invariants remain explicit and independent of framework behavior.
-- Support the full CoinTracking import taxonomy in the compatibility layer now
-  to avoid later enum churn, even though the next implementation phase only
-  gives first-class behavior to the subset needed for the current dataset and
-  Canadian tax MVP.
+- Support the required CoinTracking output taxonomy inside output adapters and
+  shared projection contracts without requiring provider-local mapping helpers.
 - Keep CoinTracking tax reports, roll-forward outputs, average purchase price,
   and double-entry reports in the oracle lane only. They may support
   comparison, regression, and one-time review, but they must not become normal
@@ -63,15 +92,16 @@ decisions that should not be rediscovered from scratch.
 
 ### HTTP And API Runtime
 
-- Add a thin HTTP layer only over the existing application services.
+- Add a thin HTTP layer only over the existing application capabilities and
+  typed use-case contracts.
 - Do not let HTTP handlers own business rules, serialization policy, or adapter
   orchestration.
 - Keep CLI and API requests on the same service contracts.
 
 ### Database Adoption
 
-- Replace filesystem-backed canonical record storage with a real SQLite-backed
-  implementation behind `StoragePort`.
+- Replace filesystem-backed fact and evidence storage with a real SQLite-backed
+  implementation behind typed repository ports.
 - Keep raw evidence as files even after database adoption.
 - Add migrations only when the SQLite implementation becomes active.
 
@@ -131,21 +161,27 @@ decisions that should not be rediscovered from scratch.
 - Keep raw-evidence protections strict. Profiling and normalization outputs must
   not be written inside raw evidence trees.
 - Keep packaging release-safe: wheels should ship only the
-  `src/crypto_reconciliation/` package, source distributions must remain
+  `src/tallylot/` package, source distributions must remain
   buildable from a clean checkout, and CI should continue verifying the build
   plus an installable CLI entry point.
 - Do not bypass `Decimal` with float-based financial calculations.
-- Keep canonical events structurally strict: asset/amount pairs must be
-  complete, and amounts must remain positive because direction is modeled by
-  the `in`/`out` fields rather than signed numbers.
+- Keep transaction facts structurally strict: every fact must retain at least
+  one positive-value economic leg, and leg direction must be modeled
+  explicitly rather than by signed magnitudes.
 - Normalize raw sign conventions inside adapters when direction is otherwise
   explicit. If the sign is the only direction signal or it conflicts with other
   fields, surface an issue instead of guessing. When adapters do apply an
   interpretive normalization or fallback default, emit normalization review
   records so users can validate the behavior explicitly.
+- Keep source-derived runtime balances application-owned unless the source
+  provides true balance evidence. Adapters should not synthesize balance
+  snapshots from translated activity rows.
 - Keep normalization review artifacts separate from hard issues: invalid or
   unsupported data stays in exceptions, while assumption-driven transforms and
   defaults go to normalization review reporting with concise grouped summaries.
+- Reserve reconciliation naming for fact, checkpoint, and oracle-comparison
+  workflows. Candidate-versus-reference CSV comparison stays under `source
+  diff` until fact-based reconciliation exists.
 - Do not allow AI providers to mutate ledger records directly.
 - Keep normalized evidence references portable by storing source-relative paths
   instead of machine-local absolute paths.
@@ -156,10 +192,17 @@ decisions that should not be rediscovered from scratch.
 - Keep adapter discovery narrow: discover only source-category namespaces and
   adapter package entry points so adapter-local tests and helpers can live
   beside the adapter without affecting runtime registration.
+- Escalate flat capability clusters into packages once a third related module
+  would otherwise be added. Keep at most two tightly related flat siblings for
+  one capability before regrouping.
 - Keep the shared-surface package seams intact now that they have been split:
-  `domain/models/`, `interfaces/cli/`, and
+  `domain/transactions/`, `interfaces/cli/`, and
   `infrastructure/discovery/adapters/` should keep bounded submodules instead
   of growing back into single-file hubs.
+- Preserve the newer workflow seams as packages as they grow:
+  `application/profiling/` and `application/intake/plan/` should absorb future
+  helpers instead of
+  pushing flat `profile_*` or `plan_*` modules back into sibling directories.
 - The repo-local operational dataset was migrated to the external workspace on
   2026-03-26. Use this mapping for any future manual recovery or audit work:
   `00_docs -> docs`, `01_raw_exports/source -> evidence/raw/source`,
@@ -167,22 +210,18 @@ decisions that should not be rediscovered from scratch.
   `01_raw_exports/incoming -> evidence/raw/incoming`, `02_working -> working`,
   `03_analysis -> analysis`, `05_outputs -> outputs`.
 - Treat `evidence/raw/incoming/` as a historical quarantine area for migrated
-  catch-all evidence only. New intake should go directly to canonical capture
+  catch-all evidence only. New intake should go directly to standard capture
   paths under `evidence/raw/source/` or `evidence/raw/portfolio/`.
 - The separate `04_import_ready/` root is retired in the current architecture.
   Keep approved import candidates under `working/import_batches/`.
 
 ## Near-Term Enhancements
 
-- Add richer baseline reconciliation artifacts.
 - Add dedicated CoinTracking oracle readers for `Trade Table`, `Trade List`,
   `Double-entry`, `Roll Forward in CAD`, `Realized Gain or Loss in CAD`, and
   `Average Purchase Price`.
 - Add explicit runtime-boundary, classification-matrix, and migration-sequence
   docs so future work does not drift back into CoinTracking-centric design.
-- Add a provider-neutral transaction fact model and migrate normalization to a
-  dual-write compatibility phase before retiring canonical-event-first
-  workflows.
 - Add deterministic checkpoint assembly and continuity validation centered on
   the best-evidenced balance date around `2026-03-23`.
 - Add a journal renderer port and Ledger CLI implementation for hard-gate
@@ -192,5 +231,6 @@ decisions that should not be rediscovered from scratch.
   unimplemented cases.
 - Add more conservative overlap heuristics and duplicate signatures.
 - Expand source profiling to include richer file-family inspection.
-- Decompose the current hotspot modules into smaller, bounded packages or
-  modules before they accumulate more responsibilities.
+- Continue splitting hotspot use-case modules and DTO hubs into bounded
+  feature modules before facts, checkpoints, and tax policy add more
+  responsibilities.

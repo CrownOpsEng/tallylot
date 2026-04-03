@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from crypto_reconciliation.domain.wallet_identifiers import (
+from tallylot.domain.wallet_identifiers import (
     normalized_identifier,
     scope_token_for_identifier,
     wallet_identifier_kind,

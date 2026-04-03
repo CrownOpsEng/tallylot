@@ -1,0 +1,24 @@
+[
+  {
+    "account": "bsc-wallet",
+    "adapter_id": "evm_explorer",
+    "confidence": "high",
+    "description": "Transfer - 0xabc",
+    "economic_kind": "chain_transfer_in",
+    "fact_id": "evm_explorer:transactions.csv:0xabc",
+    "fee_legs": "",
+    "journal_intent": "funding_inflow",
+    "legs": "in:BNB:1.5::",
+    "operation_group_id": "",
+    "projection_type": "Deposit",
+    "provider_operation_key": "explorer_transfer_in",
+    "raw_file": "transactions.csv",
+    "raw_row_ref": "transactions.csv:row:2",
+    "source": "bsc-wallet",
+    "status": "mapped",
+    "tax_treatment_code": "non_taxable_transfer_in",
+    "timestamp": "2023-11-14 12:00:00",
+    "tx_hash": "0xabc",
+    "wallet": "bsc-wallet"
+  }
+]

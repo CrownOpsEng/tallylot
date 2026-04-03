@@ -1,0 +1,1 @@
+"""Structured CSV adapter tests."""

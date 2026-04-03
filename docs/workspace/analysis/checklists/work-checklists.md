@@ -2,7 +2,7 @@
 
 ## Baseline repair round checklist
 
-- [ ] Run `round scaffold` for the round
+- [ ] Run `uv run python -m tools.oracles.cli round scaffold` for the round
 - [ ] Review `analysis/reconciliation/baseline_cad_flow_by_type.csv` and current status of `FIAT-001`
 - [ ] Review open P1 items in `analysis/issues/issue_log.csv`
 - [ ] Pull external evidence for each targeted issue
@@ -29,9 +29,9 @@
 - [ ] Generate or refresh `evidence/raw/source/<source>/<capture_id>/manifest.csv`
 - [ ] Run `source profile` and review timezone artifacts
 - [ ] Run `source normalize` and review exception and review artifacts
-- [ ] Run `batch screen` on the CoinTracking-ready candidate and review the output
-- [ ] Run `batch stage` only after the screen passes
-- [ ] Run `round scaffold`
+- [ ] Run `uv run python -m tools.oracles.cli batch screen` on the CoinTracking-ready candidate and review the output
+- [ ] Run `uv run python -m tools.oracles.cli batch stage` only after the screen passes
+- [ ] Run `uv run python -m tools.oracles.cli round scaffold`
 - [ ] Import exactly one source into CoinTracking
 - [ ] Export Validate Transactions
 - [ ] Export Missing Transactions with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
@@ -40,7 +40,7 @@
 - [ ] Export Balance by Exchange
 - [ ] Export Trade Table, Roll Forward, or Double-entry only if needed
 - [ ] Store exports under `working/verification/<round_id>/`
-- [ ] Run `verification compare` against the prior state and save the comparison artifacts
+- [ ] Run `uv run python -m tools.oracles.cli verification compare` against the prior state and save the comparison artifacts
 - [ ] Review CAD rows in `Current Balance` and `Balance by Exchange` if the source touches fiat rails
 - [ ] Update `analysis/issues/source_inventory.csv`
 - [ ] Update `analysis/issues/issue_log.csv` for any new or changed issues

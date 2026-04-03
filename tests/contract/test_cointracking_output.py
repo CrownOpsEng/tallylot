@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
-from crypto_reconciliation.application.dtos import NormalizeRequest, RenderOutputRequest
-from crypto_reconciliation.infrastructure.serialization.csv_io import read_rows
-from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.adapters.outputs.cointracking_csv import COINTRACKING_HEADER
+from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.outputs import RenderOutputRequest
+from tallylot.infrastructure.serialization.csv_io import read_rows
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service, build_render_service
 
 
@@ -15,7 +16,7 @@ def test_cointracking_output_matches_expected_schema(
 ) -> None:
     artifacts = FilesystemArtifactStore()
     normalization = build_normalization_service(artifacts=artifacts)
-    render = build_render_service(artifacts=artifacts)
+    render = build_render_service()
     normalized_dir = tmp_path / "normalized"
 
     normalization.execute(
@@ -29,7 +30,7 @@ def test_cointracking_output_matches_expected_schema(
     render.execute(
         RenderOutputRequest(
             output_adapter="cointracking_csv",
-            canonical_events_path=normalized_dir / "canonical_events.csv",
+            facts_path=normalized_dir / "facts.csv",
             output_path=output_path,
         )
     )
@@ -38,4 +39,4 @@ def test_cointracking_output_matches_expected_schema(
 
     assert tuple(rows[0]) == COINTRACKING_HEADER
     assert len(rows) == 2
-    assert (normalized_dir / "cointracking_candidate.csv").exists()
+    assert not (normalized_dir / "cointracking_candidate.csv").exists()

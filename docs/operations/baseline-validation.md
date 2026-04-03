@@ -1,6 +1,6 @@
 # Baseline Validation
 
-## Canonical Baseline
+## Oracle Baseline
 
 - Baseline export folder: `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
 - Authoritative cutoff source: `Trade Table`
@@ -12,7 +12,7 @@
 Run:
 
 ```bash
-uv run crypto-reconciliation baseline validate \
+uv run python -m tools.oracles.cli baseline validate \
   --export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
   --output-dir <workspace>/analysis/reconciliation
 ```

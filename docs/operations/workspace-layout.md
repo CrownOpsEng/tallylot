@@ -40,7 +40,7 @@ workspace/
 
 ## Design Notes
 
-- Evidence remains file-based even if canonical records move into SQLite later.
+- Evidence remains file-based even if normalized records move into SQLite later.
 - The application writes deterministic CSV and JSON artifacts into the
   workspace.
 - The repo should never require users to place their documents inside the git
