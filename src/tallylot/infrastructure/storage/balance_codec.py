@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tallylot.domain.checkpoints import BalanceSnapshot
+from tallylot.domain.checkpoints import BalanceSnapshot, normalize_balance_kind
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import parse_temporal_precision
@@ -72,4 +72,4 @@ def balance_evidence_from_row(row: dict[str, str]) -> BalanceEvidence:
 
 
 def _balance_kind_from_row(row: dict[str, str]) -> str:
-    return row.get("balance_kind", "").strip() or "available"
+    return normalize_balance_kind(row.get("balance_kind", ""))
