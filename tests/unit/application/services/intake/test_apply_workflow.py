@@ -6,6 +6,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from crypto_reconciliation.application.dtos import IntakeApplyRequest
 from crypto_reconciliation.application.services.intake import SourceIntakeService
+from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
@@ -18,7 +19,7 @@ def test_source_intake_service_applies_loose_files_into_workspace(tmp_path: Path
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    response = SourceIntakeService(FilesystemArtifactStore()).apply(
+    response = SourceIntakeService(build_registry(), FilesystemArtifactStore()).apply(
         IntakeApplyRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -44,7 +45,7 @@ def test_source_intake_service_applies_archive_members_into_workspace(tmp_path: 
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    response = SourceIntakeService(FilesystemArtifactStore()).apply(
+    response = SourceIntakeService(build_registry(), FilesystemArtifactStore()).apply(
         IntakeApplyRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -101,7 +102,7 @@ def test_source_intake_service_merges_same_cycle_near_duplicate_packages_on_appl
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).apply(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).apply(
         IntakeApplyRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -142,7 +143,7 @@ def test_source_intake_service_marks_mixed_cycle_bundle_for_review_but_places_fi
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).apply(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).apply(
         IntakeApplyRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,

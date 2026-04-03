@@ -5,6 +5,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from crypto_reconciliation.application.dtos import IntakePlanRequest
 from crypto_reconciliation.application.services.intake import SourceIntakeService
+from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
@@ -18,7 +19,7 @@ def test_source_intake_service_plans_archive_members_without_copying_them(tmp_pa
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    response = SourceIntakeService(FilesystemArtifactStore()).plan(
+    response = SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -47,7 +48,7 @@ def test_source_intake_service_routes_source_artifacts_to_source_aware_supportin
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).plan(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -86,7 +87,7 @@ def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).plan(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,
@@ -178,7 +179,7 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
     )
     report_dir = tmp_path / "reports"
 
-    SourceIntakeService(FilesystemArtifactStore()).plan(
+    SourceIntakeService(build_registry(), FilesystemArtifactStore()).plan(
         IntakePlanRequest(
             incoming_dir=incoming_dir,
             workspace_root=workspace_root,

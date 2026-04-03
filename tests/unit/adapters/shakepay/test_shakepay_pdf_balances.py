@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from crypto_reconciliation.adapters.sources.shakepay_pdf_balances import extract_pdf_balances
+from crypto_reconciliation.adapters.sources.platforms.shakepay.pdf_balances import extract_pdf_balances
 
 
 def test_shakepay_pdf_balances_extract_opening_and_closing_market_values() -> None:

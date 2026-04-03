@@ -10,6 +10,7 @@ from crypto_reconciliation.application.dtos import (
     IntakePlanRequest,
     IntakePlanResponse,
 )
+from crypto_reconciliation.ports.adapters import SourceAdapterRegistryPort
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
 from .archive import scanned_tree_files
@@ -19,7 +20,8 @@ from .plan_reports import write_capture_manifests, write_reports
 
 
 class SourceIntakeService:
-    def __init__(self, artifacts: ArtifactStorePort) -> None:
+    def __init__(self, registry: SourceAdapterRegistryPort, artifacts: ArtifactStorePort) -> None:
+        self._registry = registry
         self._artifacts = artifacts
 
     def plan(self, request: IntakePlanRequest) -> IntakePlanResponse:
@@ -41,6 +43,7 @@ class SourceIntakeService:
         ) as scanned_tree:
             planned_items = build_planned_items(
                 scanned_tree.files,
+                self._registry,
                 self._artifacts,
                 IntakePlanRequest(
                     incoming_dir=request.incoming_dir,
@@ -84,7 +87,7 @@ class SourceIntakeService:
             request.incoming_dir,
             inspect_archives=request.inspect_archives,
         ) as scanned_tree:
-            planned_items.extend(build_planned_items(scanned_tree.files, self._artifacts, request))
+            planned_items.extend(build_planned_items(scanned_tree.files, self._registry, self._artifacts, request))
             issue_rows.extend(
                 {
                     "relative_path": issue.relative_path,

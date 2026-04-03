@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
+from collections import Counter
 
 from crypto_reconciliation.application.dtos import SourceReconcileRequest, SourceReconcileResponse
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
@@ -16,12 +16,12 @@ class SourceReconciliationService:
         request.output_dir.mkdir(parents=True, exist_ok=True)
         candidate_rows = self._artifacts.read_rows(request.candidate_path)
         reference_rows = self._artifacts.read_rows(request.reference_path)
-        candidate_index = {_row_fingerprint(row): row for row in candidate_rows}
-        reference_index = {_row_fingerprint(row): row for row in reference_rows}
+        candidate_counts = Counter(_row_signature(row) for row in candidate_rows)
+        reference_counts = Counter(_row_signature(row) for row in reference_rows)
 
-        candidate_only = [candidate_index[key] for key in sorted(candidate_index.keys() - reference_index.keys())]
-        reference_only = [reference_index[key] for key in sorted(reference_index.keys() - candidate_index.keys())]
-        matched_count = len(candidate_index.keys() & reference_index.keys())
+        candidate_only = _expand_rows(candidate_counts - reference_counts)
+        reference_only = _expand_rows(reference_counts - candidate_counts)
+        matched_count = sum((candidate_counts & reference_counts).values())
         header = (
             tuple(candidate_rows[0].keys())
             if candidate_rows
@@ -48,6 +48,14 @@ class SourceReconciliationService:
         )
 
 
-def _row_fingerprint(row: dict[str, str]) -> str:
-    payload = repr(sorted(row.items()))
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+def _row_signature(row: dict[str, str]) -> tuple[tuple[str, str], ...]:
+    return tuple(sorted((key, value or "") for key, value in row.items()))
+
+
+def _expand_rows(counter: Counter[tuple[tuple[str, str], ...]]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for signature, count in sorted(counter.items()):
+        row = dict(signature)
+        for _ in range(count):
+            rows.append(row)
+    return rows

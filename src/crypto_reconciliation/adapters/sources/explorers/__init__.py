@@ -1,0 +1,1 @@
+"""Explorer source adapter namespaces."""

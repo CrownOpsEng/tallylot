@@ -1,0 +1,5 @@
+"""CoinTracking portfolio intake adapter."""
+
+from .adapter import ADAPTER
+
+__all__ = ["ADAPTER"]

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.coinbase.adapter import CoinbaseAdapter
-from crypto_reconciliation.adapters.sources.coinbase.matching import RETAIL_HEADER
-from crypto_reconciliation.adapters.sources.coinbase.timestamps import parse_retail_timestamp
+from crypto_reconciliation.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
+from crypto_reconciliation.adapters.sources.platforms.coinbase.matching import RETAIL_HEADER
+from crypto_reconciliation.adapters.sources.platforms.coinbase.timestamps import parse_retail_timestamp
 from crypto_reconciliation.application.services.profile import ProfileService
 from crypto_reconciliation.domain.models import FileInventoryEntry, SourceProfile
 from crypto_reconciliation.infrastructure.discovery import build_registry

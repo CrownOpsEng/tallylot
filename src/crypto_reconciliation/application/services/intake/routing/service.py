@@ -6,58 +6,37 @@ from pathlib import Path
 
 from crypto_reconciliation.application.services.intake.archive import ScannedFile
 from crypto_reconciliation.application.services.intake.file_facts import IntakeFileFacts, detect_capture_id
+from crypto_reconciliation.domain.models import AdapterCapability
+from crypto_reconciliation.ports.adapters import SourceAdapter, SourceAdapterRegistryPort
+from crypto_reconciliation.ports.intake_routing import IntakeRoutingRequest
 
-from .classification import detect_source_folder
 from .models import IntakeRoute
-from .portfolio import (
-    cointracking_capture_id,
-    cointracking_sidecar_capture_id,
-    is_cointracking_portfolio_export,
-    is_cointracking_sidecar,
-)
 from .targets import RAW_SOURCE_SUFFIXES, is_working_derivative, raw_source_target_path, relative_target_path
 
 
 def route_intake_file(
     entry: ScannedFile,
     *,
+    registry: SourceAdapterRegistryPort,
     incoming_dir: Path,
     workspace_root: Path,
     facts: IntakeFileFacts,
 ) -> IntakeRoute:
-    route_key = (
-        f"{entry.archive_source_path}::{entry.archive_member_path}"
-        if entry.archive_member_path
-        else entry.relative_path
+    request = IntakeRoutingRequest(
+        relative_path=entry.relative_path,
+        file_path=entry.file_path,
+        incoming_dir=incoming_dir,
+        workspace_root=workspace_root,
+        facts=facts,
+        archive_source_path=entry.archive_source_path,
+        archive_member_path=entry.archive_member_path,
     )
-    if is_cointracking_portfolio_export(route_key):
-        capture_id = cointracking_capture_id(entry.file_path) or detect_capture_id(route_key, facts) or "unknown"
-        target_path = (
-            workspace_root / "evidence" / "raw" / "portfolio" / "cointracking" / capture_id / Path(route_key).name
-        )
-        return IntakeRoute(
-            category="portfolio_raw",
-            role="portfolio_export",
-            source_folder="cointracking",
-            capture_id=capture_id,
-            action="copy",
-            target_path=target_path,
-        )
+    route = _route_via_adapter(registry, request)
+    if route is not None:
+        return route
 
-    if is_cointracking_sidecar(route_key):
-        capture_id = cointracking_sidecar_capture_id(entry, incoming_dir) or "unknown"
-        relative_target = relative_target_path(route_key)
-        target_path = workspace_root / "evidence" / "raw" / "portfolio" / "cointracking" / capture_id / relative_target
-        return IntakeRoute(
-            category="portfolio_raw",
-            role="portfolio_sidecar",
-            source_folder="cointracking",
-            capture_id=capture_id,
-            action="extract_copy" if entry.archive_member_path else "copy",
-            target_path=target_path,
-        )
-
-    source_folder = detect_source_folder(route_key, facts)
+    route_key = request.route_key
+    source_folder = detect_source_folder(registry, route_key, facts)
     capture_id = detect_capture_id(route_key, facts) or incoming_dir.name
     relative_target = relative_target_path(route_key)
     if is_working_derivative(route_key):
@@ -102,3 +81,40 @@ def route_intake_file(
             workspace_root / "working" / "supporting_artifacts" / source_folder / incoming_dir.name / relative_target
         ),
     )
+
+
+def detect_source_folder(
+    registry: SourceAdapterRegistryPort,
+    relative_path: str,
+    facts: IntakeFileFacts,
+) -> str:
+    matches = _matching_adapters(registry, relative_path, facts)
+    if not matches:
+        return "unclassified"
+    return str(matches[0].manifest.adapter_id)
+
+
+def _route_via_adapter(
+    registry: SourceAdapterRegistryPort,
+    request: IntakeRoutingRequest,
+) -> IntakeRoute | None:
+    for adapter in _matching_adapters(registry, request.route_key, request.facts):
+        route = adapter.route_intake(request)
+        if route is not None:
+            return route
+    return None
+
+
+def _matching_adapters(
+    registry: SourceAdapterRegistryPort,
+    relative_path: str,
+    facts: IntakeFileFacts,
+) -> tuple[SourceAdapter, ...]:
+    matches = [
+        (adapter.match_intake(relative_path, facts), adapter)
+        for adapter in registry.source_adapters
+        if AdapterCapability.INTAKE_ROUTE in adapter.manifest.capabilities
+    ]
+    scored_matches = [(score, adapter) for score, adapter in matches if score > 0]
+    scored_matches.sort(key=lambda item: (item[0], str(item[1].manifest.adapter_id)), reverse=True)
+    return tuple(adapter for _, adapter in scored_matches)

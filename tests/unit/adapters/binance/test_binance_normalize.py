@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.binance.adapter import BinanceAdapter
+from crypto_reconciliation.adapters.sources.platforms.binance.adapter import BinanceAdapter
 from tests.support.services import build_source_profile
 
 

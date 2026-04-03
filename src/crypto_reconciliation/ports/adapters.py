@@ -19,6 +19,7 @@ from crypto_reconciliation.domain.models import (
 from crypto_reconciliation.domain.types import JsonValue
 from crypto_reconciliation.ports.artifacts import ArtifactStorePort
 
+from .intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from .output_workflows import BaselineArtifacts, ScreeningResult
 
 
@@ -42,6 +43,10 @@ class SourceAdapter(Protocol):
     manifest: AdapterManifest
 
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int: ...
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int: ...
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None: ...
 
     def validate_profile_timezones(
         self,

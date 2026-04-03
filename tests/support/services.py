@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 from crypto_reconciliation.application.services.normalize import (
     NormalizationDependencies,
@@ -22,6 +23,7 @@ from crypto_reconciliation.infrastructure.discovery import build_registry
 from crypto_reconciliation.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from crypto_reconciliation.infrastructure.storage import FilesystemStorage
 from crypto_reconciliation.ports.adapters import NormalizationResult, SourceAdapter, SourceAdapterRegistryPort
+from crypto_reconciliation.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 
 
 def build_source_profile(
@@ -99,6 +101,14 @@ class MatchingSourceAdapter:
     def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
         del source, raw_dir, inventory
         return 100
+
+    def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
+        del relative_path, facts
+        return 0
+
+    def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
+        del request
+        return cast(IntakeRoute | None, None)
 
     def normalize(self, profile: object, raw_dir: Path) -> NormalizationResult:
         del profile, raw_dir

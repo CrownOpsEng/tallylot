@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from crypto_reconciliation.adapters.sources.coinbase.adapter import CoinbaseAdapter
+from crypto_reconciliation.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
 from tests.support.services import build_source_profile
 
 
