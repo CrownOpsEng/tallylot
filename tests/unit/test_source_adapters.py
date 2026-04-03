@@ -22,14 +22,34 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertTrue(source_adapters.get_adapter("Crypto.com").supported)
         self.assertEqual("shakepay", source_adapters.get_adapter("Shakepay").name)
         self.assertTrue(source_adapters.get_adapter("Shakepay").supported)
-        self.assertEqual("ledger_live", source_adapters.get_adapter("Ledger Live").name)
-        self.assertTrue(source_adapters.get_adapter("Ledger Live").supported)
-        self.assertEqual("near", source_adapters.get_adapter("NEAR Wallet").name)
-        self.assertTrue(source_adapters.get_adapter("NEAR Wallet").supported)
+        self.assertEqual("ledger_live", source_adapters.get_adapter("ledger-live-main").name)
+        self.assertTrue(source_adapters.get_adapter("ledger-live-main").supported)
+        self.assertEqual("near", source_adapters.get_adapter("near-main").name)
+        self.assertTrue(source_adapters.get_adapter("near-main").supported)
         self.assertEqual("gtrade", source_adapters.get_adapter("GTrade 1CT").name)
         self.assertTrue(source_adapters.get_adapter("GTrade 1CT").supported)
-        self.assertEqual("evm_explorer", source_adapters.get_adapter("BSC MetaMask Wallet").name)
-        self.assertTrue(source_adapters.get_adapter("BSC MetaMask Wallet").supported)
+        self.assertEqual("evm_explorer", source_adapters.get_adapter("bsc-metamask1").name)
+        self.assertTrue(source_adapters.get_adapter("bsc-metamask1").supported)
+        self.assertEqual("ledger_live", source_adapters.get_adapter("Ledger Live").name)
+        self.assertEqual("near", source_adapters.get_adapter("NEAR Wallet").name)
+
+    def test_get_adapter_can_resolve_from_profile_before_source_label(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            raw_dir = Path(tmpdir)
+            (raw_dir / "activities-export-2026-03-23.csv").write_text(
+                "transaction_date,settlement_date,account_id,account_type,activity_type,activity_sub_type\n"
+                "2023-09-21,,acct,Crypto,Trade,BUY\n",
+                encoding="utf-8",
+            )
+
+            profile = pipeline_common.build_source_profile(
+                source="Future Broker",
+                raw_dir=raw_dir,
+                adapter_name="generic",
+                adapter_supported=False,
+            )
+
+        self.assertEqual("wealthsimple", source_adapters.get_adapter("Future Broker", profile).name)
 
     def test_load_exception_decisions_filters_by_manifest_fingerprint(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -132,10 +152,10 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertEqual("2022-01-04 18:19:41", result.canonical_events[0]["timestamp"])
 
     def test_ledger_live_adapter_normalizes_repo_exports(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"
-        adapter = source_adapters.get_adapter("Ledger Live")
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger-live-main" / "2026-03"
+        adapter = source_adapters.get_adapter("ledger-live-main")
         profile = pipeline_common.build_source_profile(
-            source="Ledger Live",
+            source="ledger-live-main",
             raw_dir=raw_dir,
             adapter_name=adapter.name,
             adapter_supported=adapter.supported,
@@ -151,10 +171,10 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertIn("Withdrawal", kinds)
 
     def test_near_adapter_normalizes_repo_exports(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "near" / "raw"
-        adapter = source_adapters.get_adapter("NEAR Wallet")
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "near-main" / "2026-03"
+        adapter = source_adapters.get_adapter("near-main")
         profile = pipeline_common.build_source_profile(
-            source="NEAR Wallet",
+            source="near-main",
             raw_dir=raw_dir,
             adapter_name=adapter.name,
             adapter_supported=adapter.supported,
@@ -162,9 +182,9 @@ class SourceAdapterTests(unittest.TestCase):
 
         result = adapter.normalize(raw_dir, profile, exception_decisions={})
 
-        self.assertEqual(14, len(result.canonical_events))
+        self.assertEqual(10, len(result.canonical_events))
         self.assertEqual([], result.exceptions)
-        self.assertTrue(any(row["source"] == "NEAR Wallet - Staking" for row in result.canonical_events))
+        self.assertTrue(any(row["source"] == "near-main - Staking" for row in result.canonical_events))
         self.assertTrue(any(row["event_kind"] == "Airdrop" for row in result.canonical_events))
         self.assertIn(
             "2022-01-30 09:31:41",
@@ -194,10 +214,10 @@ class SourceAdapterTests(unittest.TestCase):
         )
 
     def test_evm_explorer_adapter_normalizes_bsc_repo_exports(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
-        adapter = source_adapters.get_adapter("BSC MetaMask Wallet")
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "bsc-metamask1" / "2026-03"
+        adapter = source_adapters.get_adapter("bsc-metamask1")
         profile = pipeline_common.build_source_profile(
-            source="BSC MetaMask Wallet",
+            source="bsc-metamask1",
             raw_dir=raw_dir,
             adapter_name=adapter.name,
             adapter_supported=adapter.supported,
@@ -205,16 +225,18 @@ class SourceAdapterTests(unittest.TestCase):
 
         result = adapter.normalize(raw_dir, profile, exception_decisions={})
 
-        self.assertEqual(41, len(result.canonical_events))
+        self.assertEqual(31, len(result.canonical_events))
         self.assertEqual([], result.exceptions)
         self.assertTrue(any(row["event_kind"] == "Trade" for row in result.canonical_events))
         self.assertTrue(any(row["event_kind"] == "Staking" for row in result.canonical_events))
+        self.assertTrue(any(row["fee_amount"] for row in result.canonical_events))
+        self.assertLess(sum(1 for row in result.canonical_events if row["event_kind"] == "Other Fee"), 10)
 
     def test_evm_explorer_adapter_surfaces_polygon_review_rows_without_importing_them(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
-        adapter = source_adapters.get_adapter("MetaMask - Polygon")
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "polygon-metamask1" / "2026-03"
+        adapter = source_adapters.get_adapter("polygon-metamask1")
         profile = pipeline_common.build_source_profile(
-            source="MetaMask - Polygon",
+            source="polygon-metamask1",
             raw_dir=raw_dir,
             adapter_name=adapter.name,
             adapter_supported=adapter.supported,
@@ -222,16 +244,17 @@ class SourceAdapterTests(unittest.TestCase):
 
         result = adapter.normalize(raw_dir, profile, exception_decisions={})
 
-        self.assertEqual(20, len(result.canonical_events))
+        self.assertEqual(17, len(result.canonical_events))
         self.assertEqual(5, len(result.exceptions))
         self.assertTrue(all(row["exception_kind"] == "review_required" for row in result.exceptions))
         self.assertTrue(any("suspicious NFT airdrop" in row["message"] for row in result.exceptions))
+        self.assertTrue(any(row["fee_amount"] for row in result.canonical_events))
 
     def test_evm_explorer_adapter_surfaces_eth_gala_review_rows_without_importing_them(self) -> None:
-        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
-        adapter = source_adapters.get_adapter("ETH GalaGames Wallet")
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "eth-gala1" / "2026-03"
+        adapter = source_adapters.get_adapter("eth-gala1")
         profile = pipeline_common.build_source_profile(
-            source="ETH GalaGames Wallet",
+            source="eth-gala1",
             raw_dir=raw_dir,
             adapter_name=adapter.name,
             adapter_supported=adapter.supported,
@@ -239,10 +262,11 @@ class SourceAdapterTests(unittest.TestCase):
 
         result = adapter.normalize(raw_dir, profile, exception_decisions={})
 
-        self.assertEqual(14, len(result.canonical_events))
+        self.assertEqual(11, len(result.canonical_events))
         self.assertEqual(3, len(result.exceptions))
         self.assertTrue(all(row["exception_kind"] == "review_required" for row in result.exceptions))
         self.assertTrue(any("suspicious NFT airdrop" in row["message"] for row in result.exceptions))
+        self.assertTrue(any(row["fee_amount"] for row in result.canonical_events))
 
     def test_gtrade_adapter_surfaces_report_limits_without_guessing(self) -> None:
         raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "gtrade" / "raw"
@@ -350,12 +374,12 @@ class SourceAdapterTests(unittest.TestCase):
             ("Coinbase", REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"),
             ("WealthSimple", REPO_ROOT / "01_raw_exports" / "external" / "wealthsimple" / "raw"),
             ("Binance", REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"),
-            ("BSC MetaMask Wallet", REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"),
+            ("bsc-metamask1", REPO_ROOT / "01_raw_exports" / "external" / "bsc-metamask1" / "2026-03"),
             ("Crypto.com", REPO_ROOT / "01_raw_exports" / "external" / "crypto.com" / "raw"),
             ("GTrade 1CT", REPO_ROOT / "01_raw_exports" / "external" / "gtrade" / "raw"),
             ("Shakepay", REPO_ROOT / "01_raw_exports" / "external" / "shakepay" / "raw"),
-            ("Ledger Live", REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"),
-            ("NEAR Wallet", REPO_ROOT / "01_raw_exports" / "external" / "near" / "raw"),
+            ("ledger-live-main", REPO_ROOT / "01_raw_exports" / "external" / "ledger-live-main" / "2026-03"),
+            ("near-main", REPO_ROOT / "01_raw_exports" / "external" / "near-main" / "2026-03"),
         ]
 
         for source, raw_dir in cases:
@@ -375,11 +399,11 @@ class SourceAdapterTests(unittest.TestCase):
             ("Coinbase", REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"),
             ("WealthSimple", REPO_ROOT / "01_raw_exports" / "external" / "wealthsimple" / "raw"),
             ("Binance", REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"),
-            ("BSC MetaMask Wallet", REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"),
+            ("bsc-metamask1", REPO_ROOT / "01_raw_exports" / "external" / "bsc-metamask1" / "2026-03"),
             ("Crypto.com", REPO_ROOT / "01_raw_exports" / "external" / "crypto.com" / "raw"),
             ("Shakepay", REPO_ROOT / "01_raw_exports" / "external" / "shakepay" / "raw"),
-            ("Ledger Live", REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"),
-            ("NEAR Wallet", REPO_ROOT / "01_raw_exports" / "external" / "near" / "raw"),
+            ("ledger-live-main", REPO_ROOT / "01_raw_exports" / "external" / "ledger-live-main" / "2026-03"),
+            ("near-main", REPO_ROOT / "01_raw_exports" / "external" / "near-main" / "2026-03"),
             ("GTrade 1CT", REPO_ROOT / "01_raw_exports" / "external" / "gtrade" / "raw"),
         ]
 

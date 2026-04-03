@@ -45,13 +45,13 @@ Default rule:
 ## Baseline repair round
 
 1. Pick the specific issue IDs you are resolving.
-2. Pull raw source evidence into `01_raw_exports/external/<source>/raw/`.
+2. Pull raw source evidence into `01_raw_exports/external/<source>/<capture_id>/`.
 3. Run:
 
    ```bash
    python3 06_scripts/source_manifest.py \
-     --source-dir 01_raw_exports/external/<source>/raw \
-     --output 01_raw_exports/external/<source>/manifest.csv
+     --source-dir 01_raw_exports/external/<source>/<capture_id> \
+     --output 01_raw_exports/external/<source>/<capture_id>/manifest.csv
    ```
 
 4. Update `proof_path` and `proof_summary` in `03_analysis/issues/issue_log.csv`.
@@ -84,28 +84,37 @@ Default rule:
 
 1. Confirm the source row exists in `03_analysis/issues/source_inventory.csv`.
 2. Confirm the source export window begins strictly after `2023-08-05 08:34:04`.
-3. Pull the raw export into `01_raw_exports/external/<source>/raw/`.
+3. Pull the raw export into `01_raw_exports/external/<source>/<capture_id>/`.
 4. Run `source_manifest.py`.
 5. Profile the raw source into `02_working/normalized/<source>/`:
 
    ```bash
    python3 06_scripts/profile_source.py \
      --source "<Source Name>" \
-     --raw-dir 01_raw_exports/external/<source>/raw \
+     --raw-dir 01_raw_exports/external/<source>/<capture_id> \
      --out-dir 02_working/normalized/<source>
    ```
 
-6. Normalize the source into canonical outputs and a rendered candidate:
+6. Refresh wallet inventory explicitly when the source is wallet-scoped or when new wallet evidence was added:
+
+   ```bash
+   python3 06_scripts/wallet_inventory.py \
+     --repo-root .
+   ```
+
+   Review `03_analysis/inventory/wallet_inventory.csv` and `03_analysis/inventory/wallet_inventory_issues.csv` before treating newly discovered identifiers as import-ready evidence.
+
+7. Normalize the source into canonical outputs and a rendered candidate:
 
    ```bash
    python3 06_scripts/normalize_source.py \
      --source "<Source Name>" \
-     --raw-dir 01_raw_exports/external/<source>/raw \
+     --raw-dir 01_raw_exports/external/<source>/<capture_id> \
      --out-dir 02_working/normalized/<source> \
      --profile-json 02_working/normalized/<source>/profile.json
    ```
 
-7. Stage the candidate into `02_working/import_batches/<source>/` only after overlap screening passes:
+8. Stage the candidate into `02_working/import_batches/<source>/` only after overlap screening passes:
 
    ```bash
    python3 06_scripts/stage_import_batch.py \

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Build a deterministic file manifest for a raw source export folder."""
+"""Build a deterministic file manifest for a source capture folder."""
 
 from __future__ import annotations
 
@@ -15,14 +15,8 @@ from script_common import require_directory, write_csv_rows
 IGNORED_NAMES = {"README.md", ".gitkeep"}
 
 
-def validate_source_dir(source_dir: Path, *, allow_non_raw_dir: bool = False) -> Path:
-    source_dir = require_directory(source_dir.resolve(), "Source directory")
-    if not allow_non_raw_dir and source_dir.name != "raw":
-        raise ValueError(
-            "Source directory must be the raw export folder ending in 'raw'; "
-            "pass --allow-non-raw-dir only for exceptional one-off use."
-        )
-    return source_dir
+def validate_source_dir(source_dir: Path) -> Path:
+    return require_directory(source_dir.resolve(), "Source directory")
 
 
 def sha256sum(path: Path) -> str:
@@ -36,10 +30,8 @@ def sha256sum(path: Path) -> str:
 def build_manifest_rows(
     source_dir: Path,
     output: Path,
-    *,
-    allow_non_raw_dir: bool = False,
 ) -> list[dict[str, object]]:
-    source_dir = validate_source_dir(source_dir, allow_non_raw_dir=allow_non_raw_dir)
+    source_dir = validate_source_dir(source_dir)
     output = output.resolve()
     rows = []
     for path in sorted(
@@ -65,7 +57,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-dir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--allow-non-raw-dir", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -75,7 +66,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     rows = build_manifest_rows(
         args.source_dir,
         output,
-        allow_non_raw_dir=args.allow_non_raw_dir,
     )
     write_manifest(output, rows)
     print(f"Wrote manifest with {len(rows)} file(s) to {output}")

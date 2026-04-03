@@ -33,8 +33,8 @@ This repo is the evidence, staging, and verification workspace for that process.
 ### Raw data
 
 - `01_raw_exports/cointracking/2023-08-05_full_export/` → canonical CoinTracking baseline export
-- `01_raw_exports/external/<source>/raw/` → untouched external source exports
-- `01_raw_exports/external/<source>/manifest.csv` → file manifest for the raw source folder
+- `01_raw_exports/external/<source>/<capture_id>/` → untouched external source capture
+- `01_raw_exports/external/<source>/<capture_id>/manifest.csv` → file manifest for that source capture
 
 ### Working area
 
@@ -48,6 +48,7 @@ This repo is the evidence, staging, and verification workspace for that process.
 - `00_docs/TAX_REFERENCE_MAP.md` → targeted CRA source routing for edge cases and tax-position validation
 - `03_analysis/issues/issue_log.csv` → master issue register with proof and action fields
 - `03_analysis/issues/source_inventory.csv` → live source inventory for post-cutoff activity
+- `03_analysis/inventory/wallet_inventory.csv` → compact canonical wallet and public-account identifier inventory
 - `03_analysis/reconciliation/` → asset snapshot and exchange reconciliation artifacts
 - `05_outputs/logs/round_log.csv` → structured round-by-round execution log
 
@@ -106,8 +107,8 @@ Purpose: clear or classify baseline exceptions before delta imports.
 Use:
 
 - `03_analysis/issues/issue_log.csv`
-- `01_raw_exports/external/<source>/raw/`
-- `01_raw_exports/external/<source>/manifest.csv`
+- `01_raw_exports/external/<source>/<capture_id>/`
+- `01_raw_exports/external/<source>/<capture_id>/manifest.csv`
 - `Validate Transactions`
 - `Missing Transactions` reviewed with strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`
 - `Trade Table`
@@ -116,7 +117,7 @@ Do:
 
 1. Review all open P1 issues first.
 2. Pull the exact external evidence needed for each item, including fiat deposit, withdrawal, bank, or e-transfer evidence for **FIAT-001**.
-3. Save raw files into `01_raw_exports/external/<source>/raw/`.
+3. Save raw files into `01_raw_exports/external/<source>/<capture_id>/`.
 4. Run `06_scripts/source_manifest.py` to capture a manifest for each new raw source folder.
 5. Update `proof_path` and `proof_summary` in the issue log before changing CoinTracking.
 
@@ -199,7 +200,7 @@ Target window:
 Do:
 
 1. Export raw activity for one source at a time.
-2. Save untouched files into `01_raw_exports/external/<source>/raw/`.
+2. Save untouched files into `01_raw_exports/external/<source>/<capture_id>/`.
 3. Run `06_scripts/source_manifest.py`.
 4. Update `source_inventory.csv` with the export window and raw folder.
 5. Do not import yet.
@@ -236,10 +237,11 @@ AI tasks not allowed:
 Do:
 
 1. Run `06_scripts/profile_source.py` to fingerprint the raw source and classify file families.
-2. Run `06_scripts/normalize_source.py` to produce canonical events, canonical balances, exceptions, and a rendered working candidate under `02_working/normalized/<source>/`.
-3. Review `exceptions.csv`; unresolved exceptions stay out of the import path unless they are explicitly accepted and persisted.
-4. Run `06_scripts/stage_import_batch.py` to enforce overlap screening before a candidate enters `02_working/import_batches/<source>/`.
-5. Copy the approved staged file to `04_import_ready/`.
+2. Review the generated wallet inventory artifacts for wallet-scoped sources and refresh the repo-wide inventory if the profile output lives outside the repo.
+3. Run `06_scripts/normalize_source.py` to produce canonical events, canonical balances, exceptions, and a rendered working candidate under `02_working/normalized/<source>/`.
+4. Review `exceptions.csv`; unresolved exceptions stay out of the import path unless they are explicitly accepted and persisted.
+5. Run `06_scripts/stage_import_batch.py` to enforce overlap screening before a candidate enters `02_working/import_batches/<source>/`.
+6. Copy the approved staged file to `04_import_ready/`.
 
 Gate:
 

@@ -24,16 +24,21 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def profile_source(source: str, raw_dir: Path, out_dir: Path, manifest: Path | None = None) -> dict[str, object]:
-    adapter = get_adapter(source)
     profile = build_source_profile(
         source=source,
         raw_dir=raw_dir,
         manifest_path=manifest,
-        adapter_name=adapter.name,
-        adapter_supported=adapter.supported,
+        adapter_name="generic",
+        adapter_supported=False,
     )
+    adapter = get_adapter(source, profile)
+    profile = replace(profile, adapter=adapter.name, adapter_supported=adapter.supported)
     timezone_summary, timezone_issues = adapter.validate_profile_timezones(profile)
-    profile = replace(profile, timezone_summary=timezone_summary, timezone_issues=timezone_issues)
+    profile = replace(
+        profile,
+        timezone_summary=timezone_summary,
+        timezone_issues=timezone_issues,
+    )
     profile_json, inventory_csv = write_profile_artifacts(out_dir, profile)
     return {
         "source": profile.source,

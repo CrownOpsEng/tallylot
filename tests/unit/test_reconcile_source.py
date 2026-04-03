@@ -97,3 +97,16 @@ class ReconcileSourceTests(unittest.TestCase):
         eth_row = next(row for row in deltas if row["asset"] == "ETH")
         self.assertEqual("delta", eth_row["status"])
         self.assertEqual("0.10000000", eth_row["difference"])
+
+    def test_compare_transactions_accepts_exchange_aliases(self) -> None:
+        expected = [expected_row()]
+        actual = [actual_row(Exchange="Coinbase Pro")]
+
+        results = reconcile_source.compare_transactions(
+            actual,
+            expected,
+            allowed_exchanges={"Coinbase", "Coinbase Pro"},
+        )
+
+        self.assertEqual(1, len(results["matched"]))
+        self.assertEqual([], results["missing"])

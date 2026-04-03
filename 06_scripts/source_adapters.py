@@ -21,8 +21,9 @@ from coinbase_common import (
     normalize_coinbase_transactions,
     retail_csv_rows,
 )
+from normalization_common import attach_fee_to_event, attach_fee_to_event_list
 from pdf_balance_extract import binance_balance_rows_from_text, shakepay_balance_rows_from_text
-from pipeline_common import CANONICAL_BALANCE_HEADERS, CANONICAL_EVENT_HEADERS, EXCEPTION_HEADERS, SourceProfile
+from pipeline_common import CANONICAL_BALANCE_HEADERS, CANONICAL_EVENT_HEADERS, EXCEPTION_HEADERS, SourceProfile, source_slug
 from script_common import (
     decimal_or_zero,
     decimal_text,
@@ -31,6 +32,15 @@ from script_common import (
     read_cointracking_rows,
     read_csv_rows,
     source_timezone_from_filename,
+)
+from wallet_inventory_common import (
+    EVM_ADDRESS_PATTERN,
+    WALLET_EVIDENCE_HEADERS,
+    dedupe_rows,
+    infer_identifier_kind,
+    normalize_identifier,
+    wallet_evidence_row,
+    wallet_issue_row,
 )
 
 
@@ -453,14 +463,63 @@ def build_balance_row(
     }
 
 
+def profile_paths(
+    raw_dir: Path,
+    profile: SourceProfile,
+    *,
+    families: set[str] | None = None,
+    suffixes: set[str] | None = None,
+    predicate=None,
+) -> list[Path]:
+    paths: list[Path] = []
+    for row in profile.file_inventory:
+        if families is not None and row.get("family") not in families:
+            continue
+        if suffixes is not None and row.get("suffix") not in suffixes:
+            continue
+        path = raw_dir / row["filename"]
+        if predicate is not None and not predicate(path, row):
+            continue
+        if path.exists() and path.is_file():
+            paths.append(path)
+    return sorted(paths)
+
+
+def profile_has_row(
+    profile: SourceProfile,
+    *,
+    families: set[str] | None = None,
+    filename_contains: str | None = None,
+    header_contains: str | None = None,
+) -> bool:
+    for row in profile.file_inventory:
+        if families is not None and row.get("family") not in families:
+            continue
+        if filename_contains is not None and filename_contains.lower() not in row.get("filename", "").lower():
+            continue
+        if header_contains is not None and header_contains.lower() not in row.get("header_preview", "").lower():
+            continue
+        return True
+    return False
+
+
 class SourceAdapter:
     name = "base"
     aliases: tuple[str, ...] = ()
     supported = False
 
-    def matches(self, source: str) -> bool:
-        slug = source.strip().lower()
-        return slug == self.name or slug in self.aliases
+    def matches_source(self, source_name: str) -> bool:
+        slug = source_slug(source_name)
+        alias_slugs = {source_slug(alias) for alias in self.aliases}
+        return slug == self.name or slug in alias_slugs
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return False
+
+    def matches(self, source: str, profile: SourceProfile | None = None) -> bool:
+        if profile is not None and self.matches_profile(profile):
+            return True
+        return self.matches_source(source)
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -469,6 +528,14 @@ class SourceAdapter:
 
     def validate_profile_timezones(self, profile: SourceProfile) -> tuple[dict[str, object], list[dict[str, str]]]:
         return summarize_timezone_validation(profile=profile, policy_for_row=self.timezone_policy_for_row)
+
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        return [], []
 
     def normalize(
         self,
@@ -493,10 +560,109 @@ class SourceAdapter:
         return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
 
 
+class MetamaskAppAdapter(SourceAdapter):
+    name = "metamask_app"
+    aliases = ("metamask app", "app-metamask")
+    supported = False
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return any(row.get("filename") == "MetaMask state logs.json" for row in profile.file_inventory)
+
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        state_path = raw_dir / "MetaMask state logs.json"
+        if not state_path.exists():
+            return [], [
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="MetaMask state logs were not found.",
+                )
+            ]
+
+        payload = json.loads(state_path.read_text(encoding="utf-8"))
+        metamask = payload.get("metamask", {})
+        evidence: list[dict[str, str]] = []
+        issues: list[dict[str, str]] = []
+        internal_accounts = (((metamask.get("internalAccounts") or {}).get("accounts")) or {})
+        for account in internal_accounts.values():
+            identifier_value = (account.get("address") or "").strip()
+            if not identifier_value:
+                continue
+            metadata = account.get("metadata") or {}
+            keyring = metadata.get("keyring") or {}
+            evidence.append(
+                wallet_evidence_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    identifier_value=identifier_value,
+                    network_scope="ethereum",
+                    controller=f"MetaMask {keyring.get('type', '').strip()}".strip(),
+                    account_label=(metadata.get("name") or "").strip(),
+                    evidence_kind="app_state",
+                    evidence_path=state_path,
+                    confidence="high",
+                )
+            )
+
+        identities = metamask.get("identities") or {}
+        for identifier_value, identity in identities.items():
+            kind = infer_identifier_kind(identifier_value)
+            normalized_identifier = normalize_identifier(kind, identifier_value)
+            if any(row["normalized_identifier"] == normalized_identifier for row in evidence):
+                continue
+            network_scope = {
+                "btc_address": "bitcoin",
+                "tron_address": "tron",
+                "solana_address": "solana",
+                "evm_address": "ethereum",
+            }.get(kind, "")
+            evidence.append(
+                wallet_evidence_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    identifier_value=identifier_value,
+                    network_scope=network_scope,
+                    controller="MetaMask app",
+                    account_label=(identity.get("name") or "").strip(),
+                    evidence_kind="app_state",
+                    evidence_path=state_path,
+                    confidence="medium",
+                    note="Discovered from the MetaMask identity map rather than a chain-scoped export.",
+                    identifier_kind=kind,
+                )
+            )
+
+        if not evidence:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No wallet identifiers could be extracted from the MetaMask app state.",
+                    evidence_path=state_path,
+                )
+            )
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
+
+
 class CoinbaseAdapter(SourceAdapter):
     name = "coinbase"
     aliases = ("coinbase",)
     supported = True
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, filename_contains="statement - all time") or profile_has_row(
+            profile,
+            filename_contains="coinbase pro - statement",
+        )
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -510,23 +676,29 @@ class CoinbaseAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        retail_path = None
-        pro_statement_paths: list[Path] = []
-        pro_fill_paths: list[Path] = []
-        pdf_paths: list[Path] = []
-
-        for path in sorted(raw_dir.iterdir()):
-            if not path.is_file():
-                continue
-            name = path.name
-            if "Statement - All Time" in name and path.suffix.lower() == ".csv":
-                retail_path = path
-            elif "Coinbase Pro - Statement" in name and path.suffix.lower() == ".csv":
-                pro_statement_paths.append(path)
-            elif "Coinbase Pro - Fills" in name and path.suffix.lower() == ".csv":
-                pro_fill_paths.append(path)
-            elif path.suffix.lower() == ".pdf":
-                pdf_paths.append(path)
+        retail_candidates = profile_paths(
+            raw_dir,
+            profile,
+            families={"custodial_all_time_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, _: "statement - all time" in path.name.lower(),
+        )
+        retail_path = retail_candidates[-1] if retail_candidates else None
+        pro_statement_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"transfer_statement_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, _: "coinbase pro - statement" in path.name.lower(),
+        )
+        pro_fill_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"fills_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, _: "coinbase pro - fills" in path.name.lower(),
+        )
+        pdf_paths = profile_paths(raw_dir, profile, families={"statement_balance_pdf"}, suffixes={".pdf"})
 
         exceptions: list[dict[str, str]] = []
         if retail_path is None:
@@ -563,6 +735,9 @@ class WealthsimpleAdapter(SourceAdapter):
     aliases = ("wealthsimple", "wealthsimple crypto")
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, filename_contains="activities-export")
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -575,7 +750,13 @@ class WealthsimpleAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        activity_paths = sorted(path for path in raw_dir.glob("activities-export*.csv") if path.is_file())
+        activity_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"broker_activity_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, _: path.name.lower().startswith("activities-export"),
+        )
         exceptions: list[dict[str, str]] = []
         if not activity_paths:
             maybe_append_exception(
@@ -727,6 +908,9 @@ class BinanceAdapter(SourceAdapter):
     name = "binance"
     aliases = ("binance",)
     supported = True
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return any(row.get("filename", "").lower().startswith("binance") for row in profile.file_inventory)
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -1549,6 +1733,9 @@ class CryptoComAdapter(SourceAdapter):
     aliases = ("crypto.com", "crypto com", "cryptocom")
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, header_contains="timestamp (utc)")
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
@@ -1561,8 +1748,22 @@ class CryptoComAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        cash_paths = sorted(path for path in raw_dir.glob("cash_transactions*.csv") if path.is_file())
-        crypto_paths = sorted(path for path in raw_dir.glob("crypto_transactions*.csv") if path.is_file())
+        cash_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"custodial_transaction_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, row: path.name.lower().startswith("cash_transactions_")
+            and "timestamp (utc)" in row.get("header_preview", "").lower(),
+        )
+        crypto_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"custodial_transaction_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, row: path.name.lower().startswith("crypto_transactions_")
+            and "timestamp (utc)" in row.get("header_preview", "").lower(),
+        )
         exceptions: list[dict[str, str]] = []
         if not cash_paths and not crypto_paths:
             maybe_append_exception(
@@ -1704,21 +1905,85 @@ class EvmExplorerAdapter(SourceAdapter):
             return None
         return STRICT_EXPLICIT_UTC_POLICY
 
-    _scope_prefixes = (
-        ("bsc", "Account1-bsc"),
-        ("polygon", "Account1-polygon"),
-        ("eth_gala", "Account2-eth"),
-        ("eth", "Account1-eth"),
-    )
     _native_asset_by_scope = {
         "bsc": "BNB",
         "polygon": "MATIC",
-        "eth_gala": "ETH",
         "eth": "ETH",
     }
     _token_symbol_overrides = {
         "0x7ddee176f665cd201f93eede625770e2fd911990": "GALA",
     }
+
+    def matches_source(self, source_name: str) -> bool:
+        if super().matches_source(source_name):
+            return True
+        slug = source_slug(source_name)
+        return slug.startswith(("bsc_", "eth_", "polygon_"))
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return any(
+            row.get("family") in {
+                "explorer_transaction_csv",
+                "explorer_token_transfer_csv",
+                "explorer_internal_transaction_csv",
+                "explorer_nft_transfer_csv",
+            }
+            for row in profile.file_inventory
+        )
+
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        evidence: list[dict[str, str]] = []
+        issues: list[dict[str, str]] = []
+        scope_key = self._scope_for_profile(profile)
+        selected_paths = self._selected_paths(raw_dir, profile, scope_key)
+        addresses = {
+            match.group(0)
+            for path in selected_paths
+            for match in EVM_ADDRESS_PATTERN.finditer(path.name)
+        }
+        for address in sorted(addresses, key=str.lower):
+            path = next(path for path in selected_paths if address.lower() in path.name.lower())
+            evidence.append(
+                wallet_evidence_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    identifier_value=address,
+                    network_scope=self._network_scope_for_key(scope_key),
+                    controller="Explorer export",
+                    account_label="",
+                    evidence_kind="filename",
+                    evidence_path=path,
+                    confidence="high",
+                )
+            )
+
+        if not evidence:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No EVM address could be extracted from the profiled explorer capture.",
+                )
+            )
+        elif len({row["normalized_identifier"] for row in evidence}) > 1:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="multiple_primary_identifiers",
+                    message="The profiled explorer capture exposed more than one owned EVM address.",
+                )
+            )
+
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
 
     def normalize(
         self,
@@ -1727,12 +1992,8 @@ class EvmExplorerAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        scope_key, prefix = self._scope_for_source(profile.source)
-        selected_paths = sorted(
-            path
-            for path in raw_dir.glob("*.csv")
-            if path.is_file() and (prefix in path.name or (scope_key == "eth" and path.name.startswith("Account1-eth ")))
-        )
+        scope_key = self._scope_for_profile(profile)
+        selected_paths = self._selected_paths(raw_dir, profile, scope_key)
         exceptions: list[dict[str, str]] = []
         if not selected_paths:
             maybe_append_exception(
@@ -1759,7 +2020,8 @@ class EvmExplorerAdapter(SourceAdapter):
             lambda: {"normal": [], "token": [], "internal": [], "nft": []}
         )
         for path in selected_paths:
-            family = self._family_for_path(path)
+            profile_row = next((row for row in profile.file_inventory if row.get("filename") == path.name), {})
+            family = self._family_for_profile_row(profile_row)
             if family is None:
                 continue
             for index, row in enumerate(read_csv_rows(path), start=2):
@@ -1784,25 +2046,59 @@ class EvmExplorerAdapter(SourceAdapter):
 
         return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
 
-    def _scope_for_source(self, source: str) -> tuple[str, str]:
-        label = source.strip().lower()
-        if "polygon" in label:
-            return "polygon", "Account1-polygon"
-        if "gala" in label:
-            return "eth_gala", "Account2-eth"
-        if "eth" in label:
-            return "eth", "Account1-eth"
-        return "bsc", "Account1-bsc"
+    def _scope_for_profile(self, profile: SourceProfile) -> str:
+        context_parts = [source_slug(profile.source)]
+        context_parts.extend(source_slug(part) for part in profile.raw_dir.parts[-3:])
+        context = " ".join(part for part in context_parts if part)
+        if "polygon" in context:
+            return "polygon"
+        if "bsc" in context or "bnb" in context:
+            return "bsc"
+        return "eth"
 
-    def _family_for_path(self, path: Path) -> str | None:
-        name = path.name.lower()
-        if "export-address-token" in name:
+    def _network_scope_for_key(self, scope_key: str) -> str:
+        if scope_key == "eth":
+            return "ethereum"
+        return scope_key
+
+    def _selected_paths(self, raw_dir: Path, profile: SourceProfile, scope_key: str) -> list[Path]:
+        candidates = profile_paths(
+            raw_dir,
+            profile,
+            families={
+                "explorer_transaction_csv",
+                "explorer_token_transfer_csv",
+                "explorer_internal_transaction_csv",
+                "explorer_nft_transfer_csv",
+            },
+            suffixes={".csv"},
+            predicate=lambda path, row: self._family_for_profile_row(row) is not None,
+        )
+        if self._is_chain_scoped_capture(profile.raw_dir):
+            return candidates
+        scoped = [path for path in candidates if self._path_matches_scope(path, scope_key)]
+        return scoped
+
+    def _is_chain_scoped_capture(self, raw_dir: Path) -> bool:
+        return any(source_slug(part).startswith(("bsc_", "eth_", "polygon_")) for part in raw_dir.parts)
+
+    def _path_matches_scope(self, path: Path, scope_key: str) -> bool:
+        lowered = path.name.lower()
+        if scope_key == "polygon":
+            return "polygon" in lowered
+        if scope_key == "bsc":
+            return "bsc" in lowered or "bnb" in lowered
+        return "-eth" in lowered or "_eth" in lowered or " eth" in lowered or lowered.startswith("eth")
+
+    def _family_for_profile_row(self, row: dict[str, str]) -> str | None:
+        family = row.get("family", "")
+        if family == "explorer_token_transfer_csv":
             return "token"
-        if "export-internal-tx" in name:
+        if family == "explorer_internal_transaction_csv":
             return "internal"
-        if "export-address-nfts" in name:
+        if family == "explorer_nft_transfer_csv":
             return "nft"
-        if " export-" in name:
+        if family == "explorer_transaction_csv":
             return "normal"
         return None
 
@@ -1922,36 +2218,30 @@ class EvmExplorerAdapter(SourceAdapter):
                     render_notes="evm_claim",
                 )
             ]
-            if fee_paid > 0:
-                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method))
-            return events, None
+            return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset), None
 
         if incoming and (outgoing or native_out > 0):
             asset_out, amount_out = outgoing[0] if outgoing else (native_asset, native_out)
             asset_in, amount_in = incoming[0]
-            events = [
-                canonical_event(
-                    event_id=event_id,
-                    source=profile.source,
-                    adapter=self.name,
-                    account=profile.source,
-                    wallet=profile.source,
-                    raw_file=raw_file,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind="Trade",
-                    description=f"{method} - {tx_hash}",
-                    amount_in=decimal_text(amount_in),
-                    asset_in=asset_in,
-                    amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
-                    asset_out=asset_out,
-                    tx_hash=tx_hash,
-                    render_notes="evm_trade",
-                )
-            ]
-            if fee_paid > 0:
-                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method))
-            return events, None
+            trade_event = canonical_event(
+                event_id=event_id,
+                source=profile.source,
+                adapter=self.name,
+                account=profile.source,
+                wallet=profile.source,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Trade",
+                description=f"{method} - {tx_hash}",
+                amount_in=decimal_text(amount_in),
+                asset_in=asset_in,
+                amount_out=decimal_text(amount_out if asset_out != native_asset else amount_out - fee_paid if amount_out > fee_paid else amount_out),
+                asset_out=asset_out,
+                tx_hash=tx_hash,
+                render_notes="evm_trade",
+            )
+            return [attach_fee_to_event(trade_event, fee_amount=fee_paid, fee_asset=native_asset)], None
 
         if suspicious_nft_assets and not incoming and not outgoing and native_in <= 0 and native_out <= 0:
             decision = exception_decisions.get(event_id, {})
@@ -1974,47 +2264,45 @@ class EvmExplorerAdapter(SourceAdapter):
 
         if outgoing:
             asset_out, amount_out = outgoing[0]
-            events = [
-                canonical_event(
-                    event_id=event_id,
-                    source=profile.source,
-                    adapter=self.name,
-                    account=profile.source,
-                    wallet=profile.source,
-                    raw_file=raw_file,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind="Withdrawal",
-                    description=f"{method or 'Transfer out'} - {tx_hash}",
-                    amount_out=decimal_text(amount_out),
-                    asset_out=asset_out,
-                    tx_hash=tx_hash,
-                    render_notes="evm_out",
-                )
-            ]
-            if fee_paid > 0:
-                events.append(self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method or "Transfer"))
-            return events, None
+            withdrawal_event = canonical_event(
+                event_id=event_id,
+                source=profile.source,
+                adapter=self.name,
+                account=profile.source,
+                wallet=profile.source,
+                raw_file=raw_file,
+                raw_row_ref=raw_row_ref,
+                timestamp=timestamp,
+                event_kind="Withdrawal",
+                description=f"{method or 'Transfer out'} - {tx_hash}",
+                amount_out=decimal_text(amount_out),
+                asset_out=asset_out,
+                tx_hash=tx_hash,
+                render_notes="evm_out",
+            )
+            return [attach_fee_to_event(withdrawal_event, fee_amount=fee_paid, fee_asset=native_asset)], None
 
         if native_out > 0:
             return [
-                canonical_event(
-                    event_id=event_id,
-                    source=profile.source,
-                    adapter=self.name,
-                    account=profile.source,
-                    wallet=profile.source,
-                    raw_file=raw_file,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind="Withdrawal",
-                    description=f"{method or 'Transfer out'} - {tx_hash}",
-                    amount_out=decimal_text(native_out + fee_paid),
-                    asset_out=native_asset,
-                    fee_amount=decimal_text(fee_paid) if fee_paid > 0 else "",
-                    fee_asset=native_asset if fee_paid > 0 else "",
-                    tx_hash=tx_hash,
-                    render_notes="evm_native_out",
+                attach_fee_to_event(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=raw_file,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=timestamp,
+                        event_kind="Withdrawal",
+                        description=f"{method or 'Transfer out'} - {tx_hash}",
+                        amount_out=decimal_text(native_out),
+                        asset_out=native_asset,
+                        tx_hash=tx_hash,
+                        render_notes="evm_native_out",
+                    ),
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
                 )
             ], None
 
@@ -2022,28 +2310,56 @@ class EvmExplorerAdapter(SourceAdapter):
             asset_in, amount_in = incoming[0]
             event_kind = "Airdrop" if inbound_is_airdrop else "Deposit"
             return [
-                canonical_event(
-                    event_id=event_id,
-                    source=profile.source,
-                    adapter=self.name,
-                    account=profile.source,
-                    wallet=profile.source,
-                    raw_file=raw_file,
-                    raw_row_ref=raw_row_ref,
-                    timestamp=timestamp,
-                    event_kind=event_kind,
-                    description=f"{method or event_kind} - {tx_hash}",
-                    amount_in=decimal_text(amount_in),
-                    asset_in=asset_in,
-                    tx_hash=tx_hash,
-                    render_notes="evm_in",
+                attach_fee_to_event(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=raw_file,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=timestamp,
+                        event_kind=event_kind,
+                        description=f"{method or event_kind} - {tx_hash}",
+                        amount_in=decimal_text(amount_in),
+                        asset_in=asset_in,
+                        tx_hash=tx_hash,
+                        render_notes="evm_in",
+                    ),
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
                 )
             ], None
 
         if native_in > 0:
             return [
+                attach_fee_to_event(
+                    canonical_event(
+                        event_id=event_id,
+                        source=profile.source,
+                        adapter=self.name,
+                        account=profile.source,
+                        wallet=profile.source,
+                        raw_file=raw_file,
+                        raw_row_ref=raw_row_ref,
+                        timestamp=timestamp,
+                        event_kind="Deposit",
+                        description=f"{method or 'Transfer in'} - {tx_hash}",
+                        amount_in=decimal_text(native_in),
+                        asset_in=native_asset,
+                        tx_hash=tx_hash,
+                        render_notes="evm_native_in",
+                    ),
+                    fee_amount=fee_paid,
+                    fee_asset=native_asset,
+                )
+            ], None
+
+        if fee_paid > 0:
+            return [
                 canonical_event(
-                    event_id=event_id,
+                    event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
                     source=profile.source,
                     adapter=self.name,
                     account=profile.source,
@@ -2051,17 +2367,14 @@ class EvmExplorerAdapter(SourceAdapter):
                     raw_file=raw_file,
                     raw_row_ref=raw_row_ref,
                     timestamp=timestamp,
-                    event_kind="Deposit",
-                    description=f"{method or 'Transfer in'} - {tx_hash}",
-                    amount_in=decimal_text(native_in),
-                    asset_in=native_asset,
+                    event_kind="Other Fee",
+                    description=f"{method or 'Explorer tx'} - {tx_hash}",
+                    amount_out=decimal_text(fee_paid),
+                    asset_out=native_asset,
                     tx_hash=tx_hash,
-                    render_notes="evm_native_in",
+                    render_notes="evm_fee_only",
                 )
             ], None
-
-        if fee_paid > 0:
-            return [self._fee_event(profile.source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, method or "Explorer tx")], None
         return [], None
 
     def _group_raw_file(self, group: dict[str, list[tuple[Path, int, dict[str, str]]]]) -> str:
@@ -2211,34 +2524,6 @@ class EvmExplorerAdapter(SourceAdapter):
                 return value
         return ""
 
-    def _fee_event(
-        self,
-        source: str,
-        raw_file: str,
-        raw_row_ref: str,
-        timestamp: str,
-        tx_hash: str,
-        fee_paid: Decimal,
-        native_asset: str,
-        method: str,
-    ) -> dict[str, str]:
-        return canonical_event(
-            event_id=event_id_for(self.name, raw_file, f"{tx_hash}:fee"),
-            source=source,
-            adapter=self.name,
-            account=source,
-            wallet=source,
-            raw_file=raw_file,
-            raw_row_ref=raw_row_ref,
-            timestamp=timestamp,
-            event_kind="Other Fee",
-            description=f"{method} - {tx_hash}",
-            amount_out=decimal_text(fee_paid),
-            asset_out=native_asset,
-            tx_hash=tx_hash,
-            render_notes="evm_fee",
-        )
-
     def _stake_events(
         self,
         source: str,
@@ -2286,9 +2571,7 @@ class EvmExplorerAdapter(SourceAdapter):
                 render_notes="evm_stake_in",
             ),
         ]
-        if fee_paid > 0:
-            events.append(self._fee_event(source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, "Stake"))
-        return events
+        return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset)
 
     def _unstake_events(
         self,
@@ -2337,15 +2620,16 @@ class EvmExplorerAdapter(SourceAdapter):
                 render_notes="evm_unstake_out",
             ),
         ]
-        if fee_paid > 0:
-            events.append(self._fee_event(source, raw_file, raw_row_ref, timestamp, tx_hash, fee_paid, native_asset, "Unstake"))
-        return events
+        return attach_fee_to_event_list(events, fee_amount=fee_paid, fee_asset=native_asset)
 
 
 class ShakepayAdapter(SourceAdapter):
     name = "shakepay"
     aliases = ("shakepay",)
     supported = True
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, header_contains="credit") and profile_has_row(profile, header_contains="debit")
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -2359,9 +2643,27 @@ class ShakepayAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        cash_paths = sorted(path for path in raw_dir.glob("cash_transactions*.csv") if path.is_file())
-        crypto_paths = sorted(path for path in raw_dir.glob("crypto_transactions*.csv") if path.is_file())
-        pdf_paths = sorted(path for path in raw_dir.glob("shakepay_*Performance report*.pdf") if path.is_file())
+        cash_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"fiat_transaction_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, row: "credit" in row.get("header_preview", "").lower(),
+        )
+        crypto_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"custodial_transaction_csv"},
+            suffixes={".csv"},
+            predicate=lambda path, row: "amount credited" in row.get("header_preview", "").lower(),
+        )
+        pdf_paths = profile_paths(
+            raw_dir,
+            profile,
+            families={"statement_balance_pdf"},
+            suffixes={".pdf"},
+            predicate=lambda path, _: "performance report" in path.name.lower(),
+        )
         exceptions: list[dict[str, str]] = []
         if not cash_paths and not crypto_paths:
             maybe_append_exception(
@@ -2596,8 +2898,69 @@ class ShakepayAdapter(SourceAdapter):
 
 class LedgerLiveAdapter(SourceAdapter):
     name = "ledger_live"
-    aliases = ("ledger live", "ada ledger")
+    aliases = ("ledger live", "ada ledger", "ledger-live-main")
     supported = True
+
+    def matches_source(self, source_name: str) -> bool:
+        return super().matches_source(source_name) or source_slug(source_name).startswith("ledger_live")
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, families={"wallet_operation_csv"}, header_contains="account xpub")
+
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        evidence: list[dict[str, str]] = []
+        issues: list[dict[str, str]] = []
+        account_identifiers: dict[str, set[str]] = defaultdict(set)
+        for path in profile_paths(raw_dir, profile, families={"wallet_operation_csv"}, suffixes={".csv"}):
+            for row in read_csv_rows(path):
+                account_label = (row.get("Account Name") or "").strip()
+                identifier_value = (row.get("Account xpub") or "").strip()
+                if not identifier_value:
+                    continue
+                account_identifiers[account_label].add(identifier_value)
+                evidence.append(
+                    wallet_evidence_row(
+                        source=source,
+                        raw_dir=raw_dir,
+                        identifier_value=identifier_value,
+                        network_scope=self._wallet_network_scope(identifier_value, account_label, row),
+                        controller="Ledger Live",
+                        account_label=account_label,
+                        evidence_kind="csv_row",
+                        evidence_path=path,
+                        confidence="high",
+                    )
+                )
+
+        for account_label, identifiers in sorted(account_identifiers.items()):
+            if len(identifiers) > 1:
+                issues.append(
+                    wallet_issue_row(
+                        source=source,
+                        raw_dir=raw_dir,
+                        wallet_id="",
+                        issue_kind="account_identifier_conflict",
+                        message=f"Ledger Live account {account_label or 'blank'} maps to multiple identifiers.",
+                    )
+                )
+
+        if not evidence:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No account identifier was found in the Ledger Live operations exports.",
+                )
+            )
+
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
@@ -2611,7 +2974,7 @@ class LedgerLiveAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        paths = sorted(path for path in raw_dir.glob("ledgerlive-operations-*.csv") if path.is_file())
+        paths = profile_paths(raw_dir, profile, families={"wallet_operation_csv"}, suffixes={".csv"})
         exceptions: list[dict[str, str]] = []
         if not paths:
             maybe_append_exception(
@@ -2800,16 +3163,77 @@ class LedgerLiveAdapter(SourceAdapter):
             )
         return events
 
+    def _wallet_network_scope(self, identifier_value: str, account_label: str, row: dict[str, str]) -> str:
+        kind = infer_identifier_kind(identifier_value)
+        if kind == "btc_xpub":
+            return "bitcoin"
+        if kind == "cardano_account_key":
+            return "cardano"
+        if kind == "evm_address":
+            ticker = (row.get("Currency Ticker") or "").strip().upper()
+            if ticker == "ETH":
+                return "ethereum"
+        account = account_label.lower()
+        if "ethereum" in account or account.startswith("eth"):
+            return "ethereum"
+        if "bitcoin" in account or account.startswith("btc"):
+            return "bitcoin"
+        if "cardano" in account or "ada" in account:
+            return "cardano"
+        return ""
+
 
 class NearAdapter(SourceAdapter):
     name = "near"
-    aliases = ("near", "near wallet", "near wallet - staking")
+    aliases = ("near", "near wallet", "near wallet - staking", "near-main")
     supported = True
+
+    def matches_source(self, source_name: str) -> bool:
+        return super().matches_source(source_name) or source_slug(source_name).startswith("near")
+
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return any(
+            row.get("family") in {"near_transaction_csv", "near_ft_transaction_csv", "near_nft_transaction_csv", "near_receipt_csv"}
+            for row in profile.file_inventory
+        )
 
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
         return ASSUMED_UTC_NAIVE_POLICY
+
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        evidence = [
+            wallet_evidence_row(
+                source=source,
+                raw_dir=raw_dir,
+                identifier_value=identifier_value,
+                network_scope="near",
+                controller="NearBlocks export",
+                account_label="",
+                evidence_kind="filename",
+                evidence_path=path,
+                confidence="high",
+            )
+            for identifier_value, path in self._owned_account_paths(profile, raw_dir)
+        ]
+        issues: list[dict[str, str]] = []
+        if not evidence:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No NEAR account identifier was found in the profiled capture.",
+                )
+            )
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
 
     def normalize(
         self,
@@ -2818,9 +3242,9 @@ class NearAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        tx_paths = sorted(path for path in raw_dir.glob("*transactions*.csv") if "ft_" not in path.name and "nft_" not in path.name)
-        ft_paths = sorted(path for path in raw_dir.glob("*ft_transactions*.csv"))
-        nft_paths = sorted(path for path in raw_dir.glob("*nft_transactions*.csv"))
+        tx_paths = profile_paths(raw_dir, profile, families={"near_transaction_csv"}, suffixes={".csv"})
+        ft_paths = profile_paths(raw_dir, profile, families={"near_ft_transaction_csv"}, suffixes={".csv"})
+        nft_paths = profile_paths(raw_dir, profile, families={"near_nft_transaction_csv"}, suffixes={".csv"})
         exceptions: list[dict[str, str]] = []
         if not tx_paths and not ft_paths and not nft_paths:
             maybe_append_exception(
@@ -2838,6 +3262,7 @@ class NearAdapter(SourceAdapter):
             return AdapterNormalizationResult(canonical_events=[], canonical_balances=[], exceptions=exceptions)
 
         events: list[dict[str, str]] = []
+        owned_accounts = self._owned_accounts(profile, raw_dir)
         seen_tx_hashes: set[str] = set()
         for path in tx_paths:
             for index, row in enumerate(read_csv_rows(path), start=2):
@@ -2846,7 +3271,7 @@ class NearAdapter(SourceAdapter):
                     continue
                 seen_tx_hashes.add(tx_hash)
                 method = (row.get("Method") or "").strip()
-                if method == "TRANSFER" and (row.get("To") or "").strip() == self._wallet_id():
+                if method == "TRANSFER" and (row.get("To") or "").strip().lower() in owned_accounts:
                     events.append(self._near_deposit_event(path, profile.source, index, row))
                     continue
                 if method == "deposit_and_stake":
@@ -2917,8 +3342,24 @@ class NearAdapter(SourceAdapter):
 
         return AdapterNormalizationResult(canonical_events=events, canonical_balances=[], exceptions=exceptions)
 
-    def _wallet_id(self) -> str:
-        return "example.near"
+    def _owned_accounts(self, profile: SourceProfile, raw_dir: Path) -> set[str]:
+        return {identifier_value for identifier_value, _ in self._owned_account_paths(profile, raw_dir)}
+
+    def _owned_account_paths(self, profile: SourceProfile, raw_dir: Path) -> list[tuple[str, Path]]:
+        account_paths: dict[str, Path] = {}
+        for row in profile.file_inventory:
+            filename = row.get("filename", "")
+            for match in re.finditer(r"[a-f0-9]{64}", filename.lower()):
+                account_paths.setdefault(match.group(0), raw_dir / filename)
+        if account_paths:
+            return sorted(account_paths.items())
+        for path in profile_paths(raw_dir, profile, families={"near_transaction_csv", "near_receipt_csv"}, suffixes={".csv"}):
+            for row in read_csv_rows(path):
+                for field in ("To", "Affected", "Involved"):
+                    value = (row.get(field) or "").strip().lower()
+                    if re.fullmatch(r"[a-f0-9]{64}", value):
+                        account_paths.setdefault(value, path)
+        return sorted(account_paths.items())
 
     def _near_deposit_event(self, path: Path, source: str, index: int, row: dict[str, str]) -> dict[str, str]:
         raw_row_ref = f"row:{index}"
@@ -3000,10 +3441,68 @@ class GTradeAdapter(SourceAdapter):
     aliases = ("gtrade", "gtrade 1ct")
     supported = True
 
+    def matches_profile(self, profile: SourceProfile) -> bool:
+        return profile_has_row(profile, families={"derivatives_report_csv"})
+
     def timezone_policy_for_row(self, row: dict[str, str]) -> TimezonePolicy | None:
         if not row.get("date_field"):
             return None
         return GTRADE_DATE_ONLY_POLICY
+
+    def extract_wallet_identifiers(
+        self,
+        source: str,
+        raw_dir: Path,
+        profile: SourceProfile,
+    ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+        evidence: list[dict[str, str]] = []
+        aliases: set[str] = set()
+        for path in profile_paths(raw_dir, profile, families={"derivatives_report_csv"}, suffixes={".csv"}):
+            for row in read_csv_rows(path):
+                alias = (row.get("ADDR") or "").strip()
+                if not alias:
+                    continue
+                aliases.add(alias)
+                evidence.append(
+                    wallet_evidence_row(
+                        source=source,
+                        raw_dir=raw_dir,
+                        identifier_value=alias,
+                        network_scope="polygon",
+                        controller="GTrade report",
+                        account_label="",
+                        evidence_kind="csv_row",
+                        evidence_path=path,
+                        confidence="medium",
+                        note="The report exposes a truncated trader alias instead of a full on-chain address.",
+                        identifier_kind="address_alias",
+                    )
+                )
+
+        issues: list[dict[str, str]] = []
+        if aliases:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="address_alias:" + min(alias.lower() for alias in aliases),
+                    issue_kind="partial_identifier_only",
+                    message="GTrade evidence exposes only a truncated address alias; keep companion explorer evidence linked in the canonical wallet inventory.",
+                    evidence_path=next(iter(profile_paths(raw_dir, profile, families={"derivatives_report_csv"}, suffixes={".csv"})), None),
+                )
+            )
+        else:
+            issues.append(
+                wallet_issue_row(
+                    source=source,
+                    raw_dir=raw_dir,
+                    wallet_id="",
+                    issue_kind="missing_identifier",
+                    message="No address alias was found in the GTrade report.",
+                )
+            )
+
+        return dedupe_rows(evidence, key_fields=WALLET_EVIDENCE_HEADERS), issues
 
     def normalize(
         self,
@@ -3012,7 +3511,7 @@ class GTradeAdapter(SourceAdapter):
         *,
         exception_decisions: dict[str, dict[str, str]],
     ) -> AdapterNormalizationResult:
-        report_paths = sorted(path for path in raw_dir.glob("*My_Trading_History_Report.csv") if path.is_file())
+        report_paths = profile_paths(raw_dir, profile, families={"derivatives_report_csv"}, suffixes={".csv"})
         exceptions: list[dict[str, str]] = []
         if not report_paths:
             maybe_append_exception(
@@ -3078,6 +3577,7 @@ class GTradeAdapter(SourceAdapter):
 
 
 ADAPTERS: tuple[SourceAdapter, ...] = (
+    MetamaskAppAdapter(),
     CoinbaseAdapter(),
     WealthsimpleAdapter(),
     BinanceAdapter(),
@@ -3090,9 +3590,18 @@ ADAPTERS: tuple[SourceAdapter, ...] = (
 )
 
 
-def get_adapter(source: str) -> SourceAdapter:
+def get_adapter(source: str, profile: SourceProfile | None = None) -> SourceAdapter:
+    if profile is not None:
+        profile_matches = [adapter for adapter in ADAPTERS if adapter.matches_profile(profile)]
+        if len(profile_matches) == 1:
+            return profile_matches[0]
+        for adapter in profile_matches:
+            if adapter.matches_source(source):
+                return adapter
+        if profile_matches:
+            return profile_matches[0]
     for adapter in ADAPTERS:
-        if adapter.matches(source):
+        if adapter.matches_source(source):
             return adapter
     fallback = SourceAdapter()
     fallback.name = "generic"

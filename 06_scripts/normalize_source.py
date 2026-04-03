@@ -46,29 +46,22 @@ def normalize_source(
     exception_decisions: Path | None = None,
     force: bool = False,
 ) -> dict[str, object]:
-    adapter = get_adapter(source)
+    profile = build_source_profile(
+        source=source,
+        raw_dir=raw_dir,
+        manifest_path=manifest,
+        adapter_name="generic",
+        adapter_supported=False,
+    )
+    adapter = get_adapter(source, profile)
+    profile = replace(profile, adapter=adapter.name, adapter_supported=adapter.supported)
     if profile_json is not None and profile_json.exists():
         profile_payload = read_profile(profile_json)
         manifest_fingerprint = str(profile_payload["manifest_fingerprint"])
         adapter_name = adapter.name
     else:
-        profile = build_source_profile(
-            source=source,
-            raw_dir=raw_dir,
-            manifest_path=manifest,
-            adapter_name=adapter.name,
-            adapter_supported=adapter.supported,
-        )
         manifest_fingerprint = profile.manifest_fingerprint
         adapter_name = adapter.name
-
-    profile = build_source_profile(
-        source=source,
-        raw_dir=raw_dir,
-        manifest_path=manifest,
-        adapter_name=adapter.name,
-        adapter_supported=adapter.supported,
-    )
     timezone_summary, timezone_issues = adapter.validate_profile_timezones(profile)
     profile = replace(profile, timezone_summary=timezone_summary, timezone_issues=timezone_issues)
     if timezone_issues:

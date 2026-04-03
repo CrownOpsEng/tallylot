@@ -57,8 +57,13 @@ def split_allowed_types(value: str) -> set[str]:
     return {item for item in value.split("|") if item}
 
 
-def candidate_matches(expected: dict[str, str], actual: dict[str, str]) -> bool:
-    if actual["Exchange"] != expected["Exchange"]:
+def exchange_matches(expected_exchange: str, actual_exchange: str, allowed_exchanges: set[str]) -> bool:
+    return actual_exchange in allowed_exchanges and expected_exchange in allowed_exchanges
+
+
+def candidate_matches(expected: dict[str, str], actual: dict[str, str], allowed_exchanges: set[str] | None = None) -> bool:
+    allowed_exchanges = allowed_exchanges or {expected["Exchange"]}
+    if not exchange_matches(expected["Exchange"], actual["Exchange"], allowed_exchanges):
         return False
     if actual["Type"] not in split_allowed_types(expected["render_allowed_types"]):
         return False
@@ -97,7 +102,12 @@ def compare_expected_to_actual(expected: dict[str, str], actual: dict[str, str])
     return issues
 
 
-def compare_transactions(actual_rows: list[dict[str, str]], expected_rows: list[dict[str, str]]) -> dict[str, list[dict[str, str]]]:
+def compare_transactions(
+    actual_rows: list[dict[str, str]],
+    expected_rows: list[dict[str, str]],
+    *,
+    allowed_exchanges: set[str] | None = None,
+) -> dict[str, list[dict[str, str]]]:
     unmatched_actual = set(range(len(actual_rows)))
     matched_rows: list[dict[str, str]] = []
     mismatched_rows: list[dict[str, str]] = []
@@ -105,7 +115,12 @@ def compare_transactions(actual_rows: list[dict[str, str]], expected_rows: list[
     ambiguous_rows: list[dict[str, str]] = []
 
     for expected in expected_rows:
-        candidates = [index for index in unmatched_actual if candidate_matches(expected, actual_rows[index])]
+        effective_exchanges = allowed_exchanges or {expected["Exchange"]}
+        candidates = [
+            index
+            for index in unmatched_actual
+            if candidate_matches(expected, actual_rows[index], effective_exchanges)
+        ]
         if not candidates:
             missing_rows.append(expected)
             continue
@@ -159,12 +174,19 @@ def compare_transactions(actual_rows: list[dict[str, str]], expected_rows: list[
     }
 
 
-def compare_balances(cointracking_balance_rows: list[dict[str, str]], canonical_balance_rows: list[dict[str, str]], source: str) -> list[dict[str, str]]:
+def compare_balances(
+    cointracking_balance_rows: list[dict[str, str]],
+    canonical_balance_rows: list[dict[str, str]],
+    source: str,
+    *,
+    allowed_exchanges: set[str] | None = None,
+) -> list[dict[str, str]]:
     tolerance = Decimal("0.00000001")
+    effective_exchanges = allowed_exchanges or {source}
     actual = {
         row["Currency"]: decimal_or_zero(row["Amount"])
         for row in cointracking_balance_rows
-        if row.get("Exchange") in {source, "Coinbase Pro"} or source == "Coinbase" and row.get("Exchange") == "Coinbase"
+        if row.get("Exchange") in effective_exchanges
     }
     expected = {
         row["asset"]: decimal_or_zero(row["quantity"])
@@ -196,12 +218,14 @@ def reconcile_source(
     out_dir: Path,
     cointracking_balance_by_exchange: Path | None = None,
     canonical_balances: Path | None = None,
+    exchange_aliases: Sequence[str] | None = None,
 ) -> dict[str, object]:
     all_expected_events = read_csv_rows(canonical_events)
     expected_rows, _ = render_cointracking_rows(all_expected_events)
     exchange_filters = {row["Exchange"] for row in expected_rows}
+    exchange_filters.update(alias for alias in (exchange_aliases or []) if alias)
     actual_rows = [row for row in read_cointracking_rows(cointracking_ledger) if row["Exchange"] in exchange_filters]
-    transaction_results = compare_transactions(actual_rows, expected_rows)
+    transaction_results = compare_transactions(actual_rows, expected_rows, allowed_exchanges=exchange_filters)
 
     write_cointracking_rows(
         out_dir / "matched_rows.csv",
@@ -247,7 +271,12 @@ def reconcile_source(
 
     balance_rows: list[dict[str, str]] = []
     if cointracking_balance_by_exchange is not None and canonical_balances is not None:
-        balance_rows = compare_balances(read_csv_rows(cointracking_balance_by_exchange), read_csv_rows(canonical_balances), source)
+        balance_rows = compare_balances(
+            read_csv_rows(cointracking_balance_by_exchange),
+            read_csv_rows(canonical_balances),
+            source,
+            allowed_exchanges=exchange_filters,
+        )
         write_csv_rows(out_dir / "balance_deltas.csv", ["asset", "expected_amount", "cointracking_amount", "difference", "status"], balance_rows)
 
     summary = {
@@ -292,6 +321,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--out-dir", required=True, type=Path)
     parser.add_argument("--cointracking-balance-by-exchange", type=Path)
     parser.add_argument("--canonical-balances", type=Path)
+    parser.add_argument("--exchange-alias", action="append", default=[])
     return parser.parse_args(argv)
 
 
@@ -304,6 +334,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         out_dir=args.out_dir,
         cointracking_balance_by_exchange=args.cointracking_balance_by_exchange,
         canonical_balances=args.canonical_balances,
+        exchange_aliases=args.exchange_alias,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
