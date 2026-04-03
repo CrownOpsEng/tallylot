@@ -110,3 +110,35 @@ def test_assert_balances_use_case_rejects_output_overwriting_input_file(
         match="balance assertion output must not be inside balance snapshot input",
     ):
         AssertBalancesUseCase(evidence_repo, artifacts).execute(request)
+
+
+def test_assert_balances_use_case_rejects_derived_output_overwriting_input_file(
+    tmp_path: Path,
+) -> None:
+    snapshot_path = tmp_path / "reconciliation_issues.csv"
+    evidence_path = tmp_path / "balance_evidence.csv"
+    assertion_path = tmp_path / "balance_assertions.csv"
+    evidence_repo = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    snapshot_path.write_text(
+        "source,location_id,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,notes\n",
+        encoding="utf-8",
+    )
+    evidence_path.write_text(
+        "source,location_id,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,evidence_ref,notes\n",
+        encoding="utf-8",
+    )
+
+    request = BalanceAssertionRequest(
+        snapshot_input_ref=to_resource_ref(snapshot_path),
+        evidence_input_ref=to_resource_ref(evidence_path),
+        assertion_output_ref=to_resource_ref(assertion_path),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "balance assertion issue output must not be inside balance snapshot input"
+        ),
+    ):
+        AssertBalancesUseCase(evidence_repo, artifacts).execute(request)

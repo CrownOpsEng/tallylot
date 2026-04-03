@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from tallylot.application.reconciliation.contracts import (
     BalanceAssertionRequest,
     BalanceAssertionResponse,
@@ -45,17 +47,27 @@ class AssertBalancesUseCase:
         assertion_output_path = path_from_ref(request.assertion_output_ref)
         snapshot_path = path_from_ref(request.snapshot_input_ref)
         evidence_path = path_from_ref(request.evidence_input_ref)
-        ensure_output_not_within_input_tree(
-            snapshot_path,
-            assertion_output_path,
-            input_label="balance snapshot input",
-            output_label="balance assertion output",
+        issue_output_path = assertion_output_path.with_name("reconciliation_issues.csv")
+        summary_output_path = assertion_output_path.with_name(
+            "balance_assertion_summary.json"
         )
-        ensure_output_not_within_input_tree(
+        _ensure_output_paths_are_safe(
+            snapshot_path,
+            input_label="balance snapshot input",
+            output_paths={
+                "balance assertion output": assertion_output_path,
+                "balance assertion issue output": issue_output_path,
+                "balance assertion summary output": summary_output_path,
+            },
+        )
+        _ensure_output_paths_are_safe(
             evidence_path,
-            assertion_output_path,
             input_label="balance evidence input",
-            output_label="balance assertion output",
+            output_paths={
+                "balance assertion output": assertion_output_path,
+                "balance assertion issue output": issue_output_path,
+                "balance assertion summary output": summary_output_path,
+            },
         )
         snapshots = self._evidence.read_balance_snapshots(snapshot_path)
         evidence = self._evidence.read_balance_evidence(evidence_path)
@@ -67,11 +79,11 @@ class AssertBalancesUseCase:
             (assertion.to_row() for assertion in result.assertions),
         )
         self._evidence.write_issue_records(
-            assertion_output_path.with_name("reconciliation_issues.csv"),
+            issue_output_path,
             result.issues,
         )
         self._artifacts.write_json(
-            assertion_output_path.with_name("balance_assertion_summary.json"),
+            summary_output_path,
             {
                 "assertion_count": len(result.assertions),
                 "issue_count": len(result.issues),
@@ -81,4 +93,19 @@ class AssertBalancesUseCase:
             assertion_output_ref=request.assertion_output_ref,
             assertion_count=len(result.assertions),
             issue_count=len(result.issues),
+        )
+
+
+def _ensure_output_paths_are_safe(
+    input_path: Path,
+    *,
+    input_label: str,
+    output_paths: dict[str, Path],
+) -> None:
+    for output_label, output_path in output_paths.items():
+        ensure_output_not_within_input_tree(
+            input_path,
+            output_path,
+            input_label=input_label,
+            output_label=output_label,
         )

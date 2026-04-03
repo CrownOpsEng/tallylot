@@ -8,6 +8,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from tallylot.domain.checkpoints import BalanceSnapshot
+from tallylot.domain.checkpoints.balance_kinds import normalize_balance_kind
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.temporal import TemporalPrecision
@@ -53,8 +54,11 @@ class BalanceAssertion:
     def __post_init__(self) -> None:
         if not str(self.instrument_id):
             raise ValueError("balance assertion instrument_id must not be blank")
-        if not self.balance_kind:
-            raise ValueError("balance assertion balance_kind must not be blank")
+        object.__setattr__(
+            self,
+            "balance_kind",
+            normalize_balance_kind(self.balance_kind),
+        )
         object.__setattr__(
             self,
             "snapshot_as_of_at",

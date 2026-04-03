@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
+from tallylot.domain.checkpoints.balance_kinds import normalize_balance_kind
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
@@ -31,6 +32,11 @@ class BalanceEvidence:
     def __post_init__(self) -> None:
         if not str(self.instrument_id):
             raise ValueError("balance evidence instrument_id must not be blank")
+        object.__setattr__(
+            self,
+            "balance_kind",
+            normalize_balance_kind(self.balance_kind),
+        )
         object.__setattr__(
             self,
             "as_of_at",

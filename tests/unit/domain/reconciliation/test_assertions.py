@@ -224,3 +224,38 @@ def test_balance_assertion_requires_valid_temporal_pairs() -> None:
             status=BalanceAssertionStatus.MATCHED,
             snapshot_as_of_at=_AS_OF,
         )
+
+
+def test_assertion_and_balance_models_normalize_blank_balance_kinds() -> None:
+    snapshot = BalanceSnapshot(
+        source=SourceId("coinbase"),
+        location_id=LocationId("coinbase"),
+        instrument_id=InstrumentId("BTC"),
+        quantity=Decimal("1"),
+        as_of_at=_AS_OF,
+        as_of_precision=TemporalPrecision.TIMESTAMP,
+        balance_kind=" ",
+    )
+    evidence = BalanceEvidence(
+        source=SourceId("coinbase"),
+        location_id=LocationId("coinbase"),
+        instrument_id=InstrumentId("BTC"),
+        quantity=Decimal("1"),
+        as_of_at=_AS_OF,
+        as_of_precision=TemporalPrecision.TIMESTAMP,
+        balance_kind="",
+    )
+    assertion = BalanceAssertion(
+        source=SourceId("coinbase"),
+        location_id=LocationId("coinbase"),
+        instrument_id=InstrumentId("BTC"),
+        balance_kind=" locked ",
+        snapshot_quantity=Decimal("1"),
+        evidence_quantity=Decimal("1"),
+        quantity_difference=Decimal("0"),
+        status=BalanceAssertionStatus.MATCHED,
+    )
+
+    assert snapshot.balance_kind == "available"
+    assert evidence.balance_kind == "available"
+    assert assertion.balance_kind == "locked"
