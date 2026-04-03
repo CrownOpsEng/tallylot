@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+
+"""Normalize a raw source folder into canonical events, balances, and exceptions."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Sequence
+
+from pipeline_common import (
+    CANONICAL_BALANCE_HEADERS,
+    CANONICAL_EVENT_HEADERS,
+    EXCEPTION_HEADERS,
+    build_source_profile,
+    read_profile,
+    write_csv_rows,
+    write_json,
+)
+from render_cointracking import render_cointracking_rows
+from source_adapters import decisions_fingerprint, get_adapter, load_exception_decisions
+
+
+def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source", required=True)
+    parser.add_argument("--raw-dir", required=True, type=Path)
+    parser.add_argument("--out-dir", required=True, type=Path)
+    parser.add_argument("--profile-json", type=Path)
+    parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--exception-decisions", type=Path)
+    parser.add_argument("--force", action="store_true")
+    return parser.parse_args(argv)
+
+
+def normalize_source(
+    source: str,
+    raw_dir: Path,
+    out_dir: Path,
+    *,
+    profile_json: Path | None = None,
+    manifest: Path | None = None,
+    exception_decisions: Path | None = None,
+    force: bool = False,
+) -> dict[str, object]:
+    adapter = get_adapter(source)
+    if profile_json is not None and profile_json.exists():
+        profile_payload = read_profile(profile_json)
+        manifest_fingerprint = str(profile_payload["manifest_fingerprint"])
+        adapter_name = adapter.name
+    else:
+        profile = build_source_profile(
+            source=source,
+            raw_dir=raw_dir,
+            manifest_path=manifest,
+            adapter_name=adapter.name,
+            adapter_supported=adapter.supported,
+        )
+        manifest_fingerprint = profile.manifest_fingerprint
+        adapter_name = adapter.name
+
+    profile = build_source_profile(
+        source=source,
+        raw_dir=raw_dir,
+        manifest_path=manifest,
+        adapter_name=adapter.name,
+        adapter_supported=adapter.supported,
+    )
+    decisions = load_exception_decisions(exception_decisions, profile.manifest_fingerprint)
+    decisions_digest = decisions_fingerprint(decisions)
+
+    out_dir = out_dir.resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    summary_path = out_dir / "normalization_summary.json"
+    events_path = out_dir / "canonical_events.csv"
+    balances_path = out_dir / "canonical_balances.csv"
+    exceptions_path = out_dir / "exceptions.csv"
+    candidate_path = out_dir / "cointracking_candidate.csv"
+
+    if not force and summary_path.exists():
+        existing = read_profile(summary_path)
+        if (
+            existing.get("manifest_fingerprint") == manifest_fingerprint
+            and existing.get("adapter") == adapter_name
+            and existing.get("exception_decisions_fingerprint") == decisions_digest
+            and events_path.exists()
+            and balances_path.exists()
+            and exceptions_path.exists()
+            and candidate_path.exists()
+        ):
+            return {
+                "source": source,
+                "adapter": adapter_name,
+                "manifest_fingerprint": manifest_fingerprint,
+                "status": "cached",
+                "canonical_events": int(existing.get("canonical_events", 0)),
+                "exceptions": int(existing.get("exceptions", 0)),
+                "cointracking_rows": int(existing.get("cointracking_rows", 0)),
+                "summary_path": str(summary_path),
+            }
+
+    result = adapter.normalize(raw_dir.resolve(), profile, exception_decisions=decisions)
+
+    write_csv_rows(events_path, list(CANONICAL_EVENT_HEADERS), result.canonical_events)
+    write_csv_rows(balances_path, list(CANONICAL_BALANCE_HEADERS), result.canonical_balances)
+    write_csv_rows(exceptions_path, list(EXCEPTION_HEADERS), result.exceptions)
+    rendered_rows, skipped_rows = render_cointracking_rows(result.canonical_events)
+    from render_cointracking import RENDER_METADATA_HEADERS
+    from script_common import write_cointracking_rows
+
+    write_cointracking_rows(candidate_path, rendered_rows, extra_headers=RENDER_METADATA_HEADERS)
+
+    summary = {
+        "source": source,
+        "adapter": adapter.name,
+        "adapter_supported": profile.adapter_supported,
+        "manifest_fingerprint": profile.manifest_fingerprint,
+        "canonical_events": len(result.canonical_events),
+        "canonical_balances": len(result.canonical_balances),
+        "exceptions": len(result.exceptions),
+        "exception_decisions_fingerprint": decisions_digest,
+        "cointracking_rows": len(rendered_rows),
+        "skipped_non_mapped_rows": len(skipped_rows),
+        "status": (
+            "ready"
+            if profile.adapter_supported and not result.exceptions
+            else "needs_review" if profile.adapter_supported else "adapter_not_implemented"
+        ),
+        "paths": {
+            "canonical_events": str(events_path),
+            "canonical_balances": str(balances_path),
+            "exceptions": str(exceptions_path),
+            "cointracking_candidate": str(candidate_path),
+        },
+    }
+    write_json(summary_path, summary)
+    return summary
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = parse_args(argv)
+    summary = normalize_source(
+        args.source,
+        args.raw_dir,
+        args.out_dir,
+        profile_json=args.profile_json,
+        manifest=args.manifest,
+        exception_decisions=args.exception_decisions,
+        force=args.force,
+    )
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

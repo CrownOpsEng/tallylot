@@ -130,6 +130,78 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("raw export folder", result.stderr)
 
+    def test_coinbase_normalize_cli_builds_transaction_and_balance_outputs(self) -> None:
+        retail_csv = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / (
+            "retail-export.csv"
+        )
+        pro_statement_a = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / "2021-05 Coinbase Pro - Statement.csv"
+        pro_statement_b = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / "2022-11 Coinbase Pro - Statement.csv"
+        pro_fills = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / "2021-05 Coinbase Pro - Fills.csv"
+        statement_pdf = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / (
+            "coinbase_statement.pdf"
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tx_output = Path(tmpdir) / "coinbase_normalized.csv"
+            balance_output = Path(tmpdir) / "coinbase_balances.csv"
+
+            result = run_script(
+                "coinbase_normalize.py",
+                "--retail-csv",
+                str(retail_csv),
+                "--pro-statement",
+                str(pro_statement_a),
+                "--pro-statement",
+                str(pro_statement_b),
+                "--pro-fills",
+                str(pro_fills),
+                "--pdf",
+                str(statement_pdf),
+                "--tx-output",
+                str(tx_output),
+                "--balance-output",
+                str(balance_output),
+            )
+            summary = json.loads(result.stdout)
+            tx_rows = read_dict_rows(tx_output)
+            balance_rows = read_dict_rows(balance_output)
+
+        self.assertEqual(82, summary["normalized_transaction_rows"])
+        self.assertEqual(82, len(tx_rows))
+        self.assertGreaterEqual(summary["normalized_balance_rows"], 10)
+        self.assertEqual(summary["normalized_balance_rows"], len(balance_rows))
+
+    def test_pdf_balance_extract_cli_reads_supported_repo_pdfs(self) -> None:
+        coinbase_pdf = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw" / (
+            "coinbase_statement.pdf"
+        )
+        binance_pdf = REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw" / (
+            "binance.pdf"
+        )
+        shakepay_pdf = REPO_ROOT / "01_raw_exports" / "external" / "shakepay" / "raw" / "shakepay_Performance report_2025.pdf"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "balances.csv"
+            result = run_script(
+                "pdf_balance_extract.py",
+                "--source",
+                "auto",
+                "--pdf",
+                str(coinbase_pdf),
+                "--pdf",
+                str(binance_pdf),
+                "--pdf",
+                str(shakepay_pdf),
+                "--output",
+                str(output),
+            )
+            summary = json.loads(result.stdout)
+            rows = read_dict_rows(output)
+
+        self.assertEqual(3, len(summary["pdf_files"]))
+        self.assertGreaterEqual(summary["balance_rows"], 20)
+        self.assertEqual(summary["balance_rows"], len(rows))
+
     def test_binance_unwrap_cli_extracts_and_combines(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             source_dir = Path(tmpdir) / "source" / "raw"
@@ -174,6 +246,432 @@ class ScriptEndToEndTests(unittest.TestCase):
         self.assertEqual("2023-08-06 08:34:03", summary["earliest_timestamp"])
         self.assertFalse(archive_exists)
         self.assertTrue(combined_exists)
+
+    def test_profile_source_cli_profiles_coinbase_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "coinbase"
+            result = run_script(
+                "profile_source.py",
+                "--source",
+                "Coinbase",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            profile = read_json(out_dir / "profile.json")
+            inventory = read_dict_rows(out_dir / "profile_inventory.csv")
+
+        self.assertEqual("coinbase", summary["adapter"])
+        self.assertTrue(summary["adapter_supported"])
+        self.assertEqual(summary["files_profiled"], len(inventory))
+        self.assertIn("manifest_fingerprint", profile)
+
+    def test_normalize_source_cli_supports_wealthsimple_repo_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "wealthsimple" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "wealthsimple"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "WealthSimple",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            candidate = read_dict_rows(out_dir / "cointracking_candidate.csv")
+
+        self.assertEqual("ready", summary["status"])
+        self.assertEqual(26, summary["canonical_events"])
+        self.assertEqual(0, summary["exceptions"])
+        self.assertEqual(26, len(events))
+        self.assertEqual(26, len(candidate))
+
+    def test_normalize_source_cli_supports_shakepay_repo_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "shakepay" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "shakepay"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "Shakepay",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            balances = read_dict_rows(out_dir / "canonical_balances.csv")
+
+        self.assertEqual("ready", summary["status"])
+        self.assertEqual(1895, summary["canonical_events"])
+        self.assertEqual(2, summary["canonical_balances"])
+        self.assertEqual(0, summary["exceptions"])
+        self.assertEqual(1895, len(events))
+        self.assertEqual(2, len(balances))
+
+    def test_normalize_source_cli_supports_ledger_live_repo_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "ledger live" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "ledger_live"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "Ledger Live",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+
+        self.assertEqual("ready", summary["status"])
+        self.assertEqual(22, summary["canonical_events"])
+        self.assertEqual(0, summary["exceptions"])
+        self.assertEqual(22, len(events))
+
+    def test_normalize_source_cli_supports_crypto_com_repo_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "crypto.com" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "crypto_com"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "Crypto.com",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+
+        self.assertEqual("ready", summary["status"])
+        self.assertEqual(12, summary["canonical_events"])
+        self.assertEqual(0, summary["exceptions"])
+        self.assertEqual(12, len(events))
+
+    def test_normalize_source_cli_supports_near_repo_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "near" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "near"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "NEAR Wallet",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+
+        self.assertEqual("ready", summary["status"])
+        self.assertEqual(14, summary["canonical_events"])
+        self.assertEqual(0, summary["exceptions"])
+        self.assertEqual(14, len(events))
+
+    def test_normalize_source_cli_supports_bsc_explorer_repo_raw_dir(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "bsc_explorer"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "BSC MetaMask Wallet",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+
+        self.assertEqual("ready", summary["status"])
+        self.assertEqual("evm_explorer", summary["adapter"])
+        self.assertEqual(41, summary["canonical_events"])
+        self.assertEqual(0, summary["exceptions"])
+        self.assertEqual(41, len(events))
+
+    def test_normalize_source_cli_surfaces_polygon_review_rows(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "polygon_explorer"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "MetaMask - Polygon",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            exceptions = read_dict_rows(out_dir / "exceptions.csv")
+
+        self.assertEqual("needs_review", summary["status"])
+        self.assertEqual("evm_explorer", summary["adapter"])
+        self.assertEqual(20, summary["canonical_events"])
+        self.assertEqual(5, summary["exceptions"])
+        self.assertEqual(20, len(events))
+        self.assertEqual(5, len(exceptions))
+
+    def test_normalize_source_cli_surfaces_eth_gala_review_rows(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "metamask" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "eth_gala_explorer"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "ETH GalaGames Wallet",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            exceptions = read_dict_rows(out_dir / "exceptions.csv")
+
+        self.assertEqual("needs_review", summary["status"])
+        self.assertEqual("evm_explorer", summary["adapter"])
+        self.assertEqual(14, summary["canonical_events"])
+        self.assertEqual(3, summary["exceptions"])
+        self.assertEqual(14, len(events))
+        self.assertEqual(3, len(exceptions))
+
+    def test_normalize_source_cli_surfaces_gtrade_report_limits(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "gtrade" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "gtrade"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "GTrade 1CT",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            exceptions = read_dict_rows(out_dir / "exceptions.csv")
+
+        self.assertEqual("needs_review", summary["status"])
+        self.assertEqual("gtrade", summary["adapter"])
+        self.assertEqual(3, summary["canonical_events"])
+        self.assertEqual(3, summary["exceptions"])
+        self.assertEqual(3, len(events))
+        self.assertEqual(3, len(exceptions))
+
+    def test_normalize_source_cli_surfaces_small_binance_review_set(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "binance" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "binance"
+            result = run_script(
+                "normalize_source.py",
+                "--source",
+                "Binance",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            exceptions = read_dict_rows(out_dir / "exceptions.csv")
+
+        self.assertEqual("needs_review", summary["status"])
+        self.assertGreater(summary["canonical_events"], 26000)
+        self.assertEqual(24, summary["canonical_balances"])
+        self.assertEqual(1, summary["exceptions"])
+        self.assertEqual(1, len(exceptions))
+
+    def test_normalize_source_cli_caches_coinbase_outputs(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "coinbase"
+            first = run_script(
+                "normalize_source.py",
+                "--source",
+                "Coinbase",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            second = run_script(
+                "normalize_source.py",
+                "--source",
+                "Coinbase",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            first_summary = json.loads(first.stdout)
+            second_summary = json.loads(second.stdout)
+            events = read_dict_rows(out_dir / "canonical_events.csv")
+            candidate = read_dict_rows(out_dir / "cointracking_candidate.csv")
+
+        self.assertEqual("ready", first_summary["status"])
+        self.assertEqual(82, len(events))
+        self.assertEqual(82, len(candidate))
+        self.assertEqual("cached", second_summary["status"])
+
+    def test_reconcile_source_cli_flags_existing_coinbase_backing_exceptions(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"
+        ledger = REPO_ROOT / "02_working" / "normalized" / "coinbase" / "2026-03-24_coinbase_reconstructed_current_ledger.csv"
+        balances = REPO_ROOT / "02_working" / "verification" / "baseline_repair_round_02" / "CoinTracking - Balance by Exchange - 24.03.2026.csv"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "coinbase"
+            run_script(
+                "normalize_source.py",
+                "--source",
+                "Coinbase",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            result = run_script(
+                "reconcile_source.py",
+                "--source",
+                "Coinbase",
+                "--cointracking-ledger",
+                str(ledger),
+                "--canonical-events",
+                str(out_dir / "canonical_events.csv"),
+                "--canonical-balances",
+                str(out_dir / "canonical_balances.csv"),
+                "--cointracking-balance-by-exchange",
+                str(balances),
+                "--out-dir",
+                str(out_dir / "reconcile"),
+            )
+            summary = json.loads(result.stdout)
+
+        self.assertEqual("failed", summary["status"])
+        self.assertGreater(summary["extra_rows"], 0)
+
+    def test_stage_import_batch_cli_stages_passing_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            baseline = root / "baseline"
+            baseline.mkdir()
+            baseline_trade = baseline / "Trade Table.csv"
+            baseline_trade.write_text(
+                "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
+                "Trade,1.00000000,BTC,10.00000000,CAD,0.10000000,CAD,Coinbase,,,2023-08-05 08:34:04,tx-1\n",
+                encoding="utf-8",
+            )
+            candidate = root / "candidate.csv"
+            candidate.write_text(
+                "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
+                "Trade,1.00000000,BTC,10.00000000,CAD,0.10000000,CAD,Coinbase,,,2023-08-06 08:34:05,tx-2\n",
+                encoding="utf-8",
+            )
+
+            out_dir = root / "batch"
+            ready_dir = root / "ready"
+            result = run_script(
+                "stage_import_batch.py",
+                "--candidate",
+                str(candidate),
+                "--baseline-export-dir",
+                str(baseline),
+                "--out-dir",
+                str(out_dir),
+                "--import-ready-dir",
+                str(ready_dir),
+            )
+            summary = json.loads(result.stdout)
+            self.assertEqual("staged", summary["status"])
+            self.assertTrue((out_dir / "candidate.csv").exists())
+            self.assertTrue((ready_dir / "candidate.csv").exists())
+
+    def test_dry_run_pipeline_coinbase_profile_normalize_render_overlap_reconcile(self) -> None:
+        raw_dir = REPO_ROOT / "01_raw_exports" / "external" / "coinbase" / "raw"
+        baseline_dir = REPO_ROOT / "01_raw_exports" / "cointracking" / "2023-08-05_full_export"
+        ledger = REPO_ROOT / "02_working" / "normalized" / "coinbase" / "2026-03-24_coinbase_reconstructed_current_ledger.csv"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out_dir = Path(tmpdir) / "normalized" / "coinbase"
+            run_script(
+                "profile_source.py",
+                "--source",
+                "Coinbase",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            )
+            run_script(
+                "normalize_source.py",
+                "--source",
+                "Coinbase",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+                "--profile-json",
+                str(out_dir / "profile.json"),
+            )
+            run_script(
+                "render_cointracking.py",
+                "--canonical-events",
+                str(out_dir / "canonical_events.csv"),
+                "--output",
+                str(out_dir / "rendered_cointracking.csv"),
+                "--summary-output",
+                str(out_dir / "render_summary.json"),
+            )
+            overlap = run_script(
+                "overlap_check.py",
+                "--baseline-export-dir",
+                str(baseline_dir),
+                "--candidate",
+                str(out_dir / "rendered_cointracking.csv"),
+                "--out-dir",
+                str(out_dir / "overlap_check"),
+            )
+            reconcile = run_script(
+                "reconcile_source.py",
+                "--source",
+                "Coinbase",
+                "--cointracking-ledger",
+                str(ledger),
+                "--canonical-events",
+                str(out_dir / "canonical_events.csv"),
+                "--out-dir",
+                str(out_dir / "reconcile"),
+            )
+            overlap_summary = json.loads(overlap.stdout)
+            reconcile_summary = json.loads(reconcile.stdout)
+
+        self.assertEqual("review_required", overlap_summary["status"])
+        self.assertEqual("failed", reconcile_summary["status"])
 
     def test_round_scaffold_cli_creates_temp_repo_scaffold(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -231,6 +729,44 @@ class ScriptEndToEndTests(unittest.TestCase):
 
         self.assertEqual(1, result.returncode)
         self.assertIn("single path segment without traversal", result.stderr)
+
+    def test_coinbase_check_cli_flags_extra_cointracking_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ledger = Path(tmpdir) / "ledger.csv"
+            normalized = Path(tmpdir) / "normalized.csv"
+            out_dir = Path(tmpdir) / "out"
+            ledger.write_text(
+                (
+                    "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
+                    "Trade,0.00175640,BTC,25.00000000,CAD,1.49000000,CAD,Coinbase,,Bought 0.0017564 BTC for $25.00 CAD,2019-09-11 01:06:26,\n"
+                    "Deposit,25.00000000,CAD,,,0.00000000,,Coinbase,,,2019-09-11 01:06:26,\n"
+                ),
+                encoding="utf-8",
+            )
+            normalized.write_text(
+                (
+                    "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID,"
+                    "match_window_seconds,fee_tolerance,comment_mode,tx_id_mode,allowed_types,raw_source,raw_ref,notes\n"
+                    "Trade,0.00175640,BTC,25.00000000,CAD,1.46965254,CAD,Coinbase,,Bought 0.0017564 BTC for $25.00 CAD,2019-09-11 01:06:35,coinbase-retail-buy-1,20,0.03000000,exact,ignore,Trade,coinbase.csv,buy-1,\n"
+                ),
+                encoding="utf-8",
+            )
+
+            result = run_script(
+                "coinbase_check.py",
+                "--cointracking-ledger",
+                str(ledger),
+                "--normalized-transactions",
+                str(normalized),
+                "--out-dir",
+                str(out_dir),
+            )
+            summary = json.loads(result.stdout)
+            extra_rows = read_dict_rows(out_dir / "extra_rows.csv")
+
+        self.assertEqual("failed", summary["status"])
+        self.assertEqual(1, summary["extra_rows"])
+        self.assertEqual("Deposit", extra_rows[0]["Type"])
 
     def test_overlap_check_cli_writes_summary(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

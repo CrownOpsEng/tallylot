@@ -38,7 +38,7 @@ The project still follows the canonical cutoff:
 These items stay in view while imports proceed:
 
 - `SRC-003`: Coinbase import signoff requires confirming whether the Coinbase export already covers Coinbase Pro history.
-- `SRC-002`: Binance prep requires documenting the residual `0.00001148` `WBETH` position and treating daily staking position snapshots as evidence only.
+- `BAL-001`: Binance prep requires documenting the residual `0.00001148` `WBETH` position and treating daily staking position snapshots as evidence only.
 - `SRC-004`: Review Coinberry backups when the SSD enclosure is available. This is evidence follow-up, not an immediate import blocker.
 - `SRC-005`: Review Kucoin backups when available. This is evidence follow-up unless a missing ledger segment appears.
 

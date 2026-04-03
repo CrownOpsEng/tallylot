@@ -38,7 +38,7 @@ This repo is the evidence, staging, and verification workspace for that process.
 
 ### Working area
 
-- `02_working/normalized/` → cleaned source files, overlap-trimmed, not yet approved
+- `02_working/normalized/` → profiled raw sources, canonical outputs, exception sets, and rendered working candidates
 - `02_working/import_batches/` → reviewed import candidates for the next CoinTracking step
 - `02_working/verification/<round_id>/` → fresh CoinTracking exports captured after a repair or import round
 
@@ -235,16 +235,17 @@ AI tasks not allowed:
 
 Do:
 
-1. Trim overlap against the baseline when a source export starts too early.
-2. Normalize fields as needed for CoinTracking import.
-3. Run `06_scripts/overlap_check.py` against the CoinTracking-ready candidate file and hold the batch if overlap is flagged.
-4. Save the working candidate to `02_working/import_batches/<source>/`.
-5. Copy the approved file to `04_import_ready/`.
+1. Run `06_scripts/profile_source.py` to fingerprint the raw source and classify file families.
+2. Run `06_scripts/normalize_source.py` to produce canonical events, canonical balances, exceptions, and a rendered working candidate under `02_working/normalized/<source>/`.
+3. Review `exceptions.csv`; unresolved exceptions stay out of the import path unless they are explicitly accepted and persisted.
+4. Run `06_scripts/stage_import_batch.py` to enforce overlap screening before a candidate enters `02_working/import_batches/<source>/`.
+5. Copy the approved staged file to `04_import_ready/`.
 
 Gate:
 
 - import file reviewed
 - overlap screened
+- normalized candidate not confused with an approved import batch
 - source inventory row updated to ready-for-import
 
 ## Phase 6 — Controlled CoinTracking import

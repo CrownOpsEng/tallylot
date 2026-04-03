@@ -86,19 +86,37 @@ Default rule:
 2. Confirm the source export window begins strictly after `2023-08-05 08:34:04`.
 3. Pull the raw export into `01_raw_exports/external/<source>/raw/`.
 4. Run `source_manifest.py`.
-5. Prepare the working import file in `02_working/import_batches/<source>/`.
-6. Screen the approved CoinTracking-ready candidate before import:
+5. Profile the raw source into `02_working/normalized/<source>/`:
 
    ```bash
-   python3 06_scripts/overlap_check.py \
-     --baseline-export-dir 01_raw_exports/cointracking/2023-08-05_full_export \
-     --candidate 02_working/import_batches/<source>/<candidate_file>.csv \
-     --out-dir 02_working/import_batches/<source>/overlap_check
+   python3 06_scripts/profile_source.py \
+     --source "<Source Name>" \
+     --raw-dir 01_raw_exports/external/<source>/raw \
+     --out-dir 02_working/normalized/<source>
    ```
 
-   Hold the batch if `overlap_summary.json` does not return `status: "pass"`.
-7. Copy the approved import file to `04_import_ready/`.
-8. Seed the round:
+6. Normalize the source into canonical outputs and a rendered candidate:
+
+   ```bash
+   python3 06_scripts/normalize_source.py \
+     --source "<Source Name>" \
+     --raw-dir 01_raw_exports/external/<source>/raw \
+     --out-dir 02_working/normalized/<source> \
+     --profile-json 02_working/normalized/<source>/profile.json
+   ```
+
+7. Stage the candidate into `02_working/import_batches/<source>/` only after overlap screening passes:
+
+   ```bash
+   python3 06_scripts/stage_import_batch.py \
+     --candidate 02_working/normalized/<source>/cointracking_candidate.csv \
+     --baseline-export-dir 01_raw_exports/cointracking/2023-08-05_full_export \
+     --out-dir 02_working/import_batches/<source>
+   ```
+
+   Hold the batch if `stage_summary.json` reports `status: "blocked"`.
+8. Copy or stage the approved file to `04_import_ready/` only after review.
+9. Seed the round:
 
    ```bash
    python3 06_scripts/round_scaffold.py \
@@ -107,10 +125,10 @@ Default rule:
      --source <source>
    ```
 
-9. Import exactly one source into CoinTracking manually.
-10. Export only the default verification set, with `Missing Transactions` using strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`.
-11. Save the exports into `02_working/verification/<round_id>/`.
-12. Compare the fresh exports against the prior state:
+10. Import exactly one source into CoinTracking manually.
+11. Export only the default verification set, with `Missing Transactions` using strict settings: `100%` amount accuracy, only `100%` matches hidden, time accuracy `-24h | +48h`.
+12. Save the exports into `02_working/verification/<round_id>/`.
+13. Compare the fresh exports against the prior state:
 
    ```bash
    python3 06_scripts/verification_compare.py \
@@ -122,8 +140,9 @@ Default rule:
 Then:
 
 1. Ask AI to review the comparison artifacts, classify any new exceptions, and confirm the balance movements match the source.
-2. Update `03_analysis/issues/source_inventory.csv`, `03_analysis/issues/issue_log.csv`, and `05_outputs/logs/round_log.csv`.
-3. If the source touches CAD or fiat rails, review the CAD rows in `Current Balance` and `Balance by Exchange` before closing the round.
+2. If canonical source artifacts exist, run `06_scripts/reconcile_source.py` against the relevant CoinTracking ledger slice or reference ledger slice.
+3. Update `03_analysis/issues/source_inventory.csv`, `03_analysis/issues/issue_log.csv`, and `05_outputs/logs/round_log.csv`.
+4. If the source touches CAD or fiat rails, review the CAD rows in `Current Balance` and `Balance by Exchange` before closing the round.
 
 ## When to escalate to heavier reports
 

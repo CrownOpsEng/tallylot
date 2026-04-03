@@ -14,7 +14,9 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 - a documented baseline validation package
 - a populated issue log for known baseline exceptions
 - an active source inventory and structured round log
+- a universal source-intake pipeline for profiling, canonical normalization, CoinTracking rendering, and reconciliation
 - lightweight helper scripts for baseline checks, raw-source manifests, overlap screening, and verification comparison
+- repo-local AI skills under `07_skills/` for source intake, normalization exceptions, and round verification
 
 ## Start here
 
@@ -34,9 +36,12 @@ This repo is a bounded working package for repairing and extending a CoinTrackin
 1. validate and lock the baseline
 2. resolve or document baseline exceptions with evidence
 3. inventory post-cutoff sources
-4. import one source at a time into CoinTracking
-5. capture fresh verification exports after each round
-6. stop on unexplained drift and close out at `2025-12-31`
+4. profile one raw source at a time
+5. normalize into canonical events and balances
+6. stage and overlap-screen one CoinTracking candidate at a time
+7. import one source at a time into CoinTracking
+8. capture fresh verification exports after each round
+9. stop on unexplained drift and close out at `2025-12-31`
 
 ## Testing
 

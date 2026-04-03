@@ -32,6 +32,15 @@
 - CAD deposits and withdrawals recorded in the ledger net to zero; the user manually verified that this is an intentional general CAD tracking account inside CoinTracking rather than an omitted exchange-side fiat ledger leg.
 - The durable validation summary is in `00_docs/BASELINE_VALIDATION.md`.
 
+## Universal intake capability status
+
+- As of **2026-03-24**, deterministic universal normalization is ready for `coinbase`, `wealthsimple`, `binance`, `shakepay`, `ledger_live`, `crypto_com`, `near`, and the shared `evm_explorer` adapter on the current BSC and primary Ethereum transfer and token scopes.
+- The shared `ledger_live` adapter now covers both the legacy CoinTracking labels `ADA Ledger` and `Ledger Live`, so those sources no longer need separate wallet-specific prep logic.
+- The shared `evm_explorer` adapter now covers the legacy CoinTracking labels `BSC MetaMask Wallet` and `ETH MetaMask Wallet` without wallet-app-specific logic; the underlying chain and explorer evidence now drive the mapping.
+- The newly added Polygon token and internal-tx files closed the prior Exact Input gap, but `MetaMask - Polygon` still remains `needs_review`: the current raw set now reaches **2023-12-22 01:51:13** and includes five suspicious post-cutoff NFT airdrops that are intentionally held in `exceptions.csv` instead of being auto-imported as deposits.
+- `ETH GalaGames Wallet` now also remains `needs_review`: the current raw set reaches **2025-03-24 22:55:59** and includes three suspicious post-cutoff ERC-1155 NFT rows that are intentionally held in `exceptions.csv` instead of being auto-imported as deposits.
+- `GTrade 1CT` remains `needs_review`: the current **2023-05-06** report is sufficient for deterministic realized PnL rows, but three open-position rows still lack the explorer or fill-level evidence needed for a CoinTracking-safe reconstruction.
+
 ## Open exception set
 
 - `FIAT-001` is closed as a manually verified intentional general CAD tracking account unless conflicting data appears later
