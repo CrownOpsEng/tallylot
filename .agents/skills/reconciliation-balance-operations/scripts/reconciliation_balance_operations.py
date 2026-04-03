@@ -7,8 +7,21 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[4]
-SRC_ROOT = REPO_ROOT / "src"
+SCRIPT_PATH = Path(__file__).resolve()
+
+
+def _repo_root() -> Path:
+    for candidate in SCRIPT_PATH.parents:
+        if (candidate / "pyproject.toml").is_file() and (
+            candidate / "repo_support"
+        ).is_dir():
+            if str(candidate) not in sys.path:
+                sys.path.insert(0, str(candidate))
+            from repo_support.paths import repo_root
+
+            return repo_root()
+    raise RuntimeError("Could not locate repo root for reconciliation balance skill")
+
 
 if (
     sys.version_info < (3, 12)
@@ -29,6 +42,9 @@ if (
             *sys.argv[1:],
         ],
     )
+
+REPO_ROOT = _repo_root()
+SRC_ROOT = REPO_ROOT / "src"
 
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))

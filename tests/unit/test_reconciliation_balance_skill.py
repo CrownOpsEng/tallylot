@@ -13,6 +13,7 @@ from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
+from repo_support.paths import repo_root
 
 
 def test_reconciliation_balance_skill_runner_executes_runtime_workflows(
@@ -81,7 +82,7 @@ def test_reconciliation_balance_skill_runner_executes_runtime_workflows(
             "--analysis-root",
             str(analysis_root),
         ),
-        cwd=Path(__file__).resolve().parents[2],
+        cwd=repo_root(),
         capture_output=True,
         text=True,
         check=False,
