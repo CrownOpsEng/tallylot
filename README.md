@@ -72,6 +72,35 @@ uv run python -m tools.run_quality_gates
 uv run python -m tools.run_quality_gates --full-tests
 ```
 
+By default, `uv sync` creates `.venv` in the repo root. If you want to keep
+the development environment out of the workspace so editors do not index it as
+project content, point `uv` at a user-scoped virtualenv location first:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv sync --python 3.12
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
+```
+
+If you keep the environment outside the repo, export
+`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"` in the shells where you
+run `uv` commands so `uv run`, `uv sync`, and related tooling keep using the
+external environment instead of recreating `.venv`. For Bash, prefer a
+repo-scoped wrapper instead of a global export:
+
+```bash
+uv() {
+    if [[ "$PWD" == "$HOME/Code/tallylot" || "$PWD" == "$HOME/Code/tallylot/"* ]]; then
+        UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" command uv "$@"
+        return
+    fi
+
+    command uv "$@"
+}
+```
+
+After syncing an external environment, select its interpreter in your editor,
+for example `~/.venvs/tallylot-py312/bin/python` in VS Code.
+
 `markdownlint`, `ruff`, `mypy`, `pyright`, `pylint`, and `pytest` are all part
 of the expected quality baseline.
 
