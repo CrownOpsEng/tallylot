@@ -9,19 +9,29 @@ status: active
 
 This folder stores durable reconciliation and oracle comparison artifacts.
 
-## Balance Assertion Artifacts
+## Balance Reconciliation Artifacts
 
-Runtime balance assertion workflows write these artifacts here:
+Runtime balance reconciliation workflows write these artifacts here:
 
 - `balance_assertions.csv`
 - `reconciliation_issues.csv`
 - `balance_assertion_summary.json`
+- `balance_coverage.csv`
+- `balance_coverage_summary.json`
+- `balance_check_summary.csv`
+- `balance_reconciliation_summary.json`
+- `balance_reconciliation_blockers.csv`
 
 `balance_assertions.csv` records matched, drift, missing-side, and timestamp
 mismatch rows for one source's balances and source-backed balance evidence.
 `reconciliation_issues.csv` stores the corresponding explicit issues, including
 duplicate input rows, and `balance_assertion_summary.json` records the artifact
-counts for that run.
+counts for that run. `balance_coverage.csv` and
+`balance_coverage_summary.json` describe whether each source is comparable yet.
+`balance_check_summary.csv` records per-source check status and date ranges.
+`balance_reconciliation_summary.json` reports the latest clean and observed
+dates across the selected sources, and `balance_reconciliation_blockers.csv`
+breaks blockers down by source and reason.
 
 ## Oracle Baseline Package
 
