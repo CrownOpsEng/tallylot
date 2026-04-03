@@ -7,19 +7,21 @@ from pathlib import Path
 from typing import cast
 
 from tallylot.adapters.support import (
+    location_id_from_parts,
+    location_identifier_kind,
+    location_issue,
+    location_record,
     match_intake_by_path_or_header,
     matching_file_paths,
     no_intake_route,
-    wallet_identifier_kind,
-    wallet_issue,
-    wallet_record,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
-from tallylot.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
+from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
@@ -30,7 +32,7 @@ class EvmWalletAdapter:
         adapter_id=AdapterId("evm_wallet"),
         display_name="EVM Wallet",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}),
+        capabilities=frozenset({AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}),
         description="Extracts wallet identifiers from EVM wallet state exports.",
     )
 
@@ -62,14 +64,14 @@ class EvmWalletAdapter:
         del profile
         return {"status": "passed", "issue_count": 0, "rows_with_dates": 0, "mode_counts": {}}, ()
 
-    def extract_wallet_inventory(
+    def extract_location_inventory(
         self,
         source: str,
         raw_dir: Path,
         profile: SourceProfile,
-    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+    ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
-        evidence: list[WalletInventoryRecord] = []
+        evidence: list[LocationInventoryRecord] = []
         for path in matching_file_paths(raw_dir, pattern="*.json"):
             payload = json.loads(path.read_text(encoding="utf-8"))
             evidence.extend(_account_records(source, path.name, payload))
@@ -77,8 +79,8 @@ class EvmWalletAdapter:
         if evidence:
             return tuple(evidence), ()
         return (), (
-            wallet_issue(
-                WalletIssueSpec(
+            location_issue(
+                LocationIssueSpec(
                     source=source,
                     adapter_id=str(self.manifest.adapter_id),
                     issue_kind="missing_identifier",
@@ -88,14 +90,14 @@ class EvmWalletAdapter:
         )
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
-        wallet_inventory, issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
+        location_inventory, issues = self.extract_location_inventory(str(profile.source), raw_dir, profile)
         return translation_batch_from_drafts(
             issues=issues,
-            wallet_inventory=wallet_inventory,
+            location_inventory=location_inventory,
         )
 
 
-def _account_records(source: str, evidence_path: str, payload: object) -> list[WalletInventoryRecord]:
+def _account_records(source: str, evidence_path: str, payload: object) -> list[LocationInventoryRecord]:
     state_root = _wallet_state_root(payload)
     if state_root is None:
         return []
@@ -106,7 +108,7 @@ def _account_records(source: str, evidence_path: str, payload: object) -> list[W
     accounts_container = internal_accounts_dict.get("accounts")
     if not isinstance(accounts_container, dict):
         return []
-    records: list[WalletInventoryRecord] = []
+    records: list[LocationInventoryRecord] = []
     accounts_dict = cast(dict[str, object], accounts_container)
     for account_payload in accounts_dict.values():
         if not isinstance(account_payload, dict):
@@ -119,14 +121,16 @@ def _account_records(source: str, evidence_path: str, payload: object) -> list[W
         keyring_map = _object_map(metadata_map.get("keyring"))
         keyring_type = str(keyring_map.get("type", "")).strip()
         records.append(
-            wallet_record(
-                WalletRecordSpec(
+            location_record(
+                LocationRecordSpec(
                     source=source,
+                    location_id=location_id_from_parts(source, "address", address),
+                    location_kind=LocationKind.ADDRESS,
+                    location_label=str(metadata_map.get("name", "")).strip() or address,
                     identifier_kind="evm_address",
                     identifier_value=address,
                     network_scope="ethereum",
                     controller=f"EVM wallet {keyring_type}".strip(),
-                    account_label=str(metadata_map.get("name", "")).strip(),
                     evidence_kind="wallet_state",
                     evidence_path=evidence_path,
                     confidence="high",
@@ -136,32 +140,34 @@ def _account_records(source: str, evidence_path: str, payload: object) -> list[W
     return records
 
 
-def _identity_records(source: str, evidence_path: str, payload: object) -> list[WalletInventoryRecord]:
+def _identity_records(source: str, evidence_path: str, payload: object) -> list[LocationInventoryRecord]:
     state_root = _wallet_state_root(payload)
     if state_root is None:
         return []
     identities = state_root.get("identities")
     if not isinstance(identities, dict):
         return []
-    records: list[WalletInventoryRecord] = []
+    records: list[LocationInventoryRecord] = []
     identities_dict = cast(dict[str, object], identities)
     for identifier, metadata in identities_dict.items():
         identifier_value = str(identifier).strip()
         if not identifier_value:
             continue
-        identifier_kind = wallet_identifier_kind(identifier_value)
+        identifier_kind = location_identifier_kind(identifier_value)
         if identifier_kind == "unknown":
             continue
         metadata_map = _object_map(metadata)
         records.append(
-            wallet_record(
-                WalletRecordSpec(
+            location_record(
+                LocationRecordSpec(
                     source=source,
+                    location_id=location_id_from_parts(source, identifier_kind, identifier_value),
+                    location_kind=LocationKind.ADDRESS,
+                    location_label=str(metadata_map.get("name", "")).strip() or identifier_value,
                     identifier_kind=identifier_kind,
                     identifier_value=identifier_value,
                     network_scope=_network_scope(identifier_kind),
                     controller="EVM wallet state",
-                    account_label=str(metadata_map.get("name", "")).strip(),
                     evidence_kind="wallet_state",
                     evidence_path=evidence_path,
                     confidence="medium",

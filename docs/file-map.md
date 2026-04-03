@@ -18,7 +18,7 @@ command, artifact, or agent route.
 | follow the short operator workflow | `docs/operations/operations-quickstart.md` |
 | follow the detailed operator workflow | `docs/operations/mop.md` |
 | review baseline artifact expectations | `docs/operations/baseline-validation.md` |
-| review wallet inventory outputs | `docs/operations/wallet-inventory.md` |
+| review location inventory outputs | `docs/operations/wallet-inventory.md` |
 | review timezone provenance outputs | `docs/operations/timezone-validation.md` |
 | check export and verification hygiene | `docs/operations/export-checklist.md` |
 | check commit format and checkpoint rules | `docs/architecture/commit-standards.md` |
@@ -31,10 +31,10 @@ command, artifact, or agent route.
 | ---- | ------- |
 | `analysis/issues/issue_log.csv` | Master issue register |
 | `analysis/issues/source_inventory.csv` | Source queue and status tracker |
-| `analysis/inventory/wallet_inventory.csv` | Normalized wallet inventory |
-| `analysis/inventory/wallet_inventory_evidence.csv` | Evidence rows for wallet identifiers |
-| `analysis/inventory/wallet_inventory_issues.csv` | Deterministic wallet review issues |
-| `analysis/inventory/wallet_inventory_summary.json` | Wallet inventory counts |
+| `analysis/inventory/location_inventory.csv` | Normalized location inventory |
+| `analysis/inventory/location_inventory_evidence.csv` | Evidence rows for wallet identifiers |
+| `analysis/inventory/location_inventory_issues.csv` | Deterministic wallet review issues |
+| `analysis/inventory/location_inventory_summary.json` | Location inventory counts |
 | `analysis/reconciliation/` | Baseline oracle validation outputs |
 | `outputs/logs/round_log.csv` | Round log seeded by the dev-only oracle `round scaffold` workflow |
 | `working/normalized/<source>/` | Profile, normalization, timezone, and candidate artifacts |
@@ -53,7 +53,7 @@ command, artifact, or agent route.
 | `source profile` | Build file inventory plus timezone provenance |
 | `source normalize` | Produce fact, balance, and evidence artifacts |
 | `output render file` | Render an output-adapter artifact from facts |
-| `checkpoint rebuild-wallet-inventory` | Aggregate wallet inventory artifacts |
+| `checkpoint rebuild-location-inventory` | Aggregate location inventory artifacts |
 | `checkpoint extract-pdf-balances` | Extract balances from supported PDF statements |
 | `python -m tools.oracles.cli batch screen` | Validate and screen a candidate without copying it |
 | `python -m tools.oracles.cli batch stage` | Screen and copy a passing candidate |
@@ -75,7 +75,7 @@ command, artifact, or agent route.
 | ---- | ------- |
 | `.claude/commands/source-intake.md` | Intake, profile, normalize, checkpoint, and render a source |
 | `.claude/commands/round-verification.md` | Dev-only oracle verification compare and round-close workflow |
-| `.claude/commands/wallet-inventory.md` | Checkpoint wallet inventory rebuild workflow |
+| `.claude/commands/wallet-inventory.md` | Checkpoint location inventory rebuild workflow |
 | `.claude/commands/normalization-exceptions.md` | Review normalization exceptions and reviews |
 | `.claude/commands/source-diff.md` | Dev-only oracle candidate-versus-reference diff workflow |
 | `.claude/commands/reconciliation-tax-build.md` | Architecture and implementation route for reconciliation, checkpointing, accounting, and tax |

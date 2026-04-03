@@ -22,7 +22,7 @@ Use this route before closing any non-trivial coding task.
    - fixed edge cases
 5. Run the appropriate verification path:
    - targeted tests while iterating
-   - `uv run python -m tools.run_quality_gates --full-tests` before closing
+   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests` before closing
      substantial work
 6. If architecture, schema, or sequencing changed, update:
    - `ROADMAP.md`

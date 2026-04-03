@@ -13,7 +13,7 @@ from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository, FilesystemFactRepository
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
@@ -124,12 +124,12 @@ class MatchingSourceAdapter:
         del profile
         return {}, ()
 
-    def extract_wallet_inventory(
+    def extract_location_inventory(
         self,
         source: str,
         raw_dir: Path,
         profile: SourceProfile,
-    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+    ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del source, raw_dir, profile
         return (), ()
 

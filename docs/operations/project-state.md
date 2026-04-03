@@ -25,7 +25,7 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - source profiling with timezone provenance
 - source normalization with explicit fact artifacts, balance evidence, and
   archive member provenance
-- checkpoint wallet inventory rebuild with evidence, issues, and summary
+- checkpoint location inventory rebuild with evidence, issues, and summary
   artifacts
 - checkpoint PDF balance extraction for supported statement families
 - dev-only oracle baseline validation with the documented artifact package

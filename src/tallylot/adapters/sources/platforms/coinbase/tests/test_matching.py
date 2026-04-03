@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
 from tallylot.adapters.sources.platforms.coinbase.matching import RETAIL_HEADER
 from tallylot.adapters.sources.platforms.coinbase.timestamps import parse_retail_timestamp
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.application.profiling import BuildProfileUseCase
-from tallylot.domain.transactions import ProjectionType
+from tallylot.domain.transactions import LegKind, ProjectionHint
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.source_adapters import SourceAdapter
@@ -46,9 +48,21 @@ def test_coinbase_adapter_uses_retail_family_without_filename_dependency() -> No
 
     profile, adapter = _profile_and_adapter("Future Exchange", raw_dir)
     result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "coinbase"
-    assert len(result.facts) == 1
-    assert result.facts[0].raw_file == "retail-export.csv"
-    assert result.facts[0].projection_type == ProjectionType.TRADE
+    assert len(facts) == 1
+    assert facts[0].raw_file == "retail-export.csv"
+    assert facts[0].projection_hint == ProjectionHint.TRADE
+    primary_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.PRIMARY)
+    charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
+    assert primary_legs[0].leg_id == "primary_in"
+    assert primary_legs[0].quantity == Decimal("0.01")
+    assert str(primary_legs[0].instrument_id) == "symbol:BTC@coinbase"
+    assert primary_legs[1].leg_id == "primary_out"
+    assert primary_legs[1].quantity == Decimal("-600")
+    assert str(primary_legs[1].instrument_id) == "symbol:CAD@coinbase"
+    assert charge_legs[0].leg_id == "fee"
+    assert charge_legs[0].quantity == Decimal("-10")
+    assert str(charge_legs[0].instrument_id) == "symbol:CAD@coinbase"
     assert result.issues == ()

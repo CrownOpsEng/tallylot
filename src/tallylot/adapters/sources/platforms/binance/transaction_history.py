@@ -7,14 +7,18 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import IssueSpec, issue_record
+from tallylot.adapters.support import IssueSpec, issue_record, location_id_from_parts
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -82,20 +86,27 @@ def normalize_transaction_rows(
                     activity_id=f"binance:{path.name}:row:{index}",
                     source=str(profile.source),
                     adapter_id="binance",
-                    account=account,
-                    wallet=account,
+                    location_id=location_id_from_parts(str(profile.source), account),
                     timestamp=parsed_time,
                     classification=classification(
                         economic_kind=EconomicKind.STAKING_REWARD,
-                        projection_type=ProjectionType.STAKING,
-                        journal_intent=JournalIntent.INCOME_RECOGNITION,
-                        tax_treatment_code=TaxTreatmentCode.STAKING_INCOME,
+                        projection_hint=ProjectionHint.STAKING,
+                        accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+                        tax_treatment_hint=TaxTreatmentHint.STAKING_INCOME,
                     ),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     description=operation,
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
                     provider_operation_key=operation,
-                    legs=(economic_leg(direction="in", asset=coin, amount=change),),
+                    legs=(
+                        economic_leg(
+                            leg_id="primary_in",
+                            kind=LegKind.PRIMARY,
+                            quantity=change,
+                            instrument=symbol_claim(coin, venue="binance"),
+                        ),
+                    ),
                 )
             )
             continue
@@ -113,29 +124,31 @@ def normalize_transaction_rows(
                     activity_id=f"binance:{path.name}:small_assets:{(neg.get('Coin') or '').strip().upper()}",
                     source=str(profile.source),
                     adapter_id="binance",
-                    account=account,
-                    wallet=account,
+                    location_id=location_id_from_parts(str(profile.source), account),
                     timestamp=parsed_time,
                     classification=classification(
                         economic_kind=EconomicKind.ASSET_CONVERSION,
-                        projection_type=ProjectionType.TRADE,
-                        journal_intent=JournalIntent.ASSET_EXCHANGE,
-                        tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                        projection_hint=ProjectionHint.TRADE,
+                        accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                        tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
                     ),
+                    leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
                     description=f"Binance dust conversion {(neg.get('Remark') or '').strip()}",
                     raw_file=path.name,
                     raw_row_ref=f"row:{neg_index}",
                     provider_operation_key=operation,
                     legs=(
                         economic_leg(
-                            direction="in",
-                            asset=(pos.get("Coin") or "").strip().upper(),
-                            amount=pos_change,
+                            leg_id="primary_in",
+                            kind=LegKind.PRIMARY,
+                            quantity=pos_change,
+                            instrument=symbol_claim((pos.get("Coin") or "").strip().upper(), venue="binance"),
                         ),
                         economic_leg(
-                            direction="out",
-                            asset=(neg.get("Coin") or "").strip().upper(),
-                            amount=abs(neg_change),
+                            leg_id="primary_out",
+                            kind=LegKind.PRIMARY,
+                            quantity=-abs(neg_change),
+                            instrument=symbol_claim((neg.get("Coin") or "").strip().upper(), venue="binance"),
                         ),
                     ),
                 )
@@ -175,4 +188,4 @@ def _should_ignore_historical_operation(
     cutoff_value = profile.normalization_hints.get("project_baseline_cutoff_timestamp")
     if not isinstance(cutoff_value, str) or operation not in HISTORICAL_ONLY_IGNORED_OPERATIONS:
         return False
-    return parsed_time <= parse_timestamp(cutoff_value).replace(tzinfo=None)
+    return parsed_time <= parse_timestamp(cutoff_value)

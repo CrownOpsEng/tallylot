@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from tallylot.domain.transactions import TransactionFact
+from tallylot.domain.transactions import FactLegPolicy, TransactionFact
 from tallylot.ports.adapter_contracts import AdapterManifest
 
 
@@ -17,8 +17,15 @@ class RenderedArtifact:
     metadata: dict[str, str]
 
 
+@dataclass(frozen=True)
+class OutputRenderPolicy:
+    shape_policy: FactLegPolicy
+    requires_projection_hint: bool
+
+
 class OutputAdapter(Protocol):
     manifest: AdapterManifest
+    render_policy: OutputRenderPolicy
 
     def render(
         self,

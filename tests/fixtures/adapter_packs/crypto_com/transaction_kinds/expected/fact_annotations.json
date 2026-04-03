@@ -1,0 +1,20 @@
+[
+  {
+    "adapter_metadata": [],
+    "fact_id": "crypto_com:records-a.csv:row:2",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "adapter_metadata": [],
+    "fact_id": "crypto_com:records-b.csv:row:2",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "adapter_metadata": [],
+    "fact_id": "crypto_com:records-b.csv:row:3",
+    "provenance_refs": [],
+    "review_markers": []
+  }
+]

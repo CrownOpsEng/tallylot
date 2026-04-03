@@ -3,32 +3,33 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+
+from tallylot.domain.types import ResourceRef
 
 
 @dataclass(frozen=True)
-class WalletInventoryRequest:
-    normalized_root: Path
-    output_path: Path
+class LocationInventoryRequest:
+    normalized_dataset_ref: ResourceRef
+    inventory_output_ref: ResourceRef
 
 
 @dataclass(frozen=True)
-class WalletInventoryResponse:
-    output_path: Path
-    wallet_count: int
+class LocationInventoryResponse:
+    inventory_output_ref: ResourceRef
+    location_count: int
     evidence_count: int
     issue_count: int
 
 
 @dataclass(frozen=True)
 class PdfBalanceExtractRequest:
-    pdf_path: Path
-    output_path: Path
+    pdf_artifact_ref: ResourceRef
+    output_ref: ResourceRef
     statement_kind: str | None = None
 
 
 @dataclass(frozen=True)
 class PdfBalanceExtractResponse:
-    output_path: Path
+    output_ref: ResourceRef
     row_count: int
     statement_kind: str

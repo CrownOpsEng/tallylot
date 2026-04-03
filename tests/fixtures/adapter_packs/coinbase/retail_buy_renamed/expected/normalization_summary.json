@@ -6,10 +6,11 @@
   "facts_outside_normalization_window": 0,
   "issue_count": 0,
   "issues_outside_normalization_window": 0,
+  "location_count": 0,
   "normalization_window_end": "",
   "normalization_window_start": "",
   "review_count": 0,
   "review_summary": [],
-  "source": "Future Exchange",
-  "wallet_count": 0
+  "reviews_outside_normalization_window": 0,
+  "source": "Future Exchange"
 }

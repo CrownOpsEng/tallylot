@@ -11,7 +11,7 @@ from tallylot.adapters.sources.platforms.binance.field_parsing import (
 from tallylot.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
 from tallylot.adapters.sources.platforms.binance.transaction_history import normalize_transaction_rows
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, ProjectionType
+from tallylot.domain.transactions import EconomicKind, ProjectionHint
 from tests.support.services import build_source_profile
 
 
@@ -33,9 +33,13 @@ def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambigu
 
     assert len(events) == 1
     assert events[0].economic_kind == EconomicKind.ASSET_CONVERSION
-    assert events[0].projection_type == ProjectionType.TRADE
-    assert str(events[0].asset_in) == "BNB"
-    assert str(events[0].asset_out) == "ADA"
+    assert events[0].projection_hint == ProjectionHint.TRADE
+    assert events[0].legs[0].leg_id == "primary_in"
+    assert events[0].legs[0].quantity == Decimal("0.1")
+    assert str(events[0].legs[0].instrument_id) == "symbol:BNB@binance"
+    assert events[0].legs[1].leg_id == "primary_out"
+    assert events[0].legs[1].quantity == Decimal("-10")
+    assert str(events[0].legs[1].instrument_id) == "symbol:ADA@binance"
     assert len(issues) == 1
     assert issues[0].kind == "ambiguous_group"
 
@@ -57,8 +61,10 @@ def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewar
 
     assert len(events) == 1
     assert events[0].economic_kind == EconomicKind.STAKING_REWARD
-    assert events[0].projection_type == ProjectionType.STAKING
-    assert str(events[0].asset_in) == "ETH"
+    assert events[0].projection_hint == ProjectionHint.STAKING
+    assert events[0].legs[0].leg_id == "primary_in"
+    assert events[0].legs[0].quantity == Decimal("0.005")
+    assert str(events[0].legs[0].instrument_id) == "symbol:ETH@binance"
     assert not issues
 
 

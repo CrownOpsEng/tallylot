@@ -1,21 +1,21 @@
 """Checkpoint capability."""
 
 from .contracts import (
+    LocationInventoryRequest,
+    LocationInventoryResponse,
     PdfBalanceExtractRequest,
     PdfBalanceExtractResponse,
-    WalletInventoryRequest,
-    WalletInventoryResponse,
 )
 from .extract_pdf_balances import ExtractPdfBalancesUseCase
 from .pdf_balance_schema import BALANCE_HEADER
-from .rebuild_wallet_inventory import RebuildWalletInventoryUseCase
+from .rebuild_location_inventory import RebuildLocationInventoryUseCase
 
 __all__ = [
     "BALANCE_HEADER",
     "ExtractPdfBalancesUseCase",
+    "LocationInventoryRequest",
+    "LocationInventoryResponse",
     "PdfBalanceExtractRequest",
     "PdfBalanceExtractResponse",
-    "RebuildWalletInventoryUseCase",
-    "WalletInventoryRequest",
-    "WalletInventoryResponse",
+    "RebuildLocationInventoryUseCase",
 ]

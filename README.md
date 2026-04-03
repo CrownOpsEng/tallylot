@@ -45,47 +45,40 @@ Resolution order:
 Initialize a workspace with:
 
 ```bash
-uv run tallylot workspace init
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot workspace init
 ```
 
 ## Commands
 
 ```bash
-uv run tallylot workspace init
-uv run tallylot source manifest --source-dir <path> --output <path>
-uv run tallylot source intake plan --incoming-dir <path> --report-dir <path>
-uv run tallylot source intake apply --incoming-dir <path> --report-dir <path>
-uv run tallylot source profile --source <name> --raw-dir <path> --output-dir <path>
-uv run tallylot source normalize --source <name> --raw-dir <path> --output-dir <path>
-uv run tallylot checkpoint rebuild-wallet-inventory --normalized-root <path> --output <path>
-uv run tallylot checkpoint extract-pdf-balances --pdf <path> --output <path> --statement-kind <kind>
-uv run tallylot output render file --output-adapter cointracking_csv --facts <path> --output <path>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot workspace init
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source manifest --source-dir <path> --output <path>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake plan --incoming-dir <path> --report-dir <path>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake apply --incoming-dir <path> --report-dir <path>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source profile --source <name> --raw-dir <path> --output-dir <path>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize --source <name> --raw-dir <path> --output-dir <path>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint rebuild-location-inventory --normalized-root <path> --output <path>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint extract-pdf-balances --pdf <path> --output <path> --statement-kind <kind>
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot output render file --output-adapter cointracking_csv --facts <path> --output <path>
 ```
 
 ## Development
 
 ```bash
-uv sync --python 3.12
-uv run python -m tools.install_git_hooks
-uv run pre-commit run markdownlint --all-files
-uv run python -m tools.run_quality_gates
-uv run python -m tools.run_quality_gates --full-tests
-```
-
-By default, `uv sync` creates `.venv` in the repo root. If you want to keep
-the development environment out of the workspace so editors do not index it as
-project content, point `uv` at a user-scoped virtualenv location first:
-
-```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv sync --python 3.12
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
 
-If you keep the environment outside the repo, export
-`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"` in the shells where you
-run `uv` commands so `uv run`, `uv sync`, and related tooling keep using the
-external environment instead of recreating `.venv`. For Bash, prefer a
-repo-scoped wrapper instead of a global export:
+This repo intentionally uses the external environment at
+`$HOME/.venvs/tallylot-py312`. The repo-root `.venv` file is a sentinel, not a
+virtualenv directory, so direct repo command examples should keep the explicit
+`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"` prefix unless you set up
+the Bash wrapper below.
+
+For Bash, prefer a repo-scoped wrapper instead of a global export:
 
 ```bash
 uv() {
@@ -105,7 +98,8 @@ for example `~/.venvs/tallylot-py312/bin/python` in VS Code.
 of the expected quality baseline.
 
 Commit-time `pytest` hooks intentionally run only `unit and not slow` without
-coverage so local commits stay responsive. Use the full `uv run pytest` command
+coverage so local commits stay responsive. Use the full
+`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest` command
 for complete verification.
 
 The installed `pre-commit` wrapper runs Ruff autofix and formatting on safe
@@ -113,23 +107,24 @@ staged Python files before the rest of the hook suite, then stages those
 formatter edits automatically. Partially staged Python files are left alone.
 
 The parallel quality-gate runner is the preferred explicit verification path.
-Do not also run `uv run pre-commit run --all-files` unless you specifically
-need to validate the hook wiring itself.
+Do not also run
+`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files`
+unless you specifically need to validate the hook wiring itself.
 
 Benchmark test segments with:
 
 ```bash
-uv run python -m tools.benchmark_tests
-uv run python -m tools.benchmark_tests --parallel
-uv run python -m tools.scaffold_adapter source platforms/example_exchange "Example Exchange"
-uv run python -m tools.refresh_adapter_goldens --pack structured_csv/basic
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests --parallel
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter source platforms/example_exchange "Example Exchange"
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.refresh_adapter_goldens --pack structured_csv/basic
 ```
 
 Run local quality gates in parallel with:
 
 ```bash
-uv run python -m tools.run_quality_gates
-uv run python -m tools.run_quality_gates --full-tests
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
 
 ## Docs

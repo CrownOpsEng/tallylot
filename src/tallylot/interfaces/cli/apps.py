@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import typer
 
-app = typer.Typer(help="Crypto reconciliation CLI.")
+app = typer.Typer(help="Portfolio normalization and reconciliation CLI.")
 workspace_app = typer.Typer(help="Workspace operations.")
 source_app = typer.Typer(help="Source operations.")
 source_intake_app = typer.Typer(help="Source intake commands.")

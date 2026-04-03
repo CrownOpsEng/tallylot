@@ -2,16 +2,28 @@
 
 from __future__ import annotations
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     ActivityClassification,
     EconomicActivityDraft,
     EconomicLegDraft,
+    FactLegPolicy,
+    LegKind,
+    LegShapeLimit,
     classification,
     economic_leg,
-    fee_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import NormalizationReviewRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -29,25 +41,59 @@ def translate_row(
     validator: StructuredCsvRowValidator,
 ) -> tuple[EconomicActivityDraft, tuple[NormalizationReviewRecord, ...]]:
     amount_out, amount_out_review = validator.normalize_outbound_amount(index, "amount_out", row["amount_out"])
-    fee_amount, fee_amount_review = validator.normalize_outbound_amount(index, "fee_amount", row["fee_amount"])
-    reviews = tuple(review for review in (amount_out_review, fee_amount_review) if review is not None)
+    charge_amount, charge_amount_review = validator.normalize_outbound_amount(
+        index,
+        "charge_amount",
+        row["charge_amount"],
+    )
+    reviews = tuple(review for review in (amount_out_review, charge_amount_review) if review is not None)
     account = row["account"].strip()
     wallet = row["wallet"].strip()
     legs: list[EconomicLegDraft] = []
     if row["asset_in"] and (amount_in := parse_decimal(row["amount_in"])) is not None:
-        legs.append(economic_leg(direction="in", asset=row["asset_in"], amount=amount_in))
+        legs.append(
+            economic_leg(
+                leg_id="primary_in",
+                kind=LegKind.PRIMARY,
+                quantity=amount_in,
+                instrument=symbol_claim(row["asset_in"]),
+            )
+        )
     if row["asset_out"] and amount_out is not None:
-        legs.append(economic_leg(direction="out", asset=row["asset_out"], amount=amount_out))
-    fee_legs = (
-        (fee_leg(asset=row["fee_asset"], amount=fee_amount),) if row["fee_asset"] and fee_amount is not None else ()
-    )
+        legs.append(
+            economic_leg(
+                leg_id="primary_out",
+                kind=LegKind.PRIMARY,
+                quantity=-amount_out,
+                instrument=symbol_claim(row["asset_out"]),
+            )
+        )
+    if row["charge_asset"] and charge_amount is not None:
+        legs.append(
+            economic_leg(
+                leg_id="charge",
+                kind=LegKind.CHARGE,
+                quantity=-charge_amount,
+                instrument=symbol_claim(row["charge_asset"]),
+                attributed_to_leg_id=_side_value(row["charge_side"]),
+            )
+        )
+    if row["rebate_asset"] and (rebate_amount := parse_decimal(row["rebate_amount"])) is not None:
+        legs.append(
+            economic_leg(
+                leg_id="rebate",
+                kind=LegKind.REBATE,
+                quantity=rebate_amount,
+                instrument=symbol_claim(row["rebate_asset"]),
+                attributed_to_leg_id=_side_value(row["rebate_side"]),
+            )
+        )
     category = row["category"]
     return EconomicActivityDraft(
         activity_id=f"{profile.source}:{index}",
         source=str(profile.source),
         adapter_id=validator.feedback.adapter_id,
-        account=account,
-        wallet=wallet,
+        location_id=location_id_from_parts(str(profile.source), account, wallet),
         timestamp=parse_timestamp(row["timestamp"]),
         classification=classification_for_category(category),
         description=row["description"],
@@ -56,77 +102,106 @@ def translate_row(
         tx_hash=row["tx_hash"] or "",
         provider_operation_key=f"structured_csv:{category}",
         legs=tuple(legs),
-        fee_legs=fee_legs,
+        leg_policy=policy_for_row(row),
     ), reviews
 
 
+def policy_for_row(row: dict[str, str]) -> FactLegPolicy:
+    has_charge = bool(row["charge_asset"].strip() and row["charge_amount"].strip())
+    has_rebate = bool(row["rebate_asset"].strip() and row["rebate_amount"].strip())
+    has_in = bool(row["asset_in"].strip())
+    has_out = bool(row["asset_out"].strip())
+    if has_in and has_out and has_charge and not has_rebate:
+        return TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY
+    if has_in and has_out and not has_charge and not has_rebate:
+        return TWO_SIDED_PRIMARY_EXCHANGE_POLICY
+    if (has_in ^ has_out) and not has_charge and not has_rebate:
+        return SINGLE_PRIMARY_ACTIVITY_POLICY
+
+    limits = [LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_positive_count=1, max_negative_count=1)]
+    if has_charge:
+        limits.append(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1))
+    if has_rebate:
+        limits.append(LegShapeLimit(kind=LegKind.REBATE, max_count=1, max_positive_count=1, max_negative_count=0))
+    return FactLegPolicy(limits=tuple(limits))
+
+
+def _side_value(raw_value: str) -> str | None:
+    stripped = raw_value.strip()
+    if stripped == "in":
+        return "primary_in"
+    if stripped == "out":
+        return "primary_out"
+    return None
+
+
 def classification_for_category(category: StructuredCategory) -> ActivityClassification:
-    mapping: dict[str, tuple[EconomicKind, ProjectionType, JournalIntent, TaxTreatmentCode]] = {
+    mapping: dict[str, tuple[EconomicKind, ProjectionHint, AccountingIntentHint, TaxTreatmentHint]] = {
         "trade": (
             EconomicKind.SPOT_TRADE,
-            ProjectionType.TRADE,
-            JournalIntent.ASSET_EXCHANGE,
-            TaxTreatmentCode.CAPITAL_EXCHANGE,
+            ProjectionHint.TRADE,
+            AccountingIntentHint.ASSET_EXCHANGE,
+            TaxTreatmentHint.CAPITAL_EXCHANGE,
         ),
         "deposit": (
             EconomicKind.ASSET_DEPOSIT,
-            ProjectionType.DEPOSIT,
-            JournalIntent.FUNDING_INFLOW,
-            TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+            ProjectionHint.DEPOSIT,
+            AccountingIntentHint.FUNDING_INFLOW,
+            TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
         ),
         "withdrawal": (
             EconomicKind.ASSET_WITHDRAWAL,
-            ProjectionType.WITHDRAWAL,
-            JournalIntent.FUNDING_OUTFLOW,
-            TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+            ProjectionHint.WITHDRAWAL,
+            AccountingIntentHint.FUNDING_OUTFLOW,
+            TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
         ),
         "interest_income": (
             EconomicKind.INTEREST_INCOME,
-            ProjectionType.INTEREST_INCOME,
-            JournalIntent.INCOME_RECOGNITION,
-            TaxTreatmentCode.ORDINARY_INCOME,
+            ProjectionHint.INTEREST_INCOME,
+            AccountingIntentHint.INCOME_RECOGNITION,
+            TaxTreatmentHint.ORDINARY_INCOME,
         ),
         "reward": (
             EconomicKind.PLATFORM_REWARD,
-            ProjectionType.REWARD_BONUS,
-            JournalIntent.INCOME_RECOGNITION,
-            TaxTreatmentCode.ORDINARY_INCOME,
+            ProjectionHint.REWARD_BONUS,
+            AccountingIntentHint.INCOME_RECOGNITION,
+            TaxTreatmentHint.ORDINARY_INCOME,
         ),
         "expense": (
             EconomicKind.CASH_EXPENSE,
-            ProjectionType.EXPENSE_NON_TAXABLE,
-            JournalIntent.EXPENSE_RECOGNITION,
-            TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+            ProjectionHint.EXPENSE_NON_TAXABLE,
+            AccountingIntentHint.EXPENSE_RECOGNITION,
+            TaxTreatmentHint.NON_TAXABLE_EXPENSE,
         ),
         "swap": (
             EconomicKind.ASSET_SWAP,
-            ProjectionType.SWAP_NON_TAXABLE,
-            JournalIntent.ASSET_EXCHANGE,
-            TaxTreatmentCode.NON_TAXABLE_ASSET_MIGRATION,
+            ProjectionHint.SWAP_NON_TAXABLE,
+            AccountingIntentHint.ASSET_EXCHANGE,
+            TaxTreatmentHint.NON_TAXABLE_ASSET_MIGRATION,
         ),
         "staking_reward": (
             EconomicKind.STAKING_REWARD,
-            ProjectionType.STAKING,
-            JournalIntent.INCOME_RECOGNITION,
-            TaxTreatmentCode.STAKING_INCOME,
+            ProjectionHint.STAKING,
+            AccountingIntentHint.INCOME_RECOGNITION,
+            TaxTreatmentHint.STAKING_INCOME,
         ),
         "derivatives_profit": (
             EconomicKind.DERIVATIVE_REALIZED_PROFIT,
-            ProjectionType.DERIVATIVES_FUTURES_PROFIT,
-            JournalIntent.INCOME_RECOGNITION,
-            TaxTreatmentCode.DERIVATIVE_REALIZED_GAIN,
+            ProjectionHint.DERIVATIVES_FUTURES_PROFIT,
+            AccountingIntentHint.INCOME_RECOGNITION,
+            TaxTreatmentHint.DERIVATIVE_REALIZED_GAIN,
         ),
         "derivatives_loss": (
             EconomicKind.DERIVATIVE_REALIZED_LOSS,
-            ProjectionType.DERIVATIVES_FUTURES_LOSS,
-            JournalIntent.EXPENSE_RECOGNITION,
-            TaxTreatmentCode.DERIVATIVE_REALIZED_LOSS,
+            ProjectionHint.DERIVATIVES_FUTURES_LOSS,
+            AccountingIntentHint.EXPENSE_RECOGNITION,
+            TaxTreatmentHint.DERIVATIVE_REALIZED_LOSS,
         ),
     }
-    economic_kind, projection_type, journal_intent, tax_treatment_code = mapping[category]
+    economic_kind, projection_hint, accounting_intent_hint, tax_treatment_hint = mapping[category]
     return classification(
         economic_kind=economic_kind,
-        projection_type=projection_type,
-        journal_intent=journal_intent,
-        tax_treatment_code=tax_treatment_code,
+        projection_hint=projection_hint,
+        accounting_intent_hint=accounting_intent_hint,
+        tax_treatment_hint=tax_treatment_hint,
     )

@@ -6,10 +6,17 @@ from datetime import datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-from tallylot.adapters.support import CsvRowContext, IssueSpec, issue_record
-from tallylot.adapters.support.drafts import EconomicActivityDraft, classification, economic_leg
+from tallylot.adapters.support import CsvRowContext, IssueSpec, issue_record, location_id_from_parts
+from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    EconomicActivityDraft,
+    LegKind,
+    classification,
+    economic_leg,
+)
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -45,21 +52,28 @@ def _normalize_cash_row(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="shakepay",
-            account="Shakepay",
-            wallet="Shakepay",
+            location_id=location_id_from_parts(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.FIAT_DEPOSIT,
-                projection_type=ProjectionType.DEPOSIT,
-                journal_intent=JournalIntent.FUNDING_INFLOW,
-                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                projection_hint=ProjectionHint.DEPOSIT,
+                accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type or "cash_credit",
-            legs=(economic_leg(direction="in", asset="CAD", amount=credit),),
+            legs=(
+                economic_leg(
+                    leg_id="cash_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=credit,
+                    instrument="CAD",
+                ),
+            ),
         )
     if debit is None or debit <= Decimal("0"):
         return None
@@ -68,41 +82,55 @@ def _normalize_cash_row(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="shakepay",
-            account="Shakepay",
-            wallet="Shakepay",
+            location_id=location_id_from_parts(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.CASH_EXPENSE,
-                projection_type=ProjectionType.EXPENSE_NON_TAXABLE,
-                journal_intent=JournalIntent.EXPENSE_RECOGNITION,
-                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_EXPENSE,
+                projection_hint=ProjectionHint.EXPENSE_NON_TAXABLE,
+                accounting_intent_hint=AccountingIntentHint.EXPENSE_RECOGNITION,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_EXPENSE,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="out", asset="CAD", amount=debit),),
+            legs=(
+                economic_leg(
+                    leg_id="cash_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-debit,
+                    instrument="CAD",
+                ),
+            ),
         )
     return EconomicActivityDraft(
         activity_id=transaction_id,
         source=str(profile.source),
         adapter_id="shakepay",
-        account="Shakepay",
-        wallet="Shakepay",
+        location_id=location_id_from_parts(str(profile.source)),
         timestamp=timestamp,
         classification=classification(
             economic_kind=EconomicKind.CASH_WITHDRAWAL,
-            projection_type=ProjectionType.WITHDRAWAL,
-            journal_intent=JournalIntent.FUNDING_OUTFLOW,
-            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+            projection_hint=ProjectionHint.WITHDRAWAL,
+            accounting_intent_hint=AccountingIntentHint.FUNDING_OUTFLOW,
+            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
         ),
+        leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
         description=description,
         raw_file=row_context.raw_file,
         raw_row_ref=row_context.raw_row_ref,
         tx_hash=transaction_id,
         provider_operation_key=row_type or "cash_debit",
-        legs=(economic_leg(direction="out", asset="CAD", amount=debit),),
+        legs=(
+            economic_leg(
+                leg_id="cash_out",
+                kind=LegKind.PRIMARY,
+                quantity=-debit,
+                instrument="CAD",
+            ),
+        ),
     )
 
 
@@ -124,44 +152,61 @@ def _normalize_crypto_row(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="shakepay",
-            account="Shakepay",
-            wallet="Shakepay",
+            location_id=location_id_from_parts(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.PLATFORM_REWARD,
-                projection_type=ProjectionType.REWARD_BONUS,
-                journal_intent=JournalIntent.INCOME_RECOGNITION,
-                tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
+                projection_hint=ProjectionHint.REWARD_BONUS,
+                accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+                tax_treatment_hint=TaxTreatmentHint.ORDINARY_INCOME,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="in", asset=credited_asset, amount=credited_amount),),
+            legs=(
+                economic_leg(
+                    leg_id="reward_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=credited_amount,
+                    instrument=credited_asset,
+                ),
+            ),
         )
     if row_type == "Buy" and debited_amount is not None and credited_amount is not None:
         return EconomicActivityDraft(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="shakepay",
-            account="Shakepay",
-            wallet="Shakepay",
+            location_id=location_id_from_parts(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.SPOT_TRADE,
-                projection_type=ProjectionType.TRADE,
-                journal_intent=JournalIntent.ASSET_EXCHANGE,
-                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                projection_hint=ProjectionHint.TRADE,
+                accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
             ),
+            leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
             description=(row.get("Description") or "").strip(),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
             legs=(
-                economic_leg(direction="in", asset=credited_asset, amount=credited_amount),
-                economic_leg(direction="out", asset=debited_asset, amount=debited_amount),
+                economic_leg(
+                    leg_id="asset_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=credited_amount,
+                    instrument=credited_asset,
+                ),
+                economic_leg(
+                    leg_id="asset_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-debited_amount,
+                    instrument=debited_asset,
+                ),
             ),
         )
     if row_type == "Send" and debited_amount is not None and debited_asset:
@@ -169,21 +214,28 @@ def _normalize_crypto_row(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="shakepay",
-            account="Shakepay",
-            wallet="Shakepay",
+            location_id=location_id_from_parts(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.ASSET_WITHDRAWAL,
-                projection_type=ProjectionType.WITHDRAWAL,
-                journal_intent=JournalIntent.FUNDING_OUTFLOW,
-                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+                projection_hint=ProjectionHint.WITHDRAWAL,
+                accounting_intent_hint=AccountingIntentHint.FUNDING_OUTFLOW,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=(row.get("Description") or "").strip(),
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
             provider_operation_key=row_type,
-            legs=(economic_leg(direction="out", asset=debited_asset, amount=debited_amount),),
+            legs=(
+                economic_leg(
+                    leg_id="asset_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-debited_amount,
+                    instrument=debited_asset,
+                ),
+            ),
         )
     return issue_record(
         IssueSpec(
@@ -200,4 +252,4 @@ def _normalize_crypto_row(
 
 def _parse_local_timestamp(value: str) -> datetime:
     local = datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=TORONTO)
-    return local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None)
+    return local.astimezone(ZoneInfo("UTC"))

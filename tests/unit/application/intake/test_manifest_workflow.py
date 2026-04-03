@@ -4,6 +4,7 @@ from pathlib import Path
 
 from tallylot.application.intake import ManifestRequest
 from tallylot.application.intake.build_manifest import BuildManifestUseCase
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
@@ -11,7 +12,10 @@ def test_manifest_service_writes_manifest(structured_source_dir: Path, tmp_path:
     output_path = tmp_path / "manifest.csv"
 
     response = BuildManifestUseCase(FilesystemArtifactStore()).execute(
-        ManifestRequest(source_dir=structured_source_dir, output_path=output_path),
+        ManifestRequest(
+            source_capture_ref=to_resource_ref(structured_source_dir),
+            manifest_output_ref=to_resource_ref(output_path),
+        ),
     )
 
     assert response.file_count == 1
@@ -32,8 +36,18 @@ def test_manifest_service_excludes_manifest_output_from_source_scan(
     output_path = source_dir / "manifest.csv"
     service = BuildManifestUseCase(FilesystemArtifactStore())
 
-    first = service.execute(ManifestRequest(source_dir=source_dir, output_path=output_path))
-    second = service.execute(ManifestRequest(source_dir=source_dir, output_path=output_path))
+    first = service.execute(
+        ManifestRequest(
+            source_capture_ref=to_resource_ref(source_dir),
+            manifest_output_ref=to_resource_ref(output_path),
+        )
+    )
+    second = service.execute(
+        ManifestRequest(
+            source_capture_ref=to_resource_ref(source_dir),
+            manifest_output_ref=to_resource_ref(output_path),
+        )
+    )
 
     assert first.file_count == 1
     assert second.file_count == 1

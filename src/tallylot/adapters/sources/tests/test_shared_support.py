@@ -9,13 +9,23 @@ from tallylot.adapters.support.drafts import (
     EconomicActivityDraft,
     classification,
     compile_activity_draft,
+    compile_activity_drafts,
     economic_leg,
     transaction_fact_from_draft,
     translation_batch_from_drafts,
 )
-from tallylot.adapters.support.wallets import normalized_identifier, wallet_identifier_kind
+from tallylot.adapters.support.locations import location_identifier_kind, normalized_identifier
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+    AccountingIntentHint,
+    EconomicKind,
+    LegKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
+from tallylot.domain.types import LocationId
 from tests.support.services import build_source_profile
 
 
@@ -25,33 +35,33 @@ def test_draft_compiler_preserves_internal_fields() -> None:
             activity_id="txn-1",
             source="fixture",
             adapter_id="fixture_adapter",
-            account="Primary",
-            wallet="Primary",
+            location_id=LocationId("fixture:primary"),
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
                 economic_kind=EconomicKind.ASSET_DEPOSIT,
-                projection_type=ProjectionType.DEPOSIT,
-                journal_intent=JournalIntent.FUNDING_INFLOW,
-                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                projection_hint=ProjectionHint.DEPOSIT,
+                accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
             ),
             description="Fixture deposit",
             raw_file="fixture.csv",
             raw_row_ref="row:2",
-            legs=(economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),),
+            legs=(economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
         )
     )
 
     assert event.economic_kind == EconomicKind.ASSET_DEPOSIT
-    assert event.projection_type == ProjectionType.DEPOSIT
-    assert event.journal_intent == JournalIntent.FUNDING_INFLOW
-    assert event.tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
+    assert event.projection_hint == ProjectionHint.DEPOSIT
+    assert event.accounting_intent_hint == AccountingIntentHint.FUNDING_INFLOW
+    assert event.tax_treatment_hint == TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN
     assert event.description == "Fixture deposit"
-    assert str(event.asset_in) == "BTC"
+    assert str(event.legs[0].instrument_id) == "symbol:BTC"
 
 
-def test_wallet_identifier_helpers_normalize_evm_and_classify_near_accounts() -> None:
+def test_location_identifier_helpers_normalize_evm_and_classify_near_accounts() -> None:
     assert normalized_identifier("evm_address", "0xABCDEF") == "0xabcdef"
-    assert wallet_identifier_kind("example.near") == "near_account"
+    assert location_identifier_kind("example.near") == "near_account"
 
 
 def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
@@ -60,31 +70,32 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
             activity_id="txn-1",
             source="fixture",
             adapter_id="fixture_adapter",
-            account="Primary",
-            wallet="Primary",
+            location_id=LocationId("fixture:primary"),
             timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
             classification=classification(
                 economic_kind=EconomicKind.SPOT_TRADE,
-                projection_type=ProjectionType.TRADE,
-                journal_intent=JournalIntent.ASSET_EXCHANGE,
-                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                projection_hint=ProjectionHint.TRADE,
+                accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
             ),
             legs=(
-                economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),
-                economic_leg(direction="out", asset="CAD", amount=Decimal("10")),
+                economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),
+                economic_leg(leg_id="primary_out", kind=LegKind.PRIMARY, instrument="CAD", quantity=Decimal("-10")),
             ),
+            leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
         )
     )
 
     assert fact.economic_kind == EconomicKind.SPOT_TRADE
-    assert fact.projection_type == ProjectionType.TRADE
-    assert fact.journal_intent == JournalIntent.ASSET_EXCHANGE
-    assert fact.tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
+    assert fact.projection_hint == ProjectionHint.TRADE
+    assert fact.accounting_intent_hint == AccountingIntentHint.ASSET_EXCHANGE
+    assert fact.tax_treatment_hint == TaxTreatmentHint.CAPITAL_EXCHANGE
+    assert fact.leg_policy == TWO_SIDED_PRIMARY_EXCHANGE_POLICY
     assert len(fact.legs) == 2
-    assert fact.legs[0].asset == "BTC"
-    assert fact.legs[1].asset == "CAD"
-    assert fact.legs[0].direction == "in"
-    assert fact.legs[1].direction == "out"
+    assert str(fact.legs[0].instrument_id) == "symbol:BTC"
+    assert str(fact.legs[1].instrument_id) == "symbol:CAD"
+    assert fact.legs[0].quantity == Decimal("1.5")
+    assert fact.legs[1].quantity == Decimal("-10")
 
 
 def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_channels() -> None:
@@ -94,30 +105,34 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
                 activity_id="txn-1",
                 source="fixture",
                 adapter_id="fixture_adapter",
-                account="Primary",
-                wallet="Primary",
+                location_id=LocationId("fixture:primary"),
                 timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
                 classification=classification(
                     economic_kind=EconomicKind.ASSET_DEPOSIT,
-                    projection_type=ProjectionType.DEPOSIT,
-                    journal_intent=JournalIntent.FUNDING_INFLOW,
-                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                    projection_hint=ProjectionHint.DEPOSIT,
+                    accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                    tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                 ),
                 raw_file="fixture.csv",
                 raw_row_ref="row:2",
-                legs=(economic_leg(direction="in", asset="BTC", amount=Decimal("1.5")),),
+                legs=(
+                    economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),
+                ),
+                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             ),
         ),
         issues=(),
         reviews=(),
-        wallet_inventory=(),
+        location_inventory=(),
     )
 
-    assert len(result.facts) == 1
-    assert result.facts[0].economic_kind == EconomicKind.ASSET_DEPOSIT
-    assert result.facts[0].projection_type == ProjectionType.DEPOSIT
-    assert result.facts[0].journal_intent == JournalIntent.FUNDING_INFLOW
-    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN
+    facts = compile_activity_drafts(result.drafts)
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.ASSET_DEPOSIT
+    assert facts[0].projection_hint == ProjectionHint.DEPOSIT
+    assert facts[0].accounting_intent_hint == AccountingIntentHint.FUNDING_INFLOW
+    assert facts[0].tax_treatment_hint == TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN
+    assert facts[0].leg_policy == SINGLE_PRIMARY_ACTIVITY_POLICY
     assert not result.issues
 
 

@@ -7,20 +7,22 @@ from pathlib import Path
 from tallylot.adapters.sources.explorers.evm_explorer.translation import translate_transactions
 from tallylot.adapters.support import (
     EVM_ADDRESS_PATTERN,
+    location_id_from_parts,
+    location_issue,
+    location_record,
     match_intake_by_path_or_header,
     matching_file_paths,
     no_intake_route,
     passed_timezone_summary,
     read_csv_rows,
-    wallet_issue,
-    wallet_record,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
-from tallylot.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
+from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
@@ -34,7 +36,7 @@ class EvmExplorerAdapter:
         display_name="EVM Explorer",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}
         ),
         description="Normalizes EVM explorer exports and extracts owned EVM addresses.",
     )
@@ -66,19 +68,19 @@ class EvmExplorerAdapter:
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
         return passed_timezone_summary(profile, mode="header_utc")
 
-    def extract_wallet_inventory(
+    def extract_location_inventory(
         self,
         source: str,
         raw_dir: Path,
         profile: SourceProfile,
-    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+    ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
         addresses = sorted(_owned_addresses(raw_dir))
         issues: list[IssueRecord] = []
         if not addresses:
             return (), (
-                wallet_issue(
-                    WalletIssueSpec(
+                location_issue(
+                    LocationIssueSpec(
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="missing_identifier",
@@ -88,8 +90,8 @@ class EvmExplorerAdapter:
             )
         if len(addresses) > 1:
             issues.append(
-                wallet_issue(
-                    WalletIssueSpec(
+                location_issue(
+                    LocationIssueSpec(
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="multiple_primary_identifiers",
@@ -98,14 +100,16 @@ class EvmExplorerAdapter:
                 )
             )
         evidence = tuple(
-            wallet_record(
-                WalletRecordSpec(
+            location_record(
+                LocationRecordSpec(
                     source=source,
+                    location_id=location_id_from_parts(source, "address", address),
+                    location_kind=LocationKind.ADDRESS,
+                    location_label=address,
                     identifier_kind="evm_address",
                     identifier_value=address,
                     network_scope=_network_scope(source),
                     controller="Explorer export",
-                    account_label="",
                     evidence_kind="filename",
                     evidence_path=_evidence_filename(raw_dir, address),
                     confidence="high",
@@ -116,12 +120,12 @@ class EvmExplorerAdapter:
         return evidence, tuple(issues)
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
-        wallet_inventory, wallet_issues = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
+        location_inventory, location_issues = self.extract_location_inventory(str(profile.source), raw_dir, profile)
         drafts, issues = translate_transactions(profile, raw_dir, owned_addresses=_owned_addresses(raw_dir))
         return translation_batch_from_drafts(
             drafts,
-            issues=(*issues, *wallet_issues),
-            wallet_inventory=wallet_inventory,
+            issues=(*issues, *location_issues),
+            location_inventory=location_inventory,
         )
 
 

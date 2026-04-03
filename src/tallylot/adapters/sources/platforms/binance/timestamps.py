@@ -21,13 +21,13 @@ def parse_export_timestamp(value: str, filename: str) -> datetime:
             "%Y-%m-%d %H:%M:%S",
         ).replace(tzinfo=UTC)
         hours = int(inline_match.group("offset"))
-        return (parsed - timedelta(hours=hours)).replace(tzinfo=None)
+        return parsed - timedelta(hours=hours)
     parsed = datetime.strptime(stripped, "%y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
-    return _apply_filename_offset(parsed, filename).replace(tzinfo=None)
+    return _apply_filename_offset(parsed, filename)
 
 
 def parse_transaction_history_timestamp(value: str) -> datetime:
-    return datetime.strptime(value, "%y-%m-%d %H:%M:%S").replace(tzinfo=UTC).replace(tzinfo=None)
+    return datetime.strptime(value, "%y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
 
 
 def _apply_filename_offset(parsed: datetime, filename: str) -> datetime:

@@ -6,8 +6,10 @@ from pathlib import Path
 import pytest
 
 from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tests.support.adapter_packs import fixture_raw_dir
 from tests.support.services import build_normalization_service
 
 
@@ -17,9 +19,10 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     (raw_dir / "transactions.csv").write_text(
         (
             "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-            "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
-            "2023-08-04 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,tx-early,early,Fixture,Primary\n"
-            "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,tx-keep,keep,Fixture,Primary\n"
+            "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+            "tx_hash,description,account,wallet\n"
+            "2023-08-04 10:00:00,trade,BTC,1.0,CAD,10.0,CAD,0.1,out,,,,tx-early,early,Fixture,Primary\n"
+            "2023-08-06 10:00:00,trade,ETH,2.0,CAD,20.0,CAD,0.2,out,,,,tx-keep,keep,Fixture,Primary\n"
         ),
         encoding="utf-8",
     )
@@ -30,20 +33,30 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     response = service.execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-08-05 08:34:05",
             window_end="2025-12-31 23:59:59",
         )
     )
 
     canonical_rows = read_rows(output_dir / "facts.csv")
+    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
     summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
 
     assert response.fact_count == 1
     assert len(canonical_rows) == 1
     assert canonical_rows[0]["tx_hash"] == "tx-keep"
+    assert canonical_rows[0]["fact_id"] == "fixture_source:3"
+    assert fact_annotations == [
+        {
+            "fact_id": canonical_rows[0]["fact_id"],
+            "provenance_refs": [],
+            "review_markers": [],
+            "adapter_metadata": [],
+        }
+    ]
     assert summary["fact_count"] == 1
     assert summary["facts_outside_normalization_window"] == 1
     assert summary["normalization_window_start"] == "2023-08-05 08:34:05"
@@ -67,8 +80,8 @@ def test_normalization_service_filters_timestamped_issues_outside_explicit_windo
     response = service.execute(
         NormalizeRequest(
             source="Binance",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-08-05 08:34:05",
             window_end="2025-12-31 23:59:59",
         )
@@ -99,8 +112,8 @@ def test_normalization_service_filters_row_scoped_issues_outside_explicit_window
     response = service.execute(
         NormalizeRequest(
             source="Future Broker",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start="2023-09-23 00:00:00",
             window_end="2025-12-31 23:59:59",
         )
@@ -129,8 +142,8 @@ def test_normalization_service_rejects_ambiguous_timezone_inventory(tmp_path: Pa
         service.execute(
             NormalizeRequest(
                 source="Binance",
-                raw_dir=raw_dir,
-                output_dir=tmp_path / "normalized",
+                raw_capture_ref=to_resource_ref(raw_dir),
+                normalized_output_ref=to_resource_ref(tmp_path / "normalized"),
             )
         )
 
@@ -164,8 +177,8 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
     response = service.execute(
         NormalizeRequest(
             source="Future Exchange",
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
         )
     )
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
@@ -174,3 +187,43 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
     assert profile["adapter_id"] == "coinbase"
     assert profile["supported"] is True
     assert profile["manifest_fingerprint"] != "stale"
+
+
+@pytest.mark.parametrize(
+    ("source", "raw_dir", "expected_fact_count", "expected_issue_count"),
+    (
+        ("Future Exchange", fixture_raw_dir("coinbase", "retail_buy_renamed"), 1, 0),
+        ("Future Broker", fixture_raw_dir("wealthsimple", "broker_trade"), 1, 0),
+        ("Binance", fixture_raw_dir("binance", "mixed_history"), 5, 2),
+    ),
+)
+def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
+    tmp_path: Path,
+    source: str,
+    raw_dir: Path,
+    expected_fact_count: int,
+    expected_issue_count: int,
+) -> None:
+    artifacts = FilesystemArtifactStore()
+    service = build_normalization_service(artifacts=artifacts)
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(
+            source=source,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+            window_start="2023-01-01 00:00:00",
+            window_end="2025-12-31 23:59:59",
+        )
+    )
+
+    assert response.fact_count == expected_fact_count
+    assert response.issue_count == expected_issue_count
+    assert (output_dir / "facts.csv").exists()
+    assert (
+        json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))[
+            "normalization_window_start"
+        ]
+        == "2023-01-01 00:00:00"
+    )

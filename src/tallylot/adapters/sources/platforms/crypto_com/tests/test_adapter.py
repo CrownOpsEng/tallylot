@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.crypto_com.adapter import CryptoComAdapter
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.adapters.support.drafts import compile_activity_drafts
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -13,29 +15,34 @@ def test_crypto_com_adapter_uses_transaction_kinds_without_filename_dependency()
 
     profile, adapter = profile_and_adapter("Future Card", raw_dir)
     result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "crypto_com"
-    assert [event.economic_kind for event in result.facts] == [
+    assert [event.economic_kind for event in facts] == [
         EconomicKind.FIAT_DEPOSIT,
         EconomicKind.SPOT_TRADE,
         EconomicKind.ASSET_WITHDRAWAL,
     ]
-    assert [event.projection_type for event in result.facts] == [
-        ProjectionType.DEPOSIT,
-        ProjectionType.TRADE,
-        ProjectionType.WITHDRAWAL,
+    assert [event.projection_hint for event in facts] == [
+        ProjectionHint.DEPOSIT,
+        ProjectionHint.TRADE,
+        ProjectionHint.WITHDRAWAL,
     ]
-    assert [event.journal_intent for event in result.facts] == [
-        JournalIntent.FUNDING_INFLOW,
-        JournalIntent.ASSET_EXCHANGE,
-        JournalIntent.FUNDING_OUTFLOW,
+    assert [event.accounting_intent_hint for event in facts] == [
+        AccountingIntentHint.FUNDING_INFLOW,
+        AccountingIntentHint.ASSET_EXCHANGE,
+        AccountingIntentHint.FUNDING_OUTFLOW,
     ]
-    assert [event.tax_treatment_code for event in result.facts] == [
-        TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
-        TaxTreatmentCode.CAPITAL_EXCHANGE,
-        TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+    assert [event.tax_treatment_hint for event in facts] == [
+        TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+        TaxTreatmentHint.CAPITAL_EXCHANGE,
+        TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
     ]
-    assert {event.raw_file for event in result.facts} == {"records-a.csv", "records-b.csv"}
+    assert facts[0].legs[0].quantity == Decimal("500")
+    assert facts[1].legs[0].quantity > 0
+    assert facts[1].legs[1].quantity < 0
+    assert facts[2].legs[0].quantity < 0
+    assert {event.raw_file for event in facts} == {"records-a.csv", "records-b.csv"}
     assert not result.issues
 
 
@@ -56,5 +63,5 @@ def test_crypto_com_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> No
         raw_dir,
     )
 
-    assert [event.projection_type for event in result.facts] == [ProjectionType.DEPOSIT]
+    assert [event.projection_hint for event in compile_activity_drafts(result.drafts)] == [ProjectionHint.DEPOSIT]
     assert not result.issues

@@ -6,17 +6,33 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import IssueSpec, issue_record, matching_file_paths, read_csv_rows
+from tallylot.adapters.support import (
+    IssueSpec,
+    issue_record,
+    location_id_from_parts,
+    matching_file_paths,
+    read_csv_rows,
+)
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
     EconomicActivityDraft,
+    FactLegPolicy,
+    LegKind,
+    LegShapeLimit,
     classification,
     economic_leg,
-    fee_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_translation import EconomicLegDraft
 
 
 def translate_transactions(
@@ -56,86 +72,95 @@ def translate_transactions(
                 )
                 continue
             if method == "transfer":
-                net_amount = amount - fee
-                if net_amount <= Decimal("0"):
-                    issues.append(
-                        _row_issue(
-                            profile,
-                            path.name,
-                            raw_row_ref,
-                            issue_id_suffix="non_positive_net_transfer",
-                            message="NEAR transfer row has a non-positive net amount after fees.",
-                        )
-                    )
-                    continue
                 drafts.append(
                     EconomicActivityDraft(
                         activity_id=f"near:{path.name}:{raw_row_ref}",
                         source=str(profile.source),
                         adapter_id="near",
-                        account=str(profile.source),
-                        wallet=str(profile.source),
+                        location_id=location_id_from_parts(str(profile.source)),
                         timestamp=timestamp,
                         classification=classification(
                             economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
-                            projection_type=ProjectionType.DEPOSIT,
-                            journal_intent=JournalIntent.FUNDING_INFLOW,
-                            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                            projection_hint=ProjectionHint.DEPOSIT,
+                            accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                         ),
+                        leg_policy=_transfer_in_policy(fee),
                         description=f"Transfer into {profile.source} - {tx_hash}",
                         raw_file=path.name,
                         raw_row_ref=raw_row_ref,
                         tx_hash=tx_hash,
                         provider_operation_key=method,
-                        legs=(economic_leg(direction="in", asset="NEAR", amount=net_amount),),
+                        legs=(
+                            economic_leg(
+                                leg_id="primary_in",
+                                kind=LegKind.PRIMARY,
+                                quantity=amount,
+                                instrument=symbol_claim("NEAR", venue="near"),
+                            ),
+                            *_charge_legs(fee, attributed_to_leg_id="primary_in"),
+                        ),
                     )
                 )
                 continue
             if method == "deposit_and_stake":
                 description = f"Stake NEAR - {tx_hash}"
-                fee_legs = (fee_leg(asset="NEAR", amount=fee),) if fee > Decimal("0") else ()
                 drafts.extend(
                     (
                         EconomicActivityDraft(
                             activity_id=f"near:{path.name}:{raw_row_ref}:wallet",
                             source=str(profile.source),
                             adapter_id="near",
-                            account=str(profile.source),
-                            wallet=str(profile.source),
+                            location_id=location_id_from_parts(str(profile.source)),
                             timestamp=timestamp,
                             classification=classification(
                                 economic_kind=EconomicKind.STAKING_TRANSFER_OUT,
-                                projection_type=ProjectionType.WITHDRAWAL,
-                                journal_intent=JournalIntent.FUNDING_OUTFLOW,
-                                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+                                projection_hint=ProjectionHint.WITHDRAWAL,
+                                accounting_intent_hint=AccountingIntentHint.FUNDING_OUTFLOW,
+                                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
                             ),
+                            leg_policy=_staking_out_policy(fee),
                             description=description,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
                             tx_hash=tx_hash,
                             provider_operation_key=method,
-                            legs=(economic_leg(direction="out", asset="NEAR", amount=amount),),
-                            fee_legs=fee_legs,
+                            legs=(
+                                economic_leg(
+                                    leg_id="primary_out",
+                                    kind=LegKind.PRIMARY,
+                                    quantity=-amount,
+                                    instrument=symbol_claim("NEAR", venue="near"),
+                                ),
+                                *_charge_legs(fee, attributed_to_leg_id="primary_out"),
+                            ),
                         ),
                         EconomicActivityDraft(
                             activity_id=f"near:{path.name}:{raw_row_ref}:staking",
                             source=f"{profile.source} - Staking",
                             adapter_id="near",
-                            account=f"{profile.source} - Staking",
-                            wallet=f"{profile.source} - Staking",
+                            location_id=location_id_from_parts(f"{profile.source} - Staking"),
                             timestamp=timestamp,
                             classification=classification(
                                 economic_kind=EconomicKind.STAKING_TRANSFER_IN,
-                                projection_type=ProjectionType.DEPOSIT,
-                                journal_intent=JournalIntent.FUNDING_INFLOW,
-                                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                                projection_hint=ProjectionHint.DEPOSIT,
+                                accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                             ),
+                            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                             description=description,
                             raw_file=path.name,
                             raw_row_ref=raw_row_ref,
                             tx_hash=tx_hash,
                             provider_operation_key=method,
-                            legs=(economic_leg(direction="in", asset="NEAR", amount=amount),),
+                            legs=(
+                                economic_leg(
+                                    leg_id="primary_in",
+                                    kind=LegKind.PRIMARY,
+                                    quantity=amount,
+                                    instrument=symbol_claim("NEAR", venue="near"),
+                                ),
+                            ),
                         ),
                     )
                 )
@@ -150,6 +175,40 @@ def translate_transactions(
                 )
             )
     return tuple(drafts), tuple(issues)
+
+
+def _staking_out_policy(fee: Decimal) -> FactLegPolicy:
+    return _single_primary_with_optional_charge_policy(fee)
+
+
+def _transfer_in_policy(fee: Decimal) -> FactLegPolicy:
+    return _single_primary_with_optional_charge_policy(fee)
+
+
+def _single_primary_with_optional_charge_policy(fee: Decimal) -> FactLegPolicy:
+    if fee <= Decimal("0"):
+        return SINGLE_PRIMARY_ACTIVITY_POLICY
+    return FactLegPolicy(
+        limits=(
+            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1, max_negative_count=1),
+            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+        )
+    )
+
+
+def _charge_legs(fee: Decimal, *, attributed_to_leg_id: str) -> tuple[EconomicLegDraft, ...]:
+    if fee <= Decimal("0"):
+        return ()
+    return (
+        economic_leg(
+            leg_id="charge",
+            kind=LegKind.CHARGE,
+            quantity=-fee,
+            instrument=symbol_claim("NEAR", venue="near"),
+            subtype="network_fee",
+            attributed_to_leg_id=attributed_to_leg_id,
+        ),
+    )
 
 
 def _row_value(row: dict[str, str], key: str, fallback: str = "", *, default: str = "") -> str:
@@ -188,6 +247,6 @@ def _parse_timestamp(value: str) -> datetime | None:
     if not value:
         return None
     try:
-        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC).replace(tzinfo=None)
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
     except ValueError:
         return None

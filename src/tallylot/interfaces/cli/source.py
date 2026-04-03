@@ -14,6 +14,7 @@ from tallylot.application.intake.contracts import (
 )
 from tallylot.application.normalization.contracts import NormalizeRequest
 from tallylot.application.profiling.contracts import ProfileRequest
+from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
 from tallylot.infrastructure.composition.runtime import (
     apply_intake_use_case,
     build_manifest_use_case,
@@ -33,7 +34,11 @@ def source_manifest(
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
     response = build_manifest_use_case().execute(
-        ManifestRequest(source_dir=source_dir, output_path=output, inspect_archives=inspect_archives)
+        ManifestRequest(
+            source_capture_ref=to_resource_ref(source_dir),
+            manifest_output_ref=to_resource_ref(output),
+            inspect_archives=inspect_archives,
+        )
     )
     emit_response(response.__dict__)
 
@@ -46,7 +51,12 @@ def source_profile(
     inspect_archives: Annotated[bool, typer.Option("--inspect-archives/--no-inspect-archives")] = True,
 ) -> None:
     response = build_profile_use_case().execute(
-        ProfileRequest(source=source, raw_dir=raw_dir, output_dir=output_dir, inspect_archives=inspect_archives),
+        ProfileRequest(
+            source=source,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            profile_output_ref=to_resource_ref(output_dir),
+            inspect_archives=inspect_archives,
+        ),
     )
     emit_response(response.__dict__)
 
@@ -64,8 +74,8 @@ def source_normalize(
     response = normalize_source_use_case().execute(
         NormalizeRequest(
             source=source,
-            raw_dir=raw_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
             window_start=window_start,
             window_end=window_end,
             inspect_archives=inspect_archives,
@@ -83,9 +93,9 @@ def source_intake_plan(
 ) -> None:
     response = plan_intake_use_case().execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
             inspect_archives=inspect_archives,
         )
     )
@@ -101,9 +111,9 @@ def source_intake_apply(
 ) -> None:
     response = apply_intake_use_case().execute(
         IntakeApplyRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
             inspect_archives=inspect_archives,
         )
     )

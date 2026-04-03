@@ -9,10 +9,10 @@ from tallylot.domain.types import AdapterId
 
 
 class AdapterCapability(StrEnum):
+    LOCATION_INVENTORY = "location_inventory"
     OUTPUT_RENDER = "output_render"
     INTAKE_ROUTE = "intake_route"
     SOURCE_TRANSLATE = "source_translate"
-    WALLET_INVENTORY = "wallet_inventory"
 
 
 @dataclass(frozen=True)

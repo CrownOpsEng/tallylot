@@ -1,7 +1,7 @@
 {
   "capabilities": [
     "normalize",
-    "wallet_inventory"
+    "location_inventory"
   ],
   "source": "Structured Example",
   "expected_adapter": "structured_csv",

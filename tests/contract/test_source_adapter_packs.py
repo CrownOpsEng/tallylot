@@ -6,8 +6,8 @@ import pytest
 
 from tools.adapter_packs import AdapterPack, select_adapter_packs
 from tools.refresh_adapter_goldens import (
+    EXPECTED_LOCATION_ARTIFACTS,
     EXPECTED_NORMALIZATION_ARTIFACTS,
-    EXPECTED_WALLET_ARTIFACTS,
     collect_pack_outputs,
 )
 
@@ -22,17 +22,17 @@ def _pack_id(pack: AdapterPack) -> str:
 @pytest.mark.parametrize("pack", ALL_PACKS, ids=_pack_id)
 def test_adapter_pack_expected_dirs_do_not_contain_unowned_goldens(pack: AdapterPack) -> None:
     expected_files = {path.name for path in pack.expected_dir.glob("*.json")}
-    allowed: set[str] = set(EXPECTED_WALLET_ARTIFACTS)
+    allowed: set[str] = set(EXPECTED_LOCATION_ARTIFACTS)
     if pack.supports("normalize"):
         allowed.update(EXPECTED_NORMALIZATION_ARTIFACTS)
     assert expected_files == {f"{artifact_name}.json" for artifact_name in allowed}
 
 
 @pytest.mark.parametrize("pack", ALL_PACKS, ids=_pack_id)
-def test_adapter_pack_wallet_outputs_match_expected_goldens(pack: AdapterPack) -> None:
+def test_adapter_pack_location_outputs_match_expected_goldens(pack: AdapterPack) -> None:
     payloads = collect_pack_outputs(pack)
 
-    for artifact_name in EXPECTED_WALLET_ARTIFACTS:
+    for artifact_name in EXPECTED_LOCATION_ARTIFACTS:
         expected_path = pack.expected_dir / f"{artifact_name}.json"
         expected_payload = json.loads(expected_path.read_text(encoding="utf-8"))
         assert payloads[artifact_name] == expected_payload

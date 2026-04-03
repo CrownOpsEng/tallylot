@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.binance.adapter import BinanceAdapter
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.adapters.support.drafts import compile_activity_drafts
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.services import build_source_profile
 
 
@@ -38,18 +39,19 @@ def test_binance_adapter_handles_supported_and_review_required_rows(tmp_path: Pa
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    assert len(result.facts) == 5
+    assert len(facts) == 5
     assert len(result.issues) == 3
-    projection_types = {row.projection_type for row in result.facts}
-    assert ProjectionType.TRADE in projection_types
-    assert ProjectionType.DEPOSIT in projection_types
-    assert ProjectionType.WITHDRAWAL in projection_types
-    assert ProjectionType.STAKING in projection_types
-    economic_kinds = {row.economic_kind for row in result.facts}
+    projection_hints = {row.projection_hint for row in facts}
+    assert ProjectionHint.TRADE in projection_hints
+    assert ProjectionHint.DEPOSIT in projection_hints
+    assert ProjectionHint.WITHDRAWAL in projection_hints
+    assert ProjectionHint.STAKING in projection_hints
+    economic_kinds = {row.economic_kind for row in facts}
     assert EconomicKind.STAKING_REWARD in economic_kinds
-    assert JournalIntent.INCOME_RECOGNITION in {row.journal_intent for row in result.facts}
-    assert TaxTreatmentCode.STAKING_INCOME in {row.tax_treatment_code for row in result.facts}
+    assert AccountingIntentHint.INCOME_RECOGNITION in {row.accounting_intent_hint for row in facts}
+    assert TaxTreatmentHint.STAKING_INCOME in {row.tax_treatment_hint for row in facts}
     assert any("Transfer Between Spot Account and UM Futures Account" in row.message for row in result.issues)
 
 
@@ -70,7 +72,7 @@ def test_binance_convert_date_updated_covers_transaction_history_one_second_skew
         raw_dir,
     )
 
-    assert len(result.facts) == 1
+    assert len(compile_activity_drafts(result.drafts)) == 1
     assert len(result.issues) == 0
 
 
@@ -91,12 +93,13 @@ def test_binance_transaction_history_skips_p2p_rows_when_c2c_history_exists(tmp_
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    assert len(result.facts) == 1
-    assert result.facts[0].economic_kind == EconomicKind.P2P_TRADE
-    assert result.facts[0].projection_type == ProjectionType.TRADE
-    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
-    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.P2P_TRADE
+    assert facts[0].projection_hint == ProjectionHint.TRADE
+    assert facts[0].accounting_intent_hint == AccountingIntentHint.ASSET_EXCHANGE
+    assert facts[0].tax_treatment_hint == TaxTreatmentHint.CAPITAL_EXCHANGE
     assert len(result.issues) == 0
 
 
@@ -119,12 +122,13 @@ def test_binance_adapter_reads_nested_bundle_paths(tmp_path: Path) -> None:
         build_source_profile(adapter_id="binance", raw_dir=str(raw_dir), source="Binance"),
         raw_dir,
     )
+    facts = compile_activity_drafts(result.drafts)
 
-    assert len(result.facts) == 1
-    assert result.facts[0].economic_kind == EconomicKind.P2P_TRADE
-    assert result.facts[0].projection_type == ProjectionType.TRADE
-    assert result.facts[0].journal_intent == JournalIntent.ASSET_EXCHANGE
-    assert result.facts[0].tax_treatment_code == TaxTreatmentCode.CAPITAL_EXCHANGE
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.P2P_TRADE
+    assert facts[0].projection_hint == ProjectionHint.TRADE
+    assert facts[0].accounting_intent_hint == AccountingIntentHint.ASSET_EXCHANGE
+    assert facts[0].tax_treatment_hint == TaxTreatmentHint.CAPITAL_EXCHANGE
     assert not result.issues
 
 
@@ -149,7 +153,7 @@ def test_binance_translation_priority_is_not_path_order_dependent(tmp_path: Path
         raw_dir,
     )
 
-    assert len(result.facts) == 1
+    assert len(compile_activity_drafts(result.drafts)) == 1
     assert not result.issues
 
 
@@ -165,6 +169,6 @@ def test_binance_adapter_surfaces_unmatched_export_files(tmp_path: Path) -> None
         raw_dir,
     )
 
-    assert not result.facts
+    assert not compile_activity_drafts(result.drafts)
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_file"

@@ -7,7 +7,7 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 
-from tallylot.domain.wallet_identifiers import (
+from tallylot.domain.location_identifiers import (
     BTC_ADDRESS_PATTERN,
     CARDANO_ACCOUNT_KEY_PATTERN,
     EVM_ADDRESS_PATTERN,

@@ -7,6 +7,7 @@ import json
 
 from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.intake.contracts import ManifestRequest, ManifestResponse
+from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
 
 ISSUE_HEADER = ("relative_path", "severity", "kind", "message")
@@ -17,12 +18,14 @@ class BuildManifestUseCase:
         self._artifacts = artifacts
 
     def execute(self, request: ManifestRequest) -> ManifestResponse:
+        source_dir = path_from_ref(request.source_capture_ref)
+        output_path = path_from_ref(request.manifest_output_ref)
         rows: list[dict[str, str]] = []
         issue_rows: list[dict[str, str]] = []
-        issues_path = request.output_path.with_name("manifest_issues.csv")
+        issues_path = output_path.with_name("manifest_issues.csv")
         with scanned_tree_files(
-            request.source_dir,
-            exclude_paths=(request.output_path, issues_path),
+            source_dir,
+            exclude_paths=(output_path, issues_path),
             inspect_archives=request.inspect_archives,
         ) as scanned_tree:
             for entry in scanned_tree.files:
@@ -48,7 +51,7 @@ class BuildManifestUseCase:
         payload = json.dumps(rows, sort_keys=True, separators=(",", ":"))
         fingerprint = _sha256sum_from_text(payload)
         self._artifacts.write_rows(
-            request.output_path,
+            output_path,
             ("filename", "archive_source_path", "archive_member_path", "size_bytes", "sha256"),
             rows,
         )
@@ -58,7 +61,7 @@ class BuildManifestUseCase:
             issue_rows,
         )
         return ManifestResponse(
-            output_path=request.output_path,
+            manifest_output_ref=request.manifest_output_ref,
             file_count=len(rows),
             manifest_fingerprint=fingerprint,
             issue_count=len(issue_rows),

@@ -2,6 +2,18 @@
 
 The typed profile stage records timezone provenance before normalization.
 
+## Runtime Contract
+
+- Runtime datetimes are timezone-aware UTC in:
+  - source translation drafts
+  - transaction facts
+  - balance snapshots
+  - balance evidence
+- Persisted artifact timestamps remain `YYYY-MM-DD HH:MM:SS` without an offset.
+  Runtime readers interpret that text as UTC.
+- Adapter normalization must convert provider timestamps to UTC-aware runtime
+  values before draft, fact, or evidence construction.
+
 ## Profile Outputs
 
 `source profile` writes:

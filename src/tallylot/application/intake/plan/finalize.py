@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from tallylot.application.intake.contracts import IntakePlanRequest
+from tallylot.application.resource_refs import path_from_ref
 
 from ..packages import PlannedPackageItem, apply_package_rules
 from ..path_rules import effective_bundle_id, source_raw_target_path
@@ -15,6 +16,7 @@ def apply_package_rules_to_items(
     *,
     request: IntakePlanRequest,
 ) -> list[PlannedItem]:
+    workspace_root = path_from_ref(request.workspace_root_ref)
     package_items = [
         PlannedPackageItem(
             path=str(item.source_path),
@@ -71,7 +73,7 @@ def apply_package_rules_to_items(
             scope_tokens=item.scope_tokens,
             target_path=(
                 source_raw_target_path(
-                    request.workspace_root,
+                    workspace_root,
                     source_folder=item.source_folder,
                     capture_id=item.capture_id,
                     bundle_id_value=effective_bundle_id(item, package_map[str(item.source_path)]),

@@ -1,0 +1,22 @@
+[
+  {
+    "capture_path": "",
+    "confidence": "high",
+    "controller": "Explorer export",
+    "display_identifier": "0x1111111111111111111111111111111111111111",
+    "evidence_kind": "filename",
+    "evidence_path": "transactions.csv",
+    "identifier_kind": "evm_address",
+    "identifier_value": "0x1111111111111111111111111111111111111111",
+    "location_id": "bsc_wallet:address:0x1111111111111111111111111111111111111111",
+    "location_kind": "address",
+    "location_label": "0x1111111111111111111111111111111111111111",
+    "location_path": "",
+    "network_scope": "bsc",
+    "normalized_identifier": "0x1111111111111111111111111111111111111111",
+    "notes": "",
+    "parent_location_id": "",
+    "parent_location_label": "",
+    "source": "bsc-wallet"
+  }
+]

@@ -132,7 +132,7 @@ def _adapter_template(
         "        capabilities=frozenset(\n"
         "            {\n"
         "                AdapterCapability.SOURCE_TRANSLATE,\n"
-        "                AdapterCapability.WALLET_INVENTORY,\n"
+        "                AdapterCapability.LOCATION_INVENTORY,\n"
         "            }\n"
         "        ),\n"
         if spec.kind == "source"
@@ -151,7 +151,7 @@ def _adapter_template(
             from tallylot.domain.transactions import TransactionFact
             from tallylot.domain.types import AdapterId, JsonValue
             from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-            from tallylot.ports.evidence import WalletInventoryRecord
+            from tallylot.ports.evidence import LocationInventoryRecord
             from tallylot.ports.intake_routing import (
                 IntakeFileFacts,
                 IntakeRoute,
@@ -211,12 +211,12 @@ def _adapter_template(
                     del profile
                     return {{"status": "passed", "issue_count": 0, "rows_with_dates": 0, "mode_counts": {{}}}}, ()
 
-                def extract_wallet_inventory(
+                def extract_location_inventory(
                     self,
                     source: str,
                     raw_dir: Path,
                     profile: SourceProfile,
-                ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+                ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
                     del source, raw_dir, profile
                     return (), ()
 

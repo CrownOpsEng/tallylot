@@ -5,6 +5,7 @@ from __future__ import annotations
 from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.intake.contracts import IntakePlanRequest, IntakePlanResponse
 from tallylot.application.intake.plan import PlannedItem, build_planned_items, write_reports
+from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 
@@ -15,10 +16,12 @@ class PlanIntakeUseCase:
         self._artifacts = artifacts
 
     def execute(self, request: IntakePlanRequest) -> IntakePlanResponse:
-        request.report_dir.mkdir(parents=True, exist_ok=True)
+        incoming_dir = path_from_ref(request.incoming_capture_ref)
+        report_dir = path_from_ref(request.report_output_ref)
+        report_dir.mkdir(parents=True, exist_ok=True)
         planned_items: list[PlannedItem] = []
         issue_rows: list[dict[str, str]] = []
-        with scanned_tree_files(request.incoming_dir, inspect_archives=request.inspect_archives) as scanned_tree:
+        with scanned_tree_files(incoming_dir, inspect_archives=request.inspect_archives) as scanned_tree:
             planned_items.extend(build_planned_items(scanned_tree.files, self._registry, self._artifacts, request))
             issue_rows.extend(
                 {
@@ -29,9 +32,9 @@ class PlanIntakeUseCase:
                 }
                 for issue in scanned_tree.issues
             )
-        write_reports(self._artifacts, request.report_dir, planned_items, issue_rows, copied_count=0)
+        write_reports(self._artifacts, report_dir, planned_items, issue_rows, copied_count=0)
         return IntakePlanResponse(
-            report_dir=request.report_dir,
+            report_output_ref=request.report_output_ref,
             file_count=len(planned_items),
             issue_count=len(issue_rows),
             planned_copy_count=sum(1 for item in planned_items if item.action in {"copy", "extract_copy"}),

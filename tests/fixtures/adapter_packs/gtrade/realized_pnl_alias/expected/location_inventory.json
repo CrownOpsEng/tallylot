@@ -1,0 +1,22 @@
+[
+  {
+    "capture_path": "",
+    "confidence": "medium",
+    "controller": "GTrade report",
+    "display_identifier": "bb4d",
+    "evidence_kind": "csv_row",
+    "evidence_path": "gtrade-report.csv",
+    "identifier_kind": "address_alias",
+    "identifier_value": "bb4d",
+    "location_id": "gtrade_1ct:alias:bb4d",
+    "location_kind": "other",
+    "location_label": "bb4d",
+    "location_path": "",
+    "network_scope": "polygon",
+    "normalized_identifier": "bb4d",
+    "notes": "The report exposes a truncated trader alias instead of a full on-chain address.",
+    "parent_location_id": "",
+    "parent_location_label": "",
+    "source": "GTrade 1CT"
+  }
+]

@@ -98,7 +98,7 @@ def _write_inventory_rows(
     inventory_dir.mkdir(parents=True, exist_ok=True)
     issues_dir.mkdir(parents=True, exist_ok=True)
     artifacts.write_rows(
-        inventory_dir / "wallet_inventory_evidence.csv",
+        inventory_dir / "location_inventory_evidence.csv",
         ("normalized_identifier", "source"),
         evidence_rows,
     )

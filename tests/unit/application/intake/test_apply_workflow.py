@@ -5,6 +5,7 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from tallylot.application.intake import ApplyIntakeUseCase, IntakeApplyRequest
+from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -20,9 +21,9 @@ def test_source_intake_service_applies_loose_files_into_workspace(tmp_path: Path
 
     response = ApplyIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakeApplyRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -46,9 +47,9 @@ def test_source_intake_service_applies_archive_members_into_workspace(tmp_path: 
 
     response = ApplyIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakeApplyRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -103,9 +104,9 @@ def test_source_intake_service_merges_same_cycle_near_duplicate_packages_on_appl
 
     ApplyIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakeApplyRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -144,9 +145,9 @@ def test_source_intake_service_marks_mixed_cycle_bundle_for_review_but_places_fi
 
     ApplyIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakeApplyRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 

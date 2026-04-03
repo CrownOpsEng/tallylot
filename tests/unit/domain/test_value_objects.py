@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
+import pytest
+
 from tallylot.domain.value_objects import format_decimal, format_timestamp, parse_decimal, parse_timestamp
 
 
@@ -22,3 +24,11 @@ def test_parse_timestamp_round_trips_canonical_text() -> None:
 
     assert parse_timestamp(value) == datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC)
     assert format_timestamp(parse_timestamp(value)) == value
+
+
+def test_format_timestamp_rejects_naive_or_non_utc_datetimes() -> None:
+    with pytest.raises(ValueError, match="timestamp must be timezone-aware UTC"):
+        format_timestamp(datetime.fromisoformat("2023-08-06T10:00:00"))
+
+    with pytest.raises(ValueError, match="timestamp must be timezone-aware UTC"):
+        format_timestamp(datetime.fromisoformat("2023-08-06T10:00:00-06:00"))

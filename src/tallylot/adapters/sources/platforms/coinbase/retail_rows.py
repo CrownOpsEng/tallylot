@@ -4,16 +4,25 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     ActivityClassification,
     ActivityDraftSeed,
     EconomicActivityDraft,
     EconomicLegDraft,
+    LegKind,
     classification,
     economic_leg,
-    fee_leg,
+    symbol_claim,
 )
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -30,6 +39,7 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
     asset = (row.get("Asset") or "").strip().upper()
     quantity = parse_decimal((row.get("Quantity Transacted") or "").strip())
     price_currency = (row.get("Price Currency") or "").strip().upper()
+    subtotal_amount = money_decimal(row.get("Subtotal", ""))
     total_amount = money_decimal(row.get("Total (inclusive of fees and/or spread)", ""))
     fee_amount = money_decimal(row.get("Fees and/or Spread", ""))
     description = coinbase_description(tx_type, row.get("Notes", ""), asset, quantity, total_amount)
@@ -37,12 +47,17 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
     transaction_id = f"coinbase-retail-{row_id}"
     if quantity is None and tx_type not in SUPPORTED_RETAIL_TRANSACTION_TYPES:
         raise ValueError(f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}")
-    if tx_type == "buy" and quantity is not None and total_amount is not None:
+    if (
+        tx_type == "buy"
+        and quantity is not None
+        and (cash_amount := _retail_cash_amount(tx_type, subtotal_amount, total_amount, fee_amount)) is not None
+    ):
         return _draft(
             profile=profile,
             seed=ActivityDraftSeed(
                 activity_id=transaction_id,
                 timestamp=timestamp,
+                leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
@@ -51,17 +66,37 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             ),
             tx_type=tx_type,
             legs=(
-                economic_leg(direction="in", asset=asset, amount=quantity),
-                economic_leg(direction="out", asset=price_currency, amount=total_amount),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=quantity,
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-cash_amount,
+                    instrument=symbol_claim(price_currency, venue="coinbase"),
+                ),
+                *_charge_legs(
+                    fee_amount,
+                    price_currency,
+                    attributed_to_leg_id="primary_out",
+                    leg_id="fee",
+                ),
             ),
-            fee_legs=_fee_legs(fee_amount, price_currency),
         )
-    if tx_type == "sell" and quantity is not None and total_amount is not None:
+    if (
+        tx_type == "sell"
+        and quantity is not None
+        and (cash_amount := _retail_cash_amount(tx_type, subtotal_amount, total_amount, fee_amount)) is not None
+    ):
         return _draft(
             profile=profile,
             seed=ActivityDraftSeed(
                 activity_id=transaction_id,
                 timestamp=timestamp,
+                leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
@@ -70,10 +105,25 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             ),
             tx_type=tx_type,
             legs=(
-                economic_leg(direction="in", asset=price_currency, amount=total_amount),
-                economic_leg(direction="out", asset=asset, amount=quantity),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=cash_amount,
+                    instrument=symbol_claim(price_currency, venue="coinbase"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-quantity,
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+                *_charge_legs(
+                    fee_amount,
+                    price_currency,
+                    attributed_to_leg_id="primary_in",
+                    leg_id="fee",
+                ),
             ),
-            fee_legs=_fee_legs(fee_amount, price_currency),
         )
     if tx_type == "reward income" and quantity is not None:
         return _draft(
@@ -81,6 +131,7 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             seed=ActivityDraftSeed(
                 activity_id=transaction_id,
                 timestamp=timestamp,
+                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
@@ -88,7 +139,14 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 provider_operation_key=tx_type,
             ),
             tx_type=tx_type,
-            legs=(economic_leg(direction="in", asset=asset, amount=abs(quantity)),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=abs(quantity),
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+            ),
         )
     if tx_type in {"receive", "deposit"} and quantity is not None:
         return _draft(
@@ -96,6 +154,7 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             seed=ActivityDraftSeed(
                 activity_id=transaction_id,
                 timestamp=timestamp,
+                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
@@ -103,7 +162,14 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 provider_operation_key=tx_type,
             ),
             tx_type=tx_type,
-            legs=(economic_leg(direction="in", asset=asset, amount=quantity),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=quantity,
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+            ),
         )
     if tx_type in {"send", "withdrawal", "withdraw"} and quantity is not None:
         return _draft(
@@ -111,6 +177,7 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
             seed=ActivityDraftSeed(
                 activity_id=transaction_id,
                 timestamp=timestamp,
+                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                 description=description,
                 raw_file=raw_file,
                 raw_row_ref=row_id,
@@ -118,7 +185,14 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 provider_operation_key=tx_type,
             ),
             tx_type=tx_type,
-            legs=(economic_leg(direction="out", asset=asset, amount=abs(quantity)),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-abs(quantity),
+                    instrument=symbol_claim(asset, venue="coinbase"),
+                ),
+            ),
         )
     raise ValueError(f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}")
 
@@ -129,14 +203,12 @@ def _draft(
     seed: ActivityDraftSeed,
     tx_type: str,
     legs: tuple[EconomicLegDraft, ...],
-    fee_legs: tuple[EconomicLegDraft, ...] = (),
 ) -> EconomicActivityDraft:
     return EconomicActivityDraft(
         activity_id=seed.activity_id,
         source=str(profile.source),
         adapter_id="coinbase",
-        account="Coinbase",
-        wallet="Coinbase",
+        location_id=location_id_from_parts(str(profile.source)),
         timestamp=seed.timestamp,
         classification=_classification_for_type(tx_type),
         description=seed.description,
@@ -149,44 +221,75 @@ def _draft(
         review_markers=seed.review_markers,
         confidence=seed.confidence,
         status=seed.status,
+        leg_policy=seed.leg_policy,
         legs=legs,
-        fee_legs=fee_legs,
     )
 
 
-def _fee_legs(fee_amount: Decimal | None, fee_asset: str) -> tuple[EconomicLegDraft, ...]:
+def _charge_legs(
+    fee_amount: Decimal | None,
+    fee_asset: str,
+    *,
+    attributed_to_leg_id: str,
+    leg_id: str,
+) -> tuple[EconomicLegDraft, ...]:
     if fee_amount is None or fee_amount <= Decimal("0") or not fee_asset:
         return ()
-    return (fee_leg(asset=fee_asset, amount=fee_amount),)
+    return (
+        economic_leg(
+            leg_id=leg_id,
+            kind=LegKind.CHARGE,
+            quantity=-fee_amount,
+            instrument=symbol_claim(fee_asset, venue="coinbase"),
+            subtype="trading_fee",
+            attributed_to_leg_id=attributed_to_leg_id,
+        ),
+    )
+
+
+def _retail_cash_amount(
+    tx_type: str,
+    subtotal_amount: Decimal | None,
+    total_amount: Decimal | None,
+    fee_amount: Decimal | None,
+) -> Decimal | None:
+    if subtotal_amount is not None:
+        return subtotal_amount
+    if total_amount is None:
+        return None
+    if fee_amount is None or fee_amount <= Decimal("0"):
+        return total_amount
+    cash_amount = total_amount - fee_amount if tx_type == "buy" else total_amount + fee_amount
+    return cash_amount if cash_amount > Decimal("0") else None
 
 
 def _classification_for_type(tx_type: str) -> ActivityClassification:
     if tx_type in {"buy", "sell"}:
         return classification(
             economic_kind=EconomicKind.SPOT_TRADE,
-            projection_type=ProjectionType.TRADE,
-            journal_intent=JournalIntent.ASSET_EXCHANGE,
-            tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+            projection_hint=ProjectionHint.TRADE,
+            accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+            tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
         )
     if tx_type == "reward income":
         return classification(
             economic_kind=EconomicKind.INTEREST_INCOME,
-            projection_type=ProjectionType.INTEREST_INCOME,
-            journal_intent=JournalIntent.INCOME_RECOGNITION,
-            tax_treatment_code=TaxTreatmentCode.ORDINARY_INCOME,
+            projection_hint=ProjectionHint.INTEREST_INCOME,
+            accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+            tax_treatment_hint=TaxTreatmentHint.ORDINARY_INCOME,
         )
     if tx_type in {"receive", "deposit"}:
         return classification(
             economic_kind=EconomicKind.ASSET_DEPOSIT,
-            projection_type=ProjectionType.DEPOSIT,
-            journal_intent=JournalIntent.FUNDING_INFLOW,
-            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+            projection_hint=ProjectionHint.DEPOSIT,
+            accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
         )
     return classification(
         economic_kind=EconomicKind.ASSET_WITHDRAWAL,
-        projection_type=ProjectionType.WITHDRAWAL,
-        journal_intent=JournalIntent.FUNDING_OUTFLOW,
-        tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+        projection_hint=ProjectionHint.WITHDRAWAL,
+        accounting_intent_hint=AccountingIntentHint.FUNDING_OUTFLOW,
+        tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
     )
 
 

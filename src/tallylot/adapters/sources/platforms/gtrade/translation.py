@@ -9,18 +9,22 @@ from pathlib import Path
 from tallylot.adapters.support import (
     IssueSpec,
     issue_record,
+    location_id_from_parts,
     matching_file_paths,
     read_csv_header,
     read_csv_rows,
 )
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
     ActivityClassification,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.ports.source_profiles import SourceProfile
 
 
@@ -96,19 +100,33 @@ def translate_transactions(
                     activity_id=f"gtrade:{path.name}:row:{index}",
                     source=str(profile.source),
                     adapter_id="gtrade",
-                    account=str(profile.source),
-                    wallet=str(profile.source),
+                    location_id=location_id_from_parts(str(profile.source)),
                     timestamp=timestamp,
                     classification=_classification_for_pnl(pnl),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                     description=description,
                     raw_file=path.name,
                     raw_row_ref=f"row:{index}",
                     tx_hash=f"gtrade:{path.name}:row:{index}",
                     provider_operation_key="realized_pnl",
                     legs=(
-                        (economic_leg(direction="in", asset="DAI", amount=pnl),)
+                        (
+                            economic_leg(
+                                leg_id="primary_in",
+                                kind=LegKind.PRIMARY,
+                                quantity=pnl,
+                                instrument=symbol_claim("DAI", venue="gtrade"),
+                            ),
+                        )
                         if pnl > 0
-                        else (economic_leg(direction="out", asset="DAI", amount=abs(pnl)),)
+                        else (
+                            economic_leg(
+                                leg_id="primary_out",
+                                kind=LegKind.PRIMARY,
+                                quantity=-abs(pnl),
+                                instrument=symbol_claim("DAI", venue="gtrade"),
+                            ),
+                        )
                     ),
                 )
             )
@@ -119,15 +137,15 @@ def _classification_for_pnl(pnl: Decimal) -> ActivityClassification:
     if pnl > 0:
         return classification(
             economic_kind=EconomicKind.DERIVATIVE_REALIZED_PROFIT,
-            projection_type=ProjectionType.DERIVATIVES_FUTURES_PROFIT,
-            journal_intent=JournalIntent.INCOME_RECOGNITION,
-            tax_treatment_code=TaxTreatmentCode.DERIVATIVE_REALIZED_GAIN,
+            projection_hint=ProjectionHint.DERIVATIVES_FUTURES_PROFIT,
+            accounting_intent_hint=AccountingIntentHint.INCOME_RECOGNITION,
+            tax_treatment_hint=TaxTreatmentHint.DERIVATIVE_REALIZED_GAIN,
         )
     return classification(
         economic_kind=EconomicKind.DERIVATIVE_REALIZED_LOSS,
-        projection_type=ProjectionType.DERIVATIVES_FUTURES_LOSS,
-        journal_intent=JournalIntent.EXPENSE_RECOGNITION,
-        tax_treatment_code=TaxTreatmentCode.DERIVATIVE_REALIZED_LOSS,
+        projection_hint=ProjectionHint.DERIVATIVES_FUTURES_LOSS,
+        accounting_intent_hint=AccountingIntentHint.EXPENSE_RECOGNITION,
+        tax_treatment_hint=TaxTreatmentHint.DERIVATIVE_REALIZED_LOSS,
     )
 
 
@@ -150,7 +168,7 @@ def _parse_report_date(value: str) -> datetime | None:
         return None
     for date_format in ("%Y-%m-%d", "%d/%m/%Y"):
         try:
-            return datetime.strptime(value, date_format).replace(tzinfo=UTC).replace(tzinfo=None)
+            return datetime.strptime(value, date_format).replace(tzinfo=UTC)
         except ValueError:
             continue
     return None

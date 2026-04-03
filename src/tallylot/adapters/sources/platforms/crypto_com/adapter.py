@@ -17,17 +17,26 @@ from tallylot.adapters.support import (
     read_csv_header,
 )
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
+    symbol_claim,
     translation_batch_from_drafts,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
-from tallylot.domain.types import AdapterId, JsonValue
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
+from tallylot.domain.types import AdapterId, JsonValue, LocationId
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
@@ -77,12 +86,12 @@ class CryptoComAdapter:
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
         return passed_timezone_summary(profile, mode="value_utc")
 
-    def extract_wallet_inventory(
+    def extract_location_inventory(
         self,
         source: str,
         raw_dir: Path,
         profile: SourceProfile,
-    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+    ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del source, raw_dir, profile
         return (), ()
 
@@ -129,44 +138,61 @@ def _normalize_row(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="crypto_com",
-            account=str(profile.source),
-            wallet=str(profile.source),
+            location_id=LocationId(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.FIAT_DEPOSIT,
-                projection_type=ProjectionType.DEPOSIT,
-                journal_intent=JournalIntent.FUNDING_INFLOW,
-                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                projection_hint=ProjectionHint.DEPOSIT,
+                accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=tx_hash,
             provider_operation_key=kind,
-            legs=(economic_leg(direction="in", asset=currency, amount=amount),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=amount,
+                    instrument=symbol_claim(currency, venue="crypto_com"),
+                ),
+            ),
         )
     if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
         return EconomicActivityDraft(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="crypto_com",
-            account=str(profile.source),
-            wallet=str(profile.source),
+            location_id=LocationId(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.SPOT_TRADE,
-                projection_type=ProjectionType.TRADE,
-                journal_intent=JournalIntent.ASSET_EXCHANGE,
-                tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
+                projection_hint=ProjectionHint.TRADE,
+                accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
             ),
+            leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
             description=f"{currency} -> {to_currency}",
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=tx_hash,
             provider_operation_key=kind,
             legs=(
-                economic_leg(direction="in", asset=to_currency, amount=to_amount),
-                economic_leg(direction="out", asset=currency, amount=abs(amount)),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=to_amount,
+                    instrument=symbol_claim(to_currency, venue="crypto_com"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-abs(amount),
+                    instrument=symbol_claim(currency, venue="crypto_com"),
+                ),
             ),
         )
     if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
@@ -174,21 +200,28 @@ def _normalize_row(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="crypto_com",
-            account=str(profile.source),
-            wallet=str(profile.source),
+            location_id=LocationId(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.ASSET_WITHDRAWAL,
-                projection_type=ProjectionType.WITHDRAWAL,
-                journal_intent=JournalIntent.FUNDING_OUTFLOW,
-                tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+                projection_hint=ProjectionHint.WITHDRAWAL,
+                accounting_intent_hint=AccountingIntentHint.FUNDING_OUTFLOW,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
             ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=tx_hash,
             provider_operation_key=kind,
-            legs=(economic_leg(direction="out", asset=currency, amount=abs(amount)),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-abs(amount),
+                    instrument=symbol_claim(currency, venue="crypto_com"),
+                ),
+            ),
         )
     return issue_record(
         IssueSpec(
@@ -211,7 +244,7 @@ def _parse_timestamp(value: str) -> datetime | None:
     if not value:
         return None
     try:
-        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC).replace(tzinfo=None)
+        return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
     except ValueError:
         return None
 

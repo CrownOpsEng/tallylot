@@ -5,15 +5,21 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
     EconomicActivityDraft,
+    FactLegPolicy,
+    LegKind,
+    LegShapeLimit,
     classification,
     economic_leg,
-    fee_leg,
+    symbol_claim,
 )
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_translation import EconomicLegDraft
 
 from .csv_rows import read_rows
 from .timestamps import parse_export_timestamp
@@ -34,21 +40,28 @@ def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[EconomicA
                 activity_id=f"binance:{path.name}:row:{index}",
                 source=str(profile.source),
                 adapter_id="binance",
-                account="Binance",
-                wallet="Funding",
+                location_id=location_id_from_parts(str(profile.source), "binance", "funding"),
                 timestamp=parse_export_timestamp((row.get("Time") or "").strip(), path.name),
                 classification=classification(
                     economic_kind=EconomicKind.ASSET_DEPOSIT,
-                    projection_type=ProjectionType.DEPOSIT,
-                    journal_intent=JournalIntent.FUNDING_INFLOW,
-                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_IN,
+                    projection_hint=ProjectionHint.DEPOSIT,
+                    accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                    tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                 ),
+                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                 description=f"Binance deposit via {(row.get('Network') or '').strip()}",
                 raw_file=path.name,
                 raw_row_ref=f"row:{index}",
                 tx_hash=(row.get("TXID") or "").strip(),
                 provider_operation_key="funding:deposit",
-                legs=(economic_leg(direction="in", asset=(row.get("Coin") or "").strip().upper(), amount=amount),),
+                legs=(
+                    economic_leg(
+                        leg_id="primary_in",
+                        kind=LegKind.PRIMARY,
+                        quantity=amount,
+                        instrument=symbol_claim((row.get("Coin") or "").strip().upper(), venue="binance"),
+                    ),
+                ),
             )
         )
     return drafts
@@ -64,28 +77,60 @@ def normalize_withdraw_rows(profile: SourceProfile, path: Path) -> list[Economic
         if amount is None:
             continue
         coin = (row.get("Coin") or "").strip().upper()
-        fee_legs = (fee_leg(asset=coin, amount=fee),) if fee is not None and fee > Decimal("0") else ()
         drafts.append(
             EconomicActivityDraft(
                 activity_id=f"binance:{path.name}:row:{index}",
                 source=str(profile.source),
                 adapter_id="binance",
-                account="Binance",
-                wallet="Funding",
+                location_id=location_id_from_parts(str(profile.source), "binance", "funding"),
                 timestamp=parse_export_timestamp((row.get("Time") or "").strip(), path.name),
                 classification=classification(
                     economic_kind=EconomicKind.ASSET_WITHDRAWAL,
-                    projection_type=ProjectionType.WITHDRAWAL,
-                    journal_intent=JournalIntent.FUNDING_OUTFLOW,
-                    tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_TRANSFER_OUT,
+                    projection_hint=ProjectionHint.WITHDRAWAL,
+                    accounting_intent_hint=AccountingIntentHint.FUNDING_OUTFLOW,
+                    tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
                 ),
+                leg_policy=_withdrawal_policy(fee),
                 description=f"Binance withdrawal via {(row.get('Network') or '').strip()}",
                 raw_file=path.name,
                 raw_row_ref=f"row:{index}",
                 tx_hash=(row.get("TXID") or "").strip(),
                 provider_operation_key="funding:withdrawal",
-                legs=(economic_leg(direction="out", asset=coin, amount=amount),),
-                fee_legs=fee_legs,
+                legs=(
+                    economic_leg(
+                        leg_id="primary_out",
+                        kind=LegKind.PRIMARY,
+                        quantity=-amount,
+                        instrument=symbol_claim(coin, venue="binance"),
+                    ),
+                    *_charge_legs(fee, coin, attributed_to_leg_id="primary_out"),
+                ),
             )
         )
     return drafts
+
+
+def _withdrawal_policy(fee: Decimal | None) -> FactLegPolicy:
+    if fee is None or fee <= Decimal("0"):
+        return SINGLE_PRIMARY_ACTIVITY_POLICY
+    return FactLegPolicy(
+        limits=(
+            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1, max_negative_count=1),
+            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+        )
+    )
+
+
+def _charge_legs(fee: Decimal | None, coin: str, *, attributed_to_leg_id: str) -> tuple[EconomicLegDraft, ...]:
+    if fee is None or fee <= Decimal("0"):
+        return ()
+    return (
+        economic_leg(
+            leg_id="charge",
+            kind=LegKind.CHARGE,
+            quantity=-fee,
+            instrument=symbol_claim(coin, venue="binance"),
+            subtype="network_fee",
+            attributed_to_leg_id=attributed_to_leg_id,
+        ),
+    )

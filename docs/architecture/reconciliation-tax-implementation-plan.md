@@ -22,6 +22,8 @@ The system must:
 - compute forward tax state for `2023` to `2025`
 - render a deterministic double-entry journal and require it to validate
 - surface unsupported or ambiguous facts as explicit issues
+- preserve one interface-neutral application surface so future CLI, HTTP/API,
+  and agent entrypoints can share the same typed workflows
 
 Normal runtime operation must stay platform-agnostic:
 
@@ -36,9 +38,11 @@ Normal runtime operation must stay platform-agnostic:
 
 ## Key Decisions
 
-### 1. Build Reconciliation Before Tax
+### 1. Build Reconciliation Before Tax, With Accounting In Parallel
 
-The first major capability is deterministic reconciliation, not ACB math.
+The first major milestone after fact-path alignment is deterministic
+reconciliation, not ACB math. Minimal accounting projection should advance in
+parallel on the same canonical facts.
 
 Reason:
 
@@ -46,6 +50,8 @@ Reason:
 - the best available checkpoint evidence is around `2026-03-23`
 - tax computation is not trustworthy until the fact set lands on a confirmed
   checkpoint
+- accounting and reconciliation validate different properties of the same fact
+  set and should remain separate capabilities
 
 ### 2. Keep CoinTracking At The Edge
 
@@ -82,9 +88,9 @@ A single `category` string is not a stable center for the next phase.
 Every transaction fact should support distinct classification layers:
 
 - `EconomicKind`: provider-neutral semantics
-- `ProjectionType`: output projection metadata for external renderers
-- `TaxTreatmentCode`: jurisdiction-neutral tax intent
-- `JournalIntent`: accounting intent
+- `ProjectionHint`: output projection metadata for external renderers
+- `TaxTreatmentHint`: jurisdiction-neutral tax intent
+- `AccountingIntentHint`: accounting intent
 
 ### 5. Keep The Core Runtime Asset-Class Agnostic
 
@@ -166,6 +172,24 @@ is inherently specific.
 - `application/outputs/`
   - render external artifacts from facts, journals, or tax results
 
+### Interfaces
+
+- `interfaces/cli/`
+  - current operator-facing entry points over application capabilities
+- `interfaces/api/`
+  - reserve for a future thin HTTP or agent-facing surface over the same typed
+    application workflows
+
+Rules:
+
+- CLI, API, and agent entrypoints should share use-case contracts instead of
+  growing separate orchestration logic.
+- Application request and response DTOs should trend toward transport-safe
+  resource references so a future API does not inherit raw filesystem `Path`
+  assumptions as its public contract.
+- Long-running workflows should expose explicit job or artifact references at
+  the interface boundary rather than relying on shell-owned temporary paths.
+
 ### Ports
 
 - typed source translation contracts under `ports/source_translation.py`
@@ -187,6 +211,8 @@ is inherently specific.
 - CoinTracking-specific column defaults, `Tx-ID` behavior, and row-shape
   metadata stay inside the CoinTracking output adapter package rather than in
   provider-local source code
+- CoinTracking rendering must validate that a fact stays within the adapter's
+  published render policy rather than truncating richer legs silently
 - adapters do not own tax logic, checkpoint policy, or reconciliation rules
 - adapters should stay focused on source/output translation. Core data
   manipulation, verification, and workflow policy belong in application and
@@ -248,6 +274,88 @@ The only lost capability should be comparison against the external oracle.
 
 ## Schema Contract
 
+### Repo-Wide Temporal Precision Contract
+
+- Use one timing convention everywhere in the repo:
+  - exact-time fields use UTC-aware `*_at` values
+  - fields that may be date-only or exact-time use `*_at` plus
+    `*_precision`
+- `*_precision` uses one shared enum with at least:
+  - `timestamp`
+  - `date`
+- Date-only values are stored distinctly from exact timestamps even when an
+  exact timestamp falls at midnight.
+- Adapters are responsible for preserving this distinction at translation time.
+- Infer precision from the source contract and parsed field shape, not from the
+  normalized clock value. An exact midnight timestamp remains `timestamp`
+  precision; a date-only source value remains `date` precision.
+- New domain and port fields must adopt this convention instead of introducing
+  provider-local date flags, boolean precision markers, or mixed string shapes.
+
+### Current Fact-Shape Contract
+
+- `TransactionFact` and `EconomicActivityDraft` use one canonical `legs` tuple.
+- Fact construction requires successful identifier resolution to exactly one
+  `InstrumentId`. Unresolved or ambiguous identity must emit review output and a
+  blocking issue rather than guessing.
+- Every leg carries:
+  - stable `leg_id`
+  - signed `quantity`
+  - semantic `LegKind`
+  - optional adapter-detail `subtype`
+  - optional `attributed_to_leg_id` metadata
+- signed quantities use one meaning everywhere:
+  - positive increases the balance of the leg location
+  - negative decreases the balance of the leg location
+- `attributed_to_leg_id` is valid only on non-`primary` legs and only when
+  it references one concrete leg in the same fact.
+- `FactLegPolicy` is generic and per-kind:
+  - `LegShapeLimit` declares `min_count`, `max_count`, `min_positive_count`,
+    `max_positive_count`, `min_negative_count`, and `max_negative_count`
+  - no duplicate kinds
+  - minimum counts cannot exceed maximum counts
+  - signed-count limits cannot exceed per-kind totals
+  - unspecified kinds are disallowed
+  - zero-`primary` shapes are opt-in through the declared policy
+- Current shared policy constants cover:
+  - single-primary activity
+  - two-sided primary exchange
+  - two-sided primary exchange with one `charge`
+- CoinTracking currently supports only:
+  - at least one `primary`
+  - up to one positive `primary`
+  - up to one negative `primary`
+  - up to one negative `charge`
+  - no other non-primary leg kinds
+  - renderers derive inbound and outbound adapter concepts from sign
+
+### Current Normalization Window Contract
+
+- Runtime timestamps are timezone-aware UTC in drafts, facts, balances, and
+  balance evidence. Persisted artifact timestamp text remains
+  `YYYY-MM-DD HH:MM:SS` and is interpreted as UTC on read.
+- Fields that may be date-only or exact-time persist both `*_at` and
+  `*_precision` so exact midnight timestamps remain distinguishable from
+  date-only values.
+- `facts.csv` is schema-versioned and readers fail fast on unexpected
+  `schema_version` values; rebuilding from raw evidence is the supported
+  recovery path after fact-shape breaks.
+- `balances.csv` and `balance_evidence.csv` persist canonical `instrument_id`
+  values and use `as_of_at` plus `as_of_precision` rather than bare symbol or
+  timestamp columns.
+- Windowed normalization applies to:
+  - `facts.csv`
+  - `fact_annotations.json`
+  - `balances.csv`
+  - `exceptions.csv`
+  - `normalization_reviews.csv`
+- Windowed normalization does not apply to:
+  - `balance_evidence.csv`
+  - `location_inventory.csv`
+- Review records carry `context_timestamp`, dataset-level untimed reviews stay
+  visible when a window is active, and summaries report
+  `reviews_outside_normalization_window`.
+
 ### Transitional Adapter Draft Seam
 
 Source normalization should translate through `EconomicActivityDraft` until all
@@ -255,10 +363,19 @@ adapters emit `TransactionFact` artifacts directly.
 
 Required draft responsibilities:
 
-- stable identity plus evidence references
-- timestamp and provenance
+- stable identity claims plus evidence references
+- UTC-aware timestamp and provenance
+- optional `effective_at`
+- optional `effective_precision`
 - account and wallet scope
-- one or more economic legs plus optional fee legs
+- one canonical `legs` tuple only; no separate fee lane
+- explicit leg semantics per leg:
+  - stable `leg_id`
+  - `LegKind`
+  - optional `subtype`
+  - optional `attributed_to_leg_id` on non-`primary` legs only
+- explicit per-kind leg-shape policy through `FactLegPolicy` and
+  `LegShapeLimit`, including any required minimum counts
 - provider operation key and grouped-row support
 - layered classification hints:
   - economic kind
@@ -271,11 +388,17 @@ Rules:
 
 - provider modules translate into drafts only; they do not assemble
   CoinTracking rows or other output-adapter payloads directly
+- shared identifier resolution must succeed to exactly one instrument before
+  fact construction
+- unresolved or ambiguous identifier resolution blocks fact emission for the
+  affected activity and must surface both review output and a blocking issue
 - shared fact builders may derive `TransactionFact` objects from drafts, but
   that derivation stays in shared support rather than provider-local code
 - shared support stays adapter-agnostic and registry-driven; adapters publish
   manifests, translation registries, and provider-local coverage metadata
 - one shared fact builder owns draft-to-fact conversion
+- draft-only provenance references and review markers must survive compilation
+  through a fact-keyed sidecar artifact instead of being dropped
 - one shared projection mapper owns the mapping from layered classifications
   into concrete output-adapter row types
 - one shared projection mapper owns CoinTracking CSV row construction
@@ -296,7 +419,8 @@ Required fields:
   - tx hash
 - time
   - event timestamp
-  - optional settlement timestamp
+  - optional `effective_at`
+  - optional `effective_precision`
   - timestamp provenance
   - timestamp precision
 - participants
@@ -306,15 +430,21 @@ Required fields:
   - ownership scope
 - economics
   - `tuple[EconomicLeg, ...]`
+  - legs use canonical `InstrumentId`
+  - legs carry stable `leg_id`
+  - legs use signed `quantity: Decimal`
+  - explicit per-kind leg-shape policy
   - optional grouped correction or bundle links
   - beneficial ownership change classification
 - valuation
   - `tuple[Valuation, ...]`
   - currency, amount, method, provenance, confidence
 - projection and policy hints
-  - optional `ProjectionType`
-  - optional `TaxTreatmentCode`
-  - optional `JournalIntent`
+  - optional `ProjectionHint`
+  - optional `TaxTreatmentHint`
+  - optional `AccountingIntentHint`
+- annotations
+  - fact-keyed provenance and review-marker sidecar for draft-only metadata
 - status
   - unsupported flag
   - ambiguity flag
@@ -323,6 +453,9 @@ Required fields:
 ### Supporting Types
 
 - `EconomicLeg`
+- `InstrumentIdentityClaim`
+- `EffectiveTime`
+- `TemporalPrecision`
 - `Valuation`
 - `TransferLink`
 - `CorrectionRecord`
@@ -337,13 +470,13 @@ Required fields:
 Lock these early:
 
 - `EconomicKind`
-- `LegRole`
+- `LegKind`
 - `OwnershipChange`
 - `ValuationMethod`
 - `CorrectionReason`
-- `ProjectionType`
-- `TaxTreatmentCode`
-- `JournalIntent`
+- `ProjectionHint`
+- `TaxTreatmentHint`
+- `AccountingIntentHint`
 
 ## Current CoinTracking Adapter Contract
 

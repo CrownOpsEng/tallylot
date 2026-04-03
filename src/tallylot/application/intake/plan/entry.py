@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from tallylot.application.intake.contracts import IntakePlanRequest
+from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 
@@ -29,27 +30,29 @@ def build_planned_item(
     artifacts: ArtifactStorePort,
     request: IntakePlanRequest,
 ) -> PlannedItem:
+    incoming_dir = path_from_ref(request.incoming_capture_ref)
+    workspace_root = path_from_ref(request.workspace_root_ref)
     relative_path = entry.archive_member_path or entry.relative_path
     facts = inspect_intake_file(entry.file_path, relative_path=relative_path)
     route = route_intake_file(
         entry,
         registry=registry,
-        incoming_dir=request.incoming_dir,
-        workspace_root=request.workspace_root,
+        incoming_dir=incoming_dir,
+        workspace_root=workspace_root,
         facts=facts,
     )
     bundle_id_value = bundle_id(entry, source_folder=route.source_folder)
     bundle_relative_path_value = bundle_relative_path(entry)
     inventory_route = resolve_inventory_route(
         artifacts=artifacts,
-        workspace_root=request.workspace_root,
+        workspace_root=workspace_root,
         source_folder=route.source_folder,
         facts=facts,
     )
     overlap_review = resolve_overlap_review(
         artifacts=artifacts,
         request=IntakeOverlapRequest(
-            workspace_root=request.workspace_root,
+            workspace_root=workspace_root,
             source_folder=inventory_route.source_folder,
             capture_id=route.capture_id,
             relative_path=relative_path,
@@ -60,7 +63,7 @@ def build_planned_item(
     )
     source_target_path = (
         source_raw_target_path(
-            request.workspace_root,
+            workspace_root,
             source_folder=inventory_route.source_folder,
             capture_id=route.capture_id,
             bundle_id_value=bundle_id_value,

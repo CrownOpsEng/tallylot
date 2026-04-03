@@ -43,7 +43,7 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
 
     with pytest.raises(
         ValueError,
-        match="must declare intake route, source translation, or wallet inventory capability",
+        match="must declare intake route, source translation, or location inventory capability",
     ):
         registry.collect_source_adapters("fixture.sources")
 
@@ -76,7 +76,7 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
             del profile
             return {}, ()
 
-        def extract_wallet_inventory(
+        def extract_location_inventory(
             self,
             source: str,
             raw_dir: object,

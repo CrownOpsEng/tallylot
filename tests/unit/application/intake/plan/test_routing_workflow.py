@@ -4,6 +4,7 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from tallylot.application.intake import IntakePlanRequest, PlanIntakeUseCase
+from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -20,9 +21,9 @@ def test_source_intake_service_plans_archive_members_without_copying_them(tmp_pa
 
     response = PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -49,9 +50,9 @@ def test_source_intake_service_routes_source_artifacts_to_source_aware_supportin
 
     PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -88,9 +89,9 @@ def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio
 
     PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 
@@ -130,20 +131,24 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
             },
         ),
     )
-    wallet_evidence_path = workspace_root / "analysis" / "inventory" / "wallet_inventory_evidence.csv"
-    wallet_evidence_path.parent.mkdir(parents=True, exist_ok=True)
+    location_evidence_path = workspace_root / "analysis" / "inventory" / "location_inventory_evidence.csv"
+    location_evidence_path.parent.mkdir(parents=True, exist_ok=True)
     FilesystemArtifactStore().write_rows(
-        wallet_evidence_path,
+        location_evidence_path,
         (
             "source",
             "capture_path",
-            "wallet_id",
+            "location_id",
+            "location_kind",
+            "location_label",
+            "parent_location_id",
+            "location_path",
             "identifier_kind",
             "normalized_identifier",
             "display_identifier",
             "network_scope",
             "controller",
-            "account_label",
+            "parent_location_label",
             "evidence_kind",
             "evidence_path",
             "confidence",
@@ -153,13 +158,17 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
             {
                 "source": "eth-gala1",
                 "capture_path": "/tmp/capture",
-                "wallet_id": "evm_address:0x2222222222222222222222222222222222222222",
+                "location_id": "evm_address:0x2222222222222222222222222222222222222222",
+                "location_kind": "onchain_address",
+                "location_label": "Account 2",
+                "parent_location_id": "",
+                "location_path": "Account 2",
                 "identifier_kind": "evm_address",
                 "normalized_identifier": "0x2222222222222222222222222222222222222222",
                 "display_identifier": "0x2222222222222222222222222222222222222222",
                 "network_scope": "ethereum",
                 "controller": "Explorer export",
-                "account_label": "Account 2",
+                "parent_location_label": "",
                 "evidence_kind": "filename",
                 "evidence_path": "/tmp/evidence.csv",
                 "confidence": "high",
@@ -180,9 +189,9 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
 
     PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
         IntakePlanRequest(
-            incoming_dir=incoming_dir,
-            workspace_root=workspace_root,
-            report_dir=report_dir,
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
         )
     )
 

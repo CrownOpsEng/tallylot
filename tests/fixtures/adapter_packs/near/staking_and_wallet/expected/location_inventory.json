@@ -1,0 +1,22 @@
+[
+  {
+    "capture_path": "",
+    "confidence": "high",
+    "controller": "NearBlocks export",
+    "display_identifier": "example.near",
+    "evidence_kind": "filename",
+    "evidence_path": "example.near_transactions.csv",
+    "identifier_kind": "near_account",
+    "identifier_value": "example.near",
+    "location_id": "capture_near:account:example_near",
+    "location_kind": "account",
+    "location_label": "example.near",
+    "location_path": "",
+    "network_scope": "near",
+    "normalized_identifier": "example.near",
+    "notes": "",
+    "parent_location_id": "",
+    "parent_location_label": "",
+    "source": "capture-near"
+  }
+]

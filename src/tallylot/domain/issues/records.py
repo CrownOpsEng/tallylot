@@ -41,6 +41,7 @@ class NormalizationReviewRecord:
     scope: str
     kind: str
     message: str
+    context_timestamp: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
     field_name: str = ""
@@ -56,6 +57,7 @@ class NormalizationReviewRecord:
             "scope": self.scope,
             "kind": self.kind,
             "message": self.message,
+            "context_timestamp": self.context_timestamp,
             "raw_file": self.raw_file,
             "raw_row_ref": self.raw_row_ref,
             "field_name": self.field_name,

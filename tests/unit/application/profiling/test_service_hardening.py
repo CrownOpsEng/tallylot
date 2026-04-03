@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from tallylot.application.profiling import BuildProfileUseCase, ProfileRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import FakeSourceRegistry, MatchingSourceAdapter
@@ -40,7 +41,8 @@ def test_profile_service_rejects_output_inside_raw_tree(tmp_path: Path) -> None:
     (raw_dir / "transactions.csv").write_text(
         (
             "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
-            "fee_asset,fee_amount,tx_hash,description,account,wallet\n"
+            "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+            "tx_hash,description,account,wallet\n"
         ),
         encoding="utf-8",
     )
@@ -54,7 +56,7 @@ def test_profile_service_rejects_output_inside_raw_tree(tmp_path: Path) -> None:
         service.execute(
             ProfileRequest(
                 source="fixture_source",
-                raw_dir=raw_dir,
-                output_dir=raw_dir / "profile",
+                raw_capture_ref=to_resource_ref(raw_dir),
+                profile_output_ref=to_resource_ref(raw_dir / "profile"),
             )
         )

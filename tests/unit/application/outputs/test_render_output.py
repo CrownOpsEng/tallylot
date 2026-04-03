@@ -8,19 +8,25 @@ from pathlib import Path
 import pytest
 
 from tallylot.application.outputs import RenderOutputRequest, RenderOutputUseCase
+from tallylot.application.resource_refs import to_resource_ref
+from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.transactions import (
+    TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
+    AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactClassification,
-    JournalIntent,
-    ProjectionType,
-    TaxTreatmentCode,
+    FactLegPolicy,
+    FactSemantics,
+    LegKind,
+    LegShapeLimit,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
 from tallylot.infrastructure.storage import FilesystemFactRepository
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.output_adapters import OutputAdapter, RenderedArtifact
+from tallylot.ports.output_adapters import OutputAdapter, OutputRenderPolicy, RenderedArtifact
 
 
 @dataclass(frozen=True)
@@ -46,6 +52,15 @@ class FakeOutputAdapter:
             capabilities=capabilities,
             supported=supported,
         )
+        self.render_policy = OutputRenderPolicy(
+            shape_policy=FactLegPolicy(
+                limits=(
+                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_positive_count=0, max_negative_count=0),
+                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+                )
+            ),
+            requires_projection_hint=False,
+        )
 
     def render(self, facts: tuple[TransactionFact, ...], output_path: Path) -> RenderedArtifact:
         del facts, output_path
@@ -68,8 +83,8 @@ def test_output_projection_service_rejects_unsupported_output_adapters(tmp_path:
         service.execute(
             RenderOutputRequest(
                 output_adapter="cointracking_csv",
-                facts_path=facts_path,
-                output_path=tmp_path / "cointracking.csv",
+                facts_ref=to_resource_ref(facts_path),
+                output_ref=to_resource_ref(tmp_path / "cointracking.csv"),
             )
         )
 
@@ -90,8 +105,30 @@ def test_output_projection_service_rejects_adapters_without_render_capability(tm
         service.execute(
             RenderOutputRequest(
                 output_adapter="cointracking_csv",
-                facts_path=facts_path,
-                output_path=tmp_path / "cointracking.csv",
+                facts_ref=to_resource_ref(facts_path),
+                output_ref=to_resource_ref(tmp_path / "cointracking.csv"),
+            )
+        )
+
+
+def test_output_projection_service_rejects_facts_outside_render_policy(tmp_path: Path) -> None:
+    facts_path = _write_facts(tmp_path)
+    service = RenderOutputUseCase(
+        FakeOutputRegistry(
+            FakeOutputAdapter(
+                supported=True,
+                capabilities=frozenset({AdapterCapability.OUTPUT_RENDER}),
+            )
+        ),
+        FilesystemFactRepository(),
+    )
+
+    with pytest.raises(ValueError, match="exceeds cointracking_csv render policy for primary legs"):
+        service.execute(
+            RenderOutputRequest(
+                output_adapter="cointracking_csv",
+                facts_ref=to_resource_ref(facts_path),
+                output_ref=to_resource_ref(tmp_path / "cointracking.csv"),
             )
         )
 
@@ -103,19 +140,35 @@ def _write_facts(tmp_path: Path) -> Path:
         source=SourceId("fixture"),
         adapter_id=AdapterId("structured_csv"),
         timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
-        account="Fixture",
-        wallet="Primary",
-        classification=FactClassification(
+        location_id=LocationId("fixture:primary"),
+        semantics=FactSemantics(
             economic_kind=EconomicKind.SPOT_TRADE,
-            journal_intent=JournalIntent.ASSET_EXCHANGE,
-            tax_treatment_code=TaxTreatmentCode.CAPITAL_EXCHANGE,
-            projection_type=ProjectionType.TRADE,
+            accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+            tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
+            projection_hint=ProjectionHint.TRADE,
         ),
         legs=(
-            EconomicLeg(direction="in", asset=AssetSymbol("BTC"), amount=Decimal("1")),
-            EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("10")),
+            EconomicLeg(
+                leg_id="primary_btc",
+                kind=LegKind.PRIMARY,
+                instrument_id=InstrumentId("symbol:BTC"),
+                quantity=Decimal("1"),
+            ),
+            EconomicLeg(
+                leg_id="primary_cad",
+                kind=LegKind.PRIMARY,
+                instrument_id=InstrumentId("symbol:CAD"),
+                quantity=Decimal("-10"),
+            ),
+            EconomicLeg(
+                leg_id="fee_cad",
+                kind=LegKind.CHARGE,
+                instrument_id=InstrumentId("symbol:CAD"),
+                quantity=Decimal("-0.1"),
+                attributed_to_leg_id="primary_cad",
+            ),
         ),
-        fee_legs=(EconomicLeg(direction="out", asset=AssetSymbol("CAD"), amount=Decimal("0.1")),),
+        leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
         tx_hash="tx-1",
     )
     FilesystemFactRepository().write_facts(path, (fact,))

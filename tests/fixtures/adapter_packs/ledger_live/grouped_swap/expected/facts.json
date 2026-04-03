@@ -1,24 +1,26 @@
 [
   {
-    "account": "Bitcoin 1",
+    "accounting_intent_hint": "asset_exchange",
     "adapter_id": "ledger_live",
     "confidence": "high",
     "description": "Bitcoin 1",
     "economic_kind": "asset_swap",
+    "effective_at": "",
+    "effective_precision": "",
     "fact_id": "ledger_live:ledgerlive-operations.csv:op-1",
-    "fee_legs": "out:ETH:0.01::",
-    "journal_intent": "asset_exchange",
-    "legs": "in:BTC:0.01::|out:ETH:0.5::",
+    "leg_policy": "[{\"kind\":\"charge\",\"min_count\":0,\"max_count\":1,\"min_positive_count\":null,\"max_positive_count\":0,\"min_negative_count\":null,\"max_negative_count\":1},{\"kind\":\"primary\",\"min_count\":2,\"max_count\":2,\"min_positive_count\":1,\"max_positive_count\":1,\"min_negative_count\":1,\"max_negative_count\":1}]",
+    "legs": "[{\"leg_id\":\"primary_in\",\"kind\":\"primary\",\"subtype\":\"\",\"instrument_id\":\"symbol:BTC@ledger_live\",\"quantity\":\"0.01\",\"attributed_to_leg_id\":\"\",\"location_id\":\"\"},{\"leg_id\":\"primary_out\",\"kind\":\"primary\",\"subtype\":\"\",\"instrument_id\":\"symbol:ETH@ledger_live\",\"quantity\":\"-0.5\",\"attributed_to_leg_id\":\"\",\"location_id\":\"\"},{\"leg_id\":\"charge\",\"kind\":\"charge\",\"subtype\":\"network_fee\",\"instrument_id\":\"symbol:ETH@ledger_live\",\"quantity\":\"-0.01\",\"attributed_to_leg_id\":\"primary_out\",\"location_id\":\"\"}]",
+    "location_id": "ledger_live_main:bitcoin_1",
     "operation_group_id": "op-1",
-    "projection_type": "trade",
+    "projection_hint": "trade",
     "provider_operation_key": "ledger_live_swap",
     "raw_file": "ledgerlive-operations.csv",
     "raw_row_ref": "ledgerlive-operations.csv:row:2;ledgerlive-operations.csv:row:3;ledgerlive-operations.csv:row:4",
+    "schema_version": "2",
     "source": "ledger-live-main",
     "status": "mapped",
-    "tax_treatment_code": "capital_exchange",
+    "tax_treatment_hint": "capital_exchange",
     "timestamp": "2026-03-23 10:11:12",
-    "tx_hash": "op-1",
-    "wallet": "Bitcoin 1"
+    "tx_hash": "op-1"
   }
 ]

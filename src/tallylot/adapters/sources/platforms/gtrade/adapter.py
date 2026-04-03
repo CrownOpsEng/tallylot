@@ -6,21 +6,23 @@ from pathlib import Path
 
 from tallylot.adapters.sources.platforms.gtrade.translation import translate_transactions
 from tallylot.adapters.support import (
+    location_id_from_parts,
+    location_issue,
+    location_record,
     match_intake_by_path_or_header,
     matching_file_paths,
     no_intake_route,
     passed_timezone_summary,
     read_csv_header,
     read_csv_rows,
-    wallet_issue,
-    wallet_record,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
-from tallylot.adapters.support.wallets import WalletIssueSpec, WalletRecordSpec
+from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.evidence import WalletInventoryRecord
+from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
@@ -32,7 +34,7 @@ class GTradeAdapter:
         display_name="GTrade",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.WALLET_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}
         ),
         description="Normalizes GTrade realized PnL reports and extracts trader aliases.",
     )
@@ -57,14 +59,14 @@ class GTradeAdapter:
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
         return passed_timezone_summary(profile, mode="date_only")
 
-    def extract_wallet_inventory(
+    def extract_location_inventory(
         self,
         source: str,
         raw_dir: Path,
         profile: SourceProfile,
-    ) -> tuple[tuple[WalletInventoryRecord, ...], tuple[IssueRecord, ...]]:
+    ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
-        evidence: list[WalletInventoryRecord] = []
+        evidence: list[LocationInventoryRecord] = []
         issues: list[IssueRecord] = []
         for path in matching_file_paths(raw_dir):
             if _skip_unrecognized_csv(path):
@@ -74,14 +76,16 @@ class GTradeAdapter:
                 if not alias:
                     continue
                 evidence.append(
-                    wallet_record(
-                        WalletRecordSpec(
+                    location_record(
+                        LocationRecordSpec(
                             source=source,
+                            location_id=location_id_from_parts(source, "alias", alias),
+                            location_kind=LocationKind.OTHER,
+                            location_label=alias,
                             identifier_kind="address_alias",
                             identifier_value=alias,
                             network_scope="polygon",
                             controller="GTrade report",
-                            account_label="",
                             evidence_kind="csv_row",
                             evidence_path=path.name,
                             confidence="medium",
@@ -90,8 +94,8 @@ class GTradeAdapter:
                     )
                 )
                 issues.append(
-                    wallet_issue(
-                        WalletIssueSpec(
+                    location_issue(
+                        LocationIssueSpec(
                             source=source,
                             adapter_id=str(self.manifest.adapter_id),
                             issue_kind="partial_identifier_only",
@@ -99,7 +103,7 @@ class GTradeAdapter:
                                 "GTrade evidence exposes only a truncated address alias; keep companion explorer "
                                 "evidence linked in the wallet inventory."
                             ),
-                            wallet_id=f"address_alias:{alias}",
+                            location_id=str(location_id_from_parts(source, "alias", alias)),
                             raw_file=path.name,
                         )
                     )
@@ -107,8 +111,8 @@ class GTradeAdapter:
                 break
         if not evidence:
             issues.append(
-                wallet_issue(
-                    WalletIssueSpec(
+                location_issue(
+                    LocationIssueSpec(
                         source=source,
                         adapter_id=str(self.manifest.adapter_id),
                         issue_kind="missing_identifier",
@@ -119,12 +123,12 @@ class GTradeAdapter:
         return tuple(evidence), tuple(issues)
 
     def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
-        wallet_inventory, _ = self.extract_wallet_inventory(str(profile.source), raw_dir, profile)
+        location_inventory, _ = self.extract_location_inventory(str(profile.source), raw_dir, profile)
         drafts, issues = translate_transactions(profile, raw_dir)
         return translation_batch_from_drafts(
             drafts,
             issues=issues,
-            wallet_inventory=wallet_inventory,
+            location_inventory=location_inventory,
         )
 
 

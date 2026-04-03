@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tallylot.application.checkpoints import RebuildWalletInventoryUseCase, WalletInventoryRequest
+from tallylot.application.checkpoints import LocationInventoryRequest, RebuildLocationInventoryUseCase
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.profiling import BuildProfileUseCase, ProfileRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_normalization_service
@@ -21,8 +22,8 @@ def test_profile_service_emits_timezone_artifacts(
     BuildProfileUseCase(build_registry(), artifacts).execute(
         ProfileRequest(
             source="fixture_source",
-            raw_dir=structured_source_dir,
-            output_dir=output_dir,
+            raw_capture_ref=to_resource_ref(structured_source_dir),
+            profile_output_ref=to_resource_ref(output_dir),
         )
     )
 
@@ -35,30 +36,33 @@ def test_profile_service_emits_timezone_artifacts(
     assert (output_dir / "timezone_issues.csv").exists()
 
 
-def test_wallet_inventory_rebuild_emits_documented_outputs(
+def test_location_inventory_rebuild_emits_documented_outputs(
     structured_source_dir: Path,
     tmp_path: Path,
 ) -> None:
     normalized_dir = tmp_path / "normalized"
-    output_path = tmp_path / "wallet_inventory.csv"
+    output_path = tmp_path / "location_inventory.csv"
     artifacts = FilesystemArtifactStore()
 
     build_normalization_service(artifacts=artifacts).execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=structured_source_dir,
-            output_dir=normalized_dir,
+            raw_capture_ref=to_resource_ref(structured_source_dir),
+            normalized_output_ref=to_resource_ref(normalized_dir),
         )
     )
 
-    RebuildWalletInventoryUseCase(artifacts).execute(
-        WalletInventoryRequest(normalized_root=normalized_dir, output_path=output_path)
+    RebuildLocationInventoryUseCase(artifacts).execute(
+        LocationInventoryRequest(
+            normalized_dataset_ref=to_resource_ref(normalized_dir),
+            inventory_output_ref=to_resource_ref(output_path),
+        )
     )
 
     assert output_path.exists()
-    assert output_path.with_name("wallet_inventory_evidence.csv").exists()
-    assert output_path.with_name("wallet_inventory_issues.csv").exists()
-    assert output_path.with_name("wallet_inventory_summary.json").exists()
+    assert output_path.with_name("location_inventory_evidence.csv").exists()
+    assert output_path.with_name("location_inventory_issues.csv").exists()
+    assert output_path.with_name("location_inventory_summary.json").exists()
 
 
 def test_normalization_emits_fact_and_balance_artifacts(
@@ -70,11 +74,13 @@ def test_normalization_emits_fact_and_balance_artifacts(
     build_normalization_service(artifacts=FilesystemArtifactStore()).execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_dir=structured_source_dir,
-            output_dir=normalized_dir,
+            raw_capture_ref=to_resource_ref(structured_source_dir),
+            normalized_output_ref=to_resource_ref(normalized_dir),
         )
     )
 
     assert (normalized_dir / "facts.csv").exists()
+    assert (normalized_dir / "fact_annotations.json").exists()
+    assert (normalized_dir / "location_annotations.json").exists()
     assert (normalized_dir / "balances.csv").exists()
     assert (normalized_dir / "balance_evidence.csv").exists()

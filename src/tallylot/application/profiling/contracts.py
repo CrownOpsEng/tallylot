@@ -3,20 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
+
+from tallylot.domain.types import ResourceRef
 
 
 @dataclass(frozen=True)
 class ProfileRequest:
     source: str
-    raw_dir: Path
-    output_dir: Path
+    raw_capture_ref: ResourceRef
+    profile_output_ref: ResourceRef
     inspect_archives: bool = True
 
 
 @dataclass(frozen=True)
 class ProfileResponse:
-    output_dir: Path
+    profile_output_ref: ResourceRef
     adapter_id: str
     file_count: int
     supported: bool

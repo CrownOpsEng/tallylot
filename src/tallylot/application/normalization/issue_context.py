@@ -1,4 +1,4 @@
-"""Normalization issue-context enrichment."""
+"""Normalization issue and review context enrichment."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from tallylot.application.profiling.csv_inventory import (
     inventory_csv_content,
     parse_inventory_timestamp,
 )
-from tallylot.domain.issues import IssueRecord
+from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.value_objects import format_timestamp
 from tallylot.ports.source_profiles import FileInventoryEntry
 
@@ -31,21 +31,35 @@ def enrich_issue_context_timestamps(
     raw_dir: Path,
     inventory: tuple[FileInventoryEntry, ...],
 ) -> tuple[IssueRecord, ...]:
-    resolver = _IssueTimestampResolver(raw_dir=raw_dir, inventory=inventory)
+    resolver = _ContextTimestampResolver(raw_dir=raw_dir, inventory=inventory)
     enriched: list[IssueRecord] = []
     for issue in issues:
         if issue.context_timestamp:
             enriched.append(issue)
             continue
-        context_timestamp = resolver.resolve(issue)
-        if not context_timestamp:
-            enriched.append(issue)
-            continue
-        enriched.append(replace(issue, context_timestamp=context_timestamp))
+        context_timestamp = resolver.resolve(issue.raw_file, issue.raw_row_ref)
+        enriched.append(issue if not context_timestamp else replace(issue, context_timestamp=context_timestamp))
     return tuple(enriched)
 
 
-class _IssueTimestampResolver:
+def enrich_review_context_timestamps(
+    reviews: tuple[NormalizationReviewRecord, ...],
+    *,
+    raw_dir: Path,
+    inventory: tuple[FileInventoryEntry, ...],
+) -> tuple[NormalizationReviewRecord, ...]:
+    resolver = _ContextTimestampResolver(raw_dir=raw_dir, inventory=inventory)
+    enriched: list[NormalizationReviewRecord] = []
+    for review in reviews:
+        if review.context_timestamp:
+            enriched.append(review)
+            continue
+        context_timestamp = resolver.resolve(review.raw_file, review.raw_row_ref)
+        enriched.append(review if not context_timestamp else replace(review, context_timestamp=context_timestamp))
+    return tuple(enriched)
+
+
+class _ContextTimestampResolver:
     def __init__(self, *, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> None:
         self._raw_dir = raw_dir
         self._by_relative_path = {entry.relative_path: entry for entry in inventory if entry.relative_path}
@@ -55,11 +69,11 @@ class _IssueTimestampResolver:
                 self._by_name[Path(entry.relative_path).name].append(entry)
         self._rows_by_relative_path: dict[str, list[dict[str, str]]] = {}
 
-    def resolve(self, issue: IssueRecord) -> str:
-        entry = self._inventory_entry(issue.raw_file)
+    def resolve(self, raw_file: str, raw_row_ref: str) -> str:
+        entry = self._inventory_entry(raw_file)
         if entry is None:
             return ""
-        if row_number := _row_number(issue.raw_row_ref):
+        if row_number := _row_number(raw_row_ref):
             row = self._row(entry, row_number)
             if row is not None and entry.date_field:
                 row_timestamp = parse_inventory_timestamp(
@@ -68,7 +82,7 @@ class _IssueTimestampResolver:
                 )
                 if row_timestamp is not None:
                     return format_timestamp(row_timestamp)
-        for candidate in _reference_timestamp_candidates(issue.raw_row_ref):
+        for candidate in _reference_timestamp_candidates(raw_row_ref):
             parsed = parse_inventory_timestamp(candidate, source_timezone=None)
             if parsed is not None:
                 return format_timestamp(parsed)

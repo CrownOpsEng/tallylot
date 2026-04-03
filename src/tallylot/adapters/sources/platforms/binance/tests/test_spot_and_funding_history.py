@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.binance.funding_history import (
@@ -8,7 +9,7 @@ from tallylot.adapters.sources.platforms.binance.funding_history import (
 )
 from tallylot.adapters.sources.platforms.binance.spot_trades import normalize_spot_rows
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import EconomicKind, ProjectionType
+from tallylot.domain.transactions import EconomicKind, LegKind, ProjectionHint
 from tests.support.services import build_source_profile
 
 
@@ -24,13 +25,17 @@ def test_binance_spot_rows_normalize_buy_and_sell_trades(tmp_path: Path) -> None
     events = compile_activity_drafts(tuple(normalize_spot_rows(build_source_profile(adapter_id="binance"), path)))
 
     assert [event.economic_kind for event in events] == [EconomicKind.SPOT_TRADE, EconomicKind.SPOT_TRADE]
-    assert [event.projection_type for event in events] == [ProjectionType.TRADE, ProjectionType.TRADE]
-    assert str(events[0].asset_in) == "BTC"
-    assert str(events[0].asset_out) == "USDT"
-    assert str(events[1].asset_in) == "USDT"
-    assert str(events[1].asset_out) == "ETH"
-    assert events[0].account == "Spot"
-    assert events[1].account == "Spot"
+    assert [event.projection_hint for event in events] == [ProjectionHint.TRADE, ProjectionHint.TRADE]
+    assert str(events[0].legs[0].instrument_id) == "symbol:BTC@binance"
+    assert str(events[0].legs[1].instrument_id) == "symbol:USDT@binance"
+    assert str(events[1].legs[0].instrument_id) == "symbol:ETH@binance"
+    assert str(events[1].legs[1].instrument_id) == "symbol:USDT@binance"
+    assert events[0].legs[0].quantity == Decimal("0.001")
+    assert events[0].legs[1].quantity == Decimal("-28")
+    assert events[1].legs[0].quantity == Decimal("-0.5")
+    assert events[1].legs[1].quantity == Decimal("900")
+    assert str(events[0].location_id) == "fixture:spot"
+    assert str(events[1].location_id) == "fixture:spot"
 
 
 def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Path) -> None:
@@ -63,14 +68,18 @@ def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Pat
 
     assert len(deposits) == 1
     assert deposits[0].economic_kind == EconomicKind.ASSET_DEPOSIT
-    assert deposits[0].projection_type == ProjectionType.DEPOSIT
-    assert str(deposits[0].asset_in) == "USDT"
+    assert deposits[0].projection_hint == ProjectionHint.DEPOSIT
+    assert str(deposits[0].legs[0].instrument_id) == "symbol:USDT@binance"
+    assert deposits[0].legs[0].quantity == Decimal("100")
     assert deposits[0].tx_hash == "deposit-tx"
     assert len(withdrawals) == 1
     assert withdrawals[0].economic_kind == EconomicKind.ASSET_WITHDRAWAL
-    assert withdrawals[0].projection_type == ProjectionType.WITHDRAWAL
-    assert str(withdrawals[0].asset_out) == "ETH"
-    assert str(withdrawals[0].fee_asset) == "ETH"
+    assert withdrawals[0].projection_hint == ProjectionHint.WITHDRAWAL
+    assert str(withdrawals[0].legs[0].instrument_id) == "symbol:ETH@binance"
+    assert withdrawals[0].legs[0].quantity == Decimal("-1.5")
+    charge_legs = tuple(leg for leg in withdrawals[0].legs if leg.kind is LegKind.CHARGE)
+    assert str(charge_legs[0].instrument_id) == "symbol:ETH@binance"
+    assert charge_legs[0].quantity == Decimal("-0.01")
     assert withdrawals[0].tx_hash == "withdraw-tx"
 
 

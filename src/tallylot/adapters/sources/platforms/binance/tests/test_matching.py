@@ -92,8 +92,8 @@ def test_binance_adapter_reports_timezone_validation_summary_from_inventory() ->
     assert not issues
 
 
-def test_binance_adapter_extract_wallet_inventory_is_empty() -> None:
-    records, issues = BinanceAdapter().extract_wallet_inventory(
+def test_binance_adapter_extract_location_inventory_is_empty() -> None:
+    records, issues = BinanceAdapter().extract_location_inventory(
         "binance",
         Path("/tmp/raw"),
         build_source_profile(adapter_id="binance"),

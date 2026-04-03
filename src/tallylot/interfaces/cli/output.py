@@ -8,6 +8,7 @@ from typing import Annotated
 import typer
 
 from tallylot.application.outputs.contracts import RenderOutputRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.composition.runtime import render_output_use_case
 
 from .apps import output_render_app
@@ -23,8 +24,8 @@ def render_output_file(
     response = render_output_use_case().execute(
         RenderOutputRequest(
             output_adapter=output_adapter,
-            facts_path=facts,
-            output_path=output,
+            facts_ref=to_resource_ref(facts),
+            output_ref=to_resource_ref(output),
         )
     )
     emit_response(response.__dict__)

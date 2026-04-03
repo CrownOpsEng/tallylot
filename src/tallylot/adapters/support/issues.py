@@ -29,6 +29,7 @@ class ReviewSpec:
     scope: str
     kind: str
     message: str
+    context_timestamp: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
     field_name: str = ""
@@ -60,6 +61,7 @@ def review_record(spec: ReviewSpec) -> NormalizationReviewRecord:
         scope=spec.scope,
         kind=spec.kind,
         message=spec.message,
+        context_timestamp=spec.context_timestamp,
         raw_file=spec.raw_file,
         raw_row_ref=spec.raw_row_ref,
         field_name=spec.field_name,

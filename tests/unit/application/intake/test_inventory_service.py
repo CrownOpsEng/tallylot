@@ -230,7 +230,7 @@ def _write_inventory_rows(
     source_rows: tuple[dict[str, str], ...],
 ) -> None:
     artifacts.write_rows(
-        workspace_root / "analysis" / "inventory" / "wallet_inventory_evidence.csv",
+        workspace_root / "analysis" / "inventory" / "location_inventory_evidence.csv",
         ("source", "normalized_identifier"),
         evidence_rows,
     )

@@ -1,24 +1,26 @@
 [
   {
-    "account": "bsc-wallet",
+    "accounting_intent_hint": "funding_inflow",
     "adapter_id": "evm_explorer",
     "confidence": "high",
     "description": "Transfer - 0xabc",
     "economic_kind": "chain_transfer_in",
+    "effective_at": "",
+    "effective_precision": "",
     "fact_id": "evm_explorer:transactions.csv:0xabc",
-    "fee_legs": "",
-    "journal_intent": "funding_inflow",
-    "legs": "in:BNB:1.5::",
+    "leg_policy": "[{\"kind\":\"primary\",\"min_count\":1,\"max_count\":1,\"min_positive_count\":null,\"max_positive_count\":1,\"min_negative_count\":null,\"max_negative_count\":1}]",
+    "legs": "[{\"leg_id\":\"primary_in\",\"kind\":\"primary\",\"subtype\":\"\",\"instrument_id\":\"symbol:BNB@evm_explorer\",\"quantity\":\"1.5\",\"attributed_to_leg_id\":\"\",\"location_id\":\"\"}]",
+    "location_id": "bsc_wallet",
     "operation_group_id": "",
-    "projection_type": "deposit",
+    "projection_hint": "deposit",
     "provider_operation_key": "explorer_transfer_in",
     "raw_file": "transactions.csv",
     "raw_row_ref": "transactions.csv:row:2",
+    "schema_version": "2",
     "source": "bsc-wallet",
     "status": "mapped",
-    "tax_treatment_code": "non_taxable_transfer_in",
+    "tax_treatment_hint": "non_taxable_transfer_in",
     "timestamp": "2023-11-14 12:00:00",
-    "tx_hash": "0xabc",
-    "wallet": "bsc-wallet"
+    "tx_hash": "0xabc"
   }
 ]

@@ -13,6 +13,7 @@ from tallylot.adapters.sources.wallets.evm_wallet.adapter import (
     _object_map,
     _wallet_state_root,
 )
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.ports.source_profiles import FileInventoryEntry
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
@@ -46,7 +47,7 @@ def test_evm_wallet_adapter_extracts_accounts_and_identity_records(tmp_path: Pat
         encoding="utf-8",
     )
 
-    records, issues = EvmWalletAdapter().extract_wallet_inventory(
+    records, issues = EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
@@ -54,7 +55,7 @@ def test_evm_wallet_adapter_extracts_accounts_and_identity_records(tmp_path: Pat
 
     assert not issues
     assert {record.identifier_kind for record in records} == {"evm_address", "tron_address"}
-    assert {record.account_label for record in records} == {"Primary", "Tron Wallet"}
+    assert {record.location_label for record in records} == {"Primary", "Tron Wallet"}
 
 
 def test_evm_wallet_adapter_reads_metamask_wrapped_state_and_bitcoin_identity(tmp_path: Path) -> None:
@@ -82,7 +83,7 @@ def test_evm_wallet_adapter_reads_metamask_wrapped_state_and_bitcoin_identity(tm
         encoding="utf-8",
     )
 
-    records, issues = EvmWalletAdapter().extract_wallet_inventory(
+    records, issues = EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
@@ -90,7 +91,7 @@ def test_evm_wallet_adapter_reads_metamask_wrapped_state_and_bitcoin_identity(tm
 
     assert not issues
     assert {record.identifier_kind for record in records} == {"evm_address", "btc_address"}
-    assert {record.account_label for record in records} == {"Primary", "BTC Wallet"}
+    assert {record.location_label for record in records} == {"Primary", "BTC Wallet"}
 
 
 def test_evm_wallet_adapter_matches_state_json_inventory_without_source_label() -> None:
@@ -113,7 +114,7 @@ def test_evm_wallet_adapter_matches_state_json_inventory_without_source_label() 
     assert score == 80
 
 
-def test_evm_wallet_adapter_normalize_returns_wallet_inventory_and_missing_identifier_issue(tmp_path: Path) -> None:
+def test_evm_wallet_adapter_normalize_returns_location_inventory_and_missing_identifier_issue(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "wallet-state.json").write_text(json.dumps({"wallet_state": {}}), encoding="utf-8")
@@ -123,8 +124,8 @@ def test_evm_wallet_adapter_normalize_returns_wallet_inventory_and_missing_ident
         raw_dir,
     )
 
-    assert not result.facts
-    assert not result.wallet_inventory
+    assert not compile_activity_drafts(result.drafts)
+    assert not result.location_inventory
     assert len(result.issues) == 1
     assert result.issues[0].kind == "missing_identifier"
 
@@ -147,7 +148,7 @@ def test_evm_wallet_adapter_extracts_solana_identity_and_ignores_unknown_identit
         encoding="utf-8",
     )
 
-    records, issues = EvmWalletAdapter().extract_wallet_inventory(
+    records, issues = EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
@@ -215,7 +216,7 @@ def test_metamask_empty_state_fixture_reports_missing_identifier() -> None:
     raw_dir = fixture_raw_dir("evm_wallet", "missing_state")
 
     profile, adapter = profile_and_adapter("EVM wallet", raw_dir)
-    evidence, issues = adapter.extract_wallet_inventory("EVM wallet", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory("EVM wallet", raw_dir, profile)
 
     assert str(profile.adapter_id) == "evm_wallet"
     assert evidence == ()
@@ -223,15 +224,15 @@ def test_metamask_empty_state_fixture_reports_missing_identifier() -> None:
     assert issues[0].kind == "missing_identifier"
 
 
-def test_metamask_wallet_inventory_uses_renamed_state_file_without_filename_dependency() -> None:
+def test_metamask_location_inventory_uses_renamed_state_file_without_filename_dependency() -> None:
     raw_dir = fixture_raw_dir("evm_wallet", "wallets")
 
     profile, adapter = profile_and_adapter("Unknown Wallet", raw_dir)
-    evidence, issues = adapter.extract_wallet_inventory("Unknown Wallet", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory("Unknown Wallet", raw_dir, profile)
 
     assert str(profile.adapter_id) == "evm_wallet"
     assert issues == ()
-    assert {row.wallet_id for row in evidence} >= {
-        "evm_address:0x1111111111111111111111111111111111111111",
-        "btc_address:bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    assert {str(row.location_id) for row in evidence} >= {
+        "unknown_wallet:address:0x1111111111111111111111111111111111111111",
+        "unknown_wallet:btc_address:bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     }

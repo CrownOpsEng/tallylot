@@ -1,5 +1,5 @@
-"""Checkpoint and balance state models."""
+"""Checkpoint-derived balance state models."""
 
-from .models import BalanceEvidence, BalanceSnapshot
+from .models import BalanceSnapshot
 
-__all__ = ["BalanceEvidence", "BalanceSnapshot"]
+__all__ = ["BalanceSnapshot"]

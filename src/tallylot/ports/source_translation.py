@@ -5,37 +5,44 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
 
-from tallylot.domain.checkpoints import BalanceEvidence
+from tallylot.domain.instruments import InstrumentId, InstrumentIdentityClaim, InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+from tallylot.domain.locations import LocationKind, LocationRecord
+from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
+    AccountingIntentHint,
     EconomicKind,
     EconomicLeg,
-    FactClassification,
-    JournalIntent,
-    ProjectionType,
-    TaxTreatmentCode,
+    FactLegPolicy,
+    FactSemantics,
+    LegKind,
+    ProjectionHint,
+    TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, AssetSymbol, SourceId, TransactionId
-from tallylot.ports.evidence import WalletInventoryRecord
-
-DraftDirection = Literal["in", "out"]
+from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
+from tallylot.domain.value_objects import require_temporal_datetime, require_utc_datetime
+from tallylot.ports.annotations import AdapterMetadata
+from tallylot.ports.evidence import LocationInventoryRecord
 
 
 @dataclass(frozen=True)
 class ActivityClassification:
     economic_kind: EconomicKind
-    projection_type: ProjectionType | None
-    journal_intent: JournalIntent
-    tax_treatment_code: TaxTreatmentCode
+    projection_hint: ProjectionHint | None
+    accounting_intent_hint: AccountingIntentHint
+    tax_treatment_hint: TaxTreatmentHint
 
 
 @dataclass(frozen=True)
 class ActivityDraftSeed:
     activity_id: str
     timestamp: datetime
+    leg_policy: FactLegPolicy
+    effective_at: datetime | None = None
+    effective_precision: TemporalPrecision | None = None
     description: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
@@ -44,23 +51,55 @@ class ActivityDraftSeed:
     operation_group_id: str = ""
     provenance_refs: tuple[str, ...] = ()
     review_markers: tuple[str, ...] = ()
+    adapter_metadata: tuple[AdapterMetadata, ...] = ()
     confidence: str = "high"
     status: str = "mapped"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "timestamp",
+            require_utc_datetime(self.timestamp, label="activity draft seed timestamp"),
+        )
+        if self.effective_at is None:
+            if self.effective_precision is not None:
+                raise ValueError("activity draft seed effective_precision requires effective_at")
+        else:
+            if self.effective_precision is None:
+                raise ValueError("activity draft seed effective_at requires effective_precision")
+            object.__setattr__(
+                self,
+                "effective_at",
+                require_temporal_datetime(
+                    self.effective_at,
+                    precision=self.effective_precision,
+                    label="activity draft seed effective_at",
+                ),
+            )
 
 
 @dataclass(frozen=True)
 class EconomicLegDraft:
-    direction: DraftDirection
-    asset: str
-    amount: Decimal
-    account: str = ""
-    wallet: str = ""
+    leg_id: str
+    kind: LegKind
+    instrument_identity_claims: tuple[InstrumentIdentityClaim, ...]
+    quantity: Decimal
+    subtype: str | None = None
+    attributed_to_leg_id: str | None = None
+    location_id: LocationId | None = None
 
     def __post_init__(self) -> None:
-        if self.amount <= Decimal("0"):
-            raise ValueError("draft leg amount must be greater than zero")
-        if not self.asset:
-            raise ValueError("draft leg asset must be present")
+        if not self.instrument_identity_claims:
+            raise ValueError("draft leg must include at least one instrument identity claim")
+        EconomicLeg(
+            leg_id=self.leg_id,
+            kind=self.kind,
+            instrument_id=InstrumentId("draft:placeholder"),
+            quantity=self.quantity,
+            subtype=self.subtype,
+            attributed_to_leg_id=self.attributed_to_leg_id,
+            location_id=self.location_id,
+        )
 
 
 @dataclass(frozen=True)
@@ -69,11 +108,12 @@ class EconomicActivityDraft:
     source: str
     adapter_id: str
     timestamp: datetime
-    account: str
-    wallet: str
+    location_id: LocationId
     classification: ActivityClassification
     legs: tuple[EconomicLegDraft, ...]
-    fee_legs: tuple[EconomicLegDraft, ...] = ()
+    leg_policy: FactLegPolicy
+    effective_at: datetime | None = None
+    effective_precision: TemporalPrecision | None = None
     description: str = ""
     raw_file: str = ""
     raw_row_ref: str = ""
@@ -82,12 +122,34 @@ class EconomicActivityDraft:
     operation_group_id: str = ""
     provenance_refs: tuple[str, ...] = ()
     review_markers: tuple[str, ...] = ()
+    adapter_metadata: tuple[AdapterMetadata, ...] = ()
     confidence: str = "high"
     status: str = "mapped"
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "timestamp",
+            require_utc_datetime(self.timestamp, label="economic activity draft timestamp"),
+        )
+        if self.effective_at is None:
+            if self.effective_precision is not None:
+                raise ValueError("economic activity draft effective_precision requires effective_at")
+        else:
+            if self.effective_precision is None:
+                raise ValueError("economic activity draft effective_at requires effective_precision")
+            object.__setattr__(
+                self,
+                "effective_at",
+                require_temporal_datetime(
+                    self.effective_at,
+                    precision=self.effective_precision,
+                    label="economic activity draft effective_at",
+                ),
+            )
         if not self.legs:
-            raise ValueError("draft must include at least one economic leg")
+            raise ValueError("draft must include at least one leg")
+        _validated_transaction_fact(self)
 
 
 @dataclass(frozen=True)
@@ -96,83 +158,91 @@ class SourceTranslationBatch:
     balance_evidence: tuple[BalanceEvidence, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
-    wallet_inventory: tuple[WalletInventoryRecord, ...]
+    location_inventory: tuple[LocationInventoryRecord, ...]
 
-    @property
-    def facts(self) -> tuple[TransactionFact, ...]:
-        return transaction_facts_from_drafts(self.drafts)
+
+@dataclass(frozen=True)
+class LocationDraft:
+    location_id: LocationId
+    location_kind: LocationKind
+    label: str
+    parent_location_id: LocationId | None = None
+    path: tuple[str, ...] = ()
+
+    def to_record(self) -> LocationRecord:
+        return LocationRecord(
+            location_id=self.location_id,
+            location_kind=self.location_kind,
+            label=self.label,
+            parent_location_id=self.parent_location_id,
+            path=self.path,
+        )
 
 
 def classification(
     *,
     economic_kind: EconomicKind,
-    projection_type: ProjectionType | None = None,
-    journal_intent: JournalIntent,
-    tax_treatment_code: TaxTreatmentCode,
+    projection_hint: ProjectionHint | None = None,
+    accounting_intent_hint: AccountingIntentHint,
+    tax_treatment_hint: TaxTreatmentHint,
 ) -> ActivityClassification:
     return ActivityClassification(
         economic_kind=economic_kind,
-        projection_type=projection_type,
-        journal_intent=journal_intent,
-        tax_treatment_code=tax_treatment_code,
+        projection_hint=projection_hint,
+        accounting_intent_hint=accounting_intent_hint,
+        tax_treatment_hint=tax_treatment_hint,
     )
 
 
-def economic_leg(
+def economic_leg(  # pylint: disable=too-many-arguments
     *,
-    direction: DraftDirection,
-    asset: str,
-    amount: Decimal,
-    account: str = "",
-    wallet: str = "",
+    leg_id: str,
+    kind: LegKind,
+    quantity: Decimal,
+    instrument: str | InstrumentIdentityClaim | tuple[InstrumentIdentityClaim, ...],
+    subtype: str | None = None,
+    attributed_to_leg_id: str | None = None,
+    location_id: LocationId | None = None,
 ) -> EconomicLegDraft:
-    return EconomicLegDraft(direction=direction, asset=asset, amount=amount, account=account, wallet=wallet)
+    return EconomicLegDraft(
+        leg_id=leg_id,
+        kind=kind,
+        instrument_identity_claims=_identity_claims(instrument),
+        quantity=quantity,
+        subtype=subtype,
+        attributed_to_leg_id=attributed_to_leg_id,
+        location_id=location_id,
+    )
 
 
-def fee_leg(
-    *,
-    asset: str,
-    amount: Decimal,
-    account: str = "",
-    wallet: str = "",
-) -> EconomicLegDraft:
-    return EconomicLegDraft(direction="out", asset=asset, amount=amount, account=account, wallet=wallet)
-
-
-def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact:
+def _validated_transaction_fact(draft: EconomicActivityDraft) -> TransactionFact:
     return TransactionFact(
         fact_id=TransactionId(draft.activity_id),
         source=SourceId(draft.source),
         adapter_id=AdapterId(draft.adapter_id),
         timestamp=draft.timestamp,
-        account=draft.account,
-        wallet=draft.wallet,
-        classification=FactClassification(
+        effective_at=draft.effective_at,
+        effective_precision=draft.effective_precision,
+        location_id=draft.location_id,
+        semantics=FactSemantics(
             economic_kind=draft.classification.economic_kind,
-            journal_intent=draft.classification.journal_intent,
-            tax_treatment_code=draft.classification.tax_treatment_code,
-            projection_type=draft.classification.projection_type,
+            accounting_intent_hint=draft.classification.accounting_intent_hint,
+            tax_treatment_hint=draft.classification.tax_treatment_hint,
+            projection_hint=draft.classification.projection_hint,
         ),
         legs=tuple(
             EconomicLeg(
-                direction=leg.direction,
-                asset=AssetSymbol(leg.asset),
-                amount=leg.amount,
-                account=leg.account,
-                wallet=leg.wallet,
+                leg_id=leg.leg_id,
+                kind=leg.kind,
+                instrument_id=InstrumentId("draft:placeholder"),
+                quantity=leg.quantity,
+                subtype=leg.subtype,
+                attributed_to_leg_id=leg.attributed_to_leg_id,
+                location_id=leg.location_id,
             )
             for leg in draft.legs
         ),
-        fee_legs=tuple(
-            EconomicLeg(
-                direction=leg.direction,
-                asset=AssetSymbol(leg.asset),
-                amount=leg.amount,
-                account=leg.account,
-                wallet=leg.wallet,
-            )
-            for leg in draft.fee_legs
-        ),
+        leg_policy=draft.leg_policy,
         description=draft.description,
         provider_operation_key=draft.provider_operation_key,
         operation_group_id=draft.operation_group_id,
@@ -184,5 +254,29 @@ def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact
     )
 
 
-def transaction_facts_from_drafts(drafts: tuple[EconomicActivityDraft, ...]) -> tuple[TransactionFact, ...]:
-    return tuple(transaction_fact_from_draft(draft) for draft in drafts)
+def symbol_claim(
+    value: str,
+    *,
+    display_name: str = "",
+    kind_hint: InstrumentKind = InstrumentKind.UNKNOWN,
+    precision_hint: int | None = None,
+    venue: str | None = None,
+) -> InstrumentIdentityClaim:
+    return InstrumentIdentityClaim(
+        scheme="symbol",
+        value=value,
+        venue=venue,
+        kind_hint=kind_hint,
+        display_name=display_name,
+        precision_hint=precision_hint,
+    )
+
+
+def _identity_claims(
+    instrument: str | InstrumentIdentityClaim | tuple[InstrumentIdentityClaim, ...],
+) -> tuple[InstrumentIdentityClaim, ...]:
+    if isinstance(instrument, tuple):
+        return instrument
+    if isinstance(instrument, InstrumentIdentityClaim):
+        return (instrument,)
+    return (symbol_claim(instrument),)

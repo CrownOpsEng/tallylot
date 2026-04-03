@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.adapters.support.drafts import (
+    TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
+    LegKind,
     classification,
     economic_leg,
+    symbol_claim,
 )
-from tallylot.domain.transactions import EconomicKind, JournalIntent, ProjectionType, TaxTreatmentCode
+from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -45,21 +49,31 @@ def normalize_asset_migration(
         activity_id=f"coinbase-asset-migration-{sold_id}-{bought_id}",
         source=str(profile.source),
         adapter_id="coinbase",
-        account="Coinbase",
-        wallet="Coinbase",
+        location_id=location_id_from_parts(str(profile.source)),
         timestamp=parse_retail_timestamp(timestamp),
         classification=classification(
             economic_kind=EconomicKind.ASSET_MIGRATION,
-            projection_type=ProjectionType.SWAP_NON_TAXABLE,
-            journal_intent=JournalIntent.ASSET_EXCHANGE,
-            tax_treatment_code=TaxTreatmentCode.NON_TAXABLE_ASSET_MIGRATION,
+            projection_hint=ProjectionHint.SWAP_NON_TAXABLE,
+            accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_ASSET_MIGRATION,
         ),
+        leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
         description="Coinbase Asset Migration",
         raw_file=raw_file,
         raw_row_ref=f"{sold_id}|{bought_id}",
         provider_operation_key="asset_migration",
         legs=(
-            economic_leg(direction="in", asset=(bought_row.get("Asset") or "").strip().upper(), amount=bought_quantity),
-            economic_leg(direction="out", asset=(sold_row.get("Asset") or "").strip().upper(), amount=sold_quantity),
+            economic_leg(
+                leg_id="asset_in",
+                kind=LegKind.PRIMARY,
+                quantity=bought_quantity,
+                instrument=symbol_claim((bought_row.get("Asset") or "").strip().upper(), venue="coinbase"),
+            ),
+            economic_leg(
+                leg_id="asset_out",
+                kind=LegKind.PRIMARY,
+                quantity=-sold_quantity,
+                instrument=symbol_claim((sold_row.get("Asset") or "").strip().upper(), venue="coinbase"),
+            ),
         ),
     )
