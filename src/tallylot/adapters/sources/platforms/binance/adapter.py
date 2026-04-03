@@ -32,7 +32,7 @@ from .pdf_balances import match_pdf_statement as _match_pdf_statement
 from .translation import translate_binance_exports
 
 
-class BinanceAdapter:
+class _BinanceAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("binance"),
         display_name="Binance",
@@ -121,4 +121,4 @@ class BinanceAdapter:
         return translate_binance_exports(profile, raw_dir)
 
 
-ADAPTER = BinanceAdapter()
+ADAPTER = _BinanceAdapter()

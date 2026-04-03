@@ -7,6 +7,7 @@ from pathlib import Path
 from textwrap import dedent
 
 from repo_support.paths import repo_root as active_repo_root
+from repo_support.pyright_config import sync_pyright_config
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -39,7 +40,7 @@ def _camel_case(value: str) -> str:
 
 
 @dataclass(frozen=True)
-class AdapterScaffoldSpec:
+class _AdapterScaffoldSpec:
     repo_root: Path
     kind: str
     module_name: str
@@ -60,9 +61,9 @@ def _module_parts(kind: str, module_name: str) -> tuple[str, ...]:
     return parts
 
 
-def scaffold_adapter(
+def _scaffold_adapter(
     *,
-    spec: AdapterScaffoldSpec,
+    spec: _AdapterScaffoldSpec,
     force: bool,
 ) -> tuple[Path, ...]:
     module_parts = _module_parts(spec.kind, spec.module_name)
@@ -72,11 +73,11 @@ def scaffold_adapter(
     (adapter_root / "tests").mkdir(exist_ok=True)
 
     adapter_name = module_parts[-1]
-    adapter_class_name = f"{_camel_case(adapter_name)}{spec.kind.title()}Adapter"
-    return (
+    adapter_class_name = f"_{_camel_case(adapter_name)}{spec.kind.title()}Adapter"
+    created = (
         _write_file(
             adapter_root / "__init__.py",
-            'from .adapter import ADAPTER\n\n__all__ = ["ADAPTER"]\n',
+            f'"""{spec.display_name} {spec.kind} adapter package."""\n',
             force=force,
         ),
         _write_file(
@@ -115,6 +116,8 @@ def scaffold_adapter(
             force=force,
         ),
     )
+    sync_pyright_config(root=spec.repo_root)
+    return created
 
 
 def _adapter_root(repo_root: Path, kind: str, module_parts: tuple[str, ...]) -> Path:
@@ -124,7 +127,7 @@ def _adapter_root(repo_root: Path, kind: str, module_parts: tuple[str, ...]) -> 
 
 def _adapter_template(
     *,
-    spec: AdapterScaffoldSpec,
+    spec: _AdapterScaffoldSpec,
     adapter_name: str,
     adapter_class_name: str,
 ) -> str:
@@ -313,16 +316,17 @@ def _source_translation_template(*, adapter_name: str) -> str:
 def _contract_test_template(*, kind: str, module_parts: tuple[str, ...]) -> str:
     namespace = "sources" if kind == "source" else "outputs"
     module_name = ".".join(module_parts)
+    adapter_class_name = f"_{_camel_case(module_parts[-1])}{kind.title()}Adapter"
     adapter_id = module_parts[-1]
     return dedent(
         f"""
         from __future__ import annotations
 
-        from tallylot.adapters.{namespace}.{module_name} import ADAPTER
+        from tallylot.adapters.{namespace}.{module_name}.adapter import {adapter_class_name}
 
 
         def test_manifest_adapter_id_matches_package_name() -> None:
-            assert str(ADAPTER.manifest.adapter_id) == "{adapter_id}"
+            assert str({adapter_class_name}().manifest.adapter_id) == "{adapter_id}"
         """
     )
 
@@ -337,8 +341,8 @@ def _write_file(path: Path, content: str, *, force: bool) -> Path:
 def main(argv: list[str] | None = None) -> int:
     args = _build_argument_parser().parse_args(argv)
     resolved_repo_root = active_repo_root() if args.repo_root is None else args.repo_root.resolve()
-    created = scaffold_adapter(
-        spec=AdapterScaffoldSpec(
+    created = _scaffold_adapter(
+        spec=_AdapterScaffoldSpec(
             repo_root=resolved_repo_root,
             kind=args.kind,
             module_name=args.module_name,

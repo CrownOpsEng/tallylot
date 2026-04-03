@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from repo_support import paths as repo_paths
-from tools.adapter_packs import load_adapter_packs, select_adapter_packs
-from tools.scaffold_adapter import AdapterScaffoldSpec, _build_argument_parser, scaffold_adapter
+from tools.adapter_packs import _load_adapter_packs, select_adapter_packs
+from tools.scaffold_adapter import _AdapterScaffoldSpec, _build_argument_parser, _scaffold_adapter
 
 
 def test_load_adapter_packs_discovers_structured_csv_pack() -> None:
-    packs = load_adapter_packs()
+    packs = _load_adapter_packs()
 
     pack_ids = {pack.id for pack in packs}
 
@@ -36,7 +37,7 @@ def test_load_adapter_packs_uses_active_repo_root_by_default(tmp_path: Path) -> 
     )
 
     with repo_paths.override_repo_root(tmp_path):
-        packs = load_adapter_packs()
+        packs = _load_adapter_packs()
 
     assert len(packs) == 1
     assert packs[0].id == "example/basic"
@@ -57,8 +58,18 @@ def test_scaffold_parser_uses_active_repo_root_by_default(tmp_path: Path) -> Non
 
 def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
-    created = scaffold_adapter(
-        spec=AdapterScaffoldSpec(
+    repo_root.mkdir()
+    (repo_root / "pyrightconfig.json").write_text(
+        """\
+{
+  "extends": "./pyrightconfig.tests.json",
+  "include": ["src", "tests", "tools", "conftest.py"]
+}
+""",
+        encoding="utf-8",
+    )
+    created = _scaffold_adapter(
+        spec=_AdapterScaffoldSpec(
             repo_root=repo_root,
             kind="source",
             module_name="platforms/example_exchange",
@@ -68,6 +79,7 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
         ),
         force=False,
     )
+    pyright_config = json.loads((repo_root / "pyrightconfig.tests.json").read_text(encoding="utf-8"))
 
     created_paths = {path.relative_to(repo_root) for path in created}
     assert created_paths == {
@@ -81,20 +93,54 @@ def test_scaffold_adapter_creates_package_layout(tmp_path: Path) -> None:
     adapter_py = (
         repo_root / "src" / "tallylot" / "adapters" / "sources" / "platforms" / "example_exchange" / "adapter.py"
     )
+    package_init = (
+        repo_root
+        / "src"
+        / "tallylot"
+        / "adapters"
+        / "sources"
+        / "platforms"
+        / "example_exchange"
+        / "__init__.py"
+    )
+    test_contract = (
+        repo_root
+        / "src"
+        / "tallylot"
+        / "adapters"
+        / "sources"
+        / "platforms"
+        / "example_exchange"
+        / "tests"
+        / "test_contract.py"
+    )
     translation_py = (
         repo_root / "src" / "tallylot" / "adapters" / "sources" / "platforms" / "example_exchange" / "translation.py"
     )
-    assert "class ExampleExchangeSourceAdapter" in adapter_py.read_text(encoding="utf-8")
+    assert package_init.read_text(encoding="utf-8") == '"""Example Exchange source adapter package."""\n'
+    assert "class _ExampleExchangeSourceAdapter" in adapter_py.read_text(encoding="utf-8")
     assert "translate_source_batches" in adapter_py.read_text(encoding="utf-8")
+    assert (
+        "from tallylot.adapters.sources.platforms.example_exchange.adapter "
+        "import _ExampleExchangeSourceAdapter"
+    ) in test_contract.read_text(encoding="utf-8")
     assert "FILE_TRANSLATION_RULES" in translation_py.read_text(encoding="utf-8")
+    assert {
+        environment["root"]
+        for environment in pyright_config["executionEnvironments"]
+        if environment.get("reportPrivateUsage") is False
+    } == {
+        "tests",
+        "src/tallylot/adapters/sources/platforms/example_exchange/tests",
+    }
 
 
 def test_scaffold_adapter_requires_source_category_namespace(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
 
     try:
-        scaffold_adapter(
-            spec=AdapterScaffoldSpec(
+        _scaffold_adapter(
+            spec=_AdapterScaffoldSpec(
                 repo_root=repo_root,
                 kind="source",
                 module_name="example_exchange",

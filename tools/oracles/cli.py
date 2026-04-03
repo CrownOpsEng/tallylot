@@ -43,48 +43,48 @@ def _emit_response(payload: object) -> None:
     typer.echo(json.dumps(payload, default=str))
 
 
-def baseline_validation_service() -> BaselineValidationService:
+def _baseline_validation_service() -> BaselineValidationService:
     return BaselineValidationService(FilesystemArtifactStore())
 
 
-def batch_screening_service() -> BatchScreeningService:
+def _batch_screening_service() -> BatchScreeningService:
     return BatchScreeningService(FilesystemArtifactStore())
 
 
-def batch_staging_service() -> BatchStagingService:
-    return BatchStagingService(batch_screening_service())
+def _batch_staging_service() -> BatchStagingService:
+    return BatchStagingService(_batch_screening_service())
 
 
-def round_scaffolding_service() -> RoundScaffoldingService:
+def _round_scaffolding_service() -> RoundScaffoldingService:
     return RoundScaffoldingService(FilesystemArtifactStore())
 
 
-def source_diff_service() -> SourceDiffService:
+def _source_diff_service() -> SourceDiffService:
     return SourceDiffService(FilesystemArtifactStore())
 
 
-def verification_compare_service() -> VerificationCompareService:
+def _verification_compare_service() -> VerificationCompareService:
     return VerificationCompareService(FilesystemArtifactStore())
 
 
 @baseline_app.command("validate")
-def baseline_validate(
+def _baseline_validate(
     export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = baseline_validation_service().execute(
+    response = _baseline_validation_service().execute(
         BaselineValidateRequest(export_dir=export_dir, output_dir=output_dir),
     )
     _emit_response(response.__dict__)
 
 
 @batch_app.command("screen")
-def batch_screen(
+def _batch_screen(
     candidate: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     baseline_export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = batch_screening_service().execute(
+    response = _batch_screening_service().execute(
         ScreenBatchRequest(
             candidate_path=candidate,
             baseline_export_dir=baseline_export_dir,
@@ -97,7 +97,7 @@ def batch_screen(
 
 
 @batch_app.command("stage")
-def batch_stage(
+def _batch_stage(
     candidate: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     baseline_export_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
@@ -111,7 +111,7 @@ def batch_stage(
     window_start: Annotated[str | None, typer.Option()] = None,
     window_end: Annotated[str | None, typer.Option()] = None,
 ) -> None:
-    response = batch_staging_service().execute(
+    response = _batch_staging_service().execute(
         StageBatchRequest(
             candidate_path=candidate,
             baseline_export_dir=baseline_export_dir,
@@ -129,13 +129,13 @@ def batch_stage(
 
 
 @round_app.command("scaffold")
-def round_scaffold(
+def _round_scaffold(
     round_id: Annotated[str, typer.Option()],
     phase: Annotated[str, typer.Option()],
     source: Annotated[str, typer.Option()],
     workspace_root: Annotated[Path | None, typer.Option(dir_okay=True, file_okay=False)] = None,
 ) -> None:
-    response = round_scaffolding_service().execute(
+    response = _round_scaffolding_service().execute(
         RoundScaffoldRequest(
             workspace_root=workspace_root or configured_workspace_root(),
             round_id=round_id,
@@ -147,27 +147,37 @@ def round_scaffold(
 
 
 @source_app.command("diff")
-def source_diff(
+def _source_diff(
     candidate: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     reference: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = source_diff_service().execute(
+    response = _source_diff_service().execute(
         SourceDiffRequest(candidate_path=candidate, reference_path=reference, output_dir=output_dir),
     )
     _emit_response(response.__dict__)
 
 
 @verification_app.command("compare")
-def verification_compare(
+def _verification_compare(
     previous_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     current_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
-    response = verification_compare_service().execute(
+    response = _verification_compare_service().execute(
         VerificationCompareRequest(previous_dir=previous_dir, current_dir=current_dir, output_dir=output_dir),
     )
     _emit_response(response.__dict__)
+
+
+_REGISTERED_COMMAND_CALLBACKS = (
+    _baseline_validate,
+    _batch_screen,
+    _batch_stage,
+    _round_scaffold,
+    _source_diff,
+    _verification_compare,
+)
 
 
 def main() -> None:

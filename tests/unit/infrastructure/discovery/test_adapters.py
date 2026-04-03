@@ -45,7 +45,7 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
         ValueError,
         match="must declare intake route, source translation, or location inventory capability",
     ):
-        registry.collect_source_adapters("fixture.sources")
+        registry._collect_source_adapters("fixture.sources")
 
 
 def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -112,8 +112,8 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
         del package_name
         return (cast(OutputAdapterFixture, output_module.ADAPTER),)
 
-    monkeypatch.setattr(registry, "collect_source_adapters", fake_collect_source_adapters)
-    monkeypatch.setattr(registry, "collect_output_adapters", fake_collect_output_adapters)
+    monkeypatch.setattr(registry, "_collect_source_adapters", fake_collect_source_adapters)
+    monkeypatch.setattr(registry, "_collect_output_adapters", fake_collect_output_adapters)
 
     with pytest.raises(ValueError, match="duplicate adapter_id"):
         registry.build_registry()
@@ -131,7 +131,7 @@ def test_iter_modules_supports_package_style_adapters_without_loading_tests(
     (categorized / "__init__.py").write_text("", encoding="utf-8")
     packaged = categorized / "packaged_adapter"
     packaged.mkdir()
-    (packaged / "__init__.py").write_text("", encoding="utf-8")
+    (packaged / "__init__.py").write_text("ADAPTER = object()\n", encoding="utf-8")
     (packaged / "adapter.py").write_text("ADAPTER = object()\n", encoding="utf-8")
     (packaged / "tests.py").write_text("raise RuntimeError('should not import tests')\n", encoding="utf-8")
     (package_root / "_helper.py").write_text("raise RuntimeError('should not import helpers')\n", encoding="utf-8")

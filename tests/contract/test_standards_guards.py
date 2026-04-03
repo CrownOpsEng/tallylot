@@ -9,6 +9,7 @@ from collections import defaultdict
 from pathlib import Path
 
 from repo_support.paths import repo_root
+from repo_support.pyright_config import PYRIGHT_GENERATED_TEST_CONFIG_NAME
 from tallylot.adapters.support.drafts import economic_leg
 from tallylot.domain.transactions import EconomicLeg, ProjectionHint, TransactionFact
 
@@ -28,6 +29,16 @@ def _module(path: Path) -> ast.Module:
 
 def _python_files(root: Path) -> tuple[Path, ...]:
     return tuple(sorted(root.rglob("*.py")))
+
+
+def _all_repo_python_files() -> tuple[Path, ...]:
+    return (
+        repo_root() / "conftest.py",
+        *_python_files(repo_root() / "repo_support"),
+        *_python_files(repo_root() / "src"),
+        *_python_files(repo_root() / "tests"),
+        *_python_files(repo_root() / "tools"),
+    )
 
 
 def _repo_side_python_files() -> tuple[Path, ...]:
@@ -156,18 +167,30 @@ def _defines_root_constants(path: Path) -> bool:
 
 
 def test_repo_has_no_type_ignore_comments() -> None:
-    python_files = (
-        repo_root() / "conftest.py",
-        *_python_files(repo_root() / "src"),
-        *_python_files(repo_root() / "tests"),
-        *_python_files(repo_root() / "tools"),
+    forbidden = (
+        "type:" + " ignore",
+        "pyright:" + " ignore",
+        "# " + "pyright:",
+        "# " + "mypy:",
     )
-    forbidden = ("type:" + " ignore", "pyright:" + " ignore")
 
-    for path in python_files:
+    for path in _all_repo_python_files():
         text = path.read_text(encoding="utf-8")
         for needle in forbidden:
             assert needle not in text, f"{path} contains forbidden typing bypass {needle!r}"
+
+
+def test_protected_access_suppressions_only_live_in_test_pylint_config() -> None:
+    needle = "protected" + "-access"
+    allowed_paths = {
+        repo_root() / "tests" / "unit" / "test_run_pylint.py",
+    }
+
+    for path in _all_repo_python_files():
+        if path in allowed_paths:
+            continue
+        text = path.read_text(encoding="utf-8")
+        assert needle not in text, f"{path} contains scattered {needle!r} suppression"
 
 
 def test_repo_root_derivation_is_centralized_in_repo_support_paths() -> None:
@@ -310,6 +333,35 @@ def test_typecheck_configs_remain_strict() -> None:
     assert "warn_unused_ignores = true" in mypy_text
     assert pyright_config["typeCheckingMode"] == "strict"
     assert pyright_config["reportUnnecessaryTypeIgnoreComment"] is True
+
+
+def test_pyright_private_usage_config_matches_repo_test_trees() -> None:
+    pyright_config = json.loads(
+        (repo_root() / PYRIGHT_GENERATED_TEST_CONFIG_NAME).read_text(encoding="utf-8")
+    )
+    expected_private_usage_roots = {
+        "tests",
+        *(
+            path.relative_to(repo_root()).as_posix()
+            for path in sorted((repo_root() / "src" / "tallylot" / "adapters").rglob("tests"))
+            if path.is_dir()
+        ),
+    }
+
+    private_usage_roots = {
+        environment["root"]
+        for environment in pyright_config["executionEnvironments"]
+        if environment.get("reportPrivateUsage") is False
+    }
+
+    assert private_usage_roots == expected_private_usage_roots
+
+
+def test_pyright_root_config_extends_generated_test_config() -> None:
+    pyright_config = json.loads((repo_root() / "pyrightconfig.json").read_text(encoding="utf-8"))
+
+    assert pyright_config.get("extends") == f"./{PYRIGHT_GENERATED_TEST_CONFIG_NAME}"
+    assert "executionEnvironments" not in pyright_config
 
 
 def test_application_modules_do_not_import_infrastructure() -> None:

@@ -28,7 +28,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class GTradeAdapter:
+class _GTradeAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("gtrade"),
         display_name="GTrade",
@@ -154,4 +154,4 @@ def _skip_unrecognized_csv(path: Path) -> bool:
     return header[:3] != ("DATE", "PAIR", "ADDR")
 
 
-ADAPTER = GTradeAdapter()
+ADAPTER = _GTradeAdapter()

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from tools.uv_environment import default_project_environment, repo_uv_environment
 
-HOOK_TEMPLATE = """#!/usr/bin/env bash
+_HOOK_TEMPLATE = """#!/usr/bin/env bash
 set -euo pipefail
 
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -33,7 +33,7 @@ else
 fi
 """
 
-COMMIT_MSG_HOOK_TEMPLATE = """#!/usr/bin/env bash
+_COMMIT_MSG_HOOK_TEMPLATE = """#!/usr/bin/env bash
 set -euo pipefail
 
 HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -78,7 +78,7 @@ def _hook_project_environment() -> str:
     return _installed_project_environment() or default_project_environment()
 
 
-def install_hooks(repo_root: Path) -> None:
+def _install_hooks(repo_root: Path) -> None:
     subprocess.run(
         ["git", "config", "--local", "commit.template", ".gitmessage.txt"],
         check=True,
@@ -106,20 +106,20 @@ def install_hooks(repo_root: Path) -> None:
     }
     hook_path = repo_root / ".git/hooks/pre-commit"
     hook_path.write_text(
-        HOOK_TEMPLATE.format(**hook_format_args),
+        _HOOK_TEMPLATE.format(**hook_format_args),
         encoding="utf-8",
     )
     hook_path.chmod(hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     commit_msg_hook_path = repo_root / ".git/hooks/commit-msg"
     commit_msg_hook_path.write_text(
-        COMMIT_MSG_HOOK_TEMPLATE.format(**hook_format_args),
+        _COMMIT_MSG_HOOK_TEMPLATE.format(**hook_format_args),
         encoding="utf-8",
     )
     commit_msg_hook_path.chmod(commit_msg_hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 
 def main() -> int:
-    install_hooks(Path.cwd())
+    _install_hooks(Path.cwd())
     print("Installed repo git hooks and commit template.")
     return 0
 

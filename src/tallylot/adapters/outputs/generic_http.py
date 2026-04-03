@@ -10,7 +10,7 @@ from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.output_adapters import OutputRenderPolicy, RenderedArtifact
 
 
-class GenericHttpOutputStubAdapter:
+class _GenericHttpOutputStubAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("generic_http_output"),
         display_name="Generic HTTP Output",
@@ -31,4 +31,4 @@ class GenericHttpOutputStubAdapter:
         raise NotImplementedError("Generic HTTP output is intentionally stubbed in this phase.")
 
 
-ADAPTER = GenericHttpOutputStubAdapter()
+ADAPTER = _GenericHttpOutputStubAdapter()

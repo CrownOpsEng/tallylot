@@ -29,7 +29,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class RoninAdapter:
+class _RoninAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("ronin"),
         display_name="Ronin",
@@ -198,7 +198,7 @@ def _evidence_filename(raw_dir: Path, address: str) -> str:
     return first[0][0].name if first else ""
 
 
-ADAPTER = RoninAdapter()
+ADAPTER = _RoninAdapter()
 
 
 def _has_family(item: FileInventoryEntry, family_id: str) -> bool:

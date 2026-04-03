@@ -1,12 +1,10 @@
-# pyright: reportPrivateUsage=false
-
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
 from tallylot.adapters.sources.wallets.evm_wallet.adapter import (
-    EvmWalletAdapter,
+    _EvmWalletAdapter,
     _account_records,
     _network_scope,
     _object_map,
@@ -51,7 +49,7 @@ def test_evm_wallet_adapter_extracts_chain_scoped_evm_and_snap_accounts(tmp_path
         encoding="utf-8",
     )
 
-    records, issues = EvmWalletAdapter().extract_location_inventory(
+    records, issues = _EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
@@ -98,7 +96,7 @@ def test_evm_wallet_adapter_reads_metamask_wrapped_state_for_bitcoin_snap_and_po
         encoding="utf-8",
     )
 
-    records, issues = EvmWalletAdapter().extract_location_inventory(
+    records, issues = _EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
@@ -133,7 +131,7 @@ def test_evm_wallet_adapter_marks_generic_evm_accounts_as_ambiguous(tmp_path: Pa
         encoding="utf-8",
     )
 
-    records, issues = EvmWalletAdapter().extract_location_inventory(
+    records, issues = _EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
@@ -144,9 +142,7 @@ def test_evm_wallet_adapter_marks_generic_evm_accounts_as_ambiguous(tmp_path: Pa
 
 
 def test_evm_wallet_adapter_matches_state_json_inventory_without_source_label() -> None:
-    adapter = EvmWalletAdapter()
-
-    score = adapter.match(
+    score = _EvmWalletAdapter().match(
         "Unknown Wallet",
         Path("/tmp/raw"),
         (
@@ -168,7 +164,7 @@ def test_evm_wallet_adapter_normalize_returns_location_inventory_and_missing_ide
     raw_dir.mkdir()
     (raw_dir / "wallet-state.json").write_text(json.dumps({"wallet_state": {}}), encoding="utf-8")
 
-    result = EvmWalletAdapter().translate(
+    result = _EvmWalletAdapter().translate(
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
         raw_dir,
     )
@@ -210,7 +206,7 @@ def test_evm_wallet_adapter_extracts_solana_identity_and_surfaces_unknown_identi
         encoding="utf-8",
     )
 
-    records, issues = EvmWalletAdapter().extract_location_inventory(
+    records, issues = _EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
         build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
@@ -223,7 +219,7 @@ def test_evm_wallet_adapter_extracts_solana_identity_and_surfaces_unknown_identi
 
 
 def test_evm_wallet_adapter_validate_profile_timezones_is_trivially_passed() -> None:
-    summary, issues = EvmWalletAdapter().validate_profile_timezones(build_source_profile(adapter_id="evm_wallet"))
+    summary, issues = _EvmWalletAdapter().validate_profile_timezones(build_source_profile(adapter_id="evm_wallet"))
 
     assert summary == {
         "status": "passed",

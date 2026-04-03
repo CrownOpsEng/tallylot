@@ -29,7 +29,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class NearAdapter:
+class _NearAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("near"),
         display_name="NEAR",
@@ -129,4 +129,4 @@ def _evidence_path(raw_dir: Path, identifier: str) -> str:
     return ""
 
 
-ADAPTER = NearAdapter()
+ADAPTER = _NearAdapter()

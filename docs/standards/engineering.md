@@ -59,8 +59,10 @@ Repo-native support boundaries:
 - Tests inherit a narrower exception in `mypy` config, but test helpers should
   still stay typed unless doing so adds no value.
 - Tests may exercise private helpers when the internal behavior is the thing
-  under test. Do not widen production visibility for tests; use narrow,
-  tool-supported test-side exclusions instead.
+  under test. Import the private implementation directly from the module that
+  owns it. Do not add package-root re-export shims, wrapper aliases, or widened
+  production visibility for tests; use narrow, tool-supported test-side
+  exclusions instead.
 - Prefer the smallest available exclusion scope:
   - repo config for broad test-only policy
   - per-file config when an entire test module needs an exception
@@ -96,8 +98,8 @@ When a capability grows, split by stable seams:
 - `interfaces/`: keep command parsing and command execution thin; move real work
   into application use cases.
 - `adapters/`: move larger adapters to package-style modules with an
-  `adapter.py` or `__init__.py` entry point plus local parser, mapper, issue,
-  and fixture modules.
+  `adapter.py` entry point, a docstring-only package `__init__.py`, and local
+  parser, mapper, issue, and fixture modules.
 - `infrastructure/`: host reusable primitives only when they are genuinely
   cross-capability concerns such as filesystem guards, serialization, workspace
   persistence, or composition-root wiring. Do not push application policy down

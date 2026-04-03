@@ -37,7 +37,7 @@ class AdapterPack:
         return capability in self.capabilities
 
 
-def load_adapter_packs(
+def _load_adapter_packs(
     *,
     pack_root: Path | None = None,
     capability: str | None = None,
@@ -58,7 +58,7 @@ def select_adapter_packs(
     selected_ids: tuple[str, ...] = (),
     capability: str | None = None,
 ) -> tuple[AdapterPack, ...]:
-    packs = load_adapter_packs(pack_root=pack_root, capability=capability)
+    packs = _load_adapter_packs(pack_root=pack_root, capability=capability)
     if not selected_ids:
         return packs
     selected = {pack_id.strip() for pack_id in selected_ids if pack_id.strip()}

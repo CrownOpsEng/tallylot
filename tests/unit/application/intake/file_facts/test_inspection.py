@@ -8,7 +8,7 @@ from tallylot.application.intake.file_facts import (
     inspect_intake_file,
 )
 from tallylot.application.intake.file_facts.inspection import parse_timestamp
-from tallylot.application.intake.routing import detect_source_folder
+from tallylot.application.intake.routing.service import _detect_source_folder
 from tallylot.infrastructure.discovery import build_registry
 
 
@@ -40,7 +40,7 @@ def test_detect_source_folder_uses_header_hints_without_filename_tokens(tmp_path
 
     facts = inspect_intake_file(path, relative_path="incoming/neutral/capture.csv")
 
-    assert detect_source_folder(build_registry(), "incoming/neutral/capture.csv", facts) == "binance"
+    assert _detect_source_folder(build_registry(), "incoming/neutral/capture.csv", facts) == "binance"
 
 
 def test_inspect_intake_file_supports_semicolon_delimited_headers(tmp_path: Path) -> None:
@@ -128,7 +128,7 @@ def test_inspect_intake_file_extracts_tron_scope_tokens_from_content(tmp_path: P
 
 def test_detect_source_folder_uses_filename_hints_without_header_match() -> None:
     assert (
-        detect_source_folder(
+        _detect_source_folder(
             build_registry(),
             "incoming/Wealthsimple/statement-export.csv",
             IntakeFileFacts(),

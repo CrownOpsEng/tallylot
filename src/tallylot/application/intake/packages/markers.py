@@ -26,7 +26,7 @@ def logical_key(bundle_relative_path: str) -> str:
     return "/".join(parts) if parts else path.name
 
 
-def extract_datetimes(text: str) -> list[datetime]:
+def _extract_datetimes(text: str) -> list[datetime]:
     values: list[datetime] = []
     for match in COMPACT_TIMESTAMP_14.finditer(text):
         try:
@@ -53,7 +53,7 @@ def row_marker(item: PlannedPackageItem) -> datetime | None:
     markers: list[datetime] = []
     for field in (item.relative_path, item.archive_source_path, item.path, item.bundle_id):
         if field:
-            markers.extend(extract_datetimes(field))
+            markers.extend(_extract_datetimes(field))
     return max(markers) if markers else None
 
 

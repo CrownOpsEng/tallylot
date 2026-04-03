@@ -27,7 +27,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class EvmWalletAdapter:
+class _EvmWalletAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("evm_wallet"),
         display_name="EVM Wallet",
@@ -314,4 +314,4 @@ def _wallet_state_root(payload: object) -> dict[str, object] | None:
     return None
 
 
-ADAPTER = EvmWalletAdapter()
+ADAPTER = _EvmWalletAdapter()

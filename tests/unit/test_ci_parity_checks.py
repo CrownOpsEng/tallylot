@@ -41,7 +41,7 @@ def test_ci_parity_stops_when_commit_message_step_fails(monkeypatch: MonkeyPatch
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(ci_parity, "_commit_message_range", lambda: "base..head")
 
-    def fake_run_step(step: ci_parity.ParityStep) -> int:
+    def fake_run_step(step: ci_parity._ParityStep) -> int:
         assert step.name == "commit-messages"
         return 1
 
@@ -67,7 +67,7 @@ def test_ci_parity_runs_quality_build_and_verify(monkeypatch: MonkeyPatch, tmp_p
 
     steps_seen: list[str] = []
 
-    def fake_run_step(step: ci_parity.ParityStep) -> int:
+    def fake_run_step(step: ci_parity._ParityStep) -> int:
         steps_seen.append(step.name)
         if step.name == "build":
             dist_dir.mkdir(exist_ok=True)
@@ -95,7 +95,7 @@ def test_ci_parity_can_include_commit_messages(monkeypatch: MonkeyPatch, tmp_pat
 
     steps_seen: list[str] = []
 
-    def fake_run_step(step: ci_parity.ParityStep) -> int:
+    def fake_run_step(step: ci_parity._ParityStep) -> int:
         steps_seen.append(step.name)
         if step.name == "build":
             dist_dir.mkdir(exist_ok=True)
@@ -132,9 +132,9 @@ def test_ci_parity_can_include_pr_metadata(monkeypatch: MonkeyPatch, tmp_path: P
     wheel_path = dist_dir / "tallylot-0.1.0-py3-none-any.whl"
     wheel_path.write_text("stub", encoding="utf-8")
 
-    steps_seen: list[ci_parity.ParityStep] = []
+    steps_seen: list[ci_parity._ParityStep] = []
 
-    def fake_run_step(step: ci_parity.ParityStep) -> int:
+    def fake_run_step(step: ci_parity._ParityStep) -> int:
         steps_seen.append(step)
         if step.name == "build":
             dist_dir.mkdir(exist_ok=True)

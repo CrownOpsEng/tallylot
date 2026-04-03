@@ -1,0 +1,124 @@
+{
+  "executionEnvironments": [
+    {
+      "root": "tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/outputs/cointracking_csv/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/explorers/evm_explorer/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/explorers/near/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/explorers/ronin/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/generic/structured_csv/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/platforms/binance/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/platforms/coinbase/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/platforms/crypto_com/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/platforms/gtrade/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/platforms/shakepay/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/platforms/wealthsimple/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/wallets/evm_wallet/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
+      "root": "src/tallylot/adapters/sources/wallets/ledger_live/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    }
+  ]
+}

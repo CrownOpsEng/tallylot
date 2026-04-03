@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 import tools.install_git_hooks
-from tools.install_git_hooks import COMMIT_MSG_HOOK_TEMPLATE, HOOK_TEMPLATE
+from tools.install_git_hooks import _COMMIT_MSG_HOOK_TEMPLATE, _HOOK_TEMPLATE
 from tools.pre_commit_hook import _format_candidates, _skip_value
 
 
@@ -34,11 +34,11 @@ def test_skip_value_appends_formatter_hooks_once() -> None:
 
 
 def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:
-    assert "-m tools.pre_commit_hook" in HOOK_TEMPLATE
-    assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in HOOK_TEMPLATE
-    assert 'export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"' in HOOK_TEMPLATE
-    assert "--hook-type=commit-msg" in COMMIT_MSG_HOOK_TEMPLATE
-    assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in COMMIT_MSG_HOOK_TEMPLATE
+    assert "-m tools.pre_commit_hook" in _HOOK_TEMPLATE
+    assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in _HOOK_TEMPLATE
+    assert 'export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"' in _HOOK_TEMPLATE
+    assert "--hook-type=commit-msg" in _COMMIT_MSG_HOOK_TEMPLATE
+    assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in _COMMIT_MSG_HOOK_TEMPLATE
 
 
 def test_install_hooks_uses_pre_commit_overwrite_mode(
@@ -71,7 +71,7 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
     monkeypatch.setattr("tools.install_git_hooks.sys.base_prefix", "/usr")
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    tools.install_git_hooks.install_hooks(tmp_path)
+    tools.install_git_hooks._install_hooks(tmp_path)
 
     assert commands == [
         (("git", "config", "--local", "commit.template", ".gitmessage.txt"), tmp_path, None),
@@ -123,7 +123,7 @@ def test_install_hooks_falls_back_to_default_external_environment(
     monkeypatch.setattr("tools.install_git_hooks.sys.base_prefix", "/usr")
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    tools.install_git_hooks.install_hooks(tmp_path)
+    tools.install_git_hooks._install_hooks(tmp_path)
 
     expected_environment = Path.home() / ".venvs" / "tallylot-py312"
     assert f"PROJECT_ENVIRONMENT={expected_environment}" in hook_path.read_text(encoding="utf-8")

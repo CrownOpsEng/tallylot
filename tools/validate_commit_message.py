@@ -32,7 +32,7 @@ def _normalize_message_lines(message: str) -> tuple[str, ...]:
     return tuple(lines)
 
 
-def validate_commit_message_text(message: str) -> tuple[str, ...]:
+def _validate_commit_message_text(message: str) -> tuple[str, ...]:
     lines = _normalize_message_lines(message)
     if not lines or lines[0] == "":
         return ("commit message subject is required",)
@@ -105,7 +105,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     has_errors = False
     for message in messages:
-        errors = validate_commit_message_text(message.text)
+        errors = _validate_commit_message_text(message.text)
         if not errors:
             continue
         has_errors = True

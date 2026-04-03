@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
+from repo_support.pyright_config import sync_pyright_config
 from tools.uv_environment import repo_uv_environment
 
 
@@ -16,8 +17,8 @@ class QualityGate:
     command: tuple[str, ...]
 
 
-DEFAULT_TEST_COMMAND = ("uv", "run", "pytest", "-m", "unit and not slow", "--no-cov", "-q")
-FULL_TEST_COMMAND = ("uv", "run", "pytest")
+_DEFAULT_TEST_COMMAND = ("uv", "run", "pytest", "-m", "unit and not slow", "--no-cov", "-q")
+_FULL_TEST_COMMAND = ("uv", "run", "pytest")
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -35,7 +36,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
-    test_command = FULL_TEST_COMMAND if full_tests else DEFAULT_TEST_COMMAND
+    test_command = _FULL_TEST_COMMAND if full_tests else _DEFAULT_TEST_COMMAND
     return (
         QualityGate(name="markdownlint", command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files")),
         QualityGate(name="actionlint", command=("uv", "run", "actionlint", "-color")),
@@ -62,6 +63,13 @@ def _run_gate(gate: QualityGate) -> tuple[QualityGate, subprocess.CompletedProce
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
     failures = 0
+    if sync_pyright_config():
+        print(
+            "[pyright-config] pyrightconfig.tests.json was out of sync and has "
+            "been refreshed; review and commit it before rerunning quality gates",
+            flush=True,
+        )
+        return 1
     quality_gates = _quality_gates(full_tests=args.full_tests)
 
     with ThreadPoolExecutor(max_workers=len(quality_gates)) as executor:

@@ -27,7 +27,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class WealthsimpleAdapter:
+class _WealthsimpleAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("wealthsimple"),
         display_name="Wealthsimple",
@@ -104,4 +104,4 @@ class WealthsimpleAdapter:
         )
 
 
-ADAPTER = WealthsimpleAdapter()
+ADAPTER = _WealthsimpleAdapter()

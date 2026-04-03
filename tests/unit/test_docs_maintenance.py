@@ -27,11 +27,11 @@ def entrypoint_paths() -> tuple[Path, ...]:
 
 @pytest.fixture(autouse=True)
 def reset_repo_root_state() -> Iterator[None]:
-    repo_paths.reset_repo_root()
+    repo_paths._reset_repo_root()
     try:
         yield
     finally:
-        repo_paths.reset_repo_root()
+        repo_paths._reset_repo_root()
 
 
 def override_active_roots(
@@ -45,11 +45,11 @@ def override_active_roots(
     expected_docs_root = root.resolve() / "docs"
     if resolved_docs_root.resolve() != expected_docs_root:
         raise AssertionError(f"docs root must resolve under the repo root: {resolved_docs_root}")
-    repo_paths.set_repo_root(root)
+    repo_paths._set_repo_root(root)
 
 
 def test_docs_maintenance_sync_check_passes() -> None:
-    docs_maintenance.cli.check_retired_references()
+    docs_maintenance.cli._check_retired_references()
 
 
 def test_parse_frontmatter_supports_optional_fields() -> None:
@@ -364,7 +364,7 @@ def test_sync_check_ignores_plain_text_mentions_of_retired_paths(
 
     override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
-    docs_maintenance.cli.check_retired_references()
+    docs_maintenance.cli._check_retired_references()
 
 
 def test_validate_markdown_links_accepts_repo_local_links(tmp_path: Path) -> None:
@@ -503,7 +503,7 @@ def test_sync_check_rejects_retired_markdown_link_targets(
     override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
     with pytest.raises(ValueError, match="still references retired path docs/file-map.md"):
-        docs_maintenance.cli.check_retired_references()
+        docs_maintenance.cli._check_retired_references()
 
 
 def test_sync_check_rejects_retired_related_targets(
@@ -582,7 +582,7 @@ def test_sync_check_rejects_retired_related_targets(
     override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
     with pytest.raises(ValueError, match="still references retired path docs/file-map.md"):
-        docs_maintenance.cli.check_retired_references()
+        docs_maintenance.cli._check_retired_references()
 
 
 def test_validate_markdown_links_accepts_reference_style_links(tmp_path: Path) -> None:

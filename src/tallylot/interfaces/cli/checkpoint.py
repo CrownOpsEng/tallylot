@@ -22,7 +22,7 @@ from .shared import emit_response
 
 
 @checkpoint_app.command("rebuild-location-inventory")
-def rebuild_location_inventory(
+def _rebuild_location_inventory(
     normalized_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
@@ -36,7 +36,7 @@ def rebuild_location_inventory(
 
 
 @checkpoint_app.command("extract-pdf-balances")
-def extract_pdf_balances(
+def _extract_pdf_balances(
     pdf: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     statement_kind: Annotated[str | None, typer.Option()] = None,
@@ -49,3 +49,6 @@ def extract_pdf_balances(
         )
     )
     emit_response(response.__dict__)
+
+
+_COMMAND_CALLBACKS = (_rebuild_location_inventory, _extract_pdf_balances)

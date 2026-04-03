@@ -21,7 +21,7 @@ from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, 
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-class LedgerLiveAdapter:
+class _LedgerLiveAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("ledger_live"),
         display_name="Ledger Live",
@@ -88,4 +88,4 @@ class LedgerLiveAdapter:
         )
 
 
-ADAPTER = LedgerLiveAdapter()
+ADAPTER = _LedgerLiveAdapter()

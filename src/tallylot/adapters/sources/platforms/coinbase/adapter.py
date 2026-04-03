@@ -23,7 +23,7 @@ from .pdf_balances import extract_pdf_balances as _extract_pdf_balances
 from .pdf_balances import match_pdf_statement as _match_pdf_statement
 
 
-class CoinbaseAdapter:
+class _CoinbaseAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("coinbase"),
         display_name="Coinbase",
@@ -90,4 +90,4 @@ class CoinbaseAdapter:
         return translate_coinbase_exports(profile, raw_dir)
 
 
-ADAPTER = CoinbaseAdapter()
+ADAPTER = _CoinbaseAdapter()

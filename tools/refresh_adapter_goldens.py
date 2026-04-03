@@ -14,7 +14,7 @@ from tallylot.infrastructure.discovery.adapters import build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tools.adapter_packs import AdapterPack, select_adapter_packs
 
-EXPECTED_NORMALIZATION_ARTIFACTS = (
+_EXPECTED_NORMALIZATION_ARTIFACTS = (
     "facts",
     "fact_annotations",
     "location_annotations",
@@ -24,11 +24,11 @@ EXPECTED_NORMALIZATION_ARTIFACTS = (
     "normalization_reviews",
     "normalization_summary",
 )
-EXPECTED_LOCATION_ARTIFACTS = (
+_EXPECTED_LOCATION_ARTIFACTS = (
     "location_inventory",
     "wallet_issues",
 )
-EXPECTED_ARTIFACTS = EXPECTED_NORMALIZATION_ARTIFACTS + EXPECTED_LOCATION_ARTIFACTS
+_EXPECTED_ARTIFACTS = _EXPECTED_NORMALIZATION_ARTIFACTS + _EXPECTED_LOCATION_ARTIFACTS
 
 
 def _sanitize_public_fixture_payload(payload: object, *, raw_dir: Path) -> object:
@@ -73,7 +73,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
+def _collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
     registry = build_registry()
     artifacts = FilesystemArtifactStore()
     profile_use_case = build_profile_use_case()
@@ -117,13 +117,13 @@ def collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
         }
 
 
-def refresh_pack(pack: AdapterPack) -> tuple[Path, ...]:
-    payloads = collect_pack_outputs(pack)
+def _refresh_pack(pack: AdapterPack) -> tuple[Path, ...]:
+    payloads = _collect_pack_outputs(pack)
     pack.expected_dir.mkdir(parents=True, exist_ok=True)
     written_paths: list[Path] = []
-    artifact_names: tuple[str, ...] = EXPECTED_LOCATION_ARTIFACTS
+    artifact_names: tuple[str, ...] = _EXPECTED_LOCATION_ARTIFACTS
     if pack.supports("normalize"):
-        artifact_names = EXPECTED_NORMALIZATION_ARTIFACTS + EXPECTED_LOCATION_ARTIFACTS
+        artifact_names = _EXPECTED_NORMALIZATION_ARTIFACTS + _EXPECTED_LOCATION_ARTIFACTS
     for artifact_name in artifact_names:
         target = pack.expected_dir / f"{artifact_name}.json"
         target.write_text(
@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     for pack in packs:
         print(f"Refreshing {pack.id}")
-        for path in refresh_pack(pack):
+        for path in _refresh_pack(pack):
             print(path)
     return 0
 

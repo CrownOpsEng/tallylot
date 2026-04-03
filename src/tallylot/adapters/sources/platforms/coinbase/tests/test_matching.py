@@ -4,7 +4,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from repo_support.paths import adapter_packs_root
-from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
+from tallylot.adapters.sources.platforms.coinbase.adapter import _CoinbaseAdapter
 from tallylot.adapters.sources.platforms.coinbase.matching import RETAIL_HEADER
 from tallylot.adapters.sources.platforms.coinbase.timestamps import parse_retail_timestamp
 from tallylot.adapters.support.drafts import compile_activity_drafts
@@ -45,7 +45,7 @@ def test_coinbase_adapter_matches_retail_header_without_source_label(tmp_path: P
         ),
     )
 
-    assert CoinbaseAdapter().match("future_exchange", tmp_path, inventory) == 100
+    assert _CoinbaseAdapter().match("future_exchange", tmp_path, inventory) == 100
 
 
 def test_coinbase_adapter_uses_retail_family_without_filename_dependency() -> None:

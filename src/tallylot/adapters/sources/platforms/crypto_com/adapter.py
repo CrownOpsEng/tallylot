@@ -54,7 +54,7 @@ HEADER_FIELDS = {
 SUPPORTED_TRANSACTION_KINDS = frozenset({"viban_deposit", "viban_purchase", "crypto_withdrawal"})
 
 
-class CryptoComAdapter:
+class _CryptoComAdapter:
     manifest = AdapterManifest(
         adapter_id=AdapterId("crypto_com"),
         display_name="Crypto.com",
@@ -272,4 +272,4 @@ def _parse_timestamp(value: str) -> datetime | None:
         return None
 
 
-ADAPTER = CryptoComAdapter()
+ADAPTER = _CryptoComAdapter()

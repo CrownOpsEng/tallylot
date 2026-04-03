@@ -3,14 +3,14 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.platforms.coinbase.adapter import CoinbaseAdapter
+from tallylot.adapters.sources.platforms.coinbase.adapter import _CoinbaseAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
 from tests.support.services import build_source_profile
 
 
 def test_coinbase_adapter_reports_missing_retail_csv_as_explicit_issue(tmp_path: Path) -> None:
-    result = CoinbaseAdapter().translate(
+    result = _CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(tmp_path)),
         tmp_path,
     )
@@ -33,7 +33,7 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: 
         encoding="utf-8",
     )
 
-    result = CoinbaseAdapter().translate(
+    result = _CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
@@ -74,7 +74,7 @@ def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) 
         encoding="utf-8",
     )
 
-    result = CoinbaseAdapter().translate(
+    result = _CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
@@ -121,7 +121,7 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
         encoding="utf-8",
     )
 
-    result = CoinbaseAdapter().translate(
+    result = _CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )
@@ -148,7 +148,7 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_
         encoding="utf-8",
     )
 
-    result = CoinbaseAdapter().translate(
+    result = _CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
         raw_dir,
     )

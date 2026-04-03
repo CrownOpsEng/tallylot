@@ -26,9 +26,6 @@ def iter_discoverable_modules(package_name: str) -> tuple[ModuleType, ...]:
 
 def iter_adapter_package_modules(package_name: str) -> tuple[ModuleType, ...]:
     package = importlib.import_module(package_name)
-    if getattr(package, "ADAPTER", None) is not None:
-        return (package,)
-
     modules: list[ModuleType] = []
     for module_name in DISCOVERABLE_MODULE_NAMES:
         qualified_name = f"{package_name}.{module_name}"

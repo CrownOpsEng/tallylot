@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from tallylot.infrastructure.config.loader import (
-    DEFAULT_WORKSPACE_ROOT,
+    _DEFAULT_WORKSPACE_ROOT,
     load_app_config,
 )
 
@@ -21,7 +21,7 @@ def test_load_app_config_uses_default_when_project_config_has_no_root(
     config = load_app_config(repo_root=tmp_path)
 
     assert config.repo_root == tmp_path
-    assert config.workspace_root == DEFAULT_WORKSPACE_ROOT
+    assert config.workspace_root == _DEFAULT_WORKSPACE_ROOT
 
 
 def test_load_app_config_prefers_environment_override(

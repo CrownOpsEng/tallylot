@@ -39,9 +39,9 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
     asset = (row.get("Asset") or "").strip().upper()
     quantity = parse_decimal((row.get("Quantity Transacted") or "").strip())
     price_currency = (row.get("Price Currency") or "").strip().upper()
-    subtotal_amount = money_decimal(row.get("Subtotal", ""))
-    total_amount = money_decimal(row.get("Total (inclusive of fees and/or spread)", ""))
-    fee_amount = money_decimal(row.get("Fees and/or Spread", ""))
+    subtotal_amount = _money_decimal(row.get("Subtotal", ""))
+    total_amount = _money_decimal(row.get("Total (inclusive of fees and/or spread)", ""))
+    fee_amount = _money_decimal(row.get("Fees and/or Spread", ""))
     description = coinbase_description(tx_type, row.get("Notes", ""), asset, quantity, total_amount)
     timestamp = parse_retail_timestamp((row.get("Timestamp") or "").strip())
     transaction_id = f"coinbase-retail-{row_id}"
@@ -308,6 +308,6 @@ def coinbase_description(
     return f"Coinbase {tx_type or 'transaction'}"
 
 
-def money_decimal(value: str) -> Decimal | None:
+def _money_decimal(value: str) -> Decimal | None:
     stripped = value.strip().replace("$", "").replace(",", "")
     return parse_decimal(stripped)

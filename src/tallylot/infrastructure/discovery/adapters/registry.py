@@ -29,7 +29,7 @@ class AdapterRegistry:
         raise KeyError(f"unknown output adapter: {adapter_id}")
 
 
-def collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
+def _collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
     discovered: list[SourceAdapter] = []
     for module in iter_discoverable_modules(package_name):
         adapter = getattr(module, "ADAPTER", None)
@@ -40,7 +40,7 @@ def collect_source_adapters(package_name: str) -> tuple[SourceAdapter, ...]:
     return tuple(sorted(discovered, key=lambda item: str(item.manifest.adapter_id)))
 
 
-def collect_output_adapters(package_name: str) -> tuple[OutputAdapter, ...]:
+def _collect_output_adapters(package_name: str) -> tuple[OutputAdapter, ...]:
     discovered: list[OutputAdapter] = []
     for module in iter_discoverable_modules(package_name):
         adapter = getattr(module, "ADAPTER", None)
@@ -52,8 +52,8 @@ def collect_output_adapters(package_name: str) -> tuple[OutputAdapter, ...]:
 
 
 def build_registry() -> AdapterRegistry:
-    source_adapters = collect_source_adapters("tallylot.adapters.sources")
-    output_adapters = collect_output_adapters("tallylot.adapters.outputs")
+    source_adapters = _collect_source_adapters("tallylot.adapters.sources")
+    output_adapters = _collect_output_adapters("tallylot.adapters.outputs")
     validate_unique_ids((*source_adapters, *output_adapters))
     return AdapterRegistry(
         source_adapters=source_adapters,
