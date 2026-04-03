@@ -6,6 +6,11 @@ import sys
 from pathlib import Path
 
 PYTHON_SUFFIXES = {".py", ".pyi"}
+_COMMIT_MSG_HOOK_PATH = Path(".git/hooks/commit-msg")
+_COMMIT_MSG_HOOK_NEEDLES = (
+    "--hook-type=commit-msg",
+    "pre_commit",
+)
 
 
 def _git_paths(*args: str) -> tuple[str, ...]:
@@ -26,7 +31,9 @@ def _format_candidates(
 ) -> tuple[str, ...]:
     partially_staged = set(initially_staged) & set(initially_unstaged)
     candidates = [
-        path for path in initially_staged if Path(path).suffix in PYTHON_SUFFIXES and path not in partially_staged
+        path
+        for path in initially_staged
+        if Path(path).suffix in PYTHON_SUFFIXES and path not in partially_staged
     ]
     return tuple(candidates)
 
@@ -61,6 +68,29 @@ def _run_pre_commit(hook_args: list[str]) -> int:
     return _run_command(command, env=env)
 
 
+def _require_commit_message_hook() -> int:
+    if not _COMMIT_MSG_HOOK_PATH.is_file():
+        print(
+            "repo commit-msg hook is not installed; run "
+            '`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
+            "uv run python -m tools.install_git_hooks`",
+            file=sys.stderr,
+        )
+        return 1
+
+    hook_text = _COMMIT_MSG_HOOK_PATH.read_text(encoding="utf-8")
+    if all(needle in hook_text for needle in _COMMIT_MSG_HOOK_NEEDLES):
+        return 0
+
+    print(
+        "repo commit-msg hook is stale or invalid; run "
+        '`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
+        "uv run python -m tools.install_git_hooks`",
+        file=sys.stderr,
+    )
+    return 1
+
+
 def _format_and_stage(paths: tuple[str, ...]) -> int:
     if not paths:
         return 0
@@ -78,7 +108,12 @@ def _format_and_stage(paths: tuple[str, ...]) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     hook_args = list(sys.argv[1:] if argv is None else argv)
-    initially_staged = _git_paths("diff", "--cached", "--name-only", "--diff-filter=ACMR")
+    hook_status = _require_commit_message_hook()
+    if hook_status != 0:
+        return hook_status
+    initially_staged = _git_paths(
+        "diff", "--cached", "--name-only", "--diff-filter=ACMR"
+    )
     initially_unstaged = _git_paths("diff", "--name-only", "--diff-filter=ACMR")
     format_status = _format_and_stage(
         _format_candidates(
