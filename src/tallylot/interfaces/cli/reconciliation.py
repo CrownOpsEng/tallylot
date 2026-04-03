@@ -21,13 +21,16 @@ def _assert_balances(
     evidence: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
-    response = assert_balances_use_case().execute(
-        BalanceAssertionRequest(
-            snapshot_input_ref=to_resource_ref(snapshots),
-            evidence_input_ref=to_resource_ref(evidence),
-            assertion_output_ref=to_resource_ref(output),
+    try:
+        response = assert_balances_use_case().execute(
+            BalanceAssertionRequest(
+                snapshot_input_ref=to_resource_ref(snapshots),
+                evidence_input_ref=to_resource_ref(evidence),
+                assertion_output_ref=to_resource_ref(output),
+            )
         )
-    )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
     emit_response(response.__dict__)
 
 

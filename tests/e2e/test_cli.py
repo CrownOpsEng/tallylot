@@ -289,3 +289,58 @@ def test_reconciliation_assert_balances_cli_writes_artifacts(tmp_path: Path) -> 
     assert issue_rows[0]["kind"] == "balance_drift"
     assert summary["assertion_count"] == 1
     assert summary["issue_count"] == 1
+
+
+def test_reconciliation_assert_balances_cli_rejects_conflicting_outputs(
+    tmp_path: Path,
+) -> None:
+    snapshots_path = tmp_path / "balances.csv"
+    evidence_path = tmp_path / "balance_evidence.csv"
+    output_path = tmp_path / "reconciliation_issues.csv"
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+
+    FilesystemEvidenceRepository().write_balance_snapshots(
+        snapshots_path,
+        (
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+        ),
+    )
+    FilesystemEvidenceRepository().write_balance_evidence(
+        evidence_path,
+        (
+            BalanceEvidence(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+                evidence_ref="statement.pdf#page=1",
+            ),
+        ),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "reconciliation",
+            "assert-balances",
+            "--snapshots",
+            str(snapshots_path),
+            "--evidence",
+            str(evidence_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "must not reuse" in result.stderr
+    assert "Traceback" not in result.stdout + result.stderr
