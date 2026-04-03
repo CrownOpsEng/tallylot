@@ -90,22 +90,6 @@ def _install_hooks(repo_root: Path) -> None:
         cwd=repo_root,
         env=repo_uv_environment(),
     )
-    subprocess.run(
-        [
-            "uv",
-            "run",
-            "pre-commit",
-            "install",
-            "--overwrite",
-            "--hook-type",
-            "pre-commit",
-            "--hook-type",
-            "commit-msg",
-        ],
-        check=True,
-        cwd=repo_root,
-        env=repo_uv_environment(),
-    )
     hook_format_args = {
         "project_environment": shlex.quote(_hook_project_environment()),
         "python": shlex.quote(sys.executable),

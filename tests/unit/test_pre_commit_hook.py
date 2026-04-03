@@ -8,7 +8,7 @@ import pytest
 import tools.install_git_hooks
 import tools.pre_commit_hook
 from tools.install_git_hooks import _COMMIT_MSG_HOOK_TEMPLATE, _HOOK_TEMPLATE
-from tools.pre_commit_hook import _format_candidates, _skip_value
+from tools.pre_commit_hook import _format_candidates
 
 
 def test_format_candidates_selects_only_safe_staged_python_files() -> None:
@@ -27,11 +27,6 @@ def test_format_candidates_skips_partially_staged_python_files() -> None:
     )
 
     assert candidates == ("src/other.py",)
-
-
-def test_skip_value_appends_formatter_hooks_once() -> None:
-    assert _skip_value(None) == "ruff,ruff-format"
-    assert _skip_value("pytest,ruff") == "pytest,ruff,ruff-format"
 
 
 def test_pre_commit_wrapper_fails_when_commit_msg_hook_is_missing(
@@ -69,16 +64,19 @@ def test_pre_commit_wrapper_runs_when_commit_msg_hook_is_installed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    format_calls: list[tuple[str, ...]] = []
+    pre_commit_calls: list[str] = []
+
     def fake_git_paths(*args: str) -> tuple[str, ...]:
         del args
         return ()
 
     def fake_format_and_stage(paths: tuple[str, ...]) -> int:
-        del paths
+        format_calls.append(paths)
         return 0
 
-    def fake_run_pre_commit(hook_args: list[str]) -> int:
-        del hook_args
+    def fake_run_pre_commit() -> int:
+        pre_commit_calls.append("run")
         return 0
 
     hooks_dir = tmp_path / ".git" / "hooks"
@@ -95,6 +93,8 @@ def test_pre_commit_wrapper_runs_when_commit_msg_hook_is_installed(
     monkeypatch.setattr(tools.pre_commit_hook, "_run_pre_commit", fake_run_pre_commit)
 
     assert tools.pre_commit_hook.main([]) == 0
+    assert format_calls == [()]
+    assert pre_commit_calls == ["run"]
 
 
 def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:
@@ -105,7 +105,7 @@ def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:
     assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in _COMMIT_MSG_HOOK_TEMPLATE
 
 
-def test_install_hooks_uses_pre_commit_overwrite_mode(
+def test_install_hooks_syncs_environment_before_writing_repo_hooks(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -153,21 +153,6 @@ def test_install_hooks_uses_pre_commit_overwrite_mode(
         ),
         (
             ("uv", "sync", "--frozen"),
-            tmp_path,
-            str(Path.home() / ".venvs" / "tallylot-py312"),
-        ),
-        (
-            (
-                "uv",
-                "run",
-                "pre-commit",
-                "install",
-                "--overwrite",
-                "--hook-type",
-                "pre-commit",
-                "--hook-type",
-                "commit-msg",
-            ),
             tmp_path,
             str(Path.home() / ".venvs" / "tallylot-py312"),
         ),

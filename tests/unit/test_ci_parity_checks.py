@@ -5,6 +5,7 @@ from pathlib import Path
 from pytest import MonkeyPatch
 
 import tools.run_ci_parity_checks as ci_parity
+from repo_support.paths import repo_root
 
 
 def test_commit_message_range_uses_merge_base(monkeypatch: MonkeyPatch) -> None:
@@ -22,7 +23,9 @@ def test_commit_message_range_uses_merge_base(monkeypatch: MonkeyPatch) -> None:
     assert ci_parity._commit_message_range() == "abc123..def456"
 
 
-def test_commit_message_range_falls_back_to_head_commit(monkeypatch: MonkeyPatch) -> None:
+def test_commit_message_range_falls_back_to_head_commit(
+    monkeypatch: MonkeyPatch,
+) -> None:
     def fake_git_stdout(*args: str) -> str:
         if args == ("symbolic-ref", "--short", "refs/remotes/origin/HEAD"):
             return "origin/main"
@@ -37,7 +40,9 @@ def test_commit_message_range_falls_back_to_head_commit(monkeypatch: MonkeyPatch
     assert ci_parity._commit_message_range() == "HEAD^!"
 
 
-def test_ci_parity_stops_when_commit_message_step_fails(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+def test_ci_parity_stops_when_commit_message_step_fails(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(ci_parity, "_commit_message_range", lambda: "base..head")
 
@@ -58,7 +63,9 @@ def test_ci_parity_requires_full_pr_metadata_input(tmp_path: Path) -> None:
     assert ci_parity.main(["--pr-body-file", str(pr_body)]) == 2
 
 
-def test_ci_parity_runs_quality_build_and_verify(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+def test_ci_parity_runs_quality_build_and_verify(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.chdir(tmp_path)
     dist_dir = tmp_path / "dist"
     dist_dir.mkdir()
@@ -85,7 +92,9 @@ def test_ci_parity_runs_quality_build_and_verify(monkeypatch: MonkeyPatch, tmp_p
     assert steps_seen == ["quality", "build"]
 
 
-def test_ci_parity_can_include_commit_messages(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+def test_ci_parity_can_include_commit_messages(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(ci_parity, "_commit_message_range", lambda: "base..head")
     dist_dir = tmp_path / "dist"
@@ -113,7 +122,9 @@ def test_ci_parity_can_include_commit_messages(monkeypatch: MonkeyPatch, tmp_pat
     assert steps_seen == ["commit-messages", "quality", "build"]
 
 
-def test_ci_parity_can_include_pr_metadata(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
+def test_ci_parity_can_include_pr_metadata(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(ci_parity, "_pr_validation_shas", lambda: ("base", "head"))
     pr_body = tmp_path / "pr.md"
@@ -148,8 +159,24 @@ def test_ci_parity_can_include_pr_metadata(monkeypatch: MonkeyPatch, tmp_path: P
     monkeypatch.setattr(ci_parity, "_run_step", fake_run_step)
     monkeypatch.setattr(ci_parity, "_verify_built_wheel", fake_verify_built_wheel)
 
-    assert ci_parity.main(["--pr-title", "ci: tighten parity", "--pr-body-file", str(pr_body)]) == 0
+    assert (
+        ci_parity.main(
+            ["--pr-title", "ci: tighten parity", "--pr-body-file", str(pr_body)]
+        )
+        == 0
+    )
     assert [step.name for step in steps_seen] == ["pr-metadata", "quality", "build"]
     assert steps_seen[0].command[4] == "tools.validate_pr_metadata"
     assert "--base-sha" in steps_seen[0].command
     assert "--head-sha" in steps_seen[0].command
+
+
+def test_ci_workflow_uses_parity_runner_for_quality_job() -> None:
+    workflow_text = (repo_root() / ".github/workflows/ci.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "uv run python -m tools.run_ci_parity_checks" in workflow_text
+    assert "run: uv run mypy" not in workflow_text
+    assert "run: uv run pyright" not in workflow_text
+    assert "run: uv run pytest" not in workflow_text

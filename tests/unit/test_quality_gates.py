@@ -27,7 +27,14 @@ def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
         "pylint",
         "pytest",
     ]
-    assert gates[0].command == ("uv", "run", "pre-commit", "run", "markdownlint", "--all-files")
+    assert gates[0].command == (
+        "uv",
+        "run",
+        "pre-commit",
+        "run",
+        "markdownlint",
+        "--all-files",
+    )
     assert gates[1].command == ("uv", "run", "actionlint", "-color")
     assert gates[4].command == ("uv", "run", "pyright")
     assert gates[5].command == ("uv", "run", "python", "-m", "tools.run_pylint")
@@ -40,7 +47,9 @@ def test_quality_gates_can_switch_to_full_pytest() -> None:
     assert gates[-1].command == _FULL_TEST_COMMAND
 
 
-def test_run_gate_exports_external_uv_project_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_gate_exports_external_uv_project_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured_environment: dict[str, str] = {}
 
     def fake_run(
@@ -62,14 +71,20 @@ def test_run_gate_exports_external_uv_project_environment(monkeypatch: pytest.Mo
     gate = _quality_gates(full_tests=False)[0]
     tools.run_quality_gates._run_gate(gate)
 
-    assert captured_environment["UV_PROJECT_ENVIRONMENT"] == str(Path.home() / ".venvs" / "tallylot-py312")
+    assert captured_environment["UV_PROJECT_ENVIRONMENT"] == str(
+        Path.home() / ".venvs" / "tallylot-py312"
+    )
 
 
-def test_pre_commit_config_excludes_pylint_hook() -> None:
+def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> None:
     config_text = (repo_root() / ".pre-commit-config.yaml").read_text(encoding="utf-8")
 
-    assert "id: pylint" not in config_text
+    assert "id: markdownlint" in config_text
+    assert "id: commit-message" in config_text
+    assert "id: mypy" in config_text
+    assert "id: pyright" in config_text
     assert "name: pytest-fast" in config_text
+    assert "id: ruff" not in config_text
 
 
 def test_quality_gates_refresh_generated_pyright_config_before_running(
@@ -88,7 +103,11 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
     def fake_run_gate(
         gate: QualityGate,
     ) -> tuple[QualityGate, subprocess.CompletedProcess[str], float]:
-        return gate, subprocess.CompletedProcess(gate.command, 0, stdout="", stderr=""), 0.0
+        return (
+            gate,
+            subprocess.CompletedProcess(gate.command, 0, stdout="", stderr=""),
+            0.0,
+        )
 
     monkeypatch.setattr(
         tools.run_quality_gates,

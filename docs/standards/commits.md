@@ -198,12 +198,12 @@ work:
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
 ```
 
-The installed `pre-commit` hook formats safe staged Python files with Ruff
-before running the remaining hooks once. It skips auto-restaging for partially
-staged Python files so unrelated unstaged hunks are not accidentally committed.
-It also refuses to run when the sibling `commit-msg` validator hook is missing
-or stale, so clone-local hook drift cannot silently bypass commit-message
-validation.
+The installed `pre-commit` hook is intentionally narrow. It formats safe
+staged Python files with Ruff before commit creation and skips auto-restaging
+for partially staged Python files so unrelated unstaged hunks are not
+accidentally committed. It also refuses to run when the sibling `commit-msg`
+validator hook is missing or stale, so clone-local hook drift cannot silently
+bypass commit-message validation.
 
 Validate messages directly when needed:
 
@@ -212,31 +212,28 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.vali
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
 ```
 
-## Commit-Time Test Policy
+## Commit-Time Verification Policy
 
-The `pre-commit` `pytest` hook is intentionally scoped to fast unit coverage:
+Commit-time hooks should enforce the bounded local safety checks we expect on
+every checkpoint commit without rerunning the full repo-wide verification
+matrix. Keep the hook path limited to safe staged Ruff autofixes plus the
+commit-time checks that protect every commit:
 
-```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -m "unit and not slow" --no-cov -q
-```
+- `markdownlint`
+- `mypy`
+- `pyright`
+- `pytest -m "unit and not slow" --no-cov -q`
+- commit-message validation
 
-That hook is meant to protect local commits without paying the cost of
-coverage, contract tests, or end-to-end CLI flows on every commit. Full
-verification still means running:
+Full verification still means running:
 
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
 ```
 
 Do not also run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the
-parallel quality-gate runner unless you are validating the hooks themselves.
-
-Re-benchmark suite segments before broadening or shrinking the fast test slice:
-
-```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests --parallel
-```
+shared quality-gate or CI-parity runners unless you are validating hook
+behavior itself.
 
 For explicit local verification outside the hook path, the repo also ships a
 parallel quality-gate runner:
@@ -271,9 +268,10 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_
   --pr-body-file /tmp/pr-body.md
 ```
 
-`pylint` remains part of the parallel quality-gate runner, but it is not part
-of the `pre-commit` hook path because it is materially slower than the other
-commit-time checks.
+`pylint`, full-repo `ruff`, and the full `pytest` suite belong to the shared
+quality and CI-parity runners rather than the commit-time hook path. The fast
+hook checks should stay narrower than the full parity matrix so the same broad
+suite is not rerun twice inside one explicit verification pass.
 
 Do not describe `mypy` or `pyright` as covering `pylint` findings. Type checks
 and lint checks catch different failure classes and must be reported
