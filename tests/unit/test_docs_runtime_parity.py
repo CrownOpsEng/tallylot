@@ -9,7 +9,13 @@ from typing import cast
 from typer.main import Typer
 from typer.models import CommandInfo
 
-from repo_support.paths import adapter_packs_root, agents_root, claude_commands_root, docs_root, repo_root
+from repo_support.paths import (
+    adapter_packs_root,
+    agents_root,
+    claude_commands_root,
+    docs_root,
+    repo_root,
+)
 from tallylot.infrastructure.workspace.layout import SEED_FILES
 from tallylot.interfaces.cli import app
 from tools.oracles.cli import app as oracle_app
@@ -125,7 +131,9 @@ def _registered_routes(typer_app: Typer) -> set[str]:
 
 
 def test_documented_cli_routes_exist() -> None:
-    documented_routes = _documented_routes(production_route_doc_paths(), PRODUCTION_COMMAND_ROUTE_PATTERN)
+    documented_routes = _documented_routes(
+        production_route_doc_paths(), PRODUCTION_COMMAND_ROUTE_PATTERN
+    )
     registered_routes = _registered_routes(app)
 
     missing_routes = sorted(documented_routes - registered_routes)
@@ -134,12 +142,16 @@ def test_documented_cli_routes_exist() -> None:
 
 
 def test_documented_oracle_cli_routes_exist() -> None:
-    documented_routes = _documented_routes(oracle_route_doc_paths(), ORACLE_COMMAND_ROUTE_PATTERN)
+    documented_routes = _documented_routes(
+        oracle_route_doc_paths(), ORACLE_COMMAND_ROUTE_PATTERN
+    )
     registered_routes = _registered_routes(oracle_app)
 
     missing_routes = sorted(documented_routes - registered_routes)
 
-    assert not missing_routes, f"documented oracle CLI routes do not exist: {missing_routes}"
+    assert not missing_routes, (
+        f"documented oracle CLI routes do not exist: {missing_routes}"
+    )
 
 
 def test_documented_claude_command_routes_exist() -> None:
@@ -156,7 +168,9 @@ def test_documented_claude_command_routes_exist() -> None:
     )
 
     for relative_path in command_paths:
-        assert (repo_root() / relative_path).exists(), f"missing documented command route: {relative_path}"
+        assert (repo_root() / relative_path).exists(), (
+            f"missing documented command route: {relative_path}"
+        )
 
 
 def test_documented_claude_command_routes_are_not_ignored() -> None:
@@ -199,21 +213,21 @@ def test_source_intake_route_mentions_current_typed_commands() -> None:
 
 
 def test_round_verification_route_mentions_oracle_cli_commands() -> None:
-    text = (claude_commands_root() / "round-verification.md").read_text(encoding="utf-8")
+    text = (claude_commands_root() / "round-verification.md").read_text(
+        encoding="utf-8"
+    )
 
-    scaffold_command = (
-        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli round scaffold'
-    )
-    compare_command = (
-        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli verification compare'
-    )
+    scaffold_command = 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli round scaffold'
+    compare_command = 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli verification compare'
 
     assert scaffold_command in text
     assert compare_command in text
 
 
 def test_supporting_route_mentions_checkpoint_pdf_balance_extraction_command() -> None:
-    text = (claude_commands_root() / "supporting-artifacts.md").read_text(encoding="utf-8")
+    text = (claude_commands_root() / "supporting-artifacts.md").read_text(
+        encoding="utf-8"
+    )
 
     assert "checkpoint extract-pdf-balances" in text
 
@@ -241,7 +255,9 @@ def test_docs_do_not_reference_retired_service_or_model_buckets() -> None:
     for path in architecture_doc_paths():
         text = path.read_text(encoding="utf-8").lower()
         for needle in forbidden:
-            assert needle not in text, f"{path} still references retired surface {needle!r}"
+            assert needle not in text, (
+                f"{path} still references retired surface {needle!r}"
+            )
 
 
 def test_docs_use_lowercase_filenames_except_readmes() -> None:
@@ -271,11 +287,15 @@ def test_repo_docs_do_not_reference_personal_workspace_roots() -> None:
     for path in paths:
         text = path.read_text(encoding="utf-8")
         for needle in forbidden:
-            assert needle not in text, f"{path} still references personal workspace path {needle}"
+            assert needle not in text, (
+                f"{path} still references personal workspace path {needle}"
+            )
 
 
 def test_private_oracle_manifest_is_not_checked_in() -> None:
-    assert not (docs_root() / "reference" / "cointracking-full-export-manifest.csv").exists()
+    assert not (
+        docs_root() / "reference" / "cointracking-full-export-manifest.csv"
+    ).exists()
 
 
 def test_workspace_issue_log_seed_header_matches_template() -> None:
@@ -285,7 +305,9 @@ def test_workspace_issue_log_seed_header_matches_template() -> None:
         .splitlines()[0]
     )
     seeded_header = next(
-        seed.content.strip() for seed in SEED_FILES if seed.relative_path == "analysis/issues/issue_log.csv"
+        seed.content.strip()
+        for seed in SEED_FILES
+        if seed.relative_path == "analysis/issues/issue_log.csv"
     )
 
     assert seeded_header == template_header
@@ -293,12 +315,20 @@ def test_workspace_issue_log_seed_header_matches_template() -> None:
 
 def test_workspace_source_inventory_seed_header_matches_template() -> None:
     template_header = (
-        (docs_root() / "workspace" / "analysis" / "issues" / "source-inventory-template.csv")
+        (
+            docs_root()
+            / "workspace"
+            / "analysis"
+            / "issues"
+            / "source-inventory-template.csv"
+        )
         .read_text(encoding="utf-8")
         .splitlines()[0]
     )
     seeded_header = next(
-        seed.content.strip() for seed in SEED_FILES if seed.relative_path == "analysis/issues/source_inventory.csv"
+        seed.content.strip()
+        for seed in SEED_FILES
+        if seed.relative_path == "analysis/issues/source_inventory.csv"
     )
 
     assert seeded_header == template_header
@@ -308,9 +338,33 @@ def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
     text = (docs_root() / "standards" / "commits.md").read_text(encoding="utf-8")
 
     assert "Do not describe `mypy` or `pyright` as covering `pylint` findings." in text
-    assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>' in text
-    assert 'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>' in text
+    assert (
+        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>'
+        in text
+    )
+    assert (
+        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>'
+        in text
+    )
     assert "git show HEAD:<path>" in text
+
+
+def test_commit_standards_document_hybrid_pr_merge_policy() -> None:
+    text = (docs_root() / "standards" / "commits.md").read_text(encoding="utf-8")
+    implementation_text = (docs_root() / "standards" / "implementation.md").read_text(
+        encoding="utf-8"
+    )
+    pr_template = (repo_root() / ".github" / "pull_request_template.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "`main` is a merge-commit branch by default." in text
+    assert "Use squash merges only for the narrow single-checkpoint exception." in text
+    assert "do not squash multi-checkpoint PRs" in text
+    assert "non-pushed checkpoint commit may be amended" in text
+    assert "single-checkpoint exception" in implementation_text
+    assert "create the issue immediately so it does not get lost" in implementation_text
+    assert "Single-checkpoint PRs must squash." in pr_template
 
 
 def test_implementation_anchor_references_use_explicit_doc_paths() -> None:
@@ -321,7 +375,9 @@ def test_implementation_anchor_references_use_explicit_doc_paths() -> None:
 
     for path in paths:
         text = path.read_text(encoding="utf-8")
-        assert "implementation plan" not in text.lower(), f"{path} still uses vague implementation-plan wording"
+        assert "implementation plan" not in text.lower(), (
+            f"{path} still uses vague implementation-plan wording"
+        )
 
 
 def test_reference_docs_do_not_check_in_oracle_data_files() -> None:
@@ -341,4 +397,6 @@ def test_adapter_pack_goldens_do_not_embed_absolute_home_paths() -> None:
     for path in sorted(adapter_packs_root().rglob("*.json")):
         text = path.read_text(encoding="utf-8")
         for needle in forbidden:
-            assert needle not in text, f"{path} still embeds absolute local path content"
+            assert needle not in text, (
+                f"{path} still embeds absolute local path content"
+            )

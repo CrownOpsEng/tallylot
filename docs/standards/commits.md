@@ -78,10 +78,15 @@ Checks:
 
 Standard footers are allowed, including `BREAKING CHANGE:`.
 
-## Pull Request And Squash Merge Standard
+## Pull Request Merge Strategy Standard
 
-`main` uses squash merges. Treat the pull request title and description as the
-canonical source for the commit that lands on `main`.
+`main` is a merge-commit branch by default. Preserve multi-checkpoint pull
+requests with merge commits so the reviewed checkpoint history remains visible
+in Git. Use squash merges only for the narrow single-checkpoint exception.
+
+Treat the pull request title and description as the canonical review record
+for every PR. For the single-checkpoint exception, that same metadata also
+becomes the generated squash commit that lands on `main`.
 
 Protected-branch rule:
 
@@ -95,7 +100,8 @@ Protected-branch rule:
 PR title rules:
 
 - use the same Conventional Commit subject format required for authored commits
-- keep the title history-ready on its own because the squash subject becomes
+- keep the title history-ready on its own because it remains the PR headline
+  and, for a single-checkpoint PR, the squash subject becomes
   `<pr title> (#<pr number>)`
 - do not use generic titles such as `update branch`, `cleanup`, or `misc fixes`
 
@@ -116,10 +122,19 @@ PR body rules:
 - for a one-commit PR, still list that single checkpoint under
   `Included checkpoints:`
 
-The GitHub-generated squash commit on `main` may retain the validated
-`Included checkpoints:` section from the PR body. Treat that as allowed for the
-generated mainline commit record, even though authored checkpoint commits
-should only use `Why:`, `What:`, and `Checks:` sections.
+Merge method rules:
+
+- if `Included checkpoints:` lists more than one commit, the PR must merge with
+  a merge commit
+- if `Included checkpoints:` lists exactly one commit, the PR must squash merge
+- do not squash multi-checkpoint PRs
+- do not create a merge commit for a single-checkpoint PR unless the user
+  explicitly requests a one-off repair in the current thread
+
+For a single-checkpoint PR, the GitHub-generated squash commit on `main` may
+retain the validated `Included checkpoints:` section from the PR body. Treat
+that as allowed for the generated mainline commit record, even though authored
+checkpoint commits should only use `Why:`, `What:`, and `Checks:` sections.
 
 Preferred PR body template:
 
@@ -161,6 +176,14 @@ Heuristics:
 Do not batch unrelated fixes together. Do not split one bounded change into a
 series of micro-commits with no practical review value.
 
+Before a checkpoint commit is pushed, fold a small, scoped follow-up patch into
+the owning checkpoint when that produces a cleaner review boundary. A
+non-pushed checkpoint commit may be amended for small cleanups and fixes that
+still belong to that same checkpoint. Use `git commit --amend`, `git rebase`,
+or fixup-based consolidation for that limited cleanup only, and update the
+amended commit message so `Why:`, `What:`, and `Checks:` remain accurate for
+the final commit content. Do not use repeated amend cycles to grow one broad
+commit that should be split into separate stable checkpoints.
 For multi-slice refactors, use designated checkpoint commits whenever the slice
 already leaves the tree coherent, linked, and narrow-check verified. A giant
 single-commit rewrite is only acceptable when the change cannot be reviewed or

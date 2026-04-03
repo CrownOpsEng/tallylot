@@ -191,6 +191,12 @@ Expected behavior:
 - make a commit when a bounded slice is stable and verified
 - keep commits cohesive and reviewable
 - prefer one commit per coherent reshape slice, not one commit per file
+- before a checkpoint commit is pushed, amend or fix up a small, scoped
+  follow-up patch into the owning non-pushed checkpoint when that avoids a
+  low-value micro-commit, and update the amended commit message so its
+  `Why:`, `What:`, and `Checks:` sections still describe the final content
+- do not use repeated amend cycles to grow one broad checkpoint that should be
+  split into separate commits with clearer review and rollback boundaries
 - do not bundle unrelated fixes
 - do not wait for the user to remind you to commit once the task has reached a
   real checkpoint
@@ -198,7 +204,12 @@ Expected behavior:
   stable slice that already passes the narrow checks for that slice
 - when opening a PR, use a Conventional Commit title and the structured PR body
   defined in `docs/standards/commits.md` because that metadata
-  becomes the squash commit on `main`
+  stays attached to the PR record and becomes the squash commit on `main` for
+  the single-checkpoint exception
+- when the work uncovers follow-up or out-of-scope changes that do not belong
+  in the current PR, create the issue immediately so it does not get lost
+- do not defer issue creation for out-of-scope work until after merge, handoff,
+  or a later cleanup pass
 - before closing a non-trivial task, ensure the commit already exists rather
   than leaving commit creation as follow-up work
 - keep repo cleanup forward-only by default: do not use destructive rollback
