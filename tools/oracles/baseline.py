@@ -6,7 +6,11 @@ from pathlib import Path
 
 from tallylot.ports.artifacts import ArtifactStorePort
 from tools.oracles.cointracking.baseline import build_baseline_artifacts
-from tools.oracles.contracts import BaselineArtifacts, BaselineValidateRequest, BaselineValidateResponse
+from tools.oracles.contracts import (
+    BaselineArtifacts,
+    BaselineValidateRequest,
+    BaselineValidateResponse,
+)
 
 ASSET_SNAPSHOT_HEADER = (
     "ticker",
@@ -56,7 +60,11 @@ def _write_baseline_artifacts(
     artifacts: BaselineArtifacts,
     store: ArtifactStorePort,
 ) -> None:
-    store.write_rows(output_dir / "baseline_asset_snapshot.csv", ASSET_SNAPSHOT_HEADER, artifacts.asset_snapshot_rows)
+    store.write_rows(
+        output_dir / "baseline_asset_snapshot.csv",
+        ASSET_SNAPSHOT_HEADER,
+        artifacts.asset_snapshot_rows,
+    )
     store.write_rows(
         output_dir / "baseline_exchange_reconciliation.csv",
         EXCHANGE_RECONCILIATION_HEADER,
@@ -72,10 +80,14 @@ def _write_baseline_artifacts(
         SOURCE_ACTIVITY_HEADER,
         artifacts.source_activity_rows,
     )
-    store.write_rows(output_dir / "baseline_cad_flow_by_type.csv", CAD_FLOW_HEADER, artifacts.cad_flow_rows)
+    store.write_rows(
+        output_dir / "baseline_cad_flow_by_type.csv",
+        CAD_FLOW_HEADER,
+        artifacts.cad_flow_rows,
+    )
     store.write_rows(
         output_dir / "baseline_cad_balance_by_exchange.csv",
         CAD_BALANCE_HEADER,
         artifacts.cad_balance_by_exchange_rows,
     )
-    store.write_json(output_dir / "baseline_summary.json", artifacts.summary)
+    store.write_json(output_dir / "baseline_summary.json", dict(artifacts.summary))

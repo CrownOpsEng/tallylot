@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import override
 
@@ -22,7 +22,7 @@ class FilesystemArtifactStore(ArtifactStorePort):
         self,
         path: Path,
         header: tuple[str, ...],
-        rows: Iterable[dict[str, str]],
+        rows: Iterable[Mapping[str, str]],
     ) -> None:
         write_rows(path, header, rows)
 

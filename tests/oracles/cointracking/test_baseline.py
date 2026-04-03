@@ -18,7 +18,9 @@ from tools.oracles.cointracking.baseline import (
 from tools.oracles.export_files import find_required_csv_exports
 
 
-def test_find_required_baseline_exports_uses_shared_helper_behavior(tmp_path: Path) -> None:
+def test_find_required_baseline_exports_uses_shared_helper_behavior(
+    tmp_path: Path,
+) -> None:
     export_dir = tmp_path / "exports"
     export_dir.mkdir()
     for stem in (
@@ -69,7 +71,13 @@ def test_parse_trade_table_row_rejects_short_rows() -> None:
 def test_build_asset_snapshot_sorts_and_tracks_negative_balances() -> None:
     rows, current_by_ticker, negative_balances = build_asset_snapshot(
         current_rows=[
-            {"Ticker": "BTC", "Name": "Bitcoin", "Type": "Coin", "Amount": "1.50000000", "Value in CAD": "100000"},
+            {
+                "Ticker": "BTC",
+                "Name": "Bitcoin",
+                "Type": "Coin",
+                "Amount": "1.50000000",
+                "Value in CAD": "100000",
+            },
             {
                 "Ticker": "CAD",
                 "Name": "Canadian Dollar",
@@ -79,8 +87,18 @@ def test_build_asset_snapshot_sorts_and_tracks_negative_balances() -> None:
             },
         ],
         exchange_rows=[
-            {"Amount": "1.50000000", "Currency": "BTC", "Current value in CAD": "100000", "Exchange": "Coinbase"},
-            {"Amount": "-12.34000000", "Currency": "CAD", "Current value in CAD": "-12.34", "Exchange": "Bank"},
+            {
+                "Amount": "1.50000000",
+                "Currency": "BTC",
+                "Current value in CAD": "100000",
+                "Exchange": "Coinbase",
+            },
+            {
+                "Amount": "-12.34000000",
+                "Currency": "CAD",
+                "Current value in CAD": "-12.34",
+                "Exchange": "Bank",
+            },
         ],
     )
 
@@ -88,15 +106,54 @@ def test_build_asset_snapshot_sorts_and_tracks_negative_balances() -> None:
     assert current_by_ticker["BTC"] == Decimal("1.50000000")
     assert negative_balances[0]["ticker"] == "CAD"
     assert negative_balances[0]["amount"] == "-12.34000000"
+    assert negative_balances[0]["value_cad"] == "-12.34000000"
+
+
+def test_build_asset_snapshot_rejects_duplicate_current_balance_tickers() -> None:
+    with pytest.raises(ValueError, match="Duplicate Current Balance ticker row: BTC"):
+        build_asset_snapshot(
+            current_rows=[
+                {
+                    "Ticker": "BTC",
+                    "Name": "Bitcoin",
+                    "Type": "Coin",
+                    "Amount": "1.0",
+                    "Value in CAD": "1.0",
+                },
+                {
+                    "Ticker": "BTC",
+                    "Name": "Bitcoin",
+                    "Type": "Coin",
+                    "Amount": "2.0",
+                    "Value in CAD": "2.0",
+                },
+            ],
+            exchange_rows=[],
+        )
 
 
 def test_build_exchange_reconciliation_detects_drift_and_cad_rows() -> None:
     rows, cad_rows, max_difference, max_ticker = build_exchange_reconciliation(
         current_by_ticker={"BTC": Decimal("1.0"), "CAD": Decimal("-5.0")},
         exchange_rows=[
-            {"Amount": "0.4", "Currency": "BTC", "Current value in CAD": "1", "Exchange": "A"},
-            {"Amount": "0.7", "Currency": "BTC", "Current value in CAD": "2", "Exchange": "B"},
-            {"Amount": "-5.0", "Currency": "CAD", "Current value in CAD": "-5", "Exchange": "Bank"},
+            {
+                "Amount": "0.4",
+                "Currency": "BTC",
+                "Current value in CAD": "1",
+                "Exchange": "A",
+            },
+            {
+                "Amount": "0.7",
+                "Currency": "BTC",
+                "Current value in CAD": "2",
+                "Exchange": "B",
+            },
+            {
+                "Amount": "-5.0",
+                "Currency": "CAD",
+                "Current value in CAD": "-5",
+                "Exchange": "Bank",
+            },
         ],
     )
 
@@ -104,6 +161,7 @@ def test_build_exchange_reconciliation_detects_drift_and_cad_rows() -> None:
     assert btc_row["status"] == "drift"
     assert btc_row["difference"] == "0.10000000"
     assert cad_rows[0]["exchange"] == "Bank"
+    assert cad_rows[0]["current_value_cad"] == "-5.00000000"
     assert max_difference == Decimal("0.1")
     assert max_ticker == "BTC"
 
@@ -111,7 +169,14 @@ def test_build_exchange_reconciliation_detects_drift_and_cad_rows() -> None:
 def test_build_exchange_reconciliation_includes_exchange_only_assets() -> None:
     rows, cad_rows, max_difference, max_ticker = build_exchange_reconciliation(
         current_by_ticker={"BTC": Decimal("1.0")},
-        exchange_rows=[{"Amount": "2.0", "Currency": "ETH", "Current value in CAD": "5000", "Exchange": "Wallet"}],
+        exchange_rows=[
+            {
+                "Amount": "2.0",
+                "Currency": "ETH",
+                "Current value in CAD": "5000",
+                "Exchange": "Wallet",
+            }
+        ],
     )
 
     eth_row = next(row for row in rows if row["ticker"] == "ETH")
