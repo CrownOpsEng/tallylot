@@ -97,6 +97,14 @@ Do not pre-load every repo doc by default.
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value
   - end the task on a clean, meaningful checkpoint commit
+- Treat protected branches as PR-only landing surfaces:
+  - do not push directly to `main`
+  - do not bypass branch protection for ordinary delivery
+  - do not force-push protected branches unless the user explicitly requests a
+    one-time repair in the current thread after branch protection has been
+    temporarily adjusted
+  - after any explicit one-time repair, verify the remote branch tip and return
+    to PR-only delivery before continuing
 - Treat repo cleanup as forward-only by default:
   - do not run `rm -rf`, `git restore`, `git reset`, `git checkout --`, or
     other destructive rollback commands unless the user explicitly asks for
