@@ -49,6 +49,8 @@ part of the current round-close process.
 ### 3. Normalize And Prepare A Candidate
 
 - Normalize the settled capture and review the emitted issues and summaries.
+- Run `reconciliation assert-balances` once `balances.csv` and
+  `balance_evidence.csv` are available for the source-backed balance check.
 - Render `cointracking_candidate.csv` only when the round needs an external
   comparison artifact.
 - Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the

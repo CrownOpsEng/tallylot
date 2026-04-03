@@ -32,6 +32,25 @@ Review:
 - `normalization_reviews.csv`
 - `normalization_summary.json`
 
+## Assert Source Balances
+
+Run:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation assert-balances \
+  --snapshots <workspace>/working/normalized/<source>/balances.csv \
+  --evidence <workspace>/working/normalized/<source>/balance_evidence.csv \
+  --output <workspace>/analysis/reconciliation/<source>/balance_assertions.csv
+```
+
+Review:
+
+- `balance_assertions.csv`
+- `reconciliation_issues.csv`
+- `balance_assertion_summary.json`
+
+Continue only after reviewing any emitted reconciliation issues.
+
 ## Render A Candidate When Needed
 
 Run:

@@ -4,8 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.application.checkpoints.extract_pdf_balances import ExtractPdfBalancesUseCase
-from tallylot.application.checkpoints.rebuild_location_inventory import RebuildLocationInventoryUseCase
+from tallylot.application.checkpoints.extract_pdf_balances import (
+    ExtractPdfBalancesUseCase,
+)
+from tallylot.application.checkpoints.rebuild_location_inventory import (
+    RebuildLocationInventoryUseCase,
+)
 from tallylot.application.intake.apply_intake import ApplyIntakeUseCase
 from tallylot.application.intake.build_manifest import BuildManifestUseCase
 from tallylot.application.intake.plan_intake import PlanIntakeUseCase
@@ -15,11 +19,17 @@ from tallylot.application.normalization.normalize_source import (
 )
 from tallylot.application.outputs.render_output import RenderOutputUseCase
 from tallylot.application.profiling.build_profile import BuildProfileUseCase
-from tallylot.application.workspace.initialize_workspace import InitializeWorkspaceUseCase
+from tallylot.application.reconciliation.assert_balances import AssertBalancesUseCase
+from tallylot.application.workspace.initialize_workspace import (
+    InitializeWorkspaceUseCase,
+)
 from tallylot.infrastructure.config import load_app_config
 from tallylot.infrastructure.discovery import AdapterRegistry, build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
-from tallylot.infrastructure.storage import FilesystemEvidenceRepository, FilesystemFactRepository
+from tallylot.infrastructure.storage import (
+    FilesystemEvidenceRepository,
+    FilesystemFactRepository,
+)
 from tallylot.infrastructure.workspace import FilesystemWorkspaceRepository
 
 
@@ -29,7 +39,12 @@ def runtime_dependencies() -> tuple[
     FilesystemFactRepository,
     FilesystemEvidenceRepository,
 ]:
-    return build_registry(), FilesystemArtifactStore(), FilesystemFactRepository(), FilesystemEvidenceRepository()
+    return (
+        build_registry(),
+        FilesystemArtifactStore(),
+        FilesystemFactRepository(),
+        FilesystemEvidenceRepository(),
+    )
 
 
 def build_manifest_use_case() -> BuildManifestUseCase:
@@ -78,6 +93,11 @@ def rebuild_location_inventory_use_case() -> RebuildLocationInventoryUseCase:
 def extract_pdf_balances_use_case() -> ExtractPdfBalancesUseCase:
     registry, artifacts, _, _ = runtime_dependencies()
     return ExtractPdfBalancesUseCase(registry, artifacts)
+
+
+def assert_balances_use_case() -> AssertBalancesUseCase:
+    _, artifacts, _, evidence = runtime_dependencies()
+    return AssertBalancesUseCase(evidence, artifacts)
 
 
 def initialize_workspace_use_case() -> InitializeWorkspaceUseCase:

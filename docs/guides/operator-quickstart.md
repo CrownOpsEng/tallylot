@@ -35,10 +35,12 @@ Use the linked task guides when you need the detailed procedure for one stage.
 
 1. Run `source normalize` for the settled capture.
 2. Review the normalization artifacts and issues before rendering a candidate.
-3. Run `output render file` only when the round needs
+3. Run `reconciliation assert-balances` when balance snapshots and
+   source-backed balance evidence are ready for a deterministic balance check.
+4. Run `output render file` only when the round needs
    `cointracking_candidate.csv`.
-4. Run `batch screen`, then `batch stage` only after the screen passes.
-5. Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the
+5. Run `batch screen`, then `batch stage` only after the screen passes.
+6. Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the
    detailed command flow, artifact review, and stop conditions.
 
 ## Seed And Verify A Round
