@@ -232,7 +232,7 @@ Included checkpoints:
         head_sha="1111111",
     )
 
-    assert errors == ()
+    assert not errors
 
 
 def test_pr_checkpoints_ignore_leading_html_comment(monkeypatch: MonkeyPatch) -> None:
@@ -260,7 +260,7 @@ Included checkpoints:
 
     errors = _validate_pr_checkpoints(body, base_sha="base", head_sha="head")
 
-    assert errors == ()
+    assert not errors
 
 
 def test_pr_checkpoints_reject_non_exact_commit_subjects(

@@ -370,10 +370,31 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         in checkpoint_text
     )
     assert "scratch workflow bookkeeping" in checkpoint_text
+    assert "full clean loop has completed with no new" in hardening_route_text
+    assert "invent findings to hit a quota" in hardening_route_text
     assert (
-        "Keep the PR draft until a full clean pass is complete" in hardening_route_text
+        "stop only after a full pass yields no new meaningful findings"
+        in guardrails_text
     )
-    assert "Do not invent findings to hit a" in hardening_route_text
+    assert (
+        "Continue steps 1 through 5 until a full pass yields no new meaningful"
+        in hardening_route_text
+    )
+    assert (
+        "repair every finding from that pass before starting the next pass"
+        in guardrails_text
+    )
+    assert "AGENTS.md`, its task-routing table" in guardrails_text
+    assert "checkpoint commits during the loop" in guardrails_text
+    assert (
+        "Repair every finding from that pass before starting the next pass"
+        in hardening_route_text
+    )
+    assert "create bounded checkpoint commits during the" in hardening_route_text
+    assert (
+        "relevant delivery guidance or skills before updating the PR"
+        in hardening_route_text
+    )
 
 
 def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> None:

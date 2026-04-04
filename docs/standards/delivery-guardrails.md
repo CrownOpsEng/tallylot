@@ -129,9 +129,20 @@ PR hardening review is a repeatable procedure, not an improvised pass. Each
 pass should:
 
 - re-check prior fix surfaces first
-- add one adjacent surface group
-- report up to 5 new evidence-backed findings
-- stop early when fewer real findings exist
+- red-team one adjacent surface group and look for up to 5 new unique
+  evidence-backed findings across the active review domains
+- repair every finding from that pass before starting the next pass
+- reload the narrow repo guidance needed for each repair surface before editing:
+  use `AGENTS.md`, its task-routing table, and the owning roadmap,
+  architecture, migration, or delivery docs surfaced by that route or by repo
+  search hints instead of forcing one oversized preload bundle for every pass
+- run the relevant verification for the repaired slice and create bounded
+  checkpoint commits during the loop using the repo's normal commit rules
+- when a pass finds fewer than 5 new findings, report only those findings and
+  keep the loop moving
+- stop only after a full pass yields no new meaningful findings; if the only
+  remaining item is a minor finishing touch, repair it and finish once no other
+  meaningful issues surface
 - keep scratch tracking ephemeral and untracked
 
 ### 4. Agent Defaults
