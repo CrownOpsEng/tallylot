@@ -6,7 +6,12 @@ from datetime import datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-from tallylot.adapters.support import CsvRowContext, IssueSpec, issue_record, location_id_from_parts
+from tallylot.adapters.support import (
+    CsvRowContext,
+    IssueSpec,
+    issue_record,
+    location_id_from_parts,
+)
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
@@ -16,7 +21,12 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -44,8 +54,12 @@ def translate_row(
     row_type = (row.get("Type") or "").strip()
     transaction_id = f"shakepay:{row_context.raw_file}:{row_context.raw_row_ref}"
     if row_context.raw_file == "cash_transactions_summary.csv":
-        return _normalize_cash_row(profile, row_context, timestamp, transaction_id, row_type)
-    return _normalize_crypto_row(profile, row_context, timestamp, transaction_id, row_type)
+        return _normalize_cash_row(
+            profile, row_context, timestamp, transaction_id, row_type
+        )
+    return _normalize_crypto_row(
+        profile, row_context, timestamp, transaction_id, row_type
+    )
 
 
 def _normalize_cash_row(
@@ -158,7 +172,8 @@ def _normalize_crypto_row(
     credited_amount = parse_decimal((row.get("Amount Credited") or "").strip())
     debited_asset = (row.get("Asset Debited") or "").strip().upper()
     credited_asset = (row.get("Asset Credited") or "").strip().upper()
-    description = (row.get("Description") or "").strip().lower()
+    description = (row.get("Description") or "").strip()
+    fiat_amount, fiat_currency = _row_fiat_value(row)
     if row_type == "Reward" and credited_amount is not None and credited_asset:
         return EconomicActivityDraft(
             activity_id=transaction_id,
@@ -187,7 +202,52 @@ def _normalize_crypto_row(
                 ),
             ),
         )
-    if row_type == "Buy" and debited_amount is not None and credited_amount is not None:
+    if row_type == "Buy" and credited_amount is not None and credited_asset:
+        counterparty_amount = (
+            debited_amount if debited_amount is not None else fiat_amount
+        )
+        counterparty_asset = debited_asset if debited_asset else fiat_currency
+        if counterparty_amount is not None and counterparty_asset:
+            return EconomicActivityDraft(
+                activity_id=transaction_id,
+                source=str(profile.source),
+                adapter_id="shakepay",
+                location_id=location_id_from_parts(str(profile.source)),
+                timestamp=timestamp,
+                classification=classification(
+                    economic_kind=EconomicKind.SPOT_TRADE,
+                    projection_hint=ProjectionHint.TRADE,
+                    accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
+                    tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
+                ),
+                leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
+                description=description,
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
+                tx_hash=transaction_id,
+                provider_operation_key=row_type,
+                legs=(
+                    economic_leg(
+                        leg_id="asset_in",
+                        kind=LegKind.PRIMARY,
+                        quantity=credited_amount,
+                        instrument=credited_asset,
+                    ),
+                    economic_leg(
+                        leg_id="asset_out",
+                        kind=LegKind.PRIMARY,
+                        quantity=-counterparty_amount,
+                        instrument=counterparty_asset,
+                    ),
+                ),
+            )
+    if (
+        row_type == "Sell"
+        and debited_amount is not None
+        and debited_asset
+        and fiat_amount is not None
+        and fiat_currency
+    ):
         return EconomicActivityDraft(
             activity_id=transaction_id,
             source=str(profile.source),
@@ -201,7 +261,41 @@ def _normalize_crypto_row(
                 tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
             ),
             leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
-            description=(row.get("Description") or "").strip(),
+            description=description,
+            raw_file=row_context.raw_file,
+            raw_row_ref=row_context.raw_row_ref,
+            tx_hash=transaction_id,
+            provider_operation_key=row_type,
+            legs=(
+                economic_leg(
+                    leg_id="asset_in",
+                    kind=LegKind.PRIMARY,
+                    quantity=fiat_amount,
+                    instrument=fiat_currency,
+                ),
+                economic_leg(
+                    leg_id="asset_out",
+                    kind=LegKind.PRIMARY,
+                    quantity=-debited_amount,
+                    instrument=debited_asset,
+                ),
+            ),
+        )
+    if row_type == "Receive" and credited_amount is not None and credited_asset:
+        return EconomicActivityDraft(
+            activity_id=transaction_id,
+            source=str(profile.source),
+            adapter_id="shakepay",
+            location_id=location_id_from_parts(str(profile.source)),
+            timestamp=timestamp,
+            classification=classification(
+                economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
+                projection_hint=ProjectionHint.DEPOSIT,
+                accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+            ),
+            leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
+            description=description,
             raw_file=row_context.raw_file,
             raw_row_ref=row_context.raw_row_ref,
             tx_hash=transaction_id,
@@ -212,12 +306,6 @@ def _normalize_crypto_row(
                     kind=LegKind.PRIMARY,
                     quantity=credited_amount,
                     instrument=credited_asset,
-                ),
-                economic_leg(
-                    leg_id="asset_out",
-                    kind=LegKind.PRIMARY,
-                    quantity=-debited_amount,
-                    instrument=debited_asset,
                 ),
             ),
         )
@@ -260,6 +348,18 @@ def _normalize_crypto_row(
             raw_row_ref=row_context.raw_row_ref,
         )
     )
+
+
+def _row_fiat_value(row: dict[str, str]) -> tuple[Decimal | None, str]:
+    for amount_field, currency_field in (
+        ("Market Value", "Market Value Currency"),
+        ("Book Cost", "Book Cost Currency"),
+    ):
+        amount = parse_decimal((row.get(amount_field) or "").strip())
+        currency = (row.get(currency_field) or "").strip().upper()
+        if amount is not None and currency:
+            return amount, currency
+    return None, ""
 
 
 def _parse_local_timestamp(value: str) -> datetime | None:
