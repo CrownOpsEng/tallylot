@@ -107,6 +107,29 @@ Included checkpoints:
     )
 
 
+def test_pr_body_accepts_optional_issues_section() -> None:
+    body = """\
+Why:
+- keep multi-checkpoint history visible on main
+
+What:
+- document and validate pull request metadata
+
+Checks:
+- uv run python -m tools.run_quality_gates
+
+Included checkpoints:
+- `docs: codify pull request standards`
+
+Issues:
+- Closes #34
+"""
+
+    errors = _validate_pr_body(body)
+
+    assert not errors
+
+
 def test_pr_checkpoints_match_commit_subjects(monkeypatch: MonkeyPatch) -> None:
     body = """\
 Why:

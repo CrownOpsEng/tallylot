@@ -83,6 +83,7 @@ def _validate_pr_body(body: str) -> tuple[str, ...]:
     return validate_structured_sections(
         ("placeholder", "", *lines),
         required_sections=("Why", "What", "Checks", "Included checkpoints"),
+        optional_sections=("Issues",),
         require_body=True,
         label="PR",
         allow_footers=False,

@@ -157,6 +157,9 @@ Current application of this rule:
 ## Naming Rules
 
 - Name modules after the bounded responsibility they own.
+- Keep public names and commands simple, neutral, and ergonomic. Prefer short
+  names that match the user-visible operation over long implementation labels,
+  and only add qualifiers when a real naming collision or ambiguity exists.
 - Prefer specific names such as `csv_parser.py`, `balance_mapper.py`, or
   `issue_rules.py` over generic names.
 - Match package structure to the architecture first and the external provider

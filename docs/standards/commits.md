@@ -13,6 +13,8 @@ cohesive, and checkpoint-oriented.
 
 Use Conventional Commit subjects and the structured body sections for merge
 commits too. Do not rely on GitHub's default `Merge pull request ...` subject.
+Keep commit and pull request language neutral, direct, and specific. Do not use
+rhetorical, promotional, or exaggerated wording in repo history.
 
 ## Subject Format
 
@@ -58,6 +60,14 @@ Preferred body sections:
 - `Why:`
 - `What:`
 - `Checks:`
+
+Write `Why:` and `What:` directly:
+
+- `Why:` states the problem, constraint, or risk the change addresses
+- `What:` states the behavior, structure, or contract changed in this patch
+- do not use `Why:` to restate the implementation
+- do not use `What:` to repeat generic intent without naming the concrete
+  repo change
 
 Example:
 
@@ -114,6 +124,8 @@ PR body rules:
   - `What:`
   - `Checks:`
   - `Included checkpoints:`
+- an optional `Issues:` section may follow `Included checkpoints:` when the PR
+  closes or supersedes GitHub issues or pull requests
 - use flat hyphen bullets under every section
 - keep `Included checkpoints:` in chronological order using the exact
   checkpoint subjects from the branch
@@ -121,6 +133,9 @@ PR body rules:
   subject, because CI validates that the list matches the branch history
 - describe the engineering outcome and reviewable behavior, not branch
   choreography or replay mechanics
+- use `Issues:` for neutral closeout links such as `Closes #34` or
+  `Supersedes #39`; do not encode status updates in ad hoc prose elsewhere in
+  the PR body
 - for a one-commit PR, still list that single checkpoint under
   `Included checkpoints:`
 
@@ -138,6 +153,9 @@ Merge method rules:
 - for a merge commit, use the PR title as the merge subject and keep the merge
   body in the same `Why:`, `What:`, `Checks:`, `Included checkpoints:` format
   as the PR body so the mainline commit record matches the reviewed PR record
+- if a repair PR supersedes an older pull request, leave a neutral comment on
+  the older PR that links to the replacement PR and states that it is
+  superseded or duplicate history
 
 For a single-checkpoint PR, the GitHub-generated squash commit on `main` may
 retain the validated `Included checkpoints:` section from the PR body. Treat
@@ -148,10 +166,10 @@ Preferred PR body template:
 
 ```text
 Why:
-- explain the problem or constraint this PR resolves
+- state the problem or constraint this PR resolves
 
 What:
-- summarize the engineering changes that matter for review
+- state the engineering changes that matter for review
 
 Checks:
 - list the verification you actually ran
@@ -159,6 +177,9 @@ Checks:
 Included checkpoints:
 - `refactor(example): first checkpoint subject`
 - `fix(example): second checkpoint subject`
+
+Issues:
+- Closes #123
 ```
 
 ## Stable Checkpoint Commits

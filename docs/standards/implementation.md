@@ -206,9 +206,15 @@ Expected behavior:
   defined in `docs/standards/commits.md` because that metadata
   stays attached to the PR record and becomes the squash commit on `main` for
   the single-checkpoint exception
+- keep PR, commit, and doc language neutral and direct: `Why:` should state the
+  problem or constraint, `What:` should state the concrete repo change, and
+  neither section should use rhetorical or promotional wording
 - before merging a PR or rewriting mainline history, verify whether the pull
   request record must stay attached to the landing commit; if yes, do not
   rewrite that merge commit after merge
+- if a repair PR replaces an older pull request, mark the old PR as
+  superseded/duplicate with a neutral comment that links to the replacement
+  PR before closing the repair loop
 - when the work uncovers follow-up or out-of-scope changes that do not belong
   in the current PR, create the issue immediately so it does not get lost
 - do not defer issue creation for out-of-scope work until after merge, handoff,

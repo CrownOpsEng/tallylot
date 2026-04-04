@@ -101,6 +101,13 @@ Do not pre-load every repo doc by default.
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value
   - end the task on a clean, meaningful checkpoint commit
+- Keep commit, PR, and doc language neutral and direct:
+  - `Why:` states the problem, constraint, or risk being addressed
+  - `What:` states the concrete repo behavior or structure changed
+  - avoid rhetorical, promotional, or exaggerated wording in repo history
+- Keep public-facing names simple and ergonomic. Prefer short neutral command
+  and API names over long implementation labels, and only add qualifiers when
+  a real ambiguity exists.
 - Treat protected branches as PR-only landing surfaces:
   - do not push directly to `main`
   - do not bypass branch protection for ordinary delivery
@@ -117,6 +124,9 @@ Do not pre-load every repo doc by default.
     that cleanup in the current thread
   - prefer additive fixes, follow-up commits, or leaving cleanup for the user
     over destructive local undo
+- If a repair pull request supersedes an older pull request, leave a neutral
+  comment on the older PR that links to the replacement PR and states that the
+  old PR is superseded or duplicate history.
 - If a flat directory would exceed 2 same-prefix files for one capability,
   regroup that capability into a package in the same task.
 - If a feature already has a package, keep new helpers inside that package
