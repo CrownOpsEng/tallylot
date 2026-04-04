@@ -403,6 +403,7 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
 
     codeowners_text = codeowners_path.read_text(encoding="utf-8")
     required_entries = (
+        ".agents/skills/**",
         ".github/workflows/**",
         ".github/pull_request_template.md",
         ".github/CODEOWNERS",
@@ -411,6 +412,8 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
         ".claude/commands/**",
         "tools/install_git_hooks.py",
         "tools/pre_commit_hook.py",
+        "tools/audit_delivery_guardrails.py",
+        "tools/message_standards.py",
         "tools/validate_commit_message.py",
         "tools/validate_pr_metadata.py",
         "tools/run_quality_gates.py",

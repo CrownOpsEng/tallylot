@@ -12,6 +12,7 @@ from repo_support.paths import repo_root
 
 REQUIRED_STATUS_CHECKS = ("commit-messages", "quality")
 CONTROL_PLANE_CODEOWNER_PATTERNS = (
+    ".agents/skills/**",
     ".github/workflows/**",
     ".github/pull_request_template.md",
     ".github/CODEOWNERS",
@@ -20,6 +21,8 @@ CONTROL_PLANE_CODEOWNER_PATTERNS = (
     ".claude/commands/**",
     "tools/install_git_hooks.py",
     "tools/pre_commit_hook.py",
+    "tools/audit_delivery_guardrails.py",
+    "tools/message_standards.py",
     "tools/validate_commit_message.py",
     "tools/validate_pr_metadata.py",
     "tools/run_quality_gates.py",
@@ -249,6 +252,18 @@ def _evaluate_remote_guardrails(
     notes: list[str] = []
 
     if protection is None:
+        if rulesets:
+            warnings.append(
+                "default-branch protection endpoint is absent; repository rulesets "
+                "are the active platform control and branch-protection-specific "
+                "checks were skipped"
+            )
+            notes.append("repository rulesets are configured")
+            return GuardrailReport(
+                errors=tuple(errors),
+                warnings=tuple(warnings),
+                notes=tuple(notes),
+            )
         errors.append("default-branch protection is missing")
         return GuardrailReport(
             errors=tuple(errors),
@@ -264,7 +279,7 @@ def _evaluate_remote_guardrails(
         errors.append("branch protection must block force pushes")
 
     if not _bool_setting(protection, "required_conversation_resolution"):
-        warnings.append("required conversation resolution is disabled")
+        errors.append("branch protection must require conversation resolution")
 
     pr_reviews = cast(
         Mapping[str, object],

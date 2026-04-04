@@ -81,6 +81,7 @@ expansion.
 
 Control-plane files include:
 
+- `.agents/skills/**`
 - `.github/workflows/**`
 - `.github/pull_request_template.md`
 - `.github/CODEOWNERS`
@@ -89,6 +90,8 @@ Control-plane files include:
 - `.claude/commands/**`
 - `tools/install_git_hooks.py`
 - `tools/pre_commit_hook.py`
+- `tools/audit_delivery_guardrails.py`
+- `tools/message_standards.py`
 - `tools/validate_commit_message.py`
 - `tools/validate_pr_metadata.py`
 - `tools/run_quality_gates.py`

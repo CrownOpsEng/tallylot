@@ -13,7 +13,7 @@ Checks:
 - list the verification you actually ran
 
 Included checkpoints:
-- list the branch commit subjects in chronological order
+- `list the branch commit subjects in chronological order`
 
 Follow-ups:
 - Refs #456: optional follow-up work that this PR does not close

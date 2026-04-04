@@ -23,7 +23,7 @@ def _protected_branch_payload() -> dict[str, object]:
         },
         "enforce_admins": {"enabled": True},
         "allow_force_pushes": {"enabled": False},
-        "required_conversation_resolution": {"enabled": False},
+        "required_conversation_resolution": {"enabled": True},
     }
 
 
@@ -44,10 +44,7 @@ def test_evaluate_remote_guardrails_defers_review_requirements_for_single_mainta
 
     assert report.errors == ()
     assert any("one review-capable collaborator" in note for note in report.notes)
-    assert any(
-        "required conversation resolution is disabled" in warning
-        for warning in report.warnings
-    )
+    assert report.warnings == ()
 
 
 def test_evaluate_remote_guardrails_warns_when_multi_reviewer_repo_lacks_review_gates() -> (
@@ -78,6 +75,7 @@ def test_evaluate_remote_guardrails_errors_for_missing_core_branch_controls() ->
     }
     payload["enforce_admins"] = {"enabled": False}
     payload["allow_force_pushes"] = {"enabled": True}
+    payload["required_conversation_resolution"] = {"enabled": False}
 
     report = audit._evaluate_remote_guardrails(
         protection=payload,
@@ -93,14 +91,33 @@ def test_evaluate_remote_guardrails_errors_for_missing_core_branch_controls() ->
     assert any("missing required status checks" in error for error in report.errors)
     assert any("enforce admins" in error for error in report.errors)
     assert any("block force pushes" in error for error in report.errors)
+    assert any("conversation resolution" in error for error in report.errors)
     assert any(".github/CODEOWNERS" in error for error in report.errors)
 
 
 def test_missing_codeowners_entries_reports_missing_patterns() -> None:
     missing = audit._missing_codeowners_patterns(("AGENTS.md", "docs/standards/**"))
 
+    assert ".agents/skills/**" in missing
     assert ".github/workflows/**" in missing
+    assert "tools/message_standards.py" in missing
     assert "tools/run_ci_parity_checks.py" in missing
+
+
+def test_rulesets_only_repo_does_not_fail_branch_protection_audit() -> None:
+    report = audit._evaluate_remote_guardrails(
+        protection=None,
+        rulesets=[{"name": "protect-main"}],
+        collaborators=[{"login": "CrownOpsEng", "permissions": {"pull": True}}],
+        codeowners_patterns=audit.CONTROL_PLANE_CODEOWNER_PATTERNS,
+    )
+
+    assert report.errors == ()
+    assert any(
+        "rulesets are the active platform control" in warning
+        for warning in report.warnings
+    )
+    assert any("repository rulesets are configured" in note for note in report.notes)
 
 
 def test_gh_api_json_or_none_returns_none_for_404(monkeypatch: MonkeyPatch) -> None:
