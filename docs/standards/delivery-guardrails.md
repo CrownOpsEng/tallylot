@@ -22,6 +22,10 @@ structure, authoring rules, and baseline context from `AGENTS.md`,
 surface and follows the repo's documentation metadata rules.
 Use `code-change-safety` for the repo-guidance reload path and pair it with the
 `markdown` skill when the task edits Markdown or docs surfaces.
+When the task changes GitHub-side delivery controls, run
+`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_delivery_guardrails`
+before and after the change so the local CODEOWNERS state and the live remote
+branch protection state are audited together.
 
 ## Guardrail Priority
 
@@ -63,6 +67,14 @@ Prefer GitHub controls that reject bad actions before they land:
 - stale-review dismissal or last-push review requirements when the repo wants
   post-push re-approval
 - CODEOWNERS or equivalent reviewer routing for control-plane files
+
+If the repo currently has only one single review-capable collaborator, keep
+required approving reviews and required code owner reviews as explicit deferred
+platform gaps instead of pretending those review gates are enforced. Continue
+to enforce the controls that remain achievable in a single-maintainer repo:
+PR-only branch protection, strict required checks, blocked force pushes,
+conversation resolution, and CODEOWNERS ownership routing for future reviewer
+expansion.
 
 Control-plane files include:
 
@@ -134,6 +146,8 @@ Before calling delivery complete, verify and report:
 - whether the landing subject exactly matched the required format
 - whether older superseded PRs were labeled correctly
 - whether the final remote branch tip still matches the reviewed PR record
+- whether review requirements are truly enforced or explicitly deferred because
+  the repo currently has only one single review-capable collaborator
 
 ## Exception Handling
 

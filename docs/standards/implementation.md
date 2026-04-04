@@ -45,6 +45,10 @@ Prefer the repo's built-in tooling before inventing local workflows:
 - mirror GitHub Actions locally when changing workflow, packaging, or release
   behavior with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
+- audit local CODEOWNERS coverage and live GitHub branch-protection settings
+  together when changing delivery policy, branch protection, or CI guardrails
+  with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_delivery_guardrails`
 - scaffold new adapters with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
 - refresh generated pyright test-private execution environments with

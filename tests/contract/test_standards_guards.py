@@ -330,6 +330,8 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "agent default behavior" in guardrails_text
     assert "<pr title> (#<pr number>)" in guardrails_text
     assert "duplicate or superseded label" in guardrails_text
+    assert "tools.audit_delivery_guardrails" in guardrails_text
+    assert "single review-capable collaborator" in guardrails_text
     assert "docs/status/current-state.md" in guardrails_text
     assert "tools/docs_maintenance/cli.py" in guardrails_text
     assert "`markdown` skill" in guardrails_text
@@ -347,6 +349,9 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "docs/reference/repository-history.md" in agents_text
     assert "docs/standards/delivery-guardrails.md" in agents_text
     assert "delivery guardrails layered across platform settings" in roadmap_text
+    assert "control-plane ownership routing" in roadmap_text
+    assert "audit local CODEOWNERS coverage and live GitHub delivery" in roadmap_text
+    assert "settings together without broad context loading" in roadmap_text
     assert (
         "if standards, docs placement, doc authoring rules, or agent-default enforcement changed"
         in checkpoint_text
@@ -355,6 +360,30 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         "use `code-change-safety` for repo changes and `markdown` for Markdown/docs"
         in checkpoint_text
     )
+
+
+def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> None:
+    codeowners_path = repo_root() / ".github" / "CODEOWNERS"
+    assert codeowners_path.exists(), ".github/CODEOWNERS is missing"
+
+    codeowners_text = codeowners_path.read_text(encoding="utf-8")
+    required_entries = (
+        ".github/workflows/**",
+        ".github/pull_request_template.md",
+        ".github/CODEOWNERS",
+        "AGENTS.md",
+        "docs/standards/**",
+        ".claude/commands/**",
+        "tools/install_git_hooks.py",
+        "tools/pre_commit_hook.py",
+        "tools/validate_commit_message.py",
+        "tools/validate_pr_metadata.py",
+        "tools/run_quality_gates.py",
+        "tools/run_ci_parity_checks.py",
+    )
+
+    for entry in required_entries:
+        assert entry in codeowners_text, f"CODEOWNERS is missing {entry}"
 
 
 def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:

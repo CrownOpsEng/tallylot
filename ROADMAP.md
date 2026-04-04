@@ -212,6 +212,9 @@ Scope:
 - keep public-facing scope descriptions aligned with the implemented runtime
 - keep delivery guardrails layered across platform settings, repo-native
   validators, and agent defaults so repo policy does not depend on prose alone
+- keep control-plane ownership routing and default-branch guardrail audits
+  explicit so local repo state and live GitHub protection drift are checked
+  together
 
 Exit criteria:
 
@@ -222,6 +225,8 @@ Exit criteria:
 - the default-branch delivery path is enforced by platform and repo controls
   strongly enough that a single agent mistake cannot silently bypass the
   intended PR-only workflow
+- the repo can audit local CODEOWNERS coverage and live GitHub delivery
+  settings together without broad context loading or one-off shell repair work
 
 ### 10. Post-Core Runtime Expansion
 

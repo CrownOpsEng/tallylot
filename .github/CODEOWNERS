@@ -1,0 +1,14 @@
+# Control-plane ownership for delivery, standards, and agent-routing surfaces.
+
+.github/workflows/** @CrownOpsEng
+.github/pull_request_template.md @CrownOpsEng
+.github/CODEOWNERS @CrownOpsEng
+AGENTS.md @CrownOpsEng
+docs/standards/** @CrownOpsEng
+.claude/commands/** @CrownOpsEng
+tools/install_git_hooks.py @CrownOpsEng
+tools/pre_commit_hook.py @CrownOpsEng
+tools/validate_commit_message.py @CrownOpsEng
+tools/validate_pr_metadata.py @CrownOpsEng
+tools/run_quality_gates.py @CrownOpsEng
+tools/run_ci_parity_checks.py @CrownOpsEng
