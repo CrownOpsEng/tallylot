@@ -80,8 +80,9 @@ balance evidence.
 
 Scope:
 
+- extend the first exact balance assertion workflow into broader checkpoint and
+  transfer checks
 - transfer linking across owned wallets and exchanges
-- balance assertions
 - checkpoint continuity checks
 - correction and supersession chains
 - reconciliation issue assembly
@@ -90,6 +91,7 @@ Scope:
 
 Exit criteria:
 
+- exact balance assertion artifacts are stable and feed later continuity checks
 - fact history can be reconciled against source-backed evidence without manual
   tracker logic
 - reconciliation artifacts no longer depend on normalized-transaction-era

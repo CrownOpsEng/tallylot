@@ -92,10 +92,11 @@ Do not pre-load every repo doc by default.
 - Do not run `tools.run_quality_gates --full-tests` immediately before
   `tools.run_ci_parity_checks`; the parity runner already includes the full
   quality gate pass.
-- The commit-time `pytest` hook is intentionally fast:
-  - `unit and not slow`
-  - no coverage
-  - run full `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest` before closing substantial work
+- Keep commit-time hooks narrow:
+  - safe staged Ruff autofixes
+  - commit-message validation
+  - markdownlint, mypy, pyright, and the fast pytest slice
+  - do not turn the hook path into a second full-suite verification pass
 - Treat commits as stable checkpoints by default:
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value

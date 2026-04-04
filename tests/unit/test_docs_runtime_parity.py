@@ -36,6 +36,7 @@ def production_route_doc_paths() -> list[Path]:
         docs / "guides" / "normalize-screen-stage.md",
         docs / "reference" / "wallet-inventory-artifacts.md",
         docs / "workspace" / "analysis" / "inventory" / "README.md",
+        commands_root / "reconciliation-balance-operations.md",
         commands_root / "source-intake.md",
         commands_root / "wallet-inventory.md",
         commands_root / "supporting-artifacts.md",
@@ -86,6 +87,7 @@ def env_prefix_required_doc_paths() -> tuple[Path, ...]:
         commands_root / "adapter-authoring.md",
         commands_root / "implementation-checkpoint.md",
         commands_root / "normalization-exceptions.md",
+        commands_root / "reconciliation-balance-operations.md",
         commands_root / "reconciliation-tax-build.md",
         commands_root / "round-verification.md",
         commands_root / "source-diff.md",
@@ -164,6 +166,7 @@ def test_documented_claude_command_routes_exist() -> None:
         ".claude/commands/supporting-artifacts.md",
         ".claude/commands/adapter-authoring.md",
         ".claude/commands/implementation-checkpoint.md",
+        ".claude/commands/reconciliation-balance-operations.md",
         ".claude/commands/reconciliation-tax-build.md",
     )
 
@@ -183,6 +186,7 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
         ".claude/commands/supporting-artifacts.md",
         ".claude/commands/adapter-authoring.md",
         ".claude/commands/implementation-checkpoint.md",
+        ".claude/commands/reconciliation-balance-operations.md",
         ".claude/commands/reconciliation-tax-build.md",
     )
 
@@ -222,6 +226,19 @@ def test_round_verification_route_mentions_oracle_cli_commands() -> None:
 
     assert scaffold_command in text
     assert compare_command in text
+
+
+def test_reconciliation_balance_route_mentions_current_balance_commands() -> None:
+    text = (claude_commands_root() / "reconciliation-balance-operations.md").read_text(
+        encoding="utf-8"
+    )
+
+    for command in (
+        "reconciliation balances inspect",
+        "reconciliation balances check",
+        "reconciliation balances summarize",
+    ):
+        assert command in text
 
 
 def test_supporting_route_mentions_checkpoint_pdf_balance_extraction_command() -> None:

@@ -34,11 +34,32 @@ def _resolve_required_export(directory: Path, filename: str) -> Path:
 
     stem = Path(filename).stem
     matches = sorted(
-        path for path in directory.iterdir() if path.is_file() and path.suffix.lower() == ".csv" and stem in path.stem
+        path
+        for path in directory.iterdir()
+        if path.is_file() and path.suffix.lower() == ".csv" and stem in path.stem
     )
+    preferred = [path for path in matches if _normalized_export_stem(path.stem) == stem]
+    if len(preferred) == 1:
+        return preferred[0]
+    if len(preferred) > 1:
+        match_list = ", ".join(path.name for path in preferred)
+        raise FileNotFoundError(
+            f"Ambiguous export matches for {filename!r} in {directory}: {match_list}"
+        )
     if len(matches) == 1:
         return matches[0]
     if len(matches) > 1:
         match_list = ", ".join(path.name for path in matches)
-        raise FileNotFoundError(f"Ambiguous export matches for {filename!r} in {directory}: {match_list}")
+        raise FileNotFoundError(
+            f"Ambiguous export matches for {filename!r} in {directory}: {match_list}"
+        )
     raise FileNotFoundError(f"Missing required export {filename!r} in {directory}")
+
+
+def _normalized_export_stem(stem: str) -> str:
+    normalized = stem.strip()
+    if "CoinTracking - " in normalized:
+        normalized = normalized.split("CoinTracking - ", 1)[1]
+    if " (last sync " in normalized:
+        normalized = normalized.split(" (last sync ", 1)[0]
+    return normalized.strip()

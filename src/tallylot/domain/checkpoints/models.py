@@ -15,6 +15,8 @@ from tallylot.domain.value_objects import (
     require_temporal_datetime,
 )
 
+from .balance_kinds import normalize_balance_kind
+
 
 @dataclass(frozen=True)
 class BalanceSnapshot:
@@ -30,6 +32,11 @@ class BalanceSnapshot:
     def __post_init__(self) -> None:
         if not str(self.instrument_id):
             raise ValueError("balance snapshot instrument_id must not be blank")
+        object.__setattr__(
+            self,
+            "balance_kind",
+            normalize_balance_kind(self.balance_kind),
+        )
         object.__setattr__(
             self,
             "as_of_at",

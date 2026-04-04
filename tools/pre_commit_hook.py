@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
+import subprocess
 from pathlib import Path
 
 PYTHON_SUFFIXES = {".py", ".pyi"}
@@ -38,21 +38,12 @@ def _format_candidates(
     return tuple(candidates)
 
 
-def _skip_value(existing: str | None) -> str:
-    entries = [entry for entry in (existing or "").split(",") if entry]
-    for hook_id in ("ruff", "ruff-format"):
-        if hook_id not in entries:
-            entries.append(hook_id)
-    return ",".join(entries)
-
-
 def _run_command(command: list[str], *, env: dict[str, str] | None = None) -> int:
     return subprocess.run(command, check=False, env=env).returncode
 
 
-def _run_pre_commit(hook_args: list[str]) -> int:
+def _run_pre_commit() -> int:
     env = os.environ.copy()
-    env["SKIP"] = _skip_value(env.get("SKIP"))
     command = [
         sys.executable,
         "-m",
@@ -63,7 +54,6 @@ def _run_pre_commit(hook_args: list[str]) -> int:
         "--hook-dir",
         str(Path(".git/hooks").resolve()),
         "--",
-        *hook_args,
     ]
     return _run_command(command, env=env)
 
@@ -94,7 +84,7 @@ def _require_commit_message_hook() -> int:
 def _format_and_stage(paths: tuple[str, ...]) -> int:
     if not paths:
         return 0
-    print("running staged ruff autofixes before pre-commit", file=sys.stderr)
+    print("running staged ruff autofixes before commit", file=sys.stderr)
     for command in (
         [sys.executable, "-m", "ruff", "check", "--fix", *paths],
         [sys.executable, "-m", "ruff", "format", *paths],
@@ -107,7 +97,7 @@ def _format_and_stage(paths: tuple[str, ...]) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    hook_args = list(sys.argv[1:] if argv is None else argv)
+    del argv
     hook_status = _require_commit_message_hook()
     if hook_status != 0:
         return hook_status
@@ -123,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     if format_status != 0:
         return format_status
-    return _run_pre_commit(hook_args)
+    return _run_pre_commit()
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import ClassVar
 
@@ -200,7 +200,7 @@ def _normalize_timestamp_field(
     if field_name in required_fields and not text:
         raise ValueError(f"{field_name} must not be blank")
     if text:
-        parse_timestamp(text)
+        return _normalize_baseline_timestamp(text)
     return text
 
 
@@ -244,3 +244,18 @@ def _normalize_integer_field(
     if field_name in required_positive_fields and integer_value <= 0:
         raise ValueError(f"{field_name} must be positive")
     return integer_value
+
+
+def _normalize_baseline_timestamp(text: str) -> str:
+    try:
+        return format_timestamp(parse_timestamp(text))
+    except ValueError:
+        for pattern in ("%d.%m.%Y %H:%M:%S", "%d.%m.%Y %H:%M"):
+            try:
+                return format_timestamp(
+                    datetime.strptime(text, pattern).replace(tzinfo=UTC)
+                )
+            except ValueError:
+                continue
+    parse_timestamp(text)
+    return text

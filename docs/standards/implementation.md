@@ -246,12 +246,11 @@ is:
 - do not run `tools.run_quality_gates --full-tests` again immediately before
   `tools.run_ci_parity_checks`; the parity runner already includes it
 
-If you are changing commit-time or suite-selection policy, benchmark first
-instead of guessing:
-
-- use `tools.benchmark_tests`
-- preserve the fast commit-time slice unless a measured change justifies
-  expanding it
+If you are changing commit-time or suite-selection policy, keep the hook path
+limited to bounded checkpoint checks and use the shared quality or parity
+runners as the single broad verification source. Benchmark with
+`tools.benchmark_tests` when you are proposing a different test slice, and do
+not expand the hook path into a second full-suite verification pass.
 
 ## Migration Discipline
 

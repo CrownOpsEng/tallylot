@@ -12,6 +12,12 @@ from tallylot.infrastructure.serialization.csv_io import write_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.evidence import LocationInventoryRecord
 
+from .balance_codec import (
+    BALANCE_EVIDENCE_HEADER,
+    BALANCE_SNAPSHOT_HEADER,
+    balance_evidence_from_row,
+    balance_snapshot_from_row,
+)
 from .fact_codec import FACT_HEADER, fact_from_row
 
 LOCATION_INVENTORY_HEADER = (
@@ -49,36 +55,34 @@ class FilesystemFactRepository:
 
 
 class FilesystemEvidenceRepository:
+    def __init__(self) -> None:
+        self._artifacts = FilesystemArtifactStore()
+
+    def read_balance_snapshots(
+        self,
+        path: Path,
+    ) -> tuple[BalanceSnapshot, ...]:
+        rows = self._artifacts.read_rows(path)
+        return tuple(balance_snapshot_from_row(row) for row in rows)
+
     def write_balance_snapshots(self, path: Path, balances: tuple[BalanceSnapshot, ...]) -> None:
         write_rows(
             path,
-            (
-                "source",
-                "location_id",
-                "instrument_id",
-                "quantity",
-                "as_of_at",
-                "as_of_precision",
-                "balance_kind",
-                "notes",
-            ),
+            BALANCE_SNAPSHOT_HEADER,
             (balance.to_row() for balance in balances),
         )
+
+    def read_balance_evidence(
+        self,
+        path: Path,
+    ) -> tuple[BalanceEvidence, ...]:
+        rows = self._artifacts.read_rows(path)
+        return tuple(balance_evidence_from_row(row) for row in rows)
 
     def write_balance_evidence(self, path: Path, evidence: tuple[BalanceEvidence, ...]) -> None:
         write_rows(
             path,
-            (
-                "source",
-                "location_id",
-                "instrument_id",
-                "quantity",
-                "as_of_at",
-                "as_of_precision",
-                "balance_kind",
-                "evidence_ref",
-                "notes",
-            ),
+            BALANCE_EVIDENCE_HEADER,
             (record.to_row() for record in evidence),
         )
 
