@@ -14,6 +14,10 @@ from tools.message_standards import (
 )
 
 SQUASH_PR_SUBJECT_PATTERN = re.compile(r" \(\#\d+\)$")
+ISSUE_CLOSING_KEYWORD_PATTERN = re.compile(
+    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?) #\d+\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -41,11 +45,12 @@ def _validate_commit_message_text(message: str) -> tuple[str, ...]:
         return ("commit message subject is required",)
 
     subject = lines[0]
+    is_generated_squash_commit = SQUASH_PR_SUBJECT_PATTERN.search(subject) is not None
     optional_sections = (
-        ("Included checkpoints",) if SQUASH_PR_SUBJECT_PATTERN.search(subject) else ()
+        ("Included checkpoints", "Follow-ups") if is_generated_squash_commit else ()
     )
 
-    return (
+    errors = [
         *validate_subject_line(subject),
         *validate_structured_sections(
             lines,
@@ -55,7 +60,15 @@ def _validate_commit_message_text(message: str) -> tuple[str, ...]:
             label="commit message",
             allow_footers=True,
         ),
-    )
+    ]
+    if not is_generated_squash_commit:
+        for line in lines[2:]:
+            if ISSUE_CLOSING_KEYWORD_PATTERN.search(line):
+                errors.append(
+                    "authored commit messages must not use issue-closing keywords; use the PR `Why:` section instead"
+                )
+                break
+    return tuple(errors)
 
 
 def _load_commit_message_file(path: Path) -> CommitMessage:

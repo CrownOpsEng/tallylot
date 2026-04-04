@@ -87,6 +87,7 @@ def test_squash_merge_commit_message_with_included_checkpoints_is_valid() -> Non
 refactor: source verification and routing (#11)
 
 Why:
+- Closes #44: preserve the review record on main
 - keep the single-checkpoint squash record reviewable on main
 
 What:
@@ -98,6 +99,9 @@ Checks:
 Included checkpoints:
 - `fix(sources): harden live export parsing and verification`
 - `refactor(sources): harden on-chain ids and family routing`
+
+Follow-ups:
+- Refs #45: clean up old repair notes
 """
 
     errors = _validate_commit_message_text(message)
@@ -271,6 +275,27 @@ Included checkpoints:
     assert errors == (
         "unsupported structured label: Included checkpoints:",
         "unexpected trailing content: - `docs: route agents to narrow standards`",
+    )
+
+
+def test_authored_commit_message_rejects_issue_closing_keywords() -> None:
+    errors = _validate_commit_message_text(
+        """\
+docs: route agents to narrow standards
+
+Why:
+- Closes #44: keep routing guidance explicit
+
+What:
+- point agents to the narrowest applicable standards doc
+
+Checks:
+- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+"""
+    )
+
+    assert errors == (
+        "authored commit messages must not use issue-closing keywords; use the PR `Why:` section instead",
     )
 
 

@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import re
 import subprocess
 import sys
 from collections.abc import Sequence
 
 from tools.message_standards import validate_structured_sections, validate_subject_line
+
+FOLLOW_UP_PATTERN = re.compile(r"^- Refs #\d+(?:: .+\S)?$")
+CLOSING_BULLET_PATTERN = re.compile(r"^- Closes #\d+: .+\S$")
+CLOSING_KEYWORD_PREFIX = re.compile(
+    r"^- (?:Close[sd]?|Fix(?:e[sd])?|Resolve[sd]?) #\d+", re.IGNORECASE
+)
 
 
 def _normalize_body_lines(body: str) -> tuple[str, ...]:
@@ -33,8 +40,8 @@ def _normalize_body_lines(body: str) -> tuple[str, ...]:
     return tuple(lines)
 
 
-def _parse_required_sections(body: str) -> dict[str, tuple[str, ...]]:
-    sections = ("Why", "What", "Checks", "Included checkpoints")
+def _parse_sections(body: str) -> dict[str, tuple[str, ...]]:
+    sections = ("Why", "What", "Checks", "Included checkpoints", "Follow-ups")
     parsed: dict[str, list[str]] = {section: [] for section in sections}
     current_section: str | None = None
 
@@ -80,20 +87,47 @@ def _validate_pr_body(body: str) -> tuple[str, ...]:
     lines = _normalize_body_lines(body)
     if not lines:
         return ("PR body is required",)
-    return validate_structured_sections(
-        ("placeholder", "", *lines),
-        required_sections=("Why", "What", "Checks", "Included checkpoints"),
-        optional_sections=("Issues",),
-        require_body=True,
-        label="PR",
-        allow_footers=False,
+    errors = list(
+        validate_structured_sections(
+            ("placeholder", "", *lines),
+            required_sections=("Why", "What", "Checks", "Included checkpoints"),
+            optional_sections=("Follow-ups",),
+            require_body=True,
+            label="PR",
+            allow_footers=False,
+        )
     )
+    parsed_sections = _parse_sections(body)
+
+    saw_non_closing_why_bullet = False
+    for entry in parsed_sections["Why"]:
+        if CLOSING_BULLET_PATTERN.fullmatch(entry):
+            if saw_non_closing_why_bullet:
+                errors.append(
+                    "`Why:` issue-closing bullets must come before other bullets"
+                )
+            continue
+        if CLOSING_KEYWORD_PREFIX.match(entry):
+            errors.append(
+                "`Why:` issue-closing bullets must match `- Closes #123: problem statement`"
+            )
+        saw_non_closing_why_bullet = True
+
+    for entry in parsed_sections["Follow-ups"]:
+        if FOLLOW_UP_PATTERN.fullmatch(entry):
+            continue
+        errors.append(
+            "`Follow-ups:` bullets must match `- Refs #123` or `- Refs #123: note`"
+        )
+        break
+
+    return tuple(errors)
 
 
 def _validate_pr_checkpoints(
     body: str, *, base_sha: str, head_sha: str
 ) -> tuple[str, ...]:
-    parsed_sections = _parse_required_sections(body)
+    parsed_sections = _parse_sections(body)
     checkpoint_entries = parsed_sections["Included checkpoints"]
     normalized_entries = tuple(
         _normalize_checkpoint_entry(entry) for entry in checkpoint_entries
