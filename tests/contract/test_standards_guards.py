@@ -314,6 +314,49 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert "duplicate/superseded label" in checkpoint_text
 
 
+def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
+    guardrails_text = (repo_root() / "docs/standards/delivery-guardrails.md").read_text(
+        encoding="utf-8"
+    )
+    docs_index_text = (repo_root() / "docs/README.md").read_text(encoding="utf-8")
+    agents_text = (repo_root() / "AGENTS.md").read_text(encoding="utf-8")
+    roadmap_text = (repo_root() / "ROADMAP.md").read_text(encoding="utf-8")
+    checkpoint_text = (
+        repo_root() / ".claude/commands/implementation-checkpoint.md"
+    ).read_text(encoding="utf-8")
+
+    assert "platform-native enforcement" in guardrails_text
+    assert "repo-native policy as code" in guardrails_text
+    assert "agent default behavior" in guardrails_text
+    assert "<pr title> (#<pr number>)" in guardrails_text
+    assert "duplicate or superseded label" in guardrails_text
+    assert "docs/status/current-state.md" in guardrails_text
+    assert "tools/docs_maintenance/cli.py" in guardrails_text
+    assert "`markdown` skill" in guardrails_text
+    assert "human docs, agent" in guardrails_text
+    assert "standards/delivery-guardrails.md" in docs_index_text
+    assert (
+        "Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes"
+        in agents_text
+    )
+    assert "use the `markdown` skill if available" in agents_text
+    assert (
+        "use\n  the `code-change-safety` skill as the starting workflow" in agents_text
+    )
+    assert "tools/docs_maintenance/metadata.py" in agents_text
+    assert "docs/reference/repository-history.md" in agents_text
+    assert "docs/standards/delivery-guardrails.md" in agents_text
+    assert "delivery guardrails layered across platform settings" in roadmap_text
+    assert (
+        "if standards, docs placement, doc authoring rules, or agent-default enforcement changed"
+        in checkpoint_text
+    )
+    assert (
+        "use `code-change-safety` for repo changes and `markdown` for Markdown/docs"
+        in checkpoint_text
+    )
+
+
 def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:
     source_root = repo_root() / "src" / "tallylot"
 

@@ -29,11 +29,13 @@ Do not pre-load every repo doc by default.
 | ---- | ---- |
 | Code placement, typing, modularization, naming | `docs/standards/engineering.md` |
 | Active implementation execution discipline | `docs/standards/implementation.md`, `docs/standards/commits.md` |
+| Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
+| Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md` |
 | Planning sequence, delivery slices, or rollout checkpoints | `ROADMAP.md` |
 | Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
 | Source or output adapter work | `docs/guides/write-an-adapter.md` |
-| Docs structure, generated index sections, or doc placement | `AGENTS.md`, `docs/README.md` |
+| Docs structure, generated index sections, doc placement, or doc authoring rules | `AGENTS.md`, `docs/README.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
 | External workspace layout and seeded files | `docs/concepts/workspace-model.md`, `docs/workspace/README.md` |
 | Operational state or manual workflow | `docs/status/current-state.md`, `docs/guides/operator-quickstart.md`, `docs/guides/source-intake.md`, `docs/guides/normalize-screen-stage.md`, `docs/guides/verify-a-round.md`, `docs/guides/full-operator-workflow.md` |
 | Repo-specific baseline and verification context | `docs/status/current-state.md`, `docs/reference/repository-history.md` |
@@ -49,6 +51,9 @@ Do not pre-load every repo doc by default.
   `.claude/commands/`.
 - Agent-only repo routing and maintenance rules live in this file and
   `.claude/commands/`.
+- When editing repo docs or Markdown, use the `markdown` skill if available.
+- When editing repo standards, automation, or other control-plane files, use
+  the `code-change-safety` skill as the starting workflow if available.
 - Agent-only context must not live in `docs/` unless it is genuinely useful to
   humans.
 - Every new doc must have one primary type: concept, guide, reference,
@@ -181,3 +186,6 @@ Workspace resolution order:
 - When work affects architecture, schema, or execution sequencing, update
   `ROADMAP.md` and `docs/concepts/reconciliation-tax-architecture.md`
   together.
+- When work affects delivery policy, branch protection expectations, or
+  agent-default Git behavior, update `docs/standards/delivery-guardrails.md`
+  with the relevant repo standards.

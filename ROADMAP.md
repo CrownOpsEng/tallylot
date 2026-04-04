@@ -210,6 +210,8 @@ Scope:
 - keep provenance and reuse documentation clear
 - keep the docs set navigable by type and concern
 - keep public-facing scope descriptions aligned with the implemented runtime
+- keep delivery guardrails layered across platform settings, repo-native
+  validators, and agent defaults so repo policy does not depend on prose alone
 
 Exit criteria:
 
@@ -217,6 +219,9 @@ Exit criteria:
   assumptions
 - a new contributor or coding agent can find the correct roadmap, status,
   concept, guide, and workspace docs without broad context loading
+- the default-branch delivery path is enforced by platform and repo controls
+  strongly enough that a single agent mistake cannot silently bypass the
+  intended PR-only workflow
 
 ### 10. Post-Core Runtime Expansion
 

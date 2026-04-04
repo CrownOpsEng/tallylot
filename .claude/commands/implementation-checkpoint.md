@@ -5,6 +5,8 @@ Use this route before closing any non-trivial coding task.
 1. Read:
    - `docs/standards/implementation.md`
    - `docs/standards/commits.md`
+   - use `code-change-safety` for repo changes and `markdown` for Markdown/docs
+     work when those skills are available
 2. Confirm the change still respects:
    - layer ownership
    - provider-neutral core design
@@ -31,6 +33,15 @@ Use this route before closing any non-trivial coding task.
    - `ROADMAP.md`
    - `docs/concepts/reconciliation-tax-architecture.md`
    - any boundary, matrix, or migration docs affected
+   - if standards, docs placement, doc authoring rules, or agent-default enforcement changed, reload:
+     - `AGENTS.md`
+     - `docs/README.md`
+     - `docs/status/current-state.md`
+     - `docs/reference/repository-history.md`
+     - `tools/docs_maintenance/cli.py`
+     - `tools/docs_maintenance/metadata.py`
+     and confirm any new material belongs in human docs rather than agent-only
+     routing and still follows the docs-maintenance scaffold and metadata rules
 7. Create the stable checkpoint commit when the slice is coherent and verified.
    Do not close the task first and plan to commit afterward.
 8. Confirm branch handling stayed PR-only for protected branches:
