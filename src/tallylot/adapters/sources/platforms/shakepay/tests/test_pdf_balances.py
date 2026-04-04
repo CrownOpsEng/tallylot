@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from tallylot.adapters.sources.platforms.shakepay.pdf_balances import (
     extract_pdf_balances,
+    match_pdf_statement,
 )
 
 
@@ -28,14 +31,22 @@ def test_shakepay_pdf_balances_extract_monthly_balance_summary_rows() -> None:
     assert rows[-1]["quantity"] == "0.00020245"
 
 
-def test_shakepay_pdf_balances_rejects_annual_market_value_report() -> None:
-    rows = extract_pdf_balances(
-        """
+def test_shakepay_pdf_balances_extracts_annual_market_value_report() -> None:
+    text = """
         Performance report For the year ending on December 31, 2025
         Opening market value $256.37 $0.00 (as of 2025-01-01 00:00 EST)
         Closing market value at year end $643.81 $643.81 (as of 2025-12-31 23:59 EST)
-        """,
+        """
+    rows = extract_pdf_balances(
+        text,
         "shakepay.pdf",
     )
 
-    assert rows == []
+    assert match_pdf_statement(Path("shakepay_Performance report_2025.pdf"), text) > 0
+    assert len(rows) == 2
+    assert rows[0]["balance_kind"] == "opening_market_value"
+    assert rows[0]["value_amount"] == "256.37"
+    assert rows[0]["as_of"] == "2025-01-01 00:00 EST"
+    assert rows[1]["balance_kind"] == "closing_market_value"
+    assert rows[1]["value_amount"] == "643.81"
+    assert rows[1]["as_of"] == "2025-12-31 23:59 EST"

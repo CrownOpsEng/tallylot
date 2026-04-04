@@ -209,12 +209,18 @@ def _translate_statement_evidence(
                 issues.append(
                     issue_record(
                         IssueSpec(
-                            issue_id=f"{profile.source}:{parsed.pdf_file}:{row.asset_symbol}:instrument_identity_blocked",
+                            issue_id=(
+                                f"{profile.source}:{parsed.pdf_file}:"
+                                f"{row.asset_symbol}:instrument_identity_blocked"
+                            ),
                             source=str(profile.source),
                             adapter_id="shakepay",
                             severity="high",
                             kind="instrument_identity_blocked",
-                            message=f"Shakepay statement evidence could not resolve instrument {row.asset_symbol}.",
+                            message=(
+                                "Shakepay statement evidence could not resolve "
+                                f"instrument {row.asset_symbol}."
+                            ),
                             raw_file=parsed.pdf_file,
                             raw_row_ref="page:1",
                         )
@@ -223,12 +229,18 @@ def _translate_statement_evidence(
                 reviews.append(
                     review_record(
                         ReviewSpec(
-                            review_id=f"{profile.source}:{parsed.pdf_file}:{row.asset_symbol}:instrument_identity_review",
+                            review_id=(
+                                f"{profile.source}:{parsed.pdf_file}:"
+                                f"{row.asset_symbol}:instrument_identity_review"
+                            ),
                             source=str(profile.source),
                             adapter_id="shakepay",
                             scope="balance_evidence",
                             kind="instrument_identity_review",
-                            message=f"Review required for Shakepay statement instrument {row.asset_symbol}.",
+                            message=(
+                                "Review required for Shakepay statement instrument "
+                                f"{row.asset_symbol}."
+                            ),
                             raw_file=parsed.pdf_file,
                             raw_row_ref="page:1",
                             field_name="asset_symbol",
