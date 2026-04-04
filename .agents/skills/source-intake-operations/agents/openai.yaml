@@ -1,0 +1,7 @@
+interface:
+  display_name: "Source Intake"
+  short_description: "Run tallylot's typed source intake path without ad hoc shell choreography."
+  default_prompt: "Use $source-intake-operations to run tallylot's typed intake and normalization route."
+
+policy:
+  allow_implicit_invocation: true

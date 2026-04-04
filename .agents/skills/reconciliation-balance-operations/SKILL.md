@@ -15,10 +15,12 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
 
 1. Start with the runtime commands or the bundled script. Do not write ad hoc
    shell loops over source directories.
-2. Run coverage inspection first.
-3. Run balance checks second.
-4. Run reconciliation summary third.
-5. Use oracle commands only when the summary shows they are needed for
+2. Use `.claude/commands/reconciliation-balance-operations.md` when you need
+   the repo's matching command-route checklist.
+3. Run coverage inspection first.
+4. Run balance checks second.
+5. Run reconciliation summary third.
+6. Use oracle commands only when the summary shows they are needed for
    explanation or trust validation.
 
 ## Preferred Execution

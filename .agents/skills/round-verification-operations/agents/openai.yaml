@@ -1,0 +1,7 @@
+interface:
+  display_name: "Round Verification"
+  short_description: "Run tallylot's round verification and oracle comparison path."
+  default_prompt: "Use $round-verification-operations to run tallylot's documented round verification workflow."
+
+policy:
+  allow_implicit_invocation: true

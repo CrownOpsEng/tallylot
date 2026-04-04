@@ -1,0 +1,7 @@
+interface:
+  display_name: "Adapter Authoring"
+  short_description: "Start tallylot adapter work with the repo's adapter contract and tooling."
+  default_prompt: "Use $adapter-authoring to load tallylot's adapter rules before changing source or output adapters."
+
+policy:
+  allow_implicit_invocation: true
