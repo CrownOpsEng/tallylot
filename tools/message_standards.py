@@ -16,16 +16,14 @@ ALLOWED_TYPES = (
 )
 TYPE_PATTERN = "|".join(ALLOWED_TYPES)
 SCOPE_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
-SUBJECT_PATTERN = re.compile(rf"^(?:{TYPE_PATTERN})(?:\(({SCOPE_PATTERN})\))?: (?P<summary>.+)$")
-MERGE_SUBJECT_PATTERN = re.compile(r"^Merge (?:branch|pull request) ")
+SUBJECT_PATTERN = re.compile(
+    rf"^(?:{TYPE_PATTERN})(?:\(({SCOPE_PATTERN})\))?: (?P<summary>.+)$"
+)
 FOOTER_PATTERN = re.compile(r"^(?:BREAKING CHANGE|[A-Za-z][A-Za-z0-9-]*):(?: .+)?$")
 LABEL_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9 -]*:(?: .+)?$")
 
 
-def validate_subject_line(subject: str, *, allow_merge: bool = True) -> tuple[str, ...]:
-    if allow_merge and MERGE_SUBJECT_PATTERN.match(subject):
-        return ()
-
+def validate_subject_line(subject: str) -> tuple[str, ...]:
     errors: list[str] = []
     if len(subject) > 72:
         errors.append("subject must be 72 characters or fewer")
@@ -133,7 +131,9 @@ def validate_structured_sections(
         errors.append("insert a blank line between the subject and the body")
 
     for section in required_sections:
-        index, section_errors = _validate_required_section(lines, section=section, start_index=index)
+        index, section_errors = _validate_required_section(
+            lines, section=section, start_index=index
+        )
         errors.extend(section_errors)
 
     for section in optional_sections:
@@ -147,5 +147,7 @@ def validate_structured_sections(
         )
         errors.extend(section_errors)
 
-    errors.extend(_validate_trailing_lines(lines, start_index=index, allow_footers=allow_footers))
+    errors.extend(
+        _validate_trailing_lines(lines, start_index=index, allow_footers=allow_footers)
+    )
     return tuple(errors)

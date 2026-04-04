@@ -36,6 +36,9 @@ Use this route before closing any non-trivial coding task.
 8. Confirm branch handling stayed PR-only for protected branches:
    - do not push directly to `main`
    - do not use branch-protection bypass for ordinary delivery
+   - do not rewrite a merged `main` commit if the original pull request must
+     remain attached to the landing commit; open a new repair pull request
+     instead
    - if the user explicitly requested a one-time protected-branch repair,
      verify the remote branch tip afterward and return to PR-only flow
 

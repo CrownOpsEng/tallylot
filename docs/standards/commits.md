@@ -11,8 +11,8 @@ nav_order: 30
 Use Conventional Commits for all authored commits. Keep commit history small,
 cohesive, and checkpoint-oriented.
 
-Auto-generated merge commits are tolerated by the validator, but authored
-commits should use the Conventional Commit format.
+Use Conventional Commit subjects and the structured body sections for merge
+commits too. Do not rely on GitHub's default `Merge pull request ...` subject.
 
 ## Subject Format
 
@@ -93,6 +93,8 @@ Protected-branch rule:
 - land changes on `main` through pull requests only
 - do not push directly to `main`
 - do not use branch-protection bypass or force-push for normal delivery
+- do not rewrite a merged `main` commit when the original pull request must
+  remain attached to the landing commit; open a new pull request repair instead
 - if a protected-branch repair exception is explicitly requested, limit that
   exception to the exact repair action, verify the remote branch tip
   immediately afterward, and restore PR-only flow before continuing
@@ -130,6 +132,12 @@ Merge method rules:
 - do not squash multi-checkpoint PRs
 - do not create a merge commit for a single-checkpoint PR unless the user
   explicitly requests a one-off repair in the current thread
+- when merging a multi-checkpoint PR, override GitHub's default merge subject
+  with the PR's Conventional Commit title and keep the merge body review-ready
+  instead of landing `Merge pull request ...`
+- for a merge commit, use the PR title as the merge subject and keep the merge
+  body in the same `Why:`, `What:`, `Checks:`, `Included checkpoints:` format
+  as the PR body so the mainline commit record matches the reviewed PR record
 
 For a single-checkpoint PR, the GitHub-generated squash commit on `main` may
 retain the validated `Included checkpoints:` section from the PR body. Treat

@@ -73,7 +73,7 @@ def _validate_pr_title(title: str) -> tuple[str, ...]:
     stripped = title.strip()
     if stripped == "":
         return ("PR title is required",)
-    return validate_subject_line(stripped, allow_merge=False)
+    return validate_subject_line(stripped)
 
 
 def _validate_pr_body(body: str) -> tuple[str, ...]:
@@ -107,7 +107,7 @@ def _validate_pr_checkpoints(
             )
             break
 
-        if validate_subject_line(normalized, allow_merge=False):
+        if validate_subject_line(normalized):
             errors.append(
                 "`Included checkpoints:` entries must be exact Conventional Commit subjects"
             )

@@ -104,6 +104,8 @@ Do not pre-load every repo doc by default.
 - Treat protected branches as PR-only landing surfaces:
   - do not push directly to `main`
   - do not bypass branch protection for ordinary delivery
+  - do not rewrite a merged `main` commit when preserving the original pull
+    request association matters; use a new pull request repair instead
   - do not force-push protected branches unless the user explicitly requests a
     one-time repair in the current thread after branch protection has been
     temporarily adjusted

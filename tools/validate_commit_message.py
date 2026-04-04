@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tools.message_standards import (
-    MERGE_SUBJECT_PATTERN,
     validate_structured_sections,
     validate_subject_line,
 )
@@ -42,9 +41,6 @@ def _validate_commit_message_text(message: str) -> tuple[str, ...]:
         return ("commit message subject is required",)
 
     subject = lines[0]
-    if MERGE_SUBJECT_PATTERN.match(subject):
-        return ()
-
     optional_sections = (
         ("Included checkpoints",) if SQUASH_PR_SUBJECT_PATTERN.search(subject) else ()
     )

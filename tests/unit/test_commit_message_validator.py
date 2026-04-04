@@ -71,10 +71,15 @@ BREAKING CHANGE: verification compare is now verification diff
     assert not errors
 
 
-def test_merge_commit_message_is_allowed() -> None:
+def test_merge_commit_message_requires_conventional_subject() -> None:
     errors = _validate_commit_message_text("Merge branch 'feature/refactor'\n")
 
-    assert not errors
+    assert errors == (
+        "subject must match `type(scope): imperative summary` or "
+        "`type: imperative summary` using one of: feat, fix, refactor, docs, "
+        "test, chore, build, ci, perf, revert",
+        "commit message body is required with `Why:`, `What:`, `Checks:` sections",
+    )
 
 
 def test_squash_merge_commit_message_with_included_checkpoints_is_valid() -> None:

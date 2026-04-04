@@ -206,6 +206,9 @@ Expected behavior:
   defined in `docs/standards/commits.md` because that metadata
   stays attached to the PR record and becomes the squash commit on `main` for
   the single-checkpoint exception
+- before merging a PR or rewriting mainline history, verify whether the pull
+  request record must stay attached to the landing commit; if yes, do not
+  rewrite that merge commit after merge
 - when the work uncovers follow-up or out-of-scope changes that do not belong
   in the current PR, create the issue immediately so it does not get lost
 - do not defer issue creation for out-of-scope work until after merge, handoff,
