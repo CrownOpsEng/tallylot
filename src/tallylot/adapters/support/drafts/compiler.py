@@ -5,13 +5,15 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from tallylot.adapters.support.issues import IssueSpec, ReviewSpec, issue_record, review_record
+from tallylot.adapters.support.instruments import resolve_instrument_identity
+from tallylot.adapters.support.issues import (
+    IssueSpec,
+    ReviewSpec,
+    issue_record,
+    review_record,
+)
 from tallylot.domain.instruments import (
-    InstrumentId,
-    InstrumentIdentifierRecord,
     InstrumentIdentityClaim,
-    InstrumentKind,
-    InstrumentRecord,
 )
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -19,7 +21,10 @@ from tallylot.domain.transactions import EconomicLeg, FactSemantics, Transaction
 from tallylot.domain.types import AdapterId, SourceId, TransactionId
 from tallylot.domain.value_objects import format_timestamp
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.source_translation import EconomicActivityDraft, SourceTranslationBatch
+from tallylot.ports.source_translation import (
+    EconomicActivityDraft,
+    SourceTranslationBatch,
+)
 
 
 @dataclass(frozen=True)
@@ -29,11 +34,15 @@ class DraftCompilationResult:
     reviews: tuple[NormalizationReviewRecord, ...]
 
 
-def compile_activity_drafts(drafts: tuple[EconomicActivityDraft, ...]) -> tuple[TransactionFact, ...]:
+def compile_activity_drafts(
+    drafts: tuple[EconomicActivityDraft, ...],
+) -> tuple[TransactionFact, ...]:
     return compile_activity_drafts_with_feedback(drafts).facts
 
 
-def compile_activity_drafts_with_feedback(drafts: tuple[EconomicActivityDraft, ...]) -> DraftCompilationResult:
+def compile_activity_drafts_with_feedback(
+    drafts: tuple[EconomicActivityDraft, ...],
+) -> DraftCompilationResult:
     facts: list[TransactionFact] = []
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
@@ -43,7 +52,9 @@ def compile_activity_drafts_with_feedback(drafts: tuple[EconomicActivityDraft, .
         reviews.extend(compile_reviews)
         if compiled_fact is not None:
             facts.append(compiled_fact)
-    return DraftCompilationResult(facts=tuple(facts), issues=tuple(issues), reviews=tuple(reviews))
+    return DraftCompilationResult(
+        facts=tuple(facts), issues=tuple(issues), reviews=tuple(reviews)
+    )
 
 
 def translation_batch_from_drafts(
@@ -70,21 +81,29 @@ def compile_activity_draft(draft: EconomicActivityDraft) -> TransactionFact:
 def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact:
     fact, issues, reviews = _compile_activity_draft(draft)
     if issues or reviews or fact is None:
-        raise ValueError(f"draft {draft.activity_id} did not resolve to a canonical fact")
+        raise ValueError(
+            f"draft {draft.activity_id} did not resolve to a canonical fact"
+        )
     return fact
 
 
 def _compile_activity_draft(
     draft: EconomicActivityDraft,
-) -> tuple[TransactionFact | None, tuple[IssueRecord, ...], tuple[NormalizationReviewRecord, ...]]:
+) -> tuple[
+    TransactionFact | None,
+    tuple[IssueRecord, ...],
+    tuple[NormalizationReviewRecord, ...],
+]:
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
     legs: list[EconomicLeg] = []
     for leg in draft.legs:
-        resolution = _resolve_instrument_identity(leg.instrument_identity_claims)
+        resolution = resolve_instrument_identity(leg.instrument_identity_claims)
         if resolution is None:
             issues.append(_blocking_identity_issue(draft, leg.leg_id))
-            reviews.append(_identity_review(draft, leg.leg_id, leg.instrument_identity_claims))
+            reviews.append(
+                _identity_review(draft, leg.leg_id, leg.instrument_identity_claims)
+            )
             continue
         legs.append(
             EconomicLeg(
@@ -130,71 +149,10 @@ def _compile_activity_draft(
     )
 
 
-def transaction_facts_from_drafts(drafts: tuple[EconomicActivityDraft, ...]) -> tuple[TransactionFact, ...]:
+def transaction_facts_from_drafts(
+    drafts: tuple[EconomicActivityDraft, ...],
+) -> tuple[TransactionFact, ...]:
     return tuple(transaction_fact_from_draft(draft) for draft in drafts)
-
-
-@dataclass(frozen=True)
-class _ResolvedInstrument:
-    instrument: InstrumentRecord
-    identifiers: tuple[InstrumentIdentifierRecord, ...]
-
-
-def _resolve_instrument_identity(claims: tuple[InstrumentIdentityClaim, ...]) -> _ResolvedInstrument | None:
-    normalized_claims = tuple(_normalize_claim(claim) for claim in claims)
-    unique_keys = {(_claim_key(claim)) for claim in normalized_claims}
-    if len(unique_keys) != 1:
-        return None
-    kinds = {claim.kind_hint for claim in normalized_claims if claim.kind_hint is not InstrumentKind.UNKNOWN}
-    if len(kinds) > 1:
-        return None
-    precisions = {claim.precision_hint for claim in normalized_claims if claim.precision_hint is not None}
-    if len(precisions) > 1:
-        return None
-    representative = normalized_claims[0]
-    instrument_id = InstrumentId(_instrument_id_text(representative))
-    display_name = next((claim.display_name for claim in normalized_claims if claim.display_name), representative.value)
-    return _ResolvedInstrument(
-        instrument=InstrumentRecord(
-            instrument_id=instrument_id,
-            kind=next(iter(kinds), InstrumentKind.UNKNOWN),
-            display_name=display_name,
-            precision=next(iter(precisions), None),
-        ),
-        identifiers=tuple(
-            InstrumentIdentifierRecord(
-                instrument_id=instrument_id,
-                scheme=claim.scheme,
-                value=claim.value,
-                venue=claim.venue,
-            )
-            for claim in normalized_claims
-        ),
-    )
-
-
-def _normalize_claim(claim: InstrumentIdentityClaim) -> InstrumentIdentityClaim:
-    normalized_value = claim.value.strip()
-    if claim.scheme == "symbol":
-        normalized_value = normalized_value.upper()
-    normalized_venue = None if claim.venue is None or not claim.venue.strip() else claim.venue.strip().lower()
-    return InstrumentIdentityClaim(
-        scheme=claim.scheme.strip(),
-        value=normalized_value,
-        venue=normalized_venue,
-        kind_hint=claim.kind_hint,
-        display_name=claim.display_name.strip(),
-        precision_hint=claim.precision_hint,
-    )
-
-
-def _claim_key(claim: InstrumentIdentityClaim) -> tuple[str, str, str]:
-    return claim.scheme, claim.value, "" if claim.venue is None else claim.venue
-
-
-def _instrument_id_text(claim: InstrumentIdentityClaim) -> str:
-    venue_suffix = "" if claim.venue is None else f"@{claim.venue}"
-    return f"{claim.scheme}:{claim.value}{venue_suffix}"
 
 
 def _blocking_identity_issue(draft: EconomicActivityDraft, leg_id: str) -> IssueRecord:
@@ -219,7 +177,9 @@ def _identity_review(
     claims: tuple[InstrumentIdentityClaim, ...],
 ) -> NormalizationReviewRecord:
     claims_text = ", ".join(
-        f"{claim.scheme}={claim.value}" if claim.venue in (None, "") else f"{claim.scheme}={claim.value}@{claim.venue}"
+        f"{claim.scheme}={claim.value}"
+        if claim.venue in (None, "")
+        else f"{claim.scheme}={claim.value}@{claim.venue}"
         for claim in claims
     )
     return review_record(
