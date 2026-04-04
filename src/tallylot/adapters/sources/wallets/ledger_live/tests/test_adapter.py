@@ -4,7 +4,13 @@ from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    LegKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -38,7 +44,9 @@ def test_ledger_live_location_inventory_extracts_fixture_accounts() -> None:
     raw_dir = fixture_raw_dir("ledger_live", "wallets_and_operations")
 
     profile, adapter = profile_and_adapter("ledger-live-main", raw_dir)
-    evidence, issues = adapter.extract_location_inventory("ledger-live-main", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory(
+        "ledger-live-main", raw_dir, profile
+    )
 
     assert str(profile.adapter_id) == "ledger_live"
     assert {str(row.location_id) for row in evidence} == {
@@ -53,14 +61,18 @@ def test_ledger_live_location_inventory_reports_account_conflict() -> None:
     raw_dir = fixture_raw_dir("ledger_live", "account_conflict_wallets")
 
     profile, adapter = profile_and_adapter("ledger-live-main", raw_dir)
-    evidence, issues = adapter.extract_location_inventory("ledger-live-main", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory(
+        "ledger-live-main", raw_dir, profile
+    )
 
     assert str(profile.adapter_id) == "ledger_live"
     assert len(evidence) == 2
     assert any(issue.kind == "account_identifier_conflict" for issue in issues)
 
 
-def test_ledger_live_adapter_surfaces_duplicate_group_rows_without_truncating(tmp_path: Path) -> None:
+def test_ledger_live_adapter_surfaces_duplicate_group_rows_without_truncating(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "operations.csv").write_text(
@@ -72,7 +84,127 @@ def test_ledger_live_adapter_surfaces_duplicate_group_rows_without_truncating(tm
         encoding="utf-8",
     )
 
-    profile = build_source_profile(adapter_id="ledger_live", source="ledger-live-main", raw_dir=str(raw_dir))
+    profile = build_source_profile(
+        adapter_id="ledger_live", source="ledger-live-main", raw_dir=str(raw_dir)
+    )
+    adapter = profile_and_adapter("ledger-live-main", raw_dir)[1]
+    result = adapter.translate(profile, raw_dir)
+
+    assert not compile_activity_drafts(result.drafts)
+    assert len(result.issues) == 1
+    assert result.issues[0].kind == "unsupported_group"
+
+
+def test_ledger_live_adapter_normalizes_in_only_row(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "operations.csv").write_text(
+        "Operation Hash,Transaction ID,Operation Type,Operation Date,Account Name,Currency Ticker,Operation Amount\n"
+        "in-1,,IN,2024-01-01T00:00:00.000Z,Main,BTC,0.01\n",
+        encoding="utf-8",
+    )
+
+    profile = build_source_profile(
+        adapter_id="ledger_live", source="ledger-live-main", raw_dir=str(raw_dir)
+    )
+    adapter = profile_and_adapter("ledger-live-main", raw_dir)[1]
+    result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
+
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.CHAIN_TRANSFER_IN
+    assert facts[0].projection_hint == ProjectionHint.DEPOSIT
+    assert facts[0].legs[0].quantity == Decimal("0.01")
+    assert not result.issues
+
+
+def test_ledger_live_adapter_normalizes_out_only_row(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "operations.csv").write_text(
+        "Operation Hash,Transaction ID,Operation Type,Operation Date,Account Name,Currency Ticker,Operation Amount\n"
+        "out-1,,OUT,2024-01-01T00:00:00.000Z,Main,ETH,0.2\n",
+        encoding="utf-8",
+    )
+
+    profile = build_source_profile(
+        adapter_id="ledger_live", source="ledger-live-main", raw_dir=str(raw_dir)
+    )
+    adapter = profile_and_adapter("ledger-live-main", raw_dir)[1]
+    result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
+
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.ASSET_WITHDRAWAL
+    assert facts[0].projection_hint == ProjectionHint.WITHDRAWAL
+    assert facts[0].legs[0].quantity == Decimal("-0.2")
+    assert not result.issues
+
+
+def test_ledger_live_adapter_normalizes_fee_only_row(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "operations.csv").write_text(
+        "Operation Hash,Transaction ID,Operation Type,Operation Date,Account Name,Currency Ticker,Operation Amount\n"
+        "fee-1,,FEES,2024-01-01T00:00:00.000Z,Main,ETH,0.001\n",
+        encoding="utf-8",
+    )
+
+    profile = build_source_profile(
+        adapter_id="ledger_live", source="ledger-live-main", raw_dir=str(raw_dir)
+    )
+    adapter = profile_and_adapter("ledger-live-main", raw_dir)[1]
+    result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
+
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.CASH_EXPENSE
+    assert facts[0].projection_hint == ProjectionHint.EXPENSE_NON_TAXABLE
+    assert facts[0].legs[0].quantity == Decimal("-0.001")
+    assert not result.issues
+
+
+def test_ledger_live_adapter_normalizes_delegate_only_row_with_review(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "operations.csv").write_text(
+        "Operation Hash,Transaction ID,Operation Type,Operation Date,Account Name,Currency Ticker,Operation Amount\n"
+        "delegate-1,,DELEGATE,2024-01-01T00:00:00.000Z,Main,ADA,2.175841\n",
+        encoding="utf-8",
+    )
+
+    profile = build_source_profile(
+        adapter_id="ledger_live", source="ledger-live-main", raw_dir=str(raw_dir)
+    )
+    adapter = profile_and_adapter("ledger-live-main", raw_dir)[1]
+    result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
+
+    assert len(facts) == 1
+    assert facts[0].economic_kind == EconomicKind.STAKING_TRANSFER_OUT
+    assert facts[0].projection_hint == ProjectionHint.STAKING
+    assert facts[0].legs[0].quantity == Decimal("-2.175841")
+    assert len(result.reviews) == 1
+    assert result.reviews[0].kind == "staking_delegate_incomplete"
+
+
+def test_ledger_live_adapter_blocks_ambiguous_group_shape(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "operations.csv").write_text(
+        "Operation Hash,Transaction ID,Operation Type,Operation Date,Account Name,Currency Ticker,Operation Amount\n"
+        "ambiguous-1,,IN,2024-01-01T00:00:00.000Z,Main,ETH,0.5\n"
+        "ambiguous-1,,OUT,2024-01-01T00:00:00.000Z,Main,AGIX,2400\n"
+        "ambiguous-1,,OUT,2024-01-01T00:00:00.000Z,Main,AGIX,1600\n"
+        "ambiguous-1,,FEES,2024-01-01T00:00:00.000Z,Main,ETH,0.0007\n",
+        encoding="utf-8",
+    )
+
+    profile = build_source_profile(
+        adapter_id="ledger_live", source="ledger-live-main", raw_dir=str(raw_dir)
+    )
     adapter = profile_and_adapter("ledger-live-main", raw_dir)[1]
     result = adapter.translate(profile, raw_dir)
 
