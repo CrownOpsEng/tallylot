@@ -1,0 +1,7 @@
+interface:
+  display_name: "Implementation Workflow"
+  short_description: "Start ordinary tallylot code changes with the narrow repo path."
+  default_prompt: "Use $implementation-workflow to load the narrow tallylot implementation path before coding."
+
+policy:
+  allow_implicit_invocation: true

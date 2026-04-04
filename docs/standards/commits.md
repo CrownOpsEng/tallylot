@@ -11,8 +11,10 @@ nav_order: 30
 Use Conventional Commits for all authored commits. Keep commit history small,
 cohesive, and checkpoint-oriented.
 
-Auto-generated merge commits are tolerated by the validator, but authored
-commits should use the Conventional Commit format.
+Use Conventional Commit subjects and the structured body sections for merge
+commits too. Do not rely on GitHub's default `Merge pull request ...` subject.
+Keep commit and pull request language neutral, direct, and specific. Do not use
+rhetorical, promotional, or exaggerated wording in repo history.
 
 ## Subject Format
 
@@ -59,6 +61,14 @@ Preferred body sections:
 - `What:`
 - `Checks:`
 
+Write `Why:` and `What:` directly:
+
+- `Why:` states the problem, constraint, or risk the change addresses
+- `What:` states the behavior, structure, or contract changed in this patch
+- do not use `Why:` to restate the implementation
+- do not use `What:` to repeat generic intent without naming the concrete
+  repo change
+
 Example:
 
 ```text
@@ -93,6 +103,8 @@ Protected-branch rule:
 - land changes on `main` through pull requests only
 - do not push directly to `main`
 - do not use branch-protection bypass or force-push for normal delivery
+- do not rewrite a merged `main` commit when the original pull request must
+  remain attached to the landing commit; open a new pull request repair instead
 - if a protected-branch repair exception is explicitly requested, limit that
   exception to the exact repair action, verify the remote branch tip
   immediately afterward, and restore PR-only flow before continuing
@@ -112,13 +124,20 @@ PR body rules:
   - `What:`
   - `Checks:`
   - `Included checkpoints:`
+- an optional `Follow-ups:` section may follow `Included checkpoints:`
 - use flat hyphen bullets under every section
+- when the PR closes issues, put the closing bullets first under `Why:` using
+  the exact shape `- Closes #123: <problem statement>`
 - keep `Included checkpoints:` in chronological order using the exact
   checkpoint subjects from the branch
 - wrap every `Included checkpoints:` entry in backticks using the exact commit
   subject, because CI validates that the list matches the branch history
 - describe the engineering outcome and reviewable behavior, not branch
   choreography or replay mechanics
+- use `Follow-ups:` for non-closing references such as `- Refs #456` or
+  `- Refs #456: deferred cleanup`
+- keep authored commit messages on `Why:`, `What:`, and `Checks:` without
+  issue-closing keywords unless the user explicitly requests otherwise
 - for a one-commit PR, still list that single checkpoint under
   `Included checkpoints:`
 
@@ -130,20 +149,34 @@ Merge method rules:
 - do not squash multi-checkpoint PRs
 - do not create a merge commit for a single-checkpoint PR unless the user
   explicitly requests a one-off repair in the current thread
+- when merging a multi-checkpoint PR, override GitHub's default merge subject
+  with a deterministic subject that keeps the PR number visible instead of
+  landing `Merge pull request ...`
+- for a merge commit, use `<pr title> (#<pr number>)` as the merge subject and
+  keep the merge body in the same `Why:`, `What:`, `Checks:`,
+  `Included checkpoints:` format as the PR body so the mainline commit record
+  matches the reviewed PR record
+- if a repair PR supersedes an older pull request, add the repo's neutral
+  duplicate/superseded label to the older PR as the primary marker before
+  closing the repair loop
+- use a neutral comment on the older PR only when the repo has no suitable
+  label or the user explicitly asks for explanatory prose
 
 For a single-checkpoint PR, the GitHub-generated squash commit on `main` may
-retain the validated `Included checkpoints:` section from the PR body. Treat
-that as allowed for the generated mainline commit record, even though authored
-checkpoint commits should only use `Why:`, `What:`, and `Checks:` sections.
+retain the validated `Included checkpoints:` and `Follow-ups:` sections from
+the PR body. Treat that as allowed for the generated mainline commit record,
+even though authored checkpoint commits should only use `Why:`, `What:`, and
+`Checks:` sections.
 
 Preferred PR body template:
 
 ```text
 Why:
-- explain the problem or constraint this PR resolves
+- Closes #123: state the resolved problem when this PR closes an issue
+- state the problem or constraint this PR resolves
 
 What:
-- summarize the engineering changes that matter for review
+- state the engineering changes that matter for review
 
 Checks:
 - list the verification you actually ran
@@ -151,6 +184,9 @@ Checks:
 Included checkpoints:
 - `refactor(example): first checkpoint subject`
 - `fix(example): second checkpoint subject`
+
+Follow-ups:
+- Refs #456
 ```
 
 ## Stable Checkpoint Commits

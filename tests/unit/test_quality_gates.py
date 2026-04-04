@@ -87,6 +87,18 @@ def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> 
     assert "id: ruff" not in config_text
 
 
+def test_pre_commit_config_keeps_single_pass_checkpoint_validations() -> None:
+    config_text = (repo_root() / ".pre-commit-config.yaml").read_text(encoding="utf-8")
+
+    assert config_text.count("id: markdownlint") == 1
+    assert config_text.count("id: commit-message") == 1
+    assert config_text.count("id: mypy") == 1
+    assert config_text.count("id: pyright") == 1
+    assert config_text.count("name: pytest-fast") == 1
+    assert "tools.run_quality_gates" not in config_text
+    assert "tools.run_ci_parity_checks" not in config_text
+
+
 def test_quality_gates_refresh_generated_pyright_config_before_running(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

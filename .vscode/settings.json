@@ -51,5 +51,10 @@
   "python.analysis.diagnosticMode": "workspace",
   "ruff.importStrategy": "fromEnvironment",
   "mypy-type-checker.importStrategy": "fromEnvironment",
+  "pylint.path": [
+    "${interpreter}",
+    "-m",
+    "tools.vscode_pylint"
+  ],
   "pylint.importStrategy": "fromEnvironment"
 }

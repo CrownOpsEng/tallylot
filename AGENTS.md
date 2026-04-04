@@ -29,11 +29,14 @@ Do not pre-load every repo doc by default.
 | ---- | ---- |
 | Code placement, typing, modularization, naming | `docs/standards/engineering.md` |
 | Active implementation execution discipline | `docs/standards/implementation.md`, `docs/standards/commits.md` |
+| Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
+| Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/audit_delivery_guardrails.py` |
+| PR hardening review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/pr-hardening-review.md` |
 | Planning sequence, delivery slices, or rollout checkpoints | `ROADMAP.md` |
 | Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
 | Source or output adapter work | `docs/guides/write-an-adapter.md` |
-| Docs structure, generated index sections, or doc placement | `AGENTS.md`, `docs/README.md` |
+| Docs structure, generated index sections, doc placement, or doc authoring rules | `AGENTS.md`, `docs/README.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
 | External workspace layout and seeded files | `docs/concepts/workspace-model.md`, `docs/workspace/README.md` |
 | Operational state or manual workflow | `docs/status/current-state.md`, `docs/guides/operator-quickstart.md`, `docs/guides/source-intake.md`, `docs/guides/normalize-screen-stage.md`, `docs/guides/verify-a-round.md`, `docs/guides/full-operator-workflow.md` |
 | Repo-specific baseline and verification context | `docs/status/current-state.md`, `docs/reference/repository-history.md` |
@@ -49,6 +52,12 @@ Do not pre-load every repo doc by default.
   `.claude/commands/`.
 - Agent-only repo routing and maintenance rules live in this file and
   `.claude/commands/`.
+- When editing repo docs or Markdown, use the `markdown` skill if available.
+- When editing repo standards, automation, or other control-plane files, use
+  the `code-change-safety` skill as the starting workflow if available.
+- Keep tracked docs, templates, and control-plane text neutral and durable.
+- Do not store scratch review notes, hardening ledgers, or temporary process
+  bookkeeping in tracked files.
 - Agent-only context must not live in `docs/` unless it is genuinely useful to
   humans.
 - Every new doc must have one primary type: concept, guide, reference,
@@ -101,9 +110,22 @@ Do not pre-load every repo doc by default.
   - prefer small cohesive commits
   - avoid micro-commits with no rollback or review value
   - end the task on a clean, meaningful checkpoint commit
+- Keep commit, PR, and doc language neutral and direct:
+  - `Why:` states the problem, constraint, or risk being addressed
+  - `What:` states the concrete repo behavior or structure changed
+  - avoid rhetorical, promotional, or exaggerated wording in repo history
+- Add tests only when they protect meaningful behavior, contracts,
+  non-trivial decision logic, or fixed regressions.
+- Before shaping a non-trivial change, reload the narrow roadmap,
+  architecture, migration, or owning-boundary guidance for that surface.
+- Keep public-facing names simple and ergonomic. Prefer short neutral command
+  and API names over long implementation labels, and only add qualifiers when
+  a real ambiguity exists.
 - Treat protected branches as PR-only landing surfaces:
   - do not push directly to `main`
   - do not bypass branch protection for ordinary delivery
+  - do not rewrite a merged `main` commit when preserving the original pull
+    request association matters; use a new pull request repair instead
   - do not force-push protected branches unless the user explicitly requests a
     one-time repair in the current thread after branch protection has been
     temporarily adjusted
@@ -115,6 +137,18 @@ Do not pre-load every repo doc by default.
     that cleanup in the current thread
   - prefer additive fixes, follow-up commits, or leaving cleanup for the user
     over destructive local undo
+- If a repair pull request supersedes an older pull request, leave a neutral
+  duplicate/superseded label on the older PR before closing the repair loop.
+- Use a neutral replacement comment only when the repo has no suitable label
+  or the user explicitly asks for explanatory prose.
+- Open pull requests as draft by default and keep them draft through the
+  hardening loop.
+- Mark a PR ready for review only as a separate action after a clean hardening
+  pass.
+- Never close a PR autonomously without explicit user instruction.
+- For multi-checkpoint PR merges, set the merge subject to
+  `<pr title> (#<pr number>)` so the PR number remains visible in mainline
+  history.
 - If a flat directory would exceed 2 same-prefix files for one capability,
   regroup that capability into a package in the same task.
 - If a feature already has a package, keep new helpers inside that package
@@ -159,9 +193,12 @@ Workspace resolution order:
 - Keep domain models centered on frozen dataclasses, enums, and value objects.
 - Follow `docs/standards/implementation.md` during coding:
   - structure first
-  - tests alongside behavior
+  - tests alongside behavior, but only when they add real regression value
   - refactor obvious shared seams during the task
   - commit at stable checkpoints without waiting to be reminded
 - When work affects architecture, schema, or execution sequencing, update
   `ROADMAP.md` and `docs/concepts/reconciliation-tax-architecture.md`
   together.
+- When work affects delivery policy, branch protection expectations, or
+  agent-default Git behavior, update `docs/standards/delivery-guardrails.md`
+  with the relevant repo standards.

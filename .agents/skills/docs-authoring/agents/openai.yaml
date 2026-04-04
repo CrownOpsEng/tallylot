@@ -1,0 +1,7 @@
+interface:
+  display_name: "Docs Authoring"
+  short_description: "Start tallylot docs and standards edits with the repo-native authoring path."
+  default_prompt: "Use $docs-authoring to load the tallylot docs authoring path before editing repo docs."
+
+policy:
+  allow_implicit_invocation: true
