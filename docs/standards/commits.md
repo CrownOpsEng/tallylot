@@ -148,14 +148,17 @@ Merge method rules:
 - do not create a merge commit for a single-checkpoint PR unless the user
   explicitly requests a one-off repair in the current thread
 - when merging a multi-checkpoint PR, override GitHub's default merge subject
-  with the PR's Conventional Commit title and keep the merge body review-ready
-  instead of landing `Merge pull request ...`
-- for a merge commit, use the PR title as the merge subject and keep the merge
-  body in the same `Why:`, `What:`, `Checks:`, `Included checkpoints:` format
-  as the PR body so the mainline commit record matches the reviewed PR record
-- if a repair PR supersedes an older pull request, leave a neutral comment on
-  the older PR that links to the replacement PR and states that it is
-  superseded or duplicate history
+  with a deterministic subject that keeps the PR number visible instead of
+  landing `Merge pull request ...`
+- for a merge commit, use `<pr title> (#<pr number>)` as the merge subject and
+  keep the merge body in the same `Why:`, `What:`, `Checks:`,
+  `Included checkpoints:` format as the PR body so the mainline commit record
+  matches the reviewed PR record
+- if a repair PR supersedes an older pull request, add the repo's neutral
+  duplicate/superseded label to the older PR as the primary marker before
+  closing the repair loop
+- use a neutral comment on the older PR only when the repo has no suitable
+  label or the user explicitly asks for explanatory prose
 
 For a single-checkpoint PR, the GitHub-generated squash commit on `main` may
 retain the validated `Included checkpoints:` section from the PR body. Treat

@@ -39,6 +39,10 @@ Use this route before closing any non-trivial coding task.
    - do not rewrite a merged `main` commit if the original pull request must
      remain attached to the landing commit; open a new repair pull request
      instead
+   - for multi-checkpoint PR merges, use `<pr title> (#<pr number>)` as the
+     merge subject
+   - if a repair PR replaces an older PR, apply the repo's neutral
+     duplicate/superseded label before closing the repair loop
    - if the user explicitly requested a one-time protected-branch repair,
      verify the remote branch tip afterward and return to PR-only flow
 

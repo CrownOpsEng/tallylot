@@ -125,8 +125,12 @@ Do not pre-load every repo doc by default.
   - prefer additive fixes, follow-up commits, or leaving cleanup for the user
     over destructive local undo
 - If a repair pull request supersedes an older pull request, leave a neutral
-  comment on the older PR that links to the replacement PR and states that the
-  old PR is superseded or duplicate history.
+  duplicate/superseded label on the older PR before closing the repair loop.
+- Use a neutral replacement comment only when the repo has no suitable label
+  or the user explicitly asks for explanatory prose.
+- For multi-checkpoint PR merges, set the merge subject to
+  `<pr title> (#<pr number>)` so the PR number remains visible in mainline
+  history.
 - If a flat directory would exceed 2 same-prefix files for one capability,
   regroup that capability into a package in the same task.
 - If a feature already has a package, keep new helpers inside that package

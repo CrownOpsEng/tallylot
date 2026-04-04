@@ -68,23 +68,29 @@ def _is_named_call(node: ast.expr, name: str) -> bool:
     return False
 
 
-def _assert_no_imports(root: Path, forbidden_modules: tuple[str, ...], *, production_only: bool = False) -> None:
-    python_files = _production_python_files(root) if production_only else _python_files(root)
+def _assert_no_imports(
+    root: Path, forbidden_modules: tuple[str, ...], *, production_only: bool = False
+) -> None:
+    python_files = (
+        _production_python_files(root) if production_only else _python_files(root)
+    )
 
     for path in python_files:
         module = _module(path)
         for node in ast.walk(module):
             if isinstance(node, ast.ImportFrom) and node.module is not None:
                 for forbidden in forbidden_modules:
-                    assert not (node.module == forbidden or node.module.startswith(f"{forbidden}.")), (
-                        f"{path} imports forbidden module {forbidden}"
-                    )
+                    assert not (
+                        node.module == forbidden
+                        or node.module.startswith(f"{forbidden}.")
+                    ), f"{path} imports forbidden module {forbidden}"
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     for forbidden in forbidden_modules:
-                        assert not (alias.name == forbidden or alias.name.startswith(f"{forbidden}.")), (
-                            f"{path} imports forbidden module {forbidden}"
-                        )
+                        assert not (
+                            alias.name == forbidden
+                            or alias.name.startswith(f"{forbidden}.")
+                        ), f"{path} imports forbidden module {forbidden}"
 
 
 def _uses_direct_repo_root_derivation(path: Path) -> bool:
@@ -121,17 +127,29 @@ def _uses_direct_repo_root_derivation(path: Path) -> bool:
 
     module = _module(path)
     for node in ast.walk(module):
-        if not isinstance(node, ast.Assign | ast.AnnAssign | ast.NamedExpr | ast.Call | ast.Attribute | ast.Subscript):
+        if not isinstance(
+            node,
+            ast.Assign
+            | ast.AnnAssign
+            | ast.NamedExpr
+            | ast.Call
+            | ast.Attribute
+            | ast.Subscript,
+        ):
             continue
         candidate: ast.expr | None = (
-            node.value if isinstance(node, ast.Assign | ast.AnnAssign | ast.NamedExpr) else node
+            node.value
+            if isinstance(node, ast.Assign | ast.AnnAssign | ast.NamedExpr)
+            else node
         )
         if candidate is not None and is_repo_root_derivation(candidate):
             return True
     return False
 
 
-def test_repo_root_derivation_guard_catches_parent_and_parents_forms(tmp_path: Path) -> None:
+def test_repo_root_derivation_guard_catches_parent_and_parents_forms(
+    tmp_path: Path,
+) -> None:
     parent_form = tmp_path / "parent_form.py"
     parent_form.write_text(
         "from pathlib import Path\nREPO = Path(__file__).resolve().parent.parent\n",
@@ -158,10 +176,15 @@ def _defines_root_constants(path: Path) -> bool:
     module = _module(path)
     for node in module.body:
         if isinstance(node, ast.Assign) and any(
-            isinstance(target, ast.Name) and target.id in constant_names for target in node.targets
+            isinstance(target, ast.Name) and target.id in constant_names
+            for target in node.targets
         ):
             return True
-        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id in constant_names:
+        if (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id in constant_names
+        ):
             return True
     return False
 
@@ -177,7 +200,9 @@ def test_repo_has_no_type_ignore_comments() -> None:
     for path in _all_repo_python_files():
         text = path.read_text(encoding="utf-8")
         for needle in forbidden:
-            assert needle not in text, f"{path} contains forbidden typing bypass {needle!r}"
+            assert needle not in text, (
+                f"{path} contains forbidden typing bypass {needle!r}"
+            )
 
 
 def test_protected_access_suppressions_only_live_in_test_pylint_config() -> None:
@@ -197,16 +222,24 @@ def test_repo_root_derivation_is_centralized_in_repo_support_paths() -> None:
     approved = repo_root() / "repo_support" / "paths.py"
 
     offenders = [
-        path for path in _repo_side_python_files() if path != approved and _uses_direct_repo_root_derivation(path)
+        path
+        for path in _repo_side_python_files()
+        if path != approved and _uses_direct_repo_root_derivation(path)
     ]
 
-    assert not offenders, f"repo-side python still derives repo root outside repo_support.paths: {offenders}"
+    assert not offenders, (
+        f"repo-side python still derives repo root outside repo_support.paths: {offenders}"
+    )
 
 
 def test_repo_side_python_does_not_define_repo_root_constants() -> None:
-    offenders = [path for path in _repo_side_python_files() if _defines_root_constants(path)]
+    offenders = [
+        path for path in _repo_side_python_files() if _defines_root_constants(path)
+    ]
 
-    assert not offenders, f"repo-side python still defines local root constants: {offenders}"
+    assert not offenders, (
+        f"repo-side python still defines local root constants: {offenders}"
+    )
 
 
 def test_production_code_does_not_import_repo_support_or_tools() -> None:
@@ -220,24 +253,65 @@ def test_repo_support_avoids_generic_sink_modules() -> None:
     support_root = repo_root() / "repo_support"
     if not support_root.exists():
         raise AssertionError("repo_support package is missing")
-    offenders = sorted(path.name for path in support_root.rglob("*.py") if path.name in forbidden)
+    offenders = sorted(
+        path.name for path in support_root.rglob("*.py") if path.name in forbidden
+    )
 
-    assert not offenders, f"repo_support contains forbidden generic sink modules: {offenders}"
+    assert not offenders, (
+        f"repo_support contains forbidden generic sink modules: {offenders}"
+    )
 
 
 def test_markdownlint_only_disables_md013() -> None:
-    config = json.loads((repo_root() / ".markdownlint.json").read_text(encoding="utf-8"))
+    config = json.loads(
+        (repo_root() / ".markdownlint.json").read_text(encoding="utf-8")
+    )
     assert config == {"default": True, "MD013": False}
 
 
 def test_module_size_policy_remains_aligned() -> None:
     pylint_text = (repo_root() / ".pylintrc").read_text(encoding="utf-8")
-    standards_text = (repo_root() / "docs/standards/engineering.md").read_text(encoding="utf-8")
+    standards_text = (repo_root() / "docs/standards/engineering.md").read_text(
+        encoding="utf-8"
+    )
 
     assert "max-module-lines = 450" in pylint_text
-    assert re.search(r"Refactor before extending beyond 300 lines", standards_text) is not None
-    assert re.search(r"Treat `300` lines as the official repo refactor limit", standards_text) is not None
-    assert re.search(r"Treat `450` lines as the hard-stop lint ceiling", standards_text) is not None
+    assert (
+        re.search(r"Refactor before extending beyond 300 lines", standards_text)
+        is not None
+    )
+    assert (
+        re.search(
+            r"Treat `300` lines as the official repo refactor limit", standards_text
+        )
+        is not None
+    )
+    assert (
+        re.search(r"Treat `450` lines as the hard-stop lint ceiling", standards_text)
+        is not None
+    )
+
+
+def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
+    commits_text = (repo_root() / "docs/standards/commits.md").read_text(
+        encoding="utf-8"
+    )
+    implementation_text = (repo_root() / "docs/standards/implementation.md").read_text(
+        encoding="utf-8"
+    )
+    agents_text = (repo_root() / "AGENTS.md").read_text(encoding="utf-8")
+    checkpoint_text = (
+        repo_root() / ".claude/commands/implementation-checkpoint.md"
+    ).read_text(encoding="utf-8")
+
+    assert "<pr title> (#<pr number>)" in commits_text
+    assert "<pr title> (#<pr number>)" in implementation_text
+    assert "<pr title> (#<pr number>)" in agents_text
+    assert "<pr title> (#<pr number>)" in checkpoint_text
+    assert "duplicate/superseded label" in commits_text
+    assert "duplicate/superseded label" in implementation_text
+    assert "duplicate/superseded label" in agents_text
+    assert "duplicate/superseded label" in checkpoint_text
 
 
 def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:
@@ -252,8 +326,12 @@ def test_src_does_not_accumulate_flat_same_prefix_clusters() -> None:
             if len(parts) < 2:
                 continue
             prefix_groups["_".join(parts[:2])].append(path.name)
-        offenders = {prefix: names for prefix, names in prefix_groups.items() if len(names) > 2}
-        assert not offenders, f"{directory} has flat same-prefix clusters that should be packaged: {offenders}"
+        offenders = {
+            prefix: names for prefix, names in prefix_groups.items() if len(names) > 2
+        }
+        assert not offenders, (
+            f"{directory} has flat same-prefix clusters that should be packaged: {offenders}"
+        )
 
 
 def test_retired_bucket_directories_do_not_exist() -> None:
@@ -308,14 +386,18 @@ def test_future_capability_roots_remain_available_for_next_phase() -> None:
 
     for package in required_packages:
         assert package.is_dir(), f"missing future capability package root: {package}"
-        assert (package / "__init__.py").exists(), f"missing package marker for {package}"
+        assert (package / "__init__.py").exists(), (
+            f"missing package marker for {package}"
+        )
         importlib.import_module(".".join(package.relative_to(src_root.parent).parts))
     for module in required_modules:
         assert module.exists(), f"missing capability boundary module: {module}"
 
 
 def test_production_packaging_excludes_dev_only_oracle_tooling() -> None:
-    pyproject = tomllib.loads((repo_root() / "pyproject.toml").read_text(encoding="utf-8"))
+    pyproject = tomllib.loads(
+        (repo_root() / "pyproject.toml").read_text(encoding="utf-8")
+    )
 
     scripts = pyproject["project"]["scripts"]
     wheel_packages = pyproject["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"]
@@ -327,7 +409,9 @@ def test_production_packaging_excludes_dev_only_oracle_tooling() -> None:
 
 def test_typecheck_configs_remain_strict() -> None:
     mypy_text = (repo_root() / "mypy.ini").read_text(encoding="utf-8")
-    pyright_config = json.loads((repo_root() / "pyrightconfig.json").read_text(encoding="utf-8"))
+    pyright_config = json.loads(
+        (repo_root() / "pyrightconfig.json").read_text(encoding="utf-8")
+    )
 
     assert "strict = true" in mypy_text
     assert "warn_unused_ignores = true" in mypy_text
@@ -343,7 +427,9 @@ def test_pyright_private_usage_config_matches_repo_test_trees() -> None:
         "tests",
         *(
             path.relative_to(repo_root()).as_posix()
-            for path in sorted((repo_root() / "src" / "tallylot" / "adapters").rglob("tests"))
+            for path in sorted(
+                (repo_root() / "src" / "tallylot" / "adapters").rglob("tests")
+            )
             if path.is_dir()
         ),
     }
@@ -358,7 +444,9 @@ def test_pyright_private_usage_config_matches_repo_test_trees() -> None:
 
 
 def test_pyright_root_config_extends_generated_test_config() -> None:
-    pyright_config = json.loads((repo_root() / "pyrightconfig.json").read_text(encoding="utf-8"))
+    pyright_config = json.loads(
+        (repo_root() / "pyrightconfig.json").read_text(encoding="utf-8")
+    )
 
     assert pyright_config.get("extends") == f"./{PYRIGHT_GENERATED_TEST_CONFIG_NAME}"
     assert "executionEnvironments" not in pyright_config
@@ -399,7 +487,9 @@ def test_ports_modules_do_not_import_implementation_layers() -> None:
     )
 
 
-def test_adapter_production_modules_do_not_import_application_or_infrastructure() -> None:
+def test_adapter_production_modules_do_not_import_application_or_infrastructure() -> (
+    None
+):
     adapters_root = repo_root() / "src" / "tallylot" / "adapters"
 
     _assert_no_imports(
@@ -449,7 +539,9 @@ def test_repo_does_not_reference_fact_category_attribute() -> None:
         for path in _python_files(root):
             for node in ast.walk(_module(path)):
                 if isinstance(node, ast.Attribute):
-                    assert node.attr != "category", f"{path} references removed fact category attribute"
+                    assert node.attr != "category", (
+                        f"{path} references removed fact category attribute"
+                    )
 
 
 def test_repo_does_not_reference_removed_single_leg_fact_attributes() -> None:
@@ -489,7 +581,9 @@ def test_source_adapters_do_not_pass_string_classification_values() -> None:
             for keyword in node.keywords:
                 if keyword.arg not in CLASSIFICATION_KEYWORDS:
                     continue
-                if isinstance(keyword.value, ast.Constant) and isinstance(keyword.value.value, str):
+                if isinstance(keyword.value, ast.Constant) and isinstance(
+                    keyword.value.value, str
+                ):
                     raise AssertionError(
                         f"{path} passes string classification value {keyword.arg}={keyword.value.value!r} "
                         "through shared draft helpers"
@@ -510,11 +604,21 @@ def test_balance_evidence_has_single_production_owner() -> None:
     assert occurrences == 1
 
 
-def test_transaction_classification_matrix_describes_runtime_projection_values() -> None:
-    matrix_text = (repo_root() / "docs" / "concepts" / "transaction-classification.md").read_text(encoding="utf-8")
+def test_transaction_classification_matrix_describes_runtime_projection_values() -> (
+    None
+):
+    matrix_text = (
+        repo_root() / "docs" / "concepts" / "transaction-classification.md"
+    ).read_text(encoding="utf-8")
 
-    assert "| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` |" in matrix_text
-    assert "| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` |" in matrix_text
+    assert (
+        "| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` |"
+        in matrix_text
+    )
+    assert (
+        "| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` |"
+        in matrix_text
+    )
     assert (
         "| `withdrawal` | `withdrawal` | `asset_withdrawal` | `non_taxable_transfer_out` | `funding_outflow` |"
         in matrix_text

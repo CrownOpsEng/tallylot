@@ -212,9 +212,13 @@ Expected behavior:
 - before merging a PR or rewriting mainline history, verify whether the pull
   request record must stay attached to the landing commit; if yes, do not
   rewrite that merge commit after merge
-- if a repair PR replaces an older pull request, mark the old PR as
-  superseded/duplicate with a neutral comment that links to the replacement
-  PR before closing the repair loop
+- if a multi-checkpoint PR merges with a merge commit, use
+  `<pr title> (#<pr number>)` as the merge subject so the mainline log keeps
+  the PR number visible
+- if a repair PR replaces an older pull request, mark the old PR with the
+  repo's neutral duplicate/superseded label before closing the repair loop
+- add a neutral replacement comment only when the repo has no suitable label
+  or the user explicitly asks for explanatory prose
 - when the work uncovers follow-up or out-of-scope changes that do not belong
   in the current PR, create the issue immediately so it does not get lost
 - do not defer issue creation for out-of-scope work until after merge, handoff,
