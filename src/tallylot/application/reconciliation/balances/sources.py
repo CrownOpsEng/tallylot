@@ -7,6 +7,7 @@ from pathlib import Path
 
 BALANCE_SNAPSHOT_FILENAME = "balances.csv"
 BALANCE_EVIDENCE_FILENAME = "balance_evidence.csv"
+LOCATION_INVENTORY_FILENAME = "location_inventory.csv"
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,10 @@ class BalanceSourceDir:
     @property
     def evidence_path(self) -> Path:
         return self.root / BALANCE_EVIDENCE_FILENAME
+
+    @property
+    def location_inventory_path(self) -> Path:
+        return self.root / LOCATION_INVENTORY_FILENAME
 
     def output_root(self, base_output_root: Path, *, single_source: bool) -> Path:
         return base_output_root if single_source else base_output_root / self.name

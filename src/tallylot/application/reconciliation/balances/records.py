@@ -53,6 +53,24 @@ BALANCE_RECONCILIATION_BLOCKER_HEADER = (
     "notes",
 )
 
+CROSS_SOURCE_ASSERTION_HEADER = (
+    "left_source",
+    "right_source",
+    "normalized_identifier",
+    "network_scope",
+    "instrument_id",
+    "balance_kind",
+    "left_location_id",
+    "right_location_id",
+    "left_quantity",
+    "right_quantity",
+    "quantity_difference",
+    "status",
+    "as_of_at",
+    "as_of_precision",
+    "notes",
+)
+
 
 @dataclass(frozen=True)
 class BalanceCoverageRecord:
@@ -152,6 +170,44 @@ class BalanceReconciliationBlockerRecord:
             "source": self.source,
             "blocker_kind": self.blocker_kind,
             "blocker_count": str(self.blocker_count),
+            "notes": self.notes,
+        }
+
+
+@dataclass(frozen=True)
+class CrossSourceAssertionRecord:
+    left_source: str
+    right_source: str
+    normalized_identifier: str
+    network_scope: str
+    instrument_id: str
+    balance_kind: str
+    left_location_id: str
+    right_location_id: str
+    left_quantity: str
+    right_quantity: str
+    quantity_difference: str
+    status: str
+    as_of_at: str
+    as_of_precision: str
+    notes: str = ""
+
+    def to_row(self) -> dict[str, str]:
+        return {
+            "left_source": self.left_source,
+            "right_source": self.right_source,
+            "normalized_identifier": self.normalized_identifier,
+            "network_scope": self.network_scope,
+            "instrument_id": self.instrument_id,
+            "balance_kind": self.balance_kind,
+            "left_location_id": self.left_location_id,
+            "right_location_id": self.right_location_id,
+            "left_quantity": self.left_quantity,
+            "right_quantity": self.right_quantity,
+            "quantity_difference": self.quantity_difference,
+            "status": self.status,
+            "as_of_at": self.as_of_at,
+            "as_of_precision": self.as_of_precision,
             "notes": self.notes,
         }
 

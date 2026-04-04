@@ -82,6 +82,10 @@ Scope:
 
 - extend the first exact balance assertion workflow into broader checkpoint and
   transfer checks
+- keep statement-backed quantity evidence on the normalization path and treat
+  valuation totals as non-canonical
+- add additive cross-source corroboration as a sidecar evidence surface before
+  promoting it into a harder reconciliation gate
 - transfer linking across owned wallets and exchanges
 - checkpoint continuity checks
 - correction and supersession chains
@@ -92,6 +96,8 @@ Scope:
 Exit criteria:
 
 - exact balance assertion artifacts are stable and feed later continuity checks
+- additive cross-source corroboration artifacts exist without redefining the
+  primary clean-date gate
 - fact history can be reconciled against source-backed evidence without manual
   tracker logic
 - reconciliation artifacts no longer depend on normalized-transaction-era

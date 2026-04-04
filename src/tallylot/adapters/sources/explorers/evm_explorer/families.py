@@ -9,8 +9,23 @@ from tallylot.domain.types import AdapterId
 from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry
 
 NATIVE_REQUIRED_FIELDS = {"Transaction Hash", "DateTime (UTC)", "To"}
-TOKEN_REQUIRED_FIELDS = {"Transaction Hash", "DateTime (UTC)", "From", "To", "TokenValue", "TokenSymbol"}
-NFT_REQUIRED_FIELDS = {"Transaction Hash", "DateTime (UTC)", "From", "To", "TokenName", "Token ID", "Quantity"}
+TOKEN_REQUIRED_FIELDS = {
+    "Transaction Hash",
+    "DateTime (UTC)",
+    "From",
+    "To",
+    "TokenValue",
+    "TokenSymbol",
+}
+NFT_REQUIRED_FIELDS = {
+    "Transaction Hash",
+    "DateTime (UTC)",
+    "From",
+    "To",
+    "TokenName",
+    "Token ID",
+    "Quantity",
+}
 NFT_MINIMUM_FIELDS = {"Transaction Hash", "To", "TokenName"}
 INTERNAL_REQUIRED_FIELDS = {
     "Transaction Hash",
@@ -19,6 +34,14 @@ INTERNAL_REQUIRED_FIELDS = {
     "ParentTxTo",
     "From",
     "TxTo",
+}
+PORTFOLIO_REQUIRED_FIELDS = {
+    "Chain",
+    "Token",
+    "Portfolio %",
+    "Price",
+    "Amount",
+    "Value",
 }
 
 
@@ -55,12 +78,20 @@ def family_id_for_header(header: tuple[str, ...]) -> str:
     header_fields = set(header)
     if TOKEN_REQUIRED_FIELDS.issubset(header_fields):
         return "token_transfers"
-    if NFT_REQUIRED_FIELDS.issubset(header_fields) or NFT_MINIMUM_FIELDS.issubset(header_fields):
+    if NFT_REQUIRED_FIELDS.issubset(header_fields) or NFT_MINIMUM_FIELDS.issubset(
+        header_fields
+    ):
         return "nft_transfers"
-    if INTERNAL_REQUIRED_FIELDS.issubset(header_fields) and _has_native_value_columns(header):
+    if INTERNAL_REQUIRED_FIELDS.issubset(header_fields) and _has_native_value_columns(
+        header
+    ):
         return "internal_transfers"
-    if NATIVE_REQUIRED_FIELDS.issubset(header_fields) and _has_native_value_columns(header):
+    if NATIVE_REQUIRED_FIELDS.issubset(header_fields) and _has_native_value_columns(
+        header
+    ):
         return "native_transfers"
+    if PORTFOLIO_REQUIRED_FIELDS.issubset(header_fields):
+        return "portfolio_balances"
     return ""
 
 

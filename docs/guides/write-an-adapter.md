@@ -45,6 +45,10 @@ automatically.
   in provider-local modules.
 - Do not synthesize runtime balance snapshots in adapters unless the source
   export provides actual balance evidence.
+- Statement-backed balance evidence must stay quantity-based. Normalize only
+  rows that prove per-instrument quantities; do not promote market-value totals,
+  net-worth summaries, or other valuation-only rows into canonical balance
+  evidence.
 - Normalize source-specific sign conventions at the adapter edge into signed
   canonical quantities. If the provider sign or direction signal is ambiguous,
   surface an issue or review instead of guessing.
@@ -119,6 +123,11 @@ blocking scan issue instead of attempting a best-effort normalization pass.
 Wallet-state adapters must treat UI identity maps and friendly labels as labels
 only. Emit canonical wallet inventory only when the export proves authoritative
 chain-scoped or chain-specific ownership.
+
+When a wallet or explorer source also includes portfolio-style balance views
+that do not prove wallet ownership on their own, admit those rows only under
+the owning source family and only for same-source same-chain evidence. Emit
+advisory reviews instead of auto-routing rows across folders or chains.
 
 Known current adapter workaround:
 

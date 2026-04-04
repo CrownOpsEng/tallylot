@@ -33,11 +33,14 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - source profiling with timezone provenance
 - source normalization with explicit fact artifacts, balance evidence, and
   archive member provenance
+- normalization-owned statement-backed balance evidence for supported provider
+  statements and constrained same-source-chain MetaMask portfolio evidence
 - checkpoint location inventory rebuild with evidence, issues, and summary
   artifacts
 - checkpoint PDF balance extraction for supported statement families
 - reconciliation balance coverage, checking, and summary workflows with
-  explicit drift, missing-side, duplicate-input, and blocker outputs
+  explicit drift, missing-side, duplicate-input, blocker outputs, and additive
+  cross-source corroboration sidecars
 - dev-only oracle baseline validation with the documented artifact package
 - dev-only oracle batch screening and staging with explicit issues, overlap
   summaries, and normalization window enforcement

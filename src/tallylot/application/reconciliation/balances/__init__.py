@@ -15,6 +15,7 @@ from .records import (
     BALANCE_CHECK_SUMMARY_HEADER,
     BALANCE_COVERAGE_HEADER,
     BALANCE_RECONCILIATION_BLOCKER_HEADER,
+    CROSS_SOURCE_ASSERTION_HEADER,
 )
 from .summary import BalanceSummaryWorkflow
 
@@ -23,6 +24,7 @@ __all__ = [
     "BALANCE_CHECK_SUMMARY_HEADER",
     "BALANCE_COVERAGE_HEADER",
     "BALANCE_RECONCILIATION_BLOCKER_HEADER",
+    "CROSS_SOURCE_ASSERTION_HEADER",
     "BalanceCheckRequest",
     "BalanceCheckResponse",
     "BalanceCheckWorkflow",
