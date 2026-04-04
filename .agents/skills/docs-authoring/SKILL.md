@@ -25,9 +25,11 @@ commits.
    `.claude/commands/`.
 3. Prefer updating an existing page over adding a new switchboard.
 4. Preserve frontmatter, generated markers, and doc type boundaries.
-5. Validate docs changes with:
+5. Keep tracked docs and control-plane text neutral, durable, and free of
+   scratch workflow bookkeeping.
+6. Validate docs changes with:
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.docs_maintenance sync --check`
-6. If the change also affects repo control-plane behavior, finish with the
+7. If the change also affects repo control-plane behavior, finish with the
    repo's broader quality gates before checkpointing.
 
 ## Focus

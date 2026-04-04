@@ -31,6 +31,7 @@ Do not pre-load every repo doc by default.
 | Active implementation execution discipline | `docs/standards/implementation.md`, `docs/standards/commits.md` |
 | Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
 | Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/audit_delivery_guardrails.py` |
+| PR hardening review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/pr-hardening-review.md` |
 | Planning sequence, delivery slices, or rollout checkpoints | `ROADMAP.md` |
 | Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
@@ -54,6 +55,9 @@ Do not pre-load every repo doc by default.
 - When editing repo docs or Markdown, use the `markdown` skill if available.
 - When editing repo standards, automation, or other control-plane files, use
   the `code-change-safety` skill as the starting workflow if available.
+- Keep tracked docs, templates, and control-plane text neutral and durable.
+- Do not store scratch review notes, hardening ledgers, or temporary process
+  bookkeeping in tracked files.
 - Agent-only context must not live in `docs/` unless it is genuinely useful to
   humans.
 - Every new doc must have one primary type: concept, guide, reference,
@@ -110,6 +114,10 @@ Do not pre-load every repo doc by default.
   - `Why:` states the problem, constraint, or risk being addressed
   - `What:` states the concrete repo behavior or structure changed
   - avoid rhetorical, promotional, or exaggerated wording in repo history
+- Add tests only when they protect meaningful behavior, contracts,
+  non-trivial decision logic, or fixed regressions.
+- Before shaping a non-trivial change, reload the narrow roadmap,
+  architecture, migration, or owning-boundary guidance for that surface.
 - Keep public-facing names simple and ergonomic. Prefer short neutral command
   and API names over long implementation labels, and only add qualifiers when
   a real ambiguity exists.
@@ -133,6 +141,11 @@ Do not pre-load every repo doc by default.
   duplicate/superseded label on the older PR before closing the repair loop.
 - Use a neutral replacement comment only when the repo has no suitable label
   or the user explicitly asks for explanatory prose.
+- Open pull requests as draft by default and keep them draft through the
+  hardening loop.
+- Mark a PR ready for review only as a separate action after a clean hardening
+  pass.
+- Never close a PR autonomously without explicit user instruction.
 - For multi-checkpoint PR merges, set the merge subject to
   `<pr title> (#<pr number>)` so the PR number remains visible in mainline
   history.
@@ -180,7 +193,7 @@ Workspace resolution order:
 - Keep domain models centered on frozen dataclasses, enums, and value objects.
 - Follow `docs/standards/implementation.md` during coding:
   - structure first
-  - tests alongside behavior
+  - tests alongside behavior, but only when they add real regression value
   - refactor obvious shared seams during the task
   - commit at stable checkpoints without waiting to be reminded
 - When work affects architecture, schema, or execution sequencing, update

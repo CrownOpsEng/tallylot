@@ -85,6 +85,8 @@ otherwise:
 
 - keep the architecture aligned with
   `docs/concepts/reconciliation-tax-architecture.md`
+- read the narrow forward-looking roadmap, architecture, migration, or owning
+  boundary guidance before shaping a non-trivial change
 - refactor when a clearer shared seam is already visible
 - extract shared components before copy-paste patterns harden
 - create or update tests alongside the implementation
@@ -106,6 +108,10 @@ For non-trivial implementation work, use this order:
 
 Do not start by patching call sites ad hoc and only later trying to discover
 the right structure.
+
+Before shaping a non-trivial fix, reload the narrow forward-looking guidance
+that owns the change surface. Prefer the intended end-state seam over a local
+temporary patch when the repo already documents the target ownership model.
 
 ## Refactor Expectations
 
@@ -172,6 +178,17 @@ Minimum expectation:
 - add contract tests for new external artifact parsing or rendering
 - add regression tests for fixed edge cases
 
+Meaningful tests only:
+
+- add tests for user-visible behavior, real contracts, non-trivial decision
+  logic, and fixed regressions
+- do not add trivial getter or setter tests, wording-only assertions, duplicate
+  coverage at multiple layers, or call-order tests unless that order is the
+  contract
+- when tests become repetitive, treat that as a signal that the production seam
+  may be wrong and refactor the seam instead of piling on more near-duplicate
+  tests
+
 Do not leave edge-case behavior implicit in implementation code without a test
 that pins it down.
 
@@ -232,6 +249,9 @@ Expected behavior:
 - keep repo cleanup forward-only by default: do not use destructive rollback
   commands such as `rm -rf`, `git restore`, `git reset`, or `git checkout --`
   unless the user explicitly requests that cleanup in the current thread
+- keep tracked docs, templates, and control-plane artifacts neutral and durable
+- keep scratch review notes, temporary hardening ledgers, and compaction aids
+  untracked; recover from deterministic repo facts instead
 
 When not to commit:
 
@@ -241,6 +261,22 @@ When not to commit:
 
 Do not collapse a broad but separable refactor into one giant commit unless
 the slice truly cannot be reviewed or validated incrementally.
+
+## Compaction Recovery
+
+Treat compaction or context loss as an ordinary operating condition.
+
+When context is lost before more edits, commits, or delivery steps:
+
+1. reload `git status` and the current branch tip
+2. inspect the current diff and recent commits
+3. inspect current PR metadata and changed files when PR work is active
+4. reread only the narrow repo standards and start-skill docs for the active
+   surface
+5. reload the latest targeted verification results
+
+Do not rely on tracked scratch notes, phase logs, or preserved review ledgers
+to recover task state.
 
 ## Quality Gates
 

@@ -308,6 +308,8 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert "<pr title> (#<pr number>)" in implementation_text
     assert "<pr title> (#<pr number>)" in agents_text
     assert "<pr title> (#<pr number>)" in checkpoint_text
+    assert "Follow-ups:" in commits_text
+    assert "- Closes #123:" in commits_text
     assert "duplicate/superseded label" in commits_text
     assert "duplicate/superseded label" in implementation_text
     assert "duplicate/superseded label" in agents_text
@@ -324,11 +326,17 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     checkpoint_text = (
         repo_root() / ".claude/commands/implementation-checkpoint.md"
     ).read_text(encoding="utf-8")
+    hardening_route_text = (
+        repo_root() / ".claude" / "commands" / "pr-hardening-review.md"
+    ).read_text(encoding="utf-8")
 
     assert "platform-native enforcement" in guardrails_text
     assert "repo-native policy as code" in guardrails_text
     assert "agent default behavior" in guardrails_text
     assert "<pr title> (#<pr number>)" in guardrails_text
+    assert "draft by default" in guardrails_text
+    assert "ready for review" in guardrails_text
+    assert "evidence-backed findings" in guardrails_text
     assert "duplicate or superseded label" in guardrails_text
     assert "tools.audit_delivery_guardrails" in guardrails_text
     assert "single review-capable collaborator" in guardrails_text
@@ -348,6 +356,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "tools/docs_maintenance/metadata.py" in agents_text
     assert "docs/reference/repository-history.md" in agents_text
     assert "docs/standards/delivery-guardrails.md" in agents_text
+    assert ".claude/commands/pr-hardening-review.md" in agents_text
     assert "delivery guardrails layered across platform settings" in roadmap_text
     assert "control-plane ownership routing" in roadmap_text
     assert "audit local CODEOWNERS coverage and live GitHub delivery" in roadmap_text
@@ -360,6 +369,11 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         "use `code-change-safety` for repo changes and `markdown` for Markdown/docs"
         in checkpoint_text
     )
+    assert "scratch workflow bookkeeping" in checkpoint_text
+    assert (
+        "Keep the PR draft until a full clean pass is complete" in hardening_route_text
+    )
+    assert "Do not invent findings to hit a" in hardening_route_text
 
 
 def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> None:

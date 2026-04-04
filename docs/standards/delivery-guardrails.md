@@ -43,6 +43,8 @@ when the higher-layer control is available.
 ## Default Delivery Posture
 
 - protected branches are PR-only landing surfaces
+- pull requests open as draft by default
+- a PR becomes ready for review only after a clean hardening pass
 - direct pushes to `main` are forbidden except for an explicit one-time repair
   requested in the current thread
 - a merged `main` commit must not be rewritten when the original PR record
@@ -53,6 +55,7 @@ when the higher-layer control is available.
 - replaced PRs use the repo's neutral duplicate or superseded label as the
   primary closeout marker
 - comments on replaced PRs are fallback-only, not the default
+- PRs are never closed autonomously without explicit user instruction
 
 ## Enforcement Tiers
 
@@ -122,12 +125,22 @@ Checklist text should describe the audit path, not serve as the only barrier.
 Standards work itself must verify whether a rule belongs in human docs, agent
 routing, or repo-native automation before adding a new document or route.
 
+PR hardening review is a repeatable procedure, not an improvised pass. Each
+pass should:
+
+- re-check prior fix surfaces first
+- add one adjacent surface group
+- report up to 5 new evidence-backed findings
+- stop early when fewer real findings exist
+- keep scratch tracking ephemeral and untracked
+
 ### 4. Agent Defaults
 
 Global skills and agent defaults should be conservative when repo rules are
 missing:
 
 - assume PR-only delivery for the default branch
+- assume PRs stay draft until the hardening loop is clean
 - assume merged default-branch history should not be rewritten
 - assume force-push is exceptional, not routine
 - prefer neutral direct `Why:` and `What:` language
@@ -141,6 +154,7 @@ missing:
 Before calling delivery complete, verify and report:
 
 - which repo standards were reloaded immediately before the action
+- whether the PR remained draft until the hardening procedure finished cleanly
 - whether the branch shape matched the allowed merge method
 - which checks were required and whether they passed
 - whether the landing subject exactly matched the required format
@@ -159,6 +173,17 @@ One-time repair exceptions must be:
 - followed by a return to normal PR-only flow
 
 Do not turn a repair exception into a standing workflow.
+
+## Compaction Recovery
+
+After compaction or context loss, recover from deterministic delivery facts
+instead of tracked scratch notes:
+
+1. current branch tip and `git status`
+2. current diff and recent commits
+3. current PR title, body, and changed files when PR work is active
+4. narrow delivery standards and the active hardening route
+5. latest targeted verification results
 
 ## Rollout Order
 

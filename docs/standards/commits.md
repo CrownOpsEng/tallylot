@@ -124,18 +124,20 @@ PR body rules:
   - `What:`
   - `Checks:`
   - `Included checkpoints:`
-- an optional `Issues:` section may follow `Included checkpoints:` when the PR
-  closes or supersedes GitHub issues or pull requests
+- an optional `Follow-ups:` section may follow `Included checkpoints:`
 - use flat hyphen bullets under every section
+- when the PR closes issues, put the closing bullets first under `Why:` using
+  the exact shape `- Closes #123: <problem statement>`
 - keep `Included checkpoints:` in chronological order using the exact
   checkpoint subjects from the branch
 - wrap every `Included checkpoints:` entry in backticks using the exact commit
   subject, because CI validates that the list matches the branch history
 - describe the engineering outcome and reviewable behavior, not branch
   choreography or replay mechanics
-- use `Issues:` for neutral closeout links such as `Closes #34` or
-  `Supersedes #39`; do not encode status updates in ad hoc prose elsewhere in
-  the PR body
+- use `Follow-ups:` for non-closing references such as `- Refs #456` or
+  `- Refs #456: deferred cleanup`
+- keep authored commit messages on `Why:`, `What:`, and `Checks:` without
+  issue-closing keywords unless the user explicitly requests otherwise
 - for a one-commit PR, still list that single checkpoint under
   `Included checkpoints:`
 
@@ -161,14 +163,16 @@ Merge method rules:
   label or the user explicitly asks for explanatory prose
 
 For a single-checkpoint PR, the GitHub-generated squash commit on `main` may
-retain the validated `Included checkpoints:` section from the PR body. Treat
-that as allowed for the generated mainline commit record, even though authored
-checkpoint commits should only use `Why:`, `What:`, and `Checks:` sections.
+retain the validated `Included checkpoints:` and `Follow-ups:` sections from
+the PR body. Treat that as allowed for the generated mainline commit record,
+even though authored checkpoint commits should only use `Why:`, `What:`, and
+`Checks:` sections.
 
 Preferred PR body template:
 
 ```text
 Why:
+- Closes #123: state the resolved problem when this PR closes an issue
 - state the problem or constraint this PR resolves
 
 What:
@@ -181,8 +185,8 @@ Included checkpoints:
 - `refactor(example): first checkpoint subject`
 - `fix(example): second checkpoint subject`
 
-Issues:
-- Closes #123
+Follow-ups:
+- Refs #456
 ```
 
 ## Stable Checkpoint Commits

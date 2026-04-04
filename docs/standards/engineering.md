@@ -160,6 +160,11 @@ Current application of this rule:
 - Keep public names and commands simple, neutral, and ergonomic. Prefer short
   names that match the user-visible operation over long implementation labels,
   and only add qualifiers when a real naming collision or ambiguity exists.
+- Follow the same naming posture for modules, functions, classes, and commands:
+  choose concise descriptive names over decorative jargon.
+- Reject verbose pattern-label suffixes such as `UseCase`, `Manager`, or
+  `Handler` unless they disambiguate a real collision in the surrounding
+  namespace.
 - Prefer specific names such as `csv_parser.py`, `balance_mapper.py`, or
   `issue_rules.py` over generic names.
 - Match package structure to the architecture first and the external provider
