@@ -4,10 +4,10 @@ from __future__ import annotations
 
 README_FILENAME = "README.md"
 BALANCES_FILENAME = "balances.csv"
-BALANCE_EVIDENCE_FILENAME = "balance_evidence.csv"
+BALANCE_CONFIRMATIONS_FILENAME = "balance_confirmations.csv"
 LOCATION_INVENTORY_FILENAME = "location_inventory.csv"
 BALANCES_EXAMPLE_FILENAME = f"{BALANCES_FILENAME}.example"
-BALANCE_EVIDENCE_EXAMPLE_FILENAME = f"{BALANCE_EVIDENCE_FILENAME}.example"
+BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME = f"{BALANCE_CONFIRMATIONS_FILENAME}.example"
 LOCATION_INVENTORY_EXAMPLE_FILENAME = f"{LOCATION_INVENTORY_FILENAME}.example"
 SUMMARY_FILENAME = "balance_submission_summary.json"
 ISSUES_FILENAME = "balance_submission_issues.csv"
@@ -24,7 +24,7 @@ BALANCES_HEADER = (
     "balance_kind",
     "notes",
 )
-BALANCE_EVIDENCE_HEADER = (
+BALANCE_CONFIRMATIONS_HEADER = (
     "source",
     "account",
     "wallet",
@@ -33,7 +33,12 @@ BALANCE_EVIDENCE_HEADER = (
     "as_of_at",
     "as_of_precision",
     "balance_kind",
-    "evidence_ref",
+    "confirmation_kind",
+    "support_ref",
+    "asserted_meaning",
+    "reviewed_by",
+    "reviewed_at",
+    "reason",
     "notes",
 )
 LOCATION_INVENTORY_HEADER = (

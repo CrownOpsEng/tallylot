@@ -5,20 +5,23 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+from .consistency import (
+    collect_balance_confirmation_mismatches,
+    collect_duplicate_rows,
+    collect_location_inventory_conflicts,
+)
 from .contracts import (
     BalanceSubmissionIssue,
     BalanceSubmissionValidationResult,
 )
 from .row_validation import (
-    collect_duplicate_rows,
-    collect_location_inventory_conflicts,
-    validate_balance_evidence_rows,
+    validate_balance_confirmation_rows,
     validate_balance_rows,
     validate_location_inventory_rows,
 )
 from .schema import (
-    BALANCE_EVIDENCE_FILENAME,
-    BALANCE_EVIDENCE_HEADER,
+    BALANCE_CONFIRMATIONS_FILENAME,
+    BALANCE_CONFIRMATIONS_HEADER,
     BALANCES_FILENAME,
     BALANCES_HEADER,
     LOCATION_INVENTORY_FILENAME,
@@ -37,9 +40,9 @@ def validate_balance_submission(
         header=BALANCES_HEADER,
         issues=issues,
     )
-    balance_evidence_rows = _read_required_rows(
-        submission_root / BALANCE_EVIDENCE_FILENAME,
-        header=BALANCE_EVIDENCE_HEADER,
+    balance_confirmation_rows = _read_required_rows(
+        submission_root / BALANCE_CONFIRMATIONS_FILENAME,
+        header=BALANCE_CONFIRMATIONS_HEADER,
         issues=issues,
     )
     location_inventory_rows = _read_optional_rows(
@@ -52,8 +55,8 @@ def validate_balance_submission(
         expected_source=expected_source,
         issues=issues,
     )
-    parsed_evidence = validate_balance_evidence_rows(
-        balance_evidence_rows,
+    parsed_confirmations = validate_balance_confirmation_rows(
+        balance_confirmation_rows,
         expected_source=expected_source,
         issues=issues,
     )
@@ -70,6 +73,7 @@ def validate_balance_submission(
             "account",
             "wallet",
             "instrument_id",
+            "quantity",
             "as_of_at",
             "as_of_precision",
             "balance_kind",
@@ -77,17 +81,17 @@ def validate_balance_submission(
         issues=issues,
     )
     collect_duplicate_rows(
-        file_name=BALANCE_EVIDENCE_FILENAME,
-        rows=balance_evidence_rows,
+        file_name=BALANCE_CONFIRMATIONS_FILENAME,
+        rows=balance_confirmation_rows,
         fields=(
             "source",
             "account",
             "wallet",
             "instrument_id",
+            "quantity",
             "as_of_at",
             "as_of_precision",
             "balance_kind",
-            "evidence_ref",
         ),
         issues=issues,
     )
@@ -105,9 +109,18 @@ def validate_balance_submission(
         issues=issues,
     )
     collect_location_inventory_conflicts(parsed_location_inventory, issues=issues)
+    if not (
+        _has_required_file_issue(issues, BALANCES_FILENAME)
+        or _has_required_file_issue(issues, BALANCE_CONFIRMATIONS_FILENAME)
+    ):
+        collect_balance_confirmation_mismatches(
+            tuple(parsed_balances),
+            tuple(parsed_confirmations),
+            issues=issues,
+        )
     return BalanceSubmissionValidationResult(
         balance_rows=tuple(parsed_balances),
-        balance_evidence_rows=tuple(parsed_evidence),
+        balance_confirmation_rows=tuple(parsed_confirmations),
         location_inventory_rows=tuple(parsed_location_inventory),
         issues=tuple(issues),
     )
@@ -173,3 +186,14 @@ def _read_rows(
             (index, {key: value for key, value in row.items() if key is not None})
             for index, row in enumerate(dict_reader, start=2)
         ]
+
+
+def _has_required_file_issue(
+    issues: list[BalanceSubmissionIssue],
+    file_name: str,
+) -> bool:
+    return any(
+        issue.file_name == file_name
+        and issue.issue_kind in {"missing_required_file", "invalid_header"}
+        for issue in issues
+    )

@@ -12,8 +12,8 @@ from tallylot.ports.artifacts import ArtifactStorePort
 
 from .readme_template import render_balance_submission_readme
 from .schema import (
-    BALANCE_EVIDENCE_EXAMPLE_FILENAME,
-    BALANCE_EVIDENCE_HEADER,
+    BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME,
+    BALANCE_CONFIRMATIONS_HEADER,
     BALANCES_EXAMPLE_FILENAME,
     BALANCES_HEADER,
     LOCATION_INVENTORY_EXAMPLE_FILENAME,
@@ -54,8 +54,8 @@ class ScaffoldBalanceSubmissionUseCase:
             ),
         )
         self._artifacts.write_rows(
-            submission_root / BALANCE_EVIDENCE_EXAMPLE_FILENAME,
-            BALANCE_EVIDENCE_HEADER,
+            submission_root / BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME,
+            BALANCE_CONFIRMATIONS_HEADER,
             (
                 {
                     "source": request.source,
@@ -66,8 +66,13 @@ class ScaffoldBalanceSubmissionUseCase:
                     "as_of_at": "2026-03-23",
                     "as_of_precision": "date",
                     "balance_kind": "available",
-                    "evidence_ref": "statement.pdf#page=1",
-                    "notes": "Point to the exact proof for this row.",
+                    "confirmation_kind": "external_support",
+                    "support_ref": "statement.pdf#page=1",
+                    "asserted_meaning": "Closing balance from the cited statement.",
+                    "reviewed_by": "operator@example.com",
+                    "reviewed_at": "2026-03-24 00:00:00",
+                    "reason": "Needed for runtime reconciliation.",
+                    "notes": "Point to the supporting material or leave support_ref blank for manual_assertion.",
                 },
             ),
         )
@@ -95,8 +100,8 @@ class ScaffoldBalanceSubmissionUseCase:
             balances_example_ref=to_resource_ref(
                 submission_root / BALANCES_EXAMPLE_FILENAME
             ),
-            balance_evidence_example_ref=to_resource_ref(
-                submission_root / BALANCE_EVIDENCE_EXAMPLE_FILENAME
+            balance_confirmations_example_ref=to_resource_ref(
+                submission_root / BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME
             ),
             location_inventory_example_ref=to_resource_ref(
                 submission_root / LOCATION_INVENTORY_EXAMPLE_FILENAME

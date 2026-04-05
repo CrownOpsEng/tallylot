@@ -12,14 +12,14 @@ from tallylot.adapters.support import (
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.locations import LocationKind
-from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.reconciliation import BalanceConfirmation
 from tallylot.domain.types import SourceId
 from tallylot.ports.evidence import LocationInventoryRecord
 
 from .contracts import (
     BalanceSubmissionRow,
     LocationInventorySubmissionRow,
-    SubmittedBalanceEvidenceRow,
+    SubmittedBalanceConfirmationRow,
 )
 from .schema import LOCATION_INVENTORY_FILENAME, MANUAL_SUBMISSION_EVIDENCE_KIND
 
@@ -27,7 +27,7 @@ from .schema import LOCATION_INVENTORY_FILENAME, MANUAL_SUBMISSION_EVIDENCE_KIND
 @dataclass(frozen=True)
 class MaterializedBalanceSubmission:
     balances: tuple[BalanceSnapshot, ...]
-    balance_evidence: tuple[BalanceEvidence, ...]
+    balance_confirmations: tuple[BalanceConfirmation, ...]
     location_inventory: tuple[LocationInventoryRecord, ...]
 
 
@@ -35,13 +35,13 @@ def materialize_balance_submission(
     *,
     submission_root: str,
     balance_rows: tuple[BalanceSubmissionRow, ...],
-    balance_evidence_rows: tuple[SubmittedBalanceEvidenceRow, ...],
+    balance_confirmation_rows: tuple[SubmittedBalanceConfirmationRow, ...],
     location_inventory_rows: tuple[LocationInventorySubmissionRow, ...],
 ) -> MaterializedBalanceSubmission:
     return MaterializedBalanceSubmission(
         balances=tuple(_balance_snapshot_from_row(row) for row in balance_rows),
-        balance_evidence=tuple(
-            _balance_evidence_from_row(row) for row in balance_evidence_rows
+        balance_confirmations=tuple(
+            _balance_confirmation_from_row(row) for row in balance_confirmation_rows
         ),
         location_inventory=tuple(
             _location_inventory_record_from_row(row, submission_root=submission_root)
@@ -63,8 +63,10 @@ def _balance_snapshot_from_row(row: BalanceSubmissionRow) -> BalanceSnapshot:
     )
 
 
-def _balance_evidence_from_row(row: SubmittedBalanceEvidenceRow) -> BalanceEvidence:
-    return BalanceEvidence(
+def _balance_confirmation_from_row(
+    row: SubmittedBalanceConfirmationRow,
+) -> BalanceConfirmation:
+    return BalanceConfirmation(
         source=SourceId(row.source),
         location_id=location_id_from_parts(row.source, row.account, row.wallet),
         instrument_id=InstrumentId(row.instrument_id),
@@ -72,7 +74,12 @@ def _balance_evidence_from_row(row: SubmittedBalanceEvidenceRow) -> BalanceEvide
         as_of_at=row.as_of_at,
         as_of_precision=row.as_of_precision,
         balance_kind=row.balance_kind,
-        evidence_ref=row.evidence_ref,
+        confirmation_kind=row.confirmation_kind,
+        support_ref=row.support_ref,
+        asserted_meaning=row.asserted_meaning,
+        reviewed_by=row.reviewed_by,
+        reviewed_at=row.reviewed_at,
+        reason=row.reason,
         notes=row.notes,
     )
 

@@ -8,18 +8,23 @@ from decimal import Decimal
 from decimal import InvalidOperation
 
 from tallylot.adapters.support import location_id_from_parts
+from tallylot.domain.reconciliation import normalize_balance_confirmation_kind
 from tallylot.domain.checkpoints import normalize_balance_kind
 from tallylot.domain.temporal import TemporalPrecision, parse_temporal_precision
-from tallylot.domain.value_objects import parse_decimal, parse_temporal_value
+from tallylot.domain.value_objects import (
+    parse_decimal,
+    parse_temporal_value,
+    parse_timestamp,
+)
 
 from .contracts import (
     BalanceSubmissionIssue,
     BalanceSubmissionRow,
     LocationInventorySubmissionRow,
-    SubmittedBalanceEvidenceRow,
+    SubmittedBalanceConfirmationRow,
 )
 from .schema import (
-    BALANCE_EVIDENCE_FILENAME,
+    BALANCE_CONFIRMATIONS_FILENAME,
     BALANCES_FILENAME,
     LOCATION_INVENTORY_FILENAME,
 )
@@ -71,36 +76,107 @@ def validate_balance_rows(
     return parsed_rows
 
 
-def validate_balance_evidence_rows(
+def validate_balance_confirmation_rows(
     rows: list[tuple[int, dict[str, str]]],
     *,
     expected_source: str,
     issues: list[BalanceSubmissionIssue],
-) -> list[SubmittedBalanceEvidenceRow]:
-    parsed_rows: list[SubmittedBalanceEvidenceRow] = []
+) -> list[SubmittedBalanceConfirmationRow]:
+    parsed_rows: list[SubmittedBalanceConfirmationRow] = []
     for row_number, row in rows:
         base = _validate_balance_like_row(
-            BALANCE_EVIDENCE_FILENAME,
+            BALANCE_CONFIRMATIONS_FILENAME,
             row_number,
             row,
             expected_source,
             issues,
         )
-        evidence_ref = row.get("evidence_ref", "").strip()
-        if not evidence_ref:
+        confirmation_kind = row.get("confirmation_kind", "").strip()
+        asserted_meaning = row.get("asserted_meaning", "").strip()
+        reviewed_by = row.get("reviewed_by", "").strip()
+        reviewed_at = row.get("reviewed_at", "").strip()
+        reason = row.get("reason", "").strip()
+        support_ref = row.get("support_ref", "").strip()
+        row_valid = True
+        for field_name, value in (
+            ("confirmation_kind", confirmation_kind),
+            ("asserted_meaning", asserted_meaning),
+            ("reviewed_by", reviewed_by),
+            ("reviewed_at", reviewed_at),
+            ("reason", reason),
+        ):
+            if value:
+                continue
+            row_valid = False
             issues.append(
                 BalanceSubmissionIssue(
-                    file_name=BALANCE_EVIDENCE_FILENAME,
+                    file_name=BALANCE_CONFIRMATIONS_FILENAME,
                     row_number=str(row_number),
-                    column_name="evidence_ref",
+                    column_name=field_name,
                     issue_kind="missing_required_value",
-                    message="Evidence rows require a non-blank evidence_ref.",
+                    message=(
+                        "balance_confirmations.csv rows require a non-blank "
+                        f"{field_name}."
+                    ),
                 )
             )
-        if base is None or not evidence_ref:
+        normalized_kind: str | None = None
+        if confirmation_kind:
+            try:
+                normalized_kind = normalize_balance_confirmation_kind(confirmation_kind)
+            except ValueError as exc:
+                row_valid = False
+                issues.append(
+                    BalanceSubmissionIssue(
+                        file_name=BALANCE_CONFIRMATIONS_FILENAME,
+                        row_number=str(row_number),
+                        column_name="confirmation_kind",
+                        issue_kind="invalid_confirmation_kind",
+                        message=str(exc),
+                    )
+                )
+        parsed_reviewed_at = _parse_reviewed_at(
+            row_number=row_number,
+            raw_reviewed_at=reviewed_at,
+            issues=issues,
+        )
+        if normalized_kind == "external_support" and not support_ref:
+            row_valid = False
+            issues.append(
+                BalanceSubmissionIssue(
+                    file_name=BALANCE_CONFIRMATIONS_FILENAME,
+                    row_number=str(row_number),
+                    column_name="support_ref",
+                    issue_kind="missing_required_value",
+                    message=(
+                        "balance_confirmations.csv external_support rows require "
+                        "a non-blank support_ref."
+                    ),
+                )
+            )
+        if normalized_kind == "manual_assertion" and support_ref:
+            row_valid = False
+            issues.append(
+                BalanceSubmissionIssue(
+                    file_name=BALANCE_CONFIRMATIONS_FILENAME,
+                    row_number=str(row_number),
+                    column_name="support_ref",
+                    issue_kind="unexpected_value",
+                    message=(
+                        "balance_confirmations.csv manual_assertion rows must "
+                        "leave support_ref blank."
+                    ),
+                )
+            )
+        if (
+            base is None
+            or not row_valid
+            or normalized_kind is None
+            or parsed_reviewed_at is None
+        ):
             continue
         parsed_rows.append(
-            SubmittedBalanceEvidenceRow(
+            SubmittedBalanceConfirmationRow(
                 source=base.source,
                 account=base.account,
                 wallet=base.wallet,
@@ -109,7 +185,12 @@ def validate_balance_evidence_rows(
                 as_of_at=base.as_of_at,
                 as_of_precision=base.as_of_precision,
                 balance_kind=base.balance_kind,
-                evidence_ref=evidence_ref,
+                confirmation_kind=normalized_kind,
+                support_ref=support_ref,
+                asserted_meaning=asserted_meaning,
+                reviewed_by=reviewed_by,
+                reviewed_at=parsed_reviewed_at,
+                reason=reason,
                 notes=base.notes,
             )
         )
@@ -197,69 +278,6 @@ def validate_location_inventory_rows(
             )
         )
     return parsed_rows
-
-
-def collect_duplicate_rows(
-    *,
-    file_name: str,
-    rows: list[tuple[int, dict[str, str]]],
-    fields: tuple[str, ...],
-    issues: list[BalanceSubmissionIssue],
-) -> None:
-    seen: dict[tuple[str, ...], int] = {}
-    for row_number, row in rows:
-        key = tuple(row.get(field, "").strip() for field in fields)
-        if not any(key):
-            continue
-        first_row = seen.get(key)
-        if first_row is None:
-            seen[key] = row_number
-            continue
-        issues.append(
-            BalanceSubmissionIssue(
-                file_name=file_name,
-                row_number=str(row_number),
-                column_name="",
-                issue_kind="duplicate_row",
-                message=(
-                    f"Row duplicates the logical key first seen on row {first_row}."
-                ),
-            )
-        )
-
-
-def collect_location_inventory_conflicts(
-    rows: list[LocationInventorySubmissionRow],
-    *,
-    issues: list[BalanceSubmissionIssue],
-) -> None:
-    high_confidence_keys: dict[tuple[str, str, str], set[tuple[str, str, str]]] = {}
-    for row in rows:
-        if row.confidence.strip().lower() != "high":
-            continue
-        location_key = (row.source, row.account, row.wallet)
-        identifier_key = (
-            row.identifier_kind,
-            row.identifier_value,
-            row.network_scope,
-        )
-        high_confidence_keys.setdefault(location_key, set()).add(identifier_key)
-    for source, account, wallet in sorted(high_confidence_keys):
-        identifiers = high_confidence_keys[(source, account, wallet)]
-        if len(identifiers) <= 1:
-            continue
-        issues.append(
-            BalanceSubmissionIssue(
-                file_name=LOCATION_INVENTORY_FILENAME,
-                row_number="",
-                column_name="confidence",
-                issue_kind="conflicting_high_confidence_identity",
-                message=(
-                    "More than one high-confidence identity row maps to the same "
-                    f"logical location {source}/{account}/{wallet}."
-                ),
-            )
-        )
 
 
 def _validate_balance_like_row(
@@ -424,6 +442,29 @@ def _parse_as_of_at(
                 file_name=file_name,
                 row_number=str(row_number),
                 column_name="as_of_at",
+                issue_kind="invalid_timestamp",
+                message=str(exc),
+            )
+        )
+        return None
+
+
+def _parse_reviewed_at(
+    *,
+    row_number: int,
+    raw_reviewed_at: str,
+    issues: list[BalanceSubmissionIssue],
+) -> datetime | None:
+    if not raw_reviewed_at:
+        return None
+    try:
+        return parse_timestamp(raw_reviewed_at)
+    except ValueError as exc:
+        issues.append(
+            BalanceSubmissionIssue(
+                file_name=BALANCE_CONFIRMATIONS_FILENAME,
+                row_number=str(row_number),
+                column_name="reviewed_at",
                 issue_kind="invalid_timestamp",
                 message=str(exc),
             )

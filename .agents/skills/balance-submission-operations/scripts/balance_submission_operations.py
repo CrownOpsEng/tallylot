@@ -76,7 +76,7 @@ def _default_output_root(source: str) -> Path:
 
 def main(argv: Sequence[str] | None = None) -> int:
     from tallylot.application.checkpoints.balance_submission.schema import (
-        BALANCE_EVIDENCE_FILENAME,
+        BALANCE_CONFIRMATIONS_FILENAME,
         BALANCES_FILENAME,
         ISSUES_FILENAME,
         LOCATION_INVENTORY_FILENAME,
@@ -139,7 +139,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             ),
             submission_root=submission_root,
             balances_path=submission_root / BALANCES_FILENAME,
-            balance_evidence_path=submission_root / BALANCE_EVIDENCE_FILENAME,
+            balance_confirmations_path=submission_root / BALANCE_CONFIRMATIONS_FILENAME,
             location_inventory_path=submission_root / LOCATION_INVENTORY_FILENAME,
         )
         print(json.dumps(inspection_payload, default=str))
@@ -179,7 +179,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         ),
         submission_root=submission_root,
         balances_path=submission_root / BALANCES_FILENAME,
-        balance_evidence_path=submission_root / BALANCE_EVIDENCE_FILENAME,
+        balance_confirmations_path=submission_root / BALANCE_CONFIRMATIONS_FILENAME,
         location_inventory_path=submission_root / LOCATION_INVENTORY_FILENAME,
     )
     if inspection_payload["ready_for_submit"] is False:
@@ -219,11 +219,11 @@ def _inspection_payload(
     *,
     submission_root: Path,
     balances_path: Path,
-    balance_evidence_path: Path,
+    balance_confirmations_path: Path,
     location_inventory_path: Path,
 ) -> dict[str, object]:
     from tallylot.application.checkpoints.balance_submission.schema import (
-        BALANCE_EVIDENCE_FILENAME,
+        BALANCE_CONFIRMATIONS_FILENAME,
         BALANCES_FILENAME,
         LOCATION_INVENTORY_FILENAME,
     )
@@ -233,13 +233,13 @@ def _inspection_payload(
         "submission_root": str(submission_root),
         "required_files_present": {
             BALANCES_FILENAME: balances_path.is_file(),
-            BALANCE_EVIDENCE_FILENAME: balance_evidence_path.is_file(),
+            BALANCE_CONFIRMATIONS_FILENAME: balance_confirmations_path.is_file(),
         },
         "optional_files_present": {
             LOCATION_INVENTORY_FILENAME: location_inventory_path.is_file(),
         },
         "balance_row_count": len(validation.balance_rows),
-        "balance_evidence_row_count": len(validation.balance_evidence_rows),
+        "balance_confirmation_row_count": len(validation.balance_confirmation_rows),
         "location_inventory_row_count": len(validation.location_inventory_rows),
         "issue_count": len(validation.issues),
         "ready_for_submit": len(validation.issues) == 0,

@@ -108,7 +108,7 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
         ),
     )
     artifacts.write_rows(
-        submission_root / "balance_evidence.csv",
+        submission_root / "balance_confirmations.csv",
         (
             "source",
             "account",
@@ -118,7 +118,12 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
             "as_of_at",
             "as_of_precision",
             "balance_kind",
-            "evidence_ref",
+            "confirmation_kind",
+            "support_ref",
+            "asserted_meaning",
+            "reviewed_by",
+            "reviewed_at",
+            "reason",
             "notes",
         ),
         (
@@ -131,7 +136,12 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
                 "as_of_at": "2026-03-23",
                 "as_of_precision": "date",
                 "balance_kind": "available",
-                "evidence_ref": "manual-note:test",
+                "confirmation_kind": "external_support",
+                "support_ref": "manual-note:test",
+                "asserted_meaning": "Closing balance from the cited note.",
+                "reviewed_by": "operator@example.com",
+                "reviewed_at": "2026-03-24 00:00:00",
+                "reason": "Needed for runtime reconciliation.",
                 "notes": "",
             },
         ),
@@ -158,7 +168,10 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["blocked"] is False
+    assert payload["trust_tier"] == "operator_confirmed"
     assert payload["summary_path"] == str(
         output_root / "balance_submission_summary.json"
     )
     assert (output_root / "balances.csv").exists()
+    assert (output_root / "balance_confirmations.csv").exists()
+    assert not (output_root / "balance_evidence.csv").exists()

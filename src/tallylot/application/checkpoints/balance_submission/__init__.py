@@ -9,9 +9,9 @@ from tallylot.application.checkpoints.contracts import (
 from .contracts import BalanceSubmissionIssue
 from .scaffold import ScaffoldBalanceSubmissionUseCase
 from .schema import (
-    BALANCE_EVIDENCE_EXAMPLE_FILENAME,
-    BALANCE_EVIDENCE_FILENAME,
-    BALANCE_EVIDENCE_HEADER,
+    BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME,
+    BALANCE_CONFIRMATIONS_FILENAME,
+    BALANCE_CONFIRMATIONS_HEADER,
     BALANCES_EXAMPLE_FILENAME,
     BALANCES_FILENAME,
     BALANCES_HEADER,
@@ -25,9 +25,9 @@ from .schema import (
 from .submit import SubmitBalancesUseCase
 
 __all__ = [
-    "BALANCE_EVIDENCE_EXAMPLE_FILENAME",
-    "BALANCE_EVIDENCE_FILENAME",
-    "BALANCE_EVIDENCE_HEADER",
+    "BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME",
+    "BALANCE_CONFIRMATIONS_FILENAME",
+    "BALANCE_CONFIRMATIONS_HEADER",
     "BALANCES_EXAMPLE_FILENAME",
     "BALANCES_FILENAME",
     "BALANCES_HEADER",

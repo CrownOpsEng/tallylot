@@ -20,7 +20,7 @@ from tallylot.ports.evidence import EvidenceRepositoryPort
 
 from .materialize import materialize_balance_submission
 from .schema import (
-    BALANCE_EVIDENCE_FILENAME,
+    BALANCE_CONFIRMATIONS_FILENAME,
     BALANCES_FILENAME,
     ISSUES_FILENAME,
     ISSUE_HEADER,
@@ -33,12 +33,15 @@ from .validation import validate_balance_submission
 @dataclass(frozen=True)
 class _SubmissionStatus:
     balance_row_count: int
-    balance_evidence_row_count: int
+    balance_confirmation_row_count: int
     location_inventory_row_count: int
     issue_count: int
     blocked: bool
+    wrote_balance_confirmations: bool
     wrote_location_inventory: bool
     ready_for_balance_check: bool
+    ready_for_source_backed_checkpoint: bool
+    trust_tier: str
     notes: tuple[str, ...]
 
 
@@ -64,12 +67,15 @@ class SubmitBalancesUseCase:
         if not submission_root.is_dir():
             status = _SubmissionStatus(
                 balance_row_count=0,
-                balance_evidence_row_count=0,
+                balance_confirmation_row_count=0,
                 location_inventory_row_count=0,
                 issue_count=1,
                 blocked=True,
+                wrote_balance_confirmations=False,
                 wrote_location_inventory=False,
                 ready_for_balance_check=False,
+                ready_for_source_backed_checkpoint=False,
+                trust_tier="operator_confirmed",
                 notes=("Submission root is missing.",),
             )
             issues = [
@@ -94,34 +100,40 @@ class SubmitBalancesUseCase:
                 submission_root_ref=request.submission_root_ref,
                 output_root_ref=request.output_root_ref,
                 balance_row_count=status.balance_row_count,
-                balance_evidence_row_count=status.balance_evidence_row_count,
+                balance_confirmation_row_count=status.balance_confirmation_row_count,
                 location_inventory_row_count=status.location_inventory_row_count,
                 issue_count=status.issue_count,
                 blocked=status.blocked,
+                wrote_balance_confirmations=status.wrote_balance_confirmations,
                 wrote_location_inventory=status.wrote_location_inventory,
                 ready_for_balance_check=status.ready_for_balance_check,
+                ready_for_source_backed_checkpoint=status.ready_for_source_backed_checkpoint,
+                trust_tier=status.trust_tier,
             )
         validation = validate_balance_submission(
             submission_root,
             expected_source=request.source,
         )
         blocked = bool(validation.issues)
+        wrote_balance_confirmations = False
         wrote_location_inventory = False
         if not blocked:
             materialized = materialize_balance_submission(
                 submission_root=str(submission_root),
                 balance_rows=validation.balance_rows,
-                balance_evidence_rows=validation.balance_evidence_rows,
+                balance_confirmation_rows=validation.balance_confirmation_rows,
                 location_inventory_rows=validation.location_inventory_rows,
             )
             self._evidence.write_balance_snapshots(
                 output_root / BALANCES_FILENAME,
                 materialized.balances,
             )
-            self._evidence.write_balance_evidence(
-                output_root / BALANCE_EVIDENCE_FILENAME,
-                materialized.balance_evidence,
+            self._evidence.write_balance_confirmations(
+                output_root / BALANCE_CONFIRMATIONS_FILENAME,
+                materialized.balance_confirmations,
             )
+            wrote_balance_confirmations = True
+            _remove_file_if_present(output_root / "balance_evidence.csv")
             if materialized.location_inventory:
                 self._evidence.write_location_inventory(
                     output_root / LOCATION_INVENTORY_FILENAME,
@@ -134,17 +146,20 @@ class SubmitBalancesUseCase:
             _clear_canonical_outputs(output_root)
         status = _SubmissionStatus(
             balance_row_count=len(validation.balance_rows),
-            balance_evidence_row_count=len(validation.balance_evidence_rows),
+            balance_confirmation_row_count=len(validation.balance_confirmation_rows),
             location_inventory_row_count=len(validation.location_inventory_rows),
             issue_count=len(validation.issues),
             blocked=blocked,
+            wrote_balance_confirmations=wrote_balance_confirmations,
             wrote_location_inventory=wrote_location_inventory,
             ready_for_balance_check=not blocked,
+            ready_for_source_backed_checkpoint=False,
+            trust_tier="operator_confirmed",
             notes=(
-                ("Canonical balance artifacts were written.",)
+                ("Canonical balances and balance confirmations were written.",)
                 if not blocked
                 else (
-                    "Submission is blocked. Canonical balance artifacts were cleared.",
+                    "Submission is blocked. Manual-submission-owned canonical artifacts were cleared.",
                 )
             ),
         )
@@ -161,12 +176,15 @@ class SubmitBalancesUseCase:
             submission_root_ref=request.submission_root_ref,
             output_root_ref=request.output_root_ref,
             balance_row_count=status.balance_row_count,
-            balance_evidence_row_count=status.balance_evidence_row_count,
+            balance_confirmation_row_count=status.balance_confirmation_row_count,
             location_inventory_row_count=status.location_inventory_row_count,
             issue_count=status.issue_count,
             blocked=status.blocked,
+            wrote_balance_confirmations=status.wrote_balance_confirmations,
             wrote_location_inventory=status.wrote_location_inventory,
             ready_for_balance_check=status.ready_for_balance_check,
+            ready_for_source_backed_checkpoint=status.ready_for_source_backed_checkpoint,
+            trust_tier=status.trust_tier,
         )
 
     def _write_status_artifacts(
@@ -191,12 +209,15 @@ class SubmitBalancesUseCase:
             "submission_root": str(submission_root),
             "output_root": str(output_root),
             "balance_row_count": status.balance_row_count,
-            "balance_evidence_row_count": status.balance_evidence_row_count,
+            "balance_confirmation_row_count": status.balance_confirmation_row_count,
             "location_inventory_row_count": status.location_inventory_row_count,
             "issue_count": status.issue_count,
             "blocked": status.blocked,
+            "wrote_balance_confirmations": status.wrote_balance_confirmations,
             "wrote_location_inventory": status.wrote_location_inventory,
             "ready_for_balance_check": status.ready_for_balance_check,
+            "ready_for_source_backed_checkpoint": status.ready_for_source_backed_checkpoint,
+            "trust_tier": status.trust_tier,
             "notes": notes_payload,
         }
 
@@ -204,8 +225,9 @@ class SubmitBalancesUseCase:
 def _clear_canonical_outputs(output_root: Path) -> None:
     for filename in (
         BALANCES_FILENAME,
-        BALANCE_EVIDENCE_FILENAME,
+        BALANCE_CONFIRMATIONS_FILENAME,
         LOCATION_INVENTORY_FILENAME,
+        "balance_evidence.csv",
     ):
         _remove_file_if_present(output_root / filename)
 

@@ -330,8 +330,10 @@ def test_checkpoint_submit_balances_cli(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert payload["blocked"] is False
+    assert payload["trust_tier"] == "operator_confirmed"
     assert (output_root / "balances.csv").exists()
-    assert (output_root / "balance_evidence.csv").exists()
+    assert (output_root / "balance_confirmations.csv").exists()
+    assert not (output_root / "balance_evidence.csv").exists()
     assert (output_root / "balance_submission_summary.json").exists()
 
 
@@ -697,7 +699,7 @@ def _write_submission_rows(submission_root: Path, *, source: str) -> None:
         ),
     )
     artifacts.write_rows(
-        submission_root / "balance_evidence.csv",
+        submission_root / "balance_confirmations.csv",
         (
             "source",
             "account",
@@ -707,7 +709,12 @@ def _write_submission_rows(submission_root: Path, *, source: str) -> None:
             "as_of_at",
             "as_of_precision",
             "balance_kind",
-            "evidence_ref",
+            "confirmation_kind",
+            "support_ref",
+            "asserted_meaning",
+            "reviewed_by",
+            "reviewed_at",
+            "reason",
             "notes",
         ),
         (
@@ -720,8 +727,13 @@ def _write_submission_rows(submission_root: Path, *, source: str) -> None:
                 "as_of_at": "2026-03-23",
                 "as_of_precision": "date",
                 "balance_kind": "available",
-                "evidence_ref": "statement.pdf#page=1",
-                "notes": "evidence",
+                "confirmation_kind": "external_support",
+                "support_ref": "statement.pdf#page=1",
+                "asserted_meaning": "Closing balance from the cited statement.",
+                "reviewed_by": "operator@example.com",
+                "reviewed_at": "2026-03-24 00:00:00",
+                "reason": "Needed for runtime reconciliation.",
+                "notes": "confirmation",
             },
         ),
     )

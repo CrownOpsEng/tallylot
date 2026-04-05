@@ -41,7 +41,7 @@ class BalanceSubmissionRow:
 
 
 @dataclass(frozen=True)
-class SubmittedBalanceEvidenceRow:
+class SubmittedBalanceConfirmationRow:
     source: str
     account: str
     wallet: str
@@ -50,7 +50,12 @@ class SubmittedBalanceEvidenceRow:
     as_of_at: datetime
     as_of_precision: TemporalPrecision
     balance_kind: str
-    evidence_ref: str
+    confirmation_kind: str
+    support_ref: str
+    asserted_meaning: str
+    reviewed_by: str
+    reviewed_at: datetime
+    reason: str
     notes: str
 
 
@@ -70,6 +75,6 @@ class LocationInventorySubmissionRow:
 @dataclass(frozen=True)
 class BalanceSubmissionValidationResult:
     balance_rows: tuple[BalanceSubmissionRow, ...]
-    balance_evidence_rows: tuple[SubmittedBalanceEvidenceRow, ...]
+    balance_confirmation_rows: tuple[SubmittedBalanceConfirmationRow, ...]
     location_inventory_rows: tuple[LocationInventorySubmissionRow, ...]
     issues: tuple[BalanceSubmissionIssue, ...]
