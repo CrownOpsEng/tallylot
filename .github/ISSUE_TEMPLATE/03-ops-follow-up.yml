@@ -1,0 +1,106 @@
+name: Ops follow-up
+description: Capture repo-maintenance work that should stay out of the current PR.
+title: "[Ops]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this tracker only for repo-engineering work in this repository.
+
+        Do not include personal information, secrets, raw evidence, wallet or account identifiers, or local absolute paths. Use sanitized summaries and repo-relative paths only.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One concise sentence describing the follow-up.
+      placeholder: A short description of the repo-maintenance follow-up.
+    validations:
+      required: true
+  - type: dropdown
+    id: repo-area
+    attributes:
+      label: Repo Area
+      description: Choose the repo surface this issue belongs to.
+      options:
+        - runtime code
+        - tests
+        - docs/standards
+        - templates/control-plane
+        - automation/CI
+        - refactor/maintenance
+    validations:
+      required: true
+  - type: input
+    id: relevant-paths
+    attributes:
+      label: Relevant Paths
+      description: Optional repo-relative paths only.
+      placeholder: .github/workflows/ci.yml, .claude/commands/pr-hardening-review.md
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the concrete repo-maintenance problem.
+      placeholder: What follow-up needs to be tracked separately?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Include sanitized evidence only.
+      placeholder: Repo-relative references, review findings, or policy gaps that support the follow-up.
+    validations:
+      required: true
+  - type: textarea
+    id: why-this-must-stay-out-of-the-current-pr
+    attributes:
+      label: Why This Must Stay Out Of The Current PR
+      description: Explain why this should be tracked separately instead of being added to the active branch.
+      placeholder: Why would adding this to the current PR widen scope or reduce review quality?
+    validations:
+      required: true
+  - type: dropdown
+    id: preferred-owning-surface
+    attributes:
+      label: Preferred Owning Surface
+      description: Choose the primary repo surface that should own the follow-up.
+      options:
+        - docs/standards
+        - templates/control-plane
+        - automation/CI
+        - agent routing/skills
+        - runtime code/tests
+    validations:
+      required: true
+  - type: textarea
+    id: desired-outcome
+    attributes:
+      label: Desired Outcome
+      description: Describe the intended completed state.
+      placeholder: What should be true after the follow-up lands?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the reviewable conditions that define completion.
+      placeholder: |
+        - The follow-up lands as a bounded repo-maintenance change.
+        - The owning docs, templates, or automation are aligned.
+    validations:
+      required: true
+  - type: checkboxes
+    id: issue-scope
+    attributes:
+      label: Submission Checks
+      options:
+        - label: I searched for an existing issue before opening this one.
+          required: true
+        - label: This issue is repo-scoped engineering work in this repository.
+          required: true
+        - label: This issue contains no personal information, secrets, raw evidence, wallet or account identifiers, or local absolute paths.
+          required: true

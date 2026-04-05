@@ -82,6 +82,7 @@ expansion.
 Control-plane files include:
 
 - `.agents/skills/**`
+- `.github/ISSUE_TEMPLATE/**`
 - `.github/workflows/**`
 - `.github/pull_request_template.md`
 - `.github/CODEOWNERS`
@@ -107,6 +108,7 @@ Encode the repo's delivery rules in versioned artifacts:
 
 - commit-message validators
 - PR-metadata validators
+- issue forms and chooser config
 - hook installers and hook guards
 - CI workflows
 - contract tests that pin the standards
@@ -141,6 +143,8 @@ pass should:
   search hints instead of forcing one oversized preload bundle for every pass
 - run the relevant verification for the repaired slice and create bounded
   checkpoint commits during the loop using the repo's normal commit rules
+- when a meaningful finding is real but should not expand the active PR, search
+  existing issues first and open or link the follow-up issue before merge
 - when a pass finds fewer than 5 new findings, report only those findings and
   keep the loop moving
 - stop only after a full pass yields no new meaningful findings; if the only
@@ -171,6 +175,10 @@ Before calling delivery complete, verify and report:
 - whether the PR remained draft until the hardening procedure finished cleanly
 - whether the branch shape matched the allowed merge method
 - which checks were required and whether they passed
+- whether meaningful out-of-scope repo findings were captured as issues and
+  linked from the PR when they stayed out of scope
+- whether any linked follow-up issue content remained privacy-safe and
+  repo-scoped
 - whether the landing subject exactly matched the required format
 - whether older superseded PRs were labeled correctly
 - whether the final remote branch tip still matches the reviewed PR record

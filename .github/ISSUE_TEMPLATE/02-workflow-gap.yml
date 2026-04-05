@@ -1,0 +1,103 @@
+name: Workflow gap
+description: Propose a repo-supported workflow improvement or missing supported path.
+title: "[Workflow]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this tracker only for repo-engineering work in this repository.
+
+        Do not include personal information, secrets, raw evidence, wallet or account identifiers, or local absolute paths. Use sanitized summaries and repo-relative paths only.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One concise sentence describing the workflow gap.
+      placeholder: A short description of the missing or awkward repo-supported path.
+    validations:
+      required: true
+  - type: dropdown
+    id: repo-area
+    attributes:
+      label: Repo Area
+      description: Choose the repo surface this issue belongs to.
+      options:
+        - runtime code
+        - tests
+        - docs/standards
+        - templates/control-plane
+        - automation/CI
+        - refactor/maintenance
+    validations:
+      required: true
+  - type: input
+    id: relevant-paths
+    attributes:
+      label: Relevant Paths
+      description: Optional repo-relative paths only.
+      placeholder: docs/guides/source-intake.md, src/tallylot/interfaces/cli/
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the gap or friction clearly.
+      placeholder: What supported path is missing, awkward, or incomplete?
+    validations:
+      required: true
+  - type: textarea
+    id: current-workflow-gap
+    attributes:
+      label: Current Workflow Gap
+      description: Describe the current workflow and where it breaks down.
+      placeholder: What do contributors or agents have to invent or do manually today?
+    validations:
+      required: true
+  - type: textarea
+    id: why-existing-behavior-is-insufficient
+    attributes:
+      label: Why Existing Behavior Is Insufficient
+      description: Explain why the current behavior or guidance is not enough.
+      placeholder: Why can this not stay as-is?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Include sanitized evidence only.
+      placeholder: Existing docs, missing routes, review friction, or repo-relative references that support the gap.
+    validations:
+      required: true
+  - type: textarea
+    id: desired-outcome
+    attributes:
+      label: Desired Outcome
+      description: Describe the intended supported path or improved workflow.
+      placeholder: What should the repo support after this is addressed?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the reviewable conditions that define completion.
+      placeholder: |
+        - The repo supports the missing path without ad hoc manual steps.
+        - The owning docs or control-plane surface are aligned.
+    validations:
+      required: true
+  - type: checkboxes
+    id: issue-scope
+    attributes:
+      label: Submission Checks
+      options:
+        - label: I searched for an existing issue before opening this one.
+          required: true
+        - label: This issue is repo-scoped engineering work in this repository.
+          required: true
+        - label: This issue contains no personal information, secrets, raw evidence, wallet or account identifiers, or local absolute paths.
+          required: true

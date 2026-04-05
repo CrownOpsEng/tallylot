@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Repo docs and workflow guidance
+    url: https://github.com/CrownOpsEng/tallylot/blob/main/docs/README.md
+    about: Use the docs homepage for implemented workflow guidance before opening a tracking issue.

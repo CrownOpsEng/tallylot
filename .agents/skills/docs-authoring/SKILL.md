@@ -12,7 +12,8 @@ Use this skill for repo documentation and standards work.
 
 Pair it with global `markdown` for syntax and low-churn Markdown editing and
 with `code-change-safety` when the change also touches automation or checkpoint
-commits.
+commits. Invoke `issue-workflow` when the task adds issue templates, issue
+policy, or proactive follow-up issue handling.
 
 ## Workflow
 

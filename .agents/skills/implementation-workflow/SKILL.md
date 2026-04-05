@@ -11,7 +11,9 @@ description: >-
 Use this skill for the normal repo implementation path.
 
 Pair it with global `code-change-safety` for cross-repo posture and with
-`markdown` only when the task edits Markdown files.
+`markdown` only when the task edits Markdown files. Invoke `issue-workflow`
+when implementation uncovers meaningful out-of-scope repo work that should be
+captured as a follow-up issue.
 
 ## Workflow
 

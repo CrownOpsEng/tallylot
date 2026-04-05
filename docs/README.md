@@ -87,5 +87,6 @@ that follows the external workspace layout.
 - [Engineering Standards](standards/engineering.md): Code placement, typing, modularity, and naming rules for the typed application.
 - [Implementation Working Agreement](standards/implementation.md): Execution rules for shaping, verifying, refactoring, and checkpointing repo work.
 - [Commit Standards](standards/commits.md): Conventional Commit, checkpoint, and PR body rules for stable repo history.
+- [Issue Standards](standards/issues.md): Issue scope, privacy rules, template usage, and proactive follow-up issue handling for repo work.
 - [Delivery Guardrails](standards/delivery-guardrails.md): Control hierarchy, enforcement tiers, and exception handling for repo delivery and agent-assisted Git operations.
 <!-- docs-maintenance:end standards -->

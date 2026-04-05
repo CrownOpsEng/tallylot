@@ -299,6 +299,7 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     implementation_text = (repo_root() / "docs/standards/implementation.md").read_text(
         encoding="utf-8"
     )
+    issues_text = (repo_root() / "docs/standards/issues.md").read_text(encoding="utf-8")
     agents_text = (repo_root() / "AGENTS.md").read_text(encoding="utf-8")
     pr_template_text = (repo_root() / ".github" / "pull_request_template.md").read_text(
         encoding="utf-8"
@@ -327,6 +328,8 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert "PR_BODY_OPTIONAL_SECTIONS" in pr_validator_text
     assert "GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS" in commit_validator_text
     assert "- Closes #123:" in commits_text
+    assert "Follow-ups:" in issues_text
+    assert "`Follow-ups:` with `- Refs #123`" in issues_text
     assert "duplicate/superseded label" in commits_text
     assert "duplicate/superseded label" in implementation_text
     assert "duplicate/superseded label" in agents_text
@@ -357,19 +360,27 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "duplicate or superseded label" in guardrails_text
     assert "tools.audit_delivery_guardrails" in guardrails_text
     assert "single review-capable collaborator" in guardrails_text
+    assert ".github/ISSUE_TEMPLATE/**" in guardrails_text
     assert "docs/status/current-state.md" in guardrails_text
     assert "tools/docs_maintenance/cli.py" in guardrails_text
     assert "`markdown` skill" in guardrails_text
     assert "human docs, agent" in guardrails_text
     assert "standards/delivery-guardrails.md" in docs_index_text
+    assert "standards/issues.md" in docs_index_text
     assert (
         "Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes"
+        in agents_text
+    )
+    assert (
+        "Issue templates, issue-writing policy, or proactive follow-up issue creation"
         in agents_text
     )
     assert "use the `markdown` skill if available" in agents_text
     assert (
         "use\n  the `code-change-safety` skill as the starting workflow" in agents_text
     )
+    assert "docs/standards/issues.md" in agents_text
+    assert ".claude/commands/issue-workflow.md" in agents_text
     assert "tools/docs_maintenance/metadata.py" in agents_text
     assert "docs/reference/repository-history.md" in agents_text
     assert "docs/standards/delivery-guardrails.md" in agents_text
@@ -387,6 +398,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         in checkpoint_text
     )
     assert "scratch workflow bookkeeping" in checkpoint_text
+    assert "search for an existing issue first" in checkpoint_text
     assert "full clean loop has completed with no new" in hardening_route_text
     assert "invent findings to hit a quota" in hardening_route_text
     assert (
@@ -421,6 +433,7 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
     codeowners_text = codeowners_path.read_text(encoding="utf-8")
     required_entries = (
         ".agents/skills/**",
+        ".github/ISSUE_TEMPLATE/**",
         ".github/workflows/**",
         ".github/pull_request_template.md",
         ".github/CODEOWNERS",
