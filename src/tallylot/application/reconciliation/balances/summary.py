@@ -53,7 +53,11 @@ class BalanceSummaryWorkflow:
             latest_portfolio_clean_date=str(
                 summary_payload["latest_portfolio_clean_date"]
             ),
+            latest_portfolio_source_backed_date=str(
+                summary_payload["latest_portfolio_source_backed_date"]
+            ),
             latest_clean_source_date=str(summary_payload["latest_clean_source_date"]),
+            latest_source_backed_date=str(summary_payload["latest_source_backed_date"]),
             latest_observed_assertion_date=str(
                 summary_payload["latest_observed_assertion_date"]
             ),
@@ -67,7 +71,11 @@ def _build_blockers(
     blockers: list[BalanceReconciliationBlockerRecord] = []
     check_by_source = {record.source: record for record in check_records}
     for coverage_record in coverage_records:
-        if coverage_record.coverage_status != "comparable":
+        if coverage_record.coverage_status in {
+            "missing_reference",
+            "missing_snapshots",
+            "empty_source",
+        }:
             blockers.append(
                 BalanceReconciliationBlockerRecord(
                     source=coverage_record.source,
@@ -123,45 +131,81 @@ def _summary_payload(
         for record in check_records
         if record.check_status == "clean" and record.latest_clean_checked_date
     )
+    source_backed_dates = tuple(
+        record.latest_source_backed_checked_date
+        for record in check_records
+        if record.latest_source_backed_checked_date
+    )
     observed_dates = tuple(
         record.max_assertion_date
         for record in check_records
         if record.max_assertion_date
     )
-    comparable_sources = tuple(
+    operational_sources = tuple(
         record.source
         for record in coverage_records
-        if record.coverage_status == "comparable"
+        if record.coverage_status
+        in {"source_backed", "operator_confirmed", "mixed_reference"}
     )
     all_sources_clean = (
         bool(coverage_records)
-        and len(comparable_sources) == len(coverage_records)
+        and len(operational_sources) == len(coverage_records)
         and all(
             (
                 source in check_by_source
                 and check_by_source[source].check_status == "clean"
                 and bool(check_by_source[source].latest_clean_checked_date)
             )
-            for source in comparable_sources
+            for source in operational_sources
         )
+    )
+    all_sources_source_backed = bool(coverage_records) and all(
+        (
+            source in check_by_source
+            and check_by_source[source].check_status == "clean"
+            and bool(check_by_source[source].latest_source_backed_checked_date)
+        )
+        for source in (record.source for record in coverage_records)
     )
     latest_portfolio_clean_date = (
         min(
             check_by_source[source].latest_clean_checked_date
-            for source in comparable_sources
+            for source in operational_sources
         )
         if all_sources_clean
         else ""
     )
+    latest_portfolio_source_backed_date = (
+        min(
+            check_by_source[record.source].latest_source_backed_checked_date
+            for record in coverage_records
+        )
+        if all_sources_source_backed
+        else ""
+    )
     return {
         "source_count": len(coverage_records),
-        "comparable_source_count": coverage_status_counts.get("comparable", 0),
+        "comparable_source_count": sum(
+            coverage_status_counts.get(status, 0)
+            for status in ("source_backed", "operator_confirmed", "mixed_reference")
+        ),
+        "source_backed_source_count": coverage_status_counts.get("source_backed", 0),
+        "operator_confirmed_source_count": coverage_status_counts.get(
+            "operator_confirmed", 0
+        ),
+        "mixed_reference_source_count": coverage_status_counts.get(
+            "mixed_reference", 0
+        ),
         "clean_source_count": check_status_counts.get("clean", 0),
         "issue_source_count": check_status_counts.get("issues", 0),
         "failed_source_count": check_status_counts.get("failed", 0),
         "no_assertion_source_count": check_status_counts.get("no_assertions", 0),
         "latest_portfolio_clean_date": latest_portfolio_clean_date,
+        "latest_portfolio_source_backed_date": latest_portfolio_source_backed_date,
         "latest_clean_source_date": max(clean_dates) if clean_dates else "",
+        "latest_source_backed_date": max(source_backed_dates)
+        if source_backed_dates
+        else "",
         "latest_observed_assertion_date": max(observed_dates) if observed_dates else "",
         "coverage_status_counts": dict(sorted(coverage_status_counts.items())),
         "check_status_counts": dict(sorted(check_status_counts.items())),

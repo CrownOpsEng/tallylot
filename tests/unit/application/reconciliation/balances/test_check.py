@@ -15,7 +15,7 @@ from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.locations import LocationKind
-from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
@@ -161,6 +161,143 @@ def test_balance_check_workflow_uses_per_source_output_dirs_for_batch_runs(
     assert (output_root / "issue-source" / "reconciliation_issues.csv").exists()
     assert rows[0]["source"] == "clean-source"
     assert rows[1]["source"] == "issue-source"
+
+
+def test_balance_check_workflow_uses_confirmations_when_evidence_is_absent(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    evidence_repo = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+    input_root.mkdir()
+
+    evidence_repo.write_balance_snapshots(
+        input_root / "balances.csv",
+        (
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+        ),
+    )
+    evidence_repo.write_balance_confirmations(
+        input_root / "balance_confirmations.csv",
+        (
+            BalanceConfirmation(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+                confirmation_kind="manual_assertion",
+                asserted_meaning="Operator asserted the runtime balance directly.",
+                reviewed_by="operator@example.com",
+                reviewed_at=datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC),
+                reason="Needed for runtime reconciliation.",
+            ),
+        ),
+    )
+
+    response = BalanceCheckWorkflow(evidence_repo, artifacts).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert response.clean_source_count == 1
+    assert assertion_rows[0]["reference_basis"] == "operator_confirmation"
+    assert check_summary_rows[0]["latest_clean_checked_date"] == "2025-12-31"
+    assert check_summary_rows[0]["latest_source_backed_checked_date"] == ""
+    assert (
+        check_summary_rows[0]["reference_basis_counts"]
+        == '{"operator_confirmation": 1}'
+    )
+
+
+def test_balance_check_workflow_prefers_evidence_over_confirmation(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    evidence_repo = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+    input_root.mkdir()
+
+    evidence_repo.write_balance_snapshots(
+        input_root / "balances.csv",
+        (
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+        ),
+    )
+    evidence_repo.write_balance_evidence(
+        input_root / "balance_evidence.csv",
+        (
+            BalanceEvidence(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+                evidence_ref="statement.pdf#page=1",
+            ),
+        ),
+    )
+    evidence_repo.write_balance_confirmations(
+        input_root / "balance_confirmations.csv",
+        (
+            BalanceConfirmation(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("9.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+                confirmation_kind="manual_assertion",
+                asserted_meaning="Operator asserted a conflicting balance.",
+                reviewed_by="operator@example.com",
+                reviewed_at=datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC),
+                reason="Needed for runtime reconciliation.",
+            ),
+        ),
+    )
+
+    BalanceCheckWorkflow(evidence_repo, artifacts).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert assertion_rows[0]["status"] == "matched"
+    assert assertion_rows[0]["reference_basis"] == "source_backed_evidence"
+    assert (
+        check_summary_rows[0]["reference_basis_counts"]
+        == '{"source_backed_evidence": 1}'
+    )
+    assert check_summary_rows[0]["latest_source_backed_checked_date"] == "2025-12-31"
 
 
 def test_balance_check_workflow_rejects_output_inside_input_root(

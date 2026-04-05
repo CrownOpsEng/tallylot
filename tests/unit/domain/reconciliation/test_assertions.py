@@ -10,6 +10,7 @@ from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import (
     BalanceAssertion,
     BalanceAssertionStatus,
+    BalanceConfirmation,
     BalanceEvidence,
     assert_balance_snapshots,
 )
@@ -46,6 +47,7 @@ def test_assert_balance_snapshots_marks_exact_matches() -> None:
 
     assert result.issues == ()
     assert result.assertions[0].status is BalanceAssertionStatus.MATCHED
+    assert result.assertions[0].reference_basis == "source_backed_evidence"
     assert result.assertions[0].quantity_difference == Decimal("0")
     assert result.assertions[0].to_row()["evidence_ref"] == "statement.pdf#page=1"
 
@@ -206,6 +208,87 @@ def test_assert_balance_snapshots_assigns_distinct_duplicate_issue_ids() -> None
         "coinbase:coinbase:BTC:available:duplicate_balance_snapshot:2",
         "coinbase:coinbase:BTC:available:balance_missing_reference",
     ]
+
+
+def test_assert_balance_snapshots_uses_confirmation_when_evidence_is_absent() -> None:
+    result = assert_balance_snapshots(
+        snapshots=(
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.25"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+        ),
+        evidence=(),
+        confirmations=(
+            BalanceConfirmation(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.25"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+                confirmation_kind="external_support",
+                support_ref="statement.pdf#page=1",
+                asserted_meaning="Closing balance from the cited statement.",
+                reviewed_by="operator@example.com",
+                reviewed_at=datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC),
+                reason="Needed for runtime reconciliation.",
+            ),
+        ),
+    )
+
+    assert result.issues == ()
+    assert result.assertions[0].reference_basis == "operator_confirmation"
+    assert result.assertions[0].to_row()["evidence_ref"] == "statement.pdf#page=1"
+
+
+def test_assert_balance_snapshots_prefers_evidence_over_confirmation() -> None:
+    result = assert_balance_snapshots(
+        snapshots=(
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.25"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+            ),
+        ),
+        evidence=(
+            BalanceEvidence(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("1.25"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+                evidence_ref="statement.pdf#page=1",
+            ),
+        ),
+        confirmations=(
+            BalanceConfirmation(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase"),
+                instrument_id=InstrumentId("BTC"),
+                quantity=Decimal("9.99"),
+                as_of_at=_AS_OF,
+                as_of_precision=TemporalPrecision.TIMESTAMP,
+                confirmation_kind="manual_assertion",
+                asserted_meaning="Operator asserted a conflicting balance.",
+                reviewed_by="operator@example.com",
+                reviewed_at=datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC),
+                reason="Needed for runtime reconciliation.",
+            ),
+        ),
+    )
+
+    assert result.issues == ()
+    assert result.assertions[0].reference_basis == "source_backed_evidence"
+    assert result.assertions[0].evidence_quantity == Decimal("1.25")
 
 
 def test_balance_assertion_requires_valid_temporal_pairs() -> None:

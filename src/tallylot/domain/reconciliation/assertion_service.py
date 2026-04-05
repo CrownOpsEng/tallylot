@@ -16,7 +16,14 @@ from .assertion_models import (
     BalanceAssertionResult,
     BalanceAssertionStatus,
 )
+from .confirmation import BalanceConfirmation
 from .evidence import BalanceEvidence
+
+
+@dataclass(frozen=True)
+class _SelectedReference:
+    record: BalanceEvidence | BalanceConfirmation
+    reference_basis: str
 
 
 @dataclass(frozen=True, order=True)
@@ -30,17 +37,28 @@ class _BalanceAssertionKey:
 def assert_balance_snapshots(
     snapshots: tuple[BalanceSnapshot, ...],
     evidence: tuple[BalanceEvidence, ...],
+    confirmations: tuple[BalanceConfirmation, ...] = (),
 ) -> BalanceAssertionResult:
     """Compare derived balance snapshots against source-backed balance evidence."""
 
     snapshots_by_key, snapshot_issues = _index_snapshots(snapshots)
     evidence_by_key, evidence_issues = _index_evidence(evidence)
+    confirmation_by_key, confirmation_issues = _index_confirmations(confirmations)
     assertions: list[BalanceAssertion] = []
-    issues: list[IssueRecord] = [*snapshot_issues, *evidence_issues]
-    for key in sorted(set(snapshots_by_key) | set(evidence_by_key)):
+    issues: list[IssueRecord] = [
+        *snapshot_issues,
+        *evidence_issues,
+        *confirmation_issues,
+    ]
+    for key in sorted(
+        set(snapshots_by_key) | set(evidence_by_key) | set(confirmation_by_key)
+    ):
         snapshot = snapshots_by_key.get(key)
-        evidence_record = evidence_by_key.get(key)
-        assertion = _build_assertion(key, snapshot, evidence_record)
+        reference = _selected_reference(
+            evidence_by_key.get(key),
+            confirmation_by_key.get(key),
+        )
+        assertion = _build_assertion(key, snapshot, reference)
         assertions.append(assertion)
         if assertion.status is not BalanceAssertionStatus.MATCHED:
             issues.append(_issue_for_assertion(assertion))
@@ -53,10 +71,11 @@ def assert_balance_snapshots(
 def _build_assertion(
     key: _BalanceAssertionKey,
     snapshot: BalanceSnapshot | None,
-    evidence_record: BalanceEvidence | None,
+    reference: _SelectedReference | None,
 ) -> BalanceAssertion:
     snapshot_quantity = None if snapshot is None else snapshot.quantity
-    evidence_quantity = None if evidence_record is None else evidence_record.quantity
+    reference_record = None if reference is None else reference.record
+    evidence_quantity = None if reference_record is None else reference_record.quantity
     return BalanceAssertion(
         source=SourceId(key.source),
         location_id=LocationId(key.location_id),
@@ -66,34 +85,37 @@ def _build_assertion(
         evidence_quantity=evidence_quantity,
         quantity_difference=(snapshot_quantity or Decimal("0"))
         - (evidence_quantity or Decimal("0")),
-        status=_assertion_status(snapshot, evidence_record),
+        status=_assertion_status(snapshot, reference_record),
+        reference_basis="" if reference is None else reference.reference_basis,
         snapshot_as_of_at=None if snapshot is None else snapshot.as_of_at,
         snapshot_as_of_precision=(
             None if snapshot is None else snapshot.as_of_precision
         ),
-        evidence_as_of_at=None if evidence_record is None else evidence_record.as_of_at,
+        evidence_as_of_at=None
+        if reference_record is None
+        else reference_record.as_of_at,
         evidence_as_of_precision=(
-            None if evidence_record is None else evidence_record.as_of_precision
+            None if reference_record is None else reference_record.as_of_precision
         ),
-        evidence_ref="" if evidence_record is None else evidence_record.evidence_ref,
-        notes="" if evidence_record is None else evidence_record.notes,
+        evidence_ref=_reference_ref(reference_record),
+        notes="" if reference_record is None else reference_record.notes,
     )
 
 
 def _assertion_status(
     snapshot: BalanceSnapshot | None,
-    evidence_record: BalanceEvidence | None,
+    reference_record: BalanceEvidence | BalanceConfirmation | None,
 ) -> BalanceAssertionStatus:
     if snapshot is None:
         return BalanceAssertionStatus.MISSING_SNAPSHOT
-    if evidence_record is None:
+    if reference_record is None:
         return BalanceAssertionStatus.MISSING_REFERENCE
     if (
-        snapshot.as_of_at != evidence_record.as_of_at
-        or snapshot.as_of_precision != evidence_record.as_of_precision
+        snapshot.as_of_at != reference_record.as_of_at
+        or snapshot.as_of_precision != reference_record.as_of_precision
     ):
         return BalanceAssertionStatus.TIMESTAMP_MISMATCH
-    if snapshot.quantity != evidence_record.quantity:
+    if snapshot.quantity != reference_record.quantity:
         return BalanceAssertionStatus.DRIFT
     return BalanceAssertionStatus.MATCHED
 
@@ -137,6 +159,15 @@ def _snapshot_key(snapshot: BalanceSnapshot) -> _BalanceAssertionKey:
 
 
 def _evidence_key(record: BalanceEvidence) -> _BalanceAssertionKey:
+    return _BalanceAssertionKey(
+        source=str(record.source),
+        location_id=str(record.location_id),
+        instrument_id=str(record.instrument_id),
+        balance_kind=record.balance_kind,
+    )
+
+
+def _confirmation_key(record: BalanceConfirmation) -> _BalanceAssertionKey:
     return _BalanceAssertionKey(
         source=str(record.source),
         location_id=str(record.location_id),
@@ -198,6 +229,61 @@ def _index_evidence(
             continue
         evidence_by_key[key] = record
     return evidence_by_key, tuple(issues)
+
+
+def _index_confirmations(
+    confirmations: tuple[BalanceConfirmation, ...],
+) -> tuple[dict[_BalanceAssertionKey, BalanceConfirmation], tuple[IssueRecord, ...]]:
+    confirmation_by_key: dict[_BalanceAssertionKey, BalanceConfirmation] = {}
+    duplicate_counts: dict[_BalanceAssertionKey, int] = {}
+    issues: list[IssueRecord] = []
+    for record in confirmations:
+        key = _confirmation_key(record)
+        if key in confirmation_by_key:
+            duplicate_counts[key] = duplicate_counts.get(key, 0) + 1
+            issues.append(
+                _duplicate_input_issue(
+                    key,
+                    kind="duplicate_balance_confirmation",
+                    duplicate_index=duplicate_counts[key],
+                    context_timestamp=format_assertion_temporal_text(
+                        record.as_of_at,
+                        record.as_of_precision,
+                        label="duplicate balance issue timestamp",
+                    ),
+                    raw_file=record.support_ref,
+                )
+            )
+            continue
+        confirmation_by_key[key] = record
+    return confirmation_by_key, tuple(issues)
+
+
+def _selected_reference(
+    evidence_record: BalanceEvidence | None,
+    confirmation_record: BalanceConfirmation | None,
+) -> _SelectedReference | None:
+    if evidence_record is not None:
+        return _SelectedReference(
+            record=evidence_record,
+            reference_basis="source_backed_evidence",
+        )
+    if confirmation_record is not None:
+        return _SelectedReference(
+            record=confirmation_record,
+            reference_basis="operator_confirmation",
+        )
+    return None
+
+
+def _reference_ref(
+    record: BalanceEvidence | BalanceConfirmation | None,
+) -> str:
+    if record is None:
+        return ""
+    if isinstance(record, BalanceEvidence):
+        return record.evidence_ref
+    return record.support_ref
 
 
 def _duplicate_input_issue(

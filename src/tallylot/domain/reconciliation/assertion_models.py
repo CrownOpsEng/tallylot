@@ -45,6 +45,7 @@ class BalanceAssertion:
     evidence_quantity: Decimal | None
     quantity_difference: Decimal
     status: BalanceAssertionStatus
+    reference_basis: str = ""
     snapshot_as_of_at: datetime | None = None
     snapshot_as_of_precision: TemporalPrecision | None = None
     evidence_as_of_at: datetime | None = None
@@ -91,6 +92,7 @@ class BalanceAssertion:
             "evidence_quantity": format_decimal(self.evidence_quantity),
             "quantity_difference": format_decimal(self.quantity_difference),
             "status": self.status.value,
+            "reference_basis": self.reference_basis,
             "snapshot_as_of_at": format_assertion_temporal_text(
                 self.snapshot_as_of_at,
                 self.snapshot_as_of_precision,

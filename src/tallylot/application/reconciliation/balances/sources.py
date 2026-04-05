@@ -7,6 +7,7 @@ from pathlib import Path
 
 BALANCE_SNAPSHOT_FILENAME = "balances.csv"
 BALANCE_EVIDENCE_FILENAME = "balance_evidence.csv"
+BALANCE_CONFIRMATIONS_FILENAME = "balance_confirmations.csv"
 LOCATION_INVENTORY_FILENAME = "location_inventory.csv"
 
 
@@ -22,6 +23,10 @@ class BalanceSourceDir:
     @property
     def evidence_path(self) -> Path:
         return self.root / BALANCE_EVIDENCE_FILENAME
+
+    @property
+    def confirmation_path(self) -> Path:
+        return self.root / BALANCE_CONFIRMATIONS_FILENAME
 
     @property
     def location_inventory_path(self) -> Path:
@@ -66,6 +71,8 @@ def source_dir_input(input_root: Path) -> bool:
 
 
 def _has_balance_inputs(path: Path) -> bool:
-    return (path / BALANCE_SNAPSHOT_FILENAME).is_file() or (
-        path / BALANCE_EVIDENCE_FILENAME
-    ).is_file()
+    return (
+        (path / BALANCE_SNAPSHOT_FILENAME).is_file()
+        or (path / BALANCE_EVIDENCE_FILENAME).is_file()
+        or (path / BALANCE_CONFIRMATIONS_FILENAME).is_file()
+    )

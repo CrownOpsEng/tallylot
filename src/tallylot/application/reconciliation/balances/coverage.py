@@ -56,7 +56,9 @@ class BalanceCoverageWorkflow:
             coverage_summary_output_ref=to_resource_ref(summary_output_path),
             source_count=len(records),
             comparable_source_count=sum(
-                record.coverage_status == "comparable" for record in records
+                record.coverage_status
+                in {"source_backed", "operator_confirmed", "mixed_reference"}
+                for record in records
             ),
         )
 
@@ -67,24 +69,42 @@ def _build_coverage_record(
 ) -> BalanceCoverageRecord:
     snapshot_path = source_root / "balances.csv"
     evidence_path = source_root / "balance_evidence.csv"
+    confirmation_path = source_root / "balance_confirmations.csv"
     snapshot_rows = (
         artifacts.read_rows(snapshot_path) if snapshot_path.is_file() else []
     )
     evidence_rows = (
         artifacts.read_rows(evidence_path) if evidence_path.is_file() else []
     )
+    confirmation_rows = (
+        artifacts.read_rows(confirmation_path) if confirmation_path.is_file() else []
+    )
     snapshot_dates = _row_dates(snapshot_rows)
     evidence_dates = _row_dates(evidence_rows)
+    snapshot_keys = _logical_keys(snapshot_rows)
+    evidence_keys = _logical_keys(evidence_rows)
+    confirmation_keys = _logical_keys(confirmation_rows)
+    source_backed_reference_count = len(snapshot_keys & evidence_keys)
+    operator_confirmation_count = len(
+        (snapshot_keys - evidence_keys) & confirmation_keys
+    )
+    missing_reference_count = len(snapshot_keys - evidence_keys - confirmation_keys)
     return BalanceCoverageRecord(
         source=source_root.name,
         coverage_status=_coverage_status(
             snapshot_exists=snapshot_path.is_file(),
             evidence_exists=evidence_path.is_file(),
+            confirmation_exists=confirmation_path.is_file(),
             snapshot_count=len(snapshot_rows),
-            evidence_count=len(evidence_rows),
+            reference_row_count=len(evidence_rows) + len(confirmation_rows),
+            reference_count=source_backed_reference_count + operator_confirmation_count,
+            missing_reference_count=missing_reference_count,
         ),
         snapshot_count=len(snapshot_rows),
         evidence_count=len(evidence_rows),
+        source_backed_reference_count=source_backed_reference_count,
+        operator_confirmation_count=operator_confirmation_count,
+        missing_reference_count=missing_reference_count,
         min_snapshot_date=min(snapshot_dates) if snapshot_dates else "",
         max_snapshot_date=max(snapshot_dates) if snapshot_dates else "",
         min_evidence_date=min(evidence_dates) if evidence_dates else "",
@@ -96,21 +116,30 @@ def _coverage_status(
     *,
     snapshot_exists: bool,
     evidence_exists: bool,
+    confirmation_exists: bool,
     snapshot_count: int,
-    evidence_count: int,
+    reference_row_count: int,
+    reference_count: int,
+    missing_reference_count: int,
 ) -> str:
     if (
         snapshot_exists
-        and evidence_exists
+        and (evidence_exists or confirmation_exists)
         and snapshot_count == 0
-        and evidence_count == 0
+        and reference_row_count == 0
     ):
         return "empty_source"
     if snapshot_count == 0:
         return "missing_snapshots"
-    if evidence_count == 0:
+    if missing_reference_count > 0:
         return "missing_reference"
-    return "comparable"
+    if reference_count == 0:
+        return "missing_reference"
+    if evidence_exists and confirmation_exists:
+        return "mixed_reference"
+    if evidence_exists:
+        return "source_backed"
+    return "operator_confirmed"
 
 
 def _row_dates(rows: list[dict[str, str]]) -> tuple[str, ...]:
@@ -119,13 +148,38 @@ def _row_dates(rows: list[dict[str, str]]) -> tuple[str, ...]:
     )
 
 
+def _logical_keys(rows: list[dict[str, str]]) -> set[tuple[str, ...]]:
+    return {
+        (
+            row.get("source", "").strip(),
+            row.get("location_id", "").strip(),
+            row.get("instrument_id", "").strip(),
+            row.get("quantity", "").strip(),
+            row.get("as_of_at", "").strip(),
+            row.get("as_of_precision", "").strip(),
+            row.get("balance_kind", "").strip() or "available",
+        )
+        for row in rows
+    }
+
+
 def _coverage_summary_payload(
     records: tuple[BalanceCoverageRecord, ...],
 ) -> dict[str, JsonValue]:
     coverage_status_counts = Counter(record.coverage_status for record in records)
     return {
         "source_count": len(records),
-        "comparable_source_count": coverage_status_counts.get("comparable", 0),
+        "comparable_source_count": sum(
+            coverage_status_counts.get(status, 0)
+            for status in ("source_backed", "operator_confirmed", "mixed_reference")
+        ),
+        "source_backed_source_count": coverage_status_counts.get("source_backed", 0),
+        "operator_confirmed_source_count": coverage_status_counts.get(
+            "operator_confirmed", 0
+        ),
+        "mixed_reference_source_count": coverage_status_counts.get(
+            "mixed_reference", 0
+        ),
         "missing_snapshot_source_count": coverage_status_counts.get(
             "missing_snapshots", 0
         ),
