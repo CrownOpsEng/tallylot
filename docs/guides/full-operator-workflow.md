@@ -59,8 +59,13 @@ part of the current round-close process.
   and review `balance_submission_summary.json` plus
   `balance_submission_issues.csv`.
 - Run `reconciliation balances check` once canonical `balances.csv` and
-  `balance_evidence.csv` are available for the source-backed balance check,
-  whether they came from normalization or validated manual submission.
+  a reference artifact are available for the runtime balance check.
+- Use normalization-owned `balance_evidence.csv` when the source is already
+  source-backed.
+- Use submission-owned `balance_confirmations.csv` when the source is only
+  operator-confirmed.
+- Treat source-backed checkpoint readiness separately from operator-confirmed
+  runtime readiness.
 - Use `reconciliation balances inspect` plus
   `reconciliation balances summarize` when you need a multi-source
   reconciliation-date answer instead of a single-source review.
@@ -101,4 +106,5 @@ part of the current round-close process.
   for the scaffolded submission package contract and canonical materialization
   rules.
 - Use `checkpoint extract-pdf-balances` for supported Coinbase, Binance, and
-  Shakepay PDF statements when balance evidence is only available in PDF form.
+  Shakepay PDF statements when source-backed balance evidence is only
+  available in PDF form.

@@ -36,13 +36,14 @@ Use the linked task guides when you need the detailed procedure for one stage.
 1. Run `source normalize` for the settled capture.
 2. Review the normalization artifacts and issues before rendering a candidate.
 3. If normalization did not already produce canonical `balances.csv` and
-   `balance_evidence.csv`, run
+   source-backed `balance_evidence.csv`, run
    `checkpoint scaffold-balance-submission`, fill the submission package, then
    run `checkpoint submit-balances` and review the submission summary and
    issues.
 4. Run `reconciliation balances check` when canonical balance artifacts are
    ready for a deterministic balance check, whether they came from
-   normalization or validated manual submission.
+   normalization or from validated manual submission with
+   `balance_confirmations.csv`.
 5. When you need a multi-source answer, run `reconciliation balances inspect`,
    then `reconciliation balances check`, then `reconciliation balances summarize`.
 6. Run `output render file` only when the round needs

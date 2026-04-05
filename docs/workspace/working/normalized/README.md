@@ -20,6 +20,7 @@ Per-source folders should use the typed pipeline artifact set:
 - `fact_annotations.json`
 - `balances.csv`
 - `balance_evidence.csv`
+- `balance_confirmations.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
 - `location_inventory.csv`
@@ -37,6 +38,11 @@ persists `instrument_id`, `as_of_at`, and `as_of_precision`.
 `balance_evidence.csv` contains source-backed checkpoint evidence when the
 adapter actually provides it, using the same `instrument_id` and temporal
 precision fields as `balances.csv`.
+
+`balance_confirmations.csv` contains accepted operator confirmations written by
+checkpoint-owned manual balance submission. It is a lower-trust runtime
+reference surface than `balance_evidence.csv` and does not satisfy filing-ready
+checkpoint evidence requirements on its own.
 
 `cointracking_candidate.csv` is optional. Create it with `output render file`
 when the round needs it, and keep it beside the

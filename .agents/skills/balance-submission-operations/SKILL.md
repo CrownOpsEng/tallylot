@@ -20,7 +20,7 @@ Use this skill for the manual balance submission path.
 3. Inspect the filled files before submit so missing required values surface
    explicitly.
 4. Submit only when the package is ready; do not guess `instrument_id`,
-   timestamps, quantities, evidence refs, or identity values.
+   timestamps, quantities, support refs, or identity values.
 5. Use `$reconciliation-balance-operations` only after canonical balance
    artifacts already exist.
 
@@ -38,5 +38,6 @@ Use this skill for the manual balance submission path.
   package.
 - Inspect reports missing required files and fields without materializing
   canonical outputs.
-- Submit writes canonical balance artifacts plus
+- Submit writes canonical `balances.csv`,
+  `balance_confirmations.csv`, optional `location_inventory.csv`, plus
   `balance_submission_summary.json` and `balance_submission_issues.csv`.

@@ -60,8 +60,9 @@ Review:
 
 Use this path when normalization did not already emit canonical balance
 artifacts or when the source's balance facts need to be entered through a
-validated manual package. By default, the submit workflow materializes the
-canonical outputs under `<workspace>/working/normalized/<source>/`.
+validated manual package. By default, the submit workflow materializes
+canonical `balances.csv`, `balance_confirmations.csv`, and optional
+`location_inventory.csv` under `<workspace>/working/normalized/<source>/`.
 
 Optional `location_inventory.csv` improves later cross-source corroboration,
 but source-local balance checks still work without it.
@@ -77,7 +78,8 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliat
 ```
 
 `<workspace>/working/normalized/<source>/` may come directly from
-normalization or from `checkpoint submit-balances`.
+normalization with source-backed evidence or from `checkpoint submit-balances`
+with operator-confirmed balance references.
 
 Review:
 

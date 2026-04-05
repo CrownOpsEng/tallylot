@@ -23,17 +23,20 @@ raw evidence and they are not themselves the canonical reconciliation inputs.
 Use this subtree when balances need to be authored into a repo-owned package
 before they can be validated and materialized into canonical runtime files.
 
+These packages record operator confirmations for runtime use. They do not
+create source-backed evidence.
+
 The scaffold path creates:
 
 - `README.md`
 - `balances.csv.example`
-- `balance_evidence.csv.example`
+- `balance_confirmations.csv.example`
 - `location_inventory.csv.example`
 
 The filled submission package should then contain:
 
 - `balances.csv`
-- `balance_evidence.csv`
+- `balance_confirmations.csv`
 - `location_inventory.csv` when explicit location identity is available
 
 ## Submit Handoff
@@ -45,10 +48,13 @@ submission and materialize canonical outputs elsewhere, normally under
 The submit workflow writes:
 
 - canonical `balances.csv`
-- canonical `balance_evidence.csv`
+- canonical `balance_confirmations.csv`
 - canonical `location_inventory.csv` when present
 - `balance_submission_summary.json`
 - `balance_submission_issues.csv`
+
+Successful manual submission is ready for runtime balance checks as
+`operator_confirmed`, but it is not yet ready for a source-backed checkpoint.
 
 Keep the submission package and the canonical output tree separate. The submit
 workflow rejects output paths inside the submission package tree.

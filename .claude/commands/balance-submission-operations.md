@@ -19,8 +19,10 @@ reconciliation inputs.
    - scaffold the package first
    - inspect missing required files and values second
    - submit only when inspect shows the package is ready
-5. Do not guess `instrument_id`, timestamps, quantities, evidence refs, or
+5. Do not guess `instrument_id`, timestamps, quantities, support refs, or
    identity values. Surface missing values explicitly instead.
 6. After a successful submit, use `reconciliation balances inspect`,
    `reconciliation balances check`, and `reconciliation balances summarize` to
    evaluate the canonical artifacts.
+7. Treat successful manual submission as `operator_confirmed` runtime input,
+   not as source-backed checkpoint evidence.

@@ -178,7 +178,7 @@ Rules:
 ### 11. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
 
 Manual balance submission is a supported operational path for producing
-canonical `balances.csv` and `balance_evidence.csv`, but it is not an
+canonical `balances.csv` and `balance_confirmations.csv`, but it is not an
 adapter-owned schema.
 
 Rules:
@@ -191,6 +191,11 @@ Rules:
   `application/checkpoints/`
 - the canonical reconciliation schema still lives under the chosen output
   root, normally `working/normalized/<source>/`
+- manual submission records operator-confirmed runtime references and must not
+  fabricate or widen source-backed `balance_evidence.csv`
+- runtime reconciliation may use source-backed evidence first and operator
+  confirmations second for uncovered balance keys
+- filing-ready checkpoint status still requires source-backed evidence
 - optional submitted `location_inventory.csv` improves cross-source
   corroboration, but omitting it does not block source-local balance checks
 - manual submission must preserve explicit user-provided `instrument_id`
@@ -229,7 +234,7 @@ is inherently specific.
     detection
 - `application/checkpoints/`
   - build source-backed checkpoint evidence, validate manual balance
-    submissions, and assemble checkpoint-supporting wallet aggregates
+    confirmations, and assemble checkpoint-supporting wallet aggregates
 - `application/accounting/`
   - journal assembly, ledger validation, and accounting summaries
 - `application/tax/`
@@ -414,9 +419,9 @@ The only lost capability should be comparison against the external oracle.
 - `facts.csv` is schema-versioned and readers fail fast on unexpected
   `schema_version` values; rebuilding from raw evidence is the supported
   recovery path after fact-shape breaks.
-- `balances.csv` and `balance_evidence.csv` persist canonical `instrument_id`
-  values and use `as_of_at` plus `as_of_precision` rather than bare symbol or
-  timestamp columns.
+- `balances.csv`, `balance_evidence.csv`, and `balance_confirmations.csv`
+  persist canonical `instrument_id` values and use `as_of_at` plus
+  `as_of_precision` rather than bare symbol or timestamp columns.
 - cross-source balance corroboration is additive in the first release. It
   consumes normalized `balances.csv` plus `location_inventory.csv`, writes
   sidecar corroboration artifacts, and does not redefine the primary
@@ -429,6 +434,7 @@ The only lost capability should be comparison against the external oracle.
   - `normalization_reviews.csv`
 - Windowed normalization does not apply to:
   - `balance_evidence.csv`
+  - `balance_confirmations.csv`
   - `location_inventory.csv`
 - source-scope portfolio evidence that does not itself prove wallet ownership,
   such as MetaMask portfolio CSV rows, may contribute balance evidence only for
@@ -805,8 +811,9 @@ Do not:
 ### Reconciliation
 
 - transfer pairing across owned wallets and exchanges
-- exact balance assertion workflow over `balances.csv` and
-  `balance_evidence.csv`
+- exact balance assertion workflow over `balances.csv` with
+  source-backed `balance_evidence.csv` precedence and
+  `balance_confirmations.csv` fallback
 - redistribution corrections
 - checkpoint balance assertions
 - forward continuity from oracle boundary to checkpoint

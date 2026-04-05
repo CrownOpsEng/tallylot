@@ -36,8 +36,8 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - normalization-owned statement-backed balance evidence for supported provider
   statements and constrained same-source-chain MetaMask portfolio evidence
 - checkpoint-owned manual balance submission scaffolding and validation that
-  materializes canonical balances, balance evidence, and optional location
-  inventory outputs
+  materializes canonical balances, balance confirmations, and optional
+  location inventory outputs
 - checkpoint location inventory rebuild with evidence, issues, and summary
   artifacts
 - checkpoint PDF balance extraction for supported statement families
@@ -63,6 +63,9 @@ The repo currently ships typed replacements for the core workflow capabilities:
   `working/supporting_artifacts/balance_submissions/` are pre-canonical support
   artifacts. Canonical balance outputs still live under the chosen output root,
   normally `working/normalized/<source>/`.
+- Manual submission can unblock runtime reconciliation as
+  `operator_confirmed`, but filing-ready checkpoint state still requires
+  source-backed `balance_evidence.csv`.
 - Repo docs and repo-local agent entrypoints must describe only implemented
   commands and artifacts.
 

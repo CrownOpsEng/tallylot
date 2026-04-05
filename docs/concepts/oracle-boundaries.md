@@ -22,6 +22,8 @@ depending on any one portfolio tracker.
 - The internal core should remain asset-class-agnostic even when current
   adapters or policies are crypto-first.
 - Source evidence and source-backed checkpoints are first-class.
+- Operator confirmations may support runtime reconciliation, but they are a
+  lower-trust reference surface than source-backed evidence.
 - Output and import adapters are optional edges, not central dependencies.
 - Oracle artifacts are comparison aids only.
 - No tax, reconciliation, or journal logic may require CoinTracking-specific
@@ -95,6 +97,9 @@ Forbidden uses:
 
 Checkpoints must be derived from source-backed evidence or from an explicit
 checkpoint-import workflow.
+
+Operator-confirmed balance references may unblock runtime balance checks, but
+they do not satisfy filing-ready checkpoint requirements by themselves.
 
 A valid checkpoint may be built from:
 
