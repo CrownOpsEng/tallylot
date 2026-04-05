@@ -9,9 +9,13 @@ from tallylot.application.reconciliation.balances.contracts import (
     BalanceCheckRequest,
     BalanceCheckResponse,
 )
+from tallylot.application.reconciliation.balances.cross_source import (
+    build_cross_source_corroboration,
+)
 from tallylot.application.reconciliation.balances.records import (
     BALANCE_ASSERTION_HEADER,
     BALANCE_CHECK_SUMMARY_HEADER,
+    CROSS_SOURCE_ASSERTION_HEADER,
     BalanceCheckSummaryRecord,
 )
 from tallylot.application.reconciliation.balances.sources import (
@@ -64,6 +68,24 @@ class BalanceCheckWorkflow:
             check_summary_output_path,
             BALANCE_CHECK_SUMMARY_HEADER,
             (record.to_row() for record in records),
+        )
+        cross_source_result = build_cross_source_corroboration(
+            source_dirs,
+            evidence=self._evidence,
+            artifacts=self._artifacts,
+        )
+        self._artifacts.write_rows(
+            output_root / "cross_source_assertions.csv",
+            CROSS_SOURCE_ASSERTION_HEADER,
+            (record.to_row() for record in cross_source_result.assertions),
+        )
+        self._evidence.write_issue_records(
+            output_root / "cross_source_issues.csv",
+            cross_source_result.issues,
+        )
+        self._artifacts.write_json(
+            output_root / "cross_source_summary.json",
+            cross_source_result.summary_payload(),
         )
         status_counts = Counter(record.check_status for record in records)
         return BalanceCheckResponse(

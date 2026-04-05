@@ -75,7 +75,7 @@
     "accounting_intent_hint": "income_recognition",
     "adapter_id": "shakepay",
     "confidence": "high",
-    "description": "shakingsats",
+    "description": "ShakingSats",
     "economic_kind": "platform_reward",
     "effective_at": "",
     "effective_precision": "",

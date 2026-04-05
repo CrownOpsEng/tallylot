@@ -262,6 +262,10 @@ Rules:
   domain code.
 - application services own derived-balance assembly. Adapters return balance
   evidence only when the source actually provides it.
+- normalization owns production statement-backed balance evidence for supported
+  providers. Adapters may publish canonical quantity evidence through
+  `SourceTranslationBatch.balance_evidence`, but market-value totals and other
+  valuation-only rows are not canonical balance assertions.
 - adapters may declare numeric precision expectations for source fields when
   decimal scale is part of the source contract. Shared adapter support should
   validate displayed raw-text fractional digits and support exact or minimum
@@ -391,6 +395,10 @@ The only lost capability should be comparison against the external oracle.
 - `balances.csv` and `balance_evidence.csv` persist canonical `instrument_id`
   values and use `as_of_at` plus `as_of_precision` rather than bare symbol or
   timestamp columns.
+- cross-source balance corroboration is additive in the first release. It
+  consumes normalized `balances.csv` plus `location_inventory.csv`, writes
+  sidecar corroboration artifacts, and does not redefine the primary
+  source-local clean-date gate yet.
 - Windowed normalization applies to:
   - `facts.csv`
   - `fact_annotations.json`
@@ -400,6 +408,10 @@ The only lost capability should be comparison against the external oracle.
 - Windowed normalization does not apply to:
   - `balance_evidence.csv`
   - `location_inventory.csv`
+- source-scope portfolio evidence that does not itself prove wallet ownership,
+  such as MetaMask portfolio CSV rows, may contribute balance evidence only for
+  same-source same-chain rows and must remain explicitly caveated as
+  source-folder-scoped rather than globally authoritative identity proof.
 - Review records carry `context_timestamp`, dataset-level untimed reviews stay
   visible when a window is active, and summaries report
   `reviews_outside_normalization_window`.

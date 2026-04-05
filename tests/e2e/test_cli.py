@@ -203,9 +203,21 @@ def test_checkpoint_extract_pdf_balances_cli(tmp_path: Path) -> None:
     pdf.drawString(
         72, 750, "Performance report For the year ending on December 31, 2025"
     )
-    pdf.drawString(72, 735, "For the year ($) Since account opening ($) $256.37 $0.00")
-    pdf.drawString(72, 720, "Opening market value (as of 2025-01-01 00:00 EST)")
-    pdf.drawString(72, 705, "Closing market value at year end $643.81")
+    pdf.drawString(
+        72,
+        735,
+        "Change in value of your account For the year ($) Since account opening ($)",
+    )
+    pdf.drawString(
+        72,
+        720,
+        "Opening market value $256.37 $0.00 (as of 2025-01-01 00:00 EST)",
+    )
+    pdf.drawString(
+        72,
+        705,
+        "Closing market value at year end $643.81 $643.81 (as of 2025-12-31 23:59 EST)",
+    )
     pdf.save()
 
     result = runner.invoke(
@@ -225,7 +237,50 @@ def test_checkpoint_extract_pdf_balances_cli(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert len(rows) == 2
     assert rows[0]["balance_kind"] == "opening_market_value"
+    assert rows[0]["value_amount"] == "256.37"
     assert rows[1]["balance_kind"] == "closing_market_value"
+    assert rows[1]["value_amount"] == "643.81"
+
+
+def test_checkpoint_extract_pdf_balances_cli_monthly_statement(tmp_path: Path) -> None:
+    pdf_path = tmp_path / "shakepay_2026-03.pdf"
+    output_path = tmp_path / "balances.csv"
+    pdf = canvas.Canvas(str(pdf_path))
+    pdf.drawString(72, 750, "Monthly account statement")
+    pdf.drawString(72, 735, "Balance summary (as of 2026-04-01 00:00 EDT)")
+    pdf.drawString(
+        72,
+        720,
+        "Asset Quantity* Market price (CA$) Market value (CA$)** Original cost (CA$)***",
+    )
+    pdf.drawString(72, 705, "Cash (CAD) 18.76 1.00 18.76 18.76")
+    pdf.drawString(72, 690, "US Dollar (USD) 0.00 1.3911 0.00 0.00")
+    pdf.drawString(72, 675, "Bitcoin (BTC) 0.00186458 94,692.31 176.56 261.71")
+    pdf.drawString(72, 660, "Ethereum (ETH) 0.00020245 2,922.49 0.59 0.51")
+    pdf.save()
+
+    result = runner.invoke(
+        app,
+        [
+            "checkpoint",
+            "extract-pdf-balances",
+            "--pdf",
+            str(pdf_path),
+            "--output",
+            str(output_path),
+        ],
+    )
+
+    rows = FilesystemArtifactStore().read_rows(output_path)
+
+    assert result.exit_code == 0
+    assert len(rows) == 4
+    assert rows[0]["balance_kind"] == "available"
+    assert rows[0]["asset"] == "CAD"
+    assert rows[0]["quantity"] == "18.76"
+    assert rows[0]["as_of"] == "2026-04-01 04:00:00"
+    assert rows[-1]["asset"] == "ETH"
+    assert rows[-1]["quantity"] == "0.00020245"
 
 
 def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None:

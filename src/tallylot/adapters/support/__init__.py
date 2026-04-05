@@ -1,6 +1,7 @@
 """Shared adapter support contracts."""
 
 from .intake import match_intake_by_path_or_header, no_intake_route
+from .instruments import ResolvedInstrument, resolve_instrument_identity
 from .issues import IssueSpec, ReviewSpec, issue_record, review_record
 from .locations import (
     BTC_ADDRESS_PATTERN,
@@ -33,7 +34,11 @@ from .rows import (
     read_csv_rows,
     skip_files_outside_profile_families,
 )
-from .timezones import TimezoneReviewPolicy, passed_timezone_summary, reviewed_timezone_summary
+from .timezones import (
+    TimezoneReviewPolicy,
+    passed_timezone_summary,
+    reviewed_timezone_summary,
+)
 from .translation import (
     FileTranslationContext,
     FileTranslationResult,
@@ -56,6 +61,7 @@ __all__ = [
     "LocationIssueSpec",
     "LocationRecordSpec",
     "ReviewSpec",
+    "ResolvedInstrument",
     "TimezoneReviewPolicy",
     "canonical_location_id_from_identifier",
     "check_decimal_precision",
@@ -76,6 +82,7 @@ __all__ = [
     "passed_timezone_summary",
     "read_csv_header",
     "read_csv_rows",
+    "resolve_instrument_identity",
     "review_record",
     "reviewed_timezone_summary",
     "skip_files_outside_profile_families",

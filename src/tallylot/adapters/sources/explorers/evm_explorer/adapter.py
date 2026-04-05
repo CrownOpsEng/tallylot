@@ -4,8 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.adapters.sources.explorers.evm_explorer.families import classify_inventory_families
-from tallylot.adapters.sources.explorers.evm_explorer.translation import translate_transactions
+from tallylot.adapters.sources.explorers.evm_explorer.families import (
+    classify_inventory_families,
+)
+from tallylot.adapters.sources.explorers.evm_explorer.portfolio_evidence import (
+    extract_portfolio_balance_evidence,
+)
+from tallylot.adapters.sources.explorers.evm_explorer.translation import (
+    translate_transactions,
+)
 from tallylot.adapters.support import (
     EVM_ADDRESS_PATTERN,
     canonical_location_id_from_identifier,
@@ -24,8 +31,16 @@ from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 TRANSACTION_HEADER_FIELDS = {"Transaction Hash", "DateTime (UTC)"}
@@ -37,18 +52,30 @@ class _EvmExplorerAdapter:
         display_name="EVM Explorer",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {
+                AdapterCapability.SOURCE_TRANSLATE,
+                AdapterCapability.LOCATION_INVENTORY,
+                AdapterCapability.INTAKE_ROUTE,
+            }
         ),
         description="Normalizes EVM explorer exports and extracts owned EVM addresses.",
     )
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(
+        self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> int:
         if self.classify_profile_families(source, raw_dir, inventory):
             return 100
         lower_source = source.lower()
-        if "explorer" in lower_source or any(chain in lower_source for chain in ("bsc", "ethereum", "polygon", "arb")):
+        if "explorer" in lower_source or any(
+            chain in lower_source for chain in ("bsc", "ethereum", "polygon", "arb")
+        ):
             return 100
-        if any(TRANSACTION_HEADER_FIELDS.issubset(set(item.header)) for item in inventory if item.header):
+        if any(
+            TRANSACTION_HEADER_FIELDS.issubset(set(item.header))
+            for item in inventory
+            if item.header
+        ):
             return 75
         if any("explorer" in item.relative_path.lower() for item in inventory):
             return 75
@@ -61,7 +88,9 @@ class _EvmExplorerAdapter:
         inventory: tuple[FileInventoryEntry, ...],
     ) -> tuple[FileFamilyClaim, ...]:
         del source, raw_dir
-        return classify_inventory_families(inventory, adapter_id=self.manifest.adapter_id)
+        return classify_inventory_families(
+            inventory, adapter_id=self.manifest.adapter_id
+        )
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
         return match_intake_by_path_or_header(
@@ -134,17 +163,31 @@ class _EvmExplorerAdapter:
         )
         return evidence, tuple(issues)
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
-        location_inventory, location_issues = self.extract_location_inventory(str(profile.source), raw_dir, profile)
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
+        location_inventory, location_issues = self.extract_location_inventory(
+            str(profile.source), raw_dir, profile
+        )
         drafts, issues = translate_transactions(
             profile,
             raw_dir,
             owned_addresses=_owned_addresses(raw_dir),
             network_scope=_network_scope(str(profile.source)),
         )
+        balance_evidence, evidence_issues, evidence_reviews = (
+            extract_portfolio_balance_evidence(
+                profile,
+                raw_dir,
+                location_inventory=location_inventory,
+                network_scope=_network_scope(str(profile.source)),
+            )
+        )
         return translation_batch_from_drafts(
             drafts,
-            issues=(*issues, *location_issues),
+            balance_evidence=balance_evidence,
+            issues=(*issues, *location_issues, *evidence_issues),
+            reviews=evidence_reviews,
             location_inventory=location_inventory,
         )
 

@@ -8,7 +8,10 @@ from pathlib import Path
 from tallylot.adapters.sources.pdf_balance_common import (
     decimal_text,
     normalize_whitespace,
-    parse_balance_lines,
+)
+from tallylot.adapters.sources.platforms.shakepay.statement_evidence import (
+    extract_pdf_balances as _extract_statement_balances,
+    match_statement as _match_statement,
 )
 
 SHAKEPAY_OPENING_PATTERN = re.compile(
@@ -25,36 +28,53 @@ SHAKEPAY_LEGACY_OPENING_AS_OF_PATTERN = re.compile(
 SHAKEPAY_LEGACY_OPENING_VALUE_PATTERN = re.compile(
     r"For the year \(\$\)\s+Since account opening \(\$\)\s+\$(?P<value>[0-9,]+\.[0-9]{2})"
 )
-SHAKEPAY_LEGACY_CLOSING_PATTERN = re.compile(r"Closing market value at year end\s+\$?(?P<value>[0-9,]+\.[0-9]{2})")
-SHAKEPAY_YEAR_PATTERN = re.compile(r"For the year ending on December 31,\s+(?P<year>\d{4})")
+SHAKEPAY_LEGACY_CLOSING_PATTERN = re.compile(
+    r"Closing market value at year end\s+\$?(?P<value>[0-9,]+\.[0-9]{2})"
+)
+SHAKEPAY_YEAR_PATTERN = re.compile(
+    r"For the year ending on December 31,\s+(?P<year>\d{4})"
+)
 
 
 def match_pdf_statement(pdf_path: Path, text: str) -> int:
-    name = pdf_path.name.lower()
+    monthly_score = _match_statement(pdf_path, text)
+    if monthly_score > 0:
+        return monthly_score
     normalized = normalize_whitespace(text).lower()
-    if "shakepay" in name and "performance report" in name:
-        return 100
-    if "shakepay" in normalized:
+    file_name = pdf_path.name.lower()
+    if "shakepay" in file_name and "performance report" in file_name:
+        return 90
+    if (
+        "performance report" in normalized
+        and "opening market value" in normalized
+        and "closing market value at year end" in normalized
+    ):
         return 80
     return 0
 
 
 def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
+    if _match_statement(Path(pdf_file), text) > 0:
+        return _extract_statement_balances(text, pdf_file)
+    return _extract_annual_market_value_rows(text, pdf_file)
+
+
+def _extract_annual_market_value_rows(text: str, pdf_file: str) -> list[dict[str, str]]:
     normalized = normalize_whitespace(text)
     opening_match = SHAKEPAY_OPENING_PATTERN.search(normalized)
     closing_match = SHAKEPAY_CLOSING_PATTERN.search(normalized)
-    opening_value = ""
-    opening_as_of = ""
-    closing_value = ""
-    closing_as_of = ""
     if opening_match is not None and closing_match is not None:
         opening_value = opening_match.group("value")
         opening_as_of = opening_match.group("as_of")
         closing_value = closing_match.group("value")
         closing_as_of = closing_match.group("as_of")
     else:
-        legacy_opening_as_of_match = SHAKEPAY_LEGACY_OPENING_AS_OF_PATTERN.search(normalized)
-        legacy_opening_value_match = SHAKEPAY_LEGACY_OPENING_VALUE_PATTERN.search(normalized)
+        legacy_opening_as_of_match = SHAKEPAY_LEGACY_OPENING_AS_OF_PATTERN.search(
+            normalized
+        )
+        legacy_opening_value_match = SHAKEPAY_LEGACY_OPENING_VALUE_PATTERN.search(
+            normalized
+        )
         legacy_closing_match = SHAKEPAY_LEGACY_CLOSING_PATTERN.search(normalized)
         year_match = SHAKEPAY_YEAR_PATTERN.search(normalized)
         if (
@@ -63,7 +83,7 @@ def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
             or legacy_closing_match is None
             or year_match is None
         ):
-            return parse_balance_lines(text, "shakepay", pdf_file)
+            return []
         opening_value = legacy_opening_value_match.group("value")
         opening_as_of = legacy_opening_as_of_match.group("as_of")
         closing_value = legacy_closing_match.group("value")
