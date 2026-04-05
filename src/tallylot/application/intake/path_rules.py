@@ -13,7 +13,11 @@ def package_key(entry: ScannedFile) -> str:
     if entry.archive_source_path:
         return entry.archive_source_path
     relative_path = Path(entry.relative_path)
-    return str(relative_path.parent) if relative_path.parent != Path() else entry.relative_path
+    return (
+        str(relative_path.parent)
+        if relative_path.parent != Path()
+        else entry.relative_path
+    )
 
 
 def bundle_id(entry: ScannedFile, *, source_folder: str) -> str:
@@ -49,18 +53,35 @@ def source_raw_target_path(
     bundle_id_value: str,
     bundle_relative_path_value: str,
 ) -> Path:
-    capture_root = workspace_root / "evidence" / "raw" / "source" / source_folder / capture_id
+    capture_root = (
+        workspace_root / "evidence" / "raw" / "source" / source_folder / capture_id
+    )
     if bundle_id_value.endswith("-loose"):
         return capture_root / bundle_relative_path_value
     return capture_root / bundle_id_value / bundle_relative_path_value
 
 
-def override_target_source(target_path: Path, previous_source: str, new_source: str) -> Path:
+def override_target_source(
+    target_path: Path, previous_source: str, new_source: str
+) -> Path:
     if previous_source == new_source:
         return target_path
     parts = list(target_path.parts)
-    for index, part in enumerate(parts):
-        if part == previous_source:
-            parts[index] = new_source
-            break
+    source_index = _source_segment_index(parts)
+    if source_index is None or parts[source_index] != previous_source:
+        return target_path
+    parts[source_index] = new_source
     return Path(*parts)
+
+
+def _source_segment_index(parts: list[str]) -> int | None:
+    for index in range(len(parts) - 3):
+        if (
+            parts[index : index + 3] == ["evidence", "raw", "source"]
+            and len(parts) > index + 3
+        ):
+            return index + 3
+    for index in range(len(parts) - 2):
+        if parts[index] == "working" and len(parts) > index + 2:
+            return index + 2
+    return None

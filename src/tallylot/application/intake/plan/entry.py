@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from tallylot.application.intake.contracts import IntakePlanRequest
+from tallylot.application.intake.source_labels import (
+    SourceLabelContext,
+    resolve_source_label,
+)
 from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 
 from ..archive import ScannedFile
 from ..file_facts import inspect_intake_file
-from ..inventory import resolve_inventory_route
 from ..overlap import IntakeOverlapRequest, resolve_overlap_review
 from ..path_rules import (
     bundle_id,
@@ -29,6 +32,7 @@ def build_planned_item(
     registry: SourceAdapterRegistryPort,
     artifacts: ArtifactStorePort,
     request: IntakePlanRequest,
+    source_label_context: SourceLabelContext,
 ) -> PlannedItem:
     incoming_dir = path_from_ref(request.incoming_capture_ref)
     workspace_root = path_from_ref(request.workspace_root_ref)
@@ -41,19 +45,27 @@ def build_planned_item(
         workspace_root=workspace_root,
         facts=facts,
     )
-    bundle_id_value = bundle_id(entry, source_folder=route.source_folder)
-    bundle_relative_path_value = bundle_relative_path(entry)
-    inventory_route = resolve_inventory_route(
+    route_key = (
+        entry.relative_path
+        if not entry.archive_member_path
+        else f"{entry.archive_source_path}::{entry.archive_member_path}"
+    )
+    source_resolution = resolve_source_label(
         artifacts=artifacts,
         workspace_root=workspace_root,
-        source_folder=route.source_folder,
+        context=source_label_context,
+        route_key=route_key,
         facts=facts,
+        source_folder=route.source_folder,
+        target_path=route.target_path,
     )
+    bundle_id_value = bundle_id(entry, source_folder=source_resolution.source_folder)
+    bundle_relative_path_value = bundle_relative_path(entry)
     overlap_review = resolve_overlap_review(
         artifacts=artifacts,
         request=IntakeOverlapRequest(
             workspace_root=workspace_root,
-            source_folder=inventory_route.source_folder,
+            source_folder=source_resolution.source_folder,
             capture_id=route.capture_id,
             relative_path=relative_path,
             sha256=entry.sha256,
@@ -64,13 +76,15 @@ def build_planned_item(
     source_target_path = (
         source_raw_target_path(
             workspace_root,
-            source_folder=inventory_route.source_folder,
+            source_folder=source_resolution.source_folder,
             capture_id=route.capture_id,
             bundle_id_value=bundle_id_value,
             bundle_relative_path_value=bundle_relative_path_value,
         )
         if route.category == "source_raw"
-        else override_target_source(route.target_path, route.source_folder, inventory_route.source_folder)
+        else override_target_source(
+            route.target_path, route.source_folder, source_resolution.source_folder
+        )
     )
     return PlannedItem(
         source_path=entry.file_path,
@@ -79,11 +93,11 @@ def build_planned_item(
         archive_member_path=entry.archive_member_path,
         category=route.category,
         role=route.role,
-        source_folder=inventory_route.source_folder,
+        source_folder=source_resolution.source_folder,
         capture_id=route.capture_id,
         bundle_id=bundle_id_value,
         bundle_relative_path=bundle_relative_path_value,
-        action=route.action,
+        action="skip" if source_resolution.blocked else route.action,
         package_key=package_key(entry),
         package_status="primary",
         package_primary_bundle_id=bundle_id_value,
@@ -92,23 +106,31 @@ def build_planned_item(
         package_scope_status="",
         package_decision_reason="",
         package_row_status="package_keep",
-        placement_status="planned_copy" if route.action in {"copy", "extract_copy"} else "inspect_only",
+        placement_status=(
+            "mapping_blocked_skip"
+            if source_resolution.blocked
+            else "planned_copy"
+            if route.action in {"copy", "extract_copy"}
+            else "inspect_only"
+        ),
+        source_resolution_status=source_resolution.source_resolution_status,
+        source_resolution_reason=source_resolution.source_resolution_reason,
         review_required=merge_review_required(
             route.review_required,
-            inventory_route.review_required,
+            source_resolution.review_required,
             overlap_review.review_required,
         ),
         review_codes=merge_review_values(
             route.review_codes,
-            inventory_route.review_codes,
+            source_resolution.review_codes,
             overlap_review.review_codes,
         ),
         review_reason=merge_review_values(
             route.review_reason,
-            inventory_route.review_reason,
+            source_resolution.review_reason,
             overlap_review.review_reason,
         ),
-        inventory_match_status=inventory_route.inventory_match_status,
+        inventory_match_status=source_resolution.inventory_match_status,
         sha256=entry.sha256,
         scope_tokens=facts.scope_tokens,
         target_path=source_target_path,

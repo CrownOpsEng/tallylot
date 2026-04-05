@@ -47,6 +47,10 @@ SEED_FILES = (
         ),
     ),
     SeedFile(
+        "analysis/issues/source_label_map.csv",
+        "incoming_path_prefix,source,notes\n",
+    ),
+    SeedFile(
         "analysis/inventory/location_inventory.csv",
         "location_id,source,location_kind,location_label,evidence_path,identifier_kind,identifier_value,notes\n",
     ),

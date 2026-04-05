@@ -29,7 +29,22 @@ def write_reports(
             "file_count": len(planned_items),
             "issue_count": len(issue_rows),
             "copied_count": copied_count,
-            "planned_copy_count": sum(1 for item in planned_items if item.action in {"copy", "extract_copy"}),
+            "planned_copy_count": sum(
+                1 for item in planned_items if item.action in {"copy", "extract_copy"}
+            ),
+            "explicit_map_count": sum(
+                1
+                for item in planned_items
+                if item.source_resolution_status == "explicit_map"
+            ),
+            "explicit_map_blocked_count": sum(
+                1
+                for item in planned_items
+                if item.source_resolution_status == "explicit_map_blocked"
+            ),
+            "source_label_map_issue_count": sum(
+                1 for row in issue_rows if row["kind"].startswith("source_label_map_")
+            ),
             "duplicate_packages": _package_count(planned_items, "duplicate_package"),
             "merge_primary_packages": _package_count(planned_items, "merge_primary"),
             "merged_packages": _package_count(planned_items, "merge_member"),
@@ -46,9 +61,20 @@ def write_capture_manifests(
 ) -> None:
     capture_rows: dict[Path, list[dict[str, str]]] = {}
     for item in planned_items:
-        if item.category != "source_raw" or item.placement_status.startswith("package_") or item.action == "skip":
+        if (
+            item.category != "source_raw"
+            or item.placement_status.startswith("package_")
+            or item.action == "skip"
+        ):
             continue
-        capture_root = workspace_root / "evidence" / "raw" / "source" / item.source_folder / item.capture_id
+        capture_root = (
+            workspace_root
+            / "evidence"
+            / "raw"
+            / "source"
+            / item.source_folder
+            / item.capture_id
+        )
         capture_rows.setdefault(capture_root, []).append(
             {
                 "filename": str(item.target_path.relative_to(capture_root)),
@@ -75,6 +101,9 @@ def _package_count(planned_items: list[PlannedItem], package_status: str) -> int
             (item.source_folder, item.capture_id, item.bundle_id)
             for item in planned_items
             if item.package_status == package_status
-            or (package_status == "duplicate_package" and item.package_status.startswith("duplicate_package"))
+            or (
+                package_status == "duplicate_package"
+                and item.package_status.startswith("duplicate_package")
+            )
         }
     )
