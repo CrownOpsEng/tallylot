@@ -16,6 +16,16 @@ This roadmap assumes the repo stays on the current fact-based architecture. It
 tracks remaining phases, sequencing, and delivery gates. It does not restate
 the detailed architecture contract.
 
+The current runtime already supports manual balance submission as a
+checkpoint-owned pre-canonical path. Canonical balance artifacts may therefore
+enter later reconciliation work through normalization or through validated
+manual submission packages, but only normalization and explicit source-backed
+checkpoint builders write canonical `balance_evidence.csv`.
+
+The later generic operator confirmation framework is tracked separately in
+GitHub issue `#45` so the current balance-specific confirmation slice can stay
+narrow and complete.
+
 ## Planning Anchors
 
 These planning anchors drive phase order and acceptance criteria:
@@ -75,8 +85,8 @@ Exit criteria:
 
 ### 3. Reconciliation
 
-Build deterministic reconciliation on top of transaction facts and source-backed
-balance evidence.
+Build deterministic reconciliation on top of transaction facts, source-backed
+balance evidence, and operator-confirmed balance references.
 
 Scope:
 
@@ -84,6 +94,10 @@ Scope:
   transfer checks
 - keep statement-backed quantity evidence on the normalization path and treat
   valuation totals as non-canonical
+- accept canonical `balances.csv` plus source-backed `balance_evidence.csv`
+  from normalization and operator-confirmed `balance_confirmations.csv` from
+  validated manual submission without splitting the downstream reconciliation
+  contracts
 - add additive cross-source corroboration as a sidecar evidence surface before
   promoting it into a harder reconciliation gate
 - transfer linking across owned wallets and exchanges
@@ -97,9 +111,9 @@ Exit criteria:
 
 - exact balance assertion artifacts are stable and feed later continuity checks
 - additive cross-source corroboration artifacts exist without redefining the
-  primary clean-date gate
-- fact history can be reconciled against source-backed evidence without manual
-  tracker logic
+  primary clean-date gate and remain dependent on comparable location identity
+- fact history can be reconciled against source-backed evidence or
+  operator-confirmed balance references without manual tracker logic
 - reconciliation artifacts no longer depend on normalized-transaction-era
   stopgaps
 - material reconciliation issues surface explicitly and reproducibly
@@ -113,6 +127,8 @@ Scope:
 
 - checkpoint artifact contracts
 - checkpoint provenance and evidence requirements
+- keep manual/operator-authored balance submission packages as a supported
+  checkpoint-owned input path for canonical balances and balance confirmations
 - source-backed checkpoint builder centered on the best-supported balance date
   near `2026-03-23`
 - intentional opening-state adoption flow with provenance
@@ -120,7 +136,8 @@ Scope:
 
 Exit criteria:
 
-- a balance-confirmed checkpoint can be created and reused as a typed input
+- an operator-confirmed runtime balance package can be created and reused as a
+  typed input without weakening the later source-backed checkpoint requirement
 - opening-state adoption is explicit, auditable, and not dependent on operator
   memory
 - checkpoint continuity reports exist as first-class artifacts

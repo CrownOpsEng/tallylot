@@ -103,6 +103,8 @@ def test_reconciliation_balance_skill_runner_executes_runtime_workflows(
         analysis_root / "balance_reconciliation_summary.json"
     )
     assert summary["latest_portfolio_clean_date"] == ""
+    assert summary["latest_portfolio_source_backed_date"] == ""
     assert summary["latest_clean_source_date"] == "2026-03-23"
+    assert summary["latest_source_backed_date"] == "2026-03-23"
     assert summary["latest_observed_assertion_date"] == "2026-03-23"
     assert blocker_rows[0]["source"] == "issue-source"

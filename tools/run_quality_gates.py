@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
+from repo_support.paths import repo_root
 from repo_support.pyright_config import sync_pyright_config
 from tools.uv_environment import repo_uv_environment
 
@@ -17,7 +18,15 @@ class QualityGate:
     command: tuple[str, ...]
 
 
-_DEFAULT_TEST_COMMAND = ("uv", "run", "pytest", "-m", "unit and not slow", "--no-cov", "-q")
+_DEFAULT_TEST_COMMAND = (
+    "uv",
+    "run",
+    "pytest",
+    "-m",
+    "unit and not slow",
+    "--no-cov",
+    "-q",
+)
 _FULL_TEST_COMMAND = ("uv", "run", "pytest")
 
 
@@ -38,26 +47,48 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
     test_command = _FULL_TEST_COMMAND if full_tests else _DEFAULT_TEST_COMMAND
     return (
-        QualityGate(name="markdownlint", command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files")),
+        QualityGate(
+            name="markdownlint",
+            command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files"),
+        ),
         QualityGate(name="actionlint", command=("uv", "run", "actionlint", "-color")),
         QualityGate(name="ruff", command=("uv", "run", "ruff", "check", ".")),
         QualityGate(name="mypy", command=("uv", "run", "mypy")),
         QualityGate(name="pyright", command=("uv", "run", "pyright")),
-        QualityGate(name="pylint", command=("uv", "run", "python", "-m", "tools.run_pylint")),
+        QualityGate(
+            name="pylint", command=("uv", "run", "python", "-m", "tools.run_pylint")
+        ),
         QualityGate(name="pytest", command=test_command),
     )
 
 
-def _run_gate(gate: QualityGate) -> tuple[QualityGate, subprocess.CompletedProcess[str], float]:
+def _run_gate(
+    gate: QualityGate,
+) -> tuple[QualityGate, subprocess.CompletedProcess[str], float]:
     started = time.perf_counter()
     result = subprocess.run(
         gate.command,
         capture_output=True,
         text=True,
         check=False,
-        env=repo_uv_environment(),
+        env=_gate_environment(gate),
     )
     return gate, result, time.perf_counter() - started
+
+
+def _gate_environment(gate: QualityGate) -> dict[str, str]:
+    environment = repo_uv_environment()
+    if gate.name != "pytest":
+        return environment
+
+    coverage_config = str(repo_root() / "pyproject.toml")
+    existing_addopts = environment.get("PYTEST_ADDOPTS", "").strip()
+    coverage_addopt = f"--cov-config={coverage_config}"
+    if coverage_addopt not in existing_addopts.split():
+        environment["PYTEST_ADDOPTS"] = f"{existing_addopts} {coverage_addopt}".strip()
+    environment["COVERAGE_PROCESS_START"] = coverage_config
+    environment["COVERAGE_RCFILE"] = coverage_config
+    return environment
 
 
 def main(argv: Sequence[str] | None = None) -> int:

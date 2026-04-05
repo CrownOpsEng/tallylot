@@ -116,8 +116,21 @@ class BalanceCheckWorkflow:
         ensure_directory(output_root)
         try:
             snapshots = self._evidence.read_balance_snapshots(source_dir.snapshot_path)
-            evidence = self._evidence.read_balance_evidence(source_dir.evidence_path)
-            result = assert_balance_snapshots(snapshots, evidence)
+            evidence = (
+                self._evidence.read_balance_evidence(source_dir.evidence_path)
+                if source_dir.evidence_path.is_file()
+                else ()
+            )
+            confirmations = (
+                self._evidence.read_balance_confirmations(source_dir.confirmation_path)
+                if source_dir.confirmation_path.is_file()
+                else ()
+            )
+            result = assert_balance_snapshots(
+                snapshots,
+                evidence,
+                confirmations=confirmations,
+            )
             self._artifacts.write_rows(
                 assertion_output_path,
                 BALANCE_ASSERTION_HEADER,
@@ -129,6 +142,15 @@ class BalanceCheckWorkflow:
                 {
                     "assertion_count": len(result.assertions),
                     "issue_count": len(result.issues),
+                    "reference_basis_counts": dict(
+                        sorted(
+                            Counter(
+                                assertion.reference_basis
+                                for assertion in result.assertions
+                                if assertion.reference_basis
+                            ).items()
+                        )
+                    ),
                 },
             )
         except ValueError as exc:
@@ -140,7 +162,9 @@ class BalanceCheckWorkflow:
                 min_assertion_date="",
                 max_assertion_date="",
                 latest_clean_checked_date="",
+                latest_source_backed_checked_date="",
                 assertion_status_counts=(),
+                reference_basis_counts=(),
                 issue_kind_counts=(),
                 error_message=str(exc),
             )
@@ -161,6 +185,20 @@ class BalanceCheckWorkflow:
             assertion_count=len(assertion_rows),
             issue_count=len(issue_rows),
         )
+        reference_basis_counts = tuple(
+            sorted(
+                Counter(
+                    row["reference_basis"]
+                    for row in assertion_rows
+                    if row.get("reference_basis", "").strip()
+                ).items()
+            )
+        )
+        reference_basis_values = {
+            row["reference_basis"]
+            for row in assertion_rows
+            if row.get("reference_basis", "").strip()
+        }
         return BalanceCheckSummaryRecord(
             source=source_dir.name,
             check_status=check_status,
@@ -171,9 +209,17 @@ class BalanceCheckWorkflow:
             latest_clean_checked_date=(
                 max(matched_dates) if check_status == "clean" and matched_dates else ""
             ),
+            latest_source_backed_checked_date=(
+                max(matched_dates)
+                if check_status == "clean"
+                and matched_dates
+                and reference_basis_values <= {"source_backed_evidence"}
+                else ""
+            ),
             assertion_status_counts=tuple(
                 sorted(Counter(row["status"] for row in assertion_rows).items())
             ),
+            reference_basis_counts=reference_basis_counts,
             issue_kind_counts=tuple(
                 sorted(Counter(row["kind"] for row in issue_rows).items())
             ),
@@ -189,7 +235,9 @@ def _check_status(*, assertion_count: int, issue_count: int) -> str:
 
 
 def _is_runnable_source_dir(source_dir: BalanceSourceDir) -> bool:
-    return source_dir.snapshot_path.is_file() and source_dir.evidence_path.is_file()
+    return source_dir.snapshot_path.is_file() and (
+        source_dir.evidence_path.is_file() or source_dir.confirmation_path.is_file()
+    )
 
 
 def _assertion_row_dates(row: dict[str, str]) -> tuple[str, ...]:
@@ -218,6 +266,7 @@ def _ensure_source_output_paths_are_safe(
     for input_label, input_path in (
         ("balance snapshot input", source_dir.snapshot_path),
         ("balance evidence input", source_dir.evidence_path),
+        ("balance confirmation input", source_dir.confirmation_path),
     ):
         ensure_output_not_within_input_tree(
             input_path,

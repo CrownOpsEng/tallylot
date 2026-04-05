@@ -6,7 +6,7 @@ from pathlib import Path
 
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.transactions import TransactionFact
 from tallylot.infrastructure.serialization.csv_io import write_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
@@ -14,6 +14,8 @@ from tallylot.ports.evidence import LocationInventoryRecord
 
 from .balance_codec import (
     BALANCE_EVIDENCE_HEADER,
+    BALANCE_CONFIRMATION_HEADER,
+    balance_confirmation_from_row,
     BALANCE_SNAPSHOT_HEADER,
     balance_evidence_from_row,
     balance_snapshot_from_row,
@@ -65,7 +67,9 @@ class FilesystemEvidenceRepository:
         rows = self._artifacts.read_rows(path)
         return tuple(balance_snapshot_from_row(row) for row in rows)
 
-    def write_balance_snapshots(self, path: Path, balances: tuple[BalanceSnapshot, ...]) -> None:
+    def write_balance_snapshots(
+        self, path: Path, balances: tuple[BalanceSnapshot, ...]
+    ) -> None:
         write_rows(
             path,
             BALANCE_SNAPSHOT_HEADER,
@@ -79,11 +83,31 @@ class FilesystemEvidenceRepository:
         rows = self._artifacts.read_rows(path)
         return tuple(balance_evidence_from_row(row) for row in rows)
 
-    def write_balance_evidence(self, path: Path, evidence: tuple[BalanceEvidence, ...]) -> None:
+    def write_balance_evidence(
+        self, path: Path, evidence: tuple[BalanceEvidence, ...]
+    ) -> None:
         write_rows(
             path,
             BALANCE_EVIDENCE_HEADER,
             (record.to_row() for record in evidence),
+        )
+
+    def read_balance_confirmations(
+        self,
+        path: Path,
+    ) -> tuple[BalanceConfirmation, ...]:
+        rows = self._artifacts.read_rows(path)
+        return tuple(balance_confirmation_from_row(row) for row in rows)
+
+    def write_balance_confirmations(
+        self,
+        path: Path,
+        confirmations: tuple[BalanceConfirmation, ...],
+    ) -> None:
+        write_rows(
+            path,
+            BALANCE_CONFIRMATION_HEADER,
+            (record.to_row() for record in confirmations),
         )
 
     def write_issue_records(self, path: Path, issues: tuple[IssueRecord, ...]) -> None:
@@ -129,5 +153,11 @@ class FilesystemEvidenceRepository:
             (review.to_row() for review in reviews),
         )
 
-    def write_location_inventory(self, path: Path, location_inventory: tuple[LocationInventoryRecord, ...]) -> None:
-        write_rows(path, LOCATION_INVENTORY_HEADER, (record.to_row() for record in location_inventory))
+    def write_location_inventory(
+        self, path: Path, location_inventory: tuple[LocationInventoryRecord, ...]
+    ) -> None:
+        write_rows(
+            path,
+            LOCATION_INVENTORY_HEADER,
+            (record.to_row() for record in location_inventory),
+        )

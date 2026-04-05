@@ -14,6 +14,7 @@ BALANCE_ASSERTION_HEADER = (
     "evidence_quantity",
     "quantity_difference",
     "status",
+    "reference_basis",
     "snapshot_as_of_at",
     "snapshot_as_of_precision",
     "evidence_as_of_at",
@@ -27,6 +28,9 @@ BALANCE_COVERAGE_HEADER = (
     "coverage_status",
     "snapshot_count",
     "evidence_count",
+    "source_backed_reference_count",
+    "operator_confirmation_count",
+    "missing_reference_count",
     "min_snapshot_date",
     "max_snapshot_date",
     "min_evidence_date",
@@ -41,7 +45,9 @@ BALANCE_CHECK_SUMMARY_HEADER = (
     "min_assertion_date",
     "max_assertion_date",
     "latest_clean_checked_date",
+    "latest_source_backed_checked_date",
     "assertion_status_counts",
+    "reference_basis_counts",
     "issue_kind_counts",
     "error_message",
 )
@@ -78,6 +84,9 @@ class BalanceCoverageRecord:
     coverage_status: str
     snapshot_count: int
     evidence_count: int
+    source_backed_reference_count: int = 0
+    operator_confirmation_count: int = 0
+    missing_reference_count: int = 0
     min_snapshot_date: str = ""
     max_snapshot_date: str = ""
     min_evidence_date: str = ""
@@ -89,6 +98,9 @@ class BalanceCoverageRecord:
             "coverage_status": self.coverage_status,
             "snapshot_count": str(self.snapshot_count),
             "evidence_count": str(self.evidence_count),
+            "source_backed_reference_count": str(self.source_backed_reference_count),
+            "operator_confirmation_count": str(self.operator_confirmation_count),
+            "missing_reference_count": str(self.missing_reference_count),
             "min_snapshot_date": self.min_snapshot_date,
             "max_snapshot_date": self.max_snapshot_date,
             "min_evidence_date": self.min_evidence_date,
@@ -102,6 +114,9 @@ class BalanceCoverageRecord:
             coverage_status=row["coverage_status"],
             snapshot_count=int(row["snapshot_count"]),
             evidence_count=int(row["evidence_count"]),
+            source_backed_reference_count=int(row["source_backed_reference_count"]),
+            operator_confirmation_count=int(row["operator_confirmation_count"]),
+            missing_reference_count=int(row["missing_reference_count"]),
             min_snapshot_date=row["min_snapshot_date"],
             max_snapshot_date=row["max_snapshot_date"],
             min_evidence_date=row["min_evidence_date"],
@@ -118,7 +133,9 @@ class BalanceCheckSummaryRecord:
     min_assertion_date: str
     max_assertion_date: str
     latest_clean_checked_date: str
+    latest_source_backed_checked_date: str
     assertion_status_counts: tuple[tuple[str, int], ...]
+    reference_basis_counts: tuple[tuple[str, int], ...]
     issue_kind_counts: tuple[tuple[str, int], ...]
     error_message: str = ""
 
@@ -131,8 +148,13 @@ class BalanceCheckSummaryRecord:
             "min_assertion_date": self.min_assertion_date,
             "max_assertion_date": self.max_assertion_date,
             "latest_clean_checked_date": self.latest_clean_checked_date,
+            "latest_source_backed_checked_date": self.latest_source_backed_checked_date,
             "assertion_status_counts": json.dumps(
                 dict(self.assertion_status_counts),
+                sort_keys=True,
+            ),
+            "reference_basis_counts": json.dumps(
+                dict(self.reference_basis_counts),
                 sort_keys=True,
             ),
             "issue_kind_counts": json.dumps(
@@ -152,7 +174,9 @@ class BalanceCheckSummaryRecord:
             min_assertion_date=row["min_assertion_date"],
             max_assertion_date=row["max_assertion_date"],
             latest_clean_checked_date=row["latest_clean_checked_date"],
+            latest_source_backed_checked_date=row["latest_source_backed_checked_date"],
             assertion_status_counts=_load_counts(row["assertion_status_counts"]),
+            reference_basis_counts=_load_counts(row["reference_basis_counts"]),
             issue_kind_counts=_load_counts(row["issue_kind_counts"]),
             error_message=row["error_message"],
         )

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Balance Submission"
+  short_description: "Scaffold, inspect, and submit manual balance packages."
+  default_prompt: "Use $balance-submission-operations to scaffold, inspect, and submit a manual balance package without guessing missing values."
+
+policy:
+  allow_implicit_invocation: true

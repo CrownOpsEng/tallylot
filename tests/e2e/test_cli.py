@@ -283,6 +283,243 @@ def test_checkpoint_extract_pdf_balances_cli_monthly_statement(tmp_path: Path) -
     assert rows[-1]["quantity"] == "0.00020245"
 
 
+def test_checkpoint_scaffold_balance_submission_cli(tmp_path: Path) -> None:
+    submission_root = tmp_path / "supporting" / "coinbase"
+
+    result = runner.invoke(
+        app,
+        [
+            "checkpoint",
+            "scaffold-balance-submission",
+            "--source",
+            "coinbase",
+            "--output-root",
+            str(submission_root),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["source"] == "coinbase"
+    assert (submission_root / "README.md").exists()
+    assert (submission_root / "balances.csv.example").exists()
+    assert not (submission_root / "balances.csv").exists()
+
+
+def test_checkpoint_submit_balances_cli(tmp_path: Path) -> None:
+    submission_root = tmp_path / "supporting" / "coinbase"
+    output_root = tmp_path / "normalized" / "coinbase"
+    _write_submission_rows(submission_root, source="coinbase")
+
+    result = runner.invoke(
+        app,
+        [
+            "checkpoint",
+            "submit-balances",
+            "--source",
+            "coinbase",
+            "--submission-root",
+            str(submission_root),
+            "--output-root",
+            str(output_root),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["blocked"] is False
+    assert payload["trust_tier"] == "operator_confirmed"
+    assert (output_root / "balances.csv").exists()
+    assert (output_root / "balance_confirmations.csv").exists()
+    assert not (output_root / "balance_evidence.csv").exists()
+    assert (output_root / "balance_submission_summary.json").exists()
+
+
+def test_checkpoint_submit_balances_cli_blocks_when_required_file_missing(
+    tmp_path: Path,
+) -> None:
+    submission_root = tmp_path / "supporting" / "coinbase"
+    output_root = tmp_path / "normalized" / "coinbase"
+    FilesystemArtifactStore().write_rows(
+        submission_root / "balances.csv",
+        (
+            "source",
+            "account",
+            "wallet",
+            "instrument_id",
+            "quantity",
+            "as_of_at",
+            "as_of_precision",
+            "balance_kind",
+            "notes",
+        ),
+        (
+            {
+                "source": "coinbase",
+                "account": "primary",
+                "wallet": "primary",
+                "instrument_id": "symbol:BTC@coinbase",
+                "quantity": "1.25",
+                "as_of_at": "2026-03-23",
+                "as_of_precision": "date",
+                "balance_kind": "available",
+                "notes": "",
+            },
+        ),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "checkpoint",
+            "submit-balances",
+            "--source",
+            "coinbase",
+            "--submission-root",
+            str(submission_root),
+            "--output-root",
+            str(output_root),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+    issue_rows = FilesystemArtifactStore().read_rows(
+        output_root / "balance_submission_issues.csv"
+    )
+
+    assert result.exit_code == 0
+    assert payload["blocked"] is True
+    assert issue_rows[0]["issue_kind"] == "missing_required_file"
+
+
+def test_checkpoint_submit_balances_cli_blocks_for_bad_header(tmp_path: Path) -> None:
+    submission_root = tmp_path / "supporting" / "coinbase"
+    output_root = tmp_path / "normalized" / "coinbase"
+    _write_submission_rows(submission_root, source="coinbase")
+    (submission_root / "balances.csv").write_text(
+        "source,wallet,instrument_id\ncoinbase,primary,symbol:BTC@coinbase\n",
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "checkpoint",
+            "submit-balances",
+            "--source",
+            "coinbase",
+            "--submission-root",
+            str(submission_root),
+            "--output-root",
+            str(output_root),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["blocked"] is True
+
+
+def test_checkpoint_submit_balances_cli_writes_optional_location_inventory(
+    tmp_path: Path,
+) -> None:
+    submission_root = tmp_path / "supporting" / "ledger"
+    output_root = tmp_path / "normalized" / "ledger"
+    _write_submission_rows(submission_root, source="ledger")
+    FilesystemArtifactStore().write_rows(
+        submission_root / "location_inventory.csv",
+        (
+            "source",
+            "account",
+            "wallet",
+            "identifier_kind",
+            "identifier_value",
+            "network_scope",
+            "controller",
+            "confidence",
+            "notes",
+        ),
+        (
+            {
+                "source": "ledger",
+                "account": "primary",
+                "wallet": "wallet-1",
+                "identifier_kind": "evm_address",
+                "identifier_value": "0x1111111111111111111111111111111111111111",
+                "network_scope": "ethereum",
+                "controller": "self_custody",
+                "confidence": "high",
+                "notes": "",
+            },
+        ),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "checkpoint",
+            "submit-balances",
+            "--source",
+            "ledger",
+            "--submission-root",
+            str(submission_root),
+            "--output-root",
+            str(output_root),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["wrote_location_inventory"] is True
+    assert (output_root / "location_inventory.csv").exists()
+
+
+def test_submitted_balance_output_can_be_checked_by_reconciliation_cli(
+    tmp_path: Path,
+) -> None:
+    submission_root = tmp_path / "supporting" / "coinbase"
+    normalized_root = tmp_path / "normalized" / "coinbase"
+    analysis_root = tmp_path / "analysis"
+    _write_submission_rows(submission_root, source="coinbase")
+
+    submit_result = runner.invoke(
+        app,
+        [
+            "checkpoint",
+            "submit-balances",
+            "--source",
+            "coinbase",
+            "--submission-root",
+            str(submission_root),
+            "--output-root",
+            str(normalized_root),
+        ],
+    )
+    check_result = runner.invoke(
+        app,
+        [
+            "reconciliation",
+            "balances",
+            "check",
+            "--input-root",
+            str(normalized_root),
+            "--output-root",
+            str(analysis_root),
+        ],
+    )
+
+    payload = json.loads(check_result.stdout)
+
+    assert submit_result.exit_code == 0
+    assert check_result.exit_code == 0
+    assert payload["clean_source_count"] == 1
+    assert (analysis_root / "balance_assertions.csv").exists()
+
+
 def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None:
     input_root = tmp_path / "coinbase"
     analysis_root = tmp_path / "analysis"
@@ -430,3 +667,73 @@ def test_reconciliation_balance_check_cli_rejects_output_inside_input_root(
     assert result.exit_code == 2
     assert "balance check output root must not be inside balance input" in result.stderr
     assert "Traceback" not in result.stdout + result.stderr
+
+
+def _write_submission_rows(submission_root: Path, *, source: str) -> None:
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        submission_root / "balances.csv",
+        (
+            "source",
+            "account",
+            "wallet",
+            "instrument_id",
+            "quantity",
+            "as_of_at",
+            "as_of_precision",
+            "balance_kind",
+            "notes",
+        ),
+        (
+            {
+                "source": source,
+                "account": "primary",
+                "wallet": "primary",
+                "instrument_id": f"symbol:BTC@{source}",
+                "quantity": "1.25",
+                "as_of_at": "2026-03-23",
+                "as_of_precision": "date",
+                "balance_kind": "available",
+                "notes": "snapshot",
+            },
+        ),
+    )
+    artifacts.write_rows(
+        submission_root / "balance_confirmations.csv",
+        (
+            "source",
+            "account",
+            "wallet",
+            "instrument_id",
+            "quantity",
+            "as_of_at",
+            "as_of_precision",
+            "balance_kind",
+            "confirmation_kind",
+            "support_ref",
+            "asserted_meaning",
+            "reviewed_by",
+            "reviewed_at",
+            "reason",
+            "notes",
+        ),
+        (
+            {
+                "source": source,
+                "account": "primary",
+                "wallet": "primary",
+                "instrument_id": f"symbol:BTC@{source}",
+                "quantity": "1.25",
+                "as_of_at": "2026-03-23",
+                "as_of_precision": "date",
+                "balance_kind": "available",
+                "confirmation_kind": "external_support",
+                "support_ref": "statement.pdf#page=1",
+                "asserted_meaning": "Closing balance from the cited statement.",
+                "reviewed_by": "operator@example.com",
+                "reviewed_at": "2026-03-24 00:00:00",
+                "reason": "Needed for runtime reconciliation.",
+                "notes": "confirmation",
+            },
+        ),
+    )

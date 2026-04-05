@@ -17,10 +17,14 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
    shell loops over source directories.
 2. Use `.claude/commands/reconciliation-balance-operations.md` when you need
    the repo's matching command-route checklist.
-3. Run coverage inspection first.
-4. Run balance checks second.
-5. Run reconciliation summary third.
-6. Use oracle commands only when the summary shows they are needed for
+3. Assume canonical `balances.csv` already exists with either
+   source-backed `balance_evidence.csv` or operator-confirmed
+   `balance_confirmations.csv`. Use `$balance-submission-operations` first
+   when the source still needs the manual submission path.
+4. Run coverage inspection first.
+5. Run balance checks second.
+6. Run reconciliation summary third.
+7. Use oracle commands only when the summary shows they are needed for
    explanation or trust validation.
 
 ## Preferred Execution
@@ -34,11 +38,16 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
 
 ## Outputs
 
-- Coverage artifacts describe whether a source is comparable yet.
+- Coverage artifacts describe whether a source is source-backed,
+  operator-confirmed, mixed-reference, missing-reference, missing-snapshots,
+  or empty.
 - Check artifacts write per-source `balance_assertions.csv`,
   `reconciliation_issues.csv`, and `balance_assertion_summary.json`.
+- Cross-source corroboration sidecars include `cross_source_assertions.csv`,
+  `cross_source_issues.csv`, and `cross_source_summary.json`.
 - Summary artifacts answer:
   - latest portfolio clean date
+  - latest portfolio source-backed date
   - latest clean source-backed date
   - latest observed assertion date
   - blocker counts by source and reason

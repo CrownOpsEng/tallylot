@@ -21,17 +21,29 @@ Runtime balance reconciliation workflows write these artifacts here:
 - `balance_check_summary.csv`
 - `balance_reconciliation_summary.json`
 - `balance_reconciliation_blockers.csv`
+- `cross_source_assertions.csv`
+- `cross_source_issues.csv`
+- `cross_source_summary.json`
 
 `balance_assertions.csv` records matched, drift, missing-side, and timestamp
-mismatch rows for one source's balances and source-backed balance evidence.
-`reconciliation_issues.csv` stores the corresponding explicit issues, including
-duplicate input rows, and `balance_assertion_summary.json` records the artifact
-counts for that run. `balance_coverage.csv` and
-`balance_coverage_summary.json` describe whether each source is comparable yet.
-`balance_check_summary.csv` records per-source check status and date ranges.
-`balance_reconciliation_summary.json` reports the latest clean and observed
-dates across the selected sources, and `balance_reconciliation_blockers.csv`
-breaks blockers down by source and reason.
+mismatch rows for one source's balances plus the selected reference basis.
+`reconciliation_issues.csv` stores the corresponding explicit issues,
+including duplicate input rows, and `balance_assertion_summary.json` records
+the artifact counts for that run. `balance_coverage.csv` and
+`balance_coverage_summary.json` describe whether each source is source-backed,
+operator-confirmed, mixed-reference, missing-reference, missing-snapshots, or
+empty. `balance_check_summary.csv` records per-source check status, date
+ranges, and reference-basis counts. `balance_reconciliation_summary.json`
+reports the latest clean, latest source-backed clean, and latest observed
+dates across the selected sources, and
+`balance_reconciliation_blockers.csv` breaks blockers down by source and
+reason.
+
+When compatible location inventory is available across sources,
+`cross_source_assertions.csv`, `cross_source_issues.csv`, and
+`cross_source_summary.json` record the additive corroboration sidecars emitted
+by `reconciliation balances check`. These sidecars improve confidence across
+sources, but they do not replace the source-local balance assertion outputs.
 
 ## Oracle Baseline Package
 

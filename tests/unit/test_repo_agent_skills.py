@@ -41,6 +41,15 @@ EXPECTED_SKILLS = {
             ".claude/commands/implementation-checkpoint.md",
         ),
     ),
+    "balance-submission-operations": ExpectedSkill(
+        display_name="Balance Submission",
+        required_fragments=(
+            ".claude/commands/balance-submission-operations.md",
+            ".agents/skills/balance-submission-operations/scripts/balance_submission_operations.py",
+            "checkpoint scaffold-balance-submission",
+            "checkpoint submit-balances",
+        ),
+    ),
     "reconciliation-balance-operations": ExpectedSkill(
         display_name="Reconciliation Balances",
         required_fragments=(

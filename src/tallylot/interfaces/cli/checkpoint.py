@@ -10,15 +10,34 @@ import typer
 from tallylot.application.checkpoints.contracts import (
     LocationInventoryRequest,
     PdfBalanceExtractRequest,
+    ScaffoldBalanceSubmissionRequest,
+    SubmitBalancesRequest,
 )
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.composition.runtime import (
+    configured_workspace_root,
     extract_pdf_balances_use_case,
     rebuild_location_inventory_use_case,
+    scaffold_balance_submission_use_case,
+    submit_balances_use_case,
 )
 
 from .apps import checkpoint_app
 from .shared import emit_response
+
+
+def _default_balance_submission_root(source: str) -> Path:
+    return (
+        configured_workspace_root()
+        / "working"
+        / "supporting_artifacts"
+        / "balance_submissions"
+        / source
+    )
+
+
+def _default_balance_output_root(source: str) -> Path:
+    return configured_workspace_root() / "working" / "normalized" / source
 
 
 @checkpoint_app.command("rebuild-location-inventory")
@@ -51,4 +70,53 @@ def _extract_pdf_balances(
     emit_response(response.__dict__)
 
 
-_COMMAND_CALLBACKS = (_rebuild_location_inventory, _extract_pdf_balances)
+@checkpoint_app.command("scaffold-balance-submission")
+def _scaffold_balance_submission(
+    source: Annotated[str, typer.Option()],
+    output_root: Annotated[
+        Path | None, typer.Option(dir_okay=True, file_okay=False)
+    ] = None,
+) -> None:
+    submission_root = output_root or _default_balance_submission_root(source)
+    response = scaffold_balance_submission_use_case().execute(
+        ScaffoldBalanceSubmissionRequest(
+            source=source,
+            submission_root_ref=to_resource_ref(submission_root),
+        )
+    )
+    emit_response(response.__dict__)
+
+
+@checkpoint_app.command("submit-balances")
+def _submit_balances(
+    source: Annotated[str, typer.Option()],
+    submission_root: Annotated[
+        Path | None, typer.Option(dir_okay=True, file_okay=False)
+    ] = None,
+    output_root: Annotated[
+        Path | None, typer.Option(dir_okay=True, file_okay=False)
+    ] = None,
+) -> None:
+    resolved_submission_root = submission_root or _default_balance_submission_root(
+        source
+    )
+    resolved_output_root = output_root or _default_balance_output_root(source)
+    try:
+        response = submit_balances_use_case().execute(
+            SubmitBalancesRequest(
+                source=source,
+                submission_root_ref=to_resource_ref(resolved_submission_root),
+                output_root_ref=to_resource_ref(resolved_output_root),
+            )
+        )
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    emit_response(response.__dict__)
+
+
+_COMMAND_CALLBACKS = (
+    _rebuild_location_inventory,
+    _extract_pdf_balances,
+    _scaffold_balance_submission,
+    _submit_balances,
+)

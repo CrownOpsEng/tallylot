@@ -9,7 +9,7 @@ from typing import Protocol
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind
-from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.types import LocationId
 from tallylot.ports.annotations import AdapterMetadata
 
@@ -43,10 +43,13 @@ class LocationInventoryRecord:
             "location_id": str(self.location_id),
             "location_kind": self.location_kind.value,
             "location_label": self.location_label,
-            "parent_location_id": "" if self.parent_location_id is None else str(self.parent_location_id),
+            "parent_location_id": ""
+            if self.parent_location_id is None
+            else str(self.parent_location_id),
             "location_path": " / ".join(self.location_path),
             "identifier_kind": self.identifier_kind,
-            "normalized_identifier": self.normalized_identifier or self.identifier_value,
+            "normalized_identifier": self.normalized_identifier
+            or self.identifier_value,
             "display_identifier": self.display_identifier or self.identifier_value,
             "network_scope": self.network_scope,
             "controller": self.controller,
@@ -62,14 +65,32 @@ class LocationInventoryRecord:
 class EvidenceRepositoryPort(Protocol):
     def read_balance_snapshots(self, path: Path) -> tuple[BalanceSnapshot, ...]: ...
 
-    def write_balance_snapshots(self, path: Path, balances: tuple[BalanceSnapshot, ...]) -> None: ...
+    def write_balance_snapshots(
+        self, path: Path, balances: tuple[BalanceSnapshot, ...]
+    ) -> None: ...
 
     def read_balance_evidence(self, path: Path) -> tuple[BalanceEvidence, ...]: ...
 
-    def write_balance_evidence(self, path: Path, evidence: tuple[BalanceEvidence, ...]) -> None: ...
+    def write_balance_evidence(
+        self, path: Path, evidence: tuple[BalanceEvidence, ...]
+    ) -> None: ...
 
-    def write_issue_records(self, path: Path, issues: tuple[IssueRecord, ...]) -> None: ...
+    def read_balance_confirmations(
+        self, path: Path
+    ) -> tuple[BalanceConfirmation, ...]: ...
 
-    def write_review_records(self, path: Path, reviews: tuple[NormalizationReviewRecord, ...]) -> None: ...
+    def write_balance_confirmations(
+        self, path: Path, confirmations: tuple[BalanceConfirmation, ...]
+    ) -> None: ...
 
-    def write_location_inventory(self, path: Path, location_inventory: tuple[LocationInventoryRecord, ...]) -> None: ...
+    def write_issue_records(
+        self, path: Path, issues: tuple[IssueRecord, ...]
+    ) -> None: ...
+
+    def write_review_records(
+        self, path: Path, reviews: tuple[NormalizationReviewRecord, ...]
+    ) -> None: ...
+
+    def write_location_inventory(
+        self, path: Path, location_inventory: tuple[LocationInventoryRecord, ...]
+    ) -> None: ...

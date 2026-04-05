@@ -35,14 +35,21 @@ Use the linked task guides when you need the detailed procedure for one stage.
 
 1. Run `source normalize` for the settled capture.
 2. Review the normalization artifacts and issues before rendering a candidate.
-3. Run `reconciliation balances check` when balance snapshots and
-   source-backed balance evidence are ready for a deterministic balance check.
-4. When you need a multi-source answer, run `reconciliation balances inspect`,
+3. If normalization did not already produce canonical `balances.csv` and
+   source-backed `balance_evidence.csv`, run
+   `checkpoint scaffold-balance-submission`, fill the submission package, then
+   run `checkpoint submit-balances` and review the submission summary and
+   issues.
+4. Run `reconciliation balances check` when canonical balance artifacts are
+   ready for a deterministic balance check, whether they came from
+   normalization or from validated manual submission with
+   `balance_confirmations.csv`.
+5. When you need a multi-source answer, run `reconciliation balances inspect`,
    then `reconciliation balances check`, then `reconciliation balances summarize`.
-5. Run `output render file` only when the round needs
+6. Run `output render file` only when the round needs
    `cointracking_candidate.csv`.
-6. Run `batch screen`, then `batch stage` only after the screen passes.
-7. Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the
+7. Run `batch screen`, then `batch stage` only after the screen passes.
+8. Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the
    detailed command flow, artifact review, and stop conditions.
 
 ## Seed And Verify A Round

@@ -14,6 +14,7 @@ from .reconciliation import (
     BalanceAssertion,
     BalanceAssertionResult,
     BalanceAssertionStatus,
+    BalanceConfirmation,
     BalanceEvidence,
     assert_balance_snapshots,
 )
@@ -43,6 +44,7 @@ __all__ = [
     "BalanceAssertion",
     "BalanceAssertionResult",
     "BalanceAssertionStatus",
+    "BalanceConfirmation",
     "BalanceSnapshot",
     "EconomicKind",
     "FactLegPolicy",
