@@ -17,9 +17,9 @@ from tallylot.domain.types import SourceId
 from tallylot.ports.evidence import LocationInventoryRecord
 
 from .contracts import (
-    BalanceEvidenceSubmissionRow,
     BalanceSubmissionRow,
     LocationInventorySubmissionRow,
+    SubmittedBalanceEvidenceRow,
 )
 from .schema import LOCATION_INVENTORY_FILENAME, MANUAL_SUBMISSION_EVIDENCE_KIND
 
@@ -35,7 +35,7 @@ def materialize_balance_submission(
     *,
     submission_root: str,
     balance_rows: tuple[BalanceSubmissionRow, ...],
-    balance_evidence_rows: tuple[BalanceEvidenceSubmissionRow, ...],
+    balance_evidence_rows: tuple[SubmittedBalanceEvidenceRow, ...],
     location_inventory_rows: tuple[LocationInventorySubmissionRow, ...],
 ) -> MaterializedBalanceSubmission:
     return MaterializedBalanceSubmission(
@@ -63,7 +63,7 @@ def _balance_snapshot_from_row(row: BalanceSubmissionRow) -> BalanceSnapshot:
     )
 
 
-def _balance_evidence_from_row(row: BalanceEvidenceSubmissionRow) -> BalanceEvidence:
+def _balance_evidence_from_row(row: SubmittedBalanceEvidenceRow) -> BalanceEvidence:
     return BalanceEvidence(
         source=SourceId(row.source),
         location_id=location_id_from_parts(row.source, row.account, row.wallet),

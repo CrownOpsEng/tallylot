@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from tallylot.application.checkpoints.contracts import (
@@ -29,6 +30,18 @@ from .schema import (
 from .validation import validate_balance_submission
 
 
+@dataclass(frozen=True)
+class _SubmissionStatus:
+    balance_row_count: int
+    balance_evidence_row_count: int
+    location_inventory_row_count: int
+    issue_count: int
+    blocked: bool
+    wrote_location_inventory: bool
+    ready_for_balance_check: bool
+    notes: tuple[str, ...]
+
+
 class SubmitBalancesUseCase:
     def __init__(
         self,
@@ -49,6 +62,16 @@ class SubmitBalancesUseCase:
         )
         ensure_directory(output_root)
         if not submission_root.is_dir():
+            status = _SubmissionStatus(
+                balance_row_count=0,
+                balance_evidence_row_count=0,
+                location_inventory_row_count=0,
+                issue_count=1,
+                blocked=True,
+                wrote_location_inventory=False,
+                ready_for_balance_check=False,
+                notes=("Submission root is missing.",),
+            )
             issues = [
                 {
                     "file_name": "",
@@ -64,26 +87,19 @@ class SubmitBalancesUseCase:
                 summary_payload=self._summary_payload(
                     submission_root=submission_root,
                     output_root=output_root,
-                    balance_row_count=0,
-                    balance_evidence_row_count=0,
-                    location_inventory_row_count=0,
-                    issue_count=1,
-                    blocked=True,
-                    wrote_location_inventory=False,
-                    ready_for_balance_check=False,
-                    notes=["Submission root is missing."],
+                    status=status,
                 ),
             )
             return SubmitBalancesResponse(
                 submission_root_ref=request.submission_root_ref,
                 output_root_ref=request.output_root_ref,
-                balance_row_count=0,
-                balance_evidence_row_count=0,
-                location_inventory_row_count=0,
-                issue_count=1,
-                blocked=True,
-                wrote_location_inventory=False,
-                ready_for_balance_check=False,
+                balance_row_count=status.balance_row_count,
+                balance_evidence_row_count=status.balance_evidence_row_count,
+                location_inventory_row_count=status.location_inventory_row_count,
+                issue_count=status.issue_count,
+                blocked=status.blocked,
+                wrote_location_inventory=status.wrote_location_inventory,
+                ready_for_balance_check=status.ready_for_balance_check,
             )
         validation = validate_balance_submission(
             submission_root,
@@ -116,30 +132,7 @@ class SubmitBalancesUseCase:
                 _remove_file_if_present(output_root / LOCATION_INVENTORY_FILENAME)
         else:
             _clear_canonical_outputs(output_root)
-        notes = (
-            ["Canonical balance artifacts were written."]
-            if not blocked
-            else ["Submission is blocked. Canonical balance artifacts were cleared."]
-        )
-        self._write_status_artifacts(
-            output_root=output_root,
-            issues=[issue.to_row() for issue in validation.issues],
-            summary_payload=self._summary_payload(
-                submission_root=submission_root,
-                output_root=output_root,
-                balance_row_count=len(validation.balance_rows),
-                balance_evidence_row_count=len(validation.balance_evidence_rows),
-                location_inventory_row_count=len(validation.location_inventory_rows),
-                issue_count=len(validation.issues),
-                blocked=blocked,
-                wrote_location_inventory=wrote_location_inventory,
-                ready_for_balance_check=not blocked,
-                notes=notes,
-            ),
-        )
-        return SubmitBalancesResponse(
-            submission_root_ref=request.submission_root_ref,
-            output_root_ref=request.output_root_ref,
+        status = _SubmissionStatus(
             balance_row_count=len(validation.balance_rows),
             balance_evidence_row_count=len(validation.balance_evidence_rows),
             location_inventory_row_count=len(validation.location_inventory_rows),
@@ -147,6 +140,33 @@ class SubmitBalancesUseCase:
             blocked=blocked,
             wrote_location_inventory=wrote_location_inventory,
             ready_for_balance_check=not blocked,
+            notes=(
+                ("Canonical balance artifacts were written.",)
+                if not blocked
+                else (
+                    "Submission is blocked. Canonical balance artifacts were cleared.",
+                )
+            ),
+        )
+        self._write_status_artifacts(
+            output_root=output_root,
+            issues=[issue.to_row() for issue in validation.issues],
+            summary_payload=self._summary_payload(
+                submission_root=submission_root,
+                output_root=output_root,
+                status=status,
+            ),
+        )
+        return SubmitBalancesResponse(
+            submission_root_ref=request.submission_root_ref,
+            output_root_ref=request.output_root_ref,
+            balance_row_count=status.balance_row_count,
+            balance_evidence_row_count=status.balance_evidence_row_count,
+            location_inventory_row_count=status.location_inventory_row_count,
+            issue_count=status.issue_count,
+            blocked=status.blocked,
+            wrote_location_inventory=status.wrote_location_inventory,
+            ready_for_balance_check=status.ready_for_balance_check,
         )
 
     def _write_status_artifacts(
@@ -164,26 +184,19 @@ class SubmitBalancesUseCase:
         *,
         submission_root: Path,
         output_root: Path,
-        balance_row_count: int,
-        balance_evidence_row_count: int,
-        location_inventory_row_count: int,
-        issue_count: int,
-        blocked: bool,
-        wrote_location_inventory: bool,
-        ready_for_balance_check: bool,
-        notes: list[str],
+        status: _SubmissionStatus,
     ) -> dict[str, JsonValue]:
-        notes_payload: list[JsonValue] = [note for note in notes]
+        notes_payload: list[JsonValue] = list(status.notes)
         return {
             "submission_root": str(submission_root),
             "output_root": str(output_root),
-            "balance_row_count": balance_row_count,
-            "balance_evidence_row_count": balance_evidence_row_count,
-            "location_inventory_row_count": location_inventory_row_count,
-            "issue_count": issue_count,
-            "blocked": blocked,
-            "wrote_location_inventory": wrote_location_inventory,
-            "ready_for_balance_check": ready_for_balance_check,
+            "balance_row_count": status.balance_row_count,
+            "balance_evidence_row_count": status.balance_evidence_row_count,
+            "location_inventory_row_count": status.location_inventory_row_count,
+            "issue_count": status.issue_count,
+            "blocked": status.blocked,
+            "wrote_location_inventory": status.wrote_location_inventory,
+            "ready_for_balance_check": status.ready_for_balance_check,
             "notes": notes_payload,
         }
 

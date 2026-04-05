@@ -76,6 +76,34 @@ def test_run_gate_exports_external_uv_project_environment(
     )
 
 
+def test_run_gate_sets_absolute_coverage_config_for_pytest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured_environment: dict[str, str] = {}
+
+    def fake_run(
+        command: tuple[str, ...],
+        *,
+        capture_output: bool,
+        text: bool,
+        check: bool,
+        env: dict[str, str],
+    ) -> subprocess.CompletedProcess[str]:
+        del capture_output, text, check
+        captured_environment.update(env)
+        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    gate = _quality_gates(full_tests=True)[-1]
+    tools.run_quality_gates._run_gate(gate)
+
+    coverage_config = str(repo_root() / "pyproject.toml")
+    assert captured_environment["COVERAGE_PROCESS_START"] == coverage_config
+    assert captured_environment["COVERAGE_RCFILE"] == coverage_config
+    assert coverage_config in captured_environment["PYTEST_ADDOPTS"]
+
+
 def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> None:
     config_text = (repo_root() / ".pre-commit-config.yaml").read_text(encoding="utf-8")
 

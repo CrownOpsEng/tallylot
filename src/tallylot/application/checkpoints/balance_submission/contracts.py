@@ -41,7 +41,7 @@ class BalanceSubmissionRow:
 
 
 @dataclass(frozen=True)
-class BalanceEvidenceSubmissionRow:
+class SubmittedBalanceEvidenceRow:
     source: str
     account: str
     wallet: str
@@ -70,6 +70,6 @@ class LocationInventorySubmissionRow:
 @dataclass(frozen=True)
 class BalanceSubmissionValidationResult:
     balance_rows: tuple[BalanceSubmissionRow, ...]
-    balance_evidence_rows: tuple[BalanceEvidenceSubmissionRow, ...]
+    balance_evidence_rows: tuple[SubmittedBalanceEvidenceRow, ...]
     location_inventory_rows: tuple[LocationInventorySubmissionRow, ...]
     issues: tuple[BalanceSubmissionIssue, ...]
