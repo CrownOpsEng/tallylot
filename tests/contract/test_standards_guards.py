@@ -300,6 +300,18 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
         encoding="utf-8"
     )
     agents_text = (repo_root() / "AGENTS.md").read_text(encoding="utf-8")
+    pr_template_text = (repo_root() / ".github" / "pull_request_template.md").read_text(
+        encoding="utf-8"
+    )
+    message_standards_text = (repo_root() / "tools/message_standards.py").read_text(
+        encoding="utf-8"
+    )
+    pr_validator_text = (repo_root() / "tools/validate_pr_metadata.py").read_text(
+        encoding="utf-8"
+    )
+    commit_validator_text = (
+        repo_root() / "tools/validate_commit_message.py"
+    ).read_text(encoding="utf-8")
     checkpoint_text = (
         repo_root() / ".claude/commands/implementation-checkpoint.md"
     ).read_text(encoding="utf-8")
@@ -309,6 +321,11 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert "<pr title> (#<pr number>)" in agents_text
     assert "<pr title> (#<pr number>)" in checkpoint_text
     assert "Follow-ups:" in commits_text
+    assert "optional `Follow-ups:` section is allowed" in commits_text
+    assert "Follow-ups:" in pr_template_text
+    assert 'PR_BODY_OPTIONAL_SECTIONS = ("Follow-ups",)' in message_standards_text
+    assert "PR_BODY_OPTIONAL_SECTIONS" in pr_validator_text
+    assert "GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS" in commit_validator_text
     assert "- Closes #123:" in commits_text
     assert "duplicate/superseded label" in commits_text
     assert "duplicate/superseded label" in implementation_text

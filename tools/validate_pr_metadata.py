@@ -6,7 +6,12 @@ import subprocess
 import sys
 from collections.abc import Sequence
 
-from tools.message_standards import validate_structured_sections, validate_subject_line
+from tools.message_standards import (
+    PR_BODY_OPTIONAL_SECTIONS,
+    PR_BODY_REQUIRED_SECTIONS,
+    validate_structured_sections,
+    validate_subject_line,
+)
 
 FOLLOW_UP_PATTERN = re.compile(r"^- Refs #\d+(?:: .+\S)?$")
 CLOSING_BULLET_PATTERN = re.compile(r"^- Closes #\d+: .+\S$")
@@ -41,7 +46,7 @@ def _normalize_body_lines(body: str) -> tuple[str, ...]:
 
 
 def _parse_sections(body: str) -> dict[str, tuple[str, ...]]:
-    sections = ("Why", "What", "Checks", "Included checkpoints", "Follow-ups")
+    sections = (*PR_BODY_REQUIRED_SECTIONS, *PR_BODY_OPTIONAL_SECTIONS)
     parsed: dict[str, list[str]] = {section: [] for section in sections}
     current_section: str | None = None
 
@@ -90,8 +95,8 @@ def _validate_pr_body(body: str) -> tuple[str, ...]:
     errors = list(
         validate_structured_sections(
             ("placeholder", "", *lines),
-            required_sections=("Why", "What", "Checks", "Included checkpoints"),
-            optional_sections=("Follow-ups",),
+            required_sections=PR_BODY_REQUIRED_SECTIONS,
+            optional_sections=PR_BODY_OPTIONAL_SECTIONS,
             require_body=True,
             label="PR",
             allow_footers=False,
