@@ -7,6 +7,7 @@ from tallylot.application.intake.path_rules import override_target_source
 from tallylot.application.intake.source_labels import (
     load_source_label_context,
     resolve_source_label,
+    SourceLabelResolutionRequest,
 )
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
@@ -69,17 +70,19 @@ def test_resolve_source_label_prefers_explicit_map_for_source_scoped_working_pat
 
     decision = resolve_source_label(
         artifacts=artifacts,
-        workspace_root=workspace_root,
         context=load_source_label_context(artifacts, workspace_root),
-        route_key="2021/Binance/trade Analysis - ADA-USDT - Binance.png",
-        facts=IntakeFileFacts(),
-        source_folder="binance",
-        target_path=workspace_root
-        / "working"
-        / "supporting_artifacts"
-        / "binance"
-        / "incoming"
-        / "trade Analysis - ADA-USDT - Binance.png",
+        request=SourceLabelResolutionRequest(
+            workspace_root=workspace_root,
+            route_key="2021/Binance/trade Analysis - ADA-USDT - Binance.png",
+            facts=IntakeFileFacts(),
+            source_folder="binance",
+            target_path=workspace_root
+            / "working"
+            / "supporting_artifacts"
+            / "binance"
+            / "incoming"
+            / "trade Analysis - ADA-USDT - Binance.png",
+        ),
     )
 
     assert decision.source_folder == "binance-main"
@@ -107,18 +110,20 @@ def test_resolve_source_label_blocks_matching_unknown_source_mapping(
 
     decision = resolve_source_label(
         artifacts=artifacts,
-        workspace_root=workspace_root,
         context=load_source_label_context(artifacts, workspace_root),
-        route_key="transactions.csv",
-        facts=IntakeFileFacts(),
-        source_folder="unclassified",
-        target_path=workspace_root
-        / "evidence"
-        / "raw"
-        / "source"
-        / "unclassified"
-        / "incoming"
-        / "transactions.csv",
+        request=SourceLabelResolutionRequest(
+            workspace_root=workspace_root,
+            route_key="transactions.csv",
+            facts=IntakeFileFacts(),
+            source_folder="unclassified",
+            target_path=workspace_root
+            / "evidence"
+            / "raw"
+            / "source"
+            / "unclassified"
+            / "incoming"
+            / "transactions.csv",
+        ),
     )
 
     assert decision.source_resolution_status == "explicit_map_blocked"

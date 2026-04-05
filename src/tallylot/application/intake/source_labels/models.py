@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
+
+from tallylot.application.intake.file_facts import IntakeFileFacts
 
 
 @dataclass(frozen=True)
@@ -45,3 +48,12 @@ class SourceLabelResolution:
     review_codes: str = ""
     review_reason: str = ""
     blocked: bool = False
+
+
+@dataclass(frozen=True)
+class SourceLabelResolutionRequest:
+    workspace_root: Path
+    route_key: str
+    facts: IntakeFileFacts
+    source_folder: str
+    target_path: Path

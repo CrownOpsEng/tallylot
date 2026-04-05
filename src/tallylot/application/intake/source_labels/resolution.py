@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
-from tallylot.application.intake.file_facts import IntakeFileFacts
-from tallylot.application.intake.inventory import resolve_inventory_route
+from tallylot.application.intake.inventory import (
+    InventoryRouteDecision,
+    resolve_inventory_route,
+)
 from tallylot.ports.artifacts import ArtifactStorePort
 
 from .models import (
     SourceLabelConfigIssue,
     SourceLabelContext,
     SourceLabelResolution,
+    SourceLabelResolutionRequest,
     SourceLabelRule,
 )
 
@@ -19,78 +20,105 @@ from .models import (
 def resolve_source_label(
     *,
     artifacts: ArtifactStorePort,
-    workspace_root: Path,
     context: SourceLabelContext,
-    route_key: str,
-    facts: IntakeFileFacts,
-    source_folder: str,
-    target_path: Path,
+    request: SourceLabelResolutionRequest,
 ) -> SourceLabelResolution:
-    if not _is_source_scoped_target_path(target_path, workspace_root):
-        return SourceLabelResolution(
-            source_folder=source_folder,
-            source_resolution_status="routed_source"
-            if source_folder != "unclassified"
-            else "routed_unclassified",
-            source_resolution_reason=(
-                f"Non-source-scoped destination keeps routed source {source_folder}."
-                if source_folder != "unclassified"
-                else "Non-source-scoped destination keeps routed unclassified source."
-            ),
-            inventory_match_status="unmatched",
-        )
-    explicit_issue = _matching_issue(context.issues, route_key)
-    explicit_rule = _matching_rule(context.rules, route_key)
+    if not _is_source_scoped_target_path(request):
+        return _non_source_scoped_resolution(request.source_folder)
+    explicit_issue = _matching_issue(context.issues, request.route_key)
+    explicit_rule = _matching_rule(context.rules, request.route_key)
     if explicit_issue is not None and (
         explicit_rule is None
         or len(explicit_issue.matching_prefix) >= len(explicit_rule.prefix)
     ):
-        return SourceLabelResolution(
-            source_folder=source_folder,
-            source_resolution_status="explicit_map_blocked",
-            source_resolution_reason=explicit_issue.message,
-            inventory_match_status="not_evaluated_explicit_map",
-            review_required="yes",
-            review_codes=explicit_issue.review_code,
-            review_reason=explicit_issue.message,
-            blocked=True,
-        )
+        return _blocked_resolution(request.source_folder, explicit_issue)
     if explicit_rule is not None:
-        return SourceLabelResolution(
-            source_folder=explicit_rule.source,
-            source_resolution_status="explicit_map",
-            source_resolution_reason=f"Explicit source map matched prefix {explicit_rule.prefix} -> {explicit_rule.source}",
-            inventory_match_status="not_evaluated_explicit_map",
-        )
+        return _explicit_rule_resolution(explicit_rule)
     inventory_route = resolve_inventory_route(
         artifacts=artifacts,
-        workspace_root=workspace_root,
-        source_folder=source_folder,
-        facts=facts,
+        workspace_root=request.workspace_root,
+        source_folder=request.source_folder,
+        facts=request.facts,
     )
-    if inventory_route.inventory_match_status == "inventory_source_match":
+    return _inventory_or_routed_resolution(request.source_folder, inventory_route)
+
+
+def _non_source_scoped_resolution(source_folder: str) -> SourceLabelResolution:
+    return SourceLabelResolution(
+        source_folder=source_folder,
+        source_resolution_status="routed_source"
+        if source_folder != "unclassified"
+        else "routed_unclassified",
+        source_resolution_reason=(
+            f"Non-source-scoped destination keeps routed source {source_folder}."
+            if source_folder != "unclassified"
+            else "Non-source-scoped destination keeps routed unclassified source."
+        ),
+        inventory_match_status="unmatched",
+    )
+
+
+def _blocked_resolution(
+    source_folder: str,
+    issue: SourceLabelConfigIssue,
+) -> SourceLabelResolution:
+    return SourceLabelResolution(
+        source_folder=source_folder,
+        source_resolution_status="explicit_map_blocked",
+        source_resolution_reason=issue.message,
+        inventory_match_status="not_evaluated_explicit_map",
+        review_required="yes",
+        review_codes=issue.review_code,
+        review_reason=issue.message,
+        blocked=True,
+    )
+
+
+def _explicit_rule_resolution(rule: SourceLabelRule) -> SourceLabelResolution:
+    return SourceLabelResolution(
+        source_folder=rule.source,
+        source_resolution_status="explicit_map",
+        source_resolution_reason=(
+            f"Explicit source map matched prefix {rule.prefix} -> {rule.source}"
+        ),
+        inventory_match_status="not_evaluated_explicit_map",
+    )
+
+
+def _inventory_or_routed_resolution(
+    source_folder: str,
+    inventory_route: InventoryRouteDecision,
+) -> SourceLabelResolution:
+    status = inventory_route.inventory_match_status
+    if status == "inventory_source_match":
         return SourceLabelResolution(
             source_folder=inventory_route.source_folder,
             source_resolution_status="inventory_source_match",
-            source_resolution_reason=f"Wallet evidence matched existing inventory source {inventory_route.source_folder}",
-            inventory_match_status=inventory_route.inventory_match_status,
+            source_resolution_reason=(
+                "Wallet evidence matched existing inventory source "
+                f"{inventory_route.source_folder}"
+            ),
+            inventory_match_status=status,
         )
-    if inventory_route.inventory_match_status == "inventory_source_ambiguous":
+    if status == "inventory_source_ambiguous":
         return SourceLabelResolution(
             source_folder=inventory_route.source_folder,
             source_resolution_status="inventory_source_ambiguous",
             source_resolution_reason=inventory_route.review_reason,
-            inventory_match_status=inventory_route.inventory_match_status,
+            inventory_match_status=status,
             review_required=inventory_route.review_required,
             review_codes=inventory_route.review_codes,
             review_reason=inventory_route.review_reason,
         )
-    if inventory_route.inventory_match_status == "generic_scope_routing":
+    if status == "generic_scope_routing":
         return SourceLabelResolution(
             source_folder=inventory_route.source_folder,
             source_resolution_status="generic_scope_routing",
-            source_resolution_reason=f"Generated source label {inventory_route.source_folder} from wallet scope evidence.",
-            inventory_match_status=inventory_route.inventory_match_status,
+            source_resolution_reason=(
+                f"Generated source label {inventory_route.source_folder} "
+                "from wallet scope evidence."
+            ),
+            inventory_match_status=status,
         )
     return SourceLabelResolution(
         source_folder=source_folder,
@@ -98,11 +126,12 @@ def resolve_source_label(
         if source_folder != "unclassified"
         else "routed_unclassified",
         source_resolution_reason=(
-            f"Fell back to routed source {source_folder} from adapter or file-signature matching."
+            "Fell back to routed source "
+            f"{source_folder} from adapter or file-signature matching."
             if source_folder != "unclassified"
             else "No explicit or inferred source match; using unclassified."
         ),
-        inventory_match_status=inventory_route.inventory_match_status,
+        inventory_match_status=status,
     )
 
 
@@ -118,7 +147,8 @@ def _matching_issue(
     if not matching_issues:
         return None
     matching_issues.sort(
-        key=lambda item: (len(item.matching_prefix), item.matching_prefix), reverse=True
+        key=lambda item: (len(item.matching_prefix), item.matching_prefix),
+        reverse=True,
     )
     return matching_issues[0]
 
@@ -144,9 +174,9 @@ def _prefix_matches(prefix: str, route_key: str) -> bool:
     return next_character in {"/", ":"}
 
 
-def _is_source_scoped_target_path(target_path: Path, workspace_root: Path) -> bool:
+def _is_source_scoped_target_path(request: SourceLabelResolutionRequest) -> bool:
     try:
-        relative_path = target_path.relative_to(workspace_root)
+        relative_path = request.target_path.relative_to(request.workspace_root)
     except ValueError:
         return False
     parts = relative_path.parts

@@ -113,23 +113,34 @@ def _normalize_prefix(value: str) -> tuple[str, str]:
         return ".", ""
     while normalized.startswith("./"):
         normalized = normalized[2:]
+    normalized, prefix_error = _normalize_prefix_root(normalized, value)
+    if prefix_error:
+        return "", prefix_error
+    left, separator, right = normalized.partition("::")
+    normalized_left, left_error = _normalize_part(left)
+    normalized_right = ""
+    right_error = ""
+    if separator:
+        normalized_right, right_error = _normalize_part(right)
+    if left_error or right_error:
+        return "", left_error or right_error
+    if not separator:
+        return normalized_left, ""
+    return f"{normalized_left}::{normalized_right}", ""
+
+
+def _normalize_prefix_root(
+    normalized: str,
+    original_value: str,
+) -> tuple[str, str]:
     if not normalized:
         return ".", ""
     if normalized.startswith("/") or _WINDOWS_ABSOLUTE_PREFIX.match(normalized):
         return (
             "",
-            f"Source label map prefix {value!r} must stay relative to the incoming capture root.",
+            f"Source label map prefix {original_value!r} must stay relative to the incoming capture root.",
         )
-    left, separator, right = normalized.partition("::")
-    normalized_left, left_error = _normalize_part(left)
-    if left_error:
-        return "", left_error
-    if not separator:
-        return normalized_left, ""
-    normalized_right, right_error = _normalize_part(right)
-    if right_error:
-        return "", right_error
-    return f"{normalized_left}::{normalized_right}", ""
+    return normalized, ""
 
 
 def _normalize_part(value: str) -> tuple[str, str]:

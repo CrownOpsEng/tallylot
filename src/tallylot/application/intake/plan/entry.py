@@ -5,6 +5,7 @@ from __future__ import annotations
 from tallylot.application.intake.contracts import IntakePlanRequest
 from tallylot.application.intake.source_labels import (
     SourceLabelContext,
+    SourceLabelResolutionRequest,
     resolve_source_label,
 )
 from tallylot.application.resource_refs import path_from_ref
@@ -52,12 +53,14 @@ def build_planned_item(
     )
     source_resolution = resolve_source_label(
         artifacts=artifacts,
-        workspace_root=workspace_root,
         context=source_label_context,
-        route_key=route_key,
-        facts=facts,
-        source_folder=route.source_folder,
-        target_path=route.target_path,
+        request=SourceLabelResolutionRequest(
+            workspace_root=workspace_root,
+            route_key=route_key,
+            facts=facts,
+            source_folder=route.source_folder,
+            target_path=route.target_path,
+        ),
     )
     bundle_id_value = bundle_id(entry, source_folder=source_resolution.source_folder)
     bundle_relative_path_value = bundle_relative_path(entry)
