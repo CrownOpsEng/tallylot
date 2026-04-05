@@ -67,21 +67,35 @@ def override_target_source(
     if previous_source == new_source:
         return target_path
     parts = list(target_path.parts)
-    source_index = _source_segment_index(parts)
-    if source_index is None or parts[source_index] != previous_source:
-        return target_path
-    parts[source_index] = new_source
-    return Path(*parts)
+    for source_index in _source_segment_indexes(parts, previous_source):
+        parts[source_index] = new_source
+        return Path(*parts)
+    return target_path
 
 
-def _source_segment_index(parts: list[str]) -> int | None:
-    for index in range(len(parts) - 3):
-        if (
-            parts[index : index + 3] == ["evidence", "raw", "source"]
-            and len(parts) > index + 3
-        ):
-            return index + 3
-    for index in range(len(parts) - 2):
-        if parts[index] == "working" and len(parts) > index + 2:
-            return index + 2
-    return None
+def is_source_scoped_target_path(
+    target_path: Path,
+    *,
+    workspace_root: Path,
+    source_folder: str,
+) -> bool:
+    try:
+        relative_path = target_path.relative_to(workspace_root)
+    except ValueError:
+        return False
+    return any(
+        True for _ in _source_segment_indexes(list(relative_path.parts), source_folder)
+    )
+
+
+def _source_segment_indexes(parts: list[str], source_folder: str) -> tuple[int, ...]:
+    indexes: list[int] = []
+    for index, part in enumerate(parts):
+        if part != source_folder:
+            continue
+        if index >= 3 and parts[index - 3 : index] == ["evidence", "raw", "source"]:
+            indexes.append(index)
+            continue
+        if index >= 2 and parts[index - 2] == "working":
+            indexes.append(index)
+    return tuple(indexes)

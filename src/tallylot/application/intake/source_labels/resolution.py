@@ -6,6 +6,7 @@ from tallylot.application.intake.inventory import (
     InventoryRouteDecision,
     resolve_inventory_route,
 )
+from tallylot.application.intake.path_rules import is_source_scoped_target_path
 from tallylot.ports.artifacts import ArtifactStorePort
 
 from .models import (
@@ -23,7 +24,11 @@ def resolve_source_label(
     context: SourceLabelContext,
     request: SourceLabelResolutionRequest,
 ) -> SourceLabelResolution:
-    if not _is_source_scoped_target_path(request):
+    if not is_source_scoped_target_path(
+        request.target_path,
+        workspace_root=request.workspace_root,
+        source_folder=request.source_folder,
+    ):
         return _non_source_scoped_resolution(request.source_folder)
     explicit_issue = _matching_issue(context.issues, request.route_key)
     explicit_rule = _matching_rule(context.rules, request.route_key)
@@ -172,14 +177,3 @@ def _prefix_matches(prefix: str, route_key: str) -> bool:
         return False
     next_character = route_key[len(prefix) : len(prefix) + 1]
     return next_character in {"/", ":"}
-
-
-def _is_source_scoped_target_path(request: SourceLabelResolutionRequest) -> bool:
-    try:
-        relative_path = request.target_path.relative_to(request.workspace_root)
-    except ValueError:
-        return False
-    parts = relative_path.parts
-    if len(parts) >= 4 and parts[:3] == ("evidence", "raw", "source"):
-        return True
-    return len(parts) >= 3 and parts[0] == "working"
