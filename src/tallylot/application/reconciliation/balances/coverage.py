@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
 from tallylot.application.reconciliation.balances.contracts import (
@@ -22,6 +23,17 @@ from tallylot.application.workspace.filesystem import (
 )
 from tallylot.domain.types import JsonValue
 from tallylot.ports.artifacts import ArtifactStorePort
+
+
+@dataclass(frozen=True)
+class _CoverageInputs:
+    snapshot_exists: bool
+    evidence_exists: bool
+    confirmation_exists: bool
+    snapshot_count: int
+    reference_row_count: int
+    reference_count: int
+    missing_reference_count: int
 
 
 class BalanceCoverageWorkflow:
@@ -89,17 +101,18 @@ def _build_coverage_record(
         (snapshot_keys - evidence_keys) & confirmation_keys
     )
     missing_reference_count = len(snapshot_keys - evidence_keys - confirmation_keys)
+    coverage_inputs = _CoverageInputs(
+        snapshot_exists=snapshot_path.is_file(),
+        evidence_exists=evidence_path.is_file(),
+        confirmation_exists=confirmation_path.is_file(),
+        snapshot_count=len(snapshot_rows),
+        reference_row_count=len(evidence_rows) + len(confirmation_rows),
+        reference_count=source_backed_reference_count + operator_confirmation_count,
+        missing_reference_count=missing_reference_count,
+    )
     return BalanceCoverageRecord(
         source=source_root.name,
-        coverage_status=_coverage_status(
-            snapshot_exists=snapshot_path.is_file(),
-            evidence_exists=evidence_path.is_file(),
-            confirmation_exists=confirmation_path.is_file(),
-            snapshot_count=len(snapshot_rows),
-            reference_row_count=len(evidence_rows) + len(confirmation_rows),
-            reference_count=source_backed_reference_count + operator_confirmation_count,
-            missing_reference_count=missing_reference_count,
-        ),
+        coverage_status=_coverage_status(coverage_inputs),
         snapshot_count=len(snapshot_rows),
         evidence_count=len(evidence_rows),
         source_backed_reference_count=source_backed_reference_count,
@@ -112,34 +125,25 @@ def _build_coverage_record(
     )
 
 
-def _coverage_status(
-    *,
-    snapshot_exists: bool,
-    evidence_exists: bool,
-    confirmation_exists: bool,
-    snapshot_count: int,
-    reference_row_count: int,
-    reference_count: int,
-    missing_reference_count: int,
-) -> str:
+def _coverage_status(inputs: _CoverageInputs) -> str:
     if (
-        snapshot_exists
-        and (evidence_exists or confirmation_exists)
-        and snapshot_count == 0
-        and reference_row_count == 0
+        inputs.snapshot_exists
+        and (inputs.evidence_exists or inputs.confirmation_exists)
+        and inputs.snapshot_count == 0
+        and inputs.reference_row_count == 0
     ):
-        return "empty_source"
-    if snapshot_count == 0:
-        return "missing_snapshots"
-    if missing_reference_count > 0:
-        return "missing_reference"
-    if reference_count == 0:
-        return "missing_reference"
-    if evidence_exists and confirmation_exists:
-        return "mixed_reference"
-    if evidence_exists:
-        return "source_backed"
-    return "operator_confirmed"
+        status = "empty_source"
+    elif inputs.snapshot_count == 0:
+        status = "missing_snapshots"
+    elif inputs.missing_reference_count > 0 or inputs.reference_count == 0:
+        status = "missing_reference"
+    elif inputs.evidence_exists and inputs.confirmation_exists:
+        status = "mixed_reference"
+    elif inputs.evidence_exists:
+        status = "source_backed"
+    else:
+        status = "operator_confirmed"
+    return status
 
 
 def _row_dates(rows: list[dict[str, str]]) -> tuple[str, ...]:
