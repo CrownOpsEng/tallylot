@@ -109,7 +109,7 @@ def _coverage_status(
     if snapshot_count == 0:
         return "missing_snapshots"
     if evidence_count == 0:
-        return "missing_evidence"
+        return "missing_reference"
     return "comparable"
 
 
@@ -129,8 +129,8 @@ def _coverage_summary_payload(
         "missing_snapshot_source_count": coverage_status_counts.get(
             "missing_snapshots", 0
         ),
-        "missing_evidence_source_count": coverage_status_counts.get(
-            "missing_evidence", 0
+        "missing_reference_source_count": coverage_status_counts.get(
+            "missing_reference", 0
         ),
         "empty_source_count": coverage_status_counts.get("empty_source", 0),
     }

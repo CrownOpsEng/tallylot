@@ -124,8 +124,8 @@ def test_balance_coverage_workflow_classifies_source_coverage_states(
     assert [row["coverage_status"] for row in rows] == [
         "comparable",
         "empty_source",
-        "missing_evidence",
+        "missing_reference",
         "missing_snapshots",
     ]
-    assert summary["missing_evidence_source_count"] == 1
+    assert summary["missing_reference_source_count"] == 1
     assert summary["empty_source_count"] == 1

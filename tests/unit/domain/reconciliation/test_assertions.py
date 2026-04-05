@@ -92,12 +92,12 @@ def test_assert_balance_snapshots_emits_drift_and_missing_issues() -> None:
 
     assert [assertion.status for assertion in result.assertions] == [
         BalanceAssertionStatus.DRIFT,
-        BalanceAssertionStatus.MISSING_EVIDENCE,
+        BalanceAssertionStatus.MISSING_REFERENCE,
         BalanceAssertionStatus.MISSING_SNAPSHOT,
     ]
     assert [issue.kind for issue in result.issues] == [
         "balance_drift",
-        "balance_missing_evidence",
+        "balance_missing_reference",
         "balance_missing_snapshot",
     ]
 
@@ -204,7 +204,7 @@ def test_assert_balance_snapshots_assigns_distinct_duplicate_issue_ids() -> None
     assert [issue.issue_id for issue in result.issues] == [
         "coinbase:coinbase:BTC:available:duplicate_balance_snapshot:1",
         "coinbase:coinbase:BTC:available:duplicate_balance_snapshot:2",
-        "coinbase:coinbase:BTC:available:balance_missing_evidence",
+        "coinbase:coinbase:BTC:available:balance_missing_reference",
     ]
 
 

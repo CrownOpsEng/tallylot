@@ -29,7 +29,7 @@ class BalanceAssertionStatus(StrEnum):
     MATCHED = "matched"
     DRIFT = "drift"
     MISSING_SNAPSHOT = "missing_snapshot"
-    MISSING_EVIDENCE = "missing_evidence"
+    MISSING_REFERENCE = "missing_reference"
     TIMESTAMP_MISMATCH = "timestamp_mismatch"
 
 

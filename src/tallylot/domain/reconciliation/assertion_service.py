@@ -87,7 +87,7 @@ def _assertion_status(
     if snapshot is None:
         return BalanceAssertionStatus.MISSING_SNAPSHOT
     if evidence_record is None:
-        return BalanceAssertionStatus.MISSING_EVIDENCE
+        return BalanceAssertionStatus.MISSING_REFERENCE
     if (
         snapshot.as_of_at != evidence_record.as_of_at
         or snapshot.as_of_precision != evidence_record.as_of_precision
