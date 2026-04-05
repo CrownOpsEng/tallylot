@@ -529,6 +529,38 @@ def test_submit_balances_clears_stale_outputs_when_rerun_blocks(tmp_path: Path) 
     assert not (output_root / "location_inventory.csv").exists()
 
 
+def test_submit_balances_clears_stale_outputs_when_submission_root_is_missing(
+    tmp_path: Path,
+) -> None:
+    submission_root = tmp_path / "submission" / "coinbase"
+    output_root = tmp_path / "normalized" / "coinbase"
+    _write_valid_required_files(submission_root, source="coinbase")
+    submit_balances_use_case().execute(
+        SubmitBalancesRequest(
+            source="coinbase",
+            submission_root_ref=to_resource_ref(submission_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+    (submission_root / "balances.csv").unlink()
+    (submission_root / "balance_confirmations.csv").unlink()
+    submission_root.rmdir()
+
+    response = submit_balances_use_case().execute(
+        SubmitBalancesRequest(
+            source="coinbase",
+            submission_root_ref=to_resource_ref(submission_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    assert response.blocked is True
+    assert not (output_root / "balances.csv").exists()
+    assert not (output_root / "balance_confirmations.csv").exists()
+    assert not (output_root / "balance_evidence.csv").exists()
+    assert not (output_root / "location_inventory.csv").exists()
+
+
 def test_submit_balances_clears_stale_optional_location_inventory_on_rerun(
     tmp_path: Path,
 ) -> None:

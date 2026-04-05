@@ -65,6 +65,7 @@ class SubmitBalancesUseCase:
         )
         ensure_directory(output_root)
         if not submission_root.is_dir():
+            _clear_canonical_outputs(output_root)
             status = _SubmissionStatus(
                 balance_row_count=0,
                 balance_confirmation_row_count=0,
