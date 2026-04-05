@@ -28,6 +28,8 @@ Use this route for repeatable review passes on an active branch or draft PR.
      or delivery docs surfaced by that route or by repo search hints
    - add or tighten tests, docs, automation, and validation where the fix
      belongs instead of leaving the repair in prose alone
+   - when a meaningful finding should stay out of the active PR, search for an
+     existing issue first and open or link the follow-up issue immediately
 5. Verify the repaired slice and create bounded checkpoint commits during the
    loop, following the repo's normal commit and checkpoint rules. Do not start
    another red-team pass with uncommitted repaired findings unless the pass is
@@ -42,4 +44,6 @@ Use this route for repeatable review passes on an active branch or draft PR.
 9. Keep the PR draft until a full clean loop has completed with no new
    meaningful findings. For a final PR review, finish with a clean working tree
    and reload the relevant delivery guidance or skills before updating the PR
-   state or marking it ready for review.
+   state or marking it ready for review. Ensure any remaining out-of-scope repo
+   findings are captured as linked follow-up issues rather than left in review
+   prose alone.

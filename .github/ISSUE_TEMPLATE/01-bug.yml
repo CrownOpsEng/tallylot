@@ -1,0 +1,122 @@
+name: Bug
+description: Report incorrect behavior, regressions, broken tooling, or failing policy enforcement.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this tracker only for repo-engineering work in this repository.
+
+        Do not include personal information, secrets, raw evidence, wallet or account identifiers, or local absolute paths. Use sanitized summaries and repo-relative paths only.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One concise sentence describing the bug.
+      placeholder: A short description of the incorrect behavior.
+    validations:
+      required: true
+  - type: dropdown
+    id: repo-area
+    attributes:
+      label: Repo Area
+      description: Choose the repo surface this issue belongs to.
+      options:
+        - runtime code
+        - tests
+        - docs/standards
+        - templates/control-plane
+        - automation/CI
+        - refactor/maintenance
+    validations:
+      required: true
+  - type: input
+    id: relevant-paths
+    attributes:
+      label: Relevant Paths
+      description: Optional repo-relative paths only.
+      placeholder: docs/standards/issues.md, tools/audit_delivery_guardrails.py
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the concrete problem and why it matters.
+      placeholder: What is broken, incorrect, or unexpectedly failing?
+    validations:
+      required: true
+  - type: textarea
+    id: observed-behavior
+    attributes:
+      label: Observed Behavior
+      description: Describe what currently happens.
+      placeholder: Current behavior, output, or failing condition.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: Describe what should happen instead.
+      placeholder: Expected behavior or output.
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps To Reproduce
+      description: Give a small deterministic reproduction when possible.
+      placeholder: |
+        1. Run ...
+        2. Open ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Include sanitized evidence only.
+      placeholder: Error messages, failing checks, or repo-relative references that support the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: relevant-output
+    attributes:
+      label: Relevant Output
+      description: Optional sanitized output or logs.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: desired-outcome
+    attributes:
+      label: Desired Outcome
+      description: Describe the fixed end state.
+      placeholder: What should be true after the bug is resolved?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the reviewable conditions that define completion.
+      placeholder: |
+        - The failing behavior is corrected.
+        - The relevant guard or test covers the regression.
+    validations:
+      required: true
+  - type: checkboxes
+    id: issue-scope
+    attributes:
+      label: Submission Checks
+      options:
+        - label: I searched for an existing issue before opening this one.
+          required: true
+        - label: This issue is repo-scoped engineering work in this repository.
+          required: true
+        - label: This issue contains no personal information, secrets, raw evidence, wallet or account identifiers, or local absolute paths.
+          required: true

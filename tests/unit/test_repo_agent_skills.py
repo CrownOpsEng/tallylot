@@ -41,6 +41,16 @@ EXPECTED_SKILLS = {
             ".claude/commands/implementation-checkpoint.md",
         ),
     ),
+    "issue-workflow": ExpectedSkill(
+        display_name="Issue Workflow",
+        required_fragments=(
+            "docs/standards/issues.md",
+            "docs/standards/delivery-guardrails.md",
+            ".claude/commands/issue-workflow.md",
+            "Summary",
+            "Acceptance Criteria",
+        ),
+    ),
     "balance-submission-operations": ExpectedSkill(
         display_name="Balance Submission",
         required_fragments=(

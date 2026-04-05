@@ -136,6 +136,9 @@ PR body rules:
   choreography or replay mechanics
 - use `Follow-ups:` for non-closing references such as `- Refs #456` or
   `- Refs #456: deferred cleanup`
+- use `Follow-ups:` for proactively opened out-of-scope issues discovered
+  during implementation or PR hardening when that work should stay separate
+  from the active PR
 - keep authored commit messages on `Why:`, `What:`, and `Checks:` without
   issue-closing keywords unless the user explicitly requests otherwise
 - for a one-commit PR, still list that single checkpoint under

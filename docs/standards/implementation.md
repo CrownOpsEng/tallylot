@@ -241,7 +241,20 @@ Expected behavior:
 - add a neutral replacement comment only when the repo has no suitable label
   or the user explicitly asks for explanatory prose
 - when the work uncovers follow-up or out-of-scope changes that do not belong
-  in the current PR, create the issue immediately so it does not get lost
+  in the current PR, search existing open issues first and create the issue
+  immediately when no suitable issue already exists
+- open only repo-engineering follow-up issues in this repository:
+  - code
+  - tests
+  - docs and standards
+  - templates and other control-plane files
+  - automation and CI
+- keep follow-up issues privacy-safe:
+  - no personal information
+  - no secrets or raw evidence
+  - no wallet or account identifiers
+  - no local absolute paths
+- use the repo-standard issue structure from `docs/standards/issues.md`
 - do not defer issue creation for out-of-scope work until after merge, handoff,
   or a later cleanup pass
 - before closing a non-trivial task, ensure the commit already exists rather

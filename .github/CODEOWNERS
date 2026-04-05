@@ -1,6 +1,7 @@
 # Control-plane ownership for delivery, standards, and agent-routing surfaces.
 
 .agents/skills/** @CrownOpsEng
+.github/ISSUE_TEMPLATE/** @CrownOpsEng
 .github/workflows/** @CrownOpsEng
 .github/pull_request_template.md @CrownOpsEng
 .github/CODEOWNERS @CrownOpsEng

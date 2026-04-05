@@ -13,6 +13,7 @@ from repo_support.paths import repo_root
 REQUIRED_STATUS_CHECKS = ("commit-messages", "quality")
 CONTROL_PLANE_CODEOWNER_PATTERNS = (
     ".agents/skills/**",
+    ".github/ISSUE_TEMPLATE/**",
     ".github/workflows/**",
     ".github/pull_request_template.md",
     ".github/CODEOWNERS",

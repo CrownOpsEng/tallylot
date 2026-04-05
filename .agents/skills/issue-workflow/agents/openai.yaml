@@ -1,0 +1,7 @@
+interface:
+  display_name: "Issue Workflow"
+  short_description: "Start issue-template work and proactive follow-up issue creation."
+  default_prompt: "Use $issue-workflow to load the tallylot issue policy and follow-up issue path before opening or changing repo issues."
+
+policy:
+  allow_implicit_invocation: true

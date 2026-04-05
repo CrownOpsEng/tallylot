@@ -170,6 +170,7 @@ def test_documented_claude_command_routes_exist() -> None:
         ".claude/commands/adapter-authoring.md",
         ".claude/commands/balance-submission-operations.md",
         ".claude/commands/implementation-checkpoint.md",
+        ".claude/commands/issue-workflow.md",
         ".claude/commands/reconciliation-balance-operations.md",
         ".claude/commands/reconciliation-tax-build.md",
     )
@@ -191,6 +192,7 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
         ".claude/commands/adapter-authoring.md",
         ".claude/commands/balance-submission-operations.md",
         ".claude/commands/implementation-checkpoint.md",
+        ".claude/commands/issue-workflow.md",
         ".claude/commands/reconciliation-balance-operations.md",
         ".claude/commands/reconciliation-tax-build.md",
     )
@@ -451,7 +453,8 @@ def test_commit_standards_document_hybrid_pr_merge_policy() -> None:
     assert "do not squash multi-checkpoint PRs" in text
     assert "non-pushed checkpoint commit may be amended" in text
     assert "single-checkpoint exception" in implementation_text
-    assert "create the issue immediately so it does not get lost" in implementation_text
+    assert "search existing open issues first" in implementation_text
+    assert "use the repo-standard issue structure" in implementation_text
     assert "Single-checkpoint PRs must squash." in pr_template
 
 

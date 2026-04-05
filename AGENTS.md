@@ -30,6 +30,7 @@ Do not pre-load every repo doc by default.
 | Code placement, typing, modularization, naming | `docs/standards/engineering.md` |
 | Active implementation execution discipline | `docs/standards/implementation.md`, `docs/standards/commits.md` |
 | Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
+| Issue templates, issue-writing policy, or proactive follow-up issue creation | `AGENTS.md`, `docs/standards/issues.md`, `docs/standards/implementation.md`, `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/issue-workflow.md` |
 | Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/audit_delivery_guardrails.py` |
 | PR hardening review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/pr-hardening-review.md` |
 | Planning sequence, delivery slices, or rollout checkpoints | `ROADMAP.md` |
@@ -58,6 +59,10 @@ Do not pre-load every repo doc by default.
 - Keep tracked docs, templates, and control-plane text neutral and durable.
 - Do not store scratch review notes, hardening ledgers, or temporary process
   bookkeeping in tracked files.
+- Keep repository issues repo-scoped and privacy-safe:
+  - no personal information
+  - no secrets or raw evidence
+  - no local absolute paths
 - Agent-only context must not live in `docs/` unless it is genuinely useful to
   humans.
 - Every new doc must have one primary type: concept, guide, reference,
