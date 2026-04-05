@@ -16,6 +16,18 @@ ALLOWED_TYPES = (
 )
 TYPE_PATTERN = "|".join(ALLOWED_TYPES)
 SCOPE_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
+AUTHORED_COMMIT_REQUIRED_SECTIONS = ("Why", "What", "Checks")
+PR_BODY_REQUIRED_SECTIONS = (
+    "Why",
+    "What",
+    "Checks",
+    "Included checkpoints",
+)
+PR_BODY_OPTIONAL_SECTIONS = ("Follow-ups",)
+GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS = (
+    "Included checkpoints",
+    *PR_BODY_OPTIONAL_SECTIONS,
+)
 SUBJECT_PATTERN = re.compile(
     rf"^(?:{TYPE_PATTERN})(?:\(({SCOPE_PATTERN})\))?: (?P<summary>.+)$"
 )

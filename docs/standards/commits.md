@@ -124,7 +124,7 @@ PR body rules:
   - `What:`
   - `Checks:`
   - `Included checkpoints:`
-- an optional `Follow-ups:` section may follow `Included checkpoints:`
+- an optional `Follow-ups:` section is allowed after `Included checkpoints:`
 - use flat hyphen bullets under every section
 - when the PR closes issues, put the closing bullets first under `Why:` using
   the exact shape `- Closes #123: <problem statement>`

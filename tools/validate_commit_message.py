@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from tools.message_standards import (
+    AUTHORED_COMMIT_REQUIRED_SECTIONS,
+    GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS,
     validate_structured_sections,
     validate_subject_line,
 )
@@ -47,14 +49,14 @@ def _validate_commit_message_text(message: str) -> tuple[str, ...]:
     subject = lines[0]
     is_generated_squash_commit = SQUASH_PR_SUBJECT_PATTERN.search(subject) is not None
     optional_sections = (
-        ("Included checkpoints", "Follow-ups") if is_generated_squash_commit else ()
+        GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS if is_generated_squash_commit else ()
     )
 
     errors = [
         *validate_subject_line(subject),
         *validate_structured_sections(
             lines,
-            required_sections=("Why", "What", "Checks"),
+            required_sections=AUTHORED_COMMIT_REQUIRED_SECTIONS,
             optional_sections=optional_sections,
             require_body=True,
             label="commit message",
