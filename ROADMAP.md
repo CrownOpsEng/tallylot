@@ -16,6 +16,11 @@ This roadmap assumes the repo stays on the current fact-based architecture. It
 tracks remaining phases, sequencing, and delivery gates. It does not restate
 the detailed architecture contract.
 
+The current runtime already supports manual balance submission as a
+checkpoint-owned pre-canonical path. Canonical balance artifacts may therefore
+enter later reconciliation work through normalization or through validated
+manual submission packages.
+
 ## Planning Anchors
 
 These planning anchors drive phase order and acceptance criteria:
@@ -84,6 +89,9 @@ Scope:
   transfer checks
 - keep statement-backed quantity evidence on the normalization path and treat
   valuation totals as non-canonical
+- accept canonical `balances.csv` and `balance_evidence.csv` from normalization
+  or from validated manual submission without splitting the downstream
+  reconciliation contracts
 - add additive cross-source corroboration as a sidecar evidence surface before
   promoting it into a harder reconciliation gate
 - transfer linking across owned wallets and exchanges
@@ -97,7 +105,7 @@ Exit criteria:
 
 - exact balance assertion artifacts are stable and feed later continuity checks
 - additive cross-source corroboration artifacts exist without redefining the
-  primary clean-date gate
+  primary clean-date gate and remain dependent on comparable location identity
 - fact history can be reconciled against source-backed evidence without manual
   tracker logic
 - reconciliation artifacts no longer depend on normalized-transaction-era
@@ -113,6 +121,8 @@ Scope:
 
 - checkpoint artifact contracts
 - checkpoint provenance and evidence requirements
+- keep manual/operator-authored balance submission packages as a supported
+  checkpoint-owned input path for canonical balance artifacts
 - source-backed checkpoint builder centered on the best-supported balance date
   near `2026-03-23`
 - intentional opening-state adoption flow with provenance

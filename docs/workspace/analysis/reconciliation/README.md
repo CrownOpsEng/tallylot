@@ -21,6 +21,9 @@ Runtime balance reconciliation workflows write these artifacts here:
 - `balance_check_summary.csv`
 - `balance_reconciliation_summary.json`
 - `balance_reconciliation_blockers.csv`
+- `cross_source_assertions.csv`
+- `cross_source_issues.csv`
+- `cross_source_summary.json`
 
 `balance_assertions.csv` records matched, drift, missing-side, and timestamp
 mismatch rows for one source's balances and source-backed balance evidence.
@@ -32,6 +35,12 @@ counts for that run. `balance_coverage.csv` and
 `balance_reconciliation_summary.json` reports the latest clean and observed
 dates across the selected sources, and `balance_reconciliation_blockers.csv`
 breaks blockers down by source and reason.
+
+When compatible location inventory is available across sources,
+`cross_source_assertions.csv`, `cross_source_issues.csv`, and
+`cross_source_summary.json` record the additive corroboration sidecars emitted
+by `reconciliation balances check`. These sidecars improve confidence across
+sources, but they do not replace the source-local balance assertion outputs.
 
 ## Oracle Baseline Package
 

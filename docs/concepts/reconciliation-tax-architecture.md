@@ -175,6 +175,28 @@ Rules:
   facts and no explicit issues or reviews, normalization emits
   `no_supported_activity` instead of silently succeeding
 
+### 11. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
+
+Manual balance submission is a supported operational path for producing
+canonical `balances.csv` and `balance_evidence.csv`, but it is not an
+adapter-owned schema.
+
+Rules:
+
+- the user-facing package under
+  `working/supporting_artifacts/balance_submissions/<source>/` is a
+  pre-canonical checkpoint input surface
+- `checkpoint scaffold-balance-submission` and `checkpoint submit-balances`
+  own that validation and materialization path inside
+  `application/checkpoints/`
+- the canonical reconciliation schema still lives under the chosen output
+  root, normally `working/normalized/<source>/`
+- optional submitted `location_inventory.csv` improves cross-source
+  corroboration, but omitting it does not block source-local balance checks
+- manual submission must preserve explicit user-provided `instrument_id`
+  values and derive canonical `location_id` values through shared runtime
+  helpers rather than hand-authored location identifiers
+
 ## Target Architecture
 
 Core abstractions added from this point forward must stay neutral enough to
@@ -206,8 +228,8 @@ is inherently specific.
   - reserve for transfer linking, checkpoint continuity, and fact-level drift
     detection
 - `application/checkpoints/`
-  - build source-backed checkpoint evidence and checkpoint-supporting wallet
-    aggregates
+  - build source-backed checkpoint evidence, validate manual balance
+    submissions, and assemble checkpoint-supporting wallet aggregates
 - `application/accounting/`
   - journal assembly, ledger validation, and accounting summaries
 - `application/tax/`

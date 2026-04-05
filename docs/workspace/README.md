@@ -42,6 +42,8 @@ paths keep them too.
   artifact contract
 - [`working/supporting_artifacts/README.md`](working/supporting_artifacts/README.md):
   non-raw derivative guidance
+- [`working/supporting_artifacts/balance_submissions/README.md`](working/supporting_artifacts/balance_submissions/README.md):
+  manual balance submission package guidance
 - [`working/verification/README.md`](working/verification/README.md):
   verification package structure
 

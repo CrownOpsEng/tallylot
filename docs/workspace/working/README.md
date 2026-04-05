@@ -16,7 +16,9 @@ itself.
 
 Subfolders:
 
-- `supporting_artifacts/` for non-raw derivatives discovered during intake, such as calc sheets, draft import workbooks, screenshots, and rendered HTML saves
+- `supporting_artifacts/` for non-raw derivatives discovered during intake,
+  such as calc sheets, draft import workbooks, screenshots, rendered HTML
+  saves, and manual balance submission packages
 - `normalized/` for cleaned but not yet approved source files
 - `import_batches/` for reviewed import candidates
 - `verification/` for fresh verification export sets captured after each repair

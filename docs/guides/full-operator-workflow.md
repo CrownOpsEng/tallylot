@@ -49,11 +49,23 @@ part of the current round-close process.
 ### 3. Normalize And Prepare A Candidate
 
 - Normalize the settled capture and review the emitted issues and summaries.
-- Run `reconciliation balances check` once `balances.csv` and
-  `balance_evidence.csv` are available for the source-backed balance check.
+- Use normalization-owned `balances.csv` and `balance_evidence.csv` directly
+  when the source adapter already produced canonical balance artifacts.
+- When balances need to be authored manually, run
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission --source <source>`,
+  fill the submission package under
+  `working/supporting_artifacts/balance_submissions/<source>/`, then run
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances --source <source>`
+  and review `balance_submission_summary.json` plus
+  `balance_submission_issues.csv`.
+- Run `reconciliation balances check` once canonical `balances.csv` and
+  `balance_evidence.csv` are available for the source-backed balance check,
+  whether they came from normalization or validated manual submission.
 - Use `reconciliation balances inspect` plus
   `reconciliation balances summarize` when you need a multi-source
   reconciliation-date answer instead of a single-source review.
+- Optional submitted `location_inventory.csv` improves the additive
+  cross-source corroboration sidecars written by `reconciliation balances check`.
 - Render `cointracking_candidate.csv` only when the round needs an external
   comparison artifact.
 - Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the
@@ -84,5 +96,9 @@ part of the current round-close process.
 
 - Use [Export Checklist](../reference/export-checklist.md) for the required
   verification export set.
+- Use
+  [Manual Balance Submission Artifacts](../reference/manual-balance-submission-artifacts.md)
+  for the scaffolded submission package contract and canonical materialization
+  rules.
 - Use `checkpoint extract-pdf-balances` for supported Coinbase, Binance, and
   Shakepay PDF statements when balance evidence is only available in PDF form.

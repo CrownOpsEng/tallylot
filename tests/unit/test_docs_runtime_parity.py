@@ -34,6 +34,7 @@ def production_route_doc_paths() -> list[Path]:
         docs / "guides" / "operator-quickstart.md",
         docs / "guides" / "source-intake.md",
         docs / "guides" / "normalize-screen-stage.md",
+        docs / "reference" / "manual-balance-submission-artifacts.md",
         docs / "reference" / "wallet-inventory-artifacts.md",
         docs / "workspace" / "analysis" / "inventory" / "README.md",
         commands_root / "balance-submission-operations.md",
@@ -260,6 +261,55 @@ def test_balance_submission_route_mentions_current_checkpoint_commands() -> None
         "reconciliation balances summarize",
     ):
         assert command in text
+
+
+def test_manual_balance_submission_docs_mention_checkpoint_commands() -> None:
+    paths = (
+        docs_root() / "reference" / "manual-balance-submission-artifacts.md",
+        docs_root() / "guides" / "operator-quickstart.md",
+        docs_root() / "guides" / "normalize-screen-stage.md",
+    )
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        assert "checkpoint scaffold-balance-submission" in text
+        assert "checkpoint submit-balances" in text
+
+
+def test_workspace_docs_reference_manual_balance_submission_paths() -> None:
+    workspace_home = (docs_root() / "workspace" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    supporting_text = (
+        docs_root() / "workspace" / "working" / "supporting_artifacts" / "README.md"
+    ).read_text(encoding="utf-8")
+    package_text = (
+        docs_root()
+        / "workspace"
+        / "working"
+        / "supporting_artifacts"
+        / "balance_submissions"
+        / "README.md"
+    ).read_text(encoding="utf-8")
+
+    assert (
+        "working/supporting_artifacts/balance_submissions/README.md" in workspace_home
+    )
+    assert "balance_submissions/README.md" in supporting_text
+    assert "working/supporting_artifacts/balance_submissions/<source>/" in package_text
+
+
+def test_reconciliation_workspace_docs_mention_cross_source_sidecars() -> None:
+    text = (
+        docs_root() / "workspace" / "analysis" / "reconciliation" / "README.md"
+    ).read_text(encoding="utf-8")
+
+    for artifact in (
+        "cross_source_assertions.csv",
+        "cross_source_issues.csv",
+        "cross_source_summary.json",
+    ):
+        assert artifact in text
 
 
 def test_supporting_route_mentions_checkpoint_pdf_balance_extraction_command() -> None:

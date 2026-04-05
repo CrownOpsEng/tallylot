@@ -65,6 +65,7 @@ below when you need the detailed procedure for one stage of the workflow.
 - [Canadian Crypto Tax Guide](reference/canadian-crypto-tax-guide.md): Working CRA-aligned tax reference for the repo's Canadian crypto workflow.
 - [Tax Source Map](reference/tax-source-map.md): Targeted routing from repo tax questions to CRA-aligned reference sources.
 - [CoinTracking Oracle Artifacts](reference/cointracking-oracle-artifacts.md): Repo-safe reference for CoinTracking artifact families used only for development and validation.
+- [Manual Balance Submission Artifacts](reference/manual-balance-submission-artifacts.md): Reference contract for scaffolded manual balance submission packages and their canonical outputs.
 - [Repository History](reference/repository-history.md): Reference note for the public baseline sequence and where ordinary forward development begins.
 <!-- docs-maintenance:end reference -->
 
