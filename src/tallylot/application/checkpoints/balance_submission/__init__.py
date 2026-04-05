@@ -1,19 +1,14 @@
-"""Checkpoint capability."""
+"""Manual balance submission checkpoint capability."""
 
-from .contracts import (
-    LocationInventoryRequest,
-    LocationInventoryResponse,
-    PdfBalanceExtractRequest,
-    PdfBalanceExtractResponse,
+from tallylot.application.checkpoints.contracts import (
     ScaffoldBalanceSubmissionRequest,
     ScaffoldBalanceSubmissionResponse,
     SubmitBalancesRequest,
     SubmitBalancesResponse,
 )
-from .extract_pdf_balances import ExtractPdfBalancesUseCase
-from .pdf_balance_schema import BALANCE_HEADER
-from .rebuild_location_inventory import RebuildLocationInventoryUseCase
-from .balance_submission import (
+from .contracts import BalanceSubmissionIssue
+from .scaffold import ScaffoldBalanceSubmissionUseCase
+from .schema import (
     BALANCE_EVIDENCE_EXAMPLE_FILENAME,
     BALANCE_EVIDENCE_FILENAME,
     BALANCE_EVIDENCE_HEADER,
@@ -26,33 +21,26 @@ from .balance_submission import (
     LOCATION_INVENTORY_HEADER,
     README_FILENAME,
     SUMMARY_FILENAME,
-    ScaffoldBalanceSubmissionUseCase,
-    SubmitBalancesUseCase,
 )
+from .submit import SubmitBalancesUseCase
 
 __all__ = [
     "BALANCE_EVIDENCE_EXAMPLE_FILENAME",
     "BALANCE_EVIDENCE_FILENAME",
     "BALANCE_EVIDENCE_HEADER",
-    "BALANCE_HEADER",
     "BALANCES_EXAMPLE_FILENAME",
     "BALANCES_FILENAME",
     "BALANCES_HEADER",
-    "ExtractPdfBalancesUseCase",
+    "BalanceSubmissionIssue",
     "ISSUE_HEADER",
     "LOCATION_INVENTORY_EXAMPLE_FILENAME",
     "LOCATION_INVENTORY_FILENAME",
     "LOCATION_INVENTORY_HEADER",
-    "LocationInventoryRequest",
-    "LocationInventoryResponse",
-    "PdfBalanceExtractRequest",
-    "PdfBalanceExtractResponse",
     "README_FILENAME",
+    "SUMMARY_FILENAME",
     "ScaffoldBalanceSubmissionRequest",
     "ScaffoldBalanceSubmissionResponse",
     "ScaffoldBalanceSubmissionUseCase",
-    "SUMMARY_FILENAME",
-    "RebuildLocationInventoryUseCase",
     "SubmitBalancesRequest",
     "SubmitBalancesResponse",
     "SubmitBalancesUseCase",

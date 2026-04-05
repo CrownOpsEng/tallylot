@@ -10,6 +10,10 @@ from tallylot.application.checkpoints.extract_pdf_balances import (
 from tallylot.application.checkpoints.rebuild_location_inventory import (
     RebuildLocationInventoryUseCase,
 )
+from tallylot.application.checkpoints.balance_submission import (
+    ScaffoldBalanceSubmissionUseCase,
+    SubmitBalancesUseCase,
+)
 from tallylot.application.intake.apply_intake import ApplyIntakeUseCase
 from tallylot.application.intake.build_manifest import BuildManifestUseCase
 from tallylot.application.intake.plan_intake import PlanIntakeUseCase
@@ -97,6 +101,16 @@ def rebuild_location_inventory_use_case() -> RebuildLocationInventoryUseCase:
 def extract_pdf_balances_use_case() -> ExtractPdfBalancesUseCase:
     registry, artifacts, _, _ = runtime_dependencies()
     return ExtractPdfBalancesUseCase(registry, artifacts)
+
+
+def scaffold_balance_submission_use_case() -> ScaffoldBalanceSubmissionUseCase:
+    _, artifacts, _, _ = runtime_dependencies()
+    return ScaffoldBalanceSubmissionUseCase(artifacts)
+
+
+def submit_balances_use_case() -> SubmitBalancesUseCase:
+    _, artifacts, _, evidence = runtime_dependencies()
+    return SubmitBalancesUseCase(evidence, artifacts)
 
 
 def balance_coverage_workflow() -> BalanceCoverageWorkflow:
