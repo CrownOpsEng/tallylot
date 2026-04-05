@@ -52,3 +52,25 @@ def test_scaffold_balance_submission_creates_expected_templates(
     assert balance_rows[0]["balance_kind"] == "available"
     assert confirmation_rows[0]["confirmation_kind"] == "external_support"
     assert confirmation_rows[0]["reviewed_at"] == "2026-03-24 00:00:00"
+
+
+def test_scaffold_balance_submission_uses_source_specific_example_ids(
+    tmp_path: Path,
+) -> None:
+    submission_root = tmp_path / "ledger"
+
+    scaffold_balance_submission_use_case().execute(
+        ScaffoldBalanceSubmissionRequest(
+            source="ledger",
+            submission_root_ref=to_resource_ref(submission_root),
+        )
+    )
+
+    artifacts = FilesystemArtifactStore()
+    balance_rows = artifacts.read_rows(submission_root / BALANCES_EXAMPLE_FILENAME)
+    confirmation_rows = artifacts.read_rows(
+        submission_root / BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME
+    )
+
+    assert balance_rows[0]["instrument_id"] == "symbol:BTC@ledger"
+    assert confirmation_rows[0]["instrument_id"] == "symbol:BTC@ledger"
