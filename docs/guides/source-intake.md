@@ -21,6 +21,11 @@ capture.
 
 ## Plan The Intake
 
+Before running intake for a known legacy or manually named source, update
+`analysis/issues/source_label_map.csv` when the automatic content-based route
+should yield to a stable operator-managed source label. The map applies to
+source-scoped destinations under both `evidence/raw/source/` and `working/`.
+
 Run:
 
 ```bash
@@ -35,6 +40,9 @@ Review:
 - `intake_plan.csv`
 - `intake_issues.csv`
 - `intake_summary.json`
+
+Confirm that `source_resolution_status`, `source_resolution_reason`, and the
+final `target_path` align with the intended stable source label before apply.
 
 ## Apply The Intake
 

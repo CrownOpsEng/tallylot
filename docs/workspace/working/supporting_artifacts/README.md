@@ -20,6 +20,11 @@ Examples:
 Files here are useful support material, but they are not raw system-of-record
 evidence.
 
+When intake places supporting artifacts under a source-scoped path, it uses the
+same stable source-label mapping rules as raw source intake. Update
+`analysis/issues/source_label_map.csv` when a legacy or manual intake pass must
+stay tied to an existing operator-managed source label.
+
 Use
 [`balance_submissions/README.md`](balance_submissions/README.md)
 for the scaffolded manual balance submission package layout and handoff rules.
