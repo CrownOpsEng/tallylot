@@ -9,7 +9,9 @@ from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
-def test_source_intake_service_plans_archive_members_without_copying_them(tmp_path: Path) -> None:
+def test_source_intake_service_plans_archive_members_without_copying_them(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     archive_path = incoming_dir / "bundle.zip"
@@ -30,15 +32,27 @@ def test_source_intake_service_plans_archive_members_without_copying_them(tmp_pa
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
 
     assert response.file_count == 2
-    assert any(row["action"] == "copy" and row["path"].endswith("bundle.zip") for row in plan_rows)
-    assert any(row["action"] == "extract_copy" and row["archive_member_path"] == "inner.csv" for row in plan_rows)
+    assert any(
+        row["action"] == "copy" and row["path"].endswith("bundle.zip")
+        for row in plan_rows
+    )
+    assert any(
+        row["action"] == "extract_copy" and row["archive_member_path"] == "inner.csv"
+        for row in plan_rows
+    )
 
 
 def test_source_intake_service_routes_source_artifacts_to_source_aware_supporting_paths(
     tmp_path: Path,
 ) -> None:
     incoming_dir = tmp_path / "incoming"
-    image_path = incoming_dir / "2021" / "Binance" / "From Binance" / "trade Analysis - ADA-USDT - Binance.png"
+    image_path = (
+        incoming_dir
+        / "2021"
+        / "Binance"
+        / "From Binance"
+        / "trade Analysis - ADA-USDT - Binance.png"
+    )
     scratch_csv = incoming_dir / "2021" / "Binance" / "2021 Isolated" / "test.csv"
     image_path.parent.mkdir(parents=True, exist_ok=True)
     scratch_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -57,13 +71,27 @@ def test_source_intake_service_routes_source_artifacts_to_source_aware_supportin
     )
 
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
-    by_name = {Path(row["path"]).name: row for row in plan_rows if not row["archive_member_path"]}
+    by_name = {
+        Path(row["path"]).name: row
+        for row in plan_rows
+        if not row["archive_member_path"]
+    }
 
-    assert by_name["trade Analysis - ADA-USDT - Binance.png"]["role"] == "working_derivative"
-    assert by_name["trade Analysis - ADA-USDT - Binance.png"]["source_folder"] == "binance"
-    assert "/working/supporting_artifacts/binance/" in by_name["trade Analysis - ADA-USDT - Binance.png"]["target_path"]
+    assert (
+        by_name["trade Analysis - ADA-USDT - Binance.png"]["role"]
+        == "working_derivative"
+    )
+    assert (
+        by_name["trade Analysis - ADA-USDT - Binance.png"]["source_folder"] == "binance"
+    )
+    assert (
+        "/working/supporting_artifacts/binance/"
+        in by_name["trade Analysis - ADA-USDT - Binance.png"]["target_path"]
+    )
     assert by_name["test.csv"]["role"] == "working_derivative"
-    assert "/working/supporting_artifacts/binance/" in by_name["test.csv"]["target_path"]
+    assert (
+        "/working/supporting_artifacts/binance/" in by_name["test.csv"]["target_path"]
+    )
 
 
 def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio_capture(
@@ -71,7 +99,12 @@ def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio
 ) -> None:
     incoming_dir = tmp_path / "incoming"
     html_path = incoming_dir / "tmp" / "CoinTracking · Tax Declaration Export.html"
-    sidecar_path = incoming_dir / "tmp" / "CoinTracking · Tax Declaration Export_files" / "style.min.css"
+    sidecar_path = (
+        incoming_dir
+        / "tmp"
+        / "CoinTracking · Tax Declaration Export_files"
+        / "style.min.css"
+    )
     sidecar_path.parent.mkdir(parents=True, exist_ok=True)
     html_path.write_text(
         """
@@ -98,8 +131,13 @@ def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
     by_name = {Path(row["path"]).name: row for row in plan_rows}
 
-    assert by_name["CoinTracking · Tax Declaration Export.html"]["role"] == "portfolio_export"
-    assert by_name["CoinTracking · Tax Declaration Export.html"]["capture_id"] == "2022-04"
+    assert (
+        by_name["CoinTracking · Tax Declaration Export.html"]["role"]
+        == "portfolio_export"
+    )
+    assert (
+        by_name["CoinTracking · Tax Declaration Export.html"]["capture_id"] == "2022-04"
+    )
     assert (
         "/evidence/raw/portfolio/cointracking/2022-04/"
         in by_name["CoinTracking · Tax Declaration Export.html"]["target_path"]
@@ -108,9 +146,13 @@ def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio
     assert by_name["style.min.css"]["capture_id"] == "2022-04"
 
 
-def test_source_intake_service_routes_wallet_export_to_existing_inventory_source(tmp_path: Path) -> None:
+def test_source_intake_service_routes_wallet_export_to_existing_inventory_source(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
-    source_inventory_path = workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    source_inventory_path = (
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
     source_inventory_path.parent.mkdir(parents=True, exist_ok=True)
     FilesystemArtifactStore().write_rows(
         source_inventory_path,
@@ -131,7 +173,9 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
             },
         ),
     )
-    location_evidence_path = workspace_root / "analysis" / "inventory" / "location_inventory_evidence.csv"
+    location_evidence_path = (
+        workspace_root / "analysis" / "inventory" / "location_inventory_evidence.csv"
+    )
     location_evidence_path.parent.mkdir(parents=True, exist_ok=True)
     FilesystemArtifactStore().write_rows(
         location_evidence_path,
@@ -201,3 +245,58 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
     assert row["source_folder"] == "eth-gala1"
     assert row["inventory_match_status"] == "inventory_source_match"
     assert row["review_required"] == "no"
+
+
+def test_source_intake_service_uses_explicit_source_label_map_for_stable_source_labels(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    issues_dir = workspace_root / "analysis" / "issues"
+    issues_dir.mkdir(parents=True, exist_ok=True)
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        issues_dir / "source_inventory.csv",
+        ("source",),
+        ({"source": "binance-main"},),
+    )
+    artifacts.write_rows(
+        issues_dir / "source_label_map.csv",
+        ("incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_path_prefix": "2021/Binance",
+                "source": "binance-main",
+                "notes": "",
+            },
+        ),
+    )
+    incoming_dir = tmp_path / "incoming"
+    image_path = (
+        incoming_dir
+        / "2021"
+        / "Binance"
+        / "From Binance"
+        / "trade Analysis - ADA-USDT - Binance.png"
+    )
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    image_path.write_bytes(b"png")
+    report_dir = tmp_path / "reports"
+
+    PlanIntakeUseCase(build_registry(), artifacts).execute(
+        IntakePlanRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    row = next(
+        item
+        for item in artifacts.read_rows(report_dir / "intake_plan.csv")
+        if item["archive_member_path"] == ""
+    )
+
+    assert row["source_folder"] == "binance-main"
+    assert row["source_resolution_status"] == "explicit_map"
+    assert row["inventory_match_status"] == "not_evaluated_explicit_map"
+    assert "/working/supporting_artifacts/binance-main/" in row["target_path"]

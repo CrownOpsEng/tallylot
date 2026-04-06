@@ -7,8 +7,8 @@ owner: repo
 status: active
 ---
 
-This folder holds the two live issue-tracking control files that must stay
-current during execution.
+This folder holds the live issue, inventory, and intake-control files that
+must stay current during execution.
 
 Related generated inventory artifacts now live beside them in
 `analysis/inventory/`, especially `location_inventory.csv` and
@@ -96,3 +96,27 @@ These values describe the current external import and verification workflow.
 - `excluded_dust_balance` → confirmed post-cutoff activity exists, but the source is excluded from the initial queue because its baseline balance is within the agreed dust threshold
 
 Keep the values consistent so AI and manual review can sort and filter reliably.
+
+## `source_label_map.csv`
+
+Use this file when intake should preserve a stable operator-managed source
+label instead of landing files under a generated or content-derived label.
+
+Each row maps an incoming path prefix to a source label that already exists in
+`source_inventory.csv`.
+
+Rules:
+
+- `incoming_path_prefix` is relative to the intake `--incoming-dir`
+- `.` applies to the entire incoming capture
+- keep prefixes durable and operator-meaningful rather than adapter-specific
+- use the file when raw source evidence or source-scoped working artifacts
+  should stay associated with an existing stable source label
+- do not use this file to invent new source labels implicitly; add the source
+  to `source_inventory.csv` first
+
+Intake plan and apply both read this file from the workspace root. When a valid
+map row matches, it overrides content-based source-folder generation. When a
+matching row is invalid or points at an unknown source, intake surfaces that as
+an explicit plan/apply issue and skips the affected rows instead of silently
+falling back.

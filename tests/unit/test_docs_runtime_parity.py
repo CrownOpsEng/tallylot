@@ -221,6 +221,7 @@ def test_source_intake_route_mentions_current_typed_commands() -> None:
         "output render file",
     ):
         assert command in text
+    assert "source_label_map.csv" in text
 
 
 def test_round_verification_route_mentions_oracle_cli_commands() -> None:
@@ -419,6 +420,27 @@ def test_workspace_source_inventory_seed_header_matches_template() -> None:
         seed.content.strip()
         for seed in SEED_FILES
         if seed.relative_path == "analysis/issues/source_inventory.csv"
+    )
+
+    assert seeded_header == template_header
+
+
+def test_workspace_source_label_map_seed_header_matches_template() -> None:
+    template_header = (
+        (
+            docs_root()
+            / "workspace"
+            / "analysis"
+            / "issues"
+            / "source-label-map-template.csv"
+        )
+        .read_text(encoding="utf-8")
+        .splitlines()[0]
+    )
+    seeded_header = next(
+        seed.content.strip()
+        for seed in SEED_FILES
+        if seed.relative_path == "analysis/issues/source_label_map.csv"
     )
 
     assert seeded_header == template_header

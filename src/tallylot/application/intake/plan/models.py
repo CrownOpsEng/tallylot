@@ -26,6 +26,8 @@ PLAN_HEADER = (
     "package_decision_reason",
     "package_row_status",
     "placement_status",
+    "source_resolution_status",
+    "source_resolution_reason",
     "review_required",
     "review_codes",
     "review_reason",
@@ -57,6 +59,8 @@ class PlannedItem:
     package_decision_reason: str
     package_row_status: str
     placement_status: str
+    source_resolution_status: str
+    source_resolution_reason: str
     review_required: str
     review_codes: str
     review_reason: str
@@ -87,9 +91,17 @@ class PlannedItem:
             "package_decision_reason": self.package_decision_reason,
             "package_row_status": self.package_row_status,
             "placement_status": self.placement_status,
+            "source_resolution_status": self.source_resolution_status,
+            "source_resolution_reason": self.source_resolution_reason,
             "review_required": self.review_required,
             "review_codes": self.review_codes,
             "review_reason": self.review_reason,
             "inventory_match_status": self.inventory_match_status,
             "target_path": str(self.target_path),
         }
+
+
+@dataclass(frozen=True)
+class PlannedItemBatch:
+    planned_items: tuple[PlannedItem, ...]
+    issue_rows: tuple[dict[str, str], ...]

@@ -64,6 +64,8 @@ paths keep them too.
   issue log seed example
 - [`analysis/issues/source-inventory-template.csv`](analysis/issues/source-inventory-template.csv):
   source inventory seed example
+- [`analysis/issues/source-label-map-template.csv`](analysis/issues/source-label-map-template.csv):
+  stable source-label map seed example
 - [`analysis/reconciliation/reconciliation-template.csv`](analysis/reconciliation/reconciliation-template.csv):
   reconciliation seed example
 

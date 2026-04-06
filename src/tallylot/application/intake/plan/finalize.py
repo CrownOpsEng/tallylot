@@ -8,7 +8,11 @@ from tallylot.application.resource_refs import path_from_ref
 from ..packages import PlannedPackageItem, apply_package_rules
 from ..path_rules import effective_bundle_id, source_raw_target_path
 from .models import PlannedItem
-from .reviews import planned_review_codes, planned_review_reason, planned_review_required
+from .reviews import (
+    planned_review_codes,
+    planned_review_reason,
+    planned_review_required,
+)
 
 
 def apply_package_rules_to_items(
@@ -58,16 +62,32 @@ def apply_package_rules_to_items(
             action=package_map[str(item.source_path)].action,
             package_key=item.package_key,
             package_status=package_map[str(item.source_path)].package_status,
-            package_primary_bundle_id=package_map[str(item.source_path)].package_primary_bundle_id,
-            package_related_bundles=package_map[str(item.source_path)].package_related_bundles,
-            package_cycle_status=package_map[str(item.source_path)].package_cycle_status,
-            package_scope_status=package_map[str(item.source_path)].package_scope_status,
-            package_decision_reason=package_map[str(item.source_path)].package_decision_reason,
+            package_primary_bundle_id=package_map[
+                str(item.source_path)
+            ].package_primary_bundle_id,
+            package_related_bundles=package_map[
+                str(item.source_path)
+            ].package_related_bundles,
+            package_cycle_status=package_map[
+                str(item.source_path)
+            ].package_cycle_status,
+            package_scope_status=package_map[
+                str(item.source_path)
+            ].package_scope_status,
+            package_decision_reason=package_map[
+                str(item.source_path)
+            ].package_decision_reason,
             package_row_status=package_map[str(item.source_path)].package_row_status,
             placement_status=package_map[str(item.source_path)].placement_status,
-            review_required=planned_review_required(item, package_map[str(item.source_path)]),
+            source_resolution_status=item.source_resolution_status,
+            source_resolution_reason=item.source_resolution_reason,
+            review_required=planned_review_required(
+                item, package_map[str(item.source_path)]
+            ),
             review_codes=planned_review_codes(item, package_map[str(item.source_path)]),
-            review_reason=planned_review_reason(item, package_map[str(item.source_path)]),
+            review_reason=planned_review_reason(
+                item, package_map[str(item.source_path)]
+            ),
             inventory_match_status=item.inventory_match_status,
             sha256=item.sha256,
             scope_tokens=item.scope_tokens,
@@ -76,7 +96,9 @@ def apply_package_rules_to_items(
                     workspace_root,
                     source_folder=item.source_folder,
                     capture_id=item.capture_id,
-                    bundle_id_value=effective_bundle_id(item, package_map[str(item.source_path)]),
+                    bundle_id_value=effective_bundle_id(
+                        item, package_map[str(item.source_path)]
+                    ),
                     bundle_relative_path_value=item.bundle_relative_path,
                 )
                 if item.category == "source_raw"

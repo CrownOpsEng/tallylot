@@ -28,6 +28,10 @@ capture folder just to satisfy one adapter. Adapter resolution should come from
 file families and content signatures first, with source labels used only as
 low-confidence hints when content is insufficient.
 
+When a legacy intake pass should land under an existing stable source label,
+use `analysis/issues/source_label_map.csv` to preserve that association
+explicitly instead of relying on generated labels.
+
 Bundle-aware intake may create nested bundle paths inside a capture, for example:
 
 - `evidence/raw/source/<source>/<capture_id>/<bundle_id>/archive/...`

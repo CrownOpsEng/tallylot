@@ -16,6 +16,7 @@ from .inventory import resolve_inventory_route
 from .packages import PackageRuleSummary, PlannedPackageItem, apply_package_rules
 from .plan_intake import PlanIntakeUseCase
 from .routing import route_intake_file
+from .source_labels import load_source_label_context, resolve_source_label
 
 __all__ = [
     "ApplyIntakeUseCase",
@@ -36,7 +37,9 @@ __all__ = [
     "apply_package_rules",
     "detect_capture_id",
     "inspect_intake_file",
+    "load_source_label_context",
     "resolve_inventory_route",
+    "resolve_source_label",
     "route_intake_file",
     "scanned_tree_files",
 ]

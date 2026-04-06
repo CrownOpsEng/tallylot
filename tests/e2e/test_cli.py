@@ -29,6 +29,7 @@ def test_workspace_init_cli(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert (workspace_root / "analysis/issues/issue_log.csv").exists()
+    assert (workspace_root / "analysis/issues/source_label_map.csv").exists()
 
 
 def test_profile_normalize_and_render_cli(
@@ -193,6 +194,49 @@ def test_source_intake_plan_and_apply_cli(tmp_path: Path) -> None:
     assert payload["copied_count"] == 1
     assert (
         workspace_root / "evidence/raw/source/unclassified/incoming/transactions.csv"
+    ).exists()
+
+
+def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    FilesystemArtifactStore().write_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv",
+        ("source",),
+        ({"source": "manual-main"},),
+    )
+    FilesystemArtifactStore().write_rows(
+        workspace_root / "analysis" / "issues" / "source_label_map.csv",
+        ("incoming_path_prefix", "source", "notes"),
+        ({"incoming_path_prefix": ".", "source": "manual-main", "notes": ""},),
+    )
+    report_dir = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(report_dir),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+    plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
+
+    assert result.exit_code == 0
+    assert payload["copied_count"] == 1
+    assert plan_rows[0]["source_resolution_status"] == "explicit_map"
+    assert (
+        workspace_root / "evidence/raw/source/manual-main/incoming/transactions.csv"
     ).exists()
 
 

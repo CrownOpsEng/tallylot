@@ -25,3 +25,8 @@ Subfolders:
   or import round
 
 Nothing here is a raw source of truth.
+
+Some working paths remain source-scoped even though they are not raw evidence.
+When intake needs manual control over those source associations, use
+`analysis/issues/source_label_map.csv` so the derived artifacts land under the
+same stable operator-managed source label as the related raw capture.

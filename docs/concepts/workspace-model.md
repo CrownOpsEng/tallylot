@@ -42,6 +42,7 @@ The workspace is seeded by `workspace init` with these major areas:
 
 - `analysis/issues/issue_log.csv`
 - `analysis/issues/source_inventory.csv`
+- `analysis/issues/source_label_map.csv`
 - `analysis/inventory/location_inventory.csv`
 - `outputs/logs/round_log.csv`
 - `config/workspace.json`

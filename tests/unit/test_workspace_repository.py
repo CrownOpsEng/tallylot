@@ -12,10 +12,12 @@ def test_workspace_repository_initializes_seed_files(tmp_path: Path) -> None:
 
     issue_log = tmp_path / "analysis/issues/issue_log.csv"
     source_inventory = tmp_path / "analysis/issues/source_inventory.csv"
+    source_label_map = tmp_path / "analysis/issues/source_label_map.csv"
 
     assert created_paths
     assert issue_log.exists()
     assert source_inventory.exists()
+    assert source_label_map.exists()
     assert (tmp_path / "outputs/logs/round_log.csv").exists()
     assert (tmp_path / "config/workspace.json").exists()
     assert issue_log.read_text(encoding="utf-8").splitlines()[0] == (
@@ -28,4 +30,7 @@ def test_workspace_repository_initializes_seed_files(tmp_path: Path) -> None:
         "source,activity_after_cutoff,first_post_cutoff_tx,export_window_start,"
         "export_window_end,import_order,status,capture_path,profile_status,adapter,"
         "normalization_status,exception_count,candidate_path,notes"
+    )
+    assert source_label_map.read_text(encoding="utf-8").splitlines()[0] == (
+        "incoming_path_prefix,source,notes"
     )
