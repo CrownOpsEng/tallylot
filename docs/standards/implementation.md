@@ -49,6 +49,10 @@ Prefer the repo's built-in tooling before inventing local workflows:
   together when changing delivery policy, branch protection, or CI guardrails
   with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_delivery_guardrails`
+- audit PR review surface coverage with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_pr_review`
+  and run the required review checks for the current diff with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks`
 - scaffold new adapters with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
 - refresh generated pyright test-private execution environments with
@@ -311,6 +315,18 @@ is:
   parity matters
 - do not run `tools.run_quality_gates --full-tests` again immediately before
   `tools.run_ci_parity_checks`; the parity runner already includes it
+
+For PR review and repair loops, choose verification by changed surface:
+
+- `human_docs`: run `tools.docs_maintenance sync --check`
+- `control_plane_text`: run docs maintenance plus the targeted policy tests
+  declared by `tools.run_pr_review_checks`
+- `repo_code_or_tooling`: run `tools.run_quality_gates --full-tests`
+- `ci_or_release`: run `tools.run_ci_parity_checks`
+
+When more than one surface group is present, the strongest broad verification
+family wins, but any declared surface-specific targeted checks still apply for
+touched control-plane paths.
 
 If you are changing commit-time or suite-selection policy, keep the hook path
 limited to bounded checkpoint checks and use the shared quality or parity

@@ -32,7 +32,7 @@ Do not pre-load every repo doc by default.
 | Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
 | Issue templates, issue-writing policy, or proactive follow-up issue creation | `AGENTS.md`, `docs/standards/issues.md`, `docs/standards/implementation.md`, `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/issue-workflow.md` |
 | Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/audit_delivery_guardrails.py` |
-| PR hardening review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/pr-hardening-review.md` |
+| PR review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `.claude/commands/pr-review.md` |
 | Planning sequence, delivery slices, or rollout checkpoints | `ROADMAP.md` |
 | Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |

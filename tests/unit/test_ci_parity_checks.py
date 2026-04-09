@@ -178,6 +178,21 @@ def test_ci_workflow_uses_parity_runner_for_quality_job() -> None:
     )
 
     assert "uv run python -m tools.run_ci_parity_checks" in workflow_text
+    assert "pull_request" not in workflow_text
     assert "run: uv run mypy" not in workflow_text
     assert "run: uv run pyright" not in workflow_text
     assert "run: uv run pytest" not in workflow_text
+
+
+def test_pr_review_workflow_runs_commit_metadata_and_pr_review_checks() -> None:
+    workflow_text = (repo_root() / ".github/workflows/pr-review.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "pull_request:" in workflow_text
+    assert "commit-messages:" in workflow_text
+    assert "pr-review:" in workflow_text
+    assert "tools.validate_commit_message" in workflow_text
+    assert "tools.validate_pr_metadata" in workflow_text
+    assert "tools.run_pr_review_checks" in workflow_text
+    assert "tools.run_ci_parity_checks" not in workflow_text

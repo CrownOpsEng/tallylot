@@ -238,6 +238,9 @@ Scope:
 - keep control-plane ownership routing and default-branch guardrail audits
   explicit so local repo state and live GitHub protection drift are checked
   together
+- keep repo-native PR review routing, change-sensitive PR-only review checks,
+  and explicit changed-surface coverage aligned so review loops do not stop
+  early after only inspecting a narrow subset of the touched surfaces
 
 Exit criteria:
 

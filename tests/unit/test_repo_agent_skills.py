@@ -60,6 +60,17 @@ EXPECTED_SKILLS = {
             "shell-sensitive",
         ),
     ),
+    "pr-review": ExpectedSkill(
+        display_name="PR Review",
+        required_fragments=(
+            "docs/standards/delivery-guardrails.md",
+            "docs/standards/implementation.md",
+            "docs/standards/commits.md",
+            ".claude/commands/pr-review.md",
+            "tools.audit_pr_review",
+            "applicable surface groups",
+        ),
+    ),
     "balance-submission-operations": ExpectedSkill(
         display_name="Balance Submission",
         required_fragments=(

@@ -171,6 +171,7 @@ def test_documented_claude_command_routes_exist() -> None:
         ".claude/commands/balance-submission-operations.md",
         ".claude/commands/implementation-checkpoint.md",
         ".claude/commands/issue-workflow.md",
+        ".claude/commands/pr-review.md",
         ".claude/commands/reconciliation-balance-operations.md",
         ".claude/commands/reconciliation-tax-build.md",
     )
@@ -193,6 +194,7 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
         ".claude/commands/balance-submission-operations.md",
         ".claude/commands/implementation-checkpoint.md",
         ".claude/commands/issue-workflow.md",
+        ".claude/commands/pr-review.md",
         ".claude/commands/reconciliation-balance-operations.md",
         ".claude/commands/reconciliation-tax-build.md",
     )

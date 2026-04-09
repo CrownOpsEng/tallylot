@@ -1,4 +1,4 @@
-# PR Hardening Review
+# PR Review
 
 Use this route for repeatable review passes on an active branch or draft PR.
 
@@ -8,20 +8,16 @@ Use this route for repeatable review passes on an active branch or draft PR.
    - current PR title, body, and changed files when PR work is active
    - `AGENTS.md` so the repo's task-routing table is back in context
    - `docs/standards/delivery-guardrails.md`
+   - `docs/standards/implementation.md`
    - `docs/standards/commits.md`
    - latest targeted verification results
-2. Red-team this fixed matrix and find up to 5 new unique findings for the
-   current pass:
-   - design and ownership
-   - correctness and behavior
-   - complexity and over-engineering
-   - tests and regression value
-   - naming and public terminology
-   - documentation and control-plane alignment
-   - delivery controls, PR metadata, and issue handling
-   - compaction and context-loss recovery
-3. Re-check every prior fix surface first, then add one adjacent surface group
-   for the new pass.
+2. Use
+   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_pr_review`
+   to identify the current diff's applicable surface groups, review domains,
+   required verification family, and any unmapped paths before claiming a
+   clean pass.
+3. Re-check every prior fix surface first, then inspect the next applicable
+   changed surface group that has not yet completed a clean pass.
 4. Repair every finding from that pass before starting the next pass.
    - reload the narrow repo guidance for each repair surface using `AGENTS.md`,
      its task-routing table, and the owning roadmap, architecture, migration,
@@ -30,13 +26,16 @@ Use this route for repeatable review passes on an active branch or draft PR.
      belongs instead of leaving the repair in prose alone
    - when a meaningful finding should stay out of the active PR, search for an
      existing issue first and open or link the follow-up issue immediately
-5. Verify the repaired slice and create bounded checkpoint commits during the
-   loop, following the repo's normal commit and checkpoint rules. Do not start
-   another red-team pass with uncommitted repaired findings unless the pass is
-   still in a very small in-progress slice.
-6. Continue steps 1 through 5 until a full pass yields no new meaningful
-   findings. When a pass finds fewer than 5 findings, report only those
-   findings. Do not invent findings to hit a quota.
+5. Rerun the required review checks for the repaired slice with
+   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks`
+   or the narrower required slice, then create a bounded checkpoint commit
+   before starting the next pass. Do not start another red-team pass with
+   uncommitted repaired findings unless the pass is still in a very small
+   in-progress slice.
+6. Continue steps 1 through 5 until every applicable changed surface group has
+   completed a clean pass and a full applicable-surface loop yields no new
+   meaningful findings. When a pass finds fewer than 5 findings, report only
+   those findings. Do not invent findings to hit a quota.
 7. If the only remaining item is a very minor finishing touch, repair it and
    finish once no other meaningful issues surface.
 8. Keep scratch notes untracked. Do not create tracked issue ledgers, review

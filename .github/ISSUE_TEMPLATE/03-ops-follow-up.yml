@@ -35,7 +35,7 @@ body:
     attributes:
       label: Relevant Paths
       description: Optional repo-relative paths only.
-      placeholder: .github/workflows/ci.yml, .claude/commands/pr-hardening-review.md
+      placeholder: .github/workflows/ci.yml, .claude/commands/pr-review.md
     validations:
       required: false
   - type: textarea

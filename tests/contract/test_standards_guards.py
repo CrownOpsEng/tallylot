@@ -366,7 +366,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         repo_root() / ".claude/commands/implementation-checkpoint.md"
     ).read_text(encoding="utf-8")
     hardening_route_text = (
-        repo_root() / ".claude" / "commands" / "pr-hardening-review.md"
+        repo_root() / ".claude" / "commands" / "pr-review.md"
     ).read_text(encoding="utf-8")
 
     assert "platform-native enforcement" in guardrails_text
@@ -404,11 +404,12 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "tools/docs_maintenance/metadata.py" in agents_text
     assert "docs/reference/repository-history.md" in agents_text
     assert "docs/standards/delivery-guardrails.md" in agents_text
-    assert ".claude/commands/pr-hardening-review.md" in agents_text
+    assert ".claude/commands/pr-review.md" in agents_text
     assert "delivery guardrails layered across platform settings" in roadmap_text
     assert "control-plane ownership routing" in roadmap_text
     assert "audit local CODEOWNERS coverage and live GitHub delivery" in roadmap_text
     assert "settings together without broad context loading" in roadmap_text
+    assert "repo-native PR review routing" in roadmap_text
     assert (
         "if standards, docs placement, doc authoring rules, or agent-default enforcement changed"
         in checkpoint_text
@@ -420,14 +421,25 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "shell-safe commit and PR authoring rules" in checkpoint_text
     assert "scratch workflow bookkeeping" in checkpoint_text
     assert "search for an existing issue first" in checkpoint_text
+    assert "`human_docs`" in guardrails_text
+    assert "`control_plane_text`" in guardrails_text
+    assert "`repo_code_or_tooling`" in guardrails_text
+    assert "`ci_or_release`" in guardrails_text
+    assert "surface-specific targeted checks still apply" in guardrails_text
+    assert (
+        "every applicable changed surface group has completed a clean"
+        in guardrails_text
+    )
+    assert "tools.audit_pr_review" in hardening_route_text
+    assert "tools.run_pr_review_checks" in hardening_route_text
     assert "full clean loop has completed with no new" in hardening_route_text
     assert "invent findings to hit a quota" in hardening_route_text
     assert (
         "stop only after a full pass yields no new meaningful findings"
-        in guardrails_text
+        not in guardrails_text
     )
     assert (
-        "Continue steps 1 through 5 until a full pass yields no new meaningful"
+        "Continue steps 1 through 5 until every applicable changed surface group has"
         in hardening_route_text
     )
 
@@ -437,7 +449,7 @@ def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() ->
         encoding="utf-8"
     )
     hardening_route_text = (
-        repo_root() / ".claude" / "commands" / "pr-hardening-review.md"
+        repo_root() / ".claude" / "commands" / "pr-review.md"
     ).read_text(encoding="utf-8")
 
     for relative_path in (
@@ -458,15 +470,18 @@ def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() ->
     )
     assert "AGENTS.md`, its task-routing table" in guardrails_text
     assert "checkpoint commits during the loop" in guardrails_text
+    assert "applicable surface groups" in guardrails_text
     assert (
         "Repair every finding from that pass before starting the next pass"
         in hardening_route_text
     )
-    assert "create bounded checkpoint commits during the" in hardening_route_text
+    assert "create a bounded checkpoint commit" in hardening_route_text
     assert (
         "relevant delivery guidance or skills before updating the PR"
         in hardening_route_text
     )
+    assert "tools.audit_pr_review" in hardening_route_text
+    assert "tools.run_pr_review_checks" in hardening_route_text
 
 
 def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> None:
@@ -486,7 +501,9 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
         "tools/install_git_hooks.py",
         "tools/pre_commit_hook.py",
         "tools/audit_delivery_guardrails.py",
+        "tools/audit_pr_review.py",
         "tools/message_standards.py",
+        "tools/run_pr_review_checks.py",
         "tools/validate_commit_message.py",
         "tools/validate_pr_metadata.py",
         "tools/run_quality_gates.py",

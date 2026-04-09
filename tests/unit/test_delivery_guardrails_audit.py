@@ -11,10 +11,10 @@ def _protected_branch_payload() -> dict[str, object]:
     return {
         "required_status_checks": {
             "strict": True,
-            "contexts": ["commit-messages", "quality"],
+            "contexts": ["commit-messages", "pr-review"],
             "checks": [
                 {"context": "commit-messages"},
-                {"context": "quality"},
+                {"context": "pr-review"},
             ],
         },
         "required_pull_request_reviews": {
@@ -103,6 +103,7 @@ def test_missing_codeowners_entries_reports_missing_patterns() -> None:
     assert ".github/workflows/**" in missing
     assert "tools/message_standards.py" in missing
     assert "tools/run_ci_parity_checks.py" in missing
+    assert "tools/run_pr_review_checks.py" in missing
 
 
 def test_rulesets_only_repo_does_not_fail_branch_protection_audit() -> None:
