@@ -27,11 +27,11 @@ def entrypoint_paths() -> tuple[Path, ...]:
 
 @pytest.fixture(autouse=True)
 def reset_repo_root_state() -> Iterator[None]:
-    repo_paths._reset_repo_root()
+    repo_paths.reset_repo_root()
     try:
         yield
     finally:
-        repo_paths._reset_repo_root()
+        repo_paths.reset_repo_root()
 
 
 def override_active_roots(
@@ -44,7 +44,9 @@ def override_active_roots(
     resolved_docs_root = docs_root or root / "docs"
     expected_docs_root = root.resolve() / "docs"
     if resolved_docs_root.resolve() != expected_docs_root:
-        raise AssertionError(f"docs root must resolve under the repo root: {resolved_docs_root}")
+        raise AssertionError(
+            f"docs root must resolve under the repo root: {resolved_docs_root}"
+        )
     repo_paths._set_repo_root(root)
 
 
@@ -104,7 +106,9 @@ def test_parse_frontmatter_rejects_missing_related_target() -> None:
 
     frontmatter = docs_maintenance.parse_frontmatter(text, path)
 
-    with pytest.raises(ValueError, match="uses missing related target docs/does-not-exist.md"):
+    with pytest.raises(
+        ValueError, match="uses missing related target docs/does-not-exist.md"
+    ):
         docs_maintenance.validate_frontmatter(path, frontmatter)
 
 
@@ -225,11 +229,15 @@ def test_root_consumers_use_state_getters_instead_of_root_constants() -> None:
         "tools/docs_maintenance/metadata.py",
     ):
         module_path = repo_root() / relative
-        tree = ast.parse(module_path.read_text(encoding="utf-8"), filename=str(module_path))
+        tree = ast.parse(
+            module_path.read_text(encoding="utf-8"), filename=str(module_path)
+        )
         imported_names = {
             alias.name
             for node in ast.walk(tree)
-            if isinstance(node, ast.ImportFrom) and node.level == 1 and node.module == "state"
+            if isinstance(node, ast.ImportFrom)
+            and node.level == 1
+            and node.module == "state"
             for alias in node.names
         }
         assert imported_names.isdisjoint(root_constant_names), relative
@@ -502,7 +510,9 @@ def test_sync_check_rejects_retired_markdown_link_targets(
 
     override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
-    with pytest.raises(ValueError, match="still references retired path docs/file-map.md"):
+    with pytest.raises(
+        ValueError, match="still references retired path docs/file-map.md"
+    ):
         docs_maintenance.cli._check_retired_references()
 
 
@@ -581,7 +591,9 @@ def test_sync_check_rejects_retired_related_targets(
 
     override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
 
-    with pytest.raises(ValueError, match="still references retired path docs/file-map.md"):
+    with pytest.raises(
+        ValueError, match="still references retired path docs/file-map.md"
+    ):
         docs_maintenance.cli._check_retired_references()
 
 
@@ -608,11 +620,15 @@ def test_validate_markdown_links_accepts_reference_style_links(tmp_path: Path) -
     docs_maintenance.validate_markdown_links([readme, guide])
 
 
-def test_validate_markdown_links_rejects_missing_relative_target(tmp_path: Path) -> None:
+def test_validate_markdown_links_rejects_missing_relative_target(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "README.md"
     path.write_text("# Repo\n\n[Missing](docs/does-not-exist.md)\n", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="links to missing path docs/does-not-exist.md"):
+    with pytest.raises(
+        ValueError, match="links to missing path docs/does-not-exist.md"
+    ):
         docs_maintenance.validate_markdown_links([path])
 
 
@@ -621,13 +637,17 @@ def test_validate_markdown_links_rejects_missing_anchor(tmp_path: Path) -> None:
     guide.parent.mkdir(parents=True)
     guide.write_text("## Step One\n", encoding="utf-8")
     readme = tmp_path / "README.md"
-    readme.write_text("[Guide](docs/guides/sample.md#missing-anchor)\n", encoding="utf-8")
+    readme.write_text(
+        "[Guide](docs/guides/sample.md#missing-anchor)\n", encoding="utf-8"
+    )
 
     with pytest.raises(ValueError, match="links to missing anchor #missing-anchor"):
         docs_maintenance.validate_markdown_links([readme, guide])
 
 
-def test_validate_markdown_links_rejects_broken_reference_style_link(tmp_path: Path) -> None:
+def test_validate_markdown_links_rejects_broken_reference_style_link(
+    tmp_path: Path,
+) -> None:
     readme = tmp_path / "README.md"
     readme.write_text(
         dedent(
@@ -640,11 +660,15 @@ def test_validate_markdown_links_rejects_broken_reference_style_link(tmp_path: P
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="links to missing path docs/guides/missing.md"):
+    with pytest.raises(
+        ValueError, match="links to missing path docs/guides/missing.md"
+    ):
         docs_maintenance.validate_markdown_links([readme])
 
 
-def test_validate_markdown_links_accepts_duplicate_github_style_heading_anchor(tmp_path: Path) -> None:
+def test_validate_markdown_links_accepts_duplicate_github_style_heading_anchor(
+    tmp_path: Path,
+) -> None:
     page = tmp_path / "README.md"
     page.write_text(
         dedent(
@@ -685,7 +709,9 @@ def test_scaffold_workspace_doc_infers_reference_and_both(
     assert exit_code == 0
 
     created = tmp_path / "docs" / "workspace" / "working" / "example.md"
-    frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
+    frontmatter = docs_maintenance.parse_frontmatter(
+        created.read_text(encoding="utf-8"), created
+    )
 
     assert frontmatter["doc_type"] == "reference"
     assert frontmatter["audience"] == "both"
@@ -845,7 +871,9 @@ def test_scaffold_agents_doc_accepts_explicit_doc_type(
     assert exit_code == 0
 
     created = tmp_path / "agents" / "example-agent.md"
-    frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
+    frontmatter = docs_maintenance.parse_frontmatter(
+        created.read_text(encoding="utf-8"), created
+    )
 
     assert frontmatter["doc_type"] == "standard"
     assert frontmatter["audience"] == "agent"
@@ -924,7 +952,9 @@ def test_scaffold_sync_managed_doc_accepts_nav_order(
     assert exit_code == 0
 
     created = tmp_path / "docs" / "guides" / "example-guide.md"
-    frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
+    frontmatter = docs_maintenance.parse_frontmatter(
+        created.read_text(encoding="utf-8"), created
+    )
 
     assert frontmatter["nav_order"] == 70
 
@@ -1036,7 +1066,9 @@ def test_scaffold_sync_managed_doc_escapes_yaml_sensitive_fields(
     assert exit_code == 0
 
     created = tmp_path / "docs" / "guides" / "quoted-guide.md"
-    frontmatter = docs_maintenance.parse_frontmatter(created.read_text(encoding="utf-8"), created)
+    frontmatter = docs_maintenance.parse_frontmatter(
+        created.read_text(encoding="utf-8"), created
+    )
 
     assert frontmatter["title"] == 'Guide "Quoted"'
     assert frontmatter["summary"] == 'Summary with "quotes".'
@@ -1252,13 +1284,18 @@ def test_scaffold_rejects_duplicate_nav_order_and_rolls_back(
 
 def test_validate_uv_examples_rejects_bare_uv_examples(tmp_path: Path) -> None:
     page = tmp_path / "README.md"
-    page.write_text("Run `uv run python -m tools.docs_maintenance sync --check`.\n", encoding="utf-8")
+    page.write_text(
+        "Run `uv run python -m tools.docs_maintenance sync --check`.\n",
+        encoding="utf-8",
+    )
 
     with pytest.raises(ValueError, match="markdown surfaces contain bare uv examples"):
         docs_maintenance.validate_uv_examples([page])
 
 
-def test_fenced_tilde_code_blocks_are_ignored_for_uv_and_link_validation(tmp_path: Path) -> None:
+def test_fenced_tilde_code_blocks_are_ignored_for_uv_and_link_validation(
+    tmp_path: Path,
+) -> None:
     guide = tmp_path / "docs" / "guides" / "sample.md"
     guide.parent.mkdir(parents=True)
     guide.write_text("# Sample\n", encoding="utf-8")
@@ -1279,7 +1316,9 @@ def test_fenced_tilde_code_blocks_are_ignored_for_uv_and_link_validation(tmp_pat
     docs_maintenance.validate_markdown_links([page, guide])
 
 
-def test_blockquoted_fenced_code_blocks_are_ignored_for_uv_and_link_validation(tmp_path: Path) -> None:
+def test_blockquoted_fenced_code_blocks_are_ignored_for_uv_and_link_validation(
+    tmp_path: Path,
+) -> None:
     guide = tmp_path / "docs" / "guides" / "sample.md"
     guide.parent.mkdir(parents=True)
     guide.write_text("# Sample\n", encoding="utf-8")
@@ -1321,7 +1360,9 @@ def test_html_comments_are_ignored_for_uv_and_link_validation(tmp_path: Path) ->
     docs_maintenance.validate_markdown_links([page, guide])
 
 
-def test_indented_code_blocks_are_ignored_for_uv_and_link_validation(tmp_path: Path) -> None:
+def test_indented_code_blocks_are_ignored_for_uv_and_link_validation(
+    tmp_path: Path,
+) -> None:
     guide = tmp_path / "docs" / "guides" / "sample.md"
     guide.parent.mkdir(parents=True)
     guide.write_text("# Sample\n", encoding="utf-8")

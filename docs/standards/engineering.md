@@ -72,12 +72,14 @@ Repo-native support boundaries:
 
 Default to one responsibility per module.
 
-- Keep most modules under roughly 150 lines.
-- Start a split review once a module approaches 200 lines.
-- Refactor before extending beyond 300 lines unless the file is mostly
+- Keep most modules under roughly 200 lines.
+- Start a split review once a module approaches 300 lines.
+- Refactor before extending beyond 400 lines unless the file is mostly
   declarative models, typed schemas, or protocol definitions.
-- Treat `300` lines as the official repo refactor limit.
-- Treat `450` lines as the hard-stop lint ceiling (`150%` of the repo limit).
+- Treat `400` lines as the official repo refactor limit.
+- Enforced limit is `500` lines as the hard-stop lint ceiling.
+- Keep the repo standard tighter than the enforcement ceiling so refactor
+  expectations stay ahead of the hard-stop lint cap.
 - Refactor by bounded concept, not by arbitrary suffixes.
 - Do not add new dumping-ground modules such as `helpers.py`, `utils.py`,
   `misc.py`, or another catch-all `common.py`.

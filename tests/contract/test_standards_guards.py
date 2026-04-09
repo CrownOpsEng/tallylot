@@ -271,23 +271,35 @@ def test_markdownlint_only_disables_md013() -> None:
 
 def test_module_size_policy_remains_aligned() -> None:
     pylint_text = (repo_root() / ".pylintrc").read_text(encoding="utf-8")
+    test_pylint_text = (repo_root() / ".pylintrc-tests").read_text(encoding="utf-8")
     standards_text = (repo_root() / "docs/standards/engineering.md").read_text(
         encoding="utf-8"
     )
 
-    assert "max-module-lines = 450" in pylint_text
+    assert "max-module-lines = 500" in pylint_text
+    assert "max-module-lines = 500" in test_pylint_text
     assert (
-        re.search(r"Refactor before extending beyond 300 lines", standards_text)
+        re.search(r"Refactor before extending beyond 400 lines", standards_text)
         is not None
     )
     assert (
         re.search(
-            r"Treat `300` lines as the official repo refactor limit", standards_text
+            r"Treat `400` lines as the official repo refactor limit", standards_text
         )
         is not None
     )
     assert (
-        re.search(r"Treat `450` lines as the hard-stop lint ceiling", standards_text)
+        re.search(
+            r"Enforced limit is `500` lines as the hard-stop lint ceiling",
+            standards_text,
+        )
+        is not None
+    )
+    assert (
+        re.search(
+            r"Keep the repo standard tighter than the enforcement ceiling",
+            standards_text,
+        )
         is not None
     )
 
@@ -555,8 +567,10 @@ def test_typecheck_configs_remain_strict() -> None:
 
     assert "strict = true" in mypy_text
     assert "warn_unused_ignores = true" in mypy_text
+    assert "files = src, tests, tools, repo_support" in mypy_text
     assert pyright_config["typeCheckingMode"] == "strict"
     assert pyright_config["reportUnnecessaryTypeIgnoreComment"] is True
+    assert "repo_support" in pyright_config["include"]
 
 
 def test_pyright_private_usage_config_matches_repo_test_trees() -> None:
