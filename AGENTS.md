@@ -55,7 +55,8 @@ Do not pre-load every repo doc by default.
   `.claude/commands/`.
 - When editing repo docs or Markdown, use the `markdown` skill if available.
 - When editing repo standards, automation, or other control-plane files, use
-  the `code-change-safety` skill as the starting workflow if available.
+  the repo-local workflow for the active surface and reload the narrow repo
+  guidance listed in this file before editing.
 - Keep tracked docs, templates, and control-plane text neutral and durable.
 - Do not store scratch review notes, hardening ledgers, or temporary process
   bookkeeping in tracked files.

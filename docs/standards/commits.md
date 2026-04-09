@@ -259,6 +259,10 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.vali
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
 ```
 
+When structured commit messages or PR bodies include backticks, quotes, or
+other shell-sensitive text, use file/stdin authoring forms rather than inline
+`-m` or `--body` arguments so the metadata stays literal.
+
 ## Commit-Time Verification Policy
 
 Commit-time hooks should enforce the bounded local safety checks we expect on

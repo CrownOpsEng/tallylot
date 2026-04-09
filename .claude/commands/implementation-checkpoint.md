@@ -5,8 +5,9 @@ Use this route before closing any non-trivial coding task.
 1. Read:
    - `docs/standards/implementation.md`
    - `docs/standards/commits.md`
-   - use `code-change-safety` for repo changes and `markdown` for Markdown/docs
-     work when those skills are available
+   - use `markdown` for Markdown/docs work when that skill is available
+   - use the shell-safe commit and PR authoring rules in
+     `docs/standards/commits.md` when structured metadata is involved
 2. Confirm the change still respects:
    - layer ownership
    - provider-neutral core design

@@ -20,8 +20,8 @@ structure, authoring rules, and baseline context from `AGENTS.md`,
 `docs/reference/repository-history.md`, `tools/docs_maintenance/cli.py`, and
 `tools/docs_maintenance/metadata.py` so new material lands in the right repo
 surface and follows the repo's documentation metadata rules.
-Use `code-change-safety` for the repo-guidance reload path and pair it with the
-`markdown` skill when the task edits Markdown or docs surfaces.
+Use the repo-local workflow for the active surface on that reload path and pair
+it with the `markdown` skill when the task edits Markdown or docs surfaces.
 When the task changes GitHub-side delivery controls, run
 `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_delivery_guardrails`
 before and after the change so the local CODEOWNERS state and the live remote

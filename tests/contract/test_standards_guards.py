@@ -336,6 +336,8 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert "Issue linkage:" in commits_text
     assert "Issue linkage:" in issues_text
     assert "Issue linkage:" in pr_template_text
+    assert "file/stdin authoring forms" in commits_text
+    assert "shell-sensitive text" in commits_text
     assert "Follow-ups:" in commits_text
     assert "optional `Follow-ups:` section is allowed" in commits_text
     assert "Follow-ups:" in pr_template_text
@@ -394,7 +396,8 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     )
     assert "use the `markdown` skill if available" in agents_text
     assert (
-        "use\n  the `code-change-safety` skill as the starting workflow" in agents_text
+        "use\n  the repo-local workflow for the active surface and reload the narrow repo\n  guidance listed in this file before editing."
+        in agents_text
     )
     assert "docs/standards/issues.md" in agents_text
     assert ".claude/commands/issue-workflow.md" in agents_text
@@ -411,9 +414,10 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         in checkpoint_text
     )
     assert (
-        "use `code-change-safety` for repo changes and `markdown` for Markdown/docs"
+        "use `markdown` for Markdown/docs work when that skill is available"
         in checkpoint_text
     )
+    assert "shell-safe commit and PR authoring rules" in checkpoint_text
     assert "scratch workflow bookkeeping" in checkpoint_text
     assert "search for an existing issue first" in checkpoint_text
     assert "full clean loop has completed with no new" in hardening_route_text
@@ -426,6 +430,28 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         "Continue steps 1 through 5 until a full pass yields no new meaningful"
         in hardening_route_text
     )
+
+
+def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() -> None:
+    guardrails_text = (repo_root() / "docs/standards/delivery-guardrails.md").read_text(
+        encoding="utf-8"
+    )
+    hardening_route_text = (
+        repo_root() / ".claude" / "commands" / "pr-hardening-review.md"
+    ).read_text(encoding="utf-8")
+
+    for relative_path in (
+        "AGENTS.md",
+        ".agents/skills/implementation-workflow/SKILL.md",
+        ".agents/skills/issue-workflow/SKILL.md",
+        ".agents/skills/docs-authoring/SKILL.md",
+        ".claude/commands/implementation-checkpoint.md",
+        "docs/standards/delivery-guardrails.md",
+    ):
+        text = (repo_root() / relative_path).read_text(encoding="utf-8")
+        assert "code-change-safety" not in text
+        assert "git-delivery-safety" not in text
+        assert "docs-change-safety" not in text
     assert (
         "repair every finding from that pass before starting the next pass"
         in guardrails_text
