@@ -106,9 +106,10 @@ def test_run_gate_sets_absolute_coverage_config_for_pytest(
     tools.run_quality_gates._run_gate(gate)
 
     coverage_config = str(repo_root() / "pyproject.toml")
-    assert captured_environment["COVERAGE_PROCESS_START"] == coverage_config
-    assert captured_environment["COVERAGE_RCFILE"] == coverage_config
     assert coverage_config in captured_environment["PYTEST_ADDOPTS"]
+    assert "COVERAGE_FILE" in captured_environment
+    assert Path(captured_environment["COVERAGE_FILE"]).is_absolute()
+    assert Path(captured_environment["COVERAGE_FILE"]).name == ".coverage"
 
 
 def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> None:

@@ -24,12 +24,10 @@ def test_benchmark_tests_adds_xdist_after_pytest_invocation() -> None:
     )
 
 
-def test_benchmark_tests_cleans_coverage_files_for_full_suite(
-    monkeypatch: MonkeyPatch, tmp_path: Path
+def test_benchmark_tests_full_suite_uses_isolated_coverage_file(
+    monkeypatch: MonkeyPatch,
 ) -> None:
-    monkeypatch.chdir(tmp_path)
-    coverage_path = tmp_path / ".coverage"
-    coverage_path.write_text("stale", encoding="utf-8")
+    captured_environment: dict[str, str] = {}
 
     def fake_run(
         command: tuple[str, ...],
@@ -37,10 +35,13 @@ def test_benchmark_tests_cleans_coverage_files_for_full_suite(
         check: bool,
         env: dict[str, str],
     ) -> subprocess.CompletedProcess[str]:
-        del check, env
+        del check
+        captured_environment.update(env)
         return subprocess.CompletedProcess(command, 0)
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     assert benchmark_tests.main(["--suite", "full"]) == 0
-    assert coverage_path.exists() is False
+    assert "COVERAGE_FILE" in captured_environment
+    assert Path(captured_environment["COVERAGE_FILE"]).is_absolute()
+    assert Path(captured_environment["COVERAGE_FILE"]).name == ".coverage"

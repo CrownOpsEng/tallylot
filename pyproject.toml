@@ -68,6 +68,7 @@ markers = [
     "unit: fast unit-level coverage.",
     "e2e: end-to-end CLI and service coverage.",
     "contract: adapter and output contract coverage.",
+    "no_cover: launch-boundary tests excluded from coverage once behavior is covered in-process.",
     "slow: comparatively expensive tests kept out of commit-time pytest hooks.",
 ]
 

@@ -1,39 +1,41 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from repo_support.paths import repo_root
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tests.support.skill_scripts import load_skill_main
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def test_balance_submission_skill_runner_resolves_repo_root_and_inspects_missing_values(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     submission_root = tmp_path / "submission" / "manual-source"
+    monkeypatch.chdir(tmp_path)
+    main = load_skill_main(
+        ".agents/skills/balance-submission-operations/scripts/balance_submission_operations.py"
+    )
 
-    result = subprocess.run(
+    exit_code = main(
         (
-            "python3",
-            str(
-                repo_root()
-                / ".agents/skills/balance-submission-operations/scripts/balance_submission_operations.py"
-            ),
             "inspect",
             "--source",
             "manual-source",
             "--submission-root",
             str(submission_root),
-        ),
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        check=False,
+        )
     )
+    captured = capsys.readouterr()
 
-    assert result.returncode == 0, result.stderr
-    payload = json.loads(result.stdout)
+    assert exit_code == 0
+    assert captured.err == ""
+    payload = json.loads(captured.out)
     assert payload["submission_root"] == str(submission_root)
     assert payload["ready_for_submit"] is False
     assert payload["issue_count"] >= 2
@@ -44,14 +46,18 @@ def test_balance_submission_skill_runner_resolves_repo_root_and_inspects_missing
 
 def test_balance_submission_skill_run_mode_does_not_guess_missing_values(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     submission_root = tmp_path / "submission" / "manual-source"
     output_root = tmp_path / "normalized" / "manual-source"
+    monkeypatch.chdir(tmp_path)
+    main = load_skill_main(
+        ".agents/skills/balance-submission-operations/scripts/balance_submission_operations.py"
+    )
 
-    result = subprocess.run(
+    exit_code = main(
         (
-            "python3",
-            ".agents/skills/balance-submission-operations/scripts/balance_submission_operations.py",
             "run",
             "--source",
             "manual-source",
@@ -59,15 +65,13 @@ def test_balance_submission_skill_run_mode_does_not_guess_missing_values(
             str(submission_root),
             "--output-root",
             str(output_root),
-        ),
-        cwd=repo_root(),
-        capture_output=True,
-        text=True,
-        check=False,
+        )
     )
+    captured = capsys.readouterr()
 
-    assert result.returncode == 0, result.stderr
-    payload = json.loads(result.stdout)
+    assert exit_code == 0
+    assert captured.err == ""
+    payload = json.loads(captured.out)
     assert payload["blocked"] is True
     assert payload["stage"] == "inspect"
     assert payload["ready_for_submit"] is False
@@ -76,6 +80,8 @@ def test_balance_submission_skill_run_mode_does_not_guess_missing_values(
 
 def test_balance_submission_skill_submit_writes_runtime_artifacts(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     submission_root = tmp_path / "submission" / "manual-source"
     output_root = tmp_path / "normalized" / "manual-source"
@@ -146,11 +152,13 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
             },
         ),
     )
+    monkeypatch.chdir(tmp_path)
+    main = load_skill_main(
+        ".agents/skills/balance-submission-operations/scripts/balance_submission_operations.py"
+    )
 
-    result = subprocess.run(
+    exit_code = main(
         (
-            "python3",
-            ".agents/skills/balance-submission-operations/scripts/balance_submission_operations.py",
             "submit",
             "--source",
             "manual-source",
@@ -158,15 +166,13 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
             str(submission_root),
             "--output-root",
             str(output_root),
-        ),
-        cwd=repo_root(),
-        capture_output=True,
-        text=True,
-        check=False,
+        )
     )
+    captured = capsys.readouterr()
 
-    assert result.returncode == 0, result.stderr
-    payload = json.loads(result.stdout)
+    assert exit_code == 0
+    assert captured.err == ""
+    payload = json.loads(captured.out)
     assert payload["blocked"] is False
     assert payload["trust_tier"] == "operator_confirmed"
     assert payload["summary_path"] == str(

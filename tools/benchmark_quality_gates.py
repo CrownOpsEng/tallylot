@@ -6,7 +6,6 @@ import subprocess
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import Path
 
 from tools.uv_environment import repo_uv_environment
 
@@ -94,12 +93,6 @@ def _selected_strategies(
     return tuple(strategy for strategy in STRATEGIES if strategy.name in selected)
 
 
-def _clean_runtime_artifacts() -> None:
-    for path in Path.cwd().glob(".coverage*"):
-        if path.is_file():
-            path.unlink()
-
-
 def _benchmark_environment() -> dict[str, str]:
     environment = repo_uv_environment()
     environment.pop("COVERAGE_PROCESS_START", None)
@@ -114,7 +107,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     exit_code = 0
 
     for strategy in _selected_strategies(args.strategy):
-        _clean_runtime_artifacts()
         print(f"[strategy:{strategy.name}] {strategy.description}", flush=True)
         print(f"[command] {' '.join(strategy.command)}", flush=True)
         started = time.perf_counter()

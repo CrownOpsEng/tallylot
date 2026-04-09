@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 
 from repo_support.paths import repo_root
 
@@ -120,6 +121,7 @@ def apply_gate_environment(
     existing: Mapping[str, str],
     *,
     coverage_gate: bool,
+    coverage_file: Path | None = None,
 ) -> dict[str, str]:
     environment = dict(existing)
     if not coverage_gate:
@@ -130,6 +132,6 @@ def apply_gate_environment(
     coverage_addopt = f"--cov-config={coverage_config}"
     if coverage_addopt not in existing_addopts.split():
         environment["PYTEST_ADDOPTS"] = f"{existing_addopts} {coverage_addopt}".strip()
-    environment["COVERAGE_PROCESS_START"] = coverage_config
-    environment["COVERAGE_RCFILE"] = coverage_config
+    if coverage_file is not None:
+        environment["COVERAGE_FILE"] = str(coverage_file)
     return environment

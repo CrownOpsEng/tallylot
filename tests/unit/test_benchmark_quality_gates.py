@@ -8,12 +8,6 @@ from pytest import MonkeyPatch
 import tools.benchmark_quality_gates as benchmark_quality_gates
 
 
-def _successful_completed_process(
-    command: tuple[str, ...],
-) -> subprocess.CompletedProcess[str]:
-    return subprocess.CompletedProcess(command, 0)
-
-
 def test_benchmark_quality_gates_runs_selected_strategy(
     monkeypatch: MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -46,23 +40,13 @@ def test_benchmark_quality_gates_runs_selected_strategy(
     ]
 
 
-def test_benchmark_quality_gates_cleans_coverage_files(tmp_path: Path) -> None:
-    coverage_path = tmp_path / ".coverage"
-    coverage_path.write_text("stale", encoding="utf-8")
+def test_benchmark_quality_gates_strips_inherited_coverage_environment(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("COVERAGE_PROCESS_START", "stale-process-start")
+    monkeypatch.setenv("COVERAGE_RCFILE", "stale-rcfile")
 
-    with MonkeyPatch.context() as monkeypatch:
-        monkeypatch.chdir(tmp_path)
+    environment = benchmark_quality_gates._benchmark_environment()
 
-        def fake_run(
-            command: tuple[str, ...],
-            *,
-            check: bool,
-            env: dict[str, str],
-        ) -> subprocess.CompletedProcess[str]:
-            del check, env
-            return _successful_completed_process(command)
-
-        monkeypatch.setattr(subprocess, "run", fake_run)
-        assert benchmark_quality_gates.main(["--strategy", "fast-optimized"]) == 0
-
-    assert coverage_path.exists() is False
+    assert "COVERAGE_PROCESS_START" not in environment
+    assert "COVERAGE_RCFILE" not in environment

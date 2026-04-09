@@ -5,8 +5,10 @@ import os
 import subprocess
 import time
 from collections.abc import Sequence
+from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from repo_support.quality_gates import apply_gate_environment
 from tools.uv_environment import repo_uv_environment
@@ -105,19 +107,21 @@ def _command_for_suite(suite: BenchmarkSuite, *, parallel: bool) -> tuple[str, .
     return tuple(command)
 
 
-def _suite_environment(suite: BenchmarkSuite) -> dict[str, str]:
+def _suite_environment(
+    suite: BenchmarkSuite,
+    *,
+    coverage_file: Path | None = None,
+) -> dict[str, str]:
     environment = repo_uv_environment()
     environment.pop("COVERAGE_PROCESS_START", None)
     environment.pop("COVERAGE_RCFILE", None)
     if "PYTEST_ADDOPTS" in os.environ and "PYTEST_ADDOPTS" not in environment:
         environment["PYTEST_ADDOPTS"] = os.environ["PYTEST_ADDOPTS"]
-    return apply_gate_environment(environment, coverage_gate=suite.name == "full")
-
-
-def _clean_coverage_files() -> None:
-    for path in Path.cwd().glob(".coverage*"):
-        if path.is_file():
-            path.unlink()
+    return apply_gate_environment(
+        environment,
+        coverage_gate=suite.name == "full",
+        coverage_file=coverage_file,
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -126,16 +130,25 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     for suite in _selected_suites(args.suite):
         command = _command_for_suite(suite, parallel=args.parallel)
-        if suite.name == "full":
-            _clean_coverage_files()
         print(f"[suite:{suite.name}] {suite.description}", flush=True)
         print(f"[command] {' '.join(command)}", flush=True)
         started = time.perf_counter()
-        result = subprocess.run(
-            command,
-            check=False,
-            env=_suite_environment(suite),
-        )
+        with ExitStack() as stack:
+            temp_dir = (
+                stack.enter_context(
+                    TemporaryDirectory(
+                        prefix=f"tallylot-benchmark-{suite.name}-coverage-"
+                    )
+                )
+                if suite.name == "full"
+                else None
+            )
+            coverage_file = Path(temp_dir) / ".coverage" if temp_dir else None
+            result = subprocess.run(
+                command,
+                check=False,
+                env=_suite_environment(suite, coverage_file=coverage_file),
+            )
         elapsed = time.perf_counter() - started
         print(f"[result] exit={result.returncode} elapsed={elapsed:.2f}s")
         if result.returncode != 0:

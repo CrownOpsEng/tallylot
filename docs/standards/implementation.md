@@ -197,6 +197,12 @@ Meaningful tests only:
 - when tests become repetitive, treat that as a signal that the production seam
   may be wrong and refactor the seam instead of piling on more near-duplicate
   tests
+- for repo-side agent scripts and internal workflow entry points, cover
+  behavior in-process when a callable seam exists and reserve subprocess tests
+  for the real launch boundary
+- avoid duplicate in-process and subprocess tests that prove the same workflow
+  behavior; once behavior is covered in-process, thin launch-boundary tests may
+  use `@pytest.mark.no_cover`
 
 Do not leave edge-case behavior implicit in implementation code without a test
 that pins it down.
