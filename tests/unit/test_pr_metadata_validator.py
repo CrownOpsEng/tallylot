@@ -49,6 +49,16 @@ def test_pr_title_without_conventional_commit_subject_is_rejected() -> None:
     )
 
 
+def test_pr_title_with_generic_summary_is_rejected() -> None:
+    errors = _validate_pr_title("docs: cleanup")
+
+    assert errors == (
+        "subject summary must name a concrete repo surface or behavior; "
+        "generic summaries such as `cleanup`, `misc fixes`, and "
+        "`update branch` are not allowed",
+    )
+
+
 def test_pr_body_with_required_sections_is_valid() -> None:
     errors = _validate_pr_body(_body())
 

@@ -353,6 +353,11 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert "duplicate/superseded label" in implementation_text
     assert "duplicate/superseded label" in agents_text
     assert "duplicate/superseded label" in checkpoint_text
+    assert "Every authored commit must stay bounded to" in commits_text
+    assert "multiple bounded checkpoint commits" in commits_text
+    assert "keep each authored commit bounded" in implementation_text
+    assert "split it into\n   multiple bounded checkpoint commits" in checkpoint_text
+    assert "keep every authored commit bounded to one reviewable slice" in agents_text
 
 
 def test_delivery_guardrails_doc_is_routed_and_layered() -> None:

@@ -9,7 +9,9 @@ nav_order: 30
 ---
 
 Use Conventional Commits for all authored commits. Keep commit history small,
-cohesive, and checkpoint-oriented.
+cohesive, and checkpoint-oriented. Every authored commit must stay bounded to
+one reviewable slice. When a task spans more than one separable slice, land it
+as multiple bounded checkpoint commits instead of one umbrella commit.
 
 Use Conventional Commit subjects and the structured body sections for merge
 commits too. Do not rely on GitHub's default `Merge pull request ...` subject.
@@ -48,8 +50,11 @@ Subject rules:
 - lowercase type
 - optional lowercase kebab-case scope
 - non-empty imperative summary
+- summary names a concrete repo surface or behavior
 - maximum 72 characters for the full subject line
 - no trailing period
+- do not use generic summaries such as `cleanup`, `misc fixes`, or
+  `update branch`
 
 ## Body Template
 
@@ -207,6 +212,7 @@ working agreement, not optional guidance to ignore once a change is stable.
 
 A stable checkpoint means:
 
+- the commit covers one bounded reviewable slice
 - the change slice is coherent and reviewable
 - the tree is internally consistent
 - relevant checks have passed
@@ -219,6 +225,10 @@ Heuristics:
 - larger risky refactor: split only where rollback or review value is real
 - broad but separable docs or repo-structure refactor: checkpoint each stable
   slice instead of batching everything into one umbrella commit
+
+For large scopes, the default end state is still bounded commits. Do not wait
+until the end of the branch and then collapse several reviewable slices into
+one authored commit just because the broader task was related.
 
 Do not batch unrelated fixes together. Do not split one bounded change into a
 series of micro-commits with no practical review value.

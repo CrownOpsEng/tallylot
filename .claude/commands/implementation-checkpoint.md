@@ -58,7 +58,9 @@ Use this route before closing any non-trivial coding task.
    - `docs/standards/delivery-guardrails.md` when delivery work is active
 
 10. Create the stable checkpoint commit when the slice is coherent and verified.
-   Do not close the task first and plan to commit afterward.
+   If the task contains more than one separable reviewable slice, split it into
+   multiple bounded checkpoint commits before closeout. Do not close the task
+   first and plan to commit afterward.
 
 11. Confirm branch handling stayed PR-only for protected branches: do not push
     directly to `main`; do not use branch-protection bypass for ordinary

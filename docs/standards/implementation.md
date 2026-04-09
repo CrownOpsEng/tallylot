@@ -216,12 +216,16 @@ Expected behavior:
 - make a commit when a bounded slice is stable and verified
 - keep commits cohesive and reviewable
 - prefer one commit per coherent reshape slice, not one commit per file
+- keep each authored commit bounded to one reviewable concern with a clear
+  rollback boundary
 - before a checkpoint commit is pushed, amend or fix up a small, scoped
   follow-up patch into the owning non-pushed checkpoint when that avoids a
   low-value micro-commit, and update the amended commit message so its
   `Why:`, `What:`, and `Checks:` sections still describe the final content
 - do not use repeated amend cycles to grow one broad checkpoint that should be
   split into separate commits with clearer review and rollback boundaries
+- for large but separable scopes, create multiple bounded checkpoint commits
+  before closeout instead of ending on one umbrella authored commit
 - do not bundle unrelated fixes
 - do not wait for the user to remind you to commit once the task has reached a
   real checkpoint
@@ -275,6 +279,7 @@ When not to commit:
 - the worktree is inconsistent
 - the tests for the slice are failing
 - the checkpoint would be hard to review or roll back
+- the current diff still contains multiple separable reviewable slices
 
 Do not collapse a broad but separable refactor into one giant commit unless
 the slice truly cannot be reviewed or validated incrementally.

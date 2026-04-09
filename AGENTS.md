@@ -114,7 +114,10 @@ Do not pre-load every repo doc by default.
   - do not turn the hook path into a second full-suite verification pass
 - Treat commits as stable checkpoints by default:
   - prefer small cohesive commits
+  - keep every authored commit bounded to one reviewable slice
   - avoid micro-commits with no rollback or review value
+  - split large but separable work into multiple bounded checkpoint commits
+    instead of one umbrella commit
   - end the task on a clean, meaningful checkpoint commit
 - Keep commit, PR, and doc language neutral and direct:
   - `Why:` states the problem, constraint, or risk being addressed
