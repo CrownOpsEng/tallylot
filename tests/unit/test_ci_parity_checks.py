@@ -132,6 +132,7 @@ def test_ci_parity_can_include_pr_metadata(
         "Why:\n- explain\n\n"
         "What:\n- change\n\n"
         "Checks:\n- uv run pytest\n\n"
+        "Issue linkage:\n- None: parity validation test fixture\n\n"
         "Included checkpoints:\n- `ci: tighten parity`\n"
     )
     pr_body.write_text(

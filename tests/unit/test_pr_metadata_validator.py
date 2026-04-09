@@ -9,6 +9,30 @@ from tools.validate_pr_metadata import (
 )
 
 
+def _body(
+    *,
+    why: str = "- keep multi-checkpoint history visible on main",
+    issue_linkage: str = "- Closes #34: preserve multi-checkpoint history on main",
+    follow_ups: str = "",
+    included_checkpoints: str = "- `docs: codify pull request standards`",
+) -> str:
+    body = (
+        "Why:\n"
+        f"{why}\n\n"
+        "What:\n"
+        "- document and validate pull request metadata\n\n"
+        "Checks:\n"
+        "- uv run python -m tools.run_quality_gates\n\n"
+        "Issue linkage:\n"
+        f"{issue_linkage}\n\n"
+        "Included checkpoints:\n"
+        f"{included_checkpoints}\n"
+    )
+    if follow_ups:
+        body += f"\nFollow-ups:\n{follow_ups}\n"
+    return body
+
+
 def test_pr_title_with_conventional_commit_subject_is_valid() -> None:
     errors = _validate_pr_title("refactor: preserve fact model guardrails")
 
@@ -26,43 +50,13 @@ def test_pr_title_without_conventional_commit_subject_is_rejected() -> None:
 
 
 def test_pr_body_with_required_sections_is_valid() -> None:
-    body = """\
-Why:
-- Closes #34: preserve multi-checkpoint history on main
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- `docs: codify pull request standards`
-"""
-
-    errors = _validate_pr_body(body)
+    errors = _validate_pr_body(_body())
 
     assert not errors
 
 
 def test_pr_body_tolerates_leading_html_comment() -> None:
-    body = """\
-<!-- markdownlint-disable-file MD041 MD032 -->
-
-Why:
-- Closes #34: preserve multi-checkpoint history on main
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- `docs: codify pull request standards`
-"""
+    body = f"<!-- markdownlint-disable-file MD041 MD032 -->\n\n{_body()}"
 
     errors = _validate_pr_body(body)
 
@@ -79,11 +73,34 @@ What:
 
 Checks:
 - uv run python -m tools.run_quality_gates
+
+Issue linkage:
+- Closes #34: preserve multi-checkpoint history on main
 """
 
     errors = _validate_pr_body(body)
 
     assert errors == ("missing `Included checkpoints:` section",)
+
+
+def test_pr_body_rejects_missing_issue_linkage_section() -> None:
+    body = """\
+Why:
+- keep multi-checkpoint history visible on main
+
+What:
+- document and validate pull request metadata
+
+Checks:
+- uv run python -m tools.run_quality_gates
+
+Included checkpoints:
+- `docs: codify pull request standards`
+"""
+
+    errors = _validate_pr_body(body)
+
+    assert errors == ("missing `Issue linkage:` section",)
 
 
 def test_pr_body_rejects_non_bullet_content() -> None:
@@ -96,6 +113,9 @@ What:
 
 Checks:
 - uv run python -m tools.run_quality_gates
+
+Issue linkage:
+- Closes #34: preserve multi-checkpoint history on main
 
 Included checkpoints:
 - `docs: codify pull request standards`
@@ -110,91 +130,84 @@ Included checkpoints:
 
 
 def test_pr_body_accepts_optional_follow_ups_section() -> None:
-    body = """\
-Why:
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- `docs: codify pull request standards`
-
-Follow-ups:
-- Refs #34: tighten merge-repair automation
-"""
-
-    errors = _validate_pr_body(body)
+    errors = _validate_pr_body(
+        _body(
+            issue_linkage="- Refs #34: preserve multi-checkpoint history on main",
+            follow_ups="- Refs #35: tighten merge-repair automation",
+        )
+    )
 
     assert not errors
 
 
-def test_pr_body_rejects_malformed_why_closing_bullet() -> None:
-    body = """\
-Why:
-- Closes #34
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- `docs: codify pull request standards`
-"""
-
-    errors = _validate_pr_body(body)
+def test_pr_body_rejects_issue_linkage_in_why() -> None:
+    errors = _validate_pr_body(
+        _body(
+            why="- Closes #34: preserve multi-checkpoint history on main",
+            issue_linkage="- Refs #34: preserve multi-checkpoint history on main",
+        )
+    )
 
     assert errors == (
-        "`Why:` issue-closing bullets must match `- Closes #123: problem statement`",
+        "`Why:` must describe the problem or constraint; move issue linkage "
+        "bullets to `Issue linkage:`",
     )
 
 
-def test_pr_body_rejects_late_why_closing_bullet() -> None:
-    body = """\
-Why:
-- keep multi-checkpoint history visible on main
-- Closes #34: preserve multi-checkpoint history on main
+def test_pr_body_rejects_malformed_issue_linkage_closing_bullet() -> None:
+    errors = _validate_pr_body(_body(issue_linkage="- Closes #34"))
 
-What:
-- document and validate pull request metadata
+    assert errors == (
+        "`Issue linkage:` closing bullets must match "
+        "`- Closes #123: problem statement`",
+    )
 
-Checks:
-- uv run python -m tools.run_quality_gates
 
-Included checkpoints:
-- `docs: codify pull request standards`
-"""
+def test_pr_body_rejects_bad_issue_linkage_reference_bullet() -> None:
+    errors = _validate_pr_body(_body(issue_linkage="- Refs #34 because it is related"))
 
-    errors = _validate_pr_body(body)
+    assert errors == (
+        "`Issue linkage:` reference bullets must match "
+        "`- Refs #123` or `- Refs #123: note`",
+    )
 
-    assert errors == ("`Why:` issue-closing bullets must come before other bullets",)
+
+def test_pr_body_accepts_explicit_none_issue_linkage() -> None:
+    errors = _validate_pr_body(
+        _body(issue_linkage="- None: trivial maintenance slice with no existing issue")
+    )
+
+    assert not errors
+
+
+def test_pr_body_rejects_bad_none_issue_linkage_bullet() -> None:
+    errors = _validate_pr_body(_body(issue_linkage="- None"))
+
+    assert errors == (
+        "`Issue linkage:` no-issue bullets must match `- None: explanation`",
+    )
+
+
+def test_pr_body_rejects_none_issue_linkage_with_other_bullets() -> None:
+    errors = _validate_pr_body(
+        _body(
+            issue_linkage=(
+                "- None: trivial maintenance slice with no existing issue\n"
+                "- Refs #34: preserve multi-checkpoint history on main"
+            )
+        )
+    )
+
+    assert errors == ("`Issue linkage:` `- None: ...` must be the only bullet",)
 
 
 def test_pr_body_rejects_bad_follow_up_bullet() -> None:
-    body = """\
-Why:
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- `docs: codify pull request standards`
-
-Follow-ups:
-- follow up in #34
-"""
-
-    errors = _validate_pr_body(body)
+    errors = _validate_pr_body(
+        _body(
+            issue_linkage="- Refs #34: preserve multi-checkpoint history on main",
+            follow_ups="- follow up in #35",
+        )
+    )
 
     assert errors == (
         "`Follow-ups:` bullets must match `- Refs #123` or `- Refs #123: note`",
@@ -202,20 +215,13 @@ Follow-ups:
 
 
 def test_pr_checkpoints_match_commit_subjects(monkeypatch: MonkeyPatch) -> None:
-    body = """\
-Why:
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- `docs: codify pull request standards`
-- `ci: tighten workflow metadata checks`
-"""
+    body = _body(
+        issue_linkage="- Refs #34: preserve multi-checkpoint history on main",
+        included_checkpoints=(
+            "- `docs: codify pull request standards`\n"
+            "- `ci: tighten workflow metadata checks`"
+        ),
+    )
 
     def fake_loader(base_sha: str, head_sha: str) -> tuple[str, ...]:
         del base_sha, head_sha
@@ -236,21 +242,10 @@ Included checkpoints:
 
 
 def test_pr_checkpoints_ignore_leading_html_comment(monkeypatch: MonkeyPatch) -> None:
-    body = """\
-<!-- markdownlint-disable-file MD041 MD032 -->
-
-Why:
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- `docs: codify pull request standards`
-"""
+    body = (
+        "<!-- markdownlint-disable-file MD041 MD032 -->\n\n"
+        f"{_body(issue_linkage='- Refs #34: preserve multi-checkpoint history on main')}"
+    )
 
     def fake_loader(base_sha: str, head_sha: str) -> tuple[str, ...]:
         del base_sha, head_sha
@@ -266,19 +261,10 @@ Included checkpoints:
 def test_pr_checkpoints_reject_non_exact_commit_subjects(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    body = """\
-Why:
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- docs: codify pull request standards
-"""
+    body = _body(
+        issue_linkage="- Refs #34: preserve multi-checkpoint history on main",
+        included_checkpoints="- docs: codify pull request standards",
+    )
 
     def fake_loader(base_sha: str, head_sha: str) -> tuple[str, ...]:
         del base_sha, head_sha
@@ -294,19 +280,7 @@ Included checkpoints:
 
 
 def test_pr_checkpoints_reject_subject_mismatch(monkeypatch: MonkeyPatch) -> None:
-    body = """\
-Why:
-- keep multi-checkpoint history visible on main
-
-What:
-- document and validate pull request metadata
-
-Checks:
-- uv run python -m tools.run_quality_gates
-
-Included checkpoints:
-- `docs: codify pull request standards`
-"""
+    body = _body(issue_linkage="- Refs #34: preserve multi-checkpoint history on main")
 
     def fake_loader(base_sha: str, head_sha: str) -> tuple[str, ...]:
         del base_sha, head_sha

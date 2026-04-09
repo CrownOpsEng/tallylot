@@ -333,15 +333,20 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert "<pr title> (#<pr number>)" in implementation_text
     assert "<pr title> (#<pr number>)" in agents_text
     assert "<pr title> (#<pr number>)" in checkpoint_text
+    assert "Issue linkage:" in commits_text
+    assert "Issue linkage:" in issues_text
+    assert "Issue linkage:" in pr_template_text
     assert "Follow-ups:" in commits_text
     assert "optional `Follow-ups:` section is allowed" in commits_text
     assert "Follow-ups:" in pr_template_text
+    assert '"Issue linkage"' in message_standards_text
     assert 'PR_BODY_OPTIONAL_SECTIONS = ("Follow-ups",)' in message_standards_text
     assert "PR_BODY_OPTIONAL_SECTIONS" in pr_validator_text
+    assert "`Issue linkage:`" in pr_validator_text
     assert "GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS" in commit_validator_text
-    assert "- Closes #123:" in commits_text
-    assert "Follow-ups:" in issues_text
-    assert "`Follow-ups:` with `- Refs #123`" in issues_text
+    assert "`- Closes #123: <problem statement>`" in commits_text
+    assert "`- Refs #123`" in issues_text
+    assert "`- None: ...`" in issues_text
     assert "duplicate/superseded label" in commits_text
     assert "duplicate/superseded label" in implementation_text
     assert "duplicate/superseded label" in agents_text

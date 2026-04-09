@@ -3,14 +3,18 @@
 <!-- Open PRs as draft first. Mark ready for review only after a clean hardening pass. -->
 
 Why:
-- Closes #123: describe one resolved problem when this PR closes an issue
 - explain the problem or constraint this PR resolves
+- add any review context that helps explain the change
 
 What:
 - summarize the engineering changes that matter for review
 
 Checks:
 - list the verification you actually ran
+
+<!-- Required: use `- Closes #123: ...`, `- Refs #123[: ...]`, or `- None: ...`. -->
+Issue linkage:
+- Closes #123: describe the resolved issue, reference the related issue, or explain why no existing issue applies
 
 Included checkpoints:
 - `list the branch commit subjects in chronological order`

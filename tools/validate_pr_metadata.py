@@ -14,10 +14,13 @@ from tools.message_standards import (
 )
 
 FOLLOW_UP_PATTERN = re.compile(r"^- Refs #\d+(?:: .+\S)?$")
-CLOSING_BULLET_PATTERN = re.compile(r"^- Closes #\d+: .+\S$")
-CLOSING_KEYWORD_PREFIX = re.compile(
+ISSUE_LINKAGE_CLOSING_PATTERN = re.compile(r"^- Closes #\d+: .+\S$")
+ISSUE_LINKAGE_NONE_PATTERN = re.compile(r"^- None: .+\S$")
+ISSUE_CLOSING_KEYWORD_PREFIX = re.compile(
     r"^- (?:Close[sd]?|Fix(?:e[sd])?|Resolve[sd]?) #\d+", re.IGNORECASE
 )
+ISSUE_REFERENCE_PREFIX = re.compile(r"^- Refs?\b", re.IGNORECASE)
+ISSUE_NONE_PREFIX = re.compile(r"^- None\b", re.IGNORECASE)
 
 
 def _normalize_body_lines(body: str) -> tuple[str, ...]:
@@ -88,6 +91,71 @@ def _validate_pr_title(title: str) -> tuple[str, ...]:
     return validate_subject_line(stripped)
 
 
+def _validate_why_entries(entries: tuple[str, ...]) -> tuple[str, ...]:
+    for entry in entries:
+        if ISSUE_CLOSING_KEYWORD_PREFIX.match(entry) or FOLLOW_UP_PATTERN.fullmatch(
+            entry
+        ):
+            return (
+                "`Why:` must describe the problem or constraint; move issue linkage "
+                "bullets to `Issue linkage:`",
+            )
+    return ()
+
+
+def _issue_linkage_error(entry: str) -> str | None:
+    if (
+        ISSUE_LINKAGE_CLOSING_PATTERN.fullmatch(entry)
+        or FOLLOW_UP_PATTERN.fullmatch(entry)
+        or ISSUE_LINKAGE_NONE_PATTERN.fullmatch(entry)
+    ):
+        return None
+    if ISSUE_CLOSING_KEYWORD_PREFIX.match(entry):
+        return (
+            "`Issue linkage:` closing bullets must match "
+            "`- Closes #123: problem statement`"
+        )
+    if ISSUE_REFERENCE_PREFIX.match(entry):
+        return (
+            "`Issue linkage:` reference bullets must match "
+            "`- Refs #123` or `- Refs #123: note`"
+        )
+    if ISSUE_NONE_PREFIX.match(entry):
+        return "`Issue linkage:` no-issue bullets must match `- None: explanation`"
+    return (
+        "`Issue linkage:` bullets must match "
+        "`- Closes #123: problem statement`, `- Refs #123`, "
+        "`- Refs #123: note`, or `- None: explanation`"
+    )
+
+
+def _validate_issue_linkage_entries(entries: tuple[str, ...]) -> tuple[str, ...]:
+    errors: list[str] = []
+    for entry in entries:
+        entry_error = _issue_linkage_error(entry)
+        if entry_error is None:
+            continue
+        errors.append(entry_error)
+        return tuple(errors)
+
+    none_entries = tuple(
+        entry for entry in entries if ISSUE_LINKAGE_NONE_PATTERN.fullmatch(entry)
+    )
+    if none_entries and len(entries) != 1:
+        errors.append("`Issue linkage:` `- None: ...` must be the only bullet")
+    return tuple(errors)
+
+
+def _validate_follow_up_entries(entries: tuple[str, ...]) -> tuple[str, ...]:
+    for entry in entries:
+        if FOLLOW_UP_PATTERN.fullmatch(entry):
+            continue
+        return (
+            "`Follow-ups:` bullets must match `- Refs #123` or `- Refs #123: note`",
+        )
+    return ()
+
+
 def _validate_pr_body(body: str) -> tuple[str, ...]:
     lines = _normalize_body_lines(body)
     if not lines:
@@ -103,29 +171,9 @@ def _validate_pr_body(body: str) -> tuple[str, ...]:
         )
     )
     parsed_sections = _parse_sections(body)
-
-    saw_non_closing_why_bullet = False
-    for entry in parsed_sections["Why"]:
-        if CLOSING_BULLET_PATTERN.fullmatch(entry):
-            if saw_non_closing_why_bullet:
-                errors.append(
-                    "`Why:` issue-closing bullets must come before other bullets"
-                )
-            continue
-        if CLOSING_KEYWORD_PREFIX.match(entry):
-            errors.append(
-                "`Why:` issue-closing bullets must match `- Closes #123: problem statement`"
-            )
-        saw_non_closing_why_bullet = True
-
-    for entry in parsed_sections["Follow-ups"]:
-        if FOLLOW_UP_PATTERN.fullmatch(entry):
-            continue
-        errors.append(
-            "`Follow-ups:` bullets must match `- Refs #123` or `- Refs #123: note`"
-        )
-        break
-
+    errors.extend(_validate_why_entries(parsed_sections["Why"]))
+    errors.extend(_validate_issue_linkage_entries(parsed_sections["Issue linkage"]))
+    errors.extend(_validate_follow_up_entries(parsed_sections["Follow-ups"]))
     return tuple(errors)
 
 

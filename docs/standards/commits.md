@@ -123,11 +123,17 @@ PR body rules:
   - `Why:`
   - `What:`
   - `Checks:`
+  - `Issue linkage:`
   - `Included checkpoints:`
 - an optional `Follow-ups:` section is allowed after `Included checkpoints:`
 - use flat hyphen bullets under every section
-- when the PR closes issues, put the closing bullets first under `Why:` using
-  the exact shape `- Closes #123: <problem statement>`
+- `Issue linkage:` is required for every PR
+- use `Issue linkage:` with `- Closes #123: <problem statement>` when the PR
+  resolves an existing issue
+- use `Issue linkage:` with `- Refs #123` or `- Refs #123: <note>` when the
+  PR links to tracked work without closing it
+- use `Issue linkage:` with `- None: <reason>` only when no existing issue
+  applies after search
 - keep `Included checkpoints:` in chronological order using the exact
   checkpoint subjects from the branch
 - wrap every `Included checkpoints:` entry in backticks using the exact commit
@@ -175,7 +181,6 @@ Preferred PR body template:
 
 ```text
 Why:
-- Closes #123: state the resolved problem when this PR closes an issue
 - state the problem or constraint this PR resolves
 
 What:
@@ -183,6 +188,9 @@ What:
 
 Checks:
 - list the verification you actually ran
+
+Issue linkage:
+- Closes #123: state the resolved issue, link non-closing tracked work, or explain why no issue applies
 
 Included checkpoints:
 - `refactor(example): first checkpoint subject`

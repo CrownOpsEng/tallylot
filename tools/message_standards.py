@@ -21,6 +21,7 @@ PR_BODY_REQUIRED_SECTIONS = (
     "Why",
     "What",
     "Checks",
+    "Issue linkage",
     "Included checkpoints",
 )
 PR_BODY_OPTIONAL_SECTIONS = ("Follow-ups",)
