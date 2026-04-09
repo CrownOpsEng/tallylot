@@ -12,16 +12,17 @@ def test_pylint_targets_split_repo_code_from_tests() -> None:
     targets = _pylint_targets()
 
     assert targets[0] == _PylintTarget(
-            name="src-tools",
-            command=(
-                sys.executable,
-                "-m",
-                "pylint",
-                f"--ignore-paths={_ADAPTER_TEST_IGNORE_PATHS}",
-                "src",
-                "tools",
-                "conftest.py",
-            ),
+        name="repo-code",
+        command=(
+            sys.executable,
+            "-m",
+            "pylint",
+            f"--ignore-paths={_ADAPTER_TEST_IGNORE_PATHS}",
+            "src",
+            "tools",
+            "repo_support",
+            "conftest.py",
+        ),
     )
     assert targets[1].name == "tests"
     assert targets[1].command[:5] == (
@@ -34,7 +35,16 @@ def test_pylint_targets_split_repo_code_from_tests() -> None:
 
 
 def test_pylint_targets_include_colocated_adapter_tests(tmp_path: Path) -> None:
-    (tmp_path / "src" / "tallylot" / "adapters" / "sources" / "wallets" / "demo" / "tests").mkdir(
+    (
+        tmp_path
+        / "src"
+        / "tallylot"
+        / "adapters"
+        / "sources"
+        / "wallets"
+        / "demo"
+        / "tests"
+    ).mkdir(
         parents=True,
     )
 

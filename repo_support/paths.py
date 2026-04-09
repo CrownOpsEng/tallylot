@@ -30,6 +30,10 @@ def _reset_repo_root() -> None:
     _STATE["repo_root"] = _DEFAULT_REPO_ROOT
 
 
+def reset_repo_root() -> None:
+    _reset_repo_root()
+
+
 @contextmanager
 def override_repo_root(path: Path) -> Iterator[Path]:
     previous_root = repo_root()

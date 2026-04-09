@@ -23,7 +23,7 @@ def _pylint_targets(*, root: Path | None = None) -> tuple[_PylintTarget, ...]:
     active_root = repo_root() if root is None else root.expanduser().resolve()
     return (
         _PylintTarget(
-            name="src-tools",
+            name="repo-code",
             command=(
                 sys.executable,
                 "-m",
@@ -31,6 +31,7 @@ def _pylint_targets(*, root: Path | None = None) -> tuple[_PylintTarget, ...]:
                 f"--ignore-paths={_ADAPTER_TEST_IGNORE_PATHS}",
                 "src",
                 "tools",
+                "repo_support",
                 "conftest.py",
             ),
         ),

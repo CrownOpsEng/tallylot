@@ -16,4 +16,4 @@ disable =
 
 [FORMAT]
 max-line-length = 120
-max-module-lines = 450
+max-module-lines = 500

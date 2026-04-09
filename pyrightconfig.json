@@ -4,6 +4,7 @@
     "src",
     "tests",
     "tools",
+    "repo_support",
     "conftest.py"
   ],
   "exclude": [
