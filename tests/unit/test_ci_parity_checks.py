@@ -172,16 +172,92 @@ def test_ci_parity_can_include_pr_metadata(
     assert "--head-sha" in steps_seen[0].command
 
 
+def test_ci_parity_can_run_granular_quality_steps(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    steps_seen: list[ci_parity._ParityStep] = []
+
+    def fake_run_step(step: ci_parity._ParityStep) -> int:
+        steps_seen.append(step)
+        return 0
+
+    def fake_verify_built_wheel(dist_path: Path) -> tuple[int, str, str]:
+        del dist_path
+        return 0, "", ""
+
+    monkeypatch.setattr(ci_parity, "_run_step", fake_run_step)
+    monkeypatch.setattr(ci_parity, "_verify_built_wheel", fake_verify_built_wheel)
+
+    assert (
+        ci_parity.main(
+            [
+                "--step",
+                "lint-format",
+                "--step",
+                "types",
+                "--step",
+                "pylint",
+                "--step",
+                "tests",
+            ]
+        )
+        == 0
+    )
+    assert [step.name for step in steps_seen] == [
+        "lint-format",
+        "types",
+        "pylint",
+        "tests",
+    ]
+    assert steps_seen[0].command == (
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "tools.run_quality_gates",
+        "--gate",
+        "markdownlint",
+        "--gate",
+        "actionlint",
+        "--gate",
+        "ruff",
+    )
+    assert steps_seen[-1].command == (
+        "uv",
+        "run",
+        "python",
+        "-m",
+        "tools.run_quality_gates",
+        "--full-tests",
+        "--gate",
+        "pytest",
+    )
+
+
+def test_ci_parity_rejects_mixed_quality_step_selection() -> None:
+    assert ci_parity.main(["--step", "quality", "--step", "tests"]) == 2
+
+
 def test_ci_workflow_uses_parity_runner_for_quality_job() -> None:
     workflow_text = (repo_root() / ".github/workflows/ci.yml").read_text(
         encoding="utf-8"
     )
 
-    assert "uv run python -m tools.run_ci_parity_checks" in workflow_text
+    assert "lint-format:" in workflow_text
+    assert "types:" in workflow_text
+    assert "pylint:" in workflow_text
+    assert "tests:" in workflow_text
+    assert "build:" in workflow_text
+    assert "tools.run_ci_parity_checks --step lint-format" in workflow_text
+    assert "tools.run_ci_parity_checks --step types" in workflow_text
+    assert "tools.run_ci_parity_checks --step pylint" in workflow_text
+    assert "tools.run_ci_parity_checks --step tests" in workflow_text
+    assert (
+        "tools.run_ci_parity_checks --step build --step verify-wheel" in workflow_text
+    )
     assert "pull_request" not in workflow_text
-    assert "run: uv run mypy" not in workflow_text
-    assert "run: uv run pyright" not in workflow_text
-    assert "run: uv run pytest" not in workflow_text
+    assert ".github/actions/setup-python-uv" in workflow_text
 
 
 def test_pr_review_workflow_runs_commit_metadata_and_pr_review_checks() -> None:
@@ -194,5 +270,7 @@ def test_pr_review_workflow_runs_commit_metadata_and_pr_review_checks() -> None:
     assert "pr-review:" in workflow_text
     assert "tools.validate_commit_message" in workflow_text
     assert "tools.validate_pr_metadata" in workflow_text
+    assert "tools.audit_pr_review" in workflow_text
     assert "tools.run_pr_review_checks" in workflow_text
     assert "tools.run_ci_parity_checks" not in workflow_text
+    assert ".github/actions/setup-python-uv" in workflow_text

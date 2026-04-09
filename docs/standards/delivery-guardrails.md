@@ -82,6 +82,7 @@ expansion.
 Control-plane files include:
 
 - `.agents/skills/**`
+- `.github/actions/**`
 - `.github/ISSUE_TEMPLATE/**`
 - `.github/workflows/**`
 - `.github/pull_request_template.md`
@@ -93,6 +94,7 @@ Control-plane files include:
 - `tools/pre_commit_hook.py`
 - `tools/audit_delivery_guardrails.py`
 - `tools/audit_pr_review.py`
+- `tools/benchmark_quality_gates.py`
 - `tools/message_standards.py`
 - `tools/run_pr_review_checks.py`
 - `tools/validate_commit_message.py`
@@ -154,8 +156,8 @@ the changed surface groups in the current PR diff:
     and over-engineering, tests and regression value, naming and public
     terminology, documentation and control-plane alignment
 - `ci_or_release`
-  - paths: `.github/workflows/**` and the repo's parity-sensitive delivery
-    tooling and config surfaces
+  - paths: `.github/actions/**`, `.github/workflows/**`, and the repo's
+    parity-sensitive delivery tooling and config surfaces
   - review domains: workflow correctness, delivery enforcement, metadata parity
 
 When more than one surface group is present:
@@ -218,8 +220,9 @@ push-to-mainline CI.
   PR metadata on pull requests only
 - the `pr-review` PR status runs `tools.run_pr_review_checks` against the PR
   diff and applies the repo's change-sensitive review verification matrix
-- push/mainline CI keeps the shared quality and parity path for landed changes,
-  but it does not replace the PR-only review audit
+- push/mainline CI keeps the shared quality and parity path for landed changes
+  through explicit lint, type, pylint, test, and build jobs rather than one
+  opaque umbrella status, but it does not replace the PR-only review audit
 - `pr-review` is not a local commit-hook requirement
 
 ## Required Delivery Audit

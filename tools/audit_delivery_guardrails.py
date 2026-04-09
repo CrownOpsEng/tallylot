@@ -13,6 +13,7 @@ from repo_support.paths import repo_root
 REQUIRED_STATUS_CHECKS = ("commit-messages", "pr-review")
 CONTROL_PLANE_CODEOWNER_PATTERNS = (
     ".agents/skills/**",
+    ".github/actions/**",
     ".github/ISSUE_TEMPLATE/**",
     ".github/workflows/**",
     ".github/pull_request_template.md",
@@ -24,6 +25,7 @@ CONTROL_PLANE_CODEOWNER_PATTERNS = (
     "tools/pre_commit_hook.py",
     "tools/audit_delivery_guardrails.py",
     "tools/audit_pr_review.py",
+    "tools/benchmark_quality_gates.py",
     "tools/message_standards.py",
     "tools/validate_commit_message.py",
     "tools/validate_pr_metadata.py",

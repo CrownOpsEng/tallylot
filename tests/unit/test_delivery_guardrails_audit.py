@@ -99,8 +99,10 @@ def test_missing_codeowners_entries_reports_missing_patterns() -> None:
     missing = audit._missing_codeowners_patterns(("AGENTS.md", "docs/standards/**"))
 
     assert ".agents/skills/**" in missing
+    assert ".github/actions/**" in missing
     assert ".github/ISSUE_TEMPLATE/**" in missing
     assert ".github/workflows/**" in missing
+    assert "tools/benchmark_quality_gates.py" in missing
     assert "tools/message_standards.py" in missing
     assert "tools/run_ci_parity_checks.py" in missing
     assert "tools/run_pr_review_checks.py" in missing

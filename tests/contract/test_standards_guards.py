@@ -384,9 +384,11 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "duplicate or superseded label" in guardrails_text
     assert "tools.audit_delivery_guardrails" in guardrails_text
     assert "single review-capable collaborator" in guardrails_text
+    assert ".github/actions/**" in guardrails_text
     assert ".github/ISSUE_TEMPLATE/**" in guardrails_text
     assert "docs/status/current-state.md" in guardrails_text
     assert "tools/docs_maintenance/cli.py" in guardrails_text
+    assert "tools/benchmark_quality_gates.py" in guardrails_text
     assert "`markdown` skill" in guardrails_text
     assert "human docs, agent" in guardrails_text
     assert "standards/delivery-guardrails.md" in docs_index_text
@@ -415,6 +417,8 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "audit local CODEOWNERS coverage and live GitHub delivery" in roadmap_text
     assert "settings together without broad context loading" in roadmap_text
     assert "repo-native PR review routing" in roadmap_text
+    assert "benchmark-backed" in roadmap_text
+    assert "one opaque parity shell" in roadmap_text
     assert (
         "if standards, docs placement, doc authoring rules, or agent-default enforcement changed"
         in checkpoint_text
@@ -496,6 +500,7 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
     codeowners_text = codeowners_path.read_text(encoding="utf-8")
     required_entries = (
         ".agents/skills/**",
+        ".github/actions/**",
         ".github/ISSUE_TEMPLATE/**",
         ".github/workflows/**",
         ".github/pull_request_template.md",
@@ -507,6 +512,7 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
         "tools/pre_commit_hook.py",
         "tools/audit_delivery_guardrails.py",
         "tools/audit_pr_review.py",
+        "tools/benchmark_quality_gates.py",
         "tools/message_standards.py",
         "tools/run_pr_review_checks.py",
         "tools/validate_commit_message.py",

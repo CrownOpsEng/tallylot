@@ -81,7 +81,7 @@ CI_OR_RELEASE_EXACT_PATHS = (
     "tools/validate_commit_message.py",
     "tools/validate_pr_metadata.py",
 )
-CI_OR_RELEASE_PREFIXES = (".github/workflows/",)
+CI_OR_RELEASE_PREFIXES = (".github/actions/", ".github/workflows/")
 
 
 @dataclass(frozen=True)
@@ -330,7 +330,10 @@ def _path_targeted_check_names(path: str) -> tuple[str, ...]:
         check_names.append("commit-message-validator")
     if path == "tools/run_quality_gates.py":
         check_names.append("quality-gates-tooling")
-    if path in {".github/workflows/ci.yml", "tools/run_ci_parity_checks.py"}:
+    if path.startswith(".github/actions/") or path in {
+        ".github/workflows/ci.yml",
+        "tools/run_ci_parity_checks.py",
+    }:
         check_names.append("ci-parity-tooling")
     if path in {"repo_support/pr_review.py", "tools/audit_pr_review.py"}:
         check_names.append("audit-pr-review")

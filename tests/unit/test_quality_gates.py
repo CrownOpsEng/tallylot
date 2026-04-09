@@ -5,46 +5,53 @@ from pathlib import Path
 
 import pytest
 
+from repo_support.quality_gates import (
+    QUALITY_GATE_ORDER,
+    QualityGate,
+    QualityPhase,
+    available_quality_gates,
+)
 import tools.run_quality_gates
 from repo_support.paths import repo_root
-from tools.run_quality_gates import (
-    QualityGate,
-    _DEFAULT_TEST_COMMAND,
-    _FULL_TEST_COMMAND,
-    _quality_gates,
-)
+from tools.run_quality_gates import _phase_plan, _run_request
 
 
-def test_quality_gates_default_to_fast_commit_time_pytest() -> None:
-    gates = _quality_gates(full_tests=False)
+def test_quality_gates_default_to_repo_benchmarked_fast_schedule() -> None:
+    parse_args = getattr(tools.run_quality_gates, "_parse_args")
+    run_request = _run_request(parse_args(()))
 
-    assert [gate.name for gate in gates] == [
-        "markdownlint",
-        "actionlint",
-        "ruff",
-        "mypy",
-        "pyright",
-        "pylint",
-        "pytest",
-    ]
-    assert gates[0].command == (
-        "uv",
-        "run",
-        "pre-commit",
-        "run",
-        "markdownlint",
-        "--all-files",
+    assert _phase_plan(run_request) == (
+        QualityPhase(
+            name="quick-static",
+            gate_names=("markdownlint", "actionlint", "ruff", "mypy"),
+        ),
+        QualityPhase(
+            name="heavy-static",
+            gate_names=("pyright", "pylint"),
+        ),
+        QualityPhase(name="tests", gate_names=("pytest",)),
     )
-    assert gates[1].command == ("uv", "run", "actionlint", "-color")
-    assert gates[4].command == ("uv", "run", "pyright")
-    assert gates[5].command == ("uv", "run", "python", "-m", "tools.run_pylint")
-    assert gates[-1].command == _DEFAULT_TEST_COMMAND
 
 
-def test_quality_gates_can_switch_to_full_pytest() -> None:
-    gates = _quality_gates(full_tests=True)
+def test_quality_gates_default_to_all_at_once_for_full_tests() -> None:
+    parse_args = getattr(tools.run_quality_gates, "_parse_args")
+    run_request = _run_request(parse_args(("--full-tests",)))
 
-    assert gates[-1].command == _FULL_TEST_COMMAND
+    assert _phase_plan(run_request) == (
+        QualityPhase(name="all-at-once", gate_names=QUALITY_GATE_ORDER),
+    )
+
+
+def test_quality_gates_can_select_named_gates() -> None:
+    parse_args = getattr(tools.run_quality_gates, "_parse_args")
+    run_request = _run_request(
+        parse_args(("--gate", "markdownlint", "--gate", "pytest"))
+    )
+
+    assert _phase_plan(run_request) == (
+        QualityPhase(name="quick-static", gate_names=("markdownlint",)),
+        QualityPhase(name="tests", gate_names=("pytest",)),
+    )
 
 
 def test_run_gate_exports_external_uv_project_environment(
@@ -68,7 +75,7 @@ def test_run_gate_exports_external_uv_project_environment(
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    gate = _quality_gates(full_tests=False)[0]
+    gate = available_quality_gates(full_tests=False)["markdownlint"]
     tools.run_quality_gates._run_gate(gate)
 
     assert captured_environment["UV_PROJECT_ENVIRONMENT"] == str(
@@ -95,7 +102,7 @@ def test_run_gate_sets_absolute_coverage_config_for_pytest(
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    gate = _quality_gates(full_tests=True)[-1]
+    gate = available_quality_gates(full_tests=True)["pytest"]
     tools.run_quality_gates._run_gate(gate)
 
     coverage_config = str(repo_root() / "pyproject.toml")
@@ -136,17 +143,28 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
         calls.append("sync")
         return False
 
-    def fake_quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
-        del full_tests
-        return (QualityGate(name="noop", command=("uv",)),)
+    def fake_phase_plan(
+        run_request: tools.run_quality_gates._RunRequest,
+    ) -> tuple[QualityPhase, ...]:
+        del run_request
+        return (QualityPhase(name="noop", gate_names=("ruff",)),)
 
-    def fake_run_gate(
-        gate: QualityGate,
-    ) -> tuple[QualityGate, subprocess.CompletedProcess[str], float]:
-        return (
-            gate,
-            subprocess.CompletedProcess(gate.command, 0, stdout="", stderr=""),
-            0.0,
+    def fake_run_phase(
+        phase: QualityPhase,
+        *,
+        available_gates: dict[str, QualityGate],
+    ) -> tools.run_quality_gates.PhaseResult:
+        return tools.run_quality_gates.PhaseResult(
+            phase=phase,
+            gate_results=(
+                tools.run_quality_gates.GateResult(
+                    gate=available_gates["ruff"],
+                    returncode=0,
+                    stdout="",
+                    stderr="",
+                    elapsed=0.0,
+                ),
+            ),
         )
 
     monkeypatch.setattr(
@@ -154,8 +172,8 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
         "sync_pyright_config",
         fake_sync_pyright_config,
     )
-    monkeypatch.setattr(tools.run_quality_gates, "_quality_gates", fake_quality_gates)
-    monkeypatch.setattr(tools.run_quality_gates, "_run_gate", fake_run_gate)
+    monkeypatch.setattr(tools.run_quality_gates, "_phase_plan", fake_phase_plan)
+    monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
 
     assert tools.run_quality_gates.main(()) == 0
 
@@ -166,12 +184,7 @@ def test_quality_gates_fail_when_generated_pyright_config_was_stale(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    def fake_quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
-        del full_tests
-        return ()
-
     monkeypatch.setattr(tools.run_quality_gates, "sync_pyright_config", lambda: True)
-    monkeypatch.setattr(tools.run_quality_gates, "_quality_gates", fake_quality_gates)
 
     assert tools.run_quality_gates.main(()) == 1
 

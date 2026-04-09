@@ -7,35 +7,69 @@ from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
-from repo_support.paths import repo_root
+from repo_support.quality_gates import (
+    QUALITY_GATE_ORDER,
+    QUALITY_SCHEDULES,
+    QualityGate,
+    QualityPhase,
+    apply_gate_environment,
+    available_quality_gates,
+    quality_phase_plan,
+)
 from repo_support.pyright_config import sync_pyright_config
 from tools.uv_environment import repo_uv_environment
 
 
 @dataclass(frozen=True)
-class QualityGate:
+class GateResult:
+    gate: QualityGate
+    returncode: int
+    stdout: str
+    stderr: str
+    elapsed: float
+
+
+@dataclass(frozen=True)
+class PhaseResult:
+    phase: QualityPhase
+    gate_results: tuple[GateResult, ...]
+
+
+@dataclass(frozen=True)
+class RunSummary:
+    phase_results: tuple[PhaseResult, ...]
+    total_elapsed: float
+
+
+@dataclass(frozen=True)
+class _RunRequest:
     name: str
-    command: tuple[str, ...]
-
-
-_DEFAULT_TEST_COMMAND = (
-    "uv",
-    "run",
-    "pytest",
-    "-m",
-    "unit and not slow",
-    "--no-cov",
-    "-q",
-)
-_FULL_TEST_COMMAND = ("uv", "run", "pytest")
+    full_tests: bool
+    schedule: str
+    selected_gate_names: tuple[str, ...]
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run local quality gates in parallel.")
+    parser = argparse.ArgumentParser(description="Run local quality gates.")
     parser.add_argument(
         "--full-tests",
         action="store_true",
         help="Run the full pytest suite instead of the fast commit-time subset.",
+    )
+    parser.add_argument(
+        "--gate",
+        action="append",
+        choices=QUALITY_GATE_ORDER,
+        help="Run only the named quality gate. May be passed multiple times.",
+    )
+    parser.add_argument(
+        "--schedule",
+        choices=QUALITY_SCHEDULES,
+        default="auto",
+        help=(
+            "Quality gate scheduling strategy. `auto` uses the repo-benchmarked "
+            "default for the selected test mode."
+        ),
     )
     return parser
 
@@ -44,27 +78,25 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return _build_argument_parser().parse_args(argv)
 
 
-def _quality_gates(*, full_tests: bool) -> tuple[QualityGate, ...]:
-    test_command = _FULL_TEST_COMMAND if full_tests else _DEFAULT_TEST_COMMAND
-    return (
-        QualityGate(
-            name="markdownlint",
-            command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files"),
-        ),
-        QualityGate(name="actionlint", command=("uv", "run", "actionlint", "-color")),
-        QualityGate(name="ruff", command=("uv", "run", "ruff", "check", ".")),
-        QualityGate(name="mypy", command=("uv", "run", "mypy")),
-        QualityGate(name="pyright", command=("uv", "run", "pyright")),
-        QualityGate(
-            name="pylint", command=("uv", "run", "python", "-m", "tools.run_pylint")
-        ),
-        QualityGate(name="pytest", command=test_command),
+def _run_request(args: argparse.Namespace) -> _RunRequest:
+    selected_gate_names = tuple(args.gate or ())
+    return _RunRequest(
+        name="full" if args.full_tests else "fast",
+        full_tests=args.full_tests,
+        schedule=args.schedule,
+        selected_gate_names=selected_gate_names,
     )
 
 
-def _run_gate(
-    gate: QualityGate,
-) -> tuple[QualityGate, subprocess.CompletedProcess[str], float]:
+def _phase_plan(run_request: _RunRequest) -> tuple[QualityPhase, ...]:
+    return quality_phase_plan(
+        full_tests=run_request.full_tests,
+        schedule=run_request.schedule,
+        selected_gate_names=run_request.selected_gate_names or None,
+    )
+
+
+def _run_gate(gate: QualityGate) -> GateResult:
     started = time.perf_counter()
     result = subprocess.run(
         gate.command,
@@ -73,27 +105,81 @@ def _run_gate(
         check=False,
         env=_gate_environment(gate),
     )
-    return gate, result, time.perf_counter() - started
+    return GateResult(
+        gate=gate,
+        returncode=result.returncode,
+        stdout=result.stdout,
+        stderr=result.stderr,
+        elapsed=time.perf_counter() - started,
+    )
 
 
 def _gate_environment(gate: QualityGate) -> dict[str, str]:
-    environment = repo_uv_environment()
-    if gate.name != "pytest":
-        return environment
+    return apply_gate_environment(
+        repo_uv_environment(),
+        coverage_gate=gate.coverage_gate,
+    )
 
-    coverage_config = str(repo_root() / "pyproject.toml")
-    existing_addopts = environment.get("PYTEST_ADDOPTS", "").strip()
-    coverage_addopt = f"--cov-config={coverage_config}"
-    if coverage_addopt not in existing_addopts.split():
-        environment["PYTEST_ADDOPTS"] = f"{existing_addopts} {coverage_addopt}".strip()
-    environment["COVERAGE_PROCESS_START"] = coverage_config
-    environment["COVERAGE_RCFILE"] = coverage_config
-    return environment
+
+def _print_gate_result(gate_result: GateResult) -> None:
+    print(
+        f"[{gate_result.gate.name}] exit={gate_result.returncode} "
+        f"elapsed={gate_result.elapsed:.2f}s"
+    )
+    if gate_result.stdout:
+        print(gate_result.stdout.rstrip())
+    if gate_result.stderr:
+        print(gate_result.stderr.rstrip())
+
+
+def _run_phase(
+    phase: QualityPhase,
+    *,
+    available_gates: dict[str, QualityGate],
+) -> PhaseResult:
+    print(f"[phase:{phase.name}] gates={', '.join(phase.gate_names)}", flush=True)
+    gate_results: list[GateResult] = []
+    gates = tuple(available_gates[gate_name] for gate_name in phase.gate_names)
+    with ThreadPoolExecutor(max_workers=len(gates)) as executor:
+        futures = {executor.submit(_run_gate, gate): gate.name for gate in gates}
+        for future in as_completed(futures):
+            gate_result = future.result()
+            gate_results.append(gate_result)
+            _print_gate_result(gate_result)
+    ordered_results = tuple(
+        sorted(
+            gate_results,
+            key=lambda gate_result: QUALITY_GATE_ORDER.index(gate_result.gate.name),
+        )
+    )
+    return PhaseResult(phase=phase, gate_results=ordered_results)
+
+
+def _print_summary(summary: RunSummary) -> None:
+    print("[summary] quality gate phases", flush=True)
+    for phase_result in summary.phase_results:
+        failures = sum(
+            1
+            for gate_result in phase_result.gate_results
+            if gate_result.returncode != 0
+        )
+        phase_elapsed = max(
+            (gate_result.elapsed for gate_result in phase_result.gate_results),
+            default=0.0,
+        )
+        gate_names = ", ".join(
+            gate_result.gate.name for gate_result in phase_result.gate_results
+        )
+        print(
+            f"[summary:{phase_result.phase.name}] gates={gate_names} "
+            f"failures={failures} elapsed~={phase_elapsed:.2f}s"
+        )
+    print(f"[summary] total elapsed={summary.total_elapsed:.2f}s")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parse_args(argv)
-    failures = 0
+    run_request = _run_request(args)
     if sync_pyright_config():
         print(
             "[pyright-config] pyrightconfig.tests.json was out of sync and has "
@@ -101,21 +187,29 @@ def main(argv: Sequence[str] | None = None) -> int:
             flush=True,
         )
         return 1
-    quality_gates = _quality_gates(full_tests=args.full_tests)
 
-    with ThreadPoolExecutor(max_workers=len(quality_gates)) as executor:
-        futures = {executor.submit(_run_gate, gate): gate for gate in quality_gates}
-        for future in as_completed(futures):
-            gate, result, elapsed = future.result()
-            print(f"[{gate.name}] exit={result.returncode} elapsed={elapsed:.2f}s")
-            if result.stdout:
-                print(result.stdout.rstrip())
-            if result.stderr:
-                print(result.stderr.rstrip())
-            if result.returncode != 0:
-                failures = 1
+    available_gates = available_quality_gates(full_tests=run_request.full_tests)
+    phase_results: list[PhaseResult] = []
+    started = time.perf_counter()
+    for phase in _phase_plan(run_request):
+        phase_result = _run_phase(phase, available_gates=available_gates)
+        phase_results.append(phase_result)
+        if any(
+            gate_result.returncode != 0 for gate_result in phase_result.gate_results
+        ):
+            summary = RunSummary(
+                phase_results=tuple(phase_results),
+                total_elapsed=time.perf_counter() - started,
+            )
+            _print_summary(summary)
+            return 1
 
-    return failures
+    summary = RunSummary(
+        phase_results=tuple(phase_results),
+        total_elapsed=time.perf_counter() - started,
+    )
+    _print_summary(summary)
+    return 0
 
 
 if __name__ == "__main__":

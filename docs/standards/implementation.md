@@ -42,6 +42,9 @@ Prefer the repo's built-in tooling before inventing local workflows:
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
 - run full verification before closing substantial work with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+  The repo keeps the fast gate on the benchmark-backed phased schedule and the
+  full gate on the benchmark-backed all-at-once schedule; do not change those
+  defaults without rerunning the benchmark tools.
 - mirror GitHub Actions locally when changing workflow, packaging, or release
   behavior with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
@@ -65,6 +68,8 @@ Prefer the repo's built-in tooling before inventing local workflows:
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.refresh_adapter_goldens ...`
 - benchmark test-slice changes with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests`
+- benchmark quality-gate scheduling changes with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_quality_gates`
 
 Do not replace these with ad hoc shell habits when the repo already has a
 supported path.
@@ -336,8 +341,9 @@ touched control-plane paths.
 If you are changing commit-time or suite-selection policy, keep the hook path
 limited to bounded checkpoint checks and use the shared quality or parity
 runners as the single broad verification source. Benchmark with
-`tools.benchmark_tests` when you are proposing a different test slice, and do
-not expand the hook path into a second full-suite verification pass.
+`tools.benchmark_tests` and `tools.benchmark_quality_gates` when you are
+proposing a different test slice or quality-gate schedule, and do not expand
+the hook path into a second full-suite verification pass.
 
 ## Migration Discipline
 
