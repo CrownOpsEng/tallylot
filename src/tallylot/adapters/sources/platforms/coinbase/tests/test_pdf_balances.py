@@ -111,7 +111,7 @@ def test_coinbase_parse_statement_document_returns_unrecognized_for_auxiliary_pd
     )
 
     assert parsed.recognized is False
-    assert parsed.rows == ()
+    assert not parsed.rows
 
 
 def test_coinbase_parse_statement_document_accepts_balance_report_without_statement_title() -> (

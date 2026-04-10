@@ -247,6 +247,6 @@ def test_coinbase_source_statement_extraction_skips_auxiliary_and_history_pdfs(
         raw_dir,
     )
 
-    assert batch.balance_evidence == ()
-    assert batch.issues == ()
-    assert batch.reviews == ()
+    assert not batch.balance_evidence
+    assert not batch.issues
+    assert not batch.reviews

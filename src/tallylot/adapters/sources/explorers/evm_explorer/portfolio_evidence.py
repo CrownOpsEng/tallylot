@@ -115,7 +115,10 @@ def extract_portfolio_balance_evidence(
                 reviews.append(
                     review_record(
                         ReviewSpec(
-                            review_id=f"{profile.source}:{entry.relative_path}:row:{row_index}:portfolio_row_not_admitted",
+                            review_id=(
+                                f"{profile.source}:{entry.relative_path}:row:{row_index}:"
+                                "portfolio_row_not_admitted"
+                            ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             scope="balance_evidence",
@@ -168,7 +171,10 @@ def extract_portfolio_balance_evidence(
                 issues.append(
                     issue_record(
                         IssueSpec(
-                            issue_id=f"{profile.source}:{entry.relative_path}:row:{row_index}:instrument_identity_blocked",
+                            issue_id=(
+                                f"{profile.source}:{entry.relative_path}:row:{row_index}:"
+                                "instrument_identity_blocked"
+                            ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             severity="high",
@@ -182,7 +188,10 @@ def extract_portfolio_balance_evidence(
                 reviews.append(
                     review_record(
                         ReviewSpec(
-                            review_id=f"{profile.source}:{entry.relative_path}:row:{row_index}:instrument_identity_review",
+                            review_id=(
+                                f"{profile.source}:{entry.relative_path}:row:{row_index}:"
+                                "instrument_identity_review"
+                            ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             scope="balance_evidence",
