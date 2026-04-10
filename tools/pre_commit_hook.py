@@ -6,7 +6,6 @@ import subprocess
 from pathlib import Path
 
 PYTHON_SUFFIXES = {".py", ".pyi"}
-_COMMIT_MSG_HOOK_PATH = Path(".git/hooks/commit-msg")
 _COMMIT_MSG_HOOK_NEEDLES = (
     "--hook-type=commit-msg",
     "pre_commit",
@@ -22,6 +21,24 @@ def _git_paths(*args: str) -> tuple[str, ...]:
     )
     lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
     return tuple(lines)
+
+
+def _git_path(path: str) -> Path:
+    result = subprocess.run(
+        ["git", "rev-parse", "--git-path", path],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return Path(result.stdout.strip())
+
+
+def _hook_dir_path() -> Path:
+    return _git_path("hooks")
+
+
+def _commit_msg_hook_path() -> Path:
+    return _git_path("hooks/commit-msg")
 
 
 def _format_candidates(
@@ -52,14 +69,15 @@ def _run_pre_commit() -> int:
         "--config=.pre-commit-config.yaml",
         "--hook-type=pre-commit",
         "--hook-dir",
-        str(Path(".git/hooks").resolve()),
+        str(_hook_dir_path().resolve()),
         "--",
     ]
     return _run_command(command, env=env)
 
 
 def _require_commit_message_hook() -> int:
-    if not _COMMIT_MSG_HOOK_PATH.is_file():
+    hook_path = _commit_msg_hook_path()
+    if not hook_path.is_file():
         print(
             "repo commit-msg hook is not installed; run "
             '`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
@@ -68,7 +86,7 @@ def _require_commit_message_hook() -> int:
         )
         return 1
 
-    hook_text = _COMMIT_MSG_HOOK_PATH.read_text(encoding="utf-8")
+    hook_text = hook_path.read_text(encoding="utf-8")
     if all(needle in hook_text for needle in _COMMIT_MSG_HOOK_NEEDLES):
         return 0
 

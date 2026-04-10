@@ -111,6 +111,16 @@ def test_github_action_diff_maps_to_ci_parity() -> None:
     assert [check.name for check in plan.targeted_checks] == ["ci-parity-tooling"]
 
 
+def test_pylint_config_diff_maps_to_ci_parity() -> None:
+    plan = classify_changed_paths((".pylintrc",))
+
+    assert plan.surface_groups == ("ci_or_release",)
+    assert plan.verification_level == "ci-parity"
+    assert plan.requires_ci_parity is True
+    assert plan.requires_test_stress_checks is True
+    assert plan.unmapped_paths == ()
+
+
 def test_mixed_diff_uses_strongest_verification_level() -> None:
     plan = classify_changed_paths(
         (

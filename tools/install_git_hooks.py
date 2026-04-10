@@ -78,6 +78,18 @@ def _hook_project_environment() -> str:
     return _installed_project_environment() or default_project_environment()
 
 
+def _git_path(repo_root: Path, path: str) -> Path:
+    result = subprocess.run(
+        ["git", "rev-parse", "--git-path", path],
+        check=True,
+        capture_output=True,
+        cwd=repo_root,
+        text=True,
+    )
+    hook_path = Path(result.stdout.strip())
+    return hook_path if hook_path.is_absolute() else repo_root / hook_path
+
+
 def _install_hooks(repo_root: Path) -> None:
     subprocess.run(
         ["git", "config", "--local", "commit.template", ".gitmessage.txt"],
@@ -94,7 +106,8 @@ def _install_hooks(repo_root: Path) -> None:
         "project_environment": shlex.quote(_hook_project_environment()),
         "python": shlex.quote(sys.executable),
     }
-    hook_path = repo_root / ".git/hooks/pre-commit"
+    hook_path = _git_path(repo_root, "hooks/pre-commit")
+    hook_path.parent.mkdir(parents=True, exist_ok=True)
     hook_path.write_text(
         _HOOK_TEMPLATE.format(**hook_format_args),
         encoding="utf-8",
@@ -102,7 +115,8 @@ def _install_hooks(repo_root: Path) -> None:
     hook_path.chmod(
         hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
     )
-    commit_msg_hook_path = repo_root / ".git/hooks/commit-msg"
+    commit_msg_hook_path = _git_path(repo_root, "hooks/commit-msg")
+    commit_msg_hook_path.parent.mkdir(parents=True, exist_ok=True)
     commit_msg_hook_path.write_text(
         _COMMIT_MSG_HOOK_TEMPLATE.format(**hook_format_args),
         encoding="utf-8",
