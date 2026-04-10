@@ -11,8 +11,8 @@ This folder holds the live issue, inventory, and intake-control files that
 must stay current during execution.
 
 Related generated inventory artifacts now live beside them in
-`analysis/inventory/`, especially `location_inventory.csv` and
-`location_inventory_issues.csv`.
+`analysis/inventory/`, especially `source_captures.csv`,
+`location_inventory.csv`, and `location_inventory_issues.csv`.
 
 ## `issue_log.csv`
 
@@ -71,14 +71,17 @@ Prefix guidance:
 
 ## `source_inventory.csv`
 
-Use this file to track every source that may have activity after the baseline cutoff.
+Use this file for source-summary state only.
 
-Update the row continuously as facts are confirmed:
+Update the row continuously as source scope and assembly state become clearer:
 
 - when activity is confirmed or excluded
-- when the capture folder and manifest are present
-- when the import batch is overlap-screened and ready
-- when the source is imported and then fully verified
+- when capture counts and latest accepted captures change
+- when assembly is blocked, pending, or complete
+- when the external import and verification workflow advances
+
+This file does not store one source-level `capture_path`. Capture detail belongs
+in `analysis/inventory/source_captures.csv`.
 
 Suggested `status` values:
 
@@ -96,6 +99,18 @@ These values describe the current external import and verification workflow.
 - `excluded_dust_balance` → confirmed post-cutoff activity exists, but the source is excluded from the initial queue because its baseline balance is within the agreed dust threshold
 
 Keep the values consistent so AI and manual review can sort and filter reliably.
+
+## `analysis/inventory/source_captures.csv`
+
+Use this append-only registry to track each intake capture for a source.
+
+Rules:
+
+- `capture_uid` is the immutable canonical capture identity
+- `capture_label` is the human-readable raw folder name
+- `capture_root_ref` is workspace-relative
+- `supersedes_capture_uid` is explicit when one capture replaces another
+- status captures intake, review, normalization, and assembly progression
 
 ## `source_label_map.csv`
 

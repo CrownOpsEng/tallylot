@@ -427,6 +427,27 @@ def test_workspace_source_inventory_seed_header_matches_template() -> None:
     assert seeded_header == template_header
 
 
+def test_workspace_source_captures_seed_header_matches_template() -> None:
+    template_header = (
+        (
+            docs_root()
+            / "workspace"
+            / "analysis"
+            / "inventory"
+            / "source-captures-template.csv"
+        )
+        .read_text(encoding="utf-8")
+        .splitlines()[0]
+    )
+    seeded_header = next(
+        seed.content.strip()
+        for seed in SEED_FILES
+        if seed.relative_path == "analysis/inventory/source_captures.csv"
+    )
+
+    assert seeded_header == template_header
+
+
 def test_workspace_source_label_map_seed_header_matches_template() -> None:
     template_header = (
         (

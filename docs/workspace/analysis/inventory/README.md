@@ -12,10 +12,15 @@ artifacts.
 
 Files:
 
+- `source_captures.csv`
 - `location_inventory.csv`
 - `location_inventory_evidence.csv`
 - `location_inventory_issues.csv`
 - `location_inventory_summary.json`
+
+`source_captures.csv` is the append-only capture registry keyed by
+`capture_uid`. `location_inventory.csv` and the related evidence and issue
+artifacts remain derived outputs rebuilt from normalized datasets.
 
 Refresh with:
 

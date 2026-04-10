@@ -1,0 +1,2 @@
+capture_uid,source,capture_label,status,intake_started_at,intake_completed_at,intake_method,incoming_ref,capture_root_ref,manifest_fingerprint,file_count,observed_period_start,observed_period_end,observed_group_count,supersedes_capture_uid,notes
+01HV4A5H7VJH7M3Y5A6B7C8D9E,Example Source,2026-03-23T14-15-16Z,captured,2026-03-23 14:15:16,2026-03-23 14:19:04,source_intake_apply,incoming/example,evidence/raw/source/example-source/2026-03-23T14-15-16Z,manifest:example,4,2026-01-01,2026-03-23,2,,Append-only capture registry row

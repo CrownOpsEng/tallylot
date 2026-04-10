@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from tallylot.ports.captures import SOURCE_CAPTURE_HEADER, SOURCE_INVENTORY_HEADER
+
 
 @dataclass(frozen=True)
 class SeedFile:
@@ -40,11 +42,11 @@ SEED_FILES = (
     ),
     SeedFile(
         "analysis/issues/source_inventory.csv",
-        (
-            "source,activity_after_cutoff,first_post_cutoff_tx,export_window_start,"
-            "export_window_end,import_order,status,capture_path,profile_status,adapter,"
-            "normalization_status,exception_count,candidate_path,notes\n"
-        ),
+        ",".join(SOURCE_INVENTORY_HEADER) + "\n",
+    ),
+    SeedFile(
+        "analysis/inventory/source_captures.csv",
+        ",".join(SOURCE_CAPTURE_HEADER) + "\n",
     ),
     SeedFile(
         "analysis/issues/source_label_map.csv",
