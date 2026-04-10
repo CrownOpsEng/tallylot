@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Callable
@@ -20,6 +20,7 @@ from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import CaptureUid, LocationId
 from tallylot.ports.evidence import (
     StatementBalanceEvidenceBatch,
+    StatementDocumentBalanceRow,
     StatementDocumentParseResult,
 )
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
@@ -116,7 +117,7 @@ def extract_source_balance_evidence_from_inventory(
     evidence = _balance_evidence_from_statement_documents(
         adapter,
         profile,
-        latest_documents,
+        _evidence_documents_for_latest_snapshot(recognized, latest_documents),
         issues=issues,
         reviews=reviews,
     )
@@ -258,6 +259,34 @@ def _append_ambiguous_statement_issues(
         )
 
 
+def _evidence_documents_for_latest_snapshot(
+    recognized: list[tuple[FileInventoryEntry, StatementDocumentParseResult]],
+    latest_documents: tuple[
+        tuple[FileInventoryEntry, StatementDocumentParseResult], ...
+    ],
+) -> tuple[tuple[FileInventoryEntry, StatementDocumentParseResult], ...]:
+    latest_statement_as_of = latest_documents[0][1].statement_as_of_at
+    candidates = (
+        latest_documents
+        if latest_statement_as_of is None
+        else tuple(
+            (entry, parsed)
+            for entry, parsed in recognized
+            if parsed.statement_as_of_at == latest_statement_as_of
+        )
+    )
+    return tuple(
+        sorted(
+            candidates,
+            key=lambda item: (
+                _document_precedence_value(item[1]),
+                item[0].relative_path,
+            ),
+            reverse=True,
+        )
+    )
+
+
 def _balance_evidence_from_statement_documents(
     adapter: StatementDocumentEvidenceAdapter,
     profile: SourceProfile,
@@ -267,12 +296,17 @@ def _balance_evidence_from_statement_documents(
     reviews: list[NormalizationReviewRecord],
 ) -> tuple[BalanceEvidence, ...]:
     location_id = location_id_from_parts(str(profile.source))
+    seen_rows: set[tuple[object, ...]] = set()
     aggregated: dict[
         tuple[str, str, datetime, TemporalPrecision, str],
         tuple[Decimal, set[str], set[str], InstrumentId, ProvenanceLocator],
     ] = {}
     for entry, parsed in documents:
         for row in parsed.rows:
+            row_key = _statement_row_precedence_key(row)
+            if row_key in seen_rows:
+                continue
+            seen_rows.add(row_key)
             provenance = _document_provenance(entry, anchor=row.raw_row_ref)
             if row.quantity is None or row.as_of_at is None:
                 issues.append(
@@ -320,6 +354,29 @@ def _balance_evidence_from_statement_documents(
                 row_provenance,
             )
     return _evidence_from_aggregated_rows(profile, location_id, aggregated)
+
+
+def _document_precedence_value(parsed: StatementDocumentParseResult) -> datetime:
+    return (
+        parsed.document_effective_at
+        or parsed.statement_as_of_at
+        or datetime.min.replace(tzinfo=UTC)
+    )
+
+
+def _statement_row_precedence_key(
+    row: StatementDocumentBalanceRow,
+) -> tuple[object, ...]:
+    return (
+        row.source,
+        row.account,
+        row.wallet,
+        row.balance_kind,
+        row.asset,
+        row.as_of_at,
+        row.as_of_precision,
+        row.as_of_text,
+    )
 
 
 def _evidence_from_aggregated_rows(

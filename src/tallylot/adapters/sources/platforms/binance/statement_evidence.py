@@ -20,6 +20,9 @@ from tallylot.ports.evidence import (
 )
 
 REPORT_DATE_PATTERN = re.compile(r"Report Date:?\s*(?P<report_date>\d{4}/\d{2}/\d{2})")
+STATEMENT_PERIOD_PATTERN = re.compile(
+    r"AccountStatementPeriod_[^_]+_(?P<period_start>\d{8})-(?P<period_end>\d{8})_"
+)
 SECTION_HEADER_PATTERN = re.compile(r"^(?P<section>.+Top 10 Holdings)$")
 ASSET_ROW_PATTERN = re.compile(
     r"^(?P<symbol>[A-Z0-9]+)\s+.+?\s+(?P<quantity>[0-9,]+\.\d+)\s+[0-9,]+\.\d+\s*/\s*[-0-9,]+\.\d+"
@@ -104,6 +107,7 @@ def parse_statement_document(pdf_path: Path, text: str) -> StatementDocumentPars
             )
             for row in parsed.rows
         ),
+        document_effective_at=_statement_period_end(pdf_path.name),
     )
 
 
@@ -182,3 +186,10 @@ def _parse_required_decimal(value: str) -> Decimal:
 
 def _parse_report_date(value: str) -> datetime:
     return datetime.strptime(value, "%Y/%m/%d").replace(tzinfo=UTC)
+
+
+def _statement_period_end(pdf_file: str) -> datetime | None:
+    match = STATEMENT_PERIOD_PATTERN.search(pdf_file)
+    if match is None:
+        return None
+    return datetime.strptime(match.group("period_end"), "%Y%m%d").replace(tzinfo=UTC)

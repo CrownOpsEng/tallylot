@@ -562,6 +562,131 @@ def test_source_statement_extraction_prefers_document_effective_at(
     ]
 
 
+def test_source_statement_extraction_keeps_older_unique_rows_for_same_snapshot(
+    tmp_path: Path,
+) -> None:
+    first_pdf = tmp_path / "first.pdf"
+    second_pdf = tmp_path / "second.pdf"
+    _make_pdf(first_pdf, "Statement one")
+    _make_pdf(second_pdf, "Statement two")
+    statement_as_of = datetime(2026, 3, 23, 0, 0, tzinfo=UTC)
+    rows_by_pdf = {
+        first_pdf.name: (
+            StatementDocumentBalanceRow(
+                source="Example",
+                account="Example",
+                wallet="Example",
+                balance_kind="available",
+                asset="BTC",
+                quantity=Decimal("1.0"),
+                as_of_at=statement_as_of,
+                as_of_precision=TemporalPrecision.DATE,
+                pdf_file=first_pdf.name,
+                raw_row_ref="page=1",
+            ),
+            StatementDocumentBalanceRow(
+                source="Example",
+                account="Example",
+                wallet="Example",
+                balance_kind="available",
+                asset="ETH",
+                quantity=Decimal("3.0"),
+                as_of_at=statement_as_of,
+                as_of_precision=TemporalPrecision.DATE,
+                pdf_file=first_pdf.name,
+                raw_row_ref="page=2",
+            ),
+        ),
+        second_pdf.name: (
+            StatementDocumentBalanceRow(
+                source="Example",
+                account="Example",
+                wallet="Example",
+                balance_kind="available",
+                asset="BTC",
+                quantity=Decimal("2.0"),
+                as_of_at=statement_as_of,
+                as_of_precision=TemporalPrecision.DATE,
+                pdf_file=second_pdf.name,
+                raw_row_ref="page=1",
+            ),
+        ),
+    }
+
+    class EffectiveDateAdapter(StubPdfAdapter):
+        @override
+        def parse_statement_document(
+            self, pdf_path: Path, text: str
+        ) -> StatementDocumentParseResult:
+            del text
+            self.parse_calls += 1
+            return StatementDocumentParseResult(
+                pdf_file=pdf_path.name,
+                recognized=True,
+                statement_as_of_at=statement_as_of,
+                rows=rows_by_pdf[pdf_path.name],
+                document_effective_at=(
+                    datetime(2026, 3, 20, 0, 0, tzinfo=UTC)
+                    if pdf_path.name == first_pdf.name
+                    else datetime(2026, 3, 23, 0, 0, tzinfo=UTC)
+                ),
+            )
+
+        @override
+        def resolve_statement_instrument_claims(
+            self, row: StatementDocumentBalanceRow
+        ) -> tuple[InstrumentIdentityClaim, ...]:
+            return (InstrumentIdentityClaim("symbol", row.asset),)
+
+    adapter = EffectiveDateAdapter("example", 100, ())
+    registry = StubRegistry([adapter])
+    profile = SourceProfile(
+        source=SourceId("Example"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("example"),
+        manifest_fingerprint="fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path=first_pdf.name,
+                suffix=".pdf",
+                size_bytes=first_pdf.stat().st_size,
+                sha256="first",
+                source_path=str(first_pdf),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+            FileInventoryEntry(
+                relative_path=second_pdf.name,
+                suffix=".pdf",
+                size_bytes=second_pdf.stat().st_size,
+                sha256="second",
+                source_path=str(second_pdf),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+        ),
+        supported=True,
+    )
+
+    result = StatementExtractionService(registry).extract_source_balance_evidence(
+        profile, tmp_path
+    )
+
+    assert not result.issues
+    assert [(row.instrument_id, row.quantity) for row in result.balance_evidence] == [
+        ("symbol:BTC", Decimal("2.0")),
+        ("symbol:ETH", Decimal("3.0")),
+    ]
+    assert [row.provenance.relative_path for row in result.balance_evidence] == [
+        "second.pdf",
+        "first.pdf",
+    ]
+
+
 def test_source_statement_extraction_reports_ambiguous_latest_inventory_pdfs(
     tmp_path: Path,
 ) -> None:

@@ -21,7 +21,10 @@ from tallylot.adapters.support.drafts import (
     transaction_fact_from_draft,
     translation_batch_from_drafts,
 )
-from tallylot.adapters.support.locations import location_identifier_kind, normalized_identifier
+from tallylot.adapters.support.locations import (
+    location_identifier_kind,
+    normalized_identifier,
+)
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -33,6 +36,7 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
 )
 from tallylot.domain.types import LocationId
+from tallylot.ports.source_profiles import FileInventoryEntry
 from tests.support.services import build_source_profile
 
 
@@ -53,7 +57,14 @@ def test_draft_compiler_preserves_internal_fields() -> None:
             description="Fixture deposit",
             raw_file="fixture.csv",
             raw_row_ref="row:2",
-            legs=(economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),),
+            legs=(
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    instrument="BTC",
+                    quantity=Decimal("1.5"),
+                ),
+            ),
             leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
         )
     )
@@ -86,8 +97,18 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
                 tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
             ),
             legs=(
-                economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),
-                economic_leg(leg_id="primary_out", kind=LegKind.PRIMARY, instrument="CAD", quantity=Decimal("-10")),
+                economic_leg(
+                    leg_id="primary_in",
+                    kind=LegKind.PRIMARY,
+                    instrument="BTC",
+                    quantity=Decimal("1.5"),
+                ),
+                economic_leg(
+                    leg_id="primary_out",
+                    kind=LegKind.PRIMARY,
+                    instrument="CAD",
+                    quantity=Decimal("-10"),
+                ),
             ),
             leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
         )
@@ -105,7 +126,9 @@ def test_transaction_fact_from_draft_preserves_multi_leg_shape() -> None:
     assert fact.legs[1].quantity == Decimal("-10")
 
 
-def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_channels() -> None:
+def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_channels() -> (
+    None
+):
     result = translation_batch_from_drafts(
         (
             EconomicActivityDraft(
@@ -123,7 +146,12 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
                 raw_file="fixture.csv",
                 raw_row_ref="row:2",
                 legs=(
-                    economic_leg(leg_id="primary_in", kind=LegKind.PRIMARY, instrument="BTC", quantity=Decimal("1.5")),
+                    economic_leg(
+                        leg_id="primary_in",
+                        kind=LegKind.PRIMARY,
+                        instrument="BTC",
+                        quantity=Decimal("1.5"),
+                    ),
                 ),
                 leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             ),
@@ -143,7 +171,9 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
     assert not result.issues
 
 
-def test_translate_file_families_surfaces_ambiguous_and_unmatched_files(tmp_path: Path) -> None:
+def test_translate_file_families_surfaces_ambiguous_and_unmatched_files(
+    tmp_path: Path,
+) -> None:
     (tmp_path / "alpha.csv").write_text("x\n1\n", encoding="utf-8")
     (tmp_path / "beta.csv").write_text("x\n1\n", encoding="utf-8")
 
@@ -166,16 +196,66 @@ def test_translate_file_families_surfaces_ambiguous_and_unmatched_files(tmp_path
 
     result = translate_file_families(
         tmp_path,
-        profile=build_source_profile(adapter_id="fixture_adapter", raw_dir=str(tmp_path)),
+        profile=build_source_profile(
+            adapter_id="fixture_adapter", raw_dir=str(tmp_path)
+        ),
         rules=(alpha_one, alpha_two),
     )
 
     assert result.unmatched_paths == ("beta.csv",)
-    assert {issue.kind for issue in result.issues} == {"ambiguous_file_match", "unsupported_file"}
+    assert {issue.kind for issue in result.issues} == {
+        "ambiguous_file_match",
+        "unsupported_file",
+    }
 
 
-def test_decimal_precision_support_validates_minimum_digits_and_zero_exemptions() -> None:
-    expectation = DecimalPrecisionExpectation(minimum_fraction_digits=9, allow_zero=True)
+def test_translate_file_families_uses_profile_inventory_candidates(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "trades.csv").write_text("x\n1\n", encoding="utf-8")
+    (tmp_path / "manifest.csv").write_text("x\n1\n", encoding="utf-8")
+
+    def translate(
+        context: FileTranslationContext,
+    ) -> tuple[tuple[EconomicActivityDraft, ...], tuple[IssueRecord, ...]]:
+        del context
+        return (), ()
+
+    trade_rule = FileTranslationRule(
+        family="trades",
+        matches_path=lambda path: path.name == "trades.csv",
+        translate=translate,
+    )
+
+    result = translate_file_families(
+        tmp_path,
+        profile=build_source_profile(
+            adapter_id="fixture_adapter",
+            raw_dir=str(tmp_path),
+            file_inventory=(
+                FileInventoryEntry(
+                    relative_path="trades.csv",
+                    suffix=".csv",
+                    size_bytes=(tmp_path / "trades.csv").stat().st_size,
+                    sha256="trades",
+                    source_path=str(tmp_path / "trades.csv"),
+                    family="fixture_adapter:trades",
+                ),
+            ),
+        ),
+        rules=(trade_rule,),
+    )
+
+    assert result.unmatched_paths == ()
+    assert result.issues == ()
+
+
+def test_decimal_precision_support_validates_minimum_digits_and_zero_exemptions() -> (
+    None
+):
+    expectation = DecimalPrecisionExpectation(
+        minimum_fraction_digits=9, allow_zero=True
+    )
 
     precise = check_decimal_precision("0.000051876", expectation=expectation)
     rounded = check_decimal_precision("0.000052", expectation=expectation)

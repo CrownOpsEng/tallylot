@@ -210,6 +210,46 @@ def test_build_inventory_enriches_rows_from_capture_metadata(tmp_path: Path) -> 
     assert inventory[0].source == "eth-wallet-fixture"
 
 
+def test_build_inventory_excludes_capture_control_artifacts(tmp_path: Path) -> None:
+    raw_dir = (
+        tmp_path / "workspace" / "evidence" / "raw" / "source" / "binance" / "capture"
+    )
+    raw_dir.mkdir(parents=True)
+    (raw_dir / "capture.json").write_text(
+        json.dumps(
+            {
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "source": "binance",
+                "capture_label": "capture",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/binance",
+                "manifest_fingerprint": "manifest:fixture",
+                "status": "captured",
+                "notes": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (raw_dir / "manifest.csv").write_text(
+        "relative_path,sha256,size_bytes\n", encoding="utf-8"
+    )
+    (raw_dir / "manifest_issues.csv").write_text(
+        "relative_path,kind,message\n",
+        encoding="utf-8",
+    )
+    (raw_dir / "transactions.csv").write_text(
+        "Timestamp,Amount\n2026-03-23 15:47:00-06:00,1\n",
+        encoding="utf-8",
+    )
+
+    inventory, issues = build_inventory(raw_dir, inspect_archives=True)
+
+    assert issues == []
+    assert [entry.relative_path for entry in inventory] == ["transactions.csv"]
+
+
 def test_profile_inventory_writer_emits_capture_scoped_columns(tmp_path: Path) -> None:
     profile = SourceProfile(
         source=SourceId("binance"),

@@ -34,7 +34,11 @@ def build_inventory(
     inventory: list[FileInventoryEntry] = []
     issues: list[IssueRecord] = []
     capture_metadata = load_capture_metadata(raw_dir)
-    with scanned_tree_files(raw_dir, inspect_archives=inspect_archives) as scanned_tree:
+    with scanned_tree_files(
+        raw_dir,
+        inspect_archives=inspect_archives,
+        exclude_paths=_profile_excluded_paths(raw_dir),
+    ) as scanned_tree:
         for entry in scanned_tree.files:
             header, row_count, timezone_details = _inventory_file_details(
                 entry.file_path
@@ -81,6 +85,18 @@ def build_inventory(
             for index, issue in enumerate(scanned_tree.issues, start=1)
         )
     return inventory, issues
+
+
+def _profile_excluded_paths(raw_dir: Path) -> tuple[Path, ...]:
+    return tuple(
+        path
+        for path in (
+            raw_dir / "capture.json",
+            raw_dir / "manifest.csv",
+            raw_dir / "manifest_issues.csv",
+        )
+        if path.exists()
+    )
 
 
 def manifest_fingerprint(inventory: list[FileInventoryEntry]) -> str:

@@ -7,6 +7,9 @@ from pathlib import Path
 import pytest
 
 from tallylot.adapters.sources.platforms.binance.adapter import _BinanceAdapter
+from tallylot.adapters.sources.platforms.binance.statement_evidence import (
+    parse_statement_document,
+)
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.application.evidence.statement_extraction import (
     StatementExtractionService,
@@ -225,6 +228,25 @@ def test_binance_adapter_surfaces_unmatched_export_files(tmp_path: Path) -> None
     assert result.issues[0].kind == "unsupported_file"
 
 
+def test_binance_statement_document_uses_period_end_as_effective_date() -> None:
+    result = parse_statement_document(
+        Path(
+            "AccountStatementPeriod_fixtureacct_20260101-20260320_e886163cdfda465e878a1d1dc0f003d8.pdf"
+        ),
+        "\n".join(
+            (
+                "Report Date: 2026/03/23",
+                "Funding Top 10 Holdings",
+                "USDT Tether 1.000000 1.000000 / 1.000000",
+            )
+        ),
+    )
+
+    assert result.recognized is True
+    assert result.statement_as_of_at == datetime(2026, 3, 23, tzinfo=UTC)
+    assert result.document_effective_at == datetime(2026, 3, 20, tzinfo=UTC)
+
+
 def test_binance_statement_service_emits_latest_balance_evidence(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -234,8 +256,9 @@ def test_binance_statement_service_emits_latest_balance_evidence(
     (raw_dir / "older.pdf").write_bytes(b"older")
     (raw_dir / "latest.pdf").write_bytes(b"latest")
 
-    older_as_of = datetime(2026, 2, 1, tzinfo=UTC)
-    latest_as_of = datetime(2026, 3, 23, tzinfo=UTC)
+    shared_report_as_of = datetime(2026, 3, 23, tzinfo=UTC)
+    older_effective_at = datetime(2025, 12, 31, tzinfo=UTC)
+    latest_effective_at = datetime(2026, 3, 20, tzinfo=UTC)
 
     def fake_parse_statement_document(
         path: Path, text: str
@@ -245,7 +268,7 @@ def test_binance_statement_service_emits_latest_balance_evidence(
             return StatementDocumentParseResult(
                 pdf_file=path.name,
                 recognized=True,
-                statement_as_of_at=older_as_of,
+                statement_as_of_at=shared_report_as_of,
                 rows=(
                     StatementDocumentBalanceRow(
                         source="Binance",
@@ -254,17 +277,18 @@ def test_binance_statement_service_emits_latest_balance_evidence(
                         balance_kind="available",
                         asset="USDT",
                         quantity=Decimal("1"),
-                        as_of_at=older_as_of,
+                        as_of_at=shared_report_as_of,
                         as_of_precision=TemporalPrecision.DATE,
                         pdf_file=path.name,
                         raw_row_ref="Spot Top 10 Holdings",
                     ),
                 ),
+                document_effective_at=older_effective_at,
             )
         return StatementDocumentParseResult(
             pdf_file=path.name,
             recognized=True,
-            statement_as_of_at=latest_as_of,
+            statement_as_of_at=shared_report_as_of,
             rows=(
                 StatementDocumentBalanceRow(
                     source="Binance",
@@ -273,7 +297,7 @@ def test_binance_statement_service_emits_latest_balance_evidence(
                     balance_kind="available",
                     asset="USDT",
                     quantity=Decimal("0.009526"),
-                    as_of_at=latest_as_of,
+                    as_of_at=shared_report_as_of,
                     as_of_precision=TemporalPrecision.DATE,
                     pdf_file=path.name,
                     raw_row_ref="Funding Top 10 Holdings",
@@ -286,7 +310,7 @@ def test_binance_statement_service_emits_latest_balance_evidence(
                     balance_kind="available",
                     asset="USDT",
                     quantity=Decimal("0.000340"),
-                    as_of_at=latest_as_of,
+                    as_of_at=shared_report_as_of,
                     as_of_precision=TemporalPrecision.DATE,
                     pdf_file=path.name,
                     raw_row_ref="Spot Top 10 Holdings",
@@ -299,13 +323,14 @@ def test_binance_statement_service_emits_latest_balance_evidence(
                     balance_kind="available",
                     asset="SOLO",
                     quantity=Decimal("0.920099"),
-                    as_of_at=latest_as_of,
+                    as_of_at=shared_report_as_of,
                     as_of_precision=TemporalPrecision.DATE,
                     pdf_file=path.name,
                     raw_row_ref="Spot Top 10 Holdings",
                     notes="Statement-backed quantity aggregated from Binance holdings sections.",
                 ),
             ),
+            document_effective_at=latest_effective_at,
         )
 
     def fake_extract_pdf_text(path: Path) -> str:
@@ -366,6 +391,7 @@ def test_binance_statement_service_emits_latest_balance_evidence(
 
     evidence_rows = [row.to_row() for row in result.balance_evidence]
 
+    assert not result.issues
     assert evidence_rows == [
         {
             "source": "Binance",
