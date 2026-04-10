@@ -18,16 +18,16 @@ from tallylot.adapters.support import (
     reviewed_timezone_summary,
 )
 from tallylot.adapters.support.drafts import symbol_claim
-from tallylot.application.evidence.statement_extraction import (
-    StatementBalanceEvidenceBatch,
-)
 from tallylot.domain.instruments import InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.evidence import LocationInventoryRecord
+from tallylot.ports.evidence import (
+    LocationInventoryRecord,
+    StatementBalanceEvidenceBatch,
+)
 from tallylot.ports.intake_routing import (
     IntakeFileFacts,
     IntakeRoute,

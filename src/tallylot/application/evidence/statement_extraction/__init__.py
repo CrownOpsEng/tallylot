@@ -1,6 +1,8 @@
 """Shared statement extraction service."""
 
-from .models import PdfBalanceRows, StatementBalanceEvidenceBatch
+from tallylot.ports.evidence import StatementBalanceEvidenceBatch
+
+from .models import PdfBalanceRows
 from .service import StatementExtractionService
 
 __all__ = [

@@ -153,6 +153,13 @@ class LocationInventoryRecord:
         }
 
 
+@dataclass(frozen=True)
+class StatementBalanceEvidenceBatch:
+    balance_evidence: tuple[BalanceEvidence, ...]
+    issues: tuple[IssueRecord, ...]
+    reviews: tuple[NormalizationReviewRecord, ...]
+
+
 class EvidenceRepositoryPort(Protocol):
     def read_balance_snapshots(self, path: Path) -> tuple[BalanceSnapshot, ...]: ...
 

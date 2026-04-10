@@ -8,10 +8,11 @@ from typing import Protocol, cast
 from pypdf import PdfReader
 
 from tallylot.ports.adapter_contracts import AdapterManifest
+from tallylot.ports.evidence import StatementBalanceEvidenceBatch
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
 
-from .models import PdfBalanceRows, StatementBalanceEvidenceBatch
+from .models import PdfBalanceRows
 
 
 class _PdfBalanceStatementAdapter(Protocol):
