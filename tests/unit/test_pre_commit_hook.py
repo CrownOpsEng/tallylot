@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,48 @@ def test_format_candidates_skips_partially_staged_python_files() -> None:
     )
 
     assert candidates == ("src/other.py",)
+
+
+def test_format_and_stage_logs_each_ruff_and_restage_command(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    commands: list[tuple[str, ...]] = []
+
+    def fake_run_command(
+        command: list[str], *, env: dict[str, str] | None = None
+    ) -> int:
+        del env
+        commands.append(tuple(command))
+        return 0
+
+    monkeypatch.setattr(tools.pre_commit_hook, "_run_command", fake_run_command)
+
+    assert tools.pre_commit_hook._format_and_stage(("src/app.py",)) == 0
+
+    assert commands == [
+        (
+            sys.executable,
+            "-m",
+            "ruff",
+            "check",
+            "--fix",
+            "src/app.py",
+        ),
+        (
+            sys.executable,
+            "-m",
+            "ruff",
+            "format",
+            "src/app.py",
+        ),
+        ("git", "add", "--", "src/app.py"),
+    ]
+    stderr = capsys.readouterr().err
+    assert "running staged ruff autofixes before commit" in stderr
+    assert "ruff check --fix src/app.py" in stderr
+    assert "ruff format src/app.py" in stderr
+    assert "git add -- src/app.py" in stderr
 
 
 def test_pre_commit_wrapper_fails_when_commit_msg_hook_is_missing(
