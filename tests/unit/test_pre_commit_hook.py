@@ -36,9 +36,14 @@ def test_pre_commit_wrapper_fails_when_commit_msg_hook_is_missing(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    hooks_dir = tmp_path / ".git" / "hooks"
+    hooks_dir = tmp_path / "common-git" / "hooks"
     hooks_dir.mkdir(parents=True)
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        tools.pre_commit_hook,
+        "_commit_msg_hook_path",
+        lambda: hooks_dir / "commit-msg",
+    )
 
     assert tools.pre_commit_hook.main([]) == 1
 
@@ -50,12 +55,17 @@ def test_pre_commit_wrapper_rejects_stale_commit_msg_hook(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    hooks_dir = tmp_path / ".git" / "hooks"
+    hooks_dir = tmp_path / "common-git" / "hooks"
     hooks_dir.mkdir(parents=True)
     (hooks_dir / "commit-msg").write_text(
         "#!/usr/bin/env bash\nexit 0\n", encoding="utf-8"
     )
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        tools.pre_commit_hook,
+        "_commit_msg_hook_path",
+        lambda: hooks_dir / "commit-msg",
+    )
 
     assert tools.pre_commit_hook.main([]) == 1
 
@@ -81,13 +91,18 @@ def test_pre_commit_wrapper_runs_when_commit_msg_hook_is_installed(
         pre_commit_calls.append("run")
         return 0
 
-    hooks_dir = tmp_path / ".git" / "hooks"
+    hooks_dir = tmp_path / "common-git" / "hooks"
     hooks_dir.mkdir(parents=True)
     (hooks_dir / "commit-msg").write_text(
         "#!/usr/bin/env bash\npre_commit hook-impl --hook-type=commit-msg\n",
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        tools.pre_commit_hook,
+        "_commit_msg_hook_path",
+        lambda: hooks_dir / "commit-msg",
+    )
     monkeypatch.setattr(tools.pre_commit_hook, "_git_paths", fake_git_paths)
     monkeypatch.setattr(
         tools.pre_commit_hook, "_format_and_stage", fake_format_and_stage
@@ -97,6 +112,54 @@ def test_pre_commit_wrapper_runs_when_commit_msg_hook_is_installed(
     assert tools.pre_commit_hook.main([]) == 0
     assert format_calls == [()]
     assert pre_commit_calls == ["run"]
+
+
+def test_pre_commit_wrapper_uses_resolved_hook_dir_for_pre_commit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    common_hooks = tmp_path / "common-git" / "hooks"
+    common_hooks.mkdir(parents=True)
+    (common_hooks / "commit-msg").write_text(
+        "#!/usr/bin/env bash\npre_commit hook-impl --hook-type=commit-msg\n",
+        encoding="utf-8",
+    )
+    commands: list[tuple[str, ...]] = []
+
+    def fake_git_path(path: str) -> Path:
+        if path == "hooks":
+            return common_hooks
+        if path == "hooks/commit-msg":
+            return common_hooks / "commit-msg"
+        raise AssertionError(path)
+
+    def fake_run_command(
+        command: list[str], *, env: dict[str, str] | None = None
+    ) -> int:
+        del env
+        commands.append(tuple(command))
+        return 0
+
+    def fake_git_paths(*args: str) -> tuple[str, ...]:
+        del args
+        return ()
+
+    def fake_format_and_stage(paths: tuple[str, ...]) -> int:
+        del paths
+        return 0
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(tools.pre_commit_hook, "_git_path", fake_git_path)
+    monkeypatch.setattr(tools.pre_commit_hook, "_git_paths", fake_git_paths)
+    monkeypatch.setattr(
+        tools.pre_commit_hook, "_format_and_stage", fake_format_and_stage
+    )
+    monkeypatch.setattr(tools.pre_commit_hook, "_run_command", fake_run_command)
+
+    assert tools.pre_commit_hook.main([]) == 0
+    assert commands
+    assert "--hook-dir" in commands[0]
+    assert str(common_hooks.resolve()) in commands[0]
 
 
 def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:
@@ -119,8 +182,16 @@ def test_install_hooks_syncs_environment_before_writing_repo_hooks(
         check: bool,
         cwd: Path,
         env: dict[str, str] | None = None,
+        capture_output: bool = False,
+        text: bool = False,
     ) -> subprocess.CompletedProcess[str]:
         assert check is True
+        if command[:3] == ["git", "rev-parse", "--git-path"]:
+            assert capture_output is True
+            assert text is True
+            return subprocess.CompletedProcess(
+                command, 0, stdout=f".git/{command[3]}\n"
+            )
         commands.append(
             (
                 tuple(command),
@@ -183,8 +254,16 @@ def test_install_hooks_falls_back_to_default_external_environment(
         check: bool,
         cwd: Path,
         env: dict[str, str] | None = None,
+        capture_output: bool = False,
+        text: bool = False,
     ) -> subprocess.CompletedProcess[str]:
         del check, cwd, env
+        if command[:3] == ["git", "rev-parse", "--git-path"]:
+            assert capture_output is True
+            assert text is True
+            return subprocess.CompletedProcess(
+                command, 0, stdout=f".git/{command[3]}\n"
+            )
         return subprocess.CompletedProcess(command, 0)
 
     monkeypatch.setattr("tools.install_git_hooks.sys.executable", "/usr/bin/python3")
@@ -202,6 +281,43 @@ def test_install_hooks_falls_back_to_default_external_environment(
         f"PROJECT_ENVIRONMENT={expected_environment}"
         in commit_msg_hook_path.read_text(encoding="utf-8")
     )
+
+
+def test_install_hooks_writes_to_git_resolved_hook_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    common_hooks = tmp_path / "common-git" / "hooks"
+
+    def fake_run(
+        command: list[str],
+        *,
+        check: bool,
+        cwd: Path,
+        env: dict[str, str] | None = None,
+        capture_output: bool = False,
+        text: bool = False,
+    ) -> subprocess.CompletedProcess[str]:
+        del check, cwd, env
+        if command[:3] == ["git", "rev-parse", "--git-path"]:
+            assert capture_output is True
+            assert text is True
+            return subprocess.CompletedProcess(
+                command, 0, stdout=f"{common_hooks / Path(command[3]).name}\n"
+            )
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr("tools.install_git_hooks.sys.executable", "/usr/bin/python3")
+    monkeypatch.setattr("tools.install_git_hooks.sys.prefix", "/usr")
+    monkeypatch.setattr("tools.install_git_hooks.sys.base_prefix", "/usr")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    tools.install_git_hooks._install_hooks(tmp_path)
+
+    assert (common_hooks / "pre-commit").is_file()
+    assert (common_hooks / "commit-msg").is_file()
+    assert not (tmp_path / ".git" / "hooks" / "pre-commit").exists()
+    assert not (tmp_path / ".git" / "hooks" / "commit-msg").exists()
 
 
 def test_pre_commit_config_uses_repo_owned_fast_pytest_entrypoint() -> None:
