@@ -314,10 +314,20 @@ def test_source_intake_service_skips_rows_blocked_by_invalid_source_label_map(
     )
 
     assert response.copied_count == 0
+    assert summary["capture_status"] == "capture_blocked"
+    assert summary["planned_capture_label"] == ""
+    assert summary["manifest_fingerprint"] == ""
     assert plan_rows[0]["action"] == "skip"
     assert plan_rows[0]["placement_status"] == "mapping_blocked_skip"
     assert plan_rows[0]["source_resolution_status"] == "explicit_map_blocked"
     assert plan_rows[0]["review_codes"] == "source_map_unknown_source"
+    assert plan_rows[0]["capture_status"] == "capture_blocked"
+    assert not (
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    ).exists()
+    assert artifacts.read_rows(issues_dir / "source_inventory.csv") == [
+        {"source": "manual-main"}
+    ]
     assert summary["explicit_map_blocked_count"] == 1
     assert summary["source_label_map_issue_count"] == 1
     assert issue_rows[0]["kind"] == "source_label_map_unknown_source"

@@ -169,36 +169,13 @@ def build_capture_session_plan(
                 "message": f"Intake run resolved multiple source folders: {', '.join(distinct_sources)}",
             }
         )
-        for index, item in enumerate(planned_items):
-            if item.category != "source_raw":
-                continue
-            planned_items[index] = cast(
-                _PlannedItemT,
-                replace(
-                    cast(Any, item),
-                    action="skip",
-                    placement_status="mixed_source_capture_blocked",
-                    review_required="yes",
-                    review_codes=_merge_value(
-                        item.review_codes, "mixed_source_capture"
-                    ),
-                    review_reason=_merge_value(
-                        item.review_reason,
-                        "Intake run resolved multiple source folders.",
-                    ),
-                    capture_status="capture_blocked",
-                ),
-            )
-        return CaptureSessionPlan(
-            source_folder=distinct_sources[0] if distinct_sources else "",
-            capture_label="",
-            manifest_fingerprint="",
-            capture_status="capture_blocked",
-            file_count=0,
-            observed_period_start="",
-            observed_period_end="",
-            observed_group_count=0,
+        _mark_mixed_source_capture_blocked(planned_items)
+        return _capture_blocked_plan(
+            source_folder=distinct_sources[0] if distinct_sources else ""
         )
+    if not raw_items:
+        _mark_source_raw_items_capture_blocked(planned_items)
+        return _capture_blocked_plan()
 
     source_folder = distinct_sources[0] if distinct_sources else ""
     capture_label = _planned_capture_label(
@@ -308,6 +285,56 @@ def _planned_capture_label(
     return _next_capture_label(
         workspace_root=workspace_root, source_folder=source_folder
     )
+
+
+def _capture_blocked_plan(*, source_folder: str = "") -> CaptureSessionPlan:
+    return CaptureSessionPlan(
+        source_folder=source_folder,
+        capture_label="",
+        manifest_fingerprint="",
+        capture_status="capture_blocked",
+        file_count=0,
+        observed_period_start="",
+        observed_period_end="",
+        observed_group_count=0,
+    )
+
+
+def _mark_source_raw_items_capture_blocked(
+    planned_items: list[_PlannedItemT],
+) -> None:
+    for index, item in enumerate(planned_items):
+        if item.category != "source_raw":
+            continue
+        planned_items[index] = cast(
+            _PlannedItemT,
+            replace(
+                cast(Any, item),
+                capture_label="",
+                capture_status="capture_blocked",
+            ),
+        )
+
+
+def _mark_mixed_source_capture_blocked(planned_items: list[_PlannedItemT]) -> None:
+    for index, item in enumerate(planned_items):
+        if item.category != "source_raw":
+            continue
+        planned_items[index] = cast(
+            _PlannedItemT,
+            replace(
+                cast(Any, item),
+                action="skip",
+                placement_status="mixed_source_capture_blocked",
+                review_required="yes",
+                review_codes=_merge_value(item.review_codes, "mixed_source_capture"),
+                review_reason=_merge_value(
+                    item.review_reason,
+                    "Intake run resolved multiple source folders.",
+                ),
+                capture_status="capture_blocked",
+            ),
+        )
 
 
 def _next_capture_label(*, workspace_root: Path, source_folder: str) -> str:

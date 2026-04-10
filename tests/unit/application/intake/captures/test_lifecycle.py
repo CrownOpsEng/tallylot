@@ -89,6 +89,25 @@ def test_source_summary_reducer_keeps_pending_without_assembly_exclusions() -> N
     assert reduced["assembled_root_ref"] == ""
 
 
+def test_source_summary_reducer_does_not_promote_capture_blocked_rows() -> None:
+    reduced = reduce_source_inventory_summary(
+        reduction=SourceInventorySummaryReduction(
+            source="coinbase",
+            capture_rows=[
+                _capture_row(
+                    "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                    status="capture_blocked",
+                ),
+            ],
+            source_rows=[],
+        )
+    )
+
+    assert reduced["status"] == ""
+    assert reduced["capture_count"] == "1"
+    assert reduced["latest_capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+
+
 def _capture_row(capture_uid: str, *, status: str) -> dict[str, str]:
     return {
         "capture_uid": capture_uid,

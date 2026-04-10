@@ -9,7 +9,7 @@ from tallylot.domain.types import SourceId
 from tallylot.ports.captures import SourceInventorySummaryRecord
 
 _BLOCKED_CAPTURE_STATUSES = frozenset(
-    {"duplicate_blocked", "overlap_review_required", "superseded"}
+    {"capture_blocked", "duplicate_blocked", "overlap_review_required", "superseded"}
 )
 
 
@@ -167,7 +167,7 @@ def _source_status_from_capture_history(
     if any(status and status not in _BLOCKED_CAPTURE_STATUSES for status in statuses):
         return "capture_complete"
     if statuses:
-        return "capture_complete"
+        return ""
     return ""
 
 

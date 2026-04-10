@@ -90,6 +90,7 @@ class ApplyIntakeUseCase:
             if materializes_capture:
                 write_capture_manifests(self._artifacts, workspace_root, planned_items)
         assert capture_session_plan is not None
+        should_record_capture = bool(capture_session_plan.source_folder)
         if capture_session_plan.source_folder and _session_materializes_capture(
             capture_session_plan.capture_status
         ):
@@ -117,26 +118,28 @@ class ApplyIntakeUseCase:
                     else capture_session_plan.capture_status,
                 ),
             )
-        append_capture_record(
-            artifacts=self._artifacts,
-            write=CaptureRecordWrite(
-                workspace_root=workspace_root,
-                metadata=capture_metadata,
-                plan=capture_session_plan,
-                capture_root_ref=(
-                    f"evidence/raw/source/{capture_session_plan.source_folder}/{capture_session_plan.capture_label}"
-                    if capture_session_plan.source_folder
-                    and _session_materializes_capture(
-                        capture_session_plan.capture_status
-                    )
-                    else ""
+        if should_record_capture:
+            append_capture_record(
+                artifacts=self._artifacts,
+                write=CaptureRecordWrite(
+                    workspace_root=workspace_root,
+                    metadata=capture_metadata,
+                    plan=capture_session_plan,
+                    capture_root_ref=(
+                        f"evidence/raw/source/{capture_session_plan.source_folder}/{capture_session_plan.capture_label}"
+                        if _session_materializes_capture(
+                            capture_session_plan.capture_status
+                        )
+                        else ""
+                    ),
+                    intake_started_at=intake_started_at,
+                    intake_completed_at=datetime.now(UTC),
+                    incoming_ref=incoming_ref,
                 ),
-                intake_started_at=intake_started_at,
-                intake_completed_at=datetime.now(UTC),
-                incoming_ref=incoming_ref,
-            ),
-        )
-        if _session_updates_source_inventory(capture_session_plan.capture_status):
+            )
+        if should_record_capture and _session_updates_source_inventory(
+            capture_session_plan.capture_status
+        ):
             update_source_inventory_summary(
                 artifacts=self._artifacts,
                 workspace_root=workspace_root,

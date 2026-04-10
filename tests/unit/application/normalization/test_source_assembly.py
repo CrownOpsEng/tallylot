@@ -209,6 +209,45 @@ def test_source_assembly_summary_excludes_all_policy_blocked_captures(
     assert source_rows[0]["assembled_root_ref"] == ""
 
 
+def test_source_assembly_excludes_capture_blocked_rows_from_pending(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    _write_source_inventory(artifacts, workspace_root)
+    _write_capture_registry(
+        artifacts,
+        workspace_root,
+        (
+            _capture_row(
+                "01HV4A5H7VJH7M3Y5A6B7C8D9F",
+                status="capture_blocked",
+            ),
+        ),
+    )
+
+    AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+
+    summary = json.loads(
+        (
+            workspace_root
+            / "working"
+            / "normalized"
+            / "sources"
+            / "coinbase"
+            / "assembly_summary.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert summary["excluded_capture_count"] == 1
+    assert summary["pending_capture_count"] == 0
+
+
 def test_source_assembly_excludes_normalized_rows_missing_output_root(
     tmp_path: Path,
 ) -> None:

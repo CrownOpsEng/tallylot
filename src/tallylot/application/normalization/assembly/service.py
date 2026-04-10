@@ -43,7 +43,7 @@ from .merge import (
 
 _ASSEMBLY_INCLUDED_STATUSES = frozenset({"normalized", "assembly_included"})
 _ASSEMBLY_EXCLUDED_STATUSES = frozenset(
-    {"duplicate_blocked", "overlap_review_required", "superseded"}
+    {"capture_blocked", "duplicate_blocked", "overlap_review_required", "superseded"}
 )
 _GENERATED_ARTIFACT_FILENAMES = (
     "facts.csv",
