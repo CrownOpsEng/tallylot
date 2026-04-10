@@ -27,6 +27,7 @@ from tallylot.infrastructure.composition.runtime import (
 )
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.ports.captures import CaptureMetadata, SOURCE_INVENTORY_HEADER
+from tallylot.ports.facts import FACT_HEADER
 from tools.adapter_packs import AdapterPack, select_adapter_packs
 from tools.validate_workspace_replay import main
 
@@ -178,7 +179,9 @@ def test_validate_workspace_replay_matches_expected_source_metrics(
     assert exit_code == 0
     assert summary["passed"] is True
     assert summary["mismatch_count"] == 0
+    assert summary["pass_status"] == "clean"
     assert source_metrics["status"] == "match"
+    assert source_metrics["hard_metric_status"] == "match"
     assert source_metrics["reference_fact_count"] == str(
         _expected_row_count(pack.expected_dir / "facts.json")
     )
@@ -321,6 +324,7 @@ def test_validate_workspace_replay_emits_report_package(
     assert exit_code == 0
     assert summary["passed"] is True
     assert summary["mismatch_count"] == 0
+    assert summary["pass_status"] == "clean"
     assert (report_dir / "raw_capture_parity.csv").exists()
     assert (report_dir / "capture_registry_parity.csv").exists()
     assert (report_dir / "source_metrics_parity.csv").exists()
@@ -342,3 +346,118 @@ def test_validate_workspace_replay_emits_report_package(
     )
     assert len(candidate_capture_roots) == 1
     assert candidate_capture_roots[0].name != str(metadata.capture_uid)
+
+
+def test_validate_workspace_replay_fails_on_fact_drift(
+    structured_source_dir: Path,
+    tmp_path: Path,
+) -> None:
+    reference_workspace = tmp_path / "reference-workspace"
+    candidate_workspace = tmp_path / "candidate-workspace"
+    report_dir = tmp_path / "report"
+    incoming_dir = tmp_path / "incoming"
+    reference_report_dir = tmp_path / "reference-report"
+    artifacts = FilesystemArtifactStore()
+
+    initialize_workspace_use_case().execute(
+        WorkspaceInitRequest(workspace_root_ref=to_workspace_path(reference_workspace))
+    )
+    artifacts.write_rows(
+        reference_workspace / "analysis" / "issues" / "source_inventory.csv",
+        SOURCE_INVENTORY_HEADER,
+        (
+            {
+                "source": "fixture_source",
+                "activity_after_cutoff": "",
+                "scope_status": "in_scope",
+                "status": "",
+                "capture_count": "",
+                "latest_capture_uid": "",
+                "latest_capture_label": "",
+                "latest_capture_completed_at": "",
+                "assembly_status": "",
+                "assembled_root_ref": "",
+                "adapter_hints": "",
+                "notes": "",
+            },
+        ),
+    )
+    artifacts.write_rows(
+        reference_workspace / "analysis" / "issues" / "source_label_map.csv",
+        ("incoming_path_prefix", "source", "notes"),
+        ({"incoming_path_prefix": ".", "source": "fixture_source", "notes": ""},),
+    )
+    shutil.copytree(structured_source_dir, incoming_dir)
+    apply_intake_use_case().execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(reference_workspace),
+            report_output_ref=to_resource_ref(reference_report_dir),
+        )
+    )
+    intake_summary = json.loads(
+        (reference_report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    raw_capture_root = (
+        reference_workspace
+        / "evidence"
+        / "raw"
+        / "source"
+        / "fixture_source"
+        / str(intake_summary["planned_capture_label"])
+    )
+    normalized_root = default_capture_normalized_root(raw_capture_root)
+    build_profile_use_case().execute(
+        ProfileRequest(
+            source="fixture_source",
+            raw_capture_ref=to_resource_ref(raw_capture_root),
+            profile_output_ref=to_resource_ref(normalized_root),
+        )
+    )
+    normalize_source_use_case().execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_capture_ref=to_resource_ref(raw_capture_root),
+            normalized_output_ref=to_resource_ref(normalized_root),
+        )
+    )
+    assemble_source_use_case().execute(
+        AssembleSourceRequest(
+            source="fixture_source",
+            workspace_root_ref=to_resource_ref(reference_workspace),
+        )
+    )
+    facts_path = (
+        reference_workspace
+        / "working"
+        / "normalized"
+        / "sources"
+        / "fixture_source"
+        / "facts.csv"
+    )
+    fact_rows = artifacts.read_rows(facts_path)
+    drift_row = dict(fact_rows[0])
+    drift_row["fact_id"] = f"{drift_row['fact_id']}:reference-only"
+    artifacts.write_rows(facts_path, FACT_HEADER, (*fact_rows, drift_row))
+
+    exit_code = main(
+        [
+            "--reference-workspace",
+            str(reference_workspace),
+            "--candidate-workspace",
+            str(candidate_workspace),
+            "--report-dir",
+            str(report_dir),
+            "--source",
+            "fixture_source",
+        ]
+    )
+
+    summary = json.loads((report_dir / "summary.json").read_text(encoding="utf-8"))
+    source_metrics = artifacts.read_rows(report_dir / "source_metrics_parity.csv")
+
+    assert exit_code == 1
+    assert summary["passed"] is False
+    assert summary["pass_status"] == "failed"
+    assert source_metrics[0]["status"] == "mismatch"
+    assert source_metrics[0]["hard_metric_status"] == "mismatch"

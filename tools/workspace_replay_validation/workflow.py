@@ -33,11 +33,13 @@ from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.ports.captures import CaptureMetadata, SOURCE_INVENTORY_HEADER
 
 from .comparison import collect_workspace_metrics, write_parity_report
+from .expected_differences import load_expected_differences
 from .models import (
     MetricCollectionRequest,
     ParityReportRequest,
     ReferenceCapture,
     ReplayResult,
+    WorkspaceReplayValidationRequest,
 )
 
 
@@ -117,11 +119,7 @@ def _resolve_capture_root(
     capture_root_ref = row.get("capture_root_ref", "").strip()
     if capture_root_ref:
         return workspace_root / Path(capture_root_ref)
-    source = row.get("source", "").strip()
-    capture_label = row.get("capture_label", "").strip()
-    if not source or not capture_label:
-        return None
-    return workspace_root / "evidence" / "raw" / "source" / source / capture_label
+    return None
 
 
 def _seed_candidate_workspace(
@@ -289,48 +287,46 @@ def _replay_capture(
 
 
 def validate_workspace_replay(
-    *,
-    reference_workspace: Path,
-    candidate_workspace: Path,
-    report_dir: Path,
-    selected_sources: frozenset[str],
-    inspect_archives: bool,
+    request: WorkspaceReplayValidationRequest,
 ) -> ReplayResult:
     artifacts = FilesystemArtifactStore()
+    expected_differences = load_expected_differences(
+        request.expected_differences_path
+    ).limited_to_sources(request.selected_sources)
     captures = _reference_captures(
         artifacts=artifacts,
-        workspace_root=reference_workspace,
-        selected_sources=selected_sources,
+        workspace_root=request.reference_workspace,
+        selected_sources=request.selected_sources,
     )
     _seed_candidate_workspace(
         artifacts=artifacts,
-        reference_workspace=reference_workspace,
-        candidate_workspace=candidate_workspace,
+        reference_workspace=request.reference_workspace,
+        candidate_workspace=request.candidate_workspace,
         captures=captures,
     )
     for capture in captures:
         _replay_capture(
-            candidate_workspace=candidate_workspace,
-            report_dir=report_dir,
+            candidate_workspace=request.candidate_workspace,
+            report_dir=request.report_dir,
             capture=capture,
-            inspect_archives=inspect_archives,
+            inspect_archives=request.inspect_archives,
         )
     for source in sorted({capture.source for capture in captures}):
         assemble_source_use_case().execute(
             AssembleSourceRequest(
                 source=source,
-                workspace_root_ref=to_resource_ref(candidate_workspace),
+                workspace_root_ref=to_resource_ref(request.candidate_workspace),
             )
         )
     reference_metrics = collect_workspace_metrics(
         MetricCollectionRequest(
             artifacts=artifacts,
-            workspace_root=reference_workspace,
-            selected_sources=selected_sources,
-            reconciliation_report_dir=report_dir / "reference",
+            workspace_root=request.reference_workspace,
+            selected_sources=request.selected_sources,
+            reconciliation_report_dir=request.report_dir / "reference",
             latest_capture_rows=_latest_capture_rows(
                 artifacts.read_rows(
-                    reference_workspace
+                    request.reference_workspace
                     / "analysis"
                     / "inventory"
                     / "source_captures.csv"
@@ -342,12 +338,12 @@ def validate_workspace_replay(
     candidate_metrics = collect_workspace_metrics(
         MetricCollectionRequest(
             artifacts=artifacts,
-            workspace_root=candidate_workspace,
-            selected_sources=selected_sources,
-            reconciliation_report_dir=report_dir / "candidate",
+            workspace_root=request.candidate_workspace,
+            selected_sources=request.selected_sources,
+            reconciliation_report_dir=request.report_dir / "candidate",
             latest_capture_rows=_latest_capture_rows(
                 artifacts.read_rows(
-                    candidate_workspace
+                    request.candidate_workspace
                     / "analysis"
                     / "inventory"
                     / "source_captures.csv"
@@ -359,11 +355,12 @@ def validate_workspace_replay(
     return write_parity_report(
         ParityReportRequest(
             artifacts=artifacts,
-            report_dir=report_dir,
-            reference_workspace=reference_workspace,
-            candidate_workspace=candidate_workspace,
+            report_dir=request.report_dir,
+            reference_workspace=request.reference_workspace,
+            candidate_workspace=request.candidate_workspace,
             reference_metrics=reference_metrics,
             candidate_metrics=candidate_metrics,
+            expected_differences=expected_differences,
         )
     )
 

@@ -5,6 +5,7 @@ import json
 from collections.abc import Sequence
 from pathlib import Path
 
+from .models import WorkspaceReplayValidationRequest
 from .workflow import validate_workspace_replay
 
 
@@ -19,6 +20,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument("--report-dir", required=True)
     parser.add_argument("--candidate-workspace")
     parser.add_argument("--source", action="append", default=[])
+    parser.add_argument("--expected-differences")
     parser.add_argument(
         "--inspect-archives",
         action=argparse.BooleanOptionalAction,
@@ -41,13 +43,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         else report_dir / "candidate_workspace"
     )
     selected_sources = frozenset(str(source) for source in args.source)
+    expected_differences_path = (
+        Path(args.expected_differences).expanduser().resolve()
+        if args.expected_differences
+        else None
+    )
     report_dir.mkdir(parents=True, exist_ok=True)
     result = validate_workspace_replay(
-        reference_workspace=reference_workspace,
-        candidate_workspace=candidate_workspace,
-        report_dir=report_dir,
-        selected_sources=selected_sources,
-        inspect_archives=bool(args.inspect_archives),
+        WorkspaceReplayValidationRequest(
+            reference_workspace=reference_workspace,
+            candidate_workspace=candidate_workspace,
+            report_dir=report_dir,
+            selected_sources=selected_sources,
+            inspect_archives=bool(args.inspect_archives),
+            expected_differences_path=expected_differences_path,
+        )
     )
     print(
         json.dumps(
@@ -57,7 +67,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "reference_capture_count": result.reference_capture_count,
                 "candidate_capture_count": result.candidate_capture_count,
                 "mismatch_count": result.mismatch_count,
+                "expected_difference_count": result.expected_difference_count,
+                "passed_with_expected_differences": (
+                    result.passed_with_expected_differences
+                ),
                 "passed": result.mismatch_count == 0,
+                "pass_status": (
+                    "failed"
+                    if result.mismatch_count
+                    else (
+                        "passed-with-expected-differences"
+                        if result.passed_with_expected_differences
+                        else "clean"
+                    )
+                ),
             }
         )
     )
