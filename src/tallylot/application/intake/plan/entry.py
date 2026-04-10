@@ -23,6 +23,7 @@ from ..path_rules import (
     source_raw_target_path,
 )
 from ..routing import route_intake_file
+from ..routing.targets import WORKING_DERIVATIVE_SUFFIXES
 from .models import PlannedItem
 from .reviews import merge_review_required, merge_review_values
 
@@ -96,10 +97,16 @@ def build_planned_item(
         archive_member_path=entry.archive_member_path,
         category=route.category,
         role=route.role,
+        evidence_role=_evidence_role(entry, route.role),
+        originality_class=_originality_class(entry, route.role),
         source_folder=source_resolution.source_folder,
         capture_id=route.capture_id,
+        capture_status="planned",
         bundle_id=bundle_id_value,
         bundle_relative_path=bundle_relative_path_value,
+        observed_period_start=facts.observed_period_start,
+        observed_period_end=facts.observed_period_end,
+        observed_period_label=facts.observed_period_label,
         action="skip" if source_resolution.blocked else route.action,
         package_key=package_key(entry),
         package_status="primary",
@@ -138,3 +145,26 @@ def build_planned_item(
         scope_tokens=facts.scope_tokens,
         target_path=source_target_path,
     )
+
+
+def _evidence_role(entry: ScannedFile, role: str) -> str:
+    suffix = entry.file_path.suffix.lower()
+    if role == "portfolio_export":
+        return "portfolio_export"
+    if role == "portfolio_sidecar":
+        return "required_sidecar"
+    if suffix == ".pdf":
+        return "statement_source"
+    if suffix in {".csv", ".json", ".zip", ".html"}:
+        return "transaction_source"
+    return "unknown_original"
+
+
+def _originality_class(entry: ScannedFile, role: str) -> str:
+    del role
+    suffix = entry.file_path.suffix.lower()
+    if suffix in WORKING_DERIVATIVE_SUFFIXES:
+        if suffix in {".xlsx", ".xls"}:
+            return "operator_authored"
+        return "derived_runtime"
+    return "upstream_original"

@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .archive import ScannedFile
-from .packages import PlannedPackageItem
-from .plan.models import PlannedItem
+
+if TYPE_CHECKING:
+    from .packages import PlannedPackageItem
+    from .plan.models import PlannedItem
 
 
 def package_key(entry: ScannedFile) -> str:

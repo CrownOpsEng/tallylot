@@ -68,6 +68,9 @@ def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
         header=header,
         min_timestamp=timestamp_values[0] if timestamp_values else "",
         max_timestamp=timestamp_values[-1] if timestamp_values else "",
+        observed_period_start=_observed_period_start(timestamp_values),
+        observed_period_end=_observed_period_end(timestamp_values),
+        observed_period_label=_observed_period_label(timestamp_values),
         scope_tokens=tuple(sorted(scope_tokens)),
         network_hints=tuple(sorted(network_hints)),
     )
@@ -84,15 +87,48 @@ def parse_timestamp(value: str) -> datetime | None:
     return None
 
 
-def _timestamp_values(rows: list[dict[str, CsvCell]], header: tuple[str, ...]) -> list[str]:
+def _timestamp_values(
+    rows: list[dict[str, CsvCell]], header: tuple[str, ...]
+) -> list[str]:
     field_name = next((name for name in TIMESTAMP_FIELD_NAMES if name in header), "")
     if not field_name:
         lowered = {name.lower(): name for name in header}
-        field_name = next((lowered[name.lower()] for name in TIMESTAMP_FIELD_NAMES if name.lower() in lowered), "")
+        field_name = next(
+            (
+                lowered[name.lower()]
+                for name in TIMESTAMP_FIELD_NAMES
+                if name.lower() in lowered
+            ),
+            "",
+        )
     if not field_name:
         return []
-    parsed_values = [parsed for row in rows if (parsed := parse_timestamp(_cell_text(row.get(field_name)))) is not None]
+    parsed_values = [
+        parsed
+        for row in rows
+        if (parsed := parse_timestamp(_cell_text(row.get(field_name)))) is not None
+    ]
     return [value.strftime("%Y-%m-%d %H:%M:%S") for value in sorted(parsed_values)]
+
+
+def _observed_period_start(timestamp_values: list[str]) -> str:
+    if not timestamp_values:
+        return ""
+    return timestamp_values[0][:10]
+
+
+def _observed_period_end(timestamp_values: list[str]) -> str:
+    if not timestamp_values:
+        return ""
+    return timestamp_values[-1][:10]
+
+
+def _observed_period_label(timestamp_values: list[str]) -> str:
+    if not timestamp_values:
+        return ""
+    start = timestamp_values[0][:7]
+    end = timestamp_values[-1][:7]
+    return start if start == end else f"{start}..{end}"
 
 
 def _read_csv_rows(path: Path) -> tuple[tuple[str, ...], list[dict[str, CsvCell]]]:
@@ -113,7 +149,9 @@ def _scope_tokens(relative_path: str, rows: list[dict[str, CsvCell]]) -> set[str
     for token in _identifier_scope_tokens(relative_path):
         tokens.add(token)
     for match in ACCOUNT_SEGMENT_PATTERN.finditer(lower_path):
-        tokens.add(f"label:{match.group(0).lower().replace(' ', '-').replace('_', '-')}")
+        tokens.add(
+            f"label:{match.group(0).lower().replace(' ', '-').replace('_', '-')}"
+        )
     for row in rows[:50]:
         for value in row.values():
             candidates = value if isinstance(value, list) else (value or "",)
@@ -128,7 +166,9 @@ def _network_hints(
     header: tuple[str, ...],
     rows: list[dict[str, CsvCell]],
 ) -> set[str]:
-    row_text = " ".join(_cell_text(value) for row in rows[:50] for value in row.values())
+    row_text = " ".join(
+        _cell_text(value) for row in rows[:50] for value in row.values()
+    )
     search_text = " ".join((relative_path, *header, row_text)).lower()
     hints: set[str] = set()
     for token, network in NETWORK_HINTS:

@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from tallylot.application.intake.captures.session import CaptureSessionPlan
 
 PLAN_HEADER = (
     "path",
@@ -12,10 +16,16 @@ PLAN_HEADER = (
     "archive_member_path",
     "category",
     "role",
+    "evidence_role",
+    "originality_class",
     "source_folder",
     "capture_id",
+    "capture_status",
     "bundle_id",
     "bundle_relative_path",
+    "observed_period_start",
+    "observed_period_end",
+    "observed_period_label",
     "action",
     "package_key",
     "package_status",
@@ -45,10 +55,16 @@ class PlannedItem:
     archive_member_path: str
     category: str
     role: str
+    evidence_role: str
+    originality_class: str
     source_folder: str
     capture_id: str
+    capture_status: str
     bundle_id: str
     bundle_relative_path: str
+    observed_period_start: str
+    observed_period_end: str
+    observed_period_label: str
     action: str
     package_key: str
     package_status: str
@@ -77,10 +93,16 @@ class PlannedItem:
             "archive_member_path": self.archive_member_path,
             "category": self.category,
             "role": self.role,
+            "evidence_role": self.evidence_role,
+            "originality_class": self.originality_class,
             "source_folder": self.source_folder,
             "capture_id": self.capture_id,
+            "capture_status": self.capture_status,
             "bundle_id": self.bundle_id,
             "bundle_relative_path": self.bundle_relative_path,
+            "observed_period_start": self.observed_period_start,
+            "observed_period_end": self.observed_period_end,
+            "observed_period_label": self.observed_period_label,
             "action": self.action,
             "package_key": self.package_key,
             "package_status": self.package_status,
@@ -105,3 +127,4 @@ class PlannedItem:
 class PlannedItemBatch:
     planned_items: tuple[PlannedItem, ...]
     issue_rows: tuple[dict[str, str], ...]
+    capture_session_plan: CaptureSessionPlan

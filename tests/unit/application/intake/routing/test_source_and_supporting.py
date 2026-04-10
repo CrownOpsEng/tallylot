@@ -8,7 +8,9 @@ from tallylot.application.intake.routing import route_intake_file
 from tallylot.infrastructure.discovery import build_registry
 
 
-def test_route_intake_file_routes_archive_members_under_contents_tree(tmp_path: Path) -> None:
+def test_route_intake_file_routes_archive_members_under_contents_tree(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     bundle_path = incoming_dir / "bundle.zip"
@@ -32,10 +34,15 @@ def test_route_intake_file_routes_archive_members_under_contents_tree(tmp_path: 
 
     assert route.category == "source_raw"
     assert route.action == "extract_copy"
-    assert route.target_path == (workspace_root / "evidence/raw/source/unclassified/incoming/bundle/contents/inner.csv")
+    assert route.target_path == (
+        workspace_root
+        / "evidence/raw/source/unclassified/incoming/bundle/contents/inner.csv"
+    )
 
 
-def test_route_intake_file_routes_working_derivatives_to_supporting_artifacts(tmp_path: Path) -> None:
+def test_route_intake_file_routes_working_derivatives_to_supporting_artifacts(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     derivative_path = incoming_dir / "trade Analysis - ADA-USDT - Binance.png"
     incoming_dir.mkdir()
@@ -59,7 +66,8 @@ def test_route_intake_file_routes_working_derivatives_to_supporting_artifacts(tm
     assert route.role == "working_derivative"
     assert route.source_folder == "binance"
     assert route.target_path == (
-        workspace_root / "working/supporting_artifacts/binance/incoming/trade Analysis - ADA-USDT - Binance.png"
+        workspace_root
+        / "working/supporting_artifacts/binance/incoming/trade Analysis - ADA-USDT - Binance.png"
     )
 
 
@@ -90,7 +98,9 @@ def test_route_intake_file_routes_generic_supporting_artifacts_when_suffix_is_no
     assert route.source_folder == "unclassified"
 
 
-def test_route_intake_file_uses_header_hints_for_loose_source_exports(tmp_path: Path) -> None:
+def test_route_intake_file_uses_header_hints_for_loose_source_exports(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     export_path = incoming_dir / "borrow.csv"
@@ -119,10 +129,15 @@ def test_route_intake_file_uses_header_hints_for_loose_source_exports(tmp_path: 
     assert route.category == "source_raw"
     assert route.source_folder == "binance"
     assert route.capture_id == "2021-05"
-    assert route.target_path == workspace_root / "evidence/raw/source/binance/2021-05/borrow.csv"
+    assert (
+        route.target_path
+        == workspace_root / "evidence/raw/source/binance/2021-05/borrow.csv"
+    )
 
 
-def test_route_intake_file_routes_zip_archives_under_archive_tree(tmp_path: Path) -> None:
+def test_route_intake_file_routes_zip_archives_under_archive_tree(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     archive_path = incoming_dir / "202203291736.zip"
@@ -139,11 +154,69 @@ def test_route_intake_file_routes_zip_archives_under_archive_tree(tmp_path: Path
         registry=build_registry(),
         incoming_dir=incoming_dir,
         workspace_root=workspace_root,
-        facts=IntakeFileFacts(header=("Date(UTC)", "Pair", "Side", "Price", "Executed", "Amount", "Fee")),
+        facts=IntakeFileFacts(
+            header=("Date(UTC)", "Pair", "Side", "Price", "Executed", "Amount", "Fee")
+        ),
     )
 
     assert route.category == "source_raw"
     assert route.capture_id == "2022-03"
     assert route.target_path == (
-        workspace_root / "evidence/raw/source/binance/2022-03/202203291736/archive/202203291736.zip"
+        workspace_root
+        / "evidence/raw/source/binance/2022-03/202203291736/archive/202203291736.zip"
     )
+
+
+def test_route_intake_file_routes_statement_pdfs_to_raw_source_tree(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    pdf_path = incoming_dir / "Coinbase Monthly Statement.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4\n")
+    workspace_root = tmp_path / "workspace"
+
+    route = route_intake_file(
+        ScannedFile(
+            relative_path=pdf_path.name,
+            file_path=pdf_path,
+            size_bytes=pdf_path.stat().st_size,
+            sha256="fixture",
+        ),
+        registry=build_registry(),
+        incoming_dir=incoming_dir,
+        workspace_root=workspace_root,
+        facts=IntakeFileFacts(),
+    )
+
+    assert route.category == "source_raw"
+    assert route.role == "source_export"
+    assert route.source_folder == "coinbase"
+
+
+def test_route_intake_file_routes_required_sidecars_to_raw_source_tree(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    sidecar_dir = incoming_dir / "Coinbase Export_files"
+    sidecar_dir.mkdir(parents=True)
+    sidecar_path = sidecar_dir / "style.min.css"
+    sidecar_path.write_text("body{}", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+
+    route = route_intake_file(
+        ScannedFile(
+            relative_path="Coinbase Export_files/style.min.css",
+            file_path=sidecar_path,
+            size_bytes=sidecar_path.stat().st_size,
+            sha256="fixture",
+        ),
+        registry=build_registry(),
+        incoming_dir=incoming_dir,
+        workspace_root=workspace_root,
+        facts=IntakeFileFacts(),
+    )
+
+    assert route.category == "source_raw"
+    assert route.role == "required_sidecar"
+    assert route.source_folder == "coinbase"

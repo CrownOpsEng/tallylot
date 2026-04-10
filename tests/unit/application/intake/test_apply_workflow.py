@@ -4,7 +4,12 @@ import json
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from tallylot.application.intake import ApplyIntakeUseCase, IntakeApplyRequest
+from tallylot.application.intake import (
+    ApplyIntakeUseCase,
+    IntakeApplyRequest,
+    IntakePlanRequest,
+    PlanIntakeUseCase,
+)
 from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
@@ -32,13 +37,14 @@ def test_source_intake_service_applies_loose_files_into_workspace(
     summary = json.loads(
         (report_dir / "intake_summary.json").read_text(encoding="utf-8")
     )
+    capture_label = summary["planned_capture_label"]
     target = (
         workspace_root
         / "evidence"
         / "raw"
         / "source"
         / "unclassified"
-        / "incoming"
+        / capture_label
         / "transactions.csv"
     )
 
@@ -73,7 +79,9 @@ def test_source_intake_service_applies_archive_members_into_workspace(
         / "raw"
         / "source"
         / "unclassified"
-        / "incoming"
+        / json.loads((report_dir / "intake_summary.json").read_text(encoding="utf-8"))[
+            "planned_capture_label"
+        ]
         / "bundle"
         / "archive"
         / "bundle.zip"
@@ -84,7 +92,9 @@ def test_source_intake_service_applies_archive_members_into_workspace(
         / "raw"
         / "source"
         / "unclassified"
-        / "incoming"
+        / json.loads((report_dir / "intake_summary.json").read_text(encoding="utf-8"))[
+            "planned_capture_label"
+        ]
         / "bundle"
         / "contents"
         / "inner.csv"
@@ -125,6 +135,7 @@ def test_source_intake_service_merges_same_cycle_near_duplicate_packages_on_appl
     summary = json.loads(
         (report_dir / "intake_summary.json").read_text(encoding="utf-8")
     )
+    capture_label = summary["planned_capture_label"]
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
     manifest_rows = FilesystemArtifactStore().read_rows(
         workspace_root
@@ -132,7 +143,7 @@ def test_source_intake_service_merges_same_cycle_near_duplicate_packages_on_appl
         / "raw"
         / "source"
         / "binance"
-        / "2021-05"
+        / capture_label
         / "manifest.csv"
     )
     filenames = {row["filename"] for row in manifest_rows}
@@ -176,6 +187,7 @@ def test_source_intake_service_marks_mixed_cycle_bundle_for_review_but_places_fi
     summary = json.loads(
         (report_dir / "intake_summary.json").read_text(encoding="utf-8")
     )
+    capture_label = summary["planned_capture_label"]
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
     mixed_rows = [row for row in plan_rows if row["bundle_id"] == "mixedcycle"]
     manifest_rows = FilesystemArtifactStore().read_rows(
@@ -184,7 +196,7 @@ def test_source_intake_service_marks_mixed_cycle_bundle_for_review_but_places_fi
         / "raw"
         / "source"
         / "binance"
-        / "2021-05"
+        / capture_label
         / "manifest.csv"
     )
 
@@ -231,13 +243,14 @@ def test_source_intake_service_applies_explicit_source_label_map(
     summary = json.loads(
         (report_dir / "intake_summary.json").read_text(encoding="utf-8")
     )
+    capture_label = summary["planned_capture_label"]
     target = (
         workspace_root
         / "evidence"
         / "raw"
         / "source"
         / "manual-main"
-        / "incoming"
+        / capture_label
         / "transactions.csv"
     )
 
@@ -293,3 +306,173 @@ def test_source_intake_service_skips_rows_blocked_by_invalid_source_label_map(
     assert summary["explicit_map_blocked_count"] == 1
     assert summary["source_label_map_issue_count"] == 1
     assert issue_rows[0]["kind"] == "source_label_map_unknown_source"
+
+
+def test_source_intake_service_reuses_planned_capture_label_on_apply(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    PlanIntakeUseCase(build_registry(), artifacts).execute(
+        IntakePlanRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+    planned_label = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )["planned_capture_label"]
+
+    ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+    applied_summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert applied_summary["planned_capture_label"] == planned_label
+
+
+def test_source_intake_service_blocks_duplicate_capture_by_manifest_fingerprint(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    first_report_dir = tmp_path / "reports-1"
+    second_report_dir = tmp_path / "reports-2"
+    artifacts = FilesystemArtifactStore()
+    service = ApplyIntakeUseCase(build_registry(), artifacts)
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(first_report_dir),
+        )
+    )
+    first_summary = json.loads(
+        (first_report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(second_report_dir),
+        )
+    )
+    second_summary = json.loads(
+        (second_report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+
+    assert second_summary["capture_status"] == "duplicate_blocked"
+    assert second_summary["duplicate_capture_uid"] == capture_rows[0]["capture_uid"]
+    assert not (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "unclassified"
+        / second_summary["planned_capture_label"]
+    ).exists()
+    assert capture_rows[0]["capture_label"] == first_summary["planned_capture_label"]
+    assert capture_rows[1]["status"] == "duplicate_blocked"
+
+
+def test_source_intake_service_marks_overlapping_capture_for_review(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    first_incoming = tmp_path / "incoming-1"
+    second_incoming = tmp_path / "incoming-2"
+    first_incoming.mkdir()
+    second_incoming.mkdir()
+    payload_a = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    payload_b = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0500,Auto borrowing,CONFIRM\n"
+    (first_incoming / "borrow.csv").write_text(payload_a, encoding="utf-8")
+    (second_incoming / "borrow.csv").write_text(payload_b, encoding="utf-8")
+    artifacts = FilesystemArtifactStore()
+    service = ApplyIntakeUseCase(build_registry(), artifacts)
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(first_incoming),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(tmp_path / "reports-1"),
+        )
+    )
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(second_incoming),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(tmp_path / "reports-2"),
+        )
+    )
+
+    second_summary = json.loads(
+        (tmp_path / "reports-2" / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+
+    assert second_summary["capture_status"] == "overlap_review_required"
+    assert capture_rows[-1]["status"] == "overlap_review_required"
+
+
+def test_source_inventory_summary_updates_after_apply(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    source_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+
+    assert source_rows == [
+        {
+            "source": "unclassified",
+            "activity_after_cutoff": "",
+            "scope_status": "in_scope",
+            "status": "capture_complete",
+            "capture_count": "1",
+            "latest_capture_uid": source_rows[0]["latest_capture_uid"],
+            "latest_capture_label": summary["planned_capture_label"],
+            "latest_capture_completed_at": source_rows[0][
+                "latest_capture_completed_at"
+            ],
+            "assembly_status": "pending",
+            "assembled_root_ref": "",
+            "adapter_hints": "",
+            "notes": "",
+        }
+    ]

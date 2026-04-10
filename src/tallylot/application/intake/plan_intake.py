@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.intake.contracts import IntakePlanRequest, IntakePlanResponse
-from tallylot.application.intake.plan import build_planned_items, write_reports
+from tallylot.application.intake.plan import (
+    IntakeReportBundle,
+    build_planned_items,
+    write_reports,
+)
 from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
@@ -40,7 +44,14 @@ class PlanIntakeUseCase:
                 for issue in scanned_tree.issues
             )
         write_reports(
-            self._artifacts, report_dir, planned_items, issue_rows, copied_count=0
+            self._artifacts,
+            report_dir,
+            IntakeReportBundle(
+                planned_items=planned_items,
+                issue_rows=issue_rows,
+                capture_session_plan=batch.capture_session_plan,
+                copied_count=0,
+            ),
         )
         return IntakePlanResponse(
             report_output_ref=request.report_output_ref,

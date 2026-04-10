@@ -187,13 +187,23 @@ def test_source_intake_plan_and_apply_cli(tmp_path: Path) -> None:
     )
 
     payload = json.loads(apply_result.stdout)
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    capture_label = summary["planned_capture_label"]
 
     assert plan_result.exit_code == 0
     assert apply_result.exit_code == 0
     assert (report_dir / "intake_plan.csv").exists()
     assert payload["copied_count"] == 1
     assert (
-        workspace_root / "evidence/raw/source/unclassified/incoming/transactions.csv"
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "unclassified"
+        / capture_label
+        / "transactions.csv"
     ).exists()
 
 
@@ -231,12 +241,22 @@ def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> No
 
     payload = json.loads(result.stdout)
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    capture_label = summary["planned_capture_label"]
 
     assert result.exit_code == 0
     assert payload["copied_count"] == 1
     assert plan_rows[0]["source_resolution_status"] == "explicit_map"
     assert (
-        workspace_root / "evidence/raw/source/manual-main/incoming/transactions.csv"
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "manual-main"
+        / capture_label
+        / "transactions.csv"
     ).exists()
 
 

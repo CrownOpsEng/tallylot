@@ -11,7 +11,14 @@ from tallylot.ports.intake_routing import IntakeRoutingRequest
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
 
 from .models import IntakeRoute
-from .targets import RAW_SOURCE_SUFFIXES, is_working_derivative, raw_source_target_path, relative_target_path
+from .targets import (
+    RAW_SOURCE_SUFFIXES,
+    RawSidecarTarget,
+    is_working_derivative,
+    raw_source_target_path,
+    relative_target_path,
+    required_raw_sidecar_path,
+)
 
 
 def route_intake_file(
@@ -55,6 +62,24 @@ def route_intake_file(
                 / relative_target
             ),
         )
+    if "_files/" in route_key.lower():
+        return IntakeRoute(
+            category="source_raw",
+            role="required_sidecar",
+            source_folder=source_folder,
+            capture_id=capture_id,
+            action="extract_copy" if entry.archive_member_path else "copy",
+            target_path=required_raw_sidecar_path(
+                workspace_root,
+                RawSidecarTarget(
+                    source_folder=source_folder,
+                    capture_label=capture_id,
+                    relative_path=route_key,
+                    archive_source_path=entry.archive_source_path,
+                    archive_member_path=entry.archive_member_path,
+                ),
+            ),
+        )
     if Path(route_key).suffix.lower() in RAW_SOURCE_SUFFIXES:
         target_path = raw_source_target_path(
             entry,
@@ -78,7 +103,12 @@ def route_intake_file(
         capture_id=capture_id,
         action="extract_copy" if entry.archive_member_path else "copy",
         target_path=(
-            workspace_root / "working" / "supporting_artifacts" / source_folder / incoming_dir.name / relative_target
+            workspace_root
+            / "working"
+            / "supporting_artifacts"
+            / source_folder
+            / incoming_dir.name
+            / relative_target
         ),
     )
 
@@ -116,5 +146,7 @@ def _matching_adapters(
         if AdapterCapability.INTAKE_ROUTE in adapter.manifest.capabilities
     ]
     scored_matches = [(score, adapter) for score, adapter in matches if score > 0]
-    scored_matches.sort(key=lambda item: (item[0], str(item[1].manifest.adapter_id)), reverse=True)
+    scored_matches.sort(
+        key=lambda item: (item[0], str(item[1].manifest.adapter_id)), reverse=True
+    )
     return tuple(adapter for _, adapter in scored_matches)

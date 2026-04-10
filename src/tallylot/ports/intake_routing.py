@@ -11,6 +11,9 @@ class IntakeFileFacts:
     header: tuple[str, ...] = ()
     min_timestamp: str = ""
     max_timestamp: str = ""
+    observed_period_start: str = ""
+    observed_period_end: str = ""
+    observed_period_label: str = ""
     scope_tokens: tuple[str, ...] = ()
     network_hints: tuple[str, ...] = ()
 
