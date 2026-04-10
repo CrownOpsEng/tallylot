@@ -1,6 +1,8 @@
 [
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "Explorer export",
     "display_identifier": "0x1111111111111111111111111111111111111111",
@@ -20,7 +22,9 @@
     "source": "bsc-wallet-1"
   },
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "Explorer export",
     "display_identifier": "0x2222222222222222222222222222222222222222",

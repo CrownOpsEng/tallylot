@@ -39,6 +39,10 @@ class BalanceSourceDir:
 def discover_balance_source_dirs(input_root: Path) -> tuple[BalanceSourceDir, ...]:
     if not input_root.is_dir():
         raise ValueError(f"balance input root must be a directory: {input_root}")
+    if input_root.name == "captures" or input_root.parent.name == "captures":
+        raise ValueError(
+            "balance input root must reference assembled source datasets, not capture-normalized outputs"
+        )
     if source_dir_input(input_root):
         return (BalanceSourceDir(name=input_root.name, root=input_root),)
     return tuple(

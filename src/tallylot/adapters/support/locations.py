@@ -52,7 +52,9 @@ class LocationRecordSpec:
     evidence_path: str
     confidence: str
     note: str = ""
-    capture_path: str = ""
+    capture_uid: str = ""
+    capture_label: str = ""
+    capture_root_ref: str = ""
     parent_location_id: LocationId | None = None
     location_path: tuple[str, ...] = ()
     parent_location_label: str = ""
@@ -74,7 +76,11 @@ _NON_ALNUM_PATTERN = re.compile(r"[^a-z0-9]+")
 
 
 def location_id_from_parts(*parts: str) -> LocationId:
-    normalized_parts = tuple(normalized_part for part in parts if (normalized_part := _normalized_location_part(part)))
+    normalized_parts = tuple(
+        normalized_part
+        for part in parts
+        if (normalized_part := _normalized_location_part(part))
+    )
     if not normalized_parts:
         raise ValueError("location_id requires at least one non-empty part")
     return LocationId(":".join(normalized_parts))
@@ -95,7 +101,9 @@ def location_record(spec: LocationRecordSpec) -> LocationInventoryRecord:
         location_path=spec.location_path,
         identifier_kind=spec.identifier_kind,
         identifier_value=spec.identifier_value,
-        capture_path=spec.capture_path,
+        capture_uid=spec.capture_uid,
+        capture_label=spec.capture_label,
+        capture_root_ref=spec.capture_root_ref,
         normalized_identifier=normalized,
         display_identifier=spec.identifier_value,
         network_scope=spec.network_scope,

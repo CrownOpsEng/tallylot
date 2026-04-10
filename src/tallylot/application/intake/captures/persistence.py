@@ -94,11 +94,34 @@ def append_capture_record(
     artifacts.write_rows(path, SOURCE_CAPTURE_HEADER, existing)
 
 
-def update_source_inventory_summary(
+def append_capture_status_record(
+    *,
+    artifacts: ArtifactStorePort,
+    workspace_root: Path,
+    capture_uid: str,
+    status: str,
+    notes: str = "",
+) -> None:
+    path = workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    rows = artifacts.read_rows(path) if path.exists() else []
+    latest = _latest_capture_row(rows, capture_uid)
+    if latest is None:
+        return
+    updated = {**latest, "status": status}
+    if notes:
+        updated["notes"] = notes
+    rows.append(updated)
+    artifacts.write_rows(path, SOURCE_CAPTURE_HEADER, rows)
+
+
+def update_source_inventory_summary(  # pylint: disable=too-many-arguments
     *,
     artifacts: ArtifactStorePort,
     workspace_root: Path,
     source: str,
+    status: str | None = None,
+    assembly_status: str | None = None,
+    assembled_root_ref: str | None = None,
 ) -> None:
     source_inventory_path = (
         workspace_root / "analysis" / "issues" / "source_inventory.csv"
@@ -114,24 +137,29 @@ def update_source_inventory_summary(
         if source_inventory_path.exists()
         else []
     )
-    matching = [row for row in capture_rows if row.get("source", "") == source]
-    latest = matching[-1] if matching else {}
+    matching = tuple(_latest_capture_rows_for_source(capture_rows, source).values())
+    latest = _latest_completed_capture_row(matching) if matching else {}
     updated_row = SourceInventorySummaryRecord(
         source=SourceId(source),
         activity_after_cutoff=_existing_value(
             source_rows, source, "activity_after_cutoff"
         ),
         scope_status=_existing_value(source_rows, source, "scope_status") or "in_scope",
-        status=_existing_value(source_rows, source, "status") or "capture_complete",
+        status=status
+        or _existing_value(source_rows, source, "status")
+        or "capture_complete",
         capture_count=len(matching),
         latest_capture_uid=latest.get("capture_uid", ""),
         latest_capture_label=latest.get("capture_label", ""),
         latest_capture_completed_at=_parse_optional_timestamp(
             latest.get("intake_completed_at", "")
         ),
-        assembly_status=_existing_value(source_rows, source, "assembly_status")
+        assembly_status=assembly_status
+        or _existing_value(source_rows, source, "assembly_status")
         or "pending",
-        assembled_root_ref=_existing_value(source_rows, source, "assembled_root_ref"),
+        assembled_root_ref=assembled_root_ref
+        if assembled_root_ref is not None
+        else _existing_value(source_rows, source, "assembled_root_ref"),
         adapter_hints=_existing_value(source_rows, source, "adapter_hints"),
         notes=_existing_value(source_rows, source, "notes"),
     ).to_row()
@@ -145,6 +173,40 @@ def _existing_value(rows: list[dict[str, str]], source: str, field: str) -> str:
         if row.get("source", "") == source:
             return row.get(field, "")
     return ""
+
+
+def _latest_capture_row(
+    rows: list[dict[str, str]], capture_uid: str
+) -> dict[str, str] | None:
+    for row in reversed(rows):
+        if row.get("capture_uid", "") == capture_uid:
+            return row
+    return None
+
+
+def _latest_capture_rows_for_source(
+    rows: list[dict[str, str]], source: str
+) -> dict[str, dict[str, str]]:
+    latest_by_uid: dict[str, dict[str, str]] = {}
+    for row in rows:
+        if row.get("source", "") != source:
+            continue
+        capture_uid = row.get("capture_uid", "")
+        if capture_uid:
+            latest_by_uid[capture_uid] = row
+    return latest_by_uid
+
+
+def _latest_completed_capture_row(rows: tuple[dict[str, str], ...]) -> dict[str, str]:
+    return max(
+        rows,
+        key=lambda row: (
+            _parse_optional_timestamp(row.get("intake_completed_at", ""))
+            or datetime.min.replace(tzinfo=UTC),
+            row.get("capture_label", ""),
+            row.get("capture_uid", ""),
+        ),
+    )
 
 
 def _parse_optional_timestamp(value: str) -> datetime | None:

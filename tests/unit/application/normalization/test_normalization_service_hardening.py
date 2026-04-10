@@ -27,6 +27,7 @@ from tallylot.domain.transactions import (
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemFactRepository
+from tallylot.ports.captures import SOURCE_CAPTURE_HEADER
 from tallylot.ports.source_profiles import FileFamilyClaim
 from tallylot.ports.source_translation import (
     EconomicActivityDraft,
@@ -103,6 +104,94 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(
     assert [row["kind"] for row in review_rows] == ["timestamp_timezone_assumed_utc"]
     assert wallet_rows[0]["evidence_path"] == "transactions.csv"
     assert (output_dir / "timezone_issues.csv").exists()
+
+
+def test_normalization_service_adds_capture_context_to_location_inventory(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    capture_label = "2026-03-23T14-15-16Z"
+    raw_dir = (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "fixture_source"
+        / capture_label
+    )
+    raw_dir.mkdir(parents=True)
+    (raw_dir / "capture.json").write_text(
+        json.dumps(
+            {
+                "capture_uid": capture_uid,
+                "source": "fixture_source",
+                "capture_label": capture_label,
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/fixture_source",
+                "manifest_fingerprint": "manifest:fixture",
+                "status": "captured",
+                "notes": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (raw_dir / "transactions.csv").write_text(
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
+        "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
+        "tx_hash,description,account,wallet\n"
+        "2023-08-06 10:00:00,trade,BTC,1.0,CAD,10.0,,,,,,,tx-1,BTC buy,Fixture,Primary\n",
+        encoding="utf-8",
+    )
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv",
+        SOURCE_CAPTURE_HEADER,
+        (
+            {
+                "capture_uid": capture_uid,
+                "source": "fixture_source",
+                "capture_label": capture_label,
+                "status": "captured",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/fixture_source",
+                "capture_root_ref": f"evidence/raw/source/fixture_source/{capture_label}",
+                "manifest_fingerprint": "manifest:fixture",
+                "file_count": "1",
+                "observed_period_start": "2023-08-06",
+                "observed_period_end": "2023-08-06",
+                "observed_group_count": "1",
+                "supersedes_capture_uid": "",
+                "notes": "",
+            },
+        ),
+    )
+    output_dir = workspace_root / "working" / "normalized" / "captures" / capture_uid
+
+    build_normalization_service(artifacts=artifacts).execute(
+        NormalizeRequest(
+            source="fixture_source",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+
+    wallet_rows = artifacts.read_rows(output_dir / "location_inventory.csv")
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+
+    assert wallet_rows[0]["capture_uid"] == capture_uid
+    assert wallet_rows[0]["capture_label"] == capture_label
+    assert (
+        wallet_rows[0]["capture_root_ref"]
+        == f"evidence/raw/source/fixture_source/{capture_label}"
+    )
+    assert capture_rows[-1]["status"] == "normalized"
 
 
 def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> None:

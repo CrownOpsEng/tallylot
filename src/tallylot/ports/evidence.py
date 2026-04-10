@@ -13,6 +13,93 @@ from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.types import LocationId
 from tallylot.ports.annotations import AdapterMetadata
 
+BALANCE_SNAPSHOT_HEADER = (
+    "source",
+    "location_id",
+    "instrument_id",
+    "quantity",
+    "as_of_at",
+    "as_of_precision",
+    "balance_kind",
+    "notes",
+)
+BALANCE_EVIDENCE_HEADER = (
+    "source",
+    "location_id",
+    "instrument_id",
+    "quantity",
+    "as_of_at",
+    "as_of_precision",
+    "balance_kind",
+    "evidence_ref",
+    "notes",
+)
+BALANCE_CONFIRMATION_HEADER = (
+    "source",
+    "location_id",
+    "instrument_id",
+    "quantity",
+    "as_of_at",
+    "as_of_precision",
+    "balance_kind",
+    "confirmation_kind",
+    "support_ref",
+    "asserted_meaning",
+    "reviewed_by",
+    "reviewed_at",
+    "reason",
+    "notes",
+)
+LOCATION_INVENTORY_HEADER = (
+    "source",
+    "capture_uid",
+    "capture_label",
+    "capture_root_ref",
+    "location_id",
+    "location_kind",
+    "location_label",
+    "parent_location_id",
+    "location_path",
+    "identifier_kind",
+    "normalized_identifier",
+    "display_identifier",
+    "network_scope",
+    "controller",
+    "parent_location_label",
+    "evidence_kind",
+    "evidence_path",
+    "confidence",
+    "identifier_value",
+    "notes",
+)
+ISSUE_HEADER = (
+    "issue_id",
+    "source",
+    "adapter_id",
+    "severity",
+    "kind",
+    "message",
+    "context_timestamp",
+    "raw_file",
+    "raw_row_ref",
+    "status",
+)
+NORMALIZATION_REVIEW_HEADER = (
+    "review_id",
+    "source",
+    "adapter_id",
+    "scope",
+    "kind",
+    "message",
+    "context_timestamp",
+    "raw_file",
+    "raw_row_ref",
+    "field_name",
+    "original_value",
+    "normalized_value",
+    "status",
+)
+
 
 @dataclass(frozen=True)
 class LocationInventoryRecord:
@@ -24,7 +111,9 @@ class LocationInventoryRecord:
     identifier_value: str
     parent_location_id: LocationId | None = None
     location_path: tuple[str, ...] = ()
-    capture_path: str = ""
+    capture_uid: str = ""
+    capture_label: str = ""
+    capture_root_ref: str = ""
     normalized_identifier: str = ""
     display_identifier: str = ""
     network_scope: str = ""
@@ -39,7 +128,9 @@ class LocationInventoryRecord:
     def to_row(self) -> dict[str, str]:
         return {
             "source": self.source,
-            "capture_path": self.capture_path,
+            "capture_uid": self.capture_uid,
+            "capture_label": self.capture_label,
+            "capture_root_ref": self.capture_root_ref,
             "location_id": str(self.location_id),
             "location_kind": self.location_kind.value,
             "location_label": self.location_label,

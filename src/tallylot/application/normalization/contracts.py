@@ -25,3 +25,22 @@ class NormalizeResponse:
     balance_count: int
     issue_count: int
     review_count: int
+
+
+@dataclass(frozen=True)
+class AssembleSourceRequest:
+    source: str
+    workspace_root_ref: ResourceRef
+    assembled_output_ref: ResourceRef | None = None
+
+
+@dataclass(frozen=True)
+class AssembleSourceResponse:
+    assembled_output_ref: ResourceRef
+    included_capture_count: int
+    excluded_capture_count: int
+    fact_count: int
+    balance_count: int
+    balance_evidence_count: int
+    issue_count: int
+    review_count: int

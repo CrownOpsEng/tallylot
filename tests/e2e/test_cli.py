@@ -16,6 +16,13 @@ from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
 from tallylot.interfaces.cli import app
+from tallylot.ports.captures import SOURCE_CAPTURE_HEADER
+from tallylot.ports.evidence import (
+    ISSUE_HEADER,
+    LOCATION_INVENTORY_HEADER,
+    NORMALIZATION_REVIEW_HEADER,
+)
+from tallylot.ports.facts import FACT_HEADER
 
 runner = CliRunner()
 
@@ -205,6 +212,98 @@ def test_source_intake_plan_and_apply_cli(tmp_path: Path) -> None:
         / capture_label
         / "transactions.csv"
     ).exists()
+
+
+def test_source_assemble_cli_writes_assembled_source_dataset(tmp_path: Path) -> None:
+    workspace_root = tmp_path / "workspace"
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    capture_root = workspace_root / "working" / "normalized" / "captures" / capture_uid
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2026, 3, 23, tzinfo=UTC)
+    artifacts.write_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv",
+        SOURCE_CAPTURE_HEADER,
+        (
+            {
+                "capture_uid": capture_uid,
+                "source": "coinbase",
+                "capture_label": "2026-03-23T14-15-16Z",
+                "status": "normalized",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/coinbase",
+                "capture_root_ref": "evidence/raw/source/coinbase/2026-03-23T14-15-16Z",
+                "manifest_fingerprint": "manifest:fixture",
+                "file_count": "1",
+                "observed_period_start": "2026-03-23",
+                "observed_period_end": "2026-03-23",
+                "observed_group_count": "1",
+                "supersedes_capture_uid": "",
+                "notes": "",
+            },
+        ),
+    )
+    artifacts.write_rows(capture_root / "facts.csv", FACT_HEADER, ())
+    artifacts.write_json(capture_root / "fact_annotations.json", [])
+    FilesystemEvidenceRepository().write_balance_snapshots(
+        capture_root / "balances.csv",
+        (
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase:primary"),
+                instrument_id=InstrumentId("symbol:BTC@coinbase"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.DATE,
+            ),
+        ),
+    )
+    FilesystemEvidenceRepository().write_balance_evidence(
+        capture_root / "balance_evidence.csv",
+        (
+            BalanceEvidence(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase:primary"),
+                instrument_id=InstrumentId("symbol:BTC@coinbase"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.DATE,
+                evidence_ref="statement.pdf#page=1",
+            ),
+        ),
+    )
+    artifacts.write_rows(capture_root / "exceptions.csv", ISSUE_HEADER, ())
+    artifacts.write_rows(
+        capture_root / "normalization_reviews.csv",
+        NORMALIZATION_REVIEW_HEADER,
+        (),
+    )
+    artifacts.write_rows(
+        capture_root / "location_inventory.csv",
+        LOCATION_INVENTORY_HEADER,
+        (),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "assemble",
+            "--source",
+            "coinbase",
+            "--workspace-root",
+            str(workspace_root),
+        ],
+    )
+
+    assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["included_capture_count"] == 1
+    assert (assembled_root / "assembly_summary.json").exists()
+    assert FilesystemArtifactStore().read_rows(assembled_root / "balance_evidence.csv")
 
 
 def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> None:

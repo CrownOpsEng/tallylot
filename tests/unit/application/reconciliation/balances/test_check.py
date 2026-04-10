@@ -85,6 +85,23 @@ def test_balance_check_workflow_writes_single_source_outputs(
     assert check_summary_rows[0]["max_assertion_date"] == "2025-12-31"
 
 
+def test_balance_check_rejects_capture_normalized_roots(tmp_path: Path) -> None:
+    input_root = tmp_path / "working" / "normalized" / "captures"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir(parents=True)
+
+    with pytest.raises(ValueError, match="assembled source datasets"):
+        BalanceCheckWorkflow(
+            FilesystemEvidenceRepository(),
+            FilesystemArtifactStore(),
+        ).execute(
+            BalanceCheckRequest(
+                input_root_ref=to_resource_ref(input_root),
+                output_root_ref=to_resource_ref(output_root),
+            )
+        )
+
+
 def test_balance_check_workflow_uses_per_source_output_dirs_for_batch_runs(
     tmp_path: Path,
 ) -> None:

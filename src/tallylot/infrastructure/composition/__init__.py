@@ -1,6 +1,7 @@
 """Composition-root builders."""
 
 from .runtime import (
+    assemble_source_use_case,
     apply_intake_use_case,
     build_manifest_use_case,
     build_profile_use_case,
@@ -16,6 +17,7 @@ from .runtime import (
 
 __all__ = [
     "apply_intake_use_case",
+    "assemble_source_use_case",
     "build_manifest_use_case",
     "build_profile_use_case",
     "configured_workspace_root",

@@ -114,7 +114,7 @@ def _location_inventory_record_from_row(
             evidence_path=LOCATION_INVENTORY_FILENAME,
             confidence=row.confidence,
             note=row.notes,
-            capture_path=submission_root,
+            capture_root_ref=str(submission_root),
             parent_location_label="" if account_level else row.account,
         )
     )

@@ -9,13 +9,13 @@ from tallylot.domain.reconciliation import BalanceConfirmation
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.storage.balance_codec import (
-    BALANCE_CONFIRMATION_HEADER,
     balance_confirmation_from_row,
     balance_evidence_from_row,
     balance_snapshot_from_row,
 )
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
 from tallylot.infrastructure.serialization.csv_io import read_rows
+from tallylot.ports.evidence import BALANCE_CONFIRMATION_HEADER
 
 
 def test_balance_snapshot_from_row_defaults_blank_balance_kind() -> None:

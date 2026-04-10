@@ -3,11 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from pathlib import Path
 
 from tallylot.adapters.support.drafts import compile_activity_drafts_with_feedback
 from tallylot.adapters.support.issues import IssueSpec, issue_record
 from tallylot.application.evidence.statement_extraction import (
     StatementExtractionService,
+)
+from tallylot.application.intake.captures.persistence import (
+    append_capture_status_record,
+    update_source_inventory_summary,
+)
+from tallylot.application.normalization.capture_paths import (
+    load_capture_metadata,
+    workspace_root_from_capture_root,
 )
 from tallylot.application.normalization.contracts import (
     NormalizeRequest,
@@ -26,7 +35,8 @@ from tallylot.application.workspace.filesystem import (
 )
 from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.artifacts import ArtifactStorePort
-from tallylot.ports.evidence import EvidenceRepositoryPort
+from tallylot.ports.captures import CaptureMetadata
+from tallylot.ports.evidence import EvidenceRepositoryPort, LocationInventoryRecord
 from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
@@ -69,6 +79,12 @@ class NormalizeSourceUseCase:
     def execute(self, request: NormalizeRequest) -> NormalizeResponse:
         raw_dir = path_from_ref(request.raw_capture_ref)
         output_dir = path_from_ref(request.normalized_output_ref)
+        capture_metadata = load_capture_metadata(raw_dir)
+        workspace_root = (
+            None
+            if capture_metadata is None
+            else workspace_root_from_capture_root(raw_dir, capture_metadata)
+        )
         ensure_output_not_within_input_tree(
             raw_dir,
             output_dir,
@@ -108,7 +124,15 @@ class NormalizeSourceUseCase:
             ),
             issues=(*result.issues, *statement_result.issues),
             reviews=(*result.reviews, *statement_result.reviews),
-            location_inventory=result.location_inventory,
+            location_inventory=_with_capture_context(
+                result.location_inventory,
+                capture_metadata=capture_metadata,
+                capture_root_ref=(
+                    ""
+                    if workspace_root is None
+                    else _workspace_relative_ref(workspace_root, raw_dir)
+                ),
+            ),
         )
         result = _with_no_supported_activity_issue(profile, adapter, result)
         drafts, facts_outside_window = filter_drafts_by_window(
@@ -174,6 +198,19 @@ class NormalizeSourceUseCase:
                 ),
             ),
         )
+        if capture_metadata is not None and workspace_root is not None:
+            append_capture_status_record(
+                artifacts=self._artifacts,
+                workspace_root=workspace_root,
+                capture_uid=str(capture_metadata.capture_uid),
+                status="normalized",
+            )
+            update_source_inventory_summary(
+                artifacts=self._artifacts,
+                workspace_root=workspace_root,
+                source=str(capture_metadata.source),
+                status="normalized",
+            )
         return NormalizeResponse(
             normalized_output_ref=request.normalized_output_ref,
             adapter_id=str(profile.adapter_id),
@@ -182,6 +219,32 @@ class NormalizeSourceUseCase:
             issue_count=len(issue_records),
             review_count=len(review_records),
         )
+
+
+def _with_capture_context(
+    records: tuple[LocationInventoryRecord, ...],
+    *,
+    capture_metadata: CaptureMetadata | None,
+    capture_root_ref: str,
+) -> tuple[LocationInventoryRecord, ...]:
+    if capture_metadata is None:
+        return records
+    return tuple(
+        replace(
+            record,
+            capture_uid=str(capture_metadata.capture_uid),
+            capture_label=capture_metadata.capture_label,
+            capture_root_ref=capture_root_ref,
+        )
+        for record in records
+    )
+
+
+def _workspace_relative_ref(workspace_root: Path, path: Path) -> str:
+    try:
+        return path.relative_to(workspace_root).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def _profile_with_window_hints(

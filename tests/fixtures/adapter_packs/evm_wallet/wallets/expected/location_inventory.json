@@ -1,6 +1,8 @@
 [
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "EVM wallet HD Key Tree",
     "display_identifier": "0x1111111111111111111111111111111111111111",
@@ -20,7 +22,9 @@
     "source": "EVM wallet"
   },
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "EVM wallet Ledger Hardware",
     "display_identifier": "0x2222222222222222222222222222222222222222",
@@ -40,7 +44,9 @@
     "source": "EVM wallet"
   },
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "EVM wallet Snap Keyring",
     "display_identifier": "TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
@@ -60,7 +66,9 @@
     "source": "EVM wallet"
   },
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "EVM wallet Snap Keyring",
     "display_identifier": "bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -80,7 +88,9 @@
     "source": "EVM wallet"
   },
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "EVM wallet Snap Keyring",
     "display_identifier": "F11111111111111111111111111111111111111111",

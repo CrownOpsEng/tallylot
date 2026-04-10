@@ -78,7 +78,9 @@ def _normalized_result(
         )
         drafts.append(draft)
         reviews.extend(row_reviews)
-        location_rows[_location_id(profile, row["account"].strip(), row["wallet"].strip())] = _location_record(
+        location_rows[
+            _location_id(profile, row["account"].strip(), row["wallet"].strip())
+        ] = _location_record(
             profile,
             raw_dir,
             row["account"].strip(),
@@ -118,18 +120,24 @@ def _location_record(
     account: str,
     wallet: str,
 ) -> LocationInventoryRecord:
+    del raw_dir
     location_id = _location_id(profile, account, wallet)
-    parent_location_id = None if account == wallet else location_id_from_parts(str(profile.source), account)
+    parent_location_id = (
+        None
+        if account == wallet
+        else location_id_from_parts(str(profile.source), account)
+    )
     return LocationInventoryRecord(
         source=str(profile.source),
         location_id=location_id,
-        location_kind=LocationKind.SUBACCOUNT if account != wallet else LocationKind.ACCOUNT,
+        location_kind=LocationKind.SUBACCOUNT
+        if account != wallet
+        else LocationKind.ACCOUNT,
         location_label=wallet,
         identifier_kind="account_wallet",
         identifier_value=f"{account}:{wallet}",
         parent_location_id=parent_location_id,
         location_path=(account, wallet) if account != wallet else (wallet,),
-        capture_path=str(raw_dir),
         normalized_identifier=f"{account}:{wallet}",
         display_identifier=f"{account}:{wallet}",
         network_scope="",

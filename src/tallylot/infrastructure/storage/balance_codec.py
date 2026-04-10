@@ -13,44 +13,6 @@ from tallylot.domain.value_objects import (
     parse_timestamp,
 )
 
-BALANCE_SNAPSHOT_HEADER = (
-    "source",
-    "location_id",
-    "instrument_id",
-    "quantity",
-    "as_of_at",
-    "as_of_precision",
-    "balance_kind",
-    "notes",
-)
-BALANCE_EVIDENCE_HEADER = (
-    "source",
-    "location_id",
-    "instrument_id",
-    "quantity",
-    "as_of_at",
-    "as_of_precision",
-    "balance_kind",
-    "evidence_ref",
-    "notes",
-)
-BALANCE_CONFIRMATION_HEADER = (
-    "source",
-    "location_id",
-    "instrument_id",
-    "quantity",
-    "as_of_at",
-    "as_of_precision",
-    "balance_kind",
-    "confirmation_kind",
-    "support_ref",
-    "asserted_meaning",
-    "reviewed_by",
-    "reviewed_at",
-    "reason",
-    "notes",
-)
-
 
 def balance_snapshot_from_row(row: dict[str, str]) -> BalanceSnapshot:
     precision = parse_temporal_precision(row["as_of_precision"])

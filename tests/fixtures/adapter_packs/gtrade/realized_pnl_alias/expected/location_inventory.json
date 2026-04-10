@@ -1,6 +1,8 @@
 [
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "medium",
     "controller": "GTrade report",
     "display_identifier": "bb4d",

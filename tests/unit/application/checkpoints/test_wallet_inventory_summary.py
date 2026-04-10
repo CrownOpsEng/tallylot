@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from tallylot.application.checkpoints.location_inventory_summary import summarize_location_inventory
+from tallylot.application.checkpoints.location_inventory_summary import (
+    summarize_location_inventory,
+)
 
 
 def test_location_inventory_summary_marks_alias_rows_for_linked_evidence() -> None:
@@ -8,7 +10,7 @@ def test_location_inventory_summary_marks_alias_rows_for_linked_evidence() -> No
         [
             {
                 "source": "gtrade",
-                "capture_path": "raw/gtrade.csv",
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
                 "location_id": "gtrade:alias:bb4d",
                 "location_kind": "other",
                 "location_label": "bb4d",
@@ -37,7 +39,7 @@ def test_location_inventory_summary_flags_missing_evidence_path() -> None:
         [
             {
                 "source": "fixture",
-                "capture_path": "raw/fixture.csv",
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
                 "location_id": "fixture:wallet-1",
                 "location_kind": "address",
                 "location_label": "Primary",
@@ -65,7 +67,7 @@ def test_location_inventory_summary_flags_identifier_kind_conflicts() -> None:
         [
             {
                 "source": "fixture",
-                "capture_path": "raw/a.csv",
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
                 "location_id": "fixture:wallet-1",
                 "location_kind": "address",
                 "location_label": "Primary",
@@ -84,7 +86,7 @@ def test_location_inventory_summary_flags_identifier_kind_conflicts() -> None:
             },
             {
                 "source": "fixture",
-                "capture_path": "raw/b.csv",
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9F",
                 "location_id": "fixture:wallet-2",
                 "location_kind": "other",
                 "location_label": "Primary Alias",

@@ -22,35 +22,14 @@ from tallylot.domain.transactions import (
     parse_tax_treatment_hint,
 )
 from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
-from tallylot.domain.value_objects import parse_decimal, parse_temporal_value, parse_timestamp
+from tallylot.domain.value_objects import (
+    parse_decimal,
+    parse_temporal_value,
+    parse_timestamp,
+)
 
 EnumT = TypeVar("EnumT")
 JsonDict = dict[str, object]
-
-FACT_HEADER = (
-    "schema_version",
-    "fact_id",
-    "source",
-    "adapter_id",
-    "timestamp",
-    "effective_at",
-    "effective_precision",
-    "location_id",
-    "economic_kind",
-    "projection_hint",
-    "accounting_intent_hint",
-    "tax_treatment_hint",
-    "description",
-    "provider_operation_key",
-    "operation_group_id",
-    "tx_hash",
-    "raw_file",
-    "raw_row_ref",
-    "confidence",
-    "status",
-    "legs",
-    "leg_policy",
-)
 
 
 def fact_from_row(row: dict[str, str]) -> TransactionFact:
@@ -62,7 +41,9 @@ def fact_from_row(row: dict[str, str]) -> TransactionFact:
     effective_at_text = row.get("effective_at", "").strip()
     effective_precision_text = row.get("effective_precision", "").strip()
     if bool(effective_at_text) != bool(effective_precision_text):
-        raise ValueError("fact row effective_at and effective_precision must both be present or both be blank")
+        raise ValueError(
+            "fact row effective_at and effective_precision must both be present or both be blank"
+        )
     effective_precision = (
         _required_enum(
             parse_temporal_precision(effective_precision_text),
@@ -85,7 +66,9 @@ def fact_from_row(row: dict[str, str]) -> TransactionFact:
         location_id=LocationId(row["location_id"]),
         leg_policy=_policy_from_text(row.get("leg_policy", "")),
         semantics=FactSemantics(
-            economic_kind=_required_enum(parse_economic_kind(row["economic_kind"]), "economic_kind"),
+            economic_kind=_required_enum(
+                parse_economic_kind(row["economic_kind"]), "economic_kind"
+            ),
             accounting_intent_hint=_required_enum(
                 parse_accounting_intent_hint(row["accounting_intent_hint"]),
                 "accounting_intent_hint",
@@ -119,7 +102,9 @@ def _legs_from_text(value: str) -> tuple[EconomicLeg, ...]:
                 leg_id=_required_str(raw_leg, "leg_id"),
                 kind=LegKind(_required_str(raw_leg, "kind")),
                 instrument_id=InstrumentId(_required_str(raw_leg, "instrument_id")),
-                quantity=_required_decimal(parse_decimal(_required_str(raw_leg, "quantity")), "leg.quantity"),
+                quantity=_required_decimal(
+                    parse_decimal(_required_str(raw_leg, "quantity")), "leg.quantity"
+                ),
                 subtype=_optional_str(raw_leg, "subtype"),
                 attributed_to_leg_id=_optional_str(raw_leg, "attributed_to_leg_id"),
                 location_id=(

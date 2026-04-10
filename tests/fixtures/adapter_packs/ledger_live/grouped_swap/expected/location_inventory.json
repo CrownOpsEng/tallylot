@@ -1,6 +1,8 @@
 [
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "Ledger Live",
     "display_identifier": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
@@ -20,7 +22,9 @@
     "source": "ledger-live-main"
   },
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "Ledger Live",
     "display_identifier": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
@@ -40,7 +44,9 @@
     "source": "ledger-live-main"
   },
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "Ledger Live",
     "display_identifier": "xpub6A111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",

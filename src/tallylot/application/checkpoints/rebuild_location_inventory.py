@@ -4,10 +4,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.application.checkpoints.contracts import LocationInventoryRequest, LocationInventoryResponse
-from tallylot.application.checkpoints.location_inventory_summary import summarize_location_inventory
+from tallylot.application.checkpoints.contracts import (
+    LocationInventoryRequest,
+    LocationInventoryResponse,
+)
+from tallylot.application.checkpoints.location_inventory_summary import (
+    summarize_location_inventory,
+)
 from tallylot.application.resource_refs import path_from_ref
-from tallylot.application.workspace.filesystem import ensure_output_not_within_input_tree, iter_tree_files
+from tallylot.application.workspace.filesystem import (
+    ensure_output_not_within_input_tree,
+    iter_tree_files,
+)
 from tallylot.ports.artifacts import ArtifactStorePort
 
 INVENTORY_HEADER = (
@@ -30,7 +38,9 @@ INVENTORY_HEADER = (
 )
 EVIDENCE_HEADER = (
     "source",
-    "capture_path",
+    "capture_uid",
+    "capture_label",
+    "capture_root_ref",
     "location_id",
     "location_kind",
     "location_label",
@@ -49,7 +59,7 @@ EVIDENCE_HEADER = (
 )
 ISSUE_HEADER = (
     "source",
-    "capture_path",
+    "capture_uid",
     "location_id",
     "issue_kind",
     "message",
@@ -99,17 +109,23 @@ class RebuildLocationInventoryUseCase:
             issue_count=len(issue_rows),
         )
 
-    def _collect_evidence_rows(self, normalized_root: Path, output_path: Path) -> list[dict[str, str]]:
+    def _collect_evidence_rows(
+        self, normalized_root: Path, output_path: Path
+    ) -> list[dict[str, str]]:
         rows: list[dict[str, str]] = []
         seen: set[tuple[str, ...]] = set()
         for path in iter_tree_files(normalized_root, exclude_paths=(output_path,)):
             if path.name != "location_inventory.csv":
                 continue
             for row in self._artifacts.read_rows(path):
-                normalized_identifier = row.get("normalized_identifier") or row.get("identifier_value", "")
+                normalized_identifier = row.get("normalized_identifier") or row.get(
+                    "identifier_value", ""
+                )
                 evidence_row = {
                     "source": row.get("source", ""),
-                    "capture_path": row.get("capture_path", ""),
+                    "capture_uid": row.get("capture_uid", ""),
+                    "capture_label": row.get("capture_label", ""),
+                    "capture_root_ref": row.get("capture_root_ref", ""),
                     "location_id": row.get("location_id", ""),
                     "location_kind": row.get("location_kind", ""),
                     "location_label": row.get("location_label", ""),
@@ -117,7 +133,8 @@ class RebuildLocationInventoryUseCase:
                     "location_path": row.get("location_path", ""),
                     "identifier_kind": row.get("identifier_kind", ""),
                     "normalized_identifier": normalized_identifier,
-                    "display_identifier": row.get("display_identifier", "") or normalized_identifier,
+                    "display_identifier": row.get("display_identifier", "")
+                    or normalized_identifier,
                     "network_scope": row.get("network_scope", ""),
                     "controller": row.get("controller", ""),
                     "parent_location_label": row.get("parent_location_label", ""),

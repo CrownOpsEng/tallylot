@@ -1,6 +1,8 @@
 [
   {
-    "capture_path": "",
+    "capture_uid": "",
+    "capture_label": "",
+    "capture_root_ref": "",
     "confidence": "high",
     "controller": "NEAR explorer export",
     "display_identifier": "example.near",
