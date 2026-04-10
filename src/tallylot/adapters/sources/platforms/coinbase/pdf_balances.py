@@ -49,16 +49,27 @@ COINBASE_PORTFOLIO_AS_OF_PATTERN = re.compile(
 
 def match_statement_document(pdf_path: Path, text: str) -> int:
     normalized = normalize_whitespace(text).lower()
-    if "coinbase" in pdf_path.name.lower():
+    if not _looks_like_statement_candidate(pdf_path.name.lower(), normalized):
+        return 0
+    if "account statement" in normalized:
         return 100
-    if re.match(r"^\d{4}-\d{2}-\d{2} - ", pdf_path.name):
+    if "statement" in pdf_path.name.lower():
         return 90
-    if "coinbase" in normalized:
+    if "coinbase statement" in normalized:
         return 80
     return 0
 
 
 def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
+    return _extract_pdf_balances(text, pdf_file, strict=True)
+
+
+def _extract_pdf_balances(
+    text: str,
+    pdf_file: str,
+    *,
+    strict: bool,
+) -> list[dict[str, str]]:
     normalized = normalize_whitespace(text)
     rows: list[dict[str, str]] = []
     cash_match = next(
@@ -93,7 +104,7 @@ def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
         )
     portfolio_match = COINBASE_PORTFOLIO_AS_OF_PATTERN.search(normalized)
     if portfolio_match is None:
-        return rows or parse_balance_lines(text, "coinbase", pdf_file)
+        return rows or _fallback_balance_rows(text, pdf_file, strict=strict)
     as_of = format_utc_timestamp(
         portfolio_match.group("as_of"), "%Y-%m-%d %H:%M:%S UTC"
     )
@@ -123,11 +134,19 @@ def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
                     "notes": "Portfolio summary asset balance from Coinbase statement PDF",
                 }
             )
-    return rows or parse_balance_lines(text, "coinbase", pdf_file)
+    return rows or _fallback_balance_rows(text, pdf_file, strict=strict)
 
 
 def parse_statement_document(pdf_path: Path, text: str) -> StatementDocumentParseResult:
-    rows = extract_pdf_balances(text, pdf_path.name)
+    normalized = normalize_whitespace(text).lower()
+    if not _looks_like_balance_statement(normalized):
+        return StatementDocumentParseResult(
+            pdf_file=pdf_path.name,
+            recognized=False,
+            statement_as_of_at=None,
+            rows=(),
+        )
+    rows = _extract_pdf_balances(text, pdf_path.name, strict=False)
     return StatementDocumentParseResult(
         pdf_file=pdf_path.name,
         recognized=True,
@@ -172,3 +191,33 @@ def _statement_as_of(rows: list[dict[str, str]]) -> datetime | None:
     if not as_of_values:
         return None
     return max(as_of_values)
+
+
+def _looks_like_balance_statement(normalized_text: str) -> bool:
+    return "portfolio summary balances are as of" in normalized_text or any(
+        pattern.search(normalized_text) is not None
+        for pattern in COINBASE_CLOSING_CASH_PATTERNS
+    )
+
+
+def _looks_like_statement_candidate(
+    pdf_name: str,
+    normalized_text: str,
+) -> bool:
+    if not _looks_like_balance_statement(normalized_text):
+        return False
+    return "account statement" in normalized_text or "statement" in pdf_name
+
+
+def _fallback_balance_rows(
+    text: str,
+    pdf_file: str,
+    *,
+    strict: bool,
+) -> list[dict[str, str]]:
+    try:
+        return parse_balance_lines(text, "coinbase", pdf_file)
+    except ValueError:
+        if strict:
+            raise
+        return []
