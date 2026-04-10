@@ -10,9 +10,8 @@ description: >-
 Use this skill for GitHub issue forms, issue-writing policy, and proactive
 follow-up issue creation.
 
-Pair it with global `markdown` for Markdown edits and with
-`code-change-safety` when the task also changes repo standards, templates, or
-automation.
+Pair it with `markdown` for Markdown edits and reload `docs-authoring` when
+the same task also changes repo standards, templates, or automation.
 
 ## Workflow
 
@@ -37,7 +36,10 @@ automation.
    - `Acceptance Criteria`
 6. When meaningful out-of-scope repo work appears, create the issue
    immediately instead of leaving it in scratch notes.
-7. If a PR is active, link non-closing follow-up issues from `Follow-ups:`.
+7. If a PR is active, link non-closing follow-up issues from `Follow-ups:` and
+   use the shell-safe PR-body guidance in `docs/standards/commits.md` when the
+   structured metadata contains backticks, quotes, or other shell-sensitive
+   text.
 
 ## Focus
 

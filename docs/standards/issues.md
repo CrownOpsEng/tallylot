@@ -99,10 +99,14 @@ cleanup pass.
 Use pull request metadata to distinguish resolved issues from tracked follow-up
 work:
 
-- use `Why:` with `- Closes #123: ...` only when the PR actually resolves the
-  issue
-- use `Follow-ups:` with `- Refs #123` or `- Refs #123: ...` for non-closing
-  issues that remain separate from the current PR
+- every PR must include an `Issue linkage:` section that makes the issue
+  decision explicit before merge
+- use `Issue linkage:` with `- Closes #123: ...` only when the PR actually
+  resolves the issue
+- use `Issue linkage:` with `- Refs #123` or `- Refs #123: ...` for
+  non-closing tracked work that remains separate from the current PR
+- use `Issue linkage:` with `- None: ...` only when no existing issue applies
+  after search and the reason is stated directly in the PR body
 
 When a follow-up issue is opened during implementation or hardening, link it
 from the active PR before merge.

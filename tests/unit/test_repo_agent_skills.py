@@ -27,6 +27,10 @@ EXPECTED_SKILLS = {
         display_name="Docs Authoring",
         required_fragments=(
             "docs/README.md",
+            "docs/status/current-state.md",
+            "docs/reference/repository-history.md",
+            "docs/standards/implementation.md",
+            "docs/standards/commits.md",
             "tools/docs_maintenance/cli.py",
             "tools/docs_maintenance/metadata.py",
             "uv run python -m tools.docs_maintenance sync --check",
@@ -39,6 +43,8 @@ EXPECTED_SKILLS = {
             "docs/standards/implementation.md",
             "docs/standards/commits.md",
             ".claude/commands/implementation-checkpoint.md",
+            "shell-safe commit/PR authoring path",
+            "shell-sensitive text",
         ),
     ),
     "issue-workflow": ExpectedSkill(
@@ -46,9 +52,24 @@ EXPECTED_SKILLS = {
         required_fragments=(
             "docs/standards/issues.md",
             "docs/standards/delivery-guardrails.md",
+            "docs/standards/commits.md",
             ".claude/commands/issue-workflow.md",
             "Summary",
             "Acceptance Criteria",
+            "shell-safe PR-body guidance",
+            "shell-sensitive",
+        ),
+    ),
+    "pr-review": ExpectedSkill(
+        display_name="PR Review",
+        required_fragments=(
+            "docs/standards/delivery-guardrails.md",
+            "docs/standards/implementation.md",
+            "docs/standards/commits.md",
+            ".claude/commands/pr-review.md",
+            "tools.audit_pr_review",
+            "applicable surface groups",
+            "issue-finding with open outcome",
         ),
     ),
     "balance-submission-operations": ExpectedSkill(

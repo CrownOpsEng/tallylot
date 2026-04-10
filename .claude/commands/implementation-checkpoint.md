@@ -5,8 +5,9 @@ Use this route before closing any non-trivial coding task.
 1. Read:
    - `docs/standards/implementation.md`
    - `docs/standards/commits.md`
-   - use `code-change-safety` for repo changes and `markdown` for Markdown/docs
-     work when those skills are available
+   - use `markdown` for Markdown/docs work when that skill is available
+   - use the shell-safe commit and PR authoring rules in
+     `docs/standards/commits.md` when structured metadata is involved
 2. Confirm the change still respects:
    - layer ownership
    - provider-neutral core design
@@ -57,7 +58,9 @@ Use this route before closing any non-trivial coding task.
    - `docs/standards/delivery-guardrails.md` when delivery work is active
 
 10. Create the stable checkpoint commit when the slice is coherent and verified.
-   Do not close the task first and plan to commit afterward.
+   If the task contains more than one separable reviewable slice, split it into
+   multiple bounded checkpoint commits before closeout. Do not close the task
+   first and plan to commit afterward.
 
 11. Confirm branch handling stayed PR-only for protected branches: do not push
     directly to `main`; do not use branch-protection bypass for ordinary

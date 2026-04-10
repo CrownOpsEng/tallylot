@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
-import subprocess
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
@@ -13,11 +13,16 @@ from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
-from repo_support.paths import repo_root
+from tests.support.skill_scripts import load_skill_main
+
+if TYPE_CHECKING:
+    import pytest
 
 
 def test_reconciliation_balance_skill_runner_executes_runtime_workflows(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     input_root = tmp_path / "normalized"
     analysis_root = tmp_path / "analysis"
@@ -71,25 +76,25 @@ def test_reconciliation_balance_skill_runner_executes_runtime_workflows(
         input_root / "issue-source" / "balance_evidence.csv",
         (),
     )
+    monkeypatch.chdir(tmp_path)
+    main = load_skill_main(
+        ".agents/skills/reconciliation-balance-operations/scripts/reconciliation_balance_operations.py"
+    )
 
-    result = subprocess.run(
+    exit_code = main(
         (
-            "python3",
-            ".agents/skills/reconciliation-balance-operations/scripts/reconciliation_balance_operations.py",
             "run",
             "--input-root",
             str(input_root),
             "--analysis-root",
             str(analysis_root),
-        ),
-        cwd=repo_root(),
-        capture_output=True,
-        text=True,
-        check=False,
+        )
     )
+    captured = capsys.readouterr()
 
-    assert result.returncode == 0, result.stderr
-    payload = json.loads(result.stdout)
+    assert exit_code == 0
+    assert captured.err == ""
+    payload = json.loads(captured.out)
     summary = json.loads(
         (analysis_root / "balance_reconciliation_summary.json").read_text(
             encoding="utf-8"

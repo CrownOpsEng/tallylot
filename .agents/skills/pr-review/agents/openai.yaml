@@ -1,0 +1,7 @@
+interface:
+  display_name: "PR Review"
+  short_description: "Start tallylot's repo-native issue-finding PR review loop before hardening an active branch or draft PR."
+  default_prompt: "Use $pr-review to load tallylot's repo-native issue-finding PR review route before reviewing or hardening an active PR."
+
+policy:
+  allow_implicit_invocation: true

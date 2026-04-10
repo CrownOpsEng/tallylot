@@ -10,10 +10,9 @@ description: >-
 
 Use this skill for the normal repo implementation path.
 
-Pair it with global `code-change-safety` for cross-repo posture and with
-`markdown` only when the task edits Markdown files. Invoke `issue-workflow`
-when implementation uncovers meaningful out-of-scope repo work that should be
-captured as a follow-up issue.
+Pair it with `markdown` only when the task edits Markdown files. Invoke
+`issue-workflow` when implementation uncovers meaningful out-of-scope repo
+work that should be captured as a follow-up issue.
 
 ## Workflow
 
@@ -35,6 +34,9 @@ captured as a follow-up issue.
 7. After compaction or context loss, reload the same narrow standards before
    more edits or commits.
 8. Create the verified checkpoint commit before considering the task done.
+   Use the shell-safe commit/PR authoring path from
+   `docs/standards/commits.md` whenever the structured metadata includes
+   backticks, quotes, or other shell-sensitive text.
 
 ## Focus
 

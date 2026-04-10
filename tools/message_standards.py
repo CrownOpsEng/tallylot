@@ -21,6 +21,7 @@ PR_BODY_REQUIRED_SECTIONS = (
     "Why",
     "What",
     "Checks",
+    "Issue linkage",
     "Included checkpoints",
 )
 PR_BODY_OPTIONAL_SECTIONS = ("Follow-ups",)
@@ -33,6 +34,14 @@ SUBJECT_PATTERN = re.compile(
 )
 FOOTER_PATTERN = re.compile(r"^(?:BREAKING CHANGE|[A-Za-z][A-Za-z0-9-]*):(?: .+)?$")
 LABEL_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9 -]*:(?: .+)?$")
+GENERIC_SUMMARY_PHRASES = frozenset(
+    {
+        "cleanup",
+        "misc fix",
+        "misc fixes",
+        "update branch",
+    }
+)
 
 
 def validate_subject_line(subject: str) -> tuple[str, ...]:
@@ -41,11 +50,19 @@ def validate_subject_line(subject: str) -> tuple[str, ...]:
         errors.append("subject must be 72 characters or fewer")
     if subject.endswith("."):
         errors.append("subject must not end with a period")
-    if SUBJECT_PATTERN.fullmatch(subject) is None:
+    match = SUBJECT_PATTERN.fullmatch(subject)
+    if match is None:
         allowed_types = ", ".join(ALLOWED_TYPES)
         errors.append(
             "subject must match `type(scope): imperative summary` or "
             f"`type: imperative summary` using one of: {allowed_types}"
+        )
+        return tuple(errors)
+    if match.group("summary").strip().lower() in GENERIC_SUMMARY_PHRASES:
+        errors.append(
+            "subject summary must name a concrete repo surface or behavior; "
+            "generic summaries such as `cleanup`, `misc fixes`, and "
+            "`update branch` are not allowed"
         )
     return tuple(errors)
 

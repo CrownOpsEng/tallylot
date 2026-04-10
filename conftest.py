@@ -65,6 +65,8 @@ def pytest_collection_modifyitems(items: list[Item]) -> None:
         marker = _marker_for_test_path(item.path)
         if marker is not None:
             item.add_marker(marker)
+        if _coverage_is_disabled(item):
+            _drop_no_cover_marker(item)
 
 
 def pytest_ignore_collect(collection_path: Path) -> bool:
@@ -85,3 +87,11 @@ def _marker_for_test_path(path: Path) -> str | None:
     if any(path.is_relative_to(test_dir) for test_dir in _adapter_test_dirs()):
         return "unit"
     return None
+
+
+def _coverage_is_disabled(item: Item) -> bool:
+    return bool(getattr(item.config.option, "no_cov", False))
+
+
+def _drop_no_cover_marker(item: Item) -> None:
+    item.own_markers = [mark for mark in item.own_markers if mark.name != "no_cover"]

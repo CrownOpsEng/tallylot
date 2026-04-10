@@ -222,6 +222,29 @@ Checks:
     assert errors == ("subject must not end with a period",)
 
 
+def test_generic_commit_summary_is_rejected() -> None:
+    errors = _validate_commit_message_text(
+        """\
+docs: cleanup
+
+Why:
+- tighten docs
+
+What:
+- rewrite the standard
+
+Checks:
+- uv run pytest
+"""
+    )
+
+    assert errors == (
+        "subject summary must name a concrete repo surface or behavior; "
+        "generic summaries such as `cleanup`, `misc fixes`, and "
+        "`update branch` are not allowed",
+    )
+
+
 def test_malformed_scope_is_rejected() -> None:
     errors = _validate_commit_message_text(
         """\

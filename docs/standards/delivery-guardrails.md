@@ -20,8 +20,8 @@ structure, authoring rules, and baseline context from `AGENTS.md`,
 `docs/reference/repository-history.md`, `tools/docs_maintenance/cli.py`, and
 `tools/docs_maintenance/metadata.py` so new material lands in the right repo
 surface and follows the repo's documentation metadata rules.
-Use `code-change-safety` for the repo-guidance reload path and pair it with the
-`markdown` skill when the task edits Markdown or docs surfaces.
+Use the repo-local workflow for the active surface on that reload path and pair
+it with the `markdown` skill when the task edits Markdown or docs surfaces.
 When the task changes GitHub-side delivery controls, run
 `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_delivery_guardrails`
 before and after the change so the local CODEOWNERS state and the live remote
@@ -44,7 +44,8 @@ when the higher-layer control is available.
 
 - protected branches are PR-only landing surfaces
 - pull requests open as draft by default
-- a PR becomes ready for review only after a clean hardening pass
+- a PR becomes ready for review only after the full issue-finding hardening
+  loop yields no new meaningful findings
 - direct pushes to `main` are forbidden except for an explicit one-time repair
   requested in the current thread
 - a merged `main` commit must not be rewritten when the original PR record
@@ -64,7 +65,7 @@ when the higher-layer control is available.
 Prefer GitHub controls that reject bad actions before they land:
 
 - rulesets or branch protection that require pull requests
-- required status checks
+- required status checks pinned to their owning app, not only named by context
 - required reviews
 - blocked force pushes on protected branches
 - stale-review dismissal or last-push review requirements when the repo wants
@@ -82,6 +83,7 @@ expansion.
 Control-plane files include:
 
 - `.agents/skills/**`
+- `.github/actions/**`
 - `.github/ISSUE_TEMPLATE/**`
 - `.github/workflows/**`
 - `.github/pull_request_template.md`
@@ -92,7 +94,10 @@ Control-plane files include:
 - `tools/install_git_hooks.py`
 - `tools/pre_commit_hook.py`
 - `tools/audit_delivery_guardrails.py`
+- `tools/audit_pr_review.py`
+- `tools/benchmark_quality_gates.py`
 - `tools/message_standards.py`
+- `tools/run_pr_review_checks.py`
 - `tools/validate_commit_message.py`
 - `tools/validate_pr_metadata.py`
 - `tools/run_quality_gates.py`
@@ -130,24 +135,73 @@ Checklist text should describe the audit path, not serve as the only barrier.
 Standards work itself must verify whether a rule belongs in human docs, agent
 routing, or repo-native automation before adding a new document or route.
 
-PR hardening review is a repeatable procedure, not an improvised pass. Each
-pass should:
+PR review is a repeatable procedure, not an improvised pass. Review starts from
+the changed surface groups in the current PR diff:
+
+- `human_docs`
+  - paths: `README.md`, `CHANGELOG.md`, and `docs/**` except
+    `docs/standards/**`
+  - review domains: factual accuracy, metadata and link integrity, audience
+    and type placement
+- `control_plane_text`
+  - paths: `AGENTS.md`, `ROADMAP.md`, `.agents/skills/**`,
+    `.claude/commands/**`, `docs/standards/**`,
+    `.github/pull_request_template.md`, `.github/ISSUE_TEMPLATE/**`,
+    `.github/CODEOWNERS`
+  - review domains: policy correctness, route-skill-standard alignment,
+    delivery behavior, compaction and context-loss recovery, issue and privacy
+    handling
+- `repo_code_or_tooling`
+  - paths: `src/**`, Python under `tools/**`, `repo_support/**`, `tests/**`,
+    and repo-root test support such as `conftest.py`
+  - review domains: design and ownership, correctness and behavior, complexity
+    and over-engineering, tests and regression value, naming and public
+    terminology, documentation and control-plane alignment
+- `ci_or_release`
+  - paths: `.github/actions/**`, `.github/workflows/**`, and the repo's
+    parity-sensitive delivery tooling and config surfaces
+  - review domains: workflow correctness, delivery enforcement, metadata parity
+
+When more than one surface group is present:
+
+- review domains are the union across every applicable surface group
+- the strongest broad verification family wins:
+  - `docs-maintenance`
+  - `control-plane-targeted`
+  - `quality-gates-full`
+  - `ci-parity`
+- when `ci-parity` wins for a mixed repo-code and CI diff, do not also run a
+  duplicate `quality-gates-full` pass; `ci-parity` already includes the full
+  quality, build, and wheel parity path
+- surface-specific targeted checks still apply when the touched path declares
+  them, even when a stronger broad runner is also required
+
+Each PR review pass should:
 
 - re-check prior fix surfaces first
-- red-team one adjacent surface group and look for up to 5 new unique
-  evidence-backed findings across the active review domains
+- use `tools.audit_pr_review` to confirm the applicable surface groups, review
+  domains, required verification family, and any unmapped paths before deciding
+  the current pass found no new meaningful findings
+- treat passing `tools.run_pr_review_checks` or broader verification as review
+  evidence only; a green runner never replaces the mandatory red-team repair
+  loop or decides the pass outcome
+- describe each upcoming pass as issue-finding with open outcome; do not
+  pre-label the next pass as clean, final, or publish-ready
+- red-team one adjacent applicable surface group and look for up to 5 new
+  unique evidence-backed findings for the current pass
 - repair every finding from that pass before starting the next pass
 - reload the narrow repo guidance needed for each repair surface before editing:
   use `AGENTS.md`, its task-routing table, and the owning roadmap,
   architecture, migration, or delivery docs surfaced by that route or by repo
   search hints instead of forcing one oversized preload bundle for every pass
-- run the relevant verification for the repaired slice and create bounded
+- run the required review checks for the repaired slice and create bounded
   checkpoint commits during the loop using the repo's normal commit rules
 - when a meaningful finding is real but should not expand the active PR, search
   existing issues first and open or link the follow-up issue before merge
 - when a pass finds fewer than 5 new findings, report only those findings and
   keep the loop moving
-- stop only after a full pass yields no new meaningful findings; if the only
+- stop only after every applicable changed surface group has been revisited and
+  a full applicable-surface loop yields no new meaningful findings; if the only
   remaining item is a minor finishing touch, repair it and finish once no other
   meaningful issues surface
 - keep scratch tracking ephemeral and untracked
@@ -162,16 +216,35 @@ missing:
 - assume merged default-branch history should not be rewritten
 - assume force-push is exceptional, not routine
 - prefer neutral direct `Why:` and `What:` language
+- frame each upcoming review pass as issue-finding with open outcome rather
+  than as a pre-labeled clean or final pass
 - re-check merge method and subject immediately before landing
 - report unresolved policy gaps instead of silently improvising
 - use the relevant safety and authoring skills up front rather than relying on
   mid-task memory
+
+## PR-Only CI Enforcement
+
+Pull request review enforcement stays separate from local commit hooks and
+push-to-mainline CI.
+
+- the `commit-messages` PR status validates the branch commit-message range and
+  PR metadata on pull requests only
+- the `pr-review` PR status runs `tools.run_pr_review_checks` against the PR
+  diff and applies the repo's change-sensitive review verification matrix
+- required PR-only statuses must stay pinned to the GitHub Actions app through
+  branch-protection check app IDs, not only by status context name
+- push/mainline CI keeps the shared quality and parity path for landed changes
+  through explicit lint, type, pylint, test, and build jobs rather than one
+  opaque umbrella status, but it does not replace the PR-only review audit
+- `pr-review` is not a local commit-hook requirement
 
 ## Required Delivery Audit
 
 Before calling delivery complete, verify and report:
 
 - which repo standards were reloaded immediately before the action
+- which applicable changed surface groups were reviewed
 - whether the PR remained draft until the hardening procedure finished cleanly
 - whether the branch shape matched the allowed merge method
 - which checks were required and whether they passed
@@ -184,6 +257,10 @@ Before calling delivery complete, verify and report:
 - whether the final remote branch tip still matches the reviewed PR record
 - whether review requirements are truly enforced or explicitly deferred because
   the repo currently has only one single review-capable collaborator
+- whether PR-only CI enforcement required both `commit-messages` and
+  `pr-review` for mergeable pull requests
+- whether required PR-only statuses were pinned to the owning GitHub Actions
+  app instead of relying on unpinned status-context names alone
 
 ## Exception Handling
 

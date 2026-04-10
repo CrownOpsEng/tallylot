@@ -32,7 +32,7 @@ Do not pre-load every repo doc by default.
 | Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
 | Issue templates, issue-writing policy, or proactive follow-up issue creation | `AGENTS.md`, `docs/standards/issues.md`, `docs/standards/implementation.md`, `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/issue-workflow.md` |
 | Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/audit_delivery_guardrails.py` |
-| PR hardening review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/pr-hardening-review.md` |
+| PR review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `.claude/commands/pr-review.md` |
 | Planning sequence, delivery slices, or rollout checkpoints | `ROADMAP.md` |
 | Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
@@ -55,7 +55,8 @@ Do not pre-load every repo doc by default.
   `.claude/commands/`.
 - When editing repo docs or Markdown, use the `markdown` skill if available.
 - When editing repo standards, automation, or other control-plane files, use
-  the `code-change-safety` skill as the starting workflow if available.
+  the repo-local workflow for the active surface and reload the narrow repo
+  guidance listed in this file before editing.
 - Keep tracked docs, templates, and control-plane text neutral and durable.
 - Do not store scratch review notes, hardening ledgers, or temporary process
   bookkeeping in tracked files.
@@ -97,6 +98,10 @@ Do not pre-load every repo doc by default.
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
+- Benchmark quality-gate scheduling or test-slice changes before changing the
+  default verification path:
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_quality_gates`
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests`
 - Do not run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the parallel quality-gate runner unless you are debugging hook behavior itself.
 - Use `tools.run_quality_gates --full-tests` as the normal final local
   verification command.
@@ -113,7 +118,10 @@ Do not pre-load every repo doc by default.
   - do not turn the hook path into a second full-suite verification pass
 - Treat commits as stable checkpoints by default:
   - prefer small cohesive commits
+  - keep every authored commit bounded to one reviewable slice
   - avoid micro-commits with no rollback or review value
+  - split large but separable work into multiple bounded checkpoint commits
+    instead of one umbrella commit
   - end the task on a clean, meaningful checkpoint commit
 - Keep commit, PR, and doc language neutral and direct:
   - `Why:` states the problem, constraint, or risk being addressed

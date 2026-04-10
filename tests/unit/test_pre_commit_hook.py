@@ -5,8 +5,10 @@ from pathlib import Path
 
 import pytest
 
+from repo_support.pytest_commands import build_fast_pytest_command
 import tools.install_git_hooks
 import tools.pre_commit_hook
+import tools.run_fast_pytest
 from tools.install_git_hooks import _COMMIT_MSG_HOOK_TEMPLATE, _HOOK_TEMPLATE
 from tools.pre_commit_hook import _format_candidates
 
@@ -200,3 +202,33 @@ def test_install_hooks_falls_back_to_default_external_environment(
         f"PROJECT_ENVIRONMENT={expected_environment}"
         in commit_msg_hook_path.read_text(encoding="utf-8")
     )
+
+
+def test_pre_commit_config_uses_repo_owned_fast_pytest_entrypoint() -> None:
+    config_text = Path(".pre-commit-config.yaml").read_text(encoding="utf-8")
+
+    assert "entry: uv run python -m tools.run_fast_pytest" in config_text
+    assert "--no-cov -q" not in config_text
+    assert 'pytest -m "unit and not slow"' not in config_text
+
+
+def test_run_fast_pytest_uses_shared_command_builder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured_command: tuple[str, ...] | None = None
+
+    def fake_run(
+        command: tuple[str, ...],
+        *,
+        check: bool,
+        env: dict[str, str],
+    ) -> subprocess.CompletedProcess[str]:
+        nonlocal captured_command
+        del check, env
+        captured_command = command
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    assert tools.run_fast_pytest.main([]) == 0
+    assert captured_command == build_fast_pytest_command()
