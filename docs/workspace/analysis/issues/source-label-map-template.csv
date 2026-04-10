@@ -1,2 +1,2 @@
-incoming_path_prefix,source,notes
-.,Example Source,Use this file to preserve a stable operator-managed source label during intake.
+incoming_capture_scope,incoming_path_prefix,source,notes
+incoming-a,.,Example Source,Use this file to preserve a stable operator-managed source label during intake.

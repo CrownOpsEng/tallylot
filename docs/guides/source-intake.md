@@ -30,6 +30,12 @@ Before running intake for a known legacy or manually named source, update
 should yield to a stable operator-managed source label. The map applies to
 source-scoped destinations under both `evidence/raw/source/` and `working/`.
 
+Use `incoming_capture_scope` when one workspace is staging more than one
+incoming source tree at the same time. Set that scope to the operator-managed
+staging directory name, then keep `incoming_path_prefix` relative to that
+incoming directory. This allows multiple `.` mappings to coexist in the same
+workspace as long as each mapping is scoped to a different incoming capture.
+
 Run:
 
 ```bash

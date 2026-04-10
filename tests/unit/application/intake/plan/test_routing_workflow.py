@@ -354,9 +354,10 @@ def test_source_intake_service_uses_explicit_source_label_map_for_stable_source_
     )
     artifacts.write_rows(
         issues_dir / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
         (
             {
+                "incoming_capture_scope": "",
                 "incoming_path_prefix": "2021/Binance",
                 "source": "binance-main",
                 "notes": "",

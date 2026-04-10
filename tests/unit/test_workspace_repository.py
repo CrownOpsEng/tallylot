@@ -40,5 +40,5 @@ def test_workspace_repository_initializes_seed_files(tmp_path: Path) -> None:
         "observed_period_end,observed_group_count,supersedes_capture_uid,notes"
     )
     assert source_label_map.read_text(encoding="utf-8").splitlines()[0] == (
-        "incoming_path_prefix,source,notes"
+        "incoming_capture_scope,incoming_path_prefix,source,notes"
     )

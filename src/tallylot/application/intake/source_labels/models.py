@@ -10,6 +10,7 @@ from tallylot.application.intake.file_facts import IntakeFileFacts
 
 @dataclass(frozen=True)
 class SourceLabelRule:
+    incoming_capture_scope: str
     prefix: str
     source: str
 
@@ -20,6 +21,7 @@ class SourceLabelConfigIssue:
     severity: str
     kind: str
     message: str
+    incoming_capture_scope: str = ""
     matching_prefix: str = ""
     review_code: str = ""
 
@@ -53,6 +55,7 @@ class SourceLabelResolution:
 @dataclass(frozen=True)
 class SourceLabelResolutionRequest:
     workspace_root: Path
+    incoming_capture_scope: str
     route_key: str
     facts: IntakeFileFacts
     source_folder: str

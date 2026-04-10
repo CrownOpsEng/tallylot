@@ -386,8 +386,15 @@ def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> No
     )
     FilesystemArtifactStore().write_rows(
         workspace_root / "analysis" / "issues" / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
-        ({"incoming_path_prefix": ".", "source": "manual-main", "notes": ""},),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "manual-main",
+                "notes": "",
+            },
+        ),
     )
     report_dir = tmp_path / "reports"
 

@@ -226,8 +226,15 @@ def test_source_intake_service_applies_explicit_source_label_map(
     )
     artifacts.write_rows(
         issues_dir / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
-        ({"incoming_path_prefix": ".", "source": "manual-main", "notes": ""},),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "manual-main",
+                "notes": "",
+            },
+        ),
     )
     report_dir = tmp_path / "reports"
 
@@ -279,8 +286,15 @@ def test_source_intake_service_skips_rows_blocked_by_invalid_source_label_map(
     )
     artifacts.write_rows(
         issues_dir / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
-        ({"incoming_path_prefix": ".", "source": "missing-source", "notes": ""},),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "missing-source",
+                "notes": "",
+            },
+        ),
     )
     report_dir = tmp_path / "reports"
 
@@ -306,6 +320,90 @@ def test_source_intake_service_skips_rows_blocked_by_invalid_source_label_map(
     assert summary["explicit_map_blocked_count"] == 1
     assert summary["source_label_map_issue_count"] == 1
     assert issue_rows[0]["kind"] == "source_label_map_unknown_source"
+
+
+def test_source_intake_service_applies_scoped_dot_mappings_for_multiple_sources(
+    tmp_path: Path,
+) -> None:
+    incoming_a = tmp_path / "incoming" / "bsc-stage"
+    incoming_b = tmp_path / "incoming" / "eth-stage"
+    incoming_a.mkdir(parents=True)
+    incoming_b.mkdir(parents=True)
+    (incoming_a / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    (incoming_b / "transactions.csv").write_text("a,b\n3,4\n", encoding="utf-8")
+
+    workspace_root = tmp_path / "workspace"
+    issues_dir = workspace_root / "analysis" / "issues"
+    issues_dir.mkdir(parents=True, exist_ok=True)
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        issues_dir / "source_inventory.csv",
+        ("source",),
+        ({"source": "bsc-main"}, {"source": "eth-main"}),
+    )
+    artifacts.write_rows(
+        issues_dir / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "bsc-stage",
+                "incoming_path_prefix": ".",
+                "source": "bsc-main",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "eth-stage",
+                "incoming_path_prefix": ".",
+                "source": "eth-main",
+                "notes": "",
+            },
+        ),
+    )
+    report_a = tmp_path / "reports-a"
+    report_b = tmp_path / "reports-b"
+
+    response_a = ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_a),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_a),
+        )
+    )
+    response_b = ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_b),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_b),
+        )
+    )
+
+    summary_a = json.loads(
+        (report_a / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    summary_b = json.loads(
+        (report_b / "intake_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert response_a.copied_count == 1
+    assert response_b.copied_count == 1
+    assert (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "bsc-main"
+        / summary_a["planned_capture_label"]
+        / "transactions.csv"
+    ).exists()
+    assert (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "eth-main"
+        / summary_b["planned_capture_label"]
+        / "transactions.csv"
+    ).exists()
 
 
 def test_source_intake_service_reuses_planned_capture_label_on_apply(

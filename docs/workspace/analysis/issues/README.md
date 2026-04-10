@@ -130,8 +130,13 @@ Each row maps an incoming path prefix to a source label that already exists in
 
 Rules:
 
+- `incoming_capture_scope` is optional; leave it blank for a workspace-global
+  rule or set it to the operator-managed incoming staging directory name when
+  multiple incoming captures share one workspace
 - `incoming_path_prefix` is relative to the intake `--incoming-dir`
 - `.` applies to the entire incoming capture
+- scoped `.` rows may coexist when each row uses a different
+  `incoming_capture_scope`
 - keep prefixes durable and operator-meaningful rather than adapter-specific
 - use the file when raw source evidence or source-scoped working artifacts
   should stay associated with an existing stable source label

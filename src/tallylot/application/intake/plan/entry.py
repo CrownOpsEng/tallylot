@@ -58,6 +58,7 @@ def build_planned_item(
         context=source_label_context,
         request=SourceLabelResolutionRequest(
             workspace_root=workspace_root,
+            incoming_capture_scope=incoming_dir.name,
             route_key=route_key,
             facts=facts,
             source_folder=route.source_folder,
@@ -98,7 +99,7 @@ def build_planned_item(
         category=route.category,
         role=route.role,
         evidence_role=_evidence_role(entry, route.category, route.role),
-        originality_class=_originality_class(entry, route.category, route.role),
+        originality_class=_originality_class(entry, route.category),
         source_folder=source_resolution.source_folder,
         capture_label=planned_capture_label,
         capture_status="planned",
@@ -160,7 +161,7 @@ def _evidence_role(entry: ScannedFile, category: str, role: str) -> str:
     return "transaction_source"
 
 
-def _originality_class(entry: ScannedFile, category: str, role: str) -> str:
+def _originality_class(entry: ScannedFile, category: str) -> str:
     suffix = entry.file_path.suffix.lower()
     if category == "source_raw":
         return "upstream_original"

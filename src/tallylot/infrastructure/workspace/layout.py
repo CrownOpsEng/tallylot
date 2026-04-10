@@ -51,7 +51,7 @@ SEED_FILES = (
     ),
     SeedFile(
         "analysis/issues/source_label_map.csv",
-        "incoming_path_prefix,source,notes\n",
+        "incoming_capture_scope,incoming_path_prefix,source,notes\n",
     ),
     SeedFile(
         "analysis/inventory/location_inventory.csv",
