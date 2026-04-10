@@ -4,19 +4,33 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from tallylot.application.normalization import NormalizationDependencies, NormalizeSourceUseCase
+from tallylot.application.normalization import (
+    NormalizationDependencies,
+    NormalizeSourceUseCase,
+)
 from tallylot.application.outputs import RenderOutputUseCase
 from tallylot.application.profiling import BuildProfileUseCase
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue, SourceId
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
-from tallylot.infrastructure.storage import FilesystemEvidenceRepository, FilesystemFactRepository
+from tallylot.infrastructure.storage import (
+    FilesystemEvidenceRepository,
+    FilesystemFactRepository,
+)
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -30,12 +44,13 @@ def build_source_profile(
     metadata = profile_fields.pop("metadata", {})
     normalization_hints = profile_fields.pop("normalization_hints", {})
     timezone_summary = profile_fields.pop("timezone_summary", {})
+    file_inventory = profile_fields.pop("file_inventory", ())
     return SourceProfile(
         source=SourceId(source),
         raw_dir=raw_dir,
         adapter_id=AdapterId(adapter_id),
         manifest_fingerprint="fixture",
-        file_inventory=(),
+        file_inventory=file_inventory,
         supported=True,
         metadata=metadata,
         normalization_hints=normalization_hints,
@@ -142,6 +157,8 @@ class MatchingSourceAdapter:
         del source, raw_dir, profile
         return (), ()
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
         del profile, raw_dir
         raise AssertionError("translate should not be called in this test")

@@ -4,39 +4,27 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.adapters.sources.platforms.shakepay.statement_evidence import (
-    parse_statement_pdf,
-)
 from tallylot.adapters.sources.platforms.shakepay.pdf_balances import (
-    extract_pdf_balances as _extract_pdf_balances,
-)
-from tallylot.adapters.sources.platforms.shakepay.pdf_balances import (
-    match_pdf_statement as _match_pdf_statement,
+    match_statement_document as _match_statement_document,
+    parse_statement_document as _parse_statement_document,
 )
 from tallylot.adapters.sources.platforms.shakepay.translation import translate_row
 from tallylot.adapters.support import (
-    IssueSpec,
-    ReviewSpec,
     collect_csv_row_results,
-    issue_record,
-    location_id_from_parts,
     match_intake_by_path_or_header,
     no_intake_route,
     passed_timezone_summary,
-    resolve_instrument_identity,
-    review_record,
     skip_files_outside_profile_families,
 )
 from tallylot.adapters.support.drafts import symbol_claim, translation_batch_from_drafts
-from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.instruments import InstrumentIdentityClaim, InstrumentKind
-from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import (
     LocationInventoryRecord,
-    StatementBalanceEvidenceBatch,
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
 )
 from tallylot.ports.intake_routing import (
     IntakeFileFacts,
@@ -132,11 +120,13 @@ class _ShakepayAdapter:
         del source, raw_dir, profile
         return (), ()
 
-    def match_pdf_statement(self, pdf_path: Path, text: str) -> int:
-        return _match_pdf_statement(pdf_path, text)
+    def match_statement_document(self, pdf_path: Path, text: str) -> int:
+        return _match_statement_document(pdf_path, text)
 
-    def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
-        return _extract_pdf_balances(text, pdf_path.name)
+    def parse_statement_document(
+        self, pdf_path: Path, text: str
+    ) -> StatementDocumentParseResult:
+        return _parse_statement_document(pdf_path, text)
 
     def translate(
         self, profile: SourceProfile, raw_dir: Path
@@ -155,120 +145,13 @@ class _ShakepayAdapter:
             issues=issues,
         )
 
-    def extract_statement_balance_evidence(
-        self,
-        profile: SourceProfile,
-        raw_dir: Path,
-    ) -> StatementBalanceEvidenceBatch:
-        return _extract_statement_balance_evidence(profile, raw_dir)
+    def resolve_statement_instrument_claims(
+        self, row: StatementDocumentBalanceRow
+    ) -> tuple[InstrumentIdentityClaim, ...]:
+        return (_shakepay_instrument_claim(row.asset),)
 
 
 ADAPTER = _ShakepayAdapter()
-
-
-def _extract_statement_balance_evidence(
-    profile: SourceProfile,
-    raw_dir: Path,
-) -> StatementBalanceEvidenceBatch:
-    parsed_statements = tuple(
-        parsed
-        for pdf_path in sorted(raw_dir.rglob("*.pdf"))
-        if (parsed := parse_statement_pdf(pdf_path)).recognized
-    )
-    if not parsed_statements:
-        return StatementBalanceEvidenceBatch(balance_evidence=(), issues=(), reviews=())
-    latest_as_of = max(
-        parsed.as_of_at for parsed in parsed_statements if parsed.as_of_at is not None
-    )
-    latest_statements = tuple(
-        parsed for parsed in parsed_statements if parsed.as_of_at == latest_as_of
-    )
-    evidence: list[BalanceEvidence] = []
-    issues: list[IssueRecord] = []
-    reviews: list[NormalizationReviewRecord] = []
-    location_id = location_id_from_parts(str(profile.source))
-    for parsed in latest_statements:
-        if not parsed.rows:
-            issues.append(
-                issue_record(
-                    IssueSpec(
-                        issue_id=f"{profile.source}:{parsed.pdf_file}:statement_evidence_missing",
-                        source=str(profile.source),
-                        adapter_id="shakepay",
-                        severity="high",
-                        kind="statement_evidence_missing",
-                        message="Shakepay monthly statement was recognized but no balance rows were extracted.",
-                        raw_file=parsed.pdf_file,
-                    )
-                )
-            )
-            continue
-        for row in parsed.rows:
-            resolved = resolve_instrument_identity(
-                (_shakepay_instrument_claim(row.asset_symbol),)
-            )
-            if resolved is None:
-                issues.append(
-                    issue_record(
-                        IssueSpec(
-                            issue_id=(
-                                f"{profile.source}:{parsed.pdf_file}:"
-                                f"{row.asset_symbol}:instrument_identity_blocked"
-                            ),
-                            source=str(profile.source),
-                            adapter_id="shakepay",
-                            severity="high",
-                            kind="instrument_identity_blocked",
-                            message=(
-                                "Shakepay statement evidence could not resolve "
-                                f"instrument {row.asset_symbol}."
-                            ),
-                            raw_file=parsed.pdf_file,
-                            raw_row_ref="page:1",
-                        )
-                    )
-                )
-                reviews.append(
-                    review_record(
-                        ReviewSpec(
-                            review_id=(
-                                f"{profile.source}:{parsed.pdf_file}:"
-                                f"{row.asset_symbol}:instrument_identity_review"
-                            ),
-                            source=str(profile.source),
-                            adapter_id="shakepay",
-                            scope="balance_evidence",
-                            kind="instrument_identity_review",
-                            message=(
-                                "Review required for Shakepay statement instrument "
-                                f"{row.asset_symbol}."
-                            ),
-                            raw_file=parsed.pdf_file,
-                            raw_row_ref="page:1",
-                            field_name="asset_symbol",
-                            original_value=row.asset_symbol,
-                        )
-                    )
-                )
-                continue
-            evidence.append(
-                BalanceEvidence(
-                    source=profile.source,
-                    location_id=location_id,
-                    instrument_id=resolved.instrument.instrument_id,
-                    quantity=row.quantity,
-                    as_of_at=row.as_of_at,
-                    as_of_precision=row.as_of_precision,
-                    balance_kind="available",
-                    provenance=ProvenanceLocator.from_reference_ref(row.evidence_ref),
-                    notes=row.notes,
-                )
-            )
-    return StatementBalanceEvidenceBatch(
-        balance_evidence=tuple(evidence),
-        issues=tuple(issues),
-        reviews=tuple(reviews),
-    )
 
 
 def _shakepay_instrument_claim(symbol: str) -> InstrumentIdentityClaim:

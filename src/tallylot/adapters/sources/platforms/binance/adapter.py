@@ -2,32 +2,23 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.support import (
-    IssueSpec,
-    ReviewSpec,
     TimezoneReviewPolicy,
-    issue_record,
-    location_id_from_parts,
     match_intake_by_path_or_header,
     no_intake_route,
-    resolve_instrument_identity,
-    review_record,
     reviewed_timezone_summary,
 )
 from tallylot.adapters.support.drafts import symbol_claim
-from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.instruments import InstrumentKind
-from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.domain.reconciliation import BalanceEvidence
-from tallylot.domain.temporal import TemporalPrecision
+from tallylot.domain.instruments import InstrumentIdentityClaim, InstrumentKind
+from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import (
     LocationInventoryRecord,
-    StatementBalanceEvidenceBatch,
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
 )
 from tallylot.ports.intake_routing import (
     IntakeFileFacts,
@@ -50,9 +41,8 @@ from .matching import (
     WITHDRAW_HEADER,
     match_binance_inventory,
 )
-from .pdf_balances import extract_pdf_balances as _extract_pdf_balances
-from .pdf_balances import match_pdf_statement as _match_pdf_statement
-from .statement_evidence import parse_statement_pdf
+from .pdf_balances import match_statement_document as _match_statement_document
+from .statement_evidence import parse_statement_document as _parse_statement_document
 from .translation import translate_binance_exports
 
 
@@ -139,133 +129,29 @@ class _BinanceAdapter:
         del source, raw_dir, profile
         return (), ()
 
-    def match_pdf_statement(self, pdf_path: Path, text: str) -> int:
-        return _match_pdf_statement(pdf_path, text)
+    def match_statement_document(self, pdf_path: Path, text: str) -> int:
+        return _match_statement_document(pdf_path, text)
 
-    def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
-        return _extract_pdf_balances(text, pdf_path.name)
+    def parse_statement_document(
+        self, pdf_path: Path, text: str
+    ) -> StatementDocumentParseResult:
+        return _parse_statement_document(pdf_path, text)
 
     def translate(
         self, profile: SourceProfile, raw_dir: Path
     ) -> SourceTranslationBatch:
         return translate_binance_exports(profile, raw_dir)
 
-    def extract_statement_balance_evidence(
-        self,
-        profile: SourceProfile,
-        raw_dir: Path,
-    ) -> StatementBalanceEvidenceBatch:
-        return _extract_statement_balance_evidence(profile, raw_dir)
+    def resolve_statement_instrument_claims(
+        self, row: StatementDocumentBalanceRow
+    ) -> tuple[InstrumentIdentityClaim, ...]:
+        return (
+            symbol_claim(
+                row.asset,
+                venue="binance",
+                kind_hint=InstrumentKind.CRYPTO,
+            ),
+        )
 
 
 ADAPTER = _BinanceAdapter()
-
-
-def _extract_statement_balance_evidence(
-    profile: SourceProfile,
-    raw_dir: Path,
-) -> StatementBalanceEvidenceBatch:
-    parsed_statements = tuple(
-        parsed
-        for pdf_path in sorted(raw_dir.rglob("*.pdf"))
-        if (parsed := parse_statement_pdf(pdf_path)).recognized
-    )
-    if not parsed_statements:
-        return StatementBalanceEvidenceBatch(balance_evidence=(), issues=(), reviews=())
-    latest_as_of = max(
-        parsed.as_of_at for parsed in parsed_statements if parsed.as_of_at is not None
-    )
-    latest_statements = tuple(
-        parsed for parsed in parsed_statements if parsed.as_of_at == latest_as_of
-    )
-    evidence: list[BalanceEvidence] = []
-    issues: list[IssueRecord] = []
-    reviews: list[NormalizationReviewRecord] = []
-    location_id = location_id_from_parts(str(profile.source))
-    aggregated_rows: dict[str, tuple[Decimal, set[str], set[str]]] = {}
-    for parsed in latest_statements:
-        if not parsed.rows:
-            issues.append(
-                issue_record(
-                    IssueSpec(
-                        issue_id=f"{profile.source}:{parsed.pdf_file}:statement_evidence_missing",
-                        source=str(profile.source),
-                        adapter_id="binance",
-                        severity="high",
-                        kind="statement_evidence_missing",
-                        message="Binance account statement was recognized but no holdings rows were extracted.",
-                        raw_file=parsed.pdf_file,
-                    )
-                )
-            )
-            continue
-        for row in parsed.rows:
-            quantity, sections, files = aggregated_rows.get(
-                row.asset_symbol, (Decimal("0"), set(), set())
-            )
-            aggregated_rows[row.asset_symbol] = (
-                quantity + row.quantity,
-                sections | {row.section},
-                files | {parsed.pdf_file},
-            )
-    for asset_symbol, (quantity, sections, files) in sorted(aggregated_rows.items()):
-        resolved = resolve_instrument_identity(
-            (
-                symbol_claim(
-                    asset_symbol,
-                    venue="binance",
-                    kind_hint=InstrumentKind.CRYPTO,
-                ),
-            )
-        )
-        if resolved is None:
-            issue_files = ",".join(sorted(files))
-            issues.append(
-                issue_record(
-                    IssueSpec(
-                        issue_id=f"{profile.source}:{asset_symbol}:instrument_identity_blocked",
-                        source=str(profile.source),
-                        adapter_id="binance",
-                        severity="high",
-                        kind="instrument_identity_blocked",
-                        message=f"Binance statement evidence could not resolve instrument {asset_symbol}.",
-                        raw_file=issue_files,
-                    )
-                )
-            )
-            reviews.append(
-                review_record(
-                    ReviewSpec(
-                        review_id=f"{profile.source}:{asset_symbol}:instrument_identity_review",
-                        source=str(profile.source),
-                        adapter_id="binance",
-                        scope="balance_evidence",
-                        kind="instrument_identity_review",
-                        message=f"Review required for Binance statement instrument {asset_symbol}.",
-                        raw_file=issue_files,
-                        field_name="asset_symbol",
-                        original_value=asset_symbol,
-                    )
-                )
-            )
-            continue
-        evidence.append(
-            BalanceEvidence(
-                source=profile.source,
-                location_id=location_id,
-                instrument_id=resolved.instrument.instrument_id,
-                quantity=quantity,
-                as_of_at=latest_as_of,
-                as_of_precision=TemporalPrecision.DATE,
-                balance_kind="available",
-                provenance=ProvenanceLocator.from_reference_ref(
-                    f"{','.join(sorted(files))}#{' + '.join(sorted(sections))}"
-                ),
-                notes="Statement-backed quantity aggregated from Binance holdings sections.",
-            )
-        )
-    return StatementBalanceEvidenceBatch(
-        balance_evidence=tuple(evidence),
-        issues=tuple(issues),
-        reviews=tuple(reviews),
-    )

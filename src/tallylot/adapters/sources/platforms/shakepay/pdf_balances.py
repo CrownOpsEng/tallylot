@@ -11,7 +11,13 @@ from tallylot.adapters.sources.pdf_balance_common import (
 )
 from tallylot.adapters.sources.platforms.shakepay.statement_evidence import (
     extract_pdf_balances as _extract_statement_balances,
-    match_statement as _match_statement,
+    match_statement_document as _match_statement_document,
+    parse_statement_document as _parse_statement_document,
+)
+from tallylot.domain.temporal import TemporalPrecision
+from tallylot.ports.evidence import (
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
 )
 
 SHAKEPAY_OPENING_PATTERN = re.compile(
@@ -36,8 +42,8 @@ SHAKEPAY_YEAR_PATTERN = re.compile(
 )
 
 
-def match_pdf_statement(pdf_path: Path, text: str) -> int:
-    monthly_score = _match_statement(pdf_path, text)
+def match_statement_document(pdf_path: Path, text: str) -> int:
+    monthly_score = _match_statement_document(pdf_path, text)
     if monthly_score > 0:
         return monthly_score
     normalized = normalize_whitespace(text).lower()
@@ -54,9 +60,28 @@ def match_pdf_statement(pdf_path: Path, text: str) -> int:
 
 
 def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
-    if _match_statement(Path(pdf_file), text) > 0:
+    if _match_statement_document(Path(pdf_file), text) > 0:
         return _extract_statement_balances(text, pdf_file)
     return _extract_annual_market_value_rows(text, pdf_file)
+
+
+def parse_statement_document(pdf_path: Path, text: str) -> StatementDocumentParseResult:
+    if _match_statement_document(pdf_path, text) > 0:
+        return _parse_statement_document(pdf_path, text)
+    annual_rows = _extract_annual_market_value_rows(text, pdf_path.name)
+    if not annual_rows:
+        return StatementDocumentParseResult(
+            pdf_file=pdf_path.name,
+            recognized=False,
+            statement_as_of_at=None,
+            rows=(),
+        )
+    return StatementDocumentParseResult(
+        pdf_file=pdf_path.name,
+        recognized=True,
+        statement_as_of_at=None,
+        rows=tuple(_annual_row_to_statement_document_row(row) for row in annual_rows),
+    )
 
 
 def _extract_annual_market_value_rows(text: str, pdf_file: str) -> list[dict[str, str]]:
@@ -122,3 +147,23 @@ def _extract_annual_market_value_rows(text: str, pdf_file: str) -> list[dict[str
             "notes": "Closing market value from Shakepay performance report",
         },
     ]
+
+
+def _annual_row_to_statement_document_row(
+    row: dict[str, str],
+) -> StatementDocumentBalanceRow:
+    return StatementDocumentBalanceRow(
+        source=row["source"],
+        account=row["account"],
+        wallet=row["wallet"],
+        balance_kind=row["balance_kind"],
+        asset=row["asset"],
+        quantity=None,
+        as_of_at=None,
+        as_of_precision=TemporalPrecision.TIMESTAMP,
+        pdf_file=row["pdf_file"],
+        as_of_text=row["as_of"],
+        notes=row["notes"],
+        value_amount=row["value_amount"],
+        value_currency=row["value_currency"],
+    )

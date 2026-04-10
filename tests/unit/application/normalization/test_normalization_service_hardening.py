@@ -7,14 +7,17 @@ from pathlib import Path
 from typing import override
 
 import pytest
+from reportlab.pdfgen import canvas
 
-from tallylot.application.evidence.statement_extraction import (
-    StatementBalanceEvidenceBatch,
-)
+from tallylot.adapters.support.drafts import symbol_claim
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.instruments import InstrumentId, InstrumentIdentityClaim
+from tallylot.domain.instruments import (
+    InstrumentId,
+    InstrumentIdentityClaim,
+    InstrumentKind,
+)
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
@@ -29,6 +32,10 @@ from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemFactRepository
 from tallylot.ports.captures import SOURCE_CAPTURE_HEADER
+from tallylot.ports.evidence import (
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
+)
 from tallylot.ports.source_profiles import FileFamilyClaim
 from tallylot.ports.source_translation import (
     EconomicActivityDraft,
@@ -42,6 +49,15 @@ from tests.support.services import (
     build_normalization_service,
     build_registry_backed_normalization_service,
 )
+
+
+def _make_pdf(path: Path, *lines: str) -> None:
+    pdf = canvas.Canvas(str(path))
+    y = 750
+    for line in lines:
+        pdf.drawString(72, y, line)
+        y -= 15
+    pdf.save()
 
 
 def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> None:
@@ -559,28 +575,43 @@ class StatementEvidenceSourceAdapter(MatchingSourceAdapter):
             location_inventory=(),
         )
 
-    def extract_statement_balance_evidence(
-        self,
-        profile: object,
-        raw_dir: Path,
-    ) -> StatementBalanceEvidenceBatch:
-        del profile, raw_dir
-        return StatementBalanceEvidenceBatch(
-            balance_evidence=(
-                BalanceEvidence(
-                    source=SourceId("fixture"),
-                    location_id=LocationId("fixture:primary"),
-                    instrument_id=InstrumentId("symbol:ETH"),
+    def match_statement_document(self, pdf_path: Path, text: str) -> int:
+        del pdf_path
+        return 100 if "ETH 3.5" in text else 0
+
+    def parse_statement_document(
+        self, pdf_path: Path, text: str
+    ) -> StatementDocumentParseResult:
+        del text
+        as_of_at = datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC)
+        return StatementDocumentParseResult(
+            pdf_file=pdf_path.name,
+            recognized=True,
+            statement_as_of_at=as_of_at,
+            rows=(
+                StatementDocumentBalanceRow(
+                    source="fixture",
+                    account="fixture",
+                    wallet="primary",
+                    balance_kind="available",
+                    asset="ETH",
                     quantity=Decimal("3.5"),
-                    as_of_at=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
+                    as_of_at=as_of_at,
                     as_of_precision=TemporalPrecision.TIMESTAMP,
-                    provenance=ProvenanceLocator.from_reference_ref(
-                        "statement.pdf#page=1"
-                    ),
+                    pdf_file=pdf_path.name,
+                    raw_row_ref="page=1",
                 ),
             ),
-            issues=(),
-            reviews=(),
+        )
+
+    def resolve_statement_instrument_claims(
+        self, row: StatementDocumentBalanceRow
+    ) -> tuple[InstrumentIdentityClaim, ...]:
+        return (
+            symbol_claim(
+                row.asset,
+                kind_hint=InstrumentKind.CRYPTO,
+            ),
         )
 
 
@@ -674,6 +705,7 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
 def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
+    _make_pdf(raw_dir / "statement.pdf", "ETH 3.5")
     registry = FakeSourceRegistry(
         source_adapters=(StatementEvidenceSourceAdapter("statement_fixture"),)
     )
@@ -697,7 +729,7 @@ def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) 
     assert balance_evidence_rows == [
         {
             "source": "fixture",
-            "location_id": "fixture:primary",
+            "location_id": "fixture",
             "instrument_id": "symbol:ETH",
             "quantity": "3.5",
             "as_of_at": "2023-08-06 12:00:00",

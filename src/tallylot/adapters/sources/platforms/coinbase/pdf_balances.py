@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime
 from pathlib import Path
 
 from tallylot.adapters.sources.pdf_balance_common import (
@@ -10,6 +11,12 @@ from tallylot.adapters.sources.pdf_balance_common import (
     format_utc_timestamp,
     normalize_whitespace,
     parse_balance_lines,
+)
+from tallylot.domain.temporal import TemporalPrecision
+from tallylot.domain.value_objects import parse_decimal, parse_temporal_value
+from tallylot.ports.evidence import (
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
 )
 
 PORTFOLIO_ROW_PATTERN = re.compile(
@@ -40,7 +47,7 @@ COINBASE_PORTFOLIO_AS_OF_PATTERN = re.compile(
 )
 
 
-def match_pdf_statement(pdf_path: Path, text: str) -> int:
+def match_statement_document(pdf_path: Path, text: str) -> int:
     normalized = normalize_whitespace(text).lower()
     if "coinbase" in pdf_path.name.lower():
         return 100
@@ -77,7 +84,9 @@ def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
                 "value_currency": "",
                 "price_amount": "",
                 "price_currency": "",
-                "as_of": format_utc_timestamp(cash_match.group("as_of"), "%Y-%m-%d %H:%M:%S UTC"),
+                "as_of": format_utc_timestamp(
+                    cash_match.group("as_of"), "%Y-%m-%d %H:%M:%S UTC"
+                ),
                 "pdf_file": pdf_file,
                 "notes": "Closing fiat balance from Coinbase statement PDF",
             }
@@ -85,7 +94,9 @@ def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
     portfolio_match = COINBASE_PORTFOLIO_AS_OF_PATTERN.search(normalized)
     if portfolio_match is None:
         return rows or parse_balance_lines(text, "coinbase", pdf_file)
-    as_of = format_utc_timestamp(portfolio_match.group("as_of"), "%Y-%m-%d %H:%M:%S UTC")
+    as_of = format_utc_timestamp(
+        portfolio_match.group("as_of"), "%Y-%m-%d %H:%M:%S UTC"
+    )
     seen_assets: set[str] = set()
     for pattern in (PORTFOLIO_ROW_PATTERN, PORTFOLIO_ROW_FALLBACK_PATTERN):
         for match in pattern.finditer(normalized):
@@ -113,3 +124,51 @@ def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
                 }
             )
     return rows or parse_balance_lines(text, "coinbase", pdf_file)
+
+
+def parse_statement_document(pdf_path: Path, text: str) -> StatementDocumentParseResult:
+    rows = extract_pdf_balances(text, pdf_path.name)
+    return StatementDocumentParseResult(
+        pdf_file=pdf_path.name,
+        recognized=True,
+        statement_as_of_at=_statement_as_of(rows),
+        rows=tuple(_row_to_statement_document_row(row) for row in rows),
+    )
+
+
+def _row_to_statement_document_row(row: dict[str, str]) -> StatementDocumentBalanceRow:
+    as_of_text = row["as_of"]
+    as_of_at = (
+        None
+        if not as_of_text
+        else parse_temporal_value(as_of_text, precision=TemporalPrecision.TIMESTAMP)
+    )
+    return StatementDocumentBalanceRow(
+        source=row["source"],
+        account=row["account"],
+        wallet=row["wallet"],
+        balance_kind=row["balance_kind"],
+        asset=row["asset"],
+        quantity=parse_decimal(row["quantity"]),
+        as_of_at=as_of_at,
+        as_of_precision=TemporalPrecision.TIMESTAMP,
+        pdf_file=row["pdf_file"],
+        as_of_text=as_of_text,
+        notes=row["notes"],
+        staked_quantity=row["staked_quantity"],
+        value_amount=row["value_amount"],
+        value_currency=row["value_currency"],
+        price_amount=row["price_amount"],
+        price_currency=row["price_currency"],
+    )
+
+
+def _statement_as_of(rows: list[dict[str, str]]) -> datetime | None:
+    as_of_values = [
+        parse_temporal_value(row["as_of"], precision=TemporalPrecision.TIMESTAMP)
+        for row in rows
+        if row["as_of"]
+    ]
+    if not as_of_values:
+        return None
+    return max(as_of_values)

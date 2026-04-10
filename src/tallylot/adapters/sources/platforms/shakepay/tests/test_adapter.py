@@ -7,10 +7,6 @@ from pathlib import Path
 import pytest
 
 from tallylot.adapters.sources.platforms.shakepay.adapter import _ShakepayAdapter
-from tallylot.adapters.sources.platforms.shakepay.statement_evidence import (
-    ShakepayStatementBalanceRow,
-    ShakepayStatementParseResult,
-)
 from tallylot.adapters.sources.platforms.shakepay.translation import translate_row
 from tallylot.adapters.support import CsvRowContext
 from tallylot.adapters.support.drafts import compile_activity_drafts
@@ -25,8 +21,13 @@ from tallylot.domain.transactions import (
     ProjectionHint,
     TaxTreatmentHint,
 )
+from tallylot.ports.evidence import (
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
+)
+from tallylot.ports.source_profiles import FileInventoryEntry
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
-from tests.support.services import FakeSourceRegistry
+from tests.support.services import FakeSourceRegistry, build_source_profile
 
 
 def test_shakepay_adapter_normalizes_fixture_rows() -> None:
@@ -133,61 +134,118 @@ def test_shakepay_statement_service_emits_latest_balance_evidence(
     older_as_of = datetime(2026, 3, 1, 5, 0, tzinfo=UTC)
     latest_as_of = datetime(2026, 4, 1, 4, 0, tzinfo=UTC)
 
-    def fake_parse_statement_pdf(path: Path) -> ShakepayStatementParseResult:
+    def fake_parse_statement_document(
+        path: Path, text: str
+    ) -> StatementDocumentParseResult:
+        del text
         if path.name == "older.pdf":
-            return ShakepayStatementParseResult(
+            return StatementDocumentParseResult(
                 pdf_file=path.name,
                 recognized=True,
                 statement_as_of_at=older_as_of,
                 rows=(
-                    ShakepayStatementBalanceRow(
-                        asset_label="Cash",
-                        asset_symbol="CAD",
+                    StatementDocumentBalanceRow(
+                        source="Shakepay",
+                        account="Shakepay",
+                        wallet="Personal",
+                        balance_kind="available",
+                        asset="CAD",
                         quantity=Decimal("1"),
                         as_of_at=older_as_of,
                         as_of_precision=TemporalPrecision.TIMESTAMP,
-                        evidence_ref="older.pdf#page=1:Balance summary",
+                        pdf_file=path.name,
+                        raw_row_ref="page:1:Balance summary",
                         notes="older",
                     ),
                 ),
             )
-        return ShakepayStatementParseResult(
+        return StatementDocumentParseResult(
             pdf_file=path.name,
             recognized=True,
             statement_as_of_at=latest_as_of,
             rows=(
-                ShakepayStatementBalanceRow(
-                    asset_label="Cash",
-                    asset_symbol="CAD",
+                StatementDocumentBalanceRow(
+                    source="Shakepay",
+                    account="Shakepay",
+                    wallet="Personal",
+                    balance_kind="available",
+                    asset="CAD",
                     quantity=Decimal("18.76"),
                     as_of_at=latest_as_of,
                     as_of_precision=TemporalPrecision.TIMESTAMP,
-                    evidence_ref="latest.pdf#page=1:Balance summary",
+                    pdf_file=path.name,
+                    raw_row_ref="page:1:Balance summary",
                     notes="latest",
                 ),
-                ShakepayStatementBalanceRow(
-                    asset_label="Bitcoin",
-                    asset_symbol="BTC",
+                StatementDocumentBalanceRow(
+                    source="Shakepay",
+                    account="Shakepay",
+                    wallet="Personal",
+                    balance_kind="available",
+                    asset="BTC",
                     quantity=Decimal("0.00186458"),
                     as_of_at=latest_as_of,
                     as_of_precision=TemporalPrecision.TIMESTAMP,
-                    evidence_ref="latest.pdf#page=1:Balance summary",
+                    pdf_file=path.name,
+                    raw_row_ref="page:1:Balance summary",
                     notes="latest",
                 ),
             ),
         )
 
+    def fake_extract_pdf_text(path: Path) -> str:
+        del path
+        return "statement"
+
+    def fake_match_statement_document(path: Path, text: str) -> int:
+        del path, text
+        return 100
+
     monkeypatch.setattr(
-        "tallylot.adapters.sources.platforms.shakepay.adapter.parse_statement_pdf",
-        fake_parse_statement_pdf,
+        "tallylot.application.evidence.statement_extraction.service._extract_pdf_text",
+        fake_extract_pdf_text,
+    )
+    monkeypatch.setattr(
+        "tallylot.adapters.sources.platforms.shakepay.adapter._parse_statement_document",
+        fake_parse_statement_document,
+    )
+    monkeypatch.setattr(
+        "tallylot.adapters.sources.platforms.shakepay.adapter._match_statement_document",
+        fake_match_statement_document,
     )
 
     result = StatementExtractionService(
         FakeSourceRegistry((_ShakepayAdapter(),))
     ).extract_source_balance_evidence(
-        profile_and_adapter("Shakepay", fixture_raw_dir("shakepay", "cash_crypto_mix"))[
-            0
-        ],
+        build_source_profile(
+            adapter_id="shakepay",
+            raw_dir=str(raw_dir),
+            source="Shakepay",
+            file_inventory=(
+                FileInventoryEntry(
+                    relative_path="older.pdf",
+                    suffix=".pdf",
+                    size_bytes=5,
+                    sha256="older",
+                    source_path=str(raw_dir / "older.pdf"),
+                    capture_uid="capture-1",
+                    source="Shakepay",
+                    evidence_role="statement_source",
+                    originality_class="upstream_original",
+                ),
+                FileInventoryEntry(
+                    relative_path="latest.pdf",
+                    suffix=".pdf",
+                    size_bytes=6,
+                    sha256="latest",
+                    source_path=str(raw_dir / "latest.pdf"),
+                    capture_uid="capture-1",
+                    source="Shakepay",
+                    evidence_role="statement_source",
+                    originality_class="upstream_original",
+                ),
+            ),
+        ),
         raw_dir,
     )
 
@@ -195,8 +253,8 @@ def test_shakepay_statement_service_emits_latest_balance_evidence(
         row["instrument_id"]
         for row in map(lambda item: item.to_row(), result.balance_evidence)
     ] == [
-        "symbol:CAD@shakepay",
         "symbol:BTC@shakepay",
+        "symbol:CAD@shakepay",
     ]
     assert all(
         row["as_of_at"] == "2026-04-01 04:00:00"

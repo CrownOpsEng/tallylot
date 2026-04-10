@@ -9,18 +9,32 @@ from tallylot.adapters.support import (
     no_intake_route,
     passed_timezone_summary,
 )
+from tallylot.adapters.support.drafts import symbol_claim
+from tallylot.domain.instruments import InstrumentIdentityClaim, InstrumentKind
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.evidence import (
+    LocationInventoryRecord,
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
+)
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .matching import match_coinbase_inventory
 from .normalization import translate_coinbase_exports
-from .pdf_balances import extract_pdf_balances as _extract_pdf_balances
-from .pdf_balances import match_pdf_statement as _match_pdf_statement
+from .pdf_balances import match_statement_document as _match_statement_document
+from .pdf_balances import parse_statement_document as _parse_statement_document
 
 
 class _CoinbaseAdapter:
@@ -28,11 +42,15 @@ class _CoinbaseAdapter:
         adapter_id=AdapterId("coinbase"),
         display_name="Coinbase",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.INTAKE_ROUTE}),
+        capabilities=frozenset(
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.INTAKE_ROUTE}
+        ),
         description="Normalizes Coinbase retail all-time exports.",
     )
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(
+        self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> int:
         return match_coinbase_inventory(source, raw_dir, inventory)
 
     def classify_profile_families(
@@ -49,9 +67,14 @@ class _CoinbaseAdapter:
                 family_id="retail_export",
             )
             for item in inventory
-            if {"portfolio", "type", "time", "amount", "balance", "amount/balance unit"}.issubset(
-                {field.lower() for field in item.header}
-            )
+            if {
+                "portfolio",
+                "type",
+                "time",
+                "amount",
+                "balance",
+                "amount/balance unit",
+            }.issubset({field.lower() for field in item.header})
         )
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
@@ -80,13 +103,27 @@ class _CoinbaseAdapter:
         del source, raw_dir, profile
         return (), ()
 
-    def match_pdf_statement(self, pdf_path: Path, text: str) -> int:
-        return _match_pdf_statement(pdf_path, text)
+    def match_statement_document(self, pdf_path: Path, text: str) -> int:
+        return _match_statement_document(pdf_path, text)
 
-    def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
-        return _extract_pdf_balances(text, pdf_path.name)
+    def parse_statement_document(
+        self, pdf_path: Path, text: str
+    ) -> StatementDocumentParseResult:
+        return _parse_statement_document(pdf_path, text)
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+    def resolve_statement_instrument_claims(
+        self, row: StatementDocumentBalanceRow
+    ) -> tuple[InstrumentIdentityClaim, ...]:
+        kind_hint = (
+            InstrumentKind.FIAT
+            if row.asset.strip().upper() in {"CAD", "USD"}
+            else InstrumentKind.CRYPTO
+        )
+        return (symbol_claim(row.asset, venue="coinbase", kind_hint=kind_hint),)
+
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
         return translate_coinbase_exports(profile, raw_dir)
 
 

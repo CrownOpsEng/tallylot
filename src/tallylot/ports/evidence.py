@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Protocol
 
@@ -11,6 +13,7 @@ from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
+from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId
 from tallylot.ports.annotations import AdapterMetadata
 
@@ -157,6 +160,35 @@ class LocationInventoryRecord:
             "identifier_value": self.identifier_value,
             "notes": self.notes,
         }
+
+
+@dataclass(frozen=True)
+class StatementDocumentBalanceRow:
+    source: str
+    account: str
+    wallet: str
+    balance_kind: str
+    asset: str
+    quantity: Decimal | None
+    as_of_at: datetime | None
+    as_of_precision: TemporalPrecision
+    pdf_file: str
+    as_of_text: str = ""
+    raw_row_ref: str = ""
+    notes: str = ""
+    staked_quantity: str = ""
+    value_amount: str = ""
+    value_currency: str = ""
+    price_amount: str = ""
+    price_currency: str = ""
+
+
+@dataclass(frozen=True)
+class StatementDocumentParseResult:
+    pdf_file: str
+    recognized: bool
+    statement_as_of_at: datetime | None
+    rows: tuple[StatementDocumentBalanceRow, ...]
 
 
 @dataclass(frozen=True)

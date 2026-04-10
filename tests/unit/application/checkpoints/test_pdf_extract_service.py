@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -14,10 +15,16 @@ from tallylot.application.evidence.statement_extraction import (
 )
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.types import AdapterId, JsonValue
+from tallylot.domain.instruments import InstrumentIdentityClaim
+from tallylot.domain.types import AdapterId, JsonValue, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.adapter_contracts import AdapterManifest
-from tallylot.ports.evidence import LocationInventoryRecord
+from tallylot.domain.temporal import TemporalPrecision
+from tallylot.ports.evidence import (
+    LocationInventoryRecord,
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
+)
 from tallylot.ports.intake_routing import (
     IntakeFileFacts,
     IntakeRoute,
@@ -34,7 +41,11 @@ from tallylot.ports.source_translation import SourceTranslationBatch
 
 class StubPdfAdapter:
     def __init__(
-        self, adapter_id: str, match_score: int, rows: list[dict[str, str]]
+        self,
+        adapter_id: str,
+        match_score: int,
+        rows: tuple[StatementDocumentBalanceRow, ...],
+        recognized: bool = True,
     ) -> None:
         self.manifest = AdapterManifest(
             adapter_id=AdapterId(adapter_id),
@@ -44,6 +55,7 @@ class StubPdfAdapter:
         )
         self._match_score = match_score
         self._rows = rows
+        self._recognized = recognized
 
     def match(
         self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
@@ -84,13 +96,26 @@ class StubPdfAdapter:
         del source, raw_dir, profile
         return (), ()
 
-    def match_pdf_statement(self, pdf_path: Path, text: str) -> int:
+    def match_statement_document(self, pdf_path: Path, text: str) -> int:
         del pdf_path, text
         return self._match_score
 
-    def extract_pdf_balances(self, pdf_path: Path, text: str) -> list[dict[str, str]]:
-        del pdf_path, text
-        return self._rows
+    def parse_statement_document(
+        self, pdf_path: Path, text: str
+    ) -> StatementDocumentParseResult:
+        del text
+        return StatementDocumentParseResult(
+            pdf_file=pdf_path.name,
+            recognized=self._recognized,
+            statement_as_of_at=None,
+            rows=self._rows,
+        )
+
+    def resolve_statement_instrument_claims(
+        self, row: StatementDocumentBalanceRow
+    ) -> tuple[InstrumentIdentityClaim, ...]:
+        del row
+        return ()
 
     def translate(
         self, profile: SourceProfile, raw_dir: Path
@@ -136,24 +161,20 @@ def test_pdf_balance_extraction_service_uses_requested_supported_adapter(
     output_path = tmp_path / "balances.csv"
     _make_pdf(pdf_path, "Account statement")
     artifacts = FilesystemArtifactStore()
-    rows = [
-        {
-            "source": "Example",
-            "account": "Example",
-            "wallet": "Example",
-            "balance_kind": "asset_balance",
-            "asset": "BTC",
-            "quantity": "1.0",
-            "staked_quantity": "",
-            "value_amount": "",
-            "value_currency": "",
-            "price_amount": "",
-            "price_currency": "",
-            "as_of": "",
-            "pdf_file": pdf_path.name,
-            "notes": "stub",
-        }
-    ]
+    rows = (
+        StatementDocumentBalanceRow(
+            source="Example",
+            account="Example",
+            wallet="Example",
+            balance_kind="asset_balance",
+            asset="BTC",
+            quantity=Decimal("1.0"),
+            as_of_at=None,
+            as_of_precision=TemporalPrecision.TIMESTAMP,
+            pdf_file=pdf_path.name,
+            notes="stub",
+        ),
+    )
     registry = StubRegistry([StubPdfAdapter("example", 0, rows)])
 
     response = ExtractPdfBalancesUseCase(registry, artifacts).execute(
@@ -201,7 +222,7 @@ def test_pdf_balance_extraction_service_rejects_unknown_pdf_text(
 
     with pytest.raises(ValueError, match="unable to detect supported statement kind"):
         ExtractPdfBalancesUseCase(
-            StubRegistry([StubPdfAdapter("example", 0, [])]),
+            StubRegistry([StubPdfAdapter("example", 0, ())]),
             artifacts,
         ).execute(
             PdfBalanceExtractRequest(
@@ -219,8 +240,8 @@ def test_pdf_balance_extraction_service_rejects_ambiguous_detection(
     artifacts = FilesystemArtifactStore()
     registry = StubRegistry(
         [
-            StubPdfAdapter("alpha", 100, []),
-            StubPdfAdapter("beta", 100, []),
+            StubPdfAdapter("alpha", 100, ()),
+            StubPdfAdapter("beta", 100, ()),
         ]
     )
 
@@ -231,3 +252,58 @@ def test_pdf_balance_extraction_service_rejects_ambiguous_detection(
                 output_ref=to_resource_ref(tmp_path / "balances.csv"),
             )
         )
+
+
+def test_source_statement_extraction_reports_unrecognized_inventory_pdf(
+    tmp_path: Path,
+) -> None:
+    pdf_path = tmp_path / "statement.pdf"
+    _make_pdf(pdf_path, "Unrecognized statement")
+    registry = StubRegistry([StubPdfAdapter("example", 0, (), recognized=False)])
+    profile = SourceProfile(
+        source=SourceId("Example"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("example"),
+        manifest_fingerprint="fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path=pdf_path.name,
+                suffix=".pdf",
+                size_bytes=pdf_path.stat().st_size,
+                sha256="fixture",
+                source_path=str(pdf_path),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+        ),
+        supported=True,
+    )
+
+    result = StatementExtractionService(registry).extract_source_balance_evidence(
+        profile, tmp_path
+    )
+
+    assert result.balance_evidence == ()
+    assert result.reviews == ()
+    assert [issue.kind for issue in result.issues] == [
+        "statement_document_unrecognized"
+    ]
+    assert result.issues[0].to_row() | {"message": ""} == {
+        "issue_id": "Example:statement.pdf:statement_document_unrecognized",
+        "source": "Example",
+        "adapter_id": "example",
+        "severity": "medium",
+        "kind": "statement_document_unrecognized",
+        "message": "",
+        "context_timestamp": "",
+        "raw_file": "statement.pdf",
+        "raw_row_ref": "",
+        "raw_capture_uid": "capture-1",
+        "raw_relative_path": "statement.pdf",
+        "raw_archive_member_path": "",
+        "raw_locator_kind": "raw_file",
+        "raw_anchor": "",
+        "status": "open",
+    }
