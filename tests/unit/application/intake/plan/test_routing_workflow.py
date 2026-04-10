@@ -95,6 +95,75 @@ def test_source_intake_service_routes_source_artifacts_to_source_aware_supportin
     )
 
 
+def test_source_intake_service_routes_binance_upstream_workbooks_to_raw_capture(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    order_workbook = incoming_dir / "Binance Order History 2023.xlsx"
+    withdrawal_workbook = incoming_dir / "Binance-Withdrawal History Report 2023.xlsx"
+    notes_workbook = incoming_dir / "Binance Portfolio Notes.xlsx"
+    order_workbook.write_bytes(b"PK\x03\x04")
+    withdrawal_workbook.write_bytes(b"PK\x03\x04")
+    notes_workbook.write_bytes(b"PK\x03\x04")
+
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    response = PlanIntakeUseCase(build_registry(), artifacts).execute(
+        IntakePlanRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    by_name = {
+        Path(row["path"]).name: row
+        for row in artifacts.read_rows(report_dir / "intake_plan.csv")
+    }
+
+    assert response.file_count == 3
+    assert response.planned_copy_count == 3
+    assert by_name["Binance Order History 2023.xlsx"]["category"] == "source_raw"
+    assert by_name["Binance Order History 2023.xlsx"]["role"] == "source_export"
+    assert (
+        by_name["Binance Order History 2023.xlsx"]["evidence_role"]
+        == "transaction_source"
+    )
+    assert (
+        by_name["Binance Order History 2023.xlsx"]["originality_class"]
+        == "upstream_original"
+    )
+    assert by_name["Binance Order History 2023.xlsx"]["capture_label"] != ""
+    assert (
+        "/evidence/raw/source/binance/"
+        in by_name["Binance Order History 2023.xlsx"]["target_path"]
+    )
+    assert by_name["Binance Order History 2023.xlsx"]["target_path"].endswith(
+        "/Binance Order History 2023.xlsx"
+    )
+    assert (
+        by_name["Binance-Withdrawal History Report 2023.xlsx"]["category"]
+        == "source_raw"
+    )
+    assert (
+        by_name["Binance-Withdrawal History Report 2023.xlsx"]["originality_class"]
+        == "upstream_original"
+    )
+    assert by_name["Binance Portfolio Notes.xlsx"]["category"] == "supporting_artifact"
+    assert by_name["Binance Portfolio Notes.xlsx"]["role"] == "working_derivative"
+    assert (
+        by_name["Binance Portfolio Notes.xlsx"]["evidence_role"]
+        == "supporting_artifact"
+    )
+    assert (
+        by_name["Binance Portfolio Notes.xlsx"]["originality_class"]
+        == "operator_authored"
+    )
+
+
 def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio_capture(
     tmp_path: Path,
 ) -> None:

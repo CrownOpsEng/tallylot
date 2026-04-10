@@ -97,8 +97,8 @@ def build_planned_item(
         archive_member_path=entry.archive_member_path,
         category=route.category,
         role=route.role,
-        evidence_role=_evidence_role(entry, route.role),
-        originality_class=_originality_class(entry, route.role),
+        evidence_role=_evidence_role(entry, route.category, route.role),
+        originality_class=_originality_class(entry, route.category, route.role),
         source_folder=source_resolution.source_folder,
         capture_label=planned_capture_label,
         capture_status="planned",
@@ -147,22 +147,23 @@ def build_planned_item(
     )
 
 
-def _evidence_role(entry: ScannedFile, role: str) -> str:
+def _evidence_role(entry: ScannedFile, category: str, role: str) -> str:
     suffix = entry.file_path.suffix.lower()
+    if category != "source_raw":
+        return "supporting_artifact"
     if role == "portfolio_export":
         return "portfolio_export"
-    if role == "portfolio_sidecar":
+    if role in {"portfolio_sidecar", "required_sidecar"}:
         return "required_sidecar"
     if suffix == ".pdf":
         return "statement_source"
-    if suffix in {".csv", ".json", ".zip", ".html"}:
-        return "transaction_source"
-    return "unknown_original"
+    return "transaction_source"
 
 
-def _originality_class(entry: ScannedFile, role: str) -> str:
-    del role
+def _originality_class(entry: ScannedFile, category: str, role: str) -> str:
     suffix = entry.file_path.suffix.lower()
+    if category == "source_raw":
+        return "upstream_original"
     if suffix in WORKING_DERIVATIVE_SUFFIXES:
         if suffix in {".xlsx", ".xls"}:
             return "operator_authored"
