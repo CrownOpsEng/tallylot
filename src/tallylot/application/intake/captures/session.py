@@ -176,12 +176,26 @@ def build_capture_session_plan(
         _mark_mixed_source_capture_blocked(planned_items)
         return _capture_blocked_plan(file_count=len(source_items))
     if not raw_items:
-        _mark_non_materialized_capture_items(
-            planned_items,
-            capture_status="capture_blocked",
-            placement_status="capture_blocked_skip",
-        )
-        _mark_source_raw_items_capture_blocked(planned_items)
+        if source_items:
+            _mark_non_materialized_capture_items(
+                planned_items,
+                capture_status="capture_blocked",
+                placement_status="capture_blocked_skip",
+            )
+            _mark_source_raw_items_capture_blocked(planned_items)
+        else:
+            issue_rows.append(
+                {
+                    "relative_path": "",
+                    "severity": "high",
+                    "kind": "capture_missing_source_raw",
+                    "message": (
+                        "Intake run did not include any source_raw files, so the "
+                        "capture cannot be materialized."
+                    ),
+                }
+            )
+            _mark_missing_source_raw_capture_blocked(planned_items)
         return _capture_blocked_plan(file_count=len(source_items))
 
     source_folder = distinct_sources[0] if distinct_sources else ""
@@ -354,6 +368,31 @@ def _mark_non_materialized_capture_items(
             ),
         )
         planned_items[index] = replacement
+
+
+def _mark_missing_source_raw_capture_blocked(
+    planned_items: list[_PlannedItemT],
+) -> None:
+    _mark_non_materialized_capture_items(
+        planned_items,
+        capture_status="capture_blocked",
+        placement_status="capture_blocked_skip",
+    )
+    for index, item in enumerate(planned_items):
+        planned_items[index] = cast(
+            _PlannedItemT,
+            replace(
+                cast(Any, item),
+                review_required="yes",
+                review_codes=_merge_value(
+                    item.review_codes, "missing_source_raw_capture"
+                ),
+                review_reason=_merge_value(
+                    item.review_reason,
+                    "Intake run did not include any source_raw files.",
+                ),
+            ),
+        )
 
 
 def _mark_mixed_source_capture_blocked(planned_items: list[_PlannedItemT]) -> None:

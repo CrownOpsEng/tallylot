@@ -705,6 +705,41 @@ def test_capture_blocked_apply_avoids_materialized_writes_and_source_mutation(
     assert updated_source_rows == list(source_rows)
 
 
+def test_support_only_apply_reports_missing_source_raw_issue(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "notes.png").write_bytes(b"support-only")
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    response = ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    issue_rows = artifacts.read_rows(report_dir / "intake_issues.csv")
+    plan_rows = artifacts.read_rows(report_dir / "intake_plan.csv")
+
+    assert response.capture_status == "capture_blocked"
+    assert response.issue_count == 1
+    assert summary["issue_count"] == 1
+    assert summary["planned_copy_count"] == 0
+    assert issue_rows[0]["kind"] == "capture_missing_source_raw"
+    assert plan_rows[0]["action"] == "skip"
+    assert plan_rows[0]["review_required"] == "yes"
+    assert plan_rows[0]["review_codes"] == "missing_source_raw_capture"
+    assert not (
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    ).exists()
+
+
 def test_source_intake_service_marks_overlapping_capture_for_review(
     tmp_path: Path,
 ) -> None:
