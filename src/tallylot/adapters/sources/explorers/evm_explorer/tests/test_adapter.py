@@ -162,10 +162,10 @@ def test_evm_explorer_empty_chain_scoped_capture_reports_missing_identifier(
     )
 
     records, issues = _EvmExplorerAdapter().extract_location_inventory(
-        "eth-metamask1",
+        "eth-wallet-fixture",
         raw_dir,
         build_source_profile(
-            adapter_id="evm_explorer", source="eth-metamask1", raw_dir=str(raw_dir)
+            adapter_id="evm_explorer", source="eth-wallet-fixture", raw_dir=str(raw_dir)
         ),
     )
 
@@ -264,13 +264,13 @@ def test_evm_explorer_adapter_admits_same_chain_portfolio_evidence_only(
         encoding="utf-8",
     )
 
-    profile, adapter = profile_and_adapter("bsc-metamask1", raw_dir)
+    profile, adapter = profile_and_adapter("bsc-wallet-fixture", raw_dir)
     result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "evm_explorer"
     assert [row.to_row() for row in result.balance_evidence] == [
         {
-            "source": "bsc-metamask1",
+            "source": "bsc-wallet-fixture",
             "location_id": "evm:bsc:0x1111111111111111111111111111111111111111",
             "instrument_id": "symbol:BNB@evm_explorer",
             "quantity": "1.25",
@@ -309,7 +309,7 @@ def test_evm_explorer_adapter_requires_single_location_for_portfolio_evidence(
         encoding="utf-8",
     )
 
-    profile, adapter = profile_and_adapter("bsc-metamask1", raw_dir)
+    profile, adapter = profile_and_adapter("bsc-wallet-fixture", raw_dir)
     result = adapter.translate(profile, raw_dir)
 
     assert not result.balance_evidence

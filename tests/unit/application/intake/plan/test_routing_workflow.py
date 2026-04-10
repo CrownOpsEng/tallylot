@@ -165,9 +165,9 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
         ),
         (
             {
-                "source": "eth-gala1",
+                "source": "eth-wallet-fixture",
                 "status": "capture_complete",
-                "capture_path": "evidence/raw/source/eth-gala1/2026-03",
+                "capture_path": "evidence/raw/source/eth-wallet-fixture/2026-03",
                 "adapter": "evm_explorer",
                 "normalization_status": "ready",
             },
@@ -200,7 +200,7 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
         ),
         (
             {
-                "source": "eth-gala1",
+                "source": "eth-wallet-fixture",
                 "capture_path": "/tmp/capture",
                 "location_id": "evm_address:0x2222222222222222222222222222222222222222",
                 "location_kind": "onchain_address",
@@ -242,7 +242,7 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
     row = next(item for item in plan_rows if item["archive_member_path"] == "")
 
-    assert row["source_folder"] == "eth-gala1"
+    assert row["source_folder"] == "eth-wallet-fixture"
     assert row["inventory_match_status"] == "inventory_source_match"
     assert row["review_required"] == "no"
 

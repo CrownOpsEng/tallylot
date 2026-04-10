@@ -42,10 +42,40 @@ The workspace is seeded by `workspace init` with these major areas:
 
 - `analysis/issues/issue_log.csv`
 - `analysis/issues/source_inventory.csv`
+- `analysis/inventory/source_captures.csv`
 - `analysis/issues/source_label_map.csv`
 - `analysis/inventory/location_inventory.csv`
 - `outputs/logs/round_log.csv`
 - `config/workspace.json`
+
+## Capture And Assembly Model
+
+The workspace model uses explicit capture records and assembled source
+datasets.
+
+Rules:
+
+- `source_inventory.csv` is source-summary state only; it does not pretend one
+  source has one canonical `capture_path`
+- `analysis/inventory/source_captures.csv` is the append-only capture registry
+  keyed by immutable `capture_uid`
+- one intake run materializes one raw capture root under
+  `evidence/raw/source/<source>/<capture_label>/`
+- `capture_label` is a human-facing folder name, while `capture_uid` remains
+  the canonical capture identity
+- inferred periods stay in metadata and reports; they do not control capture
+  routing
+- untouched upstream originals remain under raw evidence even when they are
+  statement PDFs, HTML exports, ZIP archives, extracted archive members, or
+  required sidecars
+- `working/supporting_artifacts/` is only for derived or operator-authored
+  helper material
+- capture-scoped normalized outputs live under
+  `working/normalized/captures/<capture_uid>/`
+- source-scoped assembled datasets live under
+  `working/normalized/sources/<source>/`
+- reconciliation consumes assembled source datasets rather than crawling raw
+  capture layouts directly
 
 ## Read Next
 

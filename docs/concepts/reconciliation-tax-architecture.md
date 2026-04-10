@@ -175,7 +175,70 @@ Rules:
   facts and no explicit issues or reviews, normalization emits
   `no_supported_activity` instead of silently succeeding
 
-### 11. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
+### 11. Keep Capture Identity In Metadata, Not In Paths
+
+One intake run is one capture, regardless of how many statement months or
+export periods it contains.
+
+Rules:
+
+- use an immutable `capture_uid` as the canonical capture identity
+- use a human-readable `capture_label` only for the raw folder name
+- treat inferred periods as metadata, not as the routing key or capture
+  identity
+- keep all untouched upstream originals for the capture under one raw capture
+  root instead of repartitioning them into inferred month or year folders
+- use explicit capture registry records instead of overloading one source row
+  with a single `capture_path`
+
+### 12. Separate Capture Normalization From Source Assembly
+
+Normalization remains capture-scoped. Reconciliation becomes source-assembly
+scoped.
+
+Rules:
+
+- `source profile` and `source normalize` operate on exactly one raw capture
+- capture-normalized outputs live under a capture-owned root
+- `source assemble` is the only supported bridge from accepted captures to the
+  reconciliation-ready source dataset
+- reconciliation reads only assembled source datasets, never raw capture trees
+  or ad hoc multi-capture crawls
+- duplicate, overlap-review, and superseded captures stay explicit in the
+  capture registry and are excluded from source assembly unless accepted
+
+### 13. Use One Shared Statement Extraction Capability
+
+Statement-backed evidence must not fork into separate normalization and
+checkpoint parsers.
+
+Rules:
+
+- add one shared application seam for statement extraction
+- let adapters contribute statement matching, parsing, and instrument-claim
+  resolution hooks through bounded plugin methods
+- use that shared service both when normalization emits source-backed balance
+  evidence and when `checkpoint extract-pdf-balances` is invoked directly
+- keep provenance, ambiguity, and review handling in the shared service rather
+  than duplicating it in provider-local orchestration
+
+### 14. Treat Semantic Workspace Validation As A First-Class Repo Capability
+
+The supported validation path is raw-evidence derivation, not migration
+wrappers.
+
+Rules:
+
+- validate semantic parity by deriving typed artifacts from raw evidence into
+  an initialized workspace
+- compare semantic parity, not path identity
+- ignore expected `capture_uid` and `capture_label` differences when two
+  workspaces are otherwise semantically identical
+- keep semantic parity validation in repo-native tooling under `tools/`
+- do not add one-off migration utilities or compatibility wrappers just to
+  preserve a superseded capture layout
+
+### 15. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
 
 Manual balance submission is a supported operational path for producing
 canonical `balances.csv` and `balance_confirmations.csv`, but it is not an
@@ -223,15 +286,22 @@ is inherently specific.
 ### Application Capabilities
 
 - `application/intake/`
-  - manifest generation plus intake planning and apply workflows
+  - manifest generation plus capture-scoped intake planning and apply
+    workflows
+- `application/evidence/`
+  - shared statement extraction, provenance locators, and document-family
+    recognition
 - `application/profiling/`
-  - source profile construction, inventory inspection, and timezone review
+  - capture profile construction, inventory inspection, and timezone review
 - `application/normalization/`
-  - orchestrate source translation into fact artifacts and source-backed
+  - orchestrate one capture's translation into fact artifacts and source-backed
     evidence
+- `application/assembly/`
+  - deterministic merge of accepted capture outputs into assembled
+    source-scoped normalization datasets
 - `application/reconciliation/`
   - reserve for transfer linking, checkpoint continuity, and fact-level drift
-    detection
+    detection over assembled source datasets
 - `application/checkpoints/`
   - build source-backed checkpoint evidence, validate manual balance
     confirmations, and assemble checkpoint-supporting wallet aggregates
@@ -290,9 +360,10 @@ Rules:
 - application services own derived-balance assembly. Adapters return balance
   evidence only when the source actually provides it.
 - normalization owns production statement-backed balance evidence for supported
-  providers. Adapters may publish canonical quantity evidence through
-  `SourceTranslationBatch.balance_evidence`, but market-value totals and other
-  valuation-only rows are not canonical balance assertions.
+  providers through the shared statement extraction seam. Adapters may publish
+  canonical quantity evidence through `SourceTranslationBatch.balance_evidence`,
+  but market-value totals and other valuation-only rows are not canonical
+  balance assertions.
 - adapters may declare numeric precision expectations for source fields when
   decimal scale is part of the source contract. Shared adapter support should
   validate displayed raw-text fractional digits and support exact or minimum
@@ -417,8 +488,8 @@ The only lost capability should be comparison against the external oracle.
   `*_precision` so exact midnight timestamps remain distinguishable from
   date-only values.
 - `facts.csv` is schema-versioned and readers fail fast on unexpected
-  `schema_version` values; rebuilding from raw evidence is the supported
-  recovery path after fact-shape breaks.
+  `schema_version` values; re-deriving artifacts from raw evidence is the
+  supported recovery path after fact-shape breaks.
 - `balances.csv`, `balance_evidence.csv`, and `balance_confirmations.csv`
   persist canonical `instrument_id` values and use `as_of_at` plus
   `as_of_precision` rather than bare symbol or timestamp columns.
@@ -443,6 +514,25 @@ The only lost capability should be comparison against the external oracle.
 - Review records carry `context_timestamp`, dataset-level untimed reviews stay
   visible when a window is active, and summaries report
   `reviews_outside_normalization_window`.
+
+### Capture And Assembly Contract
+
+- raw capture roots use `evidence/raw/source/<source>/<capture_label>/`
+- capture metadata stores the canonical `capture_uid`, intake timestamps,
+  manifest fingerprint, and workspace-relative refs
+- untouched upstream originals stay under the raw capture root even when they
+  are statements, HTML exports, ZIP archives, or required sidecars
+- `working/supporting_artifacts/` is limited to derived or operator-authored
+  helper material
+- capture-normalized outputs live under
+  `working/normalized/captures/<capture_uid>/`
+- assembled source outputs live under `working/normalized/sources/<source>/`
+- source assembly merges accepted captures deterministically, preserves the
+  union of source-backed evidence, collapses exact semantic duplicates, and
+  surfaces semantic conflicts explicitly
+- location inventory and balance evidence provenance reference captures by
+  `capture_uid`, with human-readable labels and roots treated as optional
+  report fields rather than as the key
 
 ### Transitional Adapter Draft Seam
 

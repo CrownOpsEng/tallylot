@@ -20,7 +20,7 @@ from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactS
         ("ledger-live-main", "ledger_live"),
         ("near-main", "near"),
         ("GTrade 1CT", "gtrade"),
-        ("bsc-metamask1", "evm_explorer"),
+        ("bsc-wallet-fixture", "evm_explorer"),
         ("Ronin Wallet", "ronin"),
         ("Ledger Live", "ledger_live"),
         ("NEAR Wallet", "near"),
