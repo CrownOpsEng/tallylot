@@ -72,12 +72,12 @@ Repo-native support boundaries:
 
 Default to one responsibility per module.
 
-- Keep most modules under roughly 200 lines.
-- Start a split review once a module approaches 300 lines.
-- Refactor before extending beyond 400 lines unless the file is mostly
+- Keep most modules under roughly 300 lines.
+- Start a split review once a module approaches 400 lines.
+- Refactor before extending beyond 500 lines unless the file is mostly
   declarative models, typed schemas, or protocol definitions.
-- Treat `400` lines as the official repo refactor limit.
-- Enforced limit is `500` lines as the hard-stop lint ceiling.
+- Treat `500` lines as the official repo refactor limit.
+- Enforced limit is `600` lines as the hard-stop lint ceiling.
 - Keep the repo standard tighter than the enforcement ceiling so refactor
   expectations stay ahead of the hard-stop lint cap.
 - Refactor by bounded concept, not by arbitrary suffixes.

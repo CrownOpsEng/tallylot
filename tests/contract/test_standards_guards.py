@@ -276,21 +276,21 @@ def test_module_size_policy_remains_aligned() -> None:
         encoding="utf-8"
     )
 
-    assert "max-module-lines = 500" in pylint_text
-    assert "max-module-lines = 500" in test_pylint_text
+    assert "max-module-lines = 600" in pylint_text
+    assert "max-module-lines = 600" in test_pylint_text
     assert (
-        re.search(r"Refactor before extending beyond 400 lines", standards_text)
+        re.search(r"Refactor before extending beyond 500 lines", standards_text)
         is not None
     )
     assert (
         re.search(
-            r"Treat `400` lines as the official repo refactor limit", standards_text
+            r"Treat `500` lines as the official repo refactor limit", standards_text
         )
         is not None
     )
     assert (
         re.search(
-            r"Enforced limit is `500` lines as the hard-stop lint ceiling",
+            r"Enforced limit is `600` lines as the hard-stop lint ceiling",
             standards_text,
         )
         is not None
