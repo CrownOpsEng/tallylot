@@ -75,11 +75,13 @@ clean success.
 
 Review:
 
-- `capture.json`
-- `manifest.csv`
-- `analysis/inventory/source_captures.csv`
-- `analysis/issues/source_inventory.csv`
-- `intake_summary.json`
+- `intake_summary.json` and `intake_issues.csv` for every run
+- `capture.json` and `manifest.csv` when the run materializes a capture under
+  `evidence/raw/source/<source>/<capture_label>/`
+- `analysis/inventory/source_captures.csv` when the run records a capture or
+  duplicate-blocked attempt
+- `analysis/issues/source_inventory.csv` when the run resolves a concrete
+  source and updates source summary state
 
 ## Build The Capture Manifest
 
