@@ -157,6 +157,21 @@ class ApplyIntakeUseCase:
         )
         return IntakeApplyResponse(
             report_output_ref=request.report_output_ref,
+            source=(
+                str(capture_metadata.source)
+                if capture_metadata is not None
+                else capture_session_plan.source_folder
+            ),
+            capture_status=(
+                capture_metadata.status
+                if capture_metadata is not None
+                else capture_session_plan.capture_status
+            ),
+            capture_label=(
+                capture_metadata.capture_label
+                if capture_metadata is not None
+                else capture_session_plan.capture_label
+            ),
             file_count=len(planned_items),
             issue_count=len(issue_rows),
             copied_count=copied_count,

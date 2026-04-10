@@ -270,6 +270,9 @@ def test_source_intake_plan_and_apply_cli(tmp_path: Path) -> None:
     assert plan_result.exit_code == 0
     assert apply_result.exit_code == 0
     assert (report_dir / "intake_plan.csv").exists()
+    assert payload["source"] == "unclassified"
+    assert payload["capture_status"] == "captured"
+    assert payload["capture_label"] == capture_label
     assert payload["copied_count"] == 1
     assert (
         workspace_root
@@ -421,6 +424,9 @@ def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> No
     capture_label = summary["planned_capture_label"]
 
     assert result.exit_code == 0
+    assert payload["source"] == "manual-main"
+    assert payload["capture_status"] == "captured"
+    assert payload["capture_label"] == capture_label
     assert payload["copied_count"] == 1
     assert plan_rows[0]["source_resolution_status"] == "explicit_map"
     assert (
@@ -432,6 +438,55 @@ def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> No
         / capture_label
         / "transactions.csv"
     ).exists()
+
+
+def test_source_intake_cli_reports_blocked_capture_status(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv",
+        ("source",),
+        ({"source": "manual-main"},),
+    )
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "missing-source",
+                "notes": "",
+            },
+        ),
+    )
+    report_dir = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(report_dir),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["source"] == ""
+    assert payload["capture_status"] == "capture_blocked"
+    assert payload["capture_label"] == ""
+    assert payload["copied_count"] == 0
 
 
 def test_checkpoint_extract_pdf_balances_cli(tmp_path: Path) -> None:

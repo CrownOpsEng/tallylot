@@ -55,6 +55,9 @@ class PlanIntakeUseCase:
         )
         return IntakePlanResponse(
             report_output_ref=request.report_output_ref,
+            source=batch.capture_session_plan.source_folder,
+            capture_status=batch.capture_session_plan.capture_status,
+            capture_label=batch.capture_session_plan.capture_label,
             file_count=len(planned_items),
             issue_count=len(issue_rows),
             planned_copy_count=sum(

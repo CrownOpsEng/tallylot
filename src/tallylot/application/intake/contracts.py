@@ -35,6 +35,9 @@ class IntakePlanRequest:
 @dataclass(frozen=True)
 class IntakePlanResponse:
     report_output_ref: ResourceRef
+    source: str
+    capture_status: str
+    capture_label: str
     file_count: int
     issue_count: int
     planned_copy_count: int
@@ -51,6 +54,9 @@ class IntakeApplyRequest:
 @dataclass(frozen=True)
 class IntakeApplyResponse:
     report_output_ref: ResourceRef
+    source: str
+    capture_status: str
+    capture_label: str
     file_count: int
     issue_count: int
     copied_count: int
