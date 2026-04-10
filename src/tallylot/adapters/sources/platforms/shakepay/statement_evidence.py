@@ -29,6 +29,9 @@ BALANCE_ROW_PATTERN = re.compile(
     r"[0-9,]+\.\d+\s+[0-9,]+\.\d+\s+[0-9,]+\.\d+$",
     re.MULTILINE,
 )
+MONTHLY_STATEMENT_FILENAME_PATTERN = re.compile(
+    r"^shakepay_\d{4}-\d{2}\.pdf$", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True)
@@ -77,9 +80,13 @@ def parse_statement_text(text: str, pdf_file: str) -> ShakepayStatementParseResu
 
 
 def match_statement_document(pdf_path: Path, text: str) -> int:
-    del pdf_path
-    if BALANCE_SUMMARY_PATTERN.search(text) is not None:
+    if BALANCE_SUMMARY_PATTERN.search(text) is None:
+        return 0
+    lower_text = text.lower()
+    if "monthly account statement" in lower_text:
         return 100
+    if MONTHLY_STATEMENT_FILENAME_PATTERN.match(pdf_path.name) is not None:
+        return 90
     return 0
 
 

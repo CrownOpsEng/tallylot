@@ -7,6 +7,9 @@ from pathlib import Path
 import pytest
 
 from tallylot.adapters.sources.platforms.shakepay.adapter import _ShakepayAdapter
+from tallylot.adapters.sources.platforms.shakepay.statement_evidence import (
+    match_statement_document,
+)
 from tallylot.adapters.sources.platforms.shakepay.translation import translate_row
 from tallylot.adapters.support import CsvRowContext
 from tallylot.adapters.support.drafts import compile_activity_drafts
@@ -120,6 +123,42 @@ def test_shakepay_invalid_timestamp_surfaces_issue() -> None:
     assert isinstance(parsed, IssueRecord)
     assert parsed.kind == "unsupported_row"
     assert parsed.raw_row_ref == "row:2"
+
+
+def test_shakepay_statement_matching_rejects_auxiliary_reports() -> None:
+    fees_score = match_statement_document(
+        Path("shakepay_Fees charged_2025.pdf"),
+        """
+        Fees & charges report
+        For the year ending on December 31, 2025
+        This report summarizes the sums we directly received.
+        """,
+    )
+    performance_score = match_statement_document(
+        Path("shakepay_Performance report_2025.pdf"),
+        """
+        Performance report
+        For the year ending on December 31, 2025
+        Closing market value at year end $643.81
+        """,
+    )
+
+    assert fees_score == 0
+    assert performance_score == 0
+
+
+def test_shakepay_statement_matching_accepts_monthly_statement_pdf() -> None:
+    score = match_statement_document(
+        Path("shakepay_2025-12.pdf"),
+        """
+        Balance summary (as of 2026-01-01 00:00 EST)
+        Cash (CAD) 436.54 1.00 436.54 436.54
+        Bitcoin (BTC) 0.00172289 119,827.68 206.44 257.47
+        Monthly account statement 2025-12-01 to 2025-12-31
+        """,
+    )
+
+    assert score == 100
 
 
 def test_shakepay_statement_service_emits_latest_balance_evidence(
