@@ -17,6 +17,7 @@ CONTROL_PLANE_PREFIXES = (
 REPO_CODE_OR_TOOLING_EXACT_PATHS = ("conftest.py",)
 CI_OR_RELEASE_EXACT_PATHS = (
     ".pre-commit-config.yaml",
+    ".pylintrc",
     ".pylintrc-tests",
     "pyproject.toml",
     "pyrightconfig.json",
