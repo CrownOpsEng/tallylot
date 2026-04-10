@@ -116,7 +116,8 @@ Rules:
 - `supersedes_capture_uid` is explicit when one capture replaces another
 - status captures intake, review, profiling, normalization, and assembly
   progression
-- expected status values include `captured`, `duplicate_blocked`,
+- expected status values include `capture_blocked`, `captured`,
+  `duplicate_blocked`,
   `overlap_review_required`, `profiled`, `normalized`, `assembly_included`,
   `assembly_excluded`, and `superseded`
 

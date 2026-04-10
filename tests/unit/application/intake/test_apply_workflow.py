@@ -317,6 +317,7 @@ def test_source_intake_service_skips_rows_blocked_by_invalid_source_label_map(
     assert summary["capture_status"] == "capture_blocked"
     assert summary["planned_capture_label"] == ""
     assert summary["manifest_fingerprint"] == ""
+    assert summary["file_count"] == 1
     assert plan_rows[0]["action"] == "skip"
     assert plan_rows[0]["placement_status"] == "mapping_blocked_skip"
     assert plan_rows[0]["source_resolution_status"] == "explicit_map_blocked"
@@ -669,6 +670,7 @@ def test_capture_blocked_apply_avoids_materialized_writes_and_source_mutation(
 
     assert summary["capture_status"] == "capture_blocked"
     assert summary["copied_count"] == 0
+    assert summary["file_count"] == 2
     assert not (
         workspace_root
         / "working"

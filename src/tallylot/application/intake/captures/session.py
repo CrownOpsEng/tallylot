@@ -152,6 +152,7 @@ def build_capture_session_plan(
     issue_rows: list[dict[str, str]],
 ) -> CaptureSessionPlan:
     report_dir = path_from_ref(request.report_output_ref)
+    source_items = [item for item in planned_items if item.category == "source_raw"]
     raw_items = [
         item
         for item in planned_items
@@ -171,11 +172,12 @@ def build_capture_session_plan(
         )
         _mark_mixed_source_capture_blocked(planned_items)
         return _capture_blocked_plan(
-            source_folder=distinct_sources[0] if distinct_sources else ""
+            source_folder=distinct_sources[0] if distinct_sources else "",
+            file_count=len(source_items),
         )
     if not raw_items:
         _mark_source_raw_items_capture_blocked(planned_items)
-        return _capture_blocked_plan()
+        return _capture_blocked_plan(file_count=len(source_items))
 
     source_folder = distinct_sources[0] if distinct_sources else ""
     capture_label = _planned_capture_label(
@@ -287,13 +289,15 @@ def _planned_capture_label(
     )
 
 
-def _capture_blocked_plan(*, source_folder: str = "") -> CaptureSessionPlan:
+def _capture_blocked_plan(
+    *, source_folder: str = "", file_count: int = 0
+) -> CaptureSessionPlan:
     return CaptureSessionPlan(
         source_folder=source_folder,
         capture_label="",
         manifest_fingerprint="",
         capture_status="capture_blocked",
-        file_count=0,
+        file_count=file_count,
         observed_period_start="",
         observed_period_end="",
         observed_group_count=0,
