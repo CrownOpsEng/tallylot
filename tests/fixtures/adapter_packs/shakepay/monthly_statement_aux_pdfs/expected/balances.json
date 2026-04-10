@@ -1,0 +1,22 @@
+[
+  {
+    "as_of_at": "2024-01-04 12:30:00",
+    "as_of_precision": "timestamp",
+    "balance_kind": "available",
+    "instrument_id": "symbol:BTC",
+    "location_id": "shakepay",
+    "notes": "",
+    "quantity": "0.0006",
+    "source": "shakepay"
+  },
+  {
+    "as_of_at": "2024-01-04 12:30:00",
+    "as_of_precision": "timestamp",
+    "balance_kind": "available",
+    "instrument_id": "symbol:CAD",
+    "location_id": "shakepay",
+    "notes": "",
+    "quantity": "20",
+    "source": "shakepay"
+  }
+]

@@ -35,7 +35,7 @@ def test_evaluate_remote_guardrails_defers_review_requirements_for_single_mainta
         rulesets=[],
         collaborators=[
             {
-                "login": "CrownOpsEng",
+                "login": "example-owner",
                 "permissions": {"pull": True},
             }
         ],
@@ -54,7 +54,7 @@ def test_evaluate_remote_guardrails_warns_when_multi_reviewer_repo_lacks_review_
         protection=_protected_branch_payload(),
         rulesets=[],
         collaborators=[
-            {"login": "CrownOpsEng", "permissions": {"pull": True}},
+            {"login": "example-owner", "permissions": {"pull": True}},
             {"login": "teammate", "permissions": {"pull": True}},
         ],
         codeowners_patterns=audit.CONTROL_PLANE_CODEOWNER_PATTERNS,
@@ -81,7 +81,7 @@ def test_evaluate_remote_guardrails_errors_for_missing_core_branch_controls() ->
         protection=payload,
         rulesets=[],
         collaborators=[
-            {"login": "CrownOpsEng", "permissions": {"pull": True}},
+            {"login": "example-owner", "permissions": {"pull": True}},
             {"login": "teammate", "permissions": {"pull": True}},
         ],
         codeowners_patterns=(),
@@ -111,7 +111,7 @@ def test_evaluate_remote_guardrails_errors_for_unpinned_required_status_checks()
     report = audit._evaluate_remote_guardrails(
         protection=payload,
         rulesets=[],
-        collaborators=[{"login": "CrownOpsEng", "permissions": {"pull": True}}],
+        collaborators=[{"login": "example-owner", "permissions": {"pull": True}}],
         codeowners_patterns=audit.CONTROL_PLANE_CODEOWNER_PATTERNS,
     )
 
@@ -138,7 +138,7 @@ def test_rulesets_only_repo_does_not_fail_branch_protection_audit() -> None:
     report = audit._evaluate_remote_guardrails(
         protection=None,
         rulesets=[{"name": "protect-main"}],
-        collaborators=[{"login": "CrownOpsEng", "permissions": {"pull": True}}],
+        collaborators=[{"login": "example-owner", "permissions": {"pull": True}}],
         codeowners_patterns=audit.CONTROL_PLANE_CODEOWNER_PATTERNS,
     )
 
@@ -154,7 +154,7 @@ def test_gh_api_json_or_none_returns_none_for_404(monkeypatch: MonkeyPatch) -> N
     def fake_gh_json(*_args: str) -> object:
         raise subprocess.CalledProcessError(
             returncode=1,
-            cmd=("gh", "api", "repos/CrownOpsEng/tallylot/branches/main/protection"),
+            cmd=("gh", "api", "repos/example-owner/tallylot/branches/main/protection"),
             stderr="gh: HTTP 404: Not Found",
         )
 
@@ -162,7 +162,7 @@ def test_gh_api_json_or_none_returns_none_for_404(monkeypatch: MonkeyPatch) -> N
 
     assert (
         audit._gh_api_json_or_none(
-            "repos/CrownOpsEng/tallylot/branches/main/protection"
+            "repos/example-owner/tallylot/branches/main/protection"
         )
         is None
     )

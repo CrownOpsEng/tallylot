@@ -1,0 +1,14 @@
+[
+  {
+    "adapter_metadata": [],
+    "fact_id": "evm_explorer:Wallet-eth export-0x2222222222222222222222222222222222222222.csv:0xabc",
+    "provenance_refs": [],
+    "review_markers": []
+  },
+  {
+    "adapter_metadata": [],
+    "fact_id": "evm_explorer:Wallet-eth export-address-token-0x2222222222222222222222222222222222222222.csv:0xdef",
+    "provenance_refs": [],
+    "review_markers": []
+  }
+]

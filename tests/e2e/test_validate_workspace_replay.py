@@ -34,8 +34,12 @@ from tools.validate_workspace_replay import main
 REPLAY_PACKS = select_adapter_packs(
     selected_ids=(
         "binance/mixed_history",
+        "binance/latest_statement_workbooks",
+        "coinbase/mixed_statement_aux_pdfs",
         "shakepay/cash_crypto_mix",
+        "shakepay/monthly_statement_aux_pdfs",
         "evm_explorer/chain_scoped_deposit",
+        "evm_explorer/timestamped_portfolio_balance",
     )
 )
 

@@ -1,0 +1,4 @@
+Date,Amount Debited,Asset Debited,Amount Credited,Asset Credited,Market Value,Market Value Currency,Book Cost,Book Cost Currency,Type,Spot Rate,Buy / Sell Rate,Description
+2024-01-02 09:10:11,,,0.00010000,BTC,6.00,CAD,0.00,CAD,Reward,,,ShakingSats
+2024-01-02 12:00:00,50.00,CAD,0.00100000,BTC,50.00,CAD,50.00,CAD,Buy,50000.00,50000.00,BTC buy
+2024-01-04 07:30:00,0.00050000,BTC,,,,CAD,0.00,CAD,Send,,,BTC send

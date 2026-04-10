@@ -1,0 +1,16 @@
+{
+  "adapter_id": "binance",
+  "balance_count": 3,
+  "balance_evidence_count": 2,
+  "fact_count": 1,
+  "facts_outside_normalization_window": 0,
+  "issue_count": 0,
+  "issues_outside_normalization_window": 0,
+  "location_count": 0,
+  "normalization_window_end": "",
+  "normalization_window_start": "",
+  "review_count": 0,
+  "review_summary": [],
+  "reviews_outside_normalization_window": 0,
+  "source": "Binance"
+}

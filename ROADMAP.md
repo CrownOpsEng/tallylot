@@ -88,6 +88,11 @@ Scope:
   reconciliation expands further
 - centralize statement extraction, document discovery, provenance, and shared
   issue or review handling behind one evidence seam
+- keep statement selection and portfolio evidence dating owned by typed capture
+  and profile metadata rather than by capture-label conventions or raw-path
+  rescans
+- allow adapter-owned upstream workbook exports to remain raw evidence when the
+  typed intake route classifies them as source originals
 - keep source profile and source normalize strict to one materialized raw
   capture root and fail explicit on arbitrary directories or mismatched capture
   metadata

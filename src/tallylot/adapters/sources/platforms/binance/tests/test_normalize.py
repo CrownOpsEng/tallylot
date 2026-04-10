@@ -230,9 +230,7 @@ def test_binance_adapter_surfaces_unmatched_export_files(tmp_path: Path) -> None
 
 def test_binance_statement_document_uses_period_end_as_effective_date() -> None:
     result = parse_statement_document(
-        Path(
-            "AccountStatementPeriod_fixtureacct_20260101-20260320_e886163cdfda465e878a1d1dc0f003d8.pdf"
-        ),
+        Path("AccountStatementPeriod_fixtureacct_20260101-20260320_fixture.pdf"),
         "\n".join(
             (
                 "Report Date: 2026/03/23",

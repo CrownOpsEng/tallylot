@@ -1,0 +1,17 @@
+[
+  {
+    "anchor": "row:2",
+    "archive_member_path": "",
+    "as_of_at": "2025-03-24",
+    "as_of_precision": "date",
+    "balance_kind": "available",
+    "capture_uid": "",
+    "instrument_id": "symbol:GALA@evm_explorer",
+    "location_id": "evm:ethereum:0x2222222222222222222222222222222222222222",
+    "locator_kind": "raw_file",
+    "notes": "MetaMask portfolio quantity admitted for the source folder chain only; wallet identity remains source-folder-scoped evidence.",
+    "quantity": "1000",
+    "relative_path": "Wallet-eth portfolio.csv",
+    "source": "eth-wallet-fixture"
+  }
+]

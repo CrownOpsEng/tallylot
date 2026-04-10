@@ -178,7 +178,13 @@ def test_inventory_file_details_prefers_earliest_plausible_header_row(
 
 def test_build_inventory_enriches_rows_from_capture_metadata(tmp_path: Path) -> None:
     raw_dir = (
-        tmp_path / "workspace" / "evidence" / "raw" / "source" / "eth-wallet-fixture" / "2026-03"
+        tmp_path
+        / "workspace"
+        / "evidence"
+        / "raw"
+        / "source"
+        / "eth-wallet-fixture"
+        / "2026-03"
     )
     raw_dir.mkdir(parents=True)
     (raw_dir / "capture.json").write_text(

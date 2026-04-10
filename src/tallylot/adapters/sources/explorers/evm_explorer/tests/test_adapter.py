@@ -165,7 +165,9 @@ def test_evm_explorer_empty_chain_scoped_capture_reports_missing_identifier(
         "eth-wallet-fixture",
         raw_dir,
         build_source_profile(
-            adapter_id="evm_explorer", source="eth-wallet-fixture", raw_dir=str(raw_dir)
+            adapter_id="evm_explorer",
+            source="eth-wallet-fixture",
+            raw_dir=str(raw_dir),
         ),
     )
 
