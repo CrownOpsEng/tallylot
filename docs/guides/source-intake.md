@@ -67,12 +67,19 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source inta
 
 Apply only after the plan artifacts look correct.
 
+`source intake apply` still writes its report artifacts before exit. When the
+run finishes with a non-`captured` `capture_status` such as
+`capture_blocked`, `duplicate_blocked`, or `overlap_review_required`, the CLI
+returns a nonzero exit code so shell automation does not treat the outcome as
+clean success.
+
 Review:
 
 - `capture.json`
 - `manifest.csv`
 - `analysis/inventory/source_captures.csv`
 - `analysis/issues/source_inventory.csv`
+- `intake_summary.json`
 
 ## Build The Capture Manifest
 

@@ -26,7 +26,9 @@ Use the linked task guides when you need the detailed procedure for one stage.
 1. Treat one intake run as one capture and keep settled raw evidence under
    `evidence/raw/source/<source>/<capture_label>/`.
 2. Run `source intake plan` before touching the workspace.
-3. Run `source intake apply` only after the plan artifacts look correct.
+3. Run `source intake apply` only after the plan artifacts look correct. A
+   non-`captured` intake outcome returns a nonzero exit code even though the
+   intake report artifacts are still written for review.
 4. Run `source manifest`, `source profile`, and `source normalize` against the
    settled materialized capture root. `source profile` and `source normalize`
    reject source roots, arbitrary subdirectories, and capture roots whose

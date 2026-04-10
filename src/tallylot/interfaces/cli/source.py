@@ -173,6 +173,8 @@ def _source_intake_apply(
         )
     )
     emit_response(response.__dict__)
+    if response.capture_status != "captured":
+        raise typer.Exit(1)
 
 
 _COMMAND_CALLBACKS = (

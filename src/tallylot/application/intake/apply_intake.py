@@ -91,6 +91,9 @@ class ApplyIntakeUseCase:
                 write_capture_manifests(self._artifacts, workspace_root, planned_items)
         assert capture_session_plan is not None
         should_record_capture = bool(capture_session_plan.source_folder)
+        materialized_capture = _session_materializes_capture(
+            capture_session_plan.capture_status
+        )
         if capture_session_plan.source_folder and _session_materializes_capture(
             capture_session_plan.capture_status
         ):
@@ -127,9 +130,7 @@ class ApplyIntakeUseCase:
                     plan=capture_session_plan,
                     capture_root_ref=(
                         f"evidence/raw/source/{capture_session_plan.source_folder}/{capture_session_plan.capture_label}"
-                        if _session_materializes_capture(
-                            capture_session_plan.capture_status
-                        )
+                        if materialized_capture
                         else ""
                     ),
                     intake_started_at=intake_started_at,
@@ -171,6 +172,8 @@ class ApplyIntakeUseCase:
                 capture_metadata.capture_label
                 if capture_metadata is not None
                 else capture_session_plan.capture_label
+                if materialized_capture
+                else ""
             ),
             file_count=len(planned_items),
             issue_count=len(issue_rows),
