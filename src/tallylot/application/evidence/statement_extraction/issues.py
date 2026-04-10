@@ -102,6 +102,31 @@ def missing_quantity_issue(
     )
 
 
+def ambiguous_statement_issue(
+    adapter: StatementDocumentEvidenceAdapter,
+    profile: SourceProfile,
+    entry: FileInventoryEntry,
+    provenance: ProvenanceLocator,
+    *,
+    matched_paths: tuple[str, ...],
+) -> IssueRecord:
+    documents = ", ".join(matched_paths)
+    return statement_issue(
+        adapter,
+        profile,
+        entry,
+        provenance,
+        StatementIssueDetails(
+            kind="statement_document_ambiguous",
+            severity="high",
+            message=(
+                f"{adapter.manifest.display_name} matched multiple latest statement "
+                f"documents for one capture: {documents}."
+            ),
+        ),
+    )
+
+
 def instrument_issue(
     adapter: StatementDocumentEvidenceAdapter,
     profile: SourceProfile,

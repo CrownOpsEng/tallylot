@@ -15,7 +15,7 @@ def statement_row_to_pdf_balance_row(
         "wallet": row.wallet,
         "balance_kind": row.balance_kind,
         "asset": row.asset,
-        "quantity": format_decimal(row.quantity),
+        "quantity": "" if row.quantity is None else format_decimal(row.quantity),
         "staked_quantity": row.staked_quantity,
         "value_amount": row.value_amount,
         "value_currency": row.value_currency,

@@ -7,7 +7,10 @@ from typing import cast
 
 from pypdf import PdfReader
 
-from tallylot.ports.evidence import StatementBalanceEvidenceBatch
+from tallylot.ports.evidence import (
+    StatementBalanceEvidenceBatch,
+    StatementDocumentParseResult,
+)
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -37,6 +40,10 @@ class StatementExtractionService:
             self._registry, pdf_path, text, requested_statement_kind
         )
         parsed = adapter.parse_statement_document(pdf_path, text)
+        _validate_checkpoint_parse_result(
+            adapter_id=str(adapter.manifest.adapter_id),
+            parsed=parsed,
+        )
         return PdfBalanceRows(
             adapter_id=str(adapter.manifest.adapter_id),
             rows=tuple(statement_row_to_pdf_balance_row(row) for row in parsed.rows),
@@ -106,3 +113,17 @@ def _requested_statement_adapter(
     if not supports_statement_document_parser(adapter):
         raise ValueError(f"unsupported statement kind: {requested}")
     return cast(StatementDocumentParser, adapter)
+
+
+def _validate_checkpoint_parse_result(
+    *, adapter_id: str, parsed: StatementDocumentParseResult
+) -> None:
+    if not parsed.recognized:
+        raise ValueError(
+            f"statement kind {adapter_id} did not recognize {parsed.pdf_file}"
+        )
+    if not parsed.rows:
+        raise ValueError(
+            f"statement kind {adapter_id} recognized {parsed.pdf_file} "
+            "but produced no balance rows"
+        )

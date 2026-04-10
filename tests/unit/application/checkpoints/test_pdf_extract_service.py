@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -56,6 +57,7 @@ class StubPdfAdapter:
         self._match_score = match_score
         self._rows = rows
         self._recognized = recognized
+        self.statement_as_of_at: datetime | None = None
 
     def match(
         self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
@@ -78,7 +80,8 @@ class StubPdfAdapter:
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
         del request
-        return None
+        route: IntakeRoute | None = None
+        return route
 
     def validate_profile_timezones(
         self,
@@ -107,7 +110,7 @@ class StubPdfAdapter:
         return StatementDocumentParseResult(
             pdf_file=pdf_path.name,
             recognized=self._recognized,
-            statement_as_of_at=None,
+            statement_as_of_at=self.statement_as_of_at,
             rows=self._rows,
         )
 
@@ -213,6 +216,49 @@ def test_pdf_balance_extraction_service_rejects_unknown_requested_kind(
         )
 
 
+def test_pdf_balance_extraction_service_rejects_unrecognized_requested_kind_result(
+    tmp_path: Path,
+) -> None:
+    pdf_path = tmp_path / "statement.pdf"
+    _make_pdf(pdf_path, "Account statement")
+    artifacts = FilesystemArtifactStore()
+    registry = StubRegistry([StubPdfAdapter("example", 100, (), recognized=False)])
+
+    with pytest.raises(
+        ValueError, match="statement kind example did not recognize statement.pdf"
+    ):
+        ExtractPdfBalancesUseCase(registry, artifacts).execute(
+            PdfBalanceExtractRequest(
+                pdf_artifact_ref=to_resource_ref(pdf_path),
+                output_ref=to_resource_ref(tmp_path / "balances.csv"),
+                statement_kind="example",
+            )
+        )
+
+
+def test_pdf_balance_extraction_service_rejects_empty_recognized_result(
+    tmp_path: Path,
+) -> None:
+    pdf_path = tmp_path / "statement.pdf"
+    _make_pdf(pdf_path, "Account statement")
+    artifacts = FilesystemArtifactStore()
+    registry = StubRegistry([StubPdfAdapter("example", 100, (), recognized=True)])
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "statement kind example recognized statement.pdf but produced no balance rows"
+        ),
+    ):
+        ExtractPdfBalancesUseCase(registry, artifacts).execute(
+            PdfBalanceExtractRequest(
+                pdf_artifact_ref=to_resource_ref(pdf_path),
+                output_ref=to_resource_ref(tmp_path / "balances.csv"),
+                statement_kind="example",
+            )
+        )
+
+
 def test_pdf_balance_extraction_service_rejects_unknown_pdf_text(
     tmp_path: Path,
 ) -> None:
@@ -230,6 +276,61 @@ def test_pdf_balance_extraction_service_rejects_unknown_pdf_text(
                 output_ref=to_resource_ref(tmp_path / "balances.csv"),
             )
         )
+
+
+def test_pdf_balance_extraction_service_keeps_non_quantity_statement_rows(
+    tmp_path: Path,
+) -> None:
+    pdf_path = tmp_path / "statement.pdf"
+    output_path = tmp_path / "balances.csv"
+    _make_pdf(pdf_path, "Performance report")
+    artifacts = FilesystemArtifactStore()
+    rows = (
+        StatementDocumentBalanceRow(
+            source="Example",
+            account="Example",
+            wallet="Example",
+            balance_kind="closing_market_value",
+            asset="",
+            quantity=None,
+            as_of_at=None,
+            as_of_precision=TemporalPrecision.TIMESTAMP,
+            pdf_file=pdf_path.name,
+            as_of_text="2026-03-31 23:59 EDT",
+            value_amount="123.45",
+            value_currency="CAD",
+            notes="valuation-only row",
+        ),
+    )
+    registry = StubRegistry([StubPdfAdapter("example", 100, rows)])
+
+    response = ExtractPdfBalancesUseCase(registry, artifacts).execute(
+        PdfBalanceExtractRequest(
+            pdf_artifact_ref=to_resource_ref(pdf_path),
+            output_ref=to_resource_ref(output_path),
+            statement_kind="example",
+        )
+    )
+
+    assert response.row_count == 1
+    assert artifacts.read_rows(output_path) == [
+        {
+            "source": "Example",
+            "account": "Example",
+            "wallet": "Example",
+            "balance_kind": "closing_market_value",
+            "asset": "",
+            "quantity": "",
+            "staked_quantity": "",
+            "value_amount": "123.45",
+            "value_currency": "CAD",
+            "price_amount": "",
+            "price_currency": "",
+            "as_of": "2026-03-31 23:59 EDT",
+            "pdf_file": "statement.pdf",
+            "notes": "valuation-only row",
+        }
+    ]
 
 
 def test_pdf_balance_extraction_service_rejects_ambiguous_detection(
@@ -285,8 +386,8 @@ def test_source_statement_extraction_reports_unrecognized_inventory_pdf(
         profile, tmp_path
     )
 
-    assert result.balance_evidence == ()
-    assert result.reviews == ()
+    assert not result.balance_evidence
+    assert not result.reviews
     assert [issue.kind for issue in result.issues] == [
         "statement_document_unrecognized"
     ]
@@ -307,3 +408,74 @@ def test_source_statement_extraction_reports_unrecognized_inventory_pdf(
         "raw_anchor": "",
         "status": "open",
     }
+
+
+def test_source_statement_extraction_reports_ambiguous_latest_inventory_pdfs(
+    tmp_path: Path,
+) -> None:
+    first_pdf = tmp_path / "first.pdf"
+    second_pdf = tmp_path / "second.pdf"
+    _make_pdf(first_pdf, "Statement one")
+    _make_pdf(second_pdf, "Statement two")
+    latest_as_of = datetime(2026, 3, 23, 0, 0)
+    rows = (
+        StatementDocumentBalanceRow(
+            source="Example",
+            account="Example",
+            wallet="Example",
+            balance_kind="available",
+            asset="BTC",
+            quantity=Decimal("1.0"),
+            as_of_at=latest_as_of,
+            as_of_precision=TemporalPrecision.DATE,
+            pdf_file=first_pdf.name,
+            raw_row_ref="page=1",
+        ),
+    )
+    adapter = StubPdfAdapter("example", 100, rows)
+    adapter.statement_as_of_at = latest_as_of
+    registry = StubRegistry([adapter])
+    profile = SourceProfile(
+        source=SourceId("Example"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("example"),
+        manifest_fingerprint="fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path=first_pdf.name,
+                suffix=".pdf",
+                size_bytes=first_pdf.stat().st_size,
+                sha256="first",
+                source_path=str(first_pdf),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+            FileInventoryEntry(
+                relative_path=second_pdf.name,
+                suffix=".pdf",
+                size_bytes=second_pdf.stat().st_size,
+                sha256="second",
+                source_path=str(second_pdf),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+        ),
+        supported=True,
+    )
+
+    result = StatementExtractionService(registry).extract_source_balance_evidence(
+        profile, tmp_path
+    )
+
+    assert not result.balance_evidence
+    assert not result.reviews
+    assert [issue.kind for issue in result.issues] == [
+        "statement_document_ambiguous",
+        "statement_document_ambiguous",
+    ]
+    assert {issue.raw_file for issue in result.issues} == {"first.pdf", "second.pdf"}
+    assert all("first.pdf, second.pdf" in issue.message for issue in result.issues)

@@ -27,6 +27,7 @@ from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from .hooks import StatementDocumentEvidenceAdapter
 from .issues import (
     StatementIssueDetails,
+    ambiguous_statement_issue,
     instrument_issue,
     instrument_review,
     missing_quantity_issue,
@@ -98,6 +99,16 @@ def extract_source_balance_evidence_from_inventory(
             adapter,
             profile,
             recognized,
+            issues,
+        )
+        return StatementBalanceEvidenceBatch(
+            balance_evidence=(), issues=tuple(issues), reviews=tuple(reviews)
+        )
+    if len(latest_documents) > 1:
+        _append_ambiguous_statement_issues(
+            adapter,
+            profile,
+            latest_documents,
             issues,
         )
         return StatementBalanceEvidenceBatch(
@@ -209,6 +220,27 @@ def _append_missing_as_of_issue(
             ),
         )
     )
+
+
+def _append_ambiguous_statement_issues(
+    adapter: StatementDocumentEvidenceAdapter,
+    profile: SourceProfile,
+    latest_documents: tuple[
+        tuple[FileInventoryEntry, StatementDocumentParseResult], ...
+    ],
+    issues: list[IssueRecord],
+) -> None:
+    matched_paths = tuple(entry.relative_path for entry, _ in latest_documents)
+    for entry, _ in latest_documents:
+        issues.append(
+            ambiguous_statement_issue(
+                adapter,
+                profile,
+                entry,
+                _document_provenance(entry),
+                matched_paths=matched_paths,
+            )
+        )
 
 
 def _balance_evidence_from_statement_documents(
