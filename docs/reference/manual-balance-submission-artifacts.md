@@ -186,7 +186,7 @@ entered value exactly in the canonical outputs.
 ## Canonical Outputs
 
 By default, a successful submit run materializes canonical outputs under
-`working/normalized/<source>/`. The CLI also accepts an explicit output
+`working/normalized/sources/<source>/`. The CLI also accepts an explicit output
 directory as long as it is not inside the submission package tree.
 
 Written files:

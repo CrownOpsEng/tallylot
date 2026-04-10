@@ -226,6 +226,50 @@ def test_source_intake_route_mentions_current_typed_commands() -> None:
     assert "source_label_map.csv" in text
 
 
+def test_operator_guides_include_source_assemble_stage() -> None:
+    paths = (
+        docs_root() / "guides" / "operator-quickstart.md",
+        docs_root() / "guides" / "source-intake.md",
+        docs_root() / "guides" / "normalize-screen-stage.md",
+        docs_root() / "guides" / "full-operator-workflow.md",
+    )
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        assert "source assemble" in text
+
+
+def test_current_state_mentions_capture_and_assembly_runtime_surfaces() -> None:
+    text = (docs_root() / "status" / "current-state.md").read_text(encoding="utf-8")
+
+    for needle in (
+        "capture registry",
+        "working/normalized/captures/<capture_uid>/",
+        "working/normalized/sources/<source>/",
+        "shared statement extraction",
+        "tools.validate_workspace_replay",
+    ):
+        assert needle in text
+
+
+def test_updated_workspace_and_operator_docs_drop_legacy_capture_and_normalized_paths() -> (
+    None
+):
+    paths = (
+        docs_root() / "guides" / "operator-quickstart.md",
+        docs_root() / "guides" / "source-intake.md",
+        docs_root() / "guides" / "normalize-screen-stage.md",
+        docs_root() / "guides" / "full-operator-workflow.md",
+        docs_root() / "workspace" / "evidence" / "raw" / "source" / "README.md",
+        docs_root() / "workspace" / "working" / "normalized" / "README.md",
+    )
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        assert "<capture_id>" not in text
+        assert "working/normalized/<source>" not in text
+
+
 def test_round_verification_route_mentions_oracle_cli_commands() -> None:
     text = (claude_commands_root() / "round-verification.md").read_text(
         encoding="utf-8"

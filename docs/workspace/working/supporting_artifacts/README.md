@@ -15,10 +15,17 @@ Examples:
 - manual balance submission packages under `balance_submissions/<source>/`
 - tracker-specific import-helper files
 - screenshots or rendered HTML evidence saves
+- intake or validation report packages
 - transformed helper artifacts that should not live under raw source exports
 
 Files here are useful support material, but they are not raw system-of-record
 evidence.
+
+Do not place these files here:
+
+- untouched upstream PDFs
+- untouched upstream HTML exports
+- untouched upstream sidecars required to interpret an original export
 
 When intake places supporting artifacts under a source-scoped path, it uses the
 same stable source-label mapping rules as raw source intake. Update

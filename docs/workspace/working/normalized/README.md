@@ -1,17 +1,24 @@
 ---
 title: "Normalized Files"
-summary: "Artifact contract for deterministic per-source normalized outputs and working candidates."
+summary: "Artifact contract for capture-scoped normalization outputs, assembled source datasets, and working candidates."
 doc_type: reference
 audience: both
 owner: repo
 status: active
 ---
 
-Place deterministic normalized source artifacts here after profiling and field normalization.
+Place deterministic normalized artifacts here after profiling, field
+normalization, and source assembly.
 
 Do not treat files here as raw evidence. The raw source must remain in `evidence/raw/source/`.
 
-Per-source folders should use the typed pipeline artifact set:
+## Capture Outputs
+
+Capture-scoped normalized roots live under:
+
+- `working/normalized/captures/<capture_uid>/`
+
+These folders hold the typed pipeline artifact set for one capture:
 
 - `profile.json`
 - `profile_inventory.csv`
@@ -25,6 +32,29 @@ Per-source folders should use the typed pipeline artifact set:
 - `normalization_reviews.csv`
 - `location_inventory.csv`
 - `normalization_summary.json`
+
+## Assembled Source Outputs
+
+Source assembly writes the reconciliation-ready dataset under:
+
+- `working/normalized/sources/<source>/`
+
+These folders keep the familiar per-source artifact surface, plus assembly
+artifacts:
+
+- `facts.csv`
+- `fact_annotations.json`
+- `balances.csv`
+- `balance_evidence.csv`
+- `balance_confirmations.csv`
+- `exceptions.csv`
+- `normalization_reviews.csv`
+- `location_inventory.csv`
+- `assembly_summary.json`
+- `assembly_issues.csv`
+
+Reconciliation reads only assembled source datasets from
+`working/normalized/sources/`.
 
 `fact_annotations.json` preserves fact-keyed provenance references and
 review markers that originate on drafts.
@@ -46,7 +76,7 @@ checkpoint evidence requirements on its own.
 
 `cointracking_candidate.csv` is optional. Create it with `output render file`
 when the round needs it, and keep it beside the
-normalized artifacts only as a working file. Only
+assembled source artifacts only as a working file. Only
 `working/import_batches/` should hold files that have passed overlap
 screening and are approved for import.
 

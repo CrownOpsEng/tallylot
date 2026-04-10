@@ -13,8 +13,8 @@ status: active
 - [ ] Review `analysis/reconciliation/baseline_cad_flow_by_type.csv` and current status of `FIAT-001`
 - [ ] Review open P1 items in `analysis/issues/issue_log.csv`
 - [ ] Pull external evidence for each targeted issue
-- [ ] Save raw source files to `evidence/raw/source/<source>/<capture_id>/`
-- [ ] Generate or refresh `evidence/raw/source/<source>/<capture_id>/manifest.csv`
+- [ ] Save raw source files to `evidence/raw/source/<source>/<capture_label>/`
+- [ ] Generate or refresh `evidence/raw/source/<source>/<capture_label>/manifest.csv`
 - [ ] Update `proof_path` and `proof_summary` before editing the external verification tool state
 - [ ] Make repair(s) in the external verification tool
 - [ ] Export Validate Transactions
@@ -32,10 +32,11 @@ status: active
 
 - [ ] Confirm the source has a row in `analysis/issues/source_inventory.csv`
 - [ ] Confirm the export window starts strictly after `2023-08-05 08:34:04`
-- [ ] Save raw source files to `evidence/raw/source/<source>/<capture_id>/`
-- [ ] Generate or refresh `evidence/raw/source/<source>/<capture_id>/manifest.csv`
+- [ ] Save raw source files to `evidence/raw/source/<source>/<capture_label>/`
+- [ ] Generate or refresh `evidence/raw/source/<source>/<capture_label>/manifest.csv`
 - [ ] Run `source profile` and review timezone artifacts
 - [ ] Run `source normalize` and review exception and review artifacts
+- [ ] Run `source assemble` before reconciliation or candidate rendering
 - [ ] Render `cointracking_candidate.csv` when needed
 - [ ] Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen` on the candidate CSV and review the output
 - [ ] Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch stage` only after the screen passes

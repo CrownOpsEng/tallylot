@@ -13,11 +13,15 @@ capture.
 
 ## Start From A Settled Capture
 
-1. Start from an untouched incoming dump when the capture is not already in the
+1. Treat one intake run as one capture for one source.
+2. Start from an untouched incoming dump when the capture is not already in the
    workspace.
-2. Keep settled raw files under
-   `evidence/raw/source/<source>/<capture_id>/`.
-3. Do not rename or reshape raw evidence after it becomes the settled capture.
+3. Keep settled raw files under
+   `evidence/raw/source/<source>/<capture_label>/`.
+4. Keep inferred periods as metadata only. Do not rename or regroup a capture
+   folder around an inferred month or year.
+5. Keep untouched statements, HTML exports, and required upstream sidecars in
+   raw evidence.
 
 ## Plan The Intake
 
@@ -32,7 +36,7 @@ Run:
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake plan \
   --incoming-dir <incoming_dump> \
   --workspace-root <workspace> \
-  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
+  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_label>
 ```
 
 Review:
@@ -52,20 +56,27 @@ Run:
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake apply \
   --incoming-dir <incoming_dump> \
   --workspace-root <workspace> \
-  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
+  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_label>
 ```
 
 Apply only after the plan artifacts look correct.
 
+Review:
+
+- `capture.json`
+- `manifest.csv`
+- `analysis/inventory/source_captures.csv`
+- `analysis/issues/source_inventory.csv`
+
 ## Build The Capture Manifest
 
 If the capture is already settled under
-`evidence/raw/source/<source>/<capture_id>/`, run:
+`evidence/raw/source/<source>/<capture_label>/`, run:
 
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source manifest \
-  --source-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
-  --output <workspace>/evidence/raw/source/<source>/<capture_id>/manifest.csv
+  --source-dir <workspace>/evidence/raw/source/<source>/<capture_label> \
+  --output <workspace>/evidence/raw/source/<source>/<capture_label>/manifest.csv
 ```
 
 Keep `manifest.csv` inside the settled capture folder.
@@ -77,9 +88,11 @@ Run:
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source profile \
   --source <source> \
-  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
-  --output-dir <workspace>/working/normalized/<source>
+  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
 ```
+
+When the raw capture lives inside the workspace, the default output root is
+`working/normalized/captures/<capture_uid>/`.
 
 Review:
 
@@ -87,5 +100,24 @@ Review:
 - `profile_inventory.csv`
 - `timezone_issues.csv`
 
+## Normalize And Assemble
+
+Run:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize \
+  --source <source> \
+  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
+```
+
+Then assemble the accepted capture outputs into the source dataset used by
+reconciliation:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source assemble \
+  --source <source> \
+  --workspace-root <workspace>
+```
+
 Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the next
-step after the settled capture has been profiled.
+step after the settled capture has been profiled and normalized.

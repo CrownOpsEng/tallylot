@@ -20,10 +20,11 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.orac
 
 ## Source Intake
 
-- save untouched files into `evidence/raw/source/<source>/<capture_id>/`
+- save untouched files into `evidence/raw/source/<source>/<capture_label>/`
 - run `source manifest`
 - run `source profile`
 - run `source normalize`
+- run `source assemble`
 - review `timezone_issues.csv`, `exceptions.csv`,
   `normalization_reviews.csv`, and `fact_annotations.json`
 - run `output render file` if the round needs `cointracking_candidate.csv`

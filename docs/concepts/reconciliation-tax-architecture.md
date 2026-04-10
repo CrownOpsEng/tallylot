@@ -253,7 +253,7 @@ Rules:
   own that validation and materialization path inside
   `application/checkpoints/`
 - the canonical reconciliation schema still lives under the chosen output
-  root, normally `working/normalized/<source>/`
+  root, normally `working/normalized/sources/<source>/`
 - manual submission records operator-confirmed runtime references and must not
   fabricate or widen source-backed `balance_evidence.csv`
 - runtime reconciliation may use source-backed evidence first and operator
