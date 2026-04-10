@@ -51,11 +51,10 @@ def extract_source_balance_evidence_from_inventory(
     for entry, pdf_path in candidates:
         provenance = _document_provenance(entry)
         text = extract_pdf_text(pdf_path)
+        if adapter.match_statement_document(pdf_path, text) <= 0:
+            continue
         parsed = adapter.parse_statement_document(pdf_path, text)
-        if (
-            adapter.match_statement_document(pdf_path, text) <= 0
-            or not parsed.recognized
-        ):
+        if not parsed.recognized:
             issues.append(
                 statement_issue(
                     adapter,
@@ -175,6 +174,22 @@ def _document_provenance(
 def _latest_recognized_documents(
     documents: list[tuple[FileInventoryEntry, StatementDocumentParseResult]],
 ) -> tuple[tuple[FileInventoryEntry, StatementDocumentParseResult], ...]:
+    effective_dated = tuple(
+        (entry, parsed)
+        for entry, parsed in documents
+        if parsed.document_effective_at is not None
+    )
+    if effective_dated:
+        latest_effective_at = max(
+            parsed.document_effective_at
+            for _, parsed in effective_dated
+            if parsed.document_effective_at is not None
+        )
+        return tuple(
+            (entry, parsed)
+            for entry, parsed in effective_dated
+            if parsed.document_effective_at == latest_effective_at
+        )
     dated = tuple(
         (entry, parsed)
         for entry, parsed in documents

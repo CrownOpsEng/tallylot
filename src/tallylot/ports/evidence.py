@@ -189,6 +189,7 @@ class StatementDocumentParseResult:
     recognized: bool
     statement_as_of_at: datetime | None
     rows: tuple[StatementDocumentBalanceRow, ...]
+    document_effective_at: datetime | None = None
 
 
 @dataclass(frozen=True)

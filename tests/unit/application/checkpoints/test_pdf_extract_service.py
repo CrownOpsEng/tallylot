@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import override
 
 import pytest
 from reportlab.pdfgen import canvas
@@ -58,6 +59,8 @@ class StubPdfAdapter:
         self._rows = rows
         self._recognized = recognized
         self.statement_as_of_at: datetime | None = None
+        self.document_effective_at: datetime | None = None
+        self.parse_calls = 0
 
     def match(
         self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
@@ -107,11 +110,13 @@ class StubPdfAdapter:
         self, pdf_path: Path, text: str
     ) -> StatementDocumentParseResult:
         del text
+        self.parse_calls += 1
         return StatementDocumentParseResult(
             pdf_file=pdf_path.name,
             recognized=self._recognized,
             statement_as_of_at=self.statement_as_of_at,
             rows=self._rows,
+            document_effective_at=self.document_effective_at,
         )
 
     def resolve_statement_instrument_claims(
@@ -355,12 +360,50 @@ def test_pdf_balance_extraction_service_rejects_ambiguous_detection(
         )
 
 
-def test_source_statement_extraction_reports_unrecognized_inventory_pdf(
+def test_source_statement_extraction_skips_unmatched_inventory_pdf(
     tmp_path: Path,
 ) -> None:
     pdf_path = tmp_path / "statement.pdf"
     _make_pdf(pdf_path, "Unrecognized statement")
-    registry = StubRegistry([StubPdfAdapter("example", 0, (), recognized=False)])
+    adapter = StubPdfAdapter("example", 0, (), recognized=False)
+    registry = StubRegistry([adapter])
+    profile = SourceProfile(
+        source=SourceId("Example"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("example"),
+        manifest_fingerprint="fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path=pdf_path.name,
+                suffix=".pdf",
+                size_bytes=pdf_path.stat().st_size,
+                sha256="fixture",
+                source_path=str(pdf_path),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+        ),
+        supported=True,
+    )
+
+    result = StatementExtractionService(registry).extract_source_balance_evidence(
+        profile, tmp_path
+    )
+
+    assert not result.balance_evidence
+    assert not result.issues
+    assert not result.reviews
+    assert adapter.parse_calls == 0
+
+
+def test_source_statement_extraction_reports_unrecognized_matched_inventory_pdf(
+    tmp_path: Path,
+) -> None:
+    pdf_path = tmp_path / "statement.pdf"
+    _make_pdf(pdf_path, "Unrecognized statement")
+    registry = StubRegistry([StubPdfAdapter("example", 100, (), recognized=False)])
     profile = SourceProfile(
         source=SourceId("Example"),
         raw_dir=str(tmp_path),
@@ -408,6 +451,115 @@ def test_source_statement_extraction_reports_unrecognized_inventory_pdf(
         "raw_anchor": "",
         "status": "open",
     }
+
+
+def test_source_statement_extraction_prefers_document_effective_at(
+    tmp_path: Path,
+) -> None:
+    first_pdf = tmp_path / "first.pdf"
+    second_pdf = tmp_path / "second.pdf"
+    _make_pdf(first_pdf, "Statement one")
+    _make_pdf(second_pdf, "Statement two")
+    statement_as_of = datetime(2026, 3, 23, 0, 0, tzinfo=UTC)
+    rows_by_pdf = {
+        first_pdf.name: (
+            StatementDocumentBalanceRow(
+                source="Example",
+                account="Example",
+                wallet="Example",
+                balance_kind="available",
+                asset="BTC",
+                quantity=Decimal("1.0"),
+                as_of_at=statement_as_of,
+                as_of_precision=TemporalPrecision.DATE,
+                pdf_file=first_pdf.name,
+                raw_row_ref="page=1",
+            ),
+        ),
+        second_pdf.name: (
+            StatementDocumentBalanceRow(
+                source="Example",
+                account="Example",
+                wallet="Example",
+                balance_kind="available",
+                asset="BTC",
+                quantity=Decimal("2.0"),
+                as_of_at=statement_as_of,
+                as_of_precision=TemporalPrecision.DATE,
+                pdf_file=second_pdf.name,
+                raw_row_ref="page=1",
+            ),
+        ),
+    }
+
+    class EffectiveDateAdapter(StubPdfAdapter):
+        @override
+        def parse_statement_document(
+            self, pdf_path: Path, text: str
+        ) -> StatementDocumentParseResult:
+            del text
+            self.parse_calls += 1
+            return StatementDocumentParseResult(
+                pdf_file=pdf_path.name,
+                recognized=True,
+                statement_as_of_at=statement_as_of,
+                rows=rows_by_pdf[pdf_path.name],
+                document_effective_at=(
+                    datetime(2026, 3, 20, 0, 0, tzinfo=UTC)
+                    if pdf_path.name == first_pdf.name
+                    else datetime(2026, 3, 23, 0, 0, tzinfo=UTC)
+                ),
+            )
+
+        @override
+        def resolve_statement_instrument_claims(
+            self, row: StatementDocumentBalanceRow
+        ) -> tuple[InstrumentIdentityClaim, ...]:
+            del row
+            return (InstrumentIdentityClaim("symbol", "BTC"),)
+
+    adapter = EffectiveDateAdapter("example", 100, ())
+    registry = StubRegistry([adapter])
+    profile = SourceProfile(
+        source=SourceId("Example"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("example"),
+        manifest_fingerprint="fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path=first_pdf.name,
+                suffix=".pdf",
+                size_bytes=first_pdf.stat().st_size,
+                sha256="first",
+                source_path=str(first_pdf),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+            FileInventoryEntry(
+                relative_path=second_pdf.name,
+                suffix=".pdf",
+                size_bytes=second_pdf.stat().st_size,
+                sha256="second",
+                source_path=str(second_pdf),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+        ),
+        supported=True,
+    )
+
+    result = StatementExtractionService(registry).extract_source_balance_evidence(
+        profile, tmp_path
+    )
+
+    assert not result.issues
+    assert [row.provenance.relative_path for row in result.balance_evidence] == [
+        "second.pdf"
+    ]
 
 
 def test_source_statement_extraction_reports_ambiguous_latest_inventory_pdfs(
