@@ -27,7 +27,7 @@ def apply_package_rules_to_items(
             relative_path=item.relative_path,
             archive_source_path=item.archive_source_path,
             source_folder=item.source_folder,
-            capture_id=item.capture_id,
+            capture_label=item.capture_label,
             category=item.category,
             action=item.action,
             sha256=item.sha256,
@@ -58,7 +58,7 @@ def apply_package_rules_to_items(
             evidence_role=item.evidence_role,
             originality_class=item.originality_class,
             source_folder=item.source_folder,
-            capture_id=item.capture_id,
+            capture_label=item.capture_label,
             capture_status=item.capture_status,
             bundle_id=effective_bundle_id(item, package_map[str(item.source_path)]),
             bundle_relative_path=item.bundle_relative_path,
@@ -101,7 +101,7 @@ def apply_package_rules_to_items(
                 source_raw_target_path(
                     workspace_root,
                     source_folder=item.source_folder,
-                    capture_id=item.capture_id,
+                    capture_label=item.capture_label,
                     bundle_id_value=effective_bundle_id(
                         item, package_map[str(item.source_path)]
                     ),

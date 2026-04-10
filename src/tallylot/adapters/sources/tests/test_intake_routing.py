@@ -40,13 +40,16 @@ def test_cointracking_portfolio_adapter_routes_html_export(tmp_path: Path) -> No
 
     assert route is not None
     assert route.role == "portfolio_export"
-    assert route.capture_id == "2022-04"
+    assert route.capture_label == "2022-04"
     assert route.target_path == (
-        workspace_root / "evidence/raw/portfolio/cointracking/2022-04/CoinTracking Export.html"
+        workspace_root
+        / "evidence/raw/portfolio/cointracking/2022-04/CoinTracking Export.html"
     )
 
 
-def test_cointracking_portfolio_adapter_routes_pdf_export_by_file_facts_timestamp(tmp_path: Path) -> None:
+def test_cointracking_portfolio_adapter_routes_pdf_export_by_file_facts_timestamp(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     pdf_path = incoming_dir / "CoinTracking Export.pdf"
@@ -66,11 +69,16 @@ def test_cointracking_portfolio_adapter_routes_pdf_export_by_file_facts_timestam
 
     assert route is not None
     assert route.role == "portfolio_export"
-    assert route.capture_id == "2022-03"
-    assert route.target_path == (workspace_root / "evidence/raw/portfolio/cointracking/2022-03/CoinTracking Export.pdf")
+    assert route.capture_label == "2022-03"
+    assert route.target_path == (
+        workspace_root
+        / "evidence/raw/portfolio/cointracking/2022-03/CoinTracking Export.pdf"
+    )
 
 
-def test_cointracking_portfolio_adapter_routes_archive_sidecar_under_members_path(tmp_path: Path) -> None:
+def test_cointracking_portfolio_adapter_routes_archive_sidecar_under_members_path(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     archive_path = incoming_dir / "CoinTracking-202203.zip"
@@ -92,7 +100,7 @@ def test_cointracking_portfolio_adapter_routes_archive_sidecar_under_members_pat
 
     assert route is not None
     assert route.role == "portfolio_sidecar"
-    assert route.capture_id == "2022-03"
+    assert route.capture_label == "2022-03"
     assert route.action == "extract_copy"
     assert route.target_path == (
         workspace_root

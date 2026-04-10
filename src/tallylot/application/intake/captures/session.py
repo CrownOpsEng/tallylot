@@ -39,7 +39,7 @@ class _PlannedItem(Protocol):
     def bundle_relative_path(self) -> str: ...
 
     @property
-    def capture_id(self) -> str: ...
+    def capture_label(self) -> str: ...
 
     @property
     def category(self) -> str: ...
@@ -87,6 +87,7 @@ class CaptureSessionPlan:
     capture_label: str
     manifest_fingerprint: str
     capture_status: str
+    file_count: int
     observed_period_start: str
     observed_period_end: str
     observed_group_count: int
@@ -109,7 +110,7 @@ class CaptureSessionPlan:
             "observed_group_count": self.observed_group_count,
             "duplicate_capture_uid": self.duplicate_capture_uid,
             "overlap_capture_uids": list(self.overlap_capture_uids),
-            "file_count": len(planned_items),
+            "file_count": self.file_count,
             "issue_count": len(issue_rows),
             "planned_copy_count": sum(
                 1 for item in planned_items if item.action in {"copy", "extract_copy"}
@@ -193,6 +194,7 @@ def build_capture_session_plan(
             capture_label="",
             manifest_fingerprint="",
             capture_status="capture_blocked",
+            file_count=0,
             observed_period_start="",
             observed_period_end="",
             observed_group_count=0,
@@ -250,7 +252,7 @@ def build_capture_session_plan(
             _PlannedItemT,
             replace(
                 cast(Any, item),
-                capture_id=capture_label,
+                capture_label=capture_label,
                 capture_status=capture_status,
                 target_path=target_path,
             ),
@@ -260,6 +262,7 @@ def build_capture_session_plan(
         capture_label=capture_label,
         manifest_fingerprint=manifest_fingerprint,
         capture_status=capture_status,
+        file_count=len(raw_items),
         observed_period_start=observed_period_start,
         observed_period_end=observed_period_end,
         observed_group_count=observed_group_count,
@@ -394,7 +397,7 @@ def _merge_value(left: str, right: str) -> str:
 def _package_count(planned_items: Sequence[_PlannedItem], package_status: str) -> int:
     return len(
         {
-            (item.source_folder, item.capture_id, item.bundle_id)
+            (item.source_folder, item.capture_label, item.bundle_id)
             for item in planned_items
             if item.package_status == package_status
             or (

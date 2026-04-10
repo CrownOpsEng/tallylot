@@ -19,7 +19,7 @@ PLAN_HEADER = (
     "evidence_role",
     "originality_class",
     "source_folder",
-    "capture_id",
+    "capture_label",
     "capture_status",
     "bundle_id",
     "bundle_relative_path",
@@ -44,7 +44,6 @@ PLAN_HEADER = (
     "inventory_match_status",
     "target_path",
 )
-ISSUE_HEADER = ("relative_path", "severity", "kind", "message")
 
 
 @dataclass(frozen=True)
@@ -58,7 +57,7 @@ class PlannedItem:
     evidence_role: str
     originality_class: str
     source_folder: str
-    capture_id: str
+    capture_label: str
     capture_status: str
     bundle_id: str
     bundle_relative_path: str
@@ -96,7 +95,7 @@ class PlannedItem:
             "evidence_role": self.evidence_role,
             "originality_class": self.originality_class,
             "source_folder": self.source_folder,
-            "capture_id": self.capture_id,
+            "capture_label": self.capture_label,
             "capture_status": self.capture_status,
             "bundle_id": self.bundle_id,
             "bundle_relative_path": self.bundle_relative_path,

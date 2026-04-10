@@ -47,6 +47,7 @@ def build_planned_item(
         workspace_root=workspace_root,
         facts=facts,
     )
+    planned_capture_label = route.capture_label
     route_key = (
         entry.relative_path
         if not entry.archive_member_path
@@ -70,7 +71,6 @@ def build_planned_item(
         request=IntakeOverlapRequest(
             workspace_root=workspace_root,
             source_folder=source_resolution.source_folder,
-            capture_id=route.capture_id,
             relative_path=relative_path,
             sha256=entry.sha256,
             size_bytes=entry.size_bytes,
@@ -81,7 +81,7 @@ def build_planned_item(
         source_raw_target_path(
             workspace_root,
             source_folder=source_resolution.source_folder,
-            capture_id=route.capture_id,
+            capture_label=planned_capture_label,
             bundle_id_value=bundle_id_value,
             bundle_relative_path_value=bundle_relative_path_value,
         )
@@ -100,7 +100,7 @@ def build_planned_item(
         evidence_role=_evidence_role(entry, route.role),
         originality_class=_originality_class(entry, route.role),
         source_folder=source_resolution.source_folder,
-        capture_id=route.capture_id,
+        capture_label=planned_capture_label,
         capture_status="planned",
         bundle_id=bundle_id_value,
         bundle_relative_path=bundle_relative_path_value,

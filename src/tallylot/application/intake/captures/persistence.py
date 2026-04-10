@@ -61,6 +61,9 @@ def append_capture_record(
     metadata: CaptureMetadata | None,
     plan: CaptureSessionPlan,
     capture_root_ref: str,
+    intake_started_at: datetime,
+    intake_completed_at: datetime,
+    incoming_ref: str,
 ) -> None:
     path = workspace_root / "analysis" / "inventory" / "source_captures.csv"
     existing = artifacts.read_rows(path) if path.exists() else []
@@ -74,16 +77,19 @@ def append_capture_record(
             status=plan.capture_status if metadata is None else metadata.status,
             intake_started_at=metadata.intake_started_at
             if metadata is not None
-            else None,
+            else intake_started_at,
             intake_completed_at=metadata.intake_completed_at
             if metadata is not None
-            else None,
+            else intake_completed_at,
             intake_method=metadata.intake_method
             if metadata is not None
             else "source_intake_apply",
-            incoming_ref=metadata.incoming_ref if metadata is not None else "",
+            incoming_ref=metadata.incoming_ref
+            if metadata is not None
+            else incoming_ref,
             capture_root_ref=capture_root_ref,
             manifest_fingerprint=plan.manifest_fingerprint,
+            file_count=plan.file_count,
             observed_period_start=plan.observed_period_start,
             observed_period_end=plan.observed_period_end,
             observed_group_count=plan.observed_group_count,
@@ -138,16 +144,20 @@ def update_source_inventory_summary(  # pylint: disable=too-many-arguments
         else []
     )
     matching = tuple(_latest_capture_rows_for_source(capture_rows, source).values())
-    latest = _latest_completed_capture_row(matching) if matching else {}
+    meaningful_rows = tuple(
+        row for row in matching if row.get("status", "") != "duplicate_blocked"
+    )
+    latest = (
+        _latest_completed_capture_row(meaningful_rows or matching) if matching else {}
+    )
+    existing_status = _existing_value(source_rows, source, "status")
     updated_row = SourceInventorySummaryRecord(
         source=SourceId(source),
         activity_after_cutoff=_existing_value(
             source_rows, source, "activity_after_cutoff"
         ),
         scope_status=_existing_value(source_rows, source, "scope_status") or "in_scope",
-        status=status
-        or _existing_value(source_rows, source, "status")
-        or "capture_complete",
+        status=status or _reduced_source_status(existing_status, matching),
         capture_count=len(matching),
         latest_capture_uid=latest.get("capture_uid", ""),
         latest_capture_label=latest.get("capture_label", ""),
@@ -173,6 +183,17 @@ def _existing_value(rows: list[dict[str, str]], source: str, field: str) -> str:
         if row.get("source", "") == source:
             return row.get(field, "")
     return ""
+
+
+def _reduced_source_status(
+    existing_status: str,
+    capture_rows: tuple[dict[str, str], ...],
+) -> str:
+    if existing_status in {"profiled", "normalized", "assembled"}:
+        return existing_status
+    if capture_rows:
+        return "capture_complete"
+    return existing_status
 
 
 def _latest_capture_row(

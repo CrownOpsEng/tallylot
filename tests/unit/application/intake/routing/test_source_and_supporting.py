@@ -128,10 +128,10 @@ def test_route_intake_file_uses_header_hints_for_loose_source_exports(
 
     assert route.category == "source_raw"
     assert route.source_folder == "binance"
-    assert route.capture_id == "2021-05"
+    assert route.capture_label == "incoming"
     assert (
         route.target_path
-        == workspace_root / "evidence/raw/source/binance/2021-05/borrow.csv"
+        == workspace_root / "evidence/raw/source/binance/incoming/borrow.csv"
     )
 
 
@@ -160,10 +160,10 @@ def test_route_intake_file_routes_zip_archives_under_archive_tree(
     )
 
     assert route.category == "source_raw"
-    assert route.capture_id == "2022-03"
+    assert route.capture_label == "incoming"
     assert route.target_path == (
         workspace_root
-        / "evidence/raw/source/binance/2022-03/202203291736/archive/202203291736.zip"
+        / "evidence/raw/source/binance/incoming/202203291736/archive/202203291736.zip"
     )
 
 

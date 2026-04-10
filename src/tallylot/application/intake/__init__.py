@@ -11,7 +11,7 @@ from .contracts import (
     ManifestRequest,
     ManifestResponse,
 )
-from .file_facts import IntakeFileFacts, detect_capture_id, inspect_intake_file
+from .file_facts import IntakeFileFacts, detect_capture_label, inspect_intake_file
 from .inventory import resolve_inventory_route
 from .packages import PackageRuleSummary, PlannedPackageItem, apply_package_rules
 from .plan_intake import PlanIntakeUseCase
@@ -35,7 +35,7 @@ __all__ = [
     "ScannedFile",
     "ScannedTree",
     "apply_package_rules",
-    "detect_capture_id",
+    "detect_capture_label",
     "inspect_intake_file",
     "load_source_label_context",
     "resolve_inventory_route",

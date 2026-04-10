@@ -21,7 +21,6 @@ class IntakeOverlapDecision:
 class IntakeOverlapRequest:
     workspace_root: Path
     source_folder: str
-    capture_id: str
     relative_path: str
     sha256: str
     size_bytes: int
@@ -43,7 +42,6 @@ def resolve_overlap_review(
     capture_reason = _capture_overlap_reason(
         request.workspace_root,
         request.source_folder,
-        request.capture_id,
         request.facts,
     )
     review_codes: list[str] = []
@@ -89,22 +87,37 @@ def _manifest_overlap_reason(
 def _capture_overlap_reason(
     workspace_root: Path,
     source_folder: str,
-    capture_id: str,
     facts: IntakeFileFacts,
 ) -> str:
-    if not capture_id or not facts.min_timestamp or not facts.max_timestamp:
+    if not source_folder or not facts.min_timestamp or not facts.max_timestamp:
         return ""
-    capture_root = workspace_root / "evidence" / "raw" / "source" / source_folder / capture_id
-    if not capture_root.exists():
+    source_root = workspace_root / "evidence" / "raw" / "source" / source_folder
+    if not source_root.exists():
         return ""
-    for path in sorted(file for file in capture_root.rglob("*") if file.is_file() and file.name != "manifest.csv"):
+    for path in sorted(
+        file
+        for file in source_root.rglob("*")
+        if file.is_file() and file.name != "manifest.csv"
+    ):
         existing_facts = inspect_intake_file(path, relative_path=path.name)
         if _windows_overlap(facts, existing_facts):
-            return f"Existing raw capture for {source_folder}/{capture_id} has overlapping activity in {path}"
+            capture_label = path.relative_to(source_root).parts[0]
+            return (
+                "Existing raw capture for "
+                f"{source_folder}/{capture_label} has overlapping activity in {path}"
+            )
     return ""
 
 
 def _windows_overlap(left: IntakeFileFacts, right: IntakeFileFacts) -> bool:
-    if not left.min_timestamp or not left.max_timestamp or not right.min_timestamp or not right.max_timestamp:
+    if (
+        not left.min_timestamp
+        or not left.max_timestamp
+        or not right.min_timestamp
+        or not right.max_timestamp
+    ):
         return False
-    return not (left.max_timestamp < right.min_timestamp or right.max_timestamp < left.min_timestamp)
+    return not (
+        left.max_timestamp < right.min_timestamp
+        or right.max_timestamp < left.min_timestamp
+    )

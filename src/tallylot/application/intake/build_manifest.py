@@ -6,11 +6,13 @@ import hashlib
 import json
 
 from tallylot.application.intake.archive import scanned_tree_files
-from tallylot.application.intake.contracts import ManifestRequest, ManifestResponse
+from tallylot.application.intake.contracts import (
+    INTAKE_ISSUE_HEADER,
+    ManifestRequest,
+    ManifestResponse,
+)
 from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
-
-ISSUE_HEADER = ("relative_path", "severity", "kind", "message")
 
 
 class BuildManifestUseCase:
@@ -52,12 +54,18 @@ class BuildManifestUseCase:
         fingerprint = _sha256sum_from_text(payload)
         self._artifacts.write_rows(
             output_path,
-            ("filename", "archive_source_path", "archive_member_path", "size_bytes", "sha256"),
+            (
+                "filename",
+                "archive_source_path",
+                "archive_member_path",
+                "size_bytes",
+                "sha256",
+            ),
             rows,
         )
         self._artifacts.write_rows(
             issues_path,
-            ISSUE_HEADER,
+            INTAKE_ISSUE_HEADER,
             issue_rows,
         )
         return ManifestResponse(

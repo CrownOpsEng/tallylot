@@ -53,8 +53,12 @@ def _bundle(
     )
 
 
-def test_extract_datetimes_skips_invalid_tokens_and_deduplicates_compact_minute_values() -> None:
-    values = _extract_datetimes("bad 202402301200 also 202403091200 and 20240309120059 and 2024_03_09")
+def test_extract_datetimes_skips_invalid_tokens_and_deduplicates_compact_minute_values() -> (
+    None
+):
+    values = _extract_datetimes(
+        "bad 202402301200 also 202403091200 and 20240309120059 and 2024_03_09"
+    )
 
     assert datetime(2024, 3, 9, 12, 0, tzinfo=UTC) not in values
     assert datetime(2024, 3, 9, 12, 0, 59, tzinfo=UTC) in values
@@ -67,7 +71,7 @@ def test_row_marker_and_logical_key_normalize_archive_paths() -> None:
         relative_path="folder/202403091530/report.csv",
         archive_source_path="/incoming/archive-202403091545.zip",
         source_folder="binance",
-        capture_id="2021-05",
+        capture_label="capture-a",
         category="source_raw",
         action="copy",
         sha256="hash",
@@ -94,19 +98,28 @@ def test_package_sort_key_and_cycle_status_cover_mixed_and_unknown_paths() -> No
     assert package_sort_key(dated) == (20240309153000, "2024-03-09", 1, "dated")
 
 
-def test_scope_helpers_distinguish_material_scope_partial_scope_and_overlap_reason() -> None:
+def test_scope_helpers_distinguish_material_scope_partial_scope_and_overlap_reason() -> (
+    None
+):
     left = _bundle(scope_tokens=frozenset({"evm:0x1", "label:main"}))
-    right = _bundle(bundle_id="bundle-b", scope_tokens=frozenset({"evm:0x2", "label:main"}))
+    right = _bundle(
+        bundle_id="bundle-b", scope_tokens=frozenset({"evm:0x2", "label:main"})
+    )
     partial = _bundle(bundle_id="bundle-c", scope_tokens=frozenset())
 
     assert _material_scope_tokens(left.scope_tokens) == frozenset({"evm:0x1"})
     assert compatible_scope(left, right) is False
     assert scope_status(left, right) == "incompatible_scope"
     assert scope_status(left, partial) == "partial_scope"
-    assert overlap_reason("incompatible_scope") == "shared material but explicit scope identifiers differ"
+    assert (
+        overlap_reason("incompatible_scope")
+        == "shared material but explicit scope identifiers differ"
+    )
 
 
-def test_default_and_overlap_review_decisions_cover_mixed_scope_unknown_and_related_merge() -> None:
+def test_default_and_overlap_review_decisions_cover_mixed_scope_unknown_and_related_merge() -> (
+    None
+):
     primary = _bundle(
         bundle_id="bundle-a",
         latest_marker=datetime(2024, 3, 9, 15, 30, tzinfo=UTC),
@@ -117,7 +130,11 @@ def test_default_and_overlap_review_decisions_cover_mixed_scope_unknown_and_rela
         latest_marker=datetime(2024, 3, 9, 16, 30, tzinfo=UTC),
         cycle_day_value=date(2024, 3, 9),
     )
-    mixed = _bundle(bundle_id="bundle-mixed", mixed_cycle=True, scope_tokens=frozenset({"label:main"}))
+    mixed = _bundle(
+        bundle_id="bundle-mixed",
+        mixed_cycle=True,
+        scope_tokens=frozenset({"label:main"}),
+    )
     decisions: dict[tuple[str, str, str, str], dict[str, str]] = {}
 
     mixed_count = apply_default_decisions([primary, related, mixed], decisions)

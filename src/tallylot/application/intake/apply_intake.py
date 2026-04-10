@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 from datetime import UTC, datetime
+from pathlib import Path
 
 from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.intake.captures.persistence import (
@@ -43,6 +44,9 @@ class ApplyIntakeUseCase:
         report_dir.mkdir(parents=True, exist_ok=True)
         copied_count = 0
         intake_started_at = datetime.now(UTC)
+        incoming_ref = _incoming_ref(
+            request.incoming_capture_ref, incoming_dir, workspace_root
+        )
         capture_metadata = None
         capture_session_plan: CaptureSessionPlan | None = None
         with scanned_tree_files(
@@ -106,7 +110,7 @@ class ApplyIntakeUseCase:
                     capture_label=capture_session_plan.capture_label,
                     intake_started_at=intake_started_at,
                     intake_completed_at=intake_completed_at,
-                    incoming_ref=str(incoming_dir),
+                    incoming_ref=incoming_ref,
                     manifest_fingerprint=capture_session_plan.manifest_fingerprint,
                     status="captured"
                     if capture_session_plan.capture_status == "planned"
@@ -124,6 +128,9 @@ class ApplyIntakeUseCase:
                 and capture_session_plan.capture_status != "duplicate_blocked"
                 else ""
             ),
+            intake_started_at=intake_started_at,
+            intake_completed_at=datetime.now(UTC),
+            incoming_ref=incoming_ref,
         )
         if capture_session_plan.source_folder:
             update_source_inventory_summary(
@@ -147,3 +154,15 @@ class ApplyIntakeUseCase:
             issue_count=len(issue_rows),
             copied_count=copied_count,
         )
+
+
+def _incoming_ref(
+    incoming_capture_ref: str, incoming_dir: Path, workspace_root: Path
+) -> str:
+    ref_path = Path(incoming_capture_ref)
+    if not ref_path.is_absolute():
+        return ref_path.as_posix()
+    try:
+        return incoming_dir.relative_to(workspace_root).as_posix()
+    except ValueError:
+        return f"incoming/{incoming_dir.name}"

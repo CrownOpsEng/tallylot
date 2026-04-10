@@ -10,9 +10,10 @@ from tallylot.application.intake.captures.session import (
     CaptureSessionPlan,
     apply_capture_session_plan,
 )
+from tallylot.application.intake.contracts import INTAKE_ISSUE_HEADER
 from tallylot.ports.artifacts import ArtifactStorePort
 
-from .models import ISSUE_HEADER, PLAN_HEADER, PlannedItem
+from .models import PLAN_HEADER, PlannedItem
 
 
 @dataclass(frozen=True)
@@ -34,7 +35,7 @@ def write_reports(
         (item.to_row() for item in bundle.planned_items),
     )
     artifacts.write_rows(
-        report_dir / "intake_issues.csv", ISSUE_HEADER, bundle.issue_rows
+        report_dir / "intake_issues.csv", INTAKE_ISSUE_HEADER, bundle.issue_rows
     )
     apply_capture_session_plan(
         artifacts=artifacts,
@@ -67,7 +68,7 @@ def write_capture_manifests(
             / "raw"
             / "source"
             / item.source_folder
-            / item.capture_id
+            / item.capture_label
         )
         capture_rows.setdefault(capture_root, []).append(
             {

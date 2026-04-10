@@ -4,27 +4,27 @@ from tallylot.application.intake.packages import apply_package_rules
 from tests.support.intake_packages import PackageContext, package_item
 
 
-def test_apply_package_rules_isolates_different_capture_ids() -> None:
+def test_apply_package_rules_isolates_different_capture_labels() -> None:
     items = [
         package_item(
             bundle_id="same-name",
             bundle_relative_path="borrow.csv",
             sha256="hash-a",
             relative_path="202203291730-export/borrow.csv",
-            context=PackageContext(capture_id="2021-05"),
+            context=PackageContext(capture_label="capture-a"),
         ),
         package_item(
             bundle_id="same-name",
             bundle_relative_path="borrow.csv",
             sha256="hash-a",
             relative_path="202203291830-export/borrow.csv",
-            context=PackageContext(capture_id="2021-06"),
+            context=PackageContext(capture_label="capture-b"),
         ),
     ]
 
     resolved, _ = apply_package_rules(items)
-    may = next(item for item in resolved if item.capture_id == "2021-05")
-    june = next(item for item in resolved if item.capture_id == "2021-06")
+    may = next(item for item in resolved if item.capture_label == "capture-a")
+    june = next(item for item in resolved if item.capture_label == "capture-b")
 
     assert may.package_status == "primary"
     assert june.package_status == "primary"
@@ -108,7 +108,11 @@ def test_apply_package_rules_keeps_unknown_cycle_conflicts_as_overlap_review() -
     ]
 
     resolved, _ = apply_package_rules(items)
-    by_bundle = {item.bundle_id: item for item in resolved if item.bundle_relative_path == "borrow.csv"}
+    by_bundle = {
+        item.bundle_id: item
+        for item in resolved
+        if item.bundle_relative_path == "borrow.csv"
+    }
 
     assert by_bundle["primary"].package_status == "overlap_partial_review"
     assert by_bundle["candidate"].package_status == "overlap_partial_review"

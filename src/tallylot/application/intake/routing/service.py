@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from tallylot.application.intake.archive import ScannedFile
-from tallylot.application.intake.file_facts import IntakeFileFacts, detect_capture_id
+from tallylot.application.intake.file_facts import IntakeFileFacts
 from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.intake_routing import IntakeRoutingRequest
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
@@ -44,14 +44,14 @@ def route_intake_file(
 
     route_key = request.route_key
     source_folder = _detect_source_folder(registry, route_key, facts)
-    capture_id = detect_capture_id(route_key, facts) or incoming_dir.name
+    planned_capture_label = incoming_dir.name
     relative_target = relative_target_path(route_key)
     if is_working_derivative(route_key):
         return IntakeRoute(
             category="supporting_artifact",
             role="working_derivative",
             source_folder=source_folder,
-            capture_id=capture_id,
+            capture_label=planned_capture_label,
             action="extract_copy" if entry.archive_member_path else "copy",
             target_path=(
                 workspace_root
@@ -67,13 +67,13 @@ def route_intake_file(
             category="source_raw",
             role="required_sidecar",
             source_folder=source_folder,
-            capture_id=capture_id,
+            capture_label=planned_capture_label,
             action="extract_copy" if entry.archive_member_path else "copy",
             target_path=required_raw_sidecar_path(
                 workspace_root,
                 RawSidecarTarget(
                     source_folder=source_folder,
-                    capture_label=capture_id,
+                    capture_label=planned_capture_label,
                     relative_path=route_key,
                     archive_source_path=entry.archive_source_path,
                     archive_member_path=entry.archive_member_path,
@@ -85,14 +85,14 @@ def route_intake_file(
             entry,
             workspace_root=workspace_root,
             source_folder=source_folder,
-            capture_id=capture_id,
+            capture_label=planned_capture_label,
             relative_target=relative_target,
         )
         return IntakeRoute(
             category="source_raw",
             role="source_export",
             source_folder=source_folder,
-            capture_id=capture_id,
+            capture_label=planned_capture_label,
             action="extract_copy" if entry.archive_member_path else "copy",
             target_path=target_path,
         )
@@ -100,7 +100,7 @@ def route_intake_file(
         category="supporting_artifact",
         role="supporting_artifact",
         source_folder=source_folder,
-        capture_id=capture_id,
+        capture_label=planned_capture_label,
         action="extract_copy" if entry.archive_member_path else "copy",
         target_path=(
             workspace_root

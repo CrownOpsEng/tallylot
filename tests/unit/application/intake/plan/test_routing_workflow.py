@@ -137,14 +137,15 @@ def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio
         == "portfolio_export"
     )
     assert (
-        by_name["CoinTracking · Tax Declaration Export.html"]["capture_id"] == "2022-04"
+        by_name["CoinTracking · Tax Declaration Export.html"]["capture_label"]
+        == "2022-04"
     )
     assert (
         "/evidence/raw/portfolio/cointracking/2022-04/"
         in by_name["CoinTracking · Tax Declaration Export.html"]["target_path"]
     )
     assert by_name["style.min.css"]["role"] == "portfolio_sidecar"
-    assert by_name["style.min.css"]["capture_id"] == "2022-04"
+    assert by_name["style.min.css"]["capture_label"] == "2022-04"
 
 
 def test_source_intake_service_routes_wallet_export_to_existing_inventory_source(

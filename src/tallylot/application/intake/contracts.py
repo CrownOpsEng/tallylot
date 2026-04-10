@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 from tallylot.domain.types import ResourceRef, WorkspacePath
 
+INTAKE_ISSUE_HEADER = ("relative_path", "severity", "kind", "message")
+
 
 @dataclass(frozen=True)
 class ManifestRequest:

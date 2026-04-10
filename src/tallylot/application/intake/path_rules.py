@@ -52,12 +52,12 @@ def source_raw_target_path(
     workspace_root: Path,
     *,
     source_folder: str,
-    capture_id: str,
+    capture_label: str,
     bundle_id_value: str,
     bundle_relative_path_value: str,
 ) -> Path:
     capture_root = (
-        workspace_root / "evidence" / "raw" / "source" / source_folder / capture_id
+        workspace_root / "evidence" / "raw" / "source" / source_folder / capture_label
     )
     if bundle_id_value.endswith("-loose"):
         return capture_root / bundle_relative_path_value

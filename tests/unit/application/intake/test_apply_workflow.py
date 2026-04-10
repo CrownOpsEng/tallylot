@@ -392,6 +392,11 @@ def test_source_intake_service_blocks_duplicate_capture_by_manifest_fingerprint(
     ).exists()
     assert capture_rows[0]["capture_label"] == first_summary["planned_capture_label"]
     assert capture_rows[1]["status"] == "duplicate_blocked"
+    assert capture_rows[1]["capture_root_ref"] == ""
+    assert capture_rows[1]["incoming_ref"] == "incoming/incoming"
+    assert capture_rows[1]["file_count"] == "1"
+    assert capture_rows[1]["intake_started_at"] != ""
+    assert capture_rows[1]["intake_completed_at"] != ""
 
 
 def test_source_intake_service_marks_overlapping_capture_for_review(
@@ -476,3 +481,46 @@ def test_source_inventory_summary_updates_after_apply(tmp_path: Path) -> None:
             "notes": "",
         }
     ]
+
+
+def test_source_inventory_summary_does_not_regress_after_duplicate_blocked_attempt(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    service = ApplyIntakeUseCase(build_registry(), artifacts)
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(tmp_path / "reports-1"),
+        )
+    )
+    source_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+    source_rows[0]["status"] = "normalized"
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv",
+        tuple(source_rows[0].keys()),
+        source_rows,
+    )
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(tmp_path / "reports-2"),
+        )
+    )
+
+    updated_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+
+    assert updated_rows[0]["status"] == "normalized"
+    assert updated_rows[0]["capture_count"] == "2"

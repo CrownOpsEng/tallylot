@@ -40,7 +40,7 @@ class IntakeRoute:
     category: str
     role: str
     source_folder: str
-    capture_id: str
+    capture_label: str
     action: str
     target_path: Path
     inventory_match_status: str = "unmatched"

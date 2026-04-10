@@ -37,11 +37,11 @@ def raw_source_target_path(
     *,
     workspace_root: Path,
     source_folder: str,
-    capture_id: str,
+    capture_label: str,
     relative_target: Path,
 ) -> Path:
     base_path = (
-        workspace_root / "evidence" / "raw" / "source" / source_folder / capture_id
+        workspace_root / "evidence" / "raw" / "source" / source_folder / capture_label
     )
     if entry.archive_member_path:
         archive_stem = Path(entry.archive_source_path).stem
