@@ -42,9 +42,10 @@ Prefer the repo's built-in tooling before inventing local workflows:
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
 - run full verification before closing substantial work with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
-  The repo keeps the fast gate on the benchmark-backed phased schedule and the
-  full gate on the benchmark-backed all-at-once schedule; do not change those
-  defaults without rerunning the benchmark tools.
+  The repo keeps the fast gate on the phased schedule, the fast pytest slice
+  on 4 workers by default, and the full gate on serial full-suite coverage.
+  Override the fast worker count only through
+  `TALLYLOT_FAST_PYTEST_WORKERS`; use `0` to force serial.
 - mirror GitHub Actions locally when changing workflow, packaging, or release
   behavior with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
@@ -56,6 +57,10 @@ Prefer the repo's built-in tooling before inventing local workflows:
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_pr_review`
   and run the required review checks for the current diff with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks`
+- run the blocking flake and order-sensitivity lane with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_test_stress_checks`
+- report coverage hotspots from a recent full-suite run with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.report_coverage_hotspots`
 - scaffold new adapters with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
 - refresh generated pyright test-private execution environments with
@@ -73,6 +78,19 @@ Prefer the repo's built-in tooling before inventing local workflows:
 
 Do not replace these with ad hoc shell habits when the repo already has a
 supported path.
+
+## Benchmark Rules
+
+Use the repo benchmark tools only for explicit default-selection decisions.
+
+- benchmark one suite or quality-gate comparison set at a time
+- warm caches before measured runs
+- use warmup runs plus repeated measured iterations, then compare medians
+  instead of one-off timings
+- benchmark both local hardware and GitHub runner classes before calling a
+  default benchmark-backed in docs, tests, or review rationale
+- keep `-n auto` as a benchmark or debug candidate only; do not promote it to
+  a repo default without fresh local and GitHub runner evidence
 
 `pyrightconfig.tests.json` is generated repo policy for test-private execution
 environments. Do not hand-maintain adapter `executionEnvironments` in
@@ -331,18 +349,29 @@ is:
   parity matters
 - do not run `tools.run_quality_gates --full-tests` again immediately before
   `tools.run_ci_parity_checks`; the parity runner already includes it
+- use `tools.run_fast_pytest` or the hook-owned pre-commit path for the fast
+  checkpoint loop; do not duplicate the fast pytest CLI contract in new
+  wrappers or config entries
 
 For PR review and repair loops, choose verification by changed surface:
 
 - `human_docs`: run `tools.docs_maintenance sync --check`
 - `control_plane_text`: run docs maintenance plus the targeted policy tests
   declared by `tools.run_pr_review_checks`
-- `repo_code_or_tooling`: run `tools.run_quality_gates --full-tests`
-- `ci_or_release`: run `tools.run_ci_parity_checks`
+- `repo_code_or_tooling`: run `tools.run_quality_gates --full-tests`, then the
+  blocking stress lane, and let PR routing add pre-merge packaging validation
+  for packaging-sensitive repo-code diffs
+- `ci_or_release`: run `tools.run_ci_parity_checks`; the PR route also keeps
+  the blocking stress lane on for these diffs
+
+Coverage hotspot reports are informative review output only. Use them to pick
+the next hardening target after a full-suite run; do not treat them as a
+replacement for correctness tests or the existing repo-wide coverage gate.
 
 When more than one surface group is present, the strongest broad verification
 family wins, but any declared surface-specific targeted checks still apply for
-touched control-plane paths.
+touched control-plane paths. Coverage hotspots stay informative even when the
+rest of the PR review route is blocking.
 
 If you are changing commit-time or suite-selection policy, keep the hook path
 limited to bounded checkpoint checks and use the shared quality or parity
@@ -368,6 +397,9 @@ Split the work into a smaller compatible slice.
 Keep workflow integrity rules explicit while the repo continues migrating.
 
 - filesystem scans that enumerate user evidence must be deterministic
+- xdist-sensitive parametrization and collection inputs must preserve
+  deterministic ordering; do not feed unordered collections into parametrized
+  tests that need reproducible parallel collection
 - tree-walking services should use the shared scan path with explicit output
   exclusions rather than ad hoc `rglob()` behavior
 - archive inspection, archive safety limits, and archive-member issue reporting

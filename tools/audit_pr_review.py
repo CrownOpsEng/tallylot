@@ -31,6 +31,13 @@ def _plan_to_json(plan: PrReviewPlan) -> dict[str, object]:
             for check in plan.targeted_checks
         ],
         "verification_level": plan.verification_level,
+        "requires_full_quality_gates": plan.requires_full_quality_gates,
+        "requires_ci_parity": plan.requires_ci_parity,
+        "requires_pre_merge_packaging_verification": (
+            plan.requires_pre_merge_packaging_verification
+        ),
+        "requires_test_stress_checks": plan.requires_test_stress_checks,
+        "requires_coverage_hotspot_report": plan.requires_coverage_hotspot_report,
         "unmapped_paths": list(plan.unmapped_paths),
     }
 
@@ -42,6 +49,17 @@ def _emit_text(plan: PrReviewPlan) -> None:
     print("surface groups:", ", ".join(plan.surface_groups) or "none")
     print("review domains:", ", ".join(plan.review_domains) or "none")
     print("verification level:", plan.verification_level)
+    print("full quality gates:", "yes" if plan.requires_full_quality_gates else "no")
+    print("ci parity:", "yes" if plan.requires_ci_parity else "no")
+    print(
+        "pre-merge packaging verification:",
+        "yes" if plan.requires_pre_merge_packaging_verification else "no",
+    )
+    print("stress checks:", "yes" if plan.requires_test_stress_checks else "no")
+    print(
+        "coverage hotspot report:",
+        "yes" if plan.requires_coverage_hotspot_report else "no",
+    )
     if plan.targeted_checks:
         print("targeted checks:")
         for check in plan.targeted_checks:

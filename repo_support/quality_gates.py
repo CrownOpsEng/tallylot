@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from repo_support.paths import repo_root
+from repo_support.pytest_commands import build_fast_pytest_command
 
 QUALITY_GATE_ORDER = (
     "markdownlint",
@@ -16,7 +17,6 @@ QUALITY_GATE_ORDER = (
     "pytest",
 )
 QUALITY_SCHEDULES = ("auto", "all-at-once", "phased")
-FAST_PYTEST_WORKERS = 4
 
 
 @dataclass(frozen=True)
@@ -34,19 +34,7 @@ class QualityPhase:
 
 def available_quality_gates(*, full_tests: bool) -> dict[str, QualityGate]:
     pytest_command = (
-        ("uv", "run", "pytest")
-        if full_tests
-        else (
-            "uv",
-            "run",
-            "pytest",
-            "-n",
-            str(FAST_PYTEST_WORKERS),
-            "-m",
-            "unit and not slow",
-            "--no-cov",
-            "-q",
-        )
+        ("uv", "run", "pytest") if full_tests else build_fast_pytest_command()
     )
     return {
         "markdownlint": QualityGate(

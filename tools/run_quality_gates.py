@@ -5,10 +5,7 @@ import subprocess
 import time
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import ExitStack
 from dataclasses import dataclass
-from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from repo_support.quality_gates import (
     QUALITY_GATE_ORDER,
@@ -101,22 +98,13 @@ def _phase_plan(run_request: _RunRequest) -> tuple[QualityPhase, ...]:
 
 def _run_gate(gate: QualityGate) -> GateResult:
     started = time.perf_counter()
-    with ExitStack() as stack:
-        coverage_file: Path | None = None
-        if gate.coverage_gate:
-            coverage_dir = Path(
-                stack.enter_context(
-                    TemporaryDirectory(prefix=f"tallylot-{gate.name}-coverage-")
-                )
-            )
-            coverage_file = coverage_dir / ".coverage"
-        result = subprocess.run(
-            gate.command,
-            capture_output=True,
-            text=True,
-            check=False,
-            env=_gate_environment(gate, coverage_file=coverage_file),
-        )
+    result = subprocess.run(
+        gate.command,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=_gate_environment(gate),
+    )
     return GateResult(
         gate=gate,
         returncode=result.returncode,
@@ -128,13 +116,10 @@ def _run_gate(gate: QualityGate) -> GateResult:
 
 def _gate_environment(
     gate: QualityGate,
-    *,
-    coverage_file: Path | None = None,
 ) -> dict[str, str]:
     return apply_gate_environment(
         repo_uv_environment(),
         coverage_gate=gate.coverage_gate,
-        coverage_file=coverage_file,
     )
 
 

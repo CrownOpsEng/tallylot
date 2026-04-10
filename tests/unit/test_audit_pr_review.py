@@ -27,6 +27,11 @@ def test_docs_only_diff_maps_to_human_docs() -> None:
 
     assert plan.surface_groups == ("human_docs",)
     assert plan.verification_level == "docs-maintenance"
+    assert plan.requires_full_quality_gates is False
+    assert plan.requires_ci_parity is False
+    assert plan.requires_pre_merge_packaging_verification is False
+    assert plan.requires_test_stress_checks is False
+    assert plan.requires_coverage_hotspot_report is False
     assert [check.name for check in plan.targeted_checks] == ["docs-maintenance"]
     assert plan.unmapped_paths == ()
 
@@ -36,6 +41,8 @@ def test_control_plane_diff_maps_to_targeted_review_surface() -> None:
 
     assert plan.surface_groups == ("control_plane_text",)
     assert plan.verification_level == "control-plane-targeted"
+    assert plan.requires_full_quality_gates is False
+    assert plan.requires_ci_parity is False
     assert [check.name for check in plan.targeted_checks] == [
         "docs-maintenance",
         "repo-agent-skills",
@@ -43,11 +50,29 @@ def test_control_plane_diff_maps_to_targeted_review_surface() -> None:
 
 
 def test_repo_code_diff_maps_to_full_quality_gates() -> None:
+    plan = classify_changed_paths(
+        ("src/tallylot/application/normalization/normalize_source.py",)
+    )
+
+    assert plan.surface_groups == ("repo_code_or_tooling",)
+    assert plan.verification_level == "quality-gates-full"
+    assert plan.requires_full_quality_gates is True
+    assert plan.requires_ci_parity is False
+    assert plan.requires_pre_merge_packaging_verification is False
+    assert plan.requires_test_stress_checks is True
+    assert plan.requires_coverage_hotspot_report is True
+    assert "design and ownership" in plan.review_domains
+
+
+def test_packaging_sensitive_repo_code_adds_pre_merge_packaging_verification() -> None:
     plan = classify_changed_paths(("src/tallylot/interfaces/cli/source.py",))
 
     assert plan.surface_groups == ("repo_code_or_tooling",)
     assert plan.verification_level == "quality-gates-full"
-    assert "design and ownership" in plan.review_domains
+    assert plan.requires_full_quality_gates is True
+    assert plan.requires_pre_merge_packaging_verification is True
+    assert plan.requires_test_stress_checks is True
+    assert plan.requires_coverage_hotspot_report is True
 
 
 def test_ci_workflow_diff_maps_to_ci_parity() -> None:
@@ -55,6 +80,11 @@ def test_ci_workflow_diff_maps_to_ci_parity() -> None:
 
     assert plan.surface_groups == ("ci_or_release",)
     assert plan.verification_level == "ci-parity"
+    assert plan.requires_full_quality_gates is False
+    assert plan.requires_ci_parity is True
+    assert plan.requires_pre_merge_packaging_verification is False
+    assert plan.requires_test_stress_checks is True
+    assert plan.requires_coverage_hotspot_report is False
     assert [check.name for check in plan.targeted_checks] == [
         "delivery-guardrails-audit",
         "run-pr-review-checks",
@@ -66,16 +96,24 @@ def test_github_action_diff_maps_to_ci_parity() -> None:
 
     assert plan.surface_groups == ("ci_or_release",)
     assert plan.verification_level == "ci-parity"
+    assert plan.requires_ci_parity is True
+    assert plan.requires_test_stress_checks is True
     assert [check.name for check in plan.targeted_checks] == ["ci-parity-tooling"]
 
 
 def test_mixed_diff_uses_strongest_verification_level() -> None:
     plan = classify_changed_paths(
-        ("docs/guides/source-intake.md", "src/tallylot/interfaces/cli/source.py")
+        (
+            "docs/guides/source-intake.md",
+            "src/tallylot/application/normalization/normalize_source.py",
+        )
     )
 
     assert plan.surface_groups == ("human_docs", "repo_code_or_tooling")
     assert plan.verification_level == "quality-gates-full"
+    assert plan.requires_full_quality_gates is True
+    assert plan.requires_test_stress_checks is True
+    assert plan.requires_coverage_hotspot_report is True
     assert [check.name for check in plan.targeted_checks] == ["docs-maintenance"]
 
 
@@ -96,6 +134,7 @@ def test_audit_pr_review_can_emit_json(
     report = json.loads(capsys.readouterr().out)
     assert report["surface_groups"] == ["human_docs"]
     assert report["verification_level"] == "docs-maintenance"
+    assert report["requires_pre_merge_packaging_verification"] is False
 
 
 def test_audit_pr_review_fails_closed_for_unmapped_paths(

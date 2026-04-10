@@ -3,7 +3,15 @@ from __future__ import annotations
 import subprocess
 from collections.abc import Sequence
 from dataclasses import dataclass
-from pathlib import PurePosixPath
+
+from repo_support.pr_review_paths import (
+    is_control_plane_text,
+    is_human_docs,
+    is_packaging_sensitive_path,
+    is_production_code_path,
+    path_surface_groups,
+    path_targeted_check_names,
+)
 
 SURFACE_GROUP_ORDER = (
     "human_docs",
@@ -51,37 +59,6 @@ SURFACE_VERIFICATION_LEVEL = {
     "repo_code_or_tooling": "quality-gates-full",
     "ci_or_release": "ci-parity",
 }
-CONTROL_PLANE_EXACT_PATHS = (
-    "AGENTS.md",
-    "ROADMAP.md",
-    ".github/pull_request_template.md",
-    ".github/CODEOWNERS",
-)
-CONTROL_PLANE_PREFIXES = (
-    ".agents/skills/",
-    ".claude/commands/",
-    "docs/standards/",
-    ".github/ISSUE_TEMPLATE/",
-)
-CI_OR_RELEASE_EXACT_PATHS = (
-    ".pre-commit-config.yaml",
-    ".pylintrc-tests",
-    "pyproject.toml",
-    "pyrightconfig.json",
-    "pyrightconfig.tests.json",
-    "uv.lock",
-    "tools/audit_delivery_guardrails.py",
-    "tools/audit_pr_review.py",
-    "tools/install_git_hooks.py",
-    "tools/message_standards.py",
-    "tools/pre_commit_hook.py",
-    "tools/run_ci_parity_checks.py",
-    "tools/run_pr_review_checks.py",
-    "tools/run_quality_gates.py",
-    "tools/validate_commit_message.py",
-    "tools/validate_pr_metadata.py",
-)
-CI_OR_RELEASE_PREFIXES = (".github/actions/", ".github/workflows/")
 
 
 @dataclass(frozen=True)
@@ -98,6 +75,11 @@ class PrReviewPlan:
     review_domains: tuple[str, ...]
     targeted_checks: tuple[TargetedCheck, ...]
     verification_level: str
+    requires_full_quality_gates: bool
+    requires_ci_parity: bool
+    requires_pre_merge_packaging_verification: bool
+    requires_test_stress_checks: bool
+    requires_coverage_hotspot_report: bool
     unmapped_paths: tuple[str, ...]
 
 
@@ -172,6 +154,17 @@ TARGETED_CHECKS_BY_NAME = {
             "tests/unit/test_commit_message_validator.py",
         ),
     ),
+    "pre-commit-hook-tooling": TargetedCheck(
+        name="pre-commit-hook-tooling",
+        command=(
+            "uv",
+            "run",
+            "pytest",
+            "--no-cov",
+            "-q",
+            "tests/unit/test_pre_commit_hook.py",
+        ),
+    ),
     "quality-gates-tooling": TargetedCheck(
         name="quality-gates-tooling",
         command=(
@@ -216,6 +209,28 @@ TARGETED_CHECKS_BY_NAME = {
             "tests/unit/test_run_pr_review_checks.py",
         ),
     ),
+    "test-stress-checks": TargetedCheck(
+        name="test-stress-checks",
+        command=(
+            "uv",
+            "run",
+            "pytest",
+            "--no-cov",
+            "-q",
+            "tests/unit/test_run_test_stress_checks.py",
+        ),
+    ),
+    "coverage-hotspots": TargetedCheck(
+        name="coverage-hotspots",
+        command=(
+            "uv",
+            "run",
+            "pytest",
+            "--no-cov",
+            "-q",
+            "tests/unit/test_report_coverage_hotspots.py",
+        ),
+    ),
 }
 
 
@@ -258,108 +273,23 @@ def changed_paths(
     return tuple(line for line in result.stdout.splitlines() if line)
 
 
-def _is_human_docs(path: str) -> bool:
-    return path in {"README.md", "CHANGELOG.md"} or (
-        path.startswith("docs/") and not path.startswith("docs/standards/")
-    )
-
-
-def _is_control_plane_text(path: str) -> bool:
-    return path in CONTROL_PLANE_EXACT_PATHS or path.startswith(CONTROL_PLANE_PREFIXES)
-
-
-def _is_repo_code_or_tooling(path: str) -> bool:
-    return (
-        path.startswith(("src/", "tests/", "repo_support/"))
-        or path.startswith("tools/")
-        and path.endswith(".py")
-    )
-
-
-def _is_ci_or_release(path: str) -> bool:
-    return path in CI_OR_RELEASE_EXACT_PATHS or path.startswith(CI_OR_RELEASE_PREFIXES)
-
-
-def _path_surface_groups(path: str) -> tuple[str, ...]:
-    groups: list[str] = []
-    if _is_human_docs(path):
-        groups.append("human_docs")
-    if _is_control_plane_text(path):
-        groups.append("control_plane_text")
-    if _is_repo_code_or_tooling(path):
-        groups.append("repo_code_or_tooling")
-    if _is_ci_or_release(path):
-        groups.append("ci_or_release")
-    return tuple(groups)
-
-
-def _path_targeted_check_names(path: str) -> tuple[str, ...]:
-    check_names: list[str] = []
-    pure_path = PurePosixPath(path)
-    if path.startswith(".agents/skills/"):
-        check_names.append("repo-agent-skills")
-    if (
-        path == "AGENTS.md"
-        or path == "ROADMAP.md"
-        or path.startswith("docs/standards/")
-        or path.startswith(".claude/commands/")
-    ):
-        check_names.append("standards-guards")
-    if path.startswith(".claude/commands/"):
-        check_names.append("docs-runtime-parity")
-    if (
-        path.startswith(".github/workflows/")
-        or path == ".github/CODEOWNERS"
-        or path == "docs/standards/delivery-guardrails.md"
-        or path == "tools/audit_delivery_guardrails.py"
-    ):
-        check_names.append("delivery-guardrails-audit")
-    if path in {
-        ".github/pull_request_template.md",
-        "docs/standards/commits.md",
-        "docs/standards/issues.md",
-        "tools/message_standards.py",
-        "tools/validate_pr_metadata.py",
-    }:
-        check_names.append("pr-metadata-validator")
-    if path in {
-        "docs/standards/commits.md",
-        "tools/message_standards.py",
-        "tools/validate_commit_message.py",
-    }:
-        check_names.append("commit-message-validator")
-    if path == "tools/run_quality_gates.py":
-        check_names.append("quality-gates-tooling")
-    if path.startswith(".github/actions/") or path in {
-        ".github/workflows/ci.yml",
-        "tools/run_ci_parity_checks.py",
-    }:
-        check_names.append("ci-parity-tooling")
-    if path in {"repo_support/pr_review.py", "tools/audit_pr_review.py"}:
-        check_names.append("audit-pr-review")
-    if path in {
-        "repo_support/pr_review.py",
-        "tools/run_pr_review_checks.py",
-        ".github/workflows/pr-review.yml",
-    }:
-        check_names.append("run-pr-review-checks")
-    if pure_path.parts[:2] == ("tools", "docs_maintenance"):
-        check_names.append("standards-guards")
-    return tuple(check_names)
-
-
 def classify_changed_paths(paths: Sequence[str]) -> PrReviewPlan:
     grouped_paths: dict[str, list[str]] = {name: [] for name in SURFACE_GROUP_ORDER}
     review_domains: list[str] = []
     targeted_checks: list[TargetedCheck] = []
     verification_level = "none"
+    requires_full_quality_gates = False
+    requires_ci_parity = False
+    requires_test_stress_checks = False
+    requires_coverage_hotspot_report = False
+    has_packaging_sensitive_repo_code = False
     unmapped_paths: list[str] = []
 
-    if any(_is_human_docs(path) or _is_control_plane_text(path) for path in paths):
+    if any(is_human_docs(path) or is_control_plane_text(path) for path in paths):
         targeted_checks.append(DOCS_MAINTENANCE_CHECK)
 
     for path in paths:
-        groups = _path_surface_groups(path)
+        groups = path_surface_groups(path)
         if not groups:
             unmapped_paths.append(path)
             continue
@@ -373,7 +303,17 @@ def classify_changed_paths(paths: Sequence[str]) -> PrReviewPlan:
             for domain in SURFACE_REVIEW_DOMAINS[group]:
                 if domain not in review_domains:
                     review_domains.append(domain)
-        for check_name in _path_targeted_check_names(path):
+        if "repo_code_or_tooling" in groups:
+            requires_full_quality_gates = True
+            requires_test_stress_checks = True
+        if "ci_or_release" in groups:
+            requires_ci_parity = True
+            requires_test_stress_checks = True
+        if is_production_code_path(path):
+            requires_coverage_hotspot_report = True
+        if "repo_code_or_tooling" in groups and is_packaging_sensitive_path(path):
+            has_packaging_sensitive_repo_code = True
+        for check_name in path_targeted_check_names(path):
             check = TARGETED_CHECKS_BY_NAME[check_name]
             if check not in targeted_checks:
                 targeted_checks.append(check)
@@ -391,5 +331,14 @@ def classify_changed_paths(paths: Sequence[str]) -> PrReviewPlan:
         review_domains=tuple(review_domains),
         targeted_checks=tuple(targeted_checks),
         verification_level=verification_level,
+        requires_full_quality_gates=requires_full_quality_gates,
+        requires_ci_parity=requires_ci_parity,
+        requires_pre_merge_packaging_verification=(
+            requires_full_quality_gates
+            and not requires_ci_parity
+            and has_packaging_sensitive_repo_code
+        ),
+        requires_test_stress_checks=requires_test_stress_checks,
+        requires_coverage_hotspot_report=requires_coverage_hotspot_report,
         unmapped_paths=tuple(unmapped_paths),
     )

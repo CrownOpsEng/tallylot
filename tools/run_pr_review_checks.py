@@ -15,6 +15,7 @@ from tools.uv_environment import repo_uv_environment
 class ReviewCheckStep:
     name: str
     command: tuple[str, ...]
+    blocking: bool = True
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -31,7 +32,7 @@ def _steps_for_plan(plan: PrReviewPlan) -> tuple[ReviewCheckStep, ...]:
         ReviewCheckStep(name=check.name, command=check.command)
         for check in plan.targeted_checks
     ]
-    if plan.verification_level == "quality-gates-full":
+    if plan.requires_full_quality_gates:
         steps.append(
             ReviewCheckStep(
                 name="quality-gates-full",
@@ -45,11 +46,43 @@ def _steps_for_plan(plan: PrReviewPlan) -> tuple[ReviewCheckStep, ...]:
                 ),
             )
         )
-    elif plan.verification_level == "ci-parity":
+    if plan.requires_ci_parity:
         steps.append(
             ReviewCheckStep(
                 name="ci-parity",
                 command=("uv", "run", "python", "-m", "tools.run_ci_parity_checks"),
+            )
+        )
+    if plan.requires_test_stress_checks:
+        steps.append(
+            ReviewCheckStep(
+                name="test-stress-checks",
+                command=("uv", "run", "python", "-m", "tools.run_test_stress_checks"),
+            )
+        )
+    if plan.requires_pre_merge_packaging_verification:
+        steps.append(
+            ReviewCheckStep(
+                name="pre-merge-packaging",
+                command=(
+                    "uv",
+                    "run",
+                    "python",
+                    "-m",
+                    "tools.run_ci_parity_checks",
+                    "--step",
+                    "build",
+                    "--step",
+                    "verify-wheel",
+                ),
+            )
+        )
+    if plan.requires_coverage_hotspot_report:
+        steps.append(
+            ReviewCheckStep(
+                name="coverage-hotspots",
+                command=("uv", "run", "python", "-m", "tools.report_coverage_hotspots"),
+                blocking=False,
             )
         )
     return tuple(steps)
@@ -98,8 +131,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     for step in _steps_for_plan(plan):
-        if _run_step(step) != 0:
+        returncode = _run_step(step)
+        if returncode != 0 and step.blocking:
             return 1
+        if returncode != 0 and not step.blocking:
+            print(f"[{step.name}] non-blocking failure; continuing", flush=True)
     return 0
 
 

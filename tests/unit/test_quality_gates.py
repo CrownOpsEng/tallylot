@@ -5,6 +5,11 @@ from pathlib import Path
 
 import pytest
 
+from repo_support.paths import repo_root
+from repo_support.pytest_commands import (
+    DEFAULT_FAST_PYTEST_WORKERS,
+    build_fast_pytest_command,
+)
 from repo_support.quality_gates import (
     QUALITY_GATE_ORDER,
     QualityGate,
@@ -12,7 +17,6 @@ from repo_support.quality_gates import (
     available_quality_gates,
 )
 import tools.run_quality_gates
-from repo_support.paths import repo_root
 from tools.run_quality_gates import _phase_plan, _run_request
 
 
@@ -52,6 +56,73 @@ def test_quality_gates_can_select_named_gates() -> None:
         QualityPhase(name="quick-static", gate_names=("markdownlint",)),
         QualityPhase(name="tests", gate_names=("pytest",)),
     )
+
+
+def test_fast_quality_gate_uses_shared_pytest_command_builder() -> None:
+    assert available_quality_gates(full_tests=False)["pytest"].command == (
+        build_fast_pytest_command()
+    )
+
+
+def test_fast_pytest_defaults_to_four_workers() -> None:
+    assert build_fast_pytest_command() == (
+        "uv",
+        "run",
+        "pytest",
+        "-n",
+        str(DEFAULT_FAST_PYTEST_WORKERS),
+        "-m",
+        "unit and not slow",
+        "--no-cov",
+        "-q",
+    )
+
+
+@pytest.mark.parametrize(
+    ("worker_override", "expected_command"),
+    [
+        (
+            "4",
+            (
+                "uv",
+                "run",
+                "pytest",
+                "-n",
+                "4",
+                "-m",
+                "unit and not slow",
+                "--no-cov",
+                "-q",
+            ),
+        ),
+        (
+            "1",
+            (
+                "uv",
+                "run",
+                "pytest",
+                "-n",
+                "1",
+                "-m",
+                "unit and not slow",
+                "--no-cov",
+                "-q",
+            ),
+        ),
+        (
+            "0",
+            ("uv", "run", "pytest", "-m", "unit and not slow", "--no-cov", "-q"),
+        ),
+    ],
+)
+def test_fast_pytest_honors_worker_override(
+    monkeypatch: pytest.MonkeyPatch,
+    worker_override: str,
+    expected_command: tuple[str, ...],
+) -> None:
+    monkeypatch.setenv("TALLYLOT_FAST_PYTEST_WORKERS", worker_override)
+
+    assert build_fast_pytest_command() == expected_command
 
 
 def test_run_gate_exports_external_uv_project_environment(
@@ -107,9 +178,7 @@ def test_run_gate_sets_absolute_coverage_config_for_pytest(
 
     coverage_config = str(repo_root() / "pyproject.toml")
     assert coverage_config in captured_environment["PYTEST_ADDOPTS"]
-    assert "COVERAGE_FILE" in captured_environment
-    assert Path(captured_environment["COVERAGE_FILE"]).is_absolute()
-    assert Path(captured_environment["COVERAGE_FILE"]).name == ".coverage"
+    assert "COVERAGE_FILE" not in captured_environment
 
 
 def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> None:

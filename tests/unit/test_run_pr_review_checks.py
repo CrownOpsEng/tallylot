@@ -39,10 +39,25 @@ def test_control_plane_route_diff_runs_targeted_policy_checks() -> None:
 
 
 def test_repo_code_diff_runs_full_quality_gates() -> None:
+    plan = classify_changed_paths(
+        ("src/tallylot/application/normalization/normalize_source.py",)
+    )
+
+    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
+        "quality-gates-full",
+        "test-stress-checks",
+        "coverage-hotspots",
+    ]
+
+
+def test_packaging_sensitive_repo_code_runs_packaging_verification() -> None:
     plan = classify_changed_paths(("src/tallylot/interfaces/cli/source.py",))
 
     assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
-        "quality-gates-full"
+        "quality-gates-full",
+        "test-stress-checks",
+        "pre-merge-packaging",
+        "coverage-hotspots",
     ]
 
 
@@ -53,6 +68,7 @@ def test_ci_workflow_diff_runs_ci_parity_and_targeted_audits() -> None:
         "delivery-guardrails-audit",
         "ci-parity-tooling",
         "ci-parity",
+        "test-stress-checks",
     ]
 
 
@@ -64,6 +80,9 @@ def test_mixed_docs_and_code_diff_keeps_surface_specific_checks() -> None:
     assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
         "docs-maintenance",
         "quality-gates-full",
+        "test-stress-checks",
+        "pre-merge-packaging",
+        "coverage-hotspots",
     ]
 
 
