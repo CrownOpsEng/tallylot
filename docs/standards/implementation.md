@@ -363,6 +363,10 @@ For PR review and repair loops, choose verification by changed surface:
   for packaging-sensitive repo-code diffs
 - `ci_or_release`: run `tools.run_ci_parity_checks`; the PR route also keeps
   the blocking stress lane on for these diffs
+- mixed `repo_code_or_tooling` plus `ci_or_release`: let `ci-parity` win as
+  the broad runner because it already includes the full quality, build, and
+  wheel parity path; keep the surface-specific targeted checks and the stress
+  lane, but do not duplicate `tools.run_quality_gates --full-tests`
 
 Coverage hotspot reports are informative review output only. Use them to pick
 the next hardening target after a full-suite run; do not treat them as a

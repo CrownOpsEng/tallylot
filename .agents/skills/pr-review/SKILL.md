@@ -25,6 +25,8 @@ Use this skill for repeatable review passes on an active branch or draft PR.
 4. Repair findings in bounded slices, rerun the required checks for the
    repaired slice, and keep the PR draft until a full applicable-surface pass
    yields no new meaningful findings.
+   Do not treat green `tools.run_pr_review_checks` output as a clean pass by
+   itself; it is only verification evidence for the current red-team pass.
 5. Use `issue-workflow`, `docs-authoring`, or `implementation-workflow` when
    the repair surface moves into those repo-local workflows.
 

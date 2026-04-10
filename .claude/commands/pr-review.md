@@ -33,6 +33,8 @@ Use this route for repeatable review passes on an active branch or draft PR.
    before starting the next pass. Do not start another red-team pass with
    uncommitted repaired findings unless the pass is still in a very small
    in-progress slice.
+   Do not treat a green `tools.run_pr_review_checks` result as a clean pass by
+   itself; it is only the verification evidence for the current red-team pass.
 6. Continue steps 1 through 5 until every applicable changed surface group has
    completed a clean pass and a full applicable-surface loop yields no new
    meaningful findings. When a pass finds fewer than 5 findings, report only

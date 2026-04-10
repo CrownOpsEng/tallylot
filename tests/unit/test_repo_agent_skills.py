@@ -69,6 +69,7 @@ EXPECTED_SKILLS = {
             ".claude/commands/pr-review.md",
             "tools.audit_pr_review",
             "applicable surface groups",
+            "green `tools.run_pr_review_checks` output as a clean pass",
         ),
     ),
     "balance-submission-operations": ExpectedSkill(

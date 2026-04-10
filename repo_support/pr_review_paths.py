@@ -14,6 +14,7 @@ CONTROL_PLANE_PREFIXES = (
     "docs/standards/",
     ".github/ISSUE_TEMPLATE/",
 )
+REPO_CODE_OR_TOOLING_EXACT_PATHS = ("conftest.py",)
 CI_OR_RELEASE_EXACT_PATHS = (
     ".pre-commit-config.yaml",
     ".pylintrc-tests",
@@ -57,7 +58,8 @@ def is_control_plane_text(path: str) -> bool:
 
 def is_repo_code_or_tooling(path: str) -> bool:
     return (
-        path.startswith(("src/", "tests/", "repo_support/"))
+        path in REPO_CODE_OR_TOOLING_EXACT_PATHS
+        or path.startswith(("src/", "tests/", "repo_support/"))
         or path.startswith("tools/")
         and path.endswith(".py")
     )

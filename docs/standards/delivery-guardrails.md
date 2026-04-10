@@ -151,7 +151,8 @@ the changed surface groups in the current PR diff:
     delivery behavior, compaction and context-loss recovery, issue and privacy
     handling
 - `repo_code_or_tooling`
-  - paths: `src/**`, Python under `tools/**`, `repo_support/**`, `tests/**`
+  - paths: `src/**`, Python under `tools/**`, `repo_support/**`, `tests/**`,
+    and repo-root test support such as `conftest.py`
   - review domains: design and ownership, correctness and behavior, complexity
     and over-engineering, tests and regression value, naming and public
     terminology, documentation and control-plane alignment
@@ -168,6 +169,9 @@ When more than one surface group is present:
   - `control-plane-targeted`
   - `quality-gates-full`
   - `ci-parity`
+- when `ci-parity` wins for a mixed repo-code and CI diff, do not also run a
+  duplicate `quality-gates-full` pass; `ci-parity` already includes the full
+  quality, build, and wheel parity path
 - surface-specific targeted checks still apply when the touched path declares
   them, even when a stronger broad runner is also required
 
@@ -177,6 +181,9 @@ Each PR review pass should:
 - use `tools.audit_pr_review` to confirm the applicable surface groups, review
   domains, required verification family, and any unmapped paths before calling
   the pass clean
+- treat passing `tools.run_pr_review_checks` or broader verification as review
+  evidence only; a green runner never replaces the mandatory red-team repair
+  loop or the clean-pass decision
 - red-team one adjacent applicable surface group and look for up to 5 new
   unique evidence-backed findings for the current pass
 - repair every finding from that pass before starting the next pass

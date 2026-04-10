@@ -20,6 +20,16 @@ def _unmapped_changed_paths(
     return ("notes/todo.md",)
 
 
+def _mixed_ci_and_repo_code_changed_paths(
+    base_sha: str | None = None, head_sha: str | None = None
+) -> tuple[str, ...]:
+    del base_sha, head_sha
+    return (
+        ".github/workflows/ci.yml",
+        "src/tallylot/application/normalization/normalize_source.py",
+    )
+
+
 def test_docs_only_diff_runs_docs_maintenance_only() -> None:
     plan = classify_changed_paths(("docs/guides/source-intake.md",))
 
@@ -72,6 +82,23 @@ def test_ci_workflow_diff_runs_ci_parity_and_targeted_audits() -> None:
     ]
 
 
+def test_mixed_repo_code_and_ci_diff_uses_ci_parity_as_broad_runner() -> None:
+    plan = classify_changed_paths(
+        (
+            ".github/workflows/ci.yml",
+            "src/tallylot/application/normalization/normalize_source.py",
+        )
+    )
+
+    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
+        "delivery-guardrails-audit",
+        "ci-parity-tooling",
+        "ci-parity",
+        "test-stress-checks",
+        "coverage-hotspots",
+    ]
+
+
 def test_mixed_docs_and_code_diff_keeps_surface_specific_checks() -> None:
     plan = classify_changed_paths(
         ("docs/guides/source-intake.md", "src/tallylot/interfaces/cli/source.py")
@@ -108,4 +135,28 @@ def test_run_pr_review_checks_runs_expected_steps(
 
     assert run_pr_review_checks.main([]) == 0
     assert steps_seen == ["docs-maintenance"]
-    assert "no changed paths detected" not in capsys.readouterr().out
+    output = capsys.readouterr().out
+    assert "no changed paths detected" not in output
+    assert run_pr_review_checks.REVIEW_LOOP_REMINDER in output
+    assert "continue the red-team review loop" in output
+
+
+def test_run_pr_review_checks_explains_ci_parity_subsumes_quality(
+    monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        run_pr_review_checks,
+        "changed_paths",
+        _mixed_ci_and_repo_code_changed_paths,
+    )
+
+    def fake_run_step(step: run_pr_review_checks.ReviewCheckStep) -> int:
+        del step
+        return 0
+
+    monkeypatch.setattr(run_pr_review_checks, "_run_step", fake_run_step)
+
+    assert run_pr_review_checks.main([]) == 0
+    output = capsys.readouterr().out
+    assert "ci-parity is the broad runner for this diff" in output
+    assert "duplicate quality-gates-full is intentionally skipped" in output

@@ -64,6 +64,16 @@ def test_repo_code_diff_maps_to_full_quality_gates() -> None:
     assert "design and ownership" in plan.review_domains
 
 
+def test_repo_root_conftest_maps_to_repo_code_review_surface() -> None:
+    plan = classify_changed_paths(("conftest.py",))
+
+    assert plan.surface_groups == ("repo_code_or_tooling",)
+    assert plan.verification_level == "quality-gates-full"
+    assert plan.requires_full_quality_gates is True
+    assert plan.requires_test_stress_checks is True
+    assert plan.unmapped_paths == ()
+
+
 def test_packaging_sensitive_repo_code_adds_pre_merge_packaging_verification() -> None:
     plan = classify_changed_paths(("src/tallylot/interfaces/cli/source.py",))
 
@@ -135,6 +145,7 @@ def test_audit_pr_review_can_emit_json(
     assert report["surface_groups"] == ["human_docs"]
     assert report["verification_level"] == "docs-maintenance"
     assert report["requires_pre_merge_packaging_verification"] is False
+    assert report["manual_red_team_review_required"] is True
 
 
 def test_audit_pr_review_fails_closed_for_unmapped_paths(
@@ -144,3 +155,15 @@ def test_audit_pr_review_fails_closed_for_unmapped_paths(
 
     assert audit_pr_review.main([]) == 1
     assert "unmapped paths" in capsys.readouterr().out
+
+
+def test_audit_pr_review_emits_red_team_review_reminder(
+    monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(audit_pr_review, "changed_paths", _docs_changed_paths)
+
+    assert audit_pr_review.main([]) == 0
+
+    output = capsys.readouterr().out
+    assert "manual red-team review: required" in output
+    assert "mandatory red-team repair loop" in output

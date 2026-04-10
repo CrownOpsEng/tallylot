@@ -10,12 +10,27 @@ from dataclasses import dataclass
 from repo_support.pr_review import PrReviewPlan, changed_paths, classify_changed_paths
 from tools.uv_environment import repo_uv_environment
 
+REVIEW_LOOP_REMINDER = (
+    "review reminder: passing verification does not complete the mandatory "
+    "red-team repair loop or authorize PR readiness"
+)
+
 
 @dataclass(frozen=True)
 class ReviewCheckStep:
     name: str
     command: tuple[str, ...]
     blocking: bool = True
+
+
+def _verification_note(plan: PrReviewPlan) -> str | None:
+    if plan.verification_level == "ci-parity" and plan.requires_full_quality_gates:
+        return (
+            "verification note: ci-parity is the broad runner for this diff and "
+            "already includes the full quality, build, and wheel parity path, "
+            "so duplicate quality-gates-full is intentionally skipped"
+        )
+    return None
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -32,7 +47,7 @@ def _steps_for_plan(plan: PrReviewPlan) -> tuple[ReviewCheckStep, ...]:
         ReviewCheckStep(name=check.name, command=check.command)
         for check in plan.targeted_checks
     ]
-    if plan.requires_full_quality_gates:
+    if plan.verification_level == "quality-gates-full":
         steps.append(
             ReviewCheckStep(
                 name="quality-gates-full",
@@ -46,7 +61,7 @@ def _steps_for_plan(plan: PrReviewPlan) -> tuple[ReviewCheckStep, ...]:
                 ),
             )
         )
-    if plan.requires_ci_parity:
+    if plan.verification_level == "ci-parity":
         steps.append(
             ReviewCheckStep(
                 name="ci-parity",
@@ -130,12 +145,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         print("no changed paths detected")
         return 0
 
+    print(REVIEW_LOOP_REMINDER)
+    verification_note = _verification_note(plan)
+    if verification_note is not None:
+        print(verification_note)
     for step in _steps_for_plan(plan):
         returncode = _run_step(step)
         if returncode != 0 and step.blocking:
             return 1
         if returncode != 0 and not step.blocking:
             print(f"[{step.name}] non-blocking failure; continuing", flush=True)
+    print(
+        "verification complete: continue the red-team review loop before calling the pass clean"
+    )
     return 0
 
 

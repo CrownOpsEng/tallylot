@@ -38,6 +38,7 @@ def _plan_to_json(plan: PrReviewPlan) -> dict[str, object]:
         ),
         "requires_test_stress_checks": plan.requires_test_stress_checks,
         "requires_coverage_hotspot_report": plan.requires_coverage_hotspot_report,
+        "manual_red_team_review_required": bool(plan.changed_paths),
         "unmapped_paths": list(plan.unmapped_paths),
     }
 
@@ -46,6 +47,7 @@ def _emit_text(plan: PrReviewPlan) -> None:
     if not plan.changed_paths:
         print("no changed paths detected")
         return
+    print("manual red-team review:", "required")
     print("surface groups:", ", ".join(plan.surface_groups) or "none")
     print("review domains:", ", ".join(plan.review_domains) or "none")
     print("verification level:", plan.verification_level)
@@ -68,6 +70,9 @@ def _emit_text(plan: PrReviewPlan) -> None:
         print("unmapped paths:")
         for path in plan.unmapped_paths:
             print(f"  - {path}")
+    print(
+        "review reminder: audit and verification do not replace the mandatory red-team repair loop"
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
