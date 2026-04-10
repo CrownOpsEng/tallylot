@@ -38,6 +38,8 @@ These planning anchors drive phase order and acceptance criteria:
 - accounting validates journal structure and coverage in parallel with
   reconciliation once the fact path is stable
 - capture identity is metadata, not path
+- typed provenance stays a runtime model and is flattened only when writing
+  artifacts
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - raw-evidence derivation is the supported semantic parity path
 
@@ -73,6 +75,8 @@ Scope:
 - keep direct fact artifacts as the only canonical runtime model
 - center intake on explicit capture identity, capture registries, and
   raw-evidence preservation instead of inferred capture buckets
+- keep inferred period and capture heuristics as report metadata only; they do
+  not control runtime identity, routing, or normalization ownership
 - finish adapter parity and projection parity coverage on the current fact
   model
 - keep review and issue outputs explicit for ambiguous direction, precision, or
@@ -82,8 +86,13 @@ Scope:
   ambiguous
 - split capture-scoped normalization from source-scoped assembly before
   reconciliation expands further
-- centralize statement extraction and provenance handling behind one shared
-  evidence seam
+- centralize statement extraction, document discovery, provenance, and shared
+  issue or review handling behind one evidence seam
+- keep source profile and source normalize strict to one materialized raw
+  capture root and fail explicit on arbitrary directories or mismatched capture
+  metadata
+- make source assembly rerun-safe by rewriting its owned generated artifact
+  surface deterministically on each run
 - add a repo-native semantic parity validator for unchanged raw inputs
 
 Exit criteria:
@@ -93,9 +102,15 @@ Exit criteria:
 - CoinTracking CSV projection remains correct from facts alone
 - remaining normalization ambiguity paths emit explicit reviews or blocking
   issues instead of silent coercion
+- canonical balance evidence, issue rows, review rows, and location inventory
+  evidence rows share one flattened provenance locator family at artifact
+  boundaries while runtime models keep typed provenance
 - unchanged raw inputs preserve file completeness, fact counts, balance counts,
   balance-evidence counts, and issue or review counts unless an
   expected-difference fixture documents the exception
+- expected-difference fixtures may relax only issue-count or review-count
+  parity and must never excuse raw completeness, fact, balance, evidence, or
+  reconciliation drift
 
 ### 3. Reconciliation
 

@@ -184,8 +184,8 @@ Rules:
 
 - use an immutable `capture_uid` as the canonical capture identity
 - use a human-readable `capture_label` only for the raw folder name
-- treat inferred periods as metadata, not as the routing key or capture
-  identity
+- treat inferred periods and any inferred `capture_id` heuristics as metadata,
+  not as the routing key, grouping identity, or capture ownership model
 - keep all untouched upstream originals for the capture under one raw capture
   root instead of repartitioning them into inferred month or year folders
 - use explicit capture registry records instead of overloading one source row
@@ -198,7 +198,11 @@ scoped.
 
 Rules:
 
-- `source profile` and `source normalize` operate on exactly one raw capture
+- `source profile` and `source normalize` operate on exactly one materialized
+  raw capture root
+- both commands must fail explicitly when the input is not a valid
+  `evidence/raw/source/<source>/<capture_label>/` root with matching
+  `capture.json` metadata
 - capture-normalized outputs live under a capture-owned root
 - `source assemble` is the only supported bridge from accepted captures to the
   reconciliation-ready source dataset
@@ -219,10 +223,38 @@ Rules:
   resolution hooks through bounded plugin methods
 - use that shared service both when normalization emits source-backed balance
   evidence and when `checkpoint extract-pdf-balances` is invoked directly
-- keep provenance, ambiguity, and review handling in the shared service rather
-  than duplicating it in provider-local orchestration
+- let the shared service own capture-inventory-backed document discovery,
+  ambiguity rules, typed provenance locator construction, and shared issue or
+  review handling rather than duplicating that orchestration in providers
 
-### 14. Treat Semantic Workspace Validation As A First-Class Repo Capability
+### 14. Keep Typed Provenance In Runtime Models
+
+Artifact rows need flattened provenance columns, but runtime models should keep
+one typed locator seam until the storage boundary.
+
+Rules:
+
+- keep capture-scoped provenance as a typed runtime concept
+- flatten provenance only in codecs and artifact writers
+- reuse one flattened locator family across balance evidence, issue rows,
+  review rows, and location inventory evidence rows
+- keep row or page anchors separate from file location rather than collapsing
+  them into one ad hoc string
+
+### 15. Make Source Assembly Deterministic And Rerun-Safe
+
+Source assembly owns one generated output surface per source and should rewrite
+that surface deterministically on rerun.
+
+Rules:
+
+- `source assemble` rewrites only its known generated artifacts under
+  `working/normalized/sources/<source>/`
+- reruns must remove stale generated files that no longer have source data
+- assembly lifecycle and source summary state must be derived by reducers from
+  capture registry state, not by ad hoc latest-write behavior
+
+### 16. Treat Semantic Workspace Validation As A First-Class Repo Capability
 
 The supported validation path is raw-evidence derivation, not migration
 wrappers.
@@ -234,6 +266,10 @@ Rules:
 - compare semantic parity, not path identity
 - ignore expected `capture_uid` and `capture_label` differences when two
   workspaces are otherwise semantically identical
+- compare the semantic registry surface, raw completeness, assembled source
+  metrics, and reconciliation status counts
+- allow expected-difference fixtures only for declared issue-count or
+  review-count drift with an explicit reason
 - keep semantic parity validation in repo-native tooling under `tools/`
 - do not add one-off migration utilities or compatibility wrappers just to
   preserve a superseded capture layout
