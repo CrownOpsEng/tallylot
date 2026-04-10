@@ -246,8 +246,57 @@ def test_translate_file_families_uses_profile_inventory_candidates(
         rules=(trade_rule,),
     )
 
-    assert result.unmatched_paths == ()
-    assert result.issues == ()
+    assert not result.unmatched_paths
+    assert not result.issues
+
+
+def test_translate_file_families_uses_inventory_relative_path_for_archive_members(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    extracted_dir = tmp_path / "extracted"
+    extracted_dir.mkdir()
+    extracted_path = extracted_dir / "trades.csv"
+    extracted_path.write_text("x\n1\n", encoding="utf-8")
+    translated_paths: list[Path] = []
+
+    def translate(
+        context: FileTranslationContext,
+    ) -> tuple[tuple[EconomicActivityDraft, ...], tuple[IssueRecord, ...]]:
+        translated_paths.append(context.path)
+        return (), ()
+
+    trade_rule = FileTranslationRule(
+        family="trades",
+        matches_path=lambda path: path.name == "trades.csv",
+        translate=translate,
+    )
+
+    result = translate_file_families(
+        raw_dir,
+        profile=build_source_profile(
+            adapter_id="fixture_adapter",
+            raw_dir=str(raw_dir),
+            file_inventory=(
+                FileInventoryEntry(
+                    relative_path="bundle.zip::trades.csv",
+                    suffix=".csv",
+                    size_bytes=extracted_path.stat().st_size,
+                    sha256="trades",
+                    source_path=str(extracted_path),
+                    archive_source_path="bundle.zip",
+                    archive_member_path="trades.csv",
+                    family="fixture_adapter:trades",
+                ),
+            ),
+        ),
+        rules=(trade_rule,),
+    )
+
+    assert translated_paths == [extracted_path]
+    assert not result.unmatched_paths
+    assert not result.issues
 
 
 def test_decimal_precision_support_validates_minimum_digits_and_zero_exemptions() -> (

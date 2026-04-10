@@ -62,8 +62,9 @@ def translate_file_families(
     adapter_id = str(profile.adapter_id)
     source = str(profile.source)
     inventory_by_path = {entry.relative_path: entry for entry in profile.file_inventory}
-    for path in _translation_candidate_paths(raw_dir, profile, pattern=pattern):
-        relative_path = path.relative_to(raw_dir).as_posix()
+    for path, relative_path in _translation_candidate_paths(
+        raw_dir, profile, pattern=pattern
+    ):
         entry = inventory_by_path.get(relative_path)
         family_ids = {
             family_id
@@ -161,19 +162,35 @@ def _translation_candidate_paths(
     profile: SourceProfile,
     *,
     pattern: str,
-) -> tuple[Path, ...]:
+) -> tuple[tuple[Path, str], ...]:
     if pattern != "*.csv":
-        return tuple(sorted(raw_dir.rglob(pattern)))
+        return tuple(
+            sorted(
+                (
+                    path,
+                    path.relative_to(raw_dir).as_posix(),
+                )
+                for path in raw_dir.rglob(pattern)
+            )
+        )
     candidates = tuple(
-        path
+        (path, entry.relative_path)
         for entry in profile.file_inventory
         if entry.suffix.lower() == ".csv"
         for path in (_inventory_entry_path(raw_dir, entry),)
         if path is not None
     )
     if candidates:
-        return tuple(sorted(candidates))
-    return tuple(sorted(raw_dir.rglob(pattern)))
+        return tuple(sorted(candidates, key=lambda item: (item[0].as_posix(), item[1])))
+    return tuple(
+        sorted(
+            (
+                path,
+                path.relative_to(raw_dir).as_posix(),
+            )
+            for path in raw_dir.rglob(pattern)
+        )
+    )
 
 
 def _inventory_entry_path(raw_dir: Path, entry: FileInventoryEntry) -> Path | None:
