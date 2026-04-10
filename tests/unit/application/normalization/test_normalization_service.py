@@ -10,12 +10,14 @@ from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.adapter_packs import fixture_raw_dir
+from repo_support.capture_roots import materialize_capture_root
 from tests.support.services import build_normalization_service
 
 
-def test_normalization_service_filters_events_outside_explicit_window(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+def test_normalization_service_filters_events_outside_explicit_window(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
     (raw_dir / "transactions.csv").write_text(
         (
             "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
@@ -41,8 +43,12 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     )
 
     canonical_rows = read_rows(output_dir / "facts.csv")
-    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
-    summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
+    fact_annotations = json.loads(
+        (output_dir / "fact_annotations.json").read_text(encoding="utf-8")
+    )
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
 
     assert response.fact_count == 1
@@ -61,13 +67,20 @@ def test_normalization_service_filters_events_outside_explicit_window(tmp_path: 
     assert summary["facts_outside_normalization_window"] == 1
     assert summary["normalization_window_start"] == "2023-08-05 08:34:05"
     assert summary["normalization_window_end"] == "2025-12-31 23:59:59"
-    assert profile["normalization_hints"]["normalization_window_start"] == "2023-08-05 08:34:05"
-    assert profile["normalization_hints"]["normalization_window_end"] == "2025-12-31 23:59:59"
+    assert (
+        profile["normalization_hints"]["normalization_window_start"]
+        == "2023-08-05 08:34:05"
+    )
+    assert (
+        profile["normalization_hints"]["normalization_window_end"]
+        == "2025-12-31 23:59:59"
+    )
 
 
-def test_normalization_service_filters_timestamped_issues_outside_explicit_window(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+def test_normalization_service_filters_timestamped_issues_outside_explicit_window(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="Binance")
     (raw_dir / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv").write_text(
         "User ID,Time,Account,Operation,Coin,Change,Remark\n"
         "1,23-08-05 08:34:04,Funding,Transfer Between Main and Funding Wallet,USDT,-10,\n",
@@ -88,7 +101,9 @@ def test_normalization_service_filters_timestamped_issues_outside_explicit_windo
     )
 
     issue_rows = read_rows(output_dir / "exceptions.csv")
-    summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.issue_count == 0
     assert not issue_rows
@@ -96,9 +111,10 @@ def test_normalization_service_filters_timestamped_issues_outside_explicit_windo
     assert summary["issues_outside_normalization_window"] == 1
 
 
-def test_normalization_service_filters_row_scoped_issues_outside_explicit_window(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+def test_normalization_service_filters_row_scoped_issues_outside_explicit_window(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="Future Broker")
     (raw_dir / "activity.csv").write_text(
         "transaction_date,settlement_date,account_id,account_type,activity_type,activity_sub_type,"
         "quantity,currency,symbol,commission,net_cash_amount\n"
@@ -120,7 +136,9 @@ def test_normalization_service_filters_row_scoped_issues_outside_explicit_window
     )
 
     issue_rows = read_rows(output_dir / "exceptions.csv")
-    summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.issue_count == 0
     assert not issue_rows
@@ -128,9 +146,10 @@ def test_normalization_service_filters_row_scoped_issues_outside_explicit_window
     assert summary["issues_outside_normalization_window"] == 1
 
 
-def test_normalization_service_rejects_ambiguous_timezone_inventory(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+def test_normalization_service_rejects_ambiguous_timezone_inventory(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="Binance")
     (raw_dir / "Binance-Spot-Trade-History.csv").write_text(
         "Time,Pair,Side,Price,Executed,Amount,Fee\n"
         "23-09-20 18:20:55,ALGOUSDT,SELL,0.0997,103ALGO,10.2691USDT,0.00003593BNB\n",
@@ -148,9 +167,10 @@ def test_normalization_service_rejects_ambiguous_timezone_inventory(tmp_path: Pa
         )
 
 
-def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_state(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_state(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="Future Exchange")
     (raw_dir / "retail-export.csv").write_text(
         "Transactions\n"
         "User,Example User,acct\n"
@@ -204,6 +224,7 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
     expected_fact_count: int,
     expected_issue_count: int,
 ) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source=source, source_dir=raw_dir)
     artifacts = FilesystemArtifactStore()
     service = build_normalization_service(artifacts=artifacts)
     output_dir = tmp_path / "normalized"
@@ -222,8 +243,8 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
     assert response.issue_count == expected_issue_count
     assert (output_dir / "facts.csv").exists()
     assert (
-        json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))[
-            "normalization_window_start"
-        ]
+        json.loads(
+            (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+        )["normalization_window_start"]
         == "2023-01-01 00:00:00"
     )

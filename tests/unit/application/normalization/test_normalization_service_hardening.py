@@ -43,6 +43,7 @@ from tallylot.ports.source_translation import (
     classification,
     economic_leg,
 )
+from repo_support.capture_roots import materialize_capture_root
 from tests.support.services import (
     FakeSourceRegistry,
     MatchingSourceAdapter,
@@ -61,8 +62,7 @@ def _make_pdf(path: Path, *lines: str) -> None:
 
 
 def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture")
     registry = FakeSourceRegistry(
         source_adapters=(MatchingSourceAdapter("unsupported", supported=False),)
     )
@@ -81,11 +81,58 @@ def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> N
         )
 
 
+def test_normalization_service_rejects_non_capture_roots(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    service = build_normalization_service(artifacts=FilesystemArtifactStore())
+
+    with pytest.raises(ValueError, match="must contain capture.json"):
+        service.execute(
+            NormalizeRequest(
+                source="fixture_source",
+                raw_capture_ref=to_resource_ref(raw_dir),
+                normalized_output_ref=to_resource_ref(tmp_path / "normalized"),
+            )
+        )
+
+
+def test_normalization_service_rejects_mismatched_capture_metadata(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
+    (raw_dir / "capture.json").write_text(
+        json.dumps(
+            {
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "source": "other_source",
+                "capture_label": "2026-03-23T14-15-16Z",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/other_source",
+                "manifest_fingerprint": "manifest:fixture",
+                "status": "captured",
+                "notes": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+    service = build_normalization_service(artifacts=FilesystemArtifactStore())
+
+    with pytest.raises(ValueError, match="does not match requested source"):
+        service.execute(
+            NormalizeRequest(
+                source="fixture_source",
+                raw_capture_ref=to_resource_ref(raw_dir),
+                normalized_output_ref=to_resource_ref(tmp_path / "normalized"),
+            )
+        )
+
+
 def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(
     tmp_path: Path,
 ) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
@@ -212,8 +259,7 @@ def test_normalization_service_adds_capture_context_to_location_inventory(
 
 
 def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
@@ -320,8 +366,7 @@ class IdentityBlockingAdapter(MatchingSourceAdapter):
 def test_normalization_service_excludes_annotations_for_blocked_identity_drafts(
     tmp_path: Path,
 ) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture")
     artifacts = FilesystemArtifactStore()
     service = build_registry_backed_normalization_service(
         registry=FakeSourceRegistry(source_adapters=(IdentityBlockingAdapter(),)),
@@ -361,8 +406,7 @@ def test_normalization_service_excludes_annotations_for_blocked_identity_drafts(
 
 
 def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
@@ -451,8 +495,7 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
 def test_structured_csv_normalization_rejects_conflicting_inbound_signs(
     tmp_path: Path,
 ) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
@@ -490,8 +533,7 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(
 
 
 def test_normalization_service_rejects_output_inside_raw_tree(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
     (raw_dir / "transactions.csv").write_text(
         (
             "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
@@ -643,8 +685,7 @@ class EmptyFamilyTranslationAdapter(MatchingSourceAdapter):
 def test_normalization_service_persists_balance_evidence_separately_from_derived_balances(
     tmp_path: Path,
 ) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture")
     registry = FakeSourceRegistry(
         source_adapters=(EvidenceSourceAdapter("evidence_fixture"),)
     )
@@ -703,8 +744,7 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
 
 
 def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture")
     _make_pdf(raw_dir / "statement.pdf", "ETH 3.5")
     registry = FakeSourceRegistry(
         source_adapters=(StatementEvidenceSourceAdapter("statement_fixture"),)
@@ -746,8 +786,7 @@ def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) 
 
 
 def test_normalization_service_blocks_mixed_capture_profiles(tmp_path: Path) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="mixed-capture")
     (raw_dir / "transactions.csv").write_text(
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
@@ -789,8 +828,7 @@ def test_normalization_service_blocks_mixed_capture_profiles(tmp_path: Path) -> 
 def test_normalization_service_surfaces_no_supported_activity_for_recognized_empty_translation(
     tmp_path: Path,
 ) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="recognized-empty")
     (raw_dir / "capture.csv").write_text("header\n", encoding="utf-8")
     artifacts = FilesystemArtifactStore()
     service = build_registry_backed_normalization_service(
@@ -819,8 +857,7 @@ def test_normalization_service_surfaces_no_supported_activity_for_recognized_emp
 def test_normalization_service_persists_fact_annotations_for_filtered_drafts(
     tmp_path: Path,
 ) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"
@@ -865,8 +902,7 @@ def test_normalization_service_persists_fact_annotations_for_filtered_drafts(
 def test_normalization_service_filters_row_reviews_outside_explicit_window(
     tmp_path: Path,
 ) -> None:
-    raw_dir = tmp_path / "raw"
-    raw_dir.mkdir()
+    raw_dir = materialize_capture_root(tmp_path, source="fixture_source")
     header = (
         "timestamp,category,asset_in,amount_in,asset_out,amount_out,"
         "charge_asset,charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,"

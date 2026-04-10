@@ -8,6 +8,7 @@ from pathlib import Path
 
 from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.intake.captures.persistence import (
+    CaptureRecordWrite,
     CaptureMetadataWrite,
     append_capture_record,
     update_source_inventory_summary,
@@ -119,18 +120,20 @@ class ApplyIntakeUseCase:
             )
         append_capture_record(
             artifacts=self._artifacts,
-            workspace_root=workspace_root,
-            metadata=capture_metadata,
-            plan=capture_session_plan,
-            capture_root_ref=(
-                f"evidence/raw/source/{capture_session_plan.source_folder}/{capture_session_plan.capture_label}"
-                if capture_session_plan.source_folder
-                and capture_session_plan.capture_status != "duplicate_blocked"
-                else ""
+            write=CaptureRecordWrite(
+                workspace_root=workspace_root,
+                metadata=capture_metadata,
+                plan=capture_session_plan,
+                capture_root_ref=(
+                    f"evidence/raw/source/{capture_session_plan.source_folder}/{capture_session_plan.capture_label}"
+                    if capture_session_plan.source_folder
+                    and capture_session_plan.capture_status != "duplicate_blocked"
+                    else ""
+                ),
+                intake_started_at=intake_started_at,
+                intake_completed_at=datetime.now(UTC),
+                incoming_ref=incoming_ref,
             ),
-            intake_started_at=intake_started_at,
-            intake_completed_at=datetime.now(UTC),
-            incoming_ref=incoming_ref,
         )
         if capture_session_plan.source_folder:
             update_source_inventory_summary(

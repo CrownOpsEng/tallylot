@@ -10,7 +10,7 @@ from tallylot.application.intake.contracts import (
     IntakePlanRequest,
     ManifestRequest,
 )
-from tallylot.application.normalization.capture_paths import (
+from tallylot.application.capture_paths import (
     default_capture_normalized_root,
 )
 from tallylot.application.normalization.contracts import (

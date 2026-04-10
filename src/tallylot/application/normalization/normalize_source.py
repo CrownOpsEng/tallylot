@@ -3,20 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from pathlib import Path
 
 from tallylot.adapters.support.drafts import compile_activity_drafts_with_feedback
 from tallylot.adapters.support.issues import IssueSpec, issue_record
 from tallylot.application.evidence.statement_extraction import (
     StatementExtractionService,
 )
+from tallylot.application.capture_paths import require_capture_root
 from tallylot.application.intake.captures.persistence import (
     append_capture_status_record,
     update_source_inventory_summary,
-)
-from tallylot.application.normalization.capture_paths import (
-    load_capture_metadata,
-    workspace_root_from_capture_root,
 )
 from tallylot.application.normalization.contracts import (
     NormalizeRequest,
@@ -79,12 +75,9 @@ class NormalizeSourceUseCase:
     def execute(self, request: NormalizeRequest) -> NormalizeResponse:
         raw_dir = path_from_ref(request.raw_capture_ref)
         output_dir = path_from_ref(request.normalized_output_ref)
-        capture_metadata = load_capture_metadata(raw_dir)
-        workspace_root = (
-            None
-            if capture_metadata is None
-            else workspace_root_from_capture_root(raw_dir, capture_metadata)
-        )
+        capture_context = require_capture_root(raw_dir, expected_source=request.source)
+        capture_metadata = capture_context.metadata
+        workspace_root = capture_context.workspace_root
         ensure_output_not_within_input_tree(
             raw_dir,
             output_dir,
@@ -127,11 +120,7 @@ class NormalizeSourceUseCase:
             location_inventory=_with_capture_context(
                 result.location_inventory,
                 capture_metadata=capture_metadata,
-                capture_root_ref=(
-                    ""
-                    if workspace_root is None
-                    else _workspace_relative_ref(workspace_root, raw_dir)
-                ),
+                capture_root_ref=capture_context.capture_root_ref,
             ),
         )
         result = _with_no_supported_activity_issue(profile, adapter, result)
@@ -198,19 +187,18 @@ class NormalizeSourceUseCase:
                 ),
             ),
         )
-        if capture_metadata is not None and workspace_root is not None:
-            append_capture_status_record(
-                artifacts=self._artifacts,
-                workspace_root=workspace_root,
-                capture_uid=str(capture_metadata.capture_uid),
-                status="normalized",
-            )
-            update_source_inventory_summary(
-                artifacts=self._artifacts,
-                workspace_root=workspace_root,
-                source=str(capture_metadata.source),
-                status="normalized",
-            )
+        append_capture_status_record(
+            artifacts=self._artifacts,
+            workspace_root=workspace_root,
+            capture_uid=str(capture_metadata.capture_uid),
+            status="normalized",
+        )
+        update_source_inventory_summary(
+            artifacts=self._artifacts,
+            workspace_root=workspace_root,
+            source=str(capture_metadata.source),
+            status="normalized",
+        )
         return NormalizeResponse(
             normalized_output_ref=request.normalized_output_ref,
             adapter_id=str(profile.adapter_id),
@@ -238,13 +226,6 @@ def _with_capture_context(
         )
         for record in records
     )
-
-
-def _workspace_relative_ref(workspace_root: Path, path: Path) -> str:
-    try:
-        return path.relative_to(workspace_root).as_posix()
-    except ValueError:
-        return path.as_posix()
 
 
 def _profile_with_window_hints(

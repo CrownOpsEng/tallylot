@@ -4,11 +4,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tallylot.ports.evidence import ISSUE_HEADER
 from tallylot.ports.artifacts import ArtifactStorePort
 from tools.oracles.cointracking.screening import screen_candidate
-from tools.oracles.contracts import ScreenBatchRequest, ScreenBatchResponse, ScreeningResult
+from tools.oracles.contracts import (
+    ScreenBatchRequest,
+    ScreenBatchResponse,
+    ScreeningResult,
+)
 
-from .constants import ISSUE_HEADER, NORMALIZED_TIMEZONE, OUTPUT_IMPORT_TIMEZONE
+from .constants import NORMALIZED_TIMEZONE, OUTPUT_IMPORT_TIMEZONE
 from .overlap_artifacts import summary_int, write_overlap_artifacts
 
 
@@ -62,9 +67,13 @@ class BatchScreeningService:
             issue_count=len(screening.issues),
             blocked_reason_codes=screening.blocked_reason_codes,
             overlap_rows_flagged=(
-                0 if screening.overlap_result is None else summary_int(screening.overlap_result.summary, "rows_flagged")
+                0
+                if screening.overlap_result is None
+                else summary_int(screening.overlap_result.summary, "rows_flagged")
             ),
         )
 
-    def _screen(self, candidate_path: Path, baseline_export_dir: Path) -> ScreeningResult:
+    def _screen(
+        self, candidate_path: Path, baseline_export_dir: Path
+    ) -> ScreeningResult:
         return screen_candidate(candidate_path, baseline_export_dir, self._artifacts)

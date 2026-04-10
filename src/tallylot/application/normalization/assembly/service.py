@@ -10,7 +10,7 @@ from tallylot.application.intake.captures.persistence import (
     append_capture_status_record,
     update_source_inventory_summary,
 )
-from tallylot.application.normalization.capture_paths import (
+from tallylot.application.capture_paths import (
     capture_normalized_root,
     source_assembled_root,
 )

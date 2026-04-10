@@ -24,6 +24,7 @@ from tallylot.ports.evidence import (
     NORMALIZATION_REVIEW_HEADER,
 )
 from tallylot.ports.facts import FACT_HEADER
+from repo_support.capture_roots import materialize_capture_root
 
 runner = CliRunner()
 
@@ -43,6 +44,9 @@ def test_workspace_init_cli(tmp_path: Path) -> None:
 def test_profile_normalize_and_render_cli(
     structured_source_dir: Path, tmp_path: Path
 ) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
     normalized_dir = tmp_path / "normalized"
     rendered_path = tmp_path / "cointracking.csv"
 
@@ -54,7 +58,7 @@ def test_profile_normalize_and_render_cli(
             "--source",
             "fixture_source",
             "--raw-dir",
-            str(structured_source_dir),
+            str(raw_capture_root),
             "--output-dir",
             str(normalized_dir),
         ],
@@ -67,7 +71,7 @@ def test_profile_normalize_and_render_cli(
             "--source",
             "fixture_source",
             "--raw-dir",
-            str(structured_source_dir),
+            str(raw_capture_root),
             "--output-dir",
             str(normalized_dir),
         ],
@@ -94,6 +98,66 @@ def test_profile_normalize_and_render_cli(
     assert (normalized_dir / "facts.csv").exists()
     assert (normalized_dir / "fact_annotations.json").exists()
     assert (normalized_dir / "normalization_reviews.csv").exists()
+
+
+def test_source_profile_cli_rejects_non_capture_root(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "profile",
+            "--source",
+            "fixture_source",
+            "--raw-dir",
+            str(raw_dir),
+            "--output-dir",
+            str(tmp_path / "profile"),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "capture.json" in result.stdout
+
+
+def test_source_normalize_cli_rejects_mismatched_capture_root(tmp_path: Path) -> None:
+    raw_capture_root = materialize_capture_root(tmp_path, source="fixture_source")
+    (raw_capture_root / "capture.json").write_text(
+        json.dumps(
+            {
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "source": "other_source",
+                "capture_label": "2026-03-23T14-15-16Z",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/other_source",
+                "manifest_fingerprint": "manifest:fixture",
+                "status": "captured",
+                "notes": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "normalize",
+            "--source",
+            "fixture_source",
+            "--raw-dir",
+            str(raw_capture_root),
+            "--output-dir",
+            str(tmp_path / "normalized"),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "does not match requested source" in result.stdout
 
 
 def test_source_manifest_cli(tmp_path: Path) -> None:
@@ -124,6 +188,9 @@ def test_source_manifest_cli(tmp_path: Path) -> None:
 def test_checkpoint_location_inventory_rebuild_cli(
     structured_source_dir: Path, tmp_path: Path
 ) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
     normalized_dir = tmp_path / "normalized"
     output_path = tmp_path / "location_inventory.csv"
 
@@ -135,7 +202,7 @@ def test_checkpoint_location_inventory_rebuild_cli(
             "--source",
             "fixture_source",
             "--raw-dir",
-            str(structured_source_dir),
+            str(raw_capture_root),
             "--output-dir",
             str(normalized_dir),
         ],

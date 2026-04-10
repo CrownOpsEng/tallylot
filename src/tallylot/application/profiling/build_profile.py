@@ -4,9 +4,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tallylot.application.intake.captures.persistence import (
+    append_capture_status_record,
+    update_source_inventory_summary,
+)
+from tallylot.application.capture_paths import require_capture_root
 from tallylot.application.profiling.contracts import ProfileRequest, ProfileResponse
 from tallylot.application.resource_refs import path_from_ref
-from tallylot.application.workspace.filesystem import ensure_directory, ensure_output_not_within_input_tree
+from tallylot.application.workspace.filesystem import (
+    ensure_directory,
+    ensure_output_not_within_input_tree,
+)
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue, SourceId
 from tallylot.ports.artifacts import ArtifactStorePort
@@ -19,13 +27,16 @@ from .inventory import build_inventory, manifest_fingerprint
 
 
 class BuildProfileUseCase:
-    def __init__(self, registry: SourceAdapterRegistryPort, artifacts: ArtifactStorePort) -> None:
+    def __init__(
+        self, registry: SourceAdapterRegistryPort, artifacts: ArtifactStorePort
+    ) -> None:
         self._registry = registry
         self._artifacts = artifacts
 
     def execute(self, request: ProfileRequest) -> ProfileResponse:
         raw_dir = path_from_ref(request.raw_capture_ref)
         output_dir = path_from_ref(request.profile_output_ref)
+        capture_context = require_capture_root(raw_dir, expected_source=request.source)
         ensure_output_not_within_input_tree(
             raw_dir,
             output_dir,
@@ -39,6 +50,18 @@ class BuildProfileUseCase:
             inspect_archives=request.inspect_archives,
         )
         self.write_profile_artifacts(profile, output_dir)
+        append_capture_status_record(
+            artifacts=self._artifacts,
+            workspace_root=capture_context.workspace_root,
+            capture_uid=str(capture_context.metadata.capture_uid),
+            status="profiled",
+        )
+        update_source_inventory_summary(
+            artifacts=self._artifacts,
+            workspace_root=capture_context.workspace_root,
+            source=str(capture_context.metadata.source),
+            status="profiled",
+        )
         return ProfileResponse(
             profile_output_ref=request.profile_output_ref,
             adapter_id=str(profile.adapter_id),
@@ -54,7 +77,9 @@ class BuildProfileUseCase:
         *,
         inspect_archives: bool = True,
     ) -> SourceProfile:
-        inventory, scan_issues = build_inventory(raw_dir, inspect_archives=inspect_archives)
+        inventory, scan_issues = build_inventory(
+            raw_dir, inspect_archives=inspect_archives
+        )
         family_analysis = analyze_profile_families(
             source=source,
             raw_dir=raw_dir,
@@ -77,7 +102,9 @@ class BuildProfileUseCase:
             supported=adapter.manifest.supported and family_analysis.supported,
             metadata={
                 "display_name": adapter.manifest.display_name,
-                "recognized_adapter_ids": "; ".join(family_analysis.recognized_adapter_ids),
+                "recognized_adapter_ids": "; ".join(
+                    family_analysis.recognized_adapter_ids
+                ),
                 "scan_issue_count": str(len(scan_issues) + len(family_analysis.issues)),
             },
             scan_issues=(*scan_issues, *family_analysis.issues),
@@ -118,7 +145,10 @@ class BuildProfileUseCase:
         if selected_adapter_id is not None:
             return self._registry.source_adapter(selected_adapter_id)
         ranked = sorted(
-            ((adapter.match(source, raw_dir, inventory), adapter) for adapter in self._registry.source_adapters),
+            (
+                (adapter.match(source, raw_dir, inventory), adapter)
+                for adapter in self._registry.source_adapters
+            ),
             key=lambda item: item[0],
             reverse=True,
         )
@@ -127,10 +157,18 @@ class BuildProfileUseCase:
         score, adapter = ranked[0]
         if score <= 0:
             raise ValueError(f"no source adapter matched {source!r} at {raw_dir}")
-        tied = [candidate for candidate_score, candidate in ranked if candidate_score == score]
+        tied = [
+            candidate
+            for candidate_score, candidate in ranked
+            if candidate_score == score
+        ]
         if len(tied) > 1:
-            tied_ids = ", ".join(sorted(str(candidate.manifest.adapter_id) for candidate in tied))
-            raise ValueError(f"ambiguous source adapter match for {source!r} at {raw_dir}: {tied_ids}")
+            tied_ids = ", ".join(
+                sorted(str(candidate.manifest.adapter_id) for candidate in tied)
+            )
+            raise ValueError(
+                f"ambiguous source adapter match for {source!r} at {raw_dir}: {tied_ids}"
+            )
         return adapter
 
 

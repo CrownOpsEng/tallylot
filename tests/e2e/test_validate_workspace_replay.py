@@ -8,7 +8,7 @@ from typing import TypeGuard
 import pytest
 
 from tallylot.application.intake.contracts import IntakeApplyRequest
-from tallylot.application.normalization.capture_paths import (
+from tallylot.application.capture_paths import (
     default_capture_normalized_root,
 )
 from tallylot.application.normalization.contracts import (

@@ -12,7 +12,7 @@ from tallylot.application.intake.contracts import (
     IntakePlanRequest,
     ManifestRequest,
 )
-from tallylot.application.normalization.capture_paths import (
+from tallylot.application.capture_paths import (
     default_capture_normalized_root,
     source_assembled_root,
 )
@@ -63,14 +63,18 @@ def _source_profile(
         bool, typer.Option("--inspect-archives/--no-inspect-archives")
     ] = True,
 ) -> None:
-    response = build_profile_use_case().execute(
-        ProfileRequest(
-            source=source,
-            raw_capture_ref=to_resource_ref(raw_dir),
-            profile_output_ref=to_resource_ref(output_dir),
-            inspect_archives=inspect_archives,
-        ),
-    )
+    try:
+        response = build_profile_use_case().execute(
+            ProfileRequest(
+                source=source,
+                raw_capture_ref=to_resource_ref(raw_dir),
+                profile_output_ref=to_resource_ref(output_dir),
+                inspect_archives=inspect_archives,
+            ),
+        )
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(2) from exc
     emit_response(response.__dict__)
 
 
@@ -88,17 +92,21 @@ def _source_normalize(
         bool, typer.Option("--inspect-archives/--no-inspect-archives")
     ] = True,
 ) -> None:
-    resolved_output_dir = output_dir or default_capture_normalized_root(raw_dir)
-    response = normalize_source_use_case().execute(
-        NormalizeRequest(
-            source=source,
-            raw_capture_ref=to_resource_ref(raw_dir),
-            normalized_output_ref=to_resource_ref(resolved_output_dir),
-            window_start=window_start,
-            window_end=window_end,
-            inspect_archives=inspect_archives,
+    try:
+        resolved_output_dir = output_dir or default_capture_normalized_root(raw_dir)
+        response = normalize_source_use_case().execute(
+            NormalizeRequest(
+                source=source,
+                raw_capture_ref=to_resource_ref(raw_dir),
+                normalized_output_ref=to_resource_ref(resolved_output_dir),
+                window_start=window_start,
+                window_end=window_end,
+                inspect_archives=inspect_archives,
+            )
         )
-    )
+    except ValueError as exc:
+        typer.echo(str(exc))
+        raise typer.Exit(2) from exc
     emit_response(response.__dict__)
 
 
