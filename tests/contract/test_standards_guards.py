@@ -437,24 +437,28 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "surface-specific targeted checks still apply" in guardrails_text
     assert "duplicate `quality-gates-full` pass" in guardrails_text
     assert (
-        "every applicable changed surface group has completed a clean"
-        in guardrails_text
+        "every applicable changed surface group has been revisited" in guardrails_text
     )
+    assert "issue-finding with open outcome" in guardrails_text
     assert "tools.audit_pr_review" in hardening_route_text
     assert "tools.run_pr_review_checks" in hardening_route_text
     assert (
         "green runner never replaces the mandatory red-team repair" in guardrails_text
     )
     assert (
-        "green `tools.run_pr_review_checks` result as a clean pass"
+        "green `tools.run_pr_review_checks` result as a no-findings"
         in hardening_route_text
     )
-    assert "full clean loop has completed with no new" in hardening_route_text
+    assert "issue-finding loop" in hardening_route_text
     assert "invent findings to hit a quota" in hardening_route_text
     assert (
         "stop only after a full pass yields no new meaningful findings"
         not in guardrails_text
     )
+    assert "clean hardening pass" not in guardrails_text
+    assert "full clean loop" not in hardening_route_text
+    assert "claiming a clean pass" not in hardening_route_text
+    assert "final PR review" not in hardening_route_text
     assert (
         "Continue steps 1 through 5 until every applicable changed surface group has"
         in hardening_route_text
@@ -485,6 +489,7 @@ def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() ->
         "repair every finding from that pass before starting the next pass"
         in guardrails_text
     )
+    assert "issue-finding with open outcome" in hardening_route_text
     assert "AGENTS.md`, its task-routing table" in guardrails_text
     assert "checkpoint commits during the loop" in guardrails_text
     assert "applicable surface groups" in guardrails_text
@@ -492,12 +497,11 @@ def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() ->
         "Repair every finding from that pass before starting the next pass"
         in hardening_route_text
     )
-    assert "verification evidence for the current red-team pass" in hardening_route_text
+    assert "verification evidence for the current" in hardening_route_text
+    assert "red-team pass" in hardening_route_text
     assert "create a bounded checkpoint commit" in hardening_route_text
-    assert (
-        "relevant delivery guidance or skills before updating the PR"
-        in hardening_route_text
-    )
+    assert "relevant delivery guidance or skills" in hardening_route_text
+    assert "updating the PR state" in hardening_route_text
     assert "tools.audit_pr_review" in hardening_route_text
     assert "tools.run_pr_review_checks" in hardening_route_text
 

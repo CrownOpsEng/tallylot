@@ -71,7 +71,9 @@ def _emit_text(plan: PrReviewPlan) -> None:
         for path in plan.unmapped_paths:
             print(f"  - {path}")
     print(
-        "review reminder: audit and verification do not replace the mandatory red-team repair loop"
+        "review reminder: audit and verification do not replace the mandatory "
+        "red-team repair loop; use this report to choose the next "
+        "issue-finding pass"
     )
 
 

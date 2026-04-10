@@ -167,3 +167,4 @@ def test_audit_pr_review_emits_red_team_review_reminder(
     output = capsys.readouterr().out
     assert "manual red-team review: required" in output
     assert "mandatory red-team repair loop" in output
+    assert "next issue-finding pass" in output

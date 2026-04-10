@@ -138,7 +138,7 @@ def test_run_pr_review_checks_runs_expected_steps(
     output = capsys.readouterr().out
     assert "no changed paths detected" not in output
     assert run_pr_review_checks.REVIEW_LOOP_REMINDER in output
-    assert "continue the red-team review loop" in output
+    assert "next real issues" in output
 
 
 def test_run_pr_review_checks_explains_ci_parity_subsumes_quality(

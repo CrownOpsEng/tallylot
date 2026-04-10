@@ -44,7 +44,8 @@ when the higher-layer control is available.
 
 - protected branches are PR-only landing surfaces
 - pull requests open as draft by default
-- a PR becomes ready for review only after a clean hardening pass
+- a PR becomes ready for review only after the full issue-finding hardening
+  loop yields no new meaningful findings
 - direct pushes to `main` are forbidden except for an explicit one-time repair
   requested in the current thread
 - a merged `main` commit must not be rewritten when the original PR record
@@ -179,11 +180,13 @@ Each PR review pass should:
 
 - re-check prior fix surfaces first
 - use `tools.audit_pr_review` to confirm the applicable surface groups, review
-  domains, required verification family, and any unmapped paths before calling
-  the pass clean
+  domains, required verification family, and any unmapped paths before deciding
+  the current pass found no new meaningful findings
 - treat passing `tools.run_pr_review_checks` or broader verification as review
   evidence only; a green runner never replaces the mandatory red-team repair
-  loop or the clean-pass decision
+  loop or decides the pass outcome
+- describe each upcoming pass as issue-finding with open outcome; do not
+  pre-label the next pass as clean, final, or publish-ready
 - red-team one adjacent applicable surface group and look for up to 5 new
   unique evidence-backed findings for the current pass
 - repair every finding from that pass before starting the next pass
@@ -197,10 +200,10 @@ Each PR review pass should:
   existing issues first and open or link the follow-up issue before merge
 - when a pass finds fewer than 5 new findings, report only those findings and
   keep the loop moving
-- stop only after every applicable changed surface group has completed a clean
-  pass and a full applicable-surface loop yields no new meaningful findings; if
-  the only remaining item is a minor finishing touch, repair it and finish once
-  no other meaningful issues surface
+- stop only after every applicable changed surface group has been revisited and
+  a full applicable-surface loop yields no new meaningful findings; if the only
+  remaining item is a minor finishing touch, repair it and finish once no other
+  meaningful issues surface
 - keep scratch tracking ephemeral and untracked
 
 ### 4. Agent Defaults
@@ -213,6 +216,8 @@ missing:
 - assume merged default-branch history should not be rewritten
 - assume force-push is exceptional, not routine
 - prefer neutral direct `Why:` and `What:` language
+- frame each upcoming review pass as issue-finding with open outcome rather
+  than as a pre-labeled clean or final pass
 - re-check merge method and subject immediately before landing
 - report unresolved policy gaps instead of silently improvising
 - use the relevant safety and authoring skills up front rather than relying on

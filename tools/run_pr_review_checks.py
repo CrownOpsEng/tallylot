@@ -12,7 +12,7 @@ from tools.uv_environment import repo_uv_environment
 
 REVIEW_LOOP_REMINDER = (
     "review reminder: passing verification does not complete the mandatory "
-    "red-team repair loop or authorize PR readiness"
+    "red-team repair loop, decide the pass outcome, or authorize PR readiness"
 )
 
 
@@ -156,7 +156,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         if returncode != 0 and not step.blocking:
             print(f"[{step.name}] non-blocking failure; continuing", flush=True)
     print(
-        "verification complete: continue the red-team review loop before calling the pass clean"
+        "verification complete: use this evidence in the current issue-finding "
+        "pass, then go look for the next real issues"
     )
     return 0
 

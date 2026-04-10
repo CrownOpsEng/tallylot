@@ -21,12 +21,15 @@ Use this skill for repeatable review passes on an active branch or draft PR.
 3. Use
    `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_pr_review`
    to identify the applicable surface groups, review domains, and required
-   verification before calling a pass clean.
+   verification before choosing the next issue-finding pass.
 4. Repair findings in bounded slices, rerun the required checks for the
    repaired slice, and keep the PR draft until a full applicable-surface pass
    yields no new meaningful findings.
-   Do not treat green `tools.run_pr_review_checks` output as a clean pass by
-   itself; it is only verification evidence for the current red-team pass.
+   Do not describe an upcoming pass as clean, final, or publish-ready; every
+   pass is issue-finding with open outcome.
+   Do not treat green `tools.run_pr_review_checks` output as a no-findings
+   decision by itself; it is only verification evidence for the current
+   red-team pass.
 5. Use `issue-workflow`, `docs-authoring`, or `implementation-workflow` when
    the repair surface moves into those repo-local workflows.
 
