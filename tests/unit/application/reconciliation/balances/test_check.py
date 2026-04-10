@@ -12,6 +12,7 @@ from tallylot.application.reconciliation import (
     BalanceCheckWorkflow,
 )
 from tallylot.application.resource_refs import to_resource_ref
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.locations import LocationKind
@@ -56,7 +57,7 @@ def test_balance_check_workflow_writes_single_source_outputs(
                 quantity=Decimal("1.5"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -136,7 +137,7 @@ def test_balance_check_workflow_uses_per_source_output_dirs_for_batch_runs(
                 quantity=Decimal("1.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.DATE,
-                evidence_ref="clean-source.csv",
+                provenance=ProvenanceLocator.from_reference_ref("clean-source.csv"),
             ),
         ),
     )
@@ -275,7 +276,7 @@ def test_balance_check_workflow_prefers_evidence_over_confirmation(
                 quantity=Decimal("1.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -879,7 +880,7 @@ def _balance_evidence(
         quantity=Decimal(quantity),
         as_of_at=as_of,
         as_of_precision=TemporalPrecision.DATE,
-        evidence_ref=evidence_ref,
+        provenance=ProvenanceLocator.from_reference_ref(evidence_ref),
     )
 
 
@@ -896,10 +897,10 @@ def _location_inventory_record(
         location_label=normalized_identifier,
         identifier_kind="evm_address",
         identifier_value=normalized_identifier,
+        evidence_provenance=ProvenanceLocator.from_reference_ref("transactions.csv"),
         normalized_identifier=normalized_identifier,
         display_identifier=normalized_identifier,
         network_scope="ethereum",
         confidence=confidence,
         evidence_kind="filename",
-        evidence_path="transactions.csv",
     )

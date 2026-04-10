@@ -7,20 +7,8 @@ from typing import cast
 
 from tallylot.domain.types import JsonValue
 from tallylot.ports.artifacts import ArtifactStorePort
-from tallylot.ports.source_profiles import SourceProfile
-
-ISSUE_HEADER = (
-    "issue_id",
-    "source",
-    "adapter_id",
-    "severity",
-    "kind",
-    "message",
-    "context_timestamp",
-    "raw_file",
-    "raw_row_ref",
-    "status",
-)
+from tallylot.ports.evidence import ISSUE_HEADER
+from tallylot.ports.source_profiles import PROFILE_INVENTORY_HEADER, SourceProfile
 
 
 def write_profile_artifacts(
@@ -28,46 +16,12 @@ def write_profile_artifacts(
     profile: SourceProfile,
     output_dir: Path,
 ) -> None:
-    artifacts.write_json(output_dir / "profile.json", cast(JsonValue, profile.to_dict()))
+    artifacts.write_json(
+        output_dir / "profile.json", cast(JsonValue, profile.to_dict())
+    )
     artifacts.write_rows(
         output_dir / "profile_inventory.csv",
-        (
-            "source_path",
-            "relative_path",
-            "bundle_id",
-            "bundle_type",
-            "bundle_relative_path",
-            "alias_group",
-            "collision_status",
-            "path_scope_tokens",
-            "content_scope_tokens",
-            "scope_tokens",
-            "scope_preview",
-            "suffix",
-            "family",
-            "header_preview",
-            "size_bytes",
-            "sha256",
-            "archive_source_path",
-            "archive_member_path",
-            "row_count",
-            "header",
-            "date_field",
-            "min_timestamp",
-            "max_timestamp",
-            "timestamp_resolution",
-            "timezone_mode",
-            "timezone_value",
-            "timezone_conflict",
-            "export_timestamp",
-            "report_period_start",
-            "report_period_end",
-            "workbook_sheet_names",
-            "workbook_created_at",
-            "workbook_modified_at",
-            "artifact_kind",
-            "artifact_reason",
-        ),
+        PROFILE_INVENTORY_HEADER,
         (
             {
                 "source_path": entry.source_path or entry.relative_path,
@@ -105,6 +59,14 @@ def write_profile_artifacts(
                 "workbook_modified_at": entry.workbook_modified_at,
                 "artifact_kind": entry.artifact_kind,
                 "artifact_reason": entry.artifact_reason,
+                "capture_uid": entry.capture_uid,
+                "source": entry.source,
+                "evidence_role": entry.evidence_role,
+                "observed_period_start": entry.observed_period_start,
+                "observed_period_end": entry.observed_period_end,
+                "observed_period_label": entry.observed_period_label,
+                "statement_kind": entry.statement_kind,
+                "originality_class": entry.originality_class,
             }
             for entry in profile.file_inventory
         ),

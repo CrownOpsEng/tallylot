@@ -28,6 +28,7 @@ from tallylot.adapters.support import (
     skip_files_outside_profile_families,
 )
 from tallylot.adapters.support.drafts import symbol_claim, translation_batch_from_drafts
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.instruments import InstrumentIdentityClaim, InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -259,7 +260,7 @@ def _extract_statement_balance_evidence(
                     as_of_at=row.as_of_at,
                     as_of_precision=row.as_of_precision,
                     balance_kind="available",
-                    evidence_ref=row.evidence_ref,
+                    provenance=ProvenanceLocator.from_reference_ref(row.evidence_ref),
                     notes=row.notes,
                 )
             )

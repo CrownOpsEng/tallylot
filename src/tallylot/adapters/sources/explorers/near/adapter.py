@@ -19,13 +19,22 @@ from tallylot.adapters.support import (
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.adapters.support.locations import LocationRecordSpec
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -35,12 +44,18 @@ class _NearAdapter:
         display_name="NEAR",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {
+                AdapterCapability.SOURCE_TRANSLATE,
+                AdapterCapability.LOCATION_INVENTORY,
+                AdapterCapability.INTAKE_ROUTE,
+            }
         ),
         description="Normalizes NEAR transaction exports and extracts wallet identifiers.",
     )
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(
+        self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> int:
         if self.classify_profile_families(source, raw_dir, inventory):
             return 100
         if "near" in source.lower():
@@ -56,10 +71,14 @@ class _NearAdapter:
         inventory: tuple[FileInventoryEntry, ...],
     ) -> tuple[FileFamilyClaim, ...]:
         del source, raw_dir
-        return classify_inventory_families(inventory, adapter_id=self.manifest.adapter_id)
+        return classify_inventory_families(
+            inventory, adapter_id=self.manifest.adapter_id
+        )
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
-        return match_intake_by_path_or_header(relative_path, facts, path_hints=("near",))
+        return match_intake_by_path_or_header(
+            relative_path, facts, path_hints=("near",)
+        )
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
         return no_intake_route(request)
@@ -78,7 +97,11 @@ class _NearAdapter:
     ) -> tuple[tuple[LocationInventoryRecord, ...], tuple[IssueRecord, ...]]:
         del profile
         identifiers = sorted(
-            {identifier for path, _ in classified_csv_paths(raw_dir) if (identifier := near_account_for_path(path))}
+            {
+                identifier
+                for path, _ in classified_csv_paths(raw_dir)
+                if (identifier := near_account_for_path(path))
+            }
         )
         evidence: list[LocationInventoryRecord] = []
         for identifier in identifiers:
@@ -86,7 +109,9 @@ class _NearAdapter:
                 location_record(
                     LocationRecordSpec(
                         source=source,
-                        location_id=canonical_location_id_from_identifier("near_account", identifier),
+                        location_id=canonical_location_id_from_identifier(
+                            "near_account", identifier
+                        ),
                         location_kind=LocationKind.ACCOUNT,
                         location_label=identifier,
                         identifier_kind="near_account",
@@ -94,7 +119,9 @@ class _NearAdapter:
                         network_scope="near",
                         controller="NEAR explorer export",
                         evidence_kind="filename",
-                        evidence_path=_evidence_path(raw_dir, identifier),
+                        evidence_provenance=ProvenanceLocator.from_reference_ref(
+                            _evidence_path(raw_dir, identifier)
+                        ),
                         confidence="high",
                     )
                 )
@@ -112,9 +139,13 @@ class _NearAdapter:
             ),
         )
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
         drafts, issues = translate_transactions(profile, raw_dir)
-        location_inventory, _ = self.extract_location_inventory(str(profile.source), raw_dir, profile)
+        location_inventory, _ = self.extract_location_inventory(
+            str(profile.source), raw_dir, profile
+        )
         return translation_batch_from_drafts(
             drafts,
             issues=issues,

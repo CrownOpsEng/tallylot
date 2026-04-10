@@ -8,6 +8,7 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 from typer.testing import CliRunner
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -269,7 +270,7 @@ def test_source_assemble_cli_writes_assembled_source_dataset(tmp_path: Path) -> 
                 quantity=Decimal("1.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.DATE,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -714,7 +715,7 @@ def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None
                 quantity=Decimal("1.5"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -809,7 +810,7 @@ def test_reconciliation_balance_check_cli_rejects_output_inside_input_root(
                 quantity=Decimal("1.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )

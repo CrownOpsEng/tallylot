@@ -119,7 +119,7 @@ def test_submit_balances_materializes_optional_location_inventory(
     assert location_rows[0]["location_path"] == "account-1 / wallet-1"
     assert location_rows[0]["capture_root_ref"] == str(submission_root)
     assert location_rows[0]["evidence_kind"] == "manual_submission"
-    assert location_rows[0]["evidence_path"] == "location_inventory.csv"
+    assert location_rows[0]["evidence_relative_path"] == "location_inventory.csv"
     assert location_rows[1]["location_kind"] == "account"
     assert location_rows[1]["parent_location_id"] == ""
     assert location_rows[1]["location_path"] == "vault"

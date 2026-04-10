@@ -26,6 +26,7 @@ from tallylot.adapters.support import (
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import AdapterId, JsonValue
@@ -155,7 +156,9 @@ class _EvmExplorerAdapter:
                     network_scope=_network_scope(source),
                     controller="Explorer export",
                     evidence_kind="filename",
-                    evidence_path=_evidence_filename(raw_dir, address),
+                    evidence_provenance=ProvenanceLocator.from_reference_ref(
+                        _evidence_filename(raw_dir, address)
+                    ),
                     confidence="high",
                 )
             )

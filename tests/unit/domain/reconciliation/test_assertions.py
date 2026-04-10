@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pytest
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import (
@@ -40,7 +41,7 @@ def test_assert_balance_snapshots_marks_exact_matches() -> None:
                 quantity=Decimal("1.25"),
                 as_of_at=_AS_OF,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -80,6 +81,7 @@ def test_assert_balance_snapshots_emits_drift_and_missing_issues() -> None:
                 quantity=Decimal("1.5"),
                 as_of_at=_AS_OF,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
             BalanceEvidence(
                 source=SourceId("coinbase"),
@@ -88,6 +90,7 @@ def test_assert_balance_snapshots_emits_drift_and_missing_issues() -> None:
                 quantity=Decimal("3.0"),
                 as_of_at=_AS_OF,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -124,6 +127,7 @@ def test_assert_balance_snapshots_flags_timestamp_mismatch() -> None:
                 quantity=Decimal("1.25"),
                 as_of_at=datetime(2026, 1, 1, tzinfo=UTC),
                 as_of_precision=TemporalPrecision.DATE,
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -161,6 +165,7 @@ def test_assert_balance_snapshots_surfaces_duplicate_inputs() -> None:
                 quantity=Decimal("1"),
                 as_of_at=_AS_OF,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -266,7 +271,7 @@ def test_assert_balance_snapshots_prefers_evidence_over_confirmation() -> None:
                 quantity=Decimal("1.25"),
                 as_of_at=_AS_OF,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
         confirmations=(
@@ -327,6 +332,7 @@ def test_assertion_and_balance_models_normalize_blank_balance_kinds() -> None:
         as_of_at=_AS_OF,
         as_of_precision=TemporalPrecision.TIMESTAMP,
         balance_kind="",
+        provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
     )
     assertion = BalanceAssertion(
         source=SourceId("coinbase"),

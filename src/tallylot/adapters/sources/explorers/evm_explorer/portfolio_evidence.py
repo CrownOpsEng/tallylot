@@ -19,6 +19,7 @@ from tallylot.adapters.support import (
     review_record,
 )
 from tallylot.adapters.support.drafts import symbol_claim
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.instruments import InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -200,7 +201,9 @@ def extract_portfolio_balance_evidence(
                     quantity=amount,
                     as_of_at=as_of_at,
                     as_of_precision=TemporalPrecision.DATE,
-                    evidence_ref=f"{path.name}#row:{row_index}",
+                    provenance=ProvenanceLocator.from_reference_ref(
+                        f"{path.name}#row:{row_index}"
+                    ),
                     notes=(
                         "MetaMask portfolio quantity admitted for the source folder chain only; "
                         "wallet identity remains source-folder-scoped evidence."

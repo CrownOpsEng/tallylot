@@ -7,6 +7,7 @@ from tallylot.application.intake import IntakePlanRequest, PlanIntakeUseCase
 from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.ports.evidence import EVIDENCE_PROVENANCE_HEADER
 
 
 def test_source_intake_service_plans_archive_members_without_copying_them(
@@ -210,7 +211,7 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
             "controller",
             "parent_location_label",
             "evidence_kind",
-            "evidence_path",
+            *EVIDENCE_PROVENANCE_HEADER,
             "confidence",
             "note",
         ),
@@ -232,7 +233,11 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
                 "controller": "Explorer export",
                 "parent_location_label": "",
                 "evidence_kind": "filename",
-                "evidence_path": "/tmp/evidence.csv",
+                "evidence_capture_uid": "",
+                "evidence_relative_path": "/tmp/evidence.csv",
+                "evidence_archive_member_path": "",
+                "evidence_locator_kind": "raw_file",
+                "evidence_anchor": "",
                 "confidence": "high",
                 "note": "",
             },

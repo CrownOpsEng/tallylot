@@ -9,6 +9,7 @@ from tallylot.adapters.support import (
     location_id_from_parts,
     location_record,
 )
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.locations import LocationKind
@@ -111,7 +112,9 @@ def _location_inventory_record_from_row(
             network_scope=row.network_scope,
             controller=row.controller,
             evidence_kind=MANUAL_SUBMISSION_EVIDENCE_KIND,
-            evidence_path=LOCATION_INVENTORY_FILENAME,
+            evidence_provenance=ProvenanceLocator.from_reference_ref(
+                LOCATION_INVENTORY_FILENAME
+            ),
             confidence=row.confidence,
             note=row.notes,
             capture_root_ref=str(submission_root),

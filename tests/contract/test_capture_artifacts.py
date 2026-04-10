@@ -1,8 +1,16 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 
-from tallylot.domain.types import CaptureUid, SourceId
+from tallylot.application.profiling.artifacts import write_profile_artifacts
+from tallylot.domain.types import AdapterId, CaptureUid, SourceId
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.ports.source_profiles import (
+    PROFILE_INVENTORY_HEADER,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.captures import (
     CAPTURE_METADATA_FIELDS,
     SOURCE_CAPTURE_HEADER,
@@ -72,3 +80,37 @@ def test_source_inventory_summary_record_uses_expected_header() -> None:
     ).to_row()
 
     assert tuple(row.keys()) == SOURCE_INVENTORY_HEADER
+
+
+def test_profile_inventory_writer_uses_expected_header(tmp_path: Path) -> None:
+    profile = SourceProfile(
+        source=SourceId("binance"),
+        raw_dir=str(tmp_path / "raw"),
+        adapter_id=AdapterId("binance"),
+        manifest_fingerprint="manifest:fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path="statement.pdf",
+                suffix=".pdf",
+                size_bytes=1024,
+                sha256="fixture",
+                capture_uid="01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                source="binance",
+                evidence_role="statement",
+                observed_period_start="2026-01-01",
+                observed_period_end="2026-03-23",
+                observed_period_label="2026-Q1",
+                statement_kind="balance_statement",
+                originality_class="original",
+            ),
+        ),
+        supported=True,
+    )
+    artifacts = FilesystemArtifactStore()
+    output_dir = tmp_path / "profile"
+
+    write_profile_artifacts(artifacts, profile, output_dir)
+
+    rows = artifacts.read_rows(output_dir / "profile_inventory.csv")
+
+    assert tuple(rows[0].keys()) == PROFILE_INVENTORY_HEADER

@@ -6,12 +6,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
+from tallylot.domain.captures import ProvenanceLocator, provenance_locator_header
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.types import LocationId
 from tallylot.ports.annotations import AdapterMetadata
+
+RAW_PROVENANCE_HEADER = provenance_locator_header("raw")
+EVIDENCE_PROVENANCE_HEADER = provenance_locator_header("evidence")
 
 BALANCE_SNAPSHOT_HEADER = (
     "source",
@@ -31,7 +35,7 @@ BALANCE_EVIDENCE_HEADER = (
     "as_of_at",
     "as_of_precision",
     "balance_kind",
-    "evidence_ref",
+    *provenance_locator_header(),
     "notes",
 )
 BALANCE_CONFIRMATION_HEADER = (
@@ -67,7 +71,7 @@ LOCATION_INVENTORY_HEADER = (
     "controller",
     "parent_location_label",
     "evidence_kind",
-    "evidence_path",
+    *EVIDENCE_PROVENANCE_HEADER,
     "confidence",
     "identifier_value",
     "notes",
@@ -82,6 +86,7 @@ ISSUE_HEADER = (
     "context_timestamp",
     "raw_file",
     "raw_row_ref",
+    *RAW_PROVENANCE_HEADER,
     "status",
 )
 NORMALIZATION_REVIEW_HEADER = (
@@ -94,6 +99,7 @@ NORMALIZATION_REVIEW_HEADER = (
     "context_timestamp",
     "raw_file",
     "raw_row_ref",
+    *RAW_PROVENANCE_HEADER,
     "field_name",
     "original_value",
     "normalized_value",
@@ -109,6 +115,7 @@ class LocationInventoryRecord:
     location_label: str
     identifier_kind: str
     identifier_value: str
+    evidence_provenance: ProvenanceLocator
     parent_location_id: LocationId | None = None
     location_path: tuple[str, ...] = ()
     capture_uid: str = ""
@@ -120,7 +127,6 @@ class LocationInventoryRecord:
     controller: str = ""
     parent_location_label: str = ""
     evidence_kind: str = ""
-    evidence_path: str = ""
     confidence: str = ""
     notes: str = ""
     adapter_metadata: tuple[AdapterMetadata, ...] = ()
@@ -146,7 +152,7 @@ class LocationInventoryRecord:
             "controller": self.controller,
             "parent_location_label": self.parent_location_label,
             "evidence_kind": self.evidence_kind,
-            "evidence_path": self.evidence_path,
+            **self.evidence_provenance.to_flat_dict(prefix="evidence"),
             "confidence": self.confidence,
             "identifier_value": self.identifier_value,
             "notes": self.notes,

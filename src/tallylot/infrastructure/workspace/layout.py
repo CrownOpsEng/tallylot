@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from tallylot.ports.captures import SOURCE_CAPTURE_HEADER, SOURCE_INVENTORY_HEADER
+from tallylot.ports.evidence import LOCATION_INVENTORY_HEADER
 
 
 @dataclass(frozen=True)
@@ -54,7 +55,7 @@ SEED_FILES = (
     ),
     SeedFile(
         "analysis/inventory/location_inventory.csv",
-        "location_id,source,location_kind,location_label,evidence_path,identifier_kind,identifier_value,notes\n",
+        ",".join(LOCATION_INVENTORY_HEADER) + "\n",
     ),
     SeedFile(
         "outputs/logs/round_log.csv",

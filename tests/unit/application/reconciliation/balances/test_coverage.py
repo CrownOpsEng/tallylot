@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.application.reconciliation import (
     BalanceCoverageRequest,
     BalanceCoverageWorkflow,
@@ -61,7 +62,7 @@ def test_balance_coverage_workflow_classifies_source_coverage_states(
                 quantity=Decimal("1.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.DATE,
-                evidence_ref="source-backed.csv",
+                provenance=ProvenanceLocator.from_reference_ref("source-backed.csv"),
             ),
         ),
     )
@@ -129,7 +130,7 @@ def test_balance_coverage_workflow_classifies_source_coverage_states(
                 quantity=Decimal("3.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.DATE,
-                evidence_ref="mixed-reference.csv",
+                provenance=ProvenanceLocator.from_reference_ref("mixed-reference.csv"),
             ),
         ),
     )
@@ -181,7 +182,9 @@ def test_balance_coverage_workflow_classifies_source_coverage_states(
                 quantity=Decimal("3.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.DATE,
-                evidence_ref="missing-snapshots.csv",
+                provenance=ProvenanceLocator.from_reference_ref(
+                    "missing-snapshots.csv"
+                ),
             ),
         ),
     )

@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from repo_support.paths import repo_root
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -87,7 +88,7 @@ def test_reconciliation_balance_skill_script_run_launches_as_real_process(
                 quantity=Decimal("1.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.DATE,
-                evidence_ref="clean.csv",
+                provenance=ProvenanceLocator.from_reference_ref("clean.csv"),
             ),
         ),
     )

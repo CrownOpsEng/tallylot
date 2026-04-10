@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.location_identifiers import (
     BTC_ADDRESS_PATTERN,
@@ -49,7 +50,7 @@ class LocationRecordSpec:
     network_scope: str
     controller: str
     evidence_kind: str
-    evidence_path: str
+    evidence_provenance: ProvenanceLocator
     confidence: str
     note: str = ""
     capture_uid: str = ""
@@ -110,7 +111,7 @@ def location_record(spec: LocationRecordSpec) -> LocationInventoryRecord:
         controller=spec.controller,
         parent_location_label=spec.parent_location_label,
         evidence_kind=spec.evidence_kind,
-        evidence_path=spec.evidence_path,
+        evidence_provenance=spec.evidence_provenance,
         confidence=spec.confidence,
         notes=spec.note,
         adapter_metadata=spec.adapter_metadata,

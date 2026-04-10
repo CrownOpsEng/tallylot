@@ -2,10 +2,20 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tallylot.application.profiling.artifacts import write_profile_artifacts
 from tallylot.application.profiling.inventory import _inventory_file_details
+from tallylot.domain.types import AdapterId, SourceId
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.ports.source_profiles import (
+    PROFILE_INVENTORY_HEADER,
+    FileInventoryEntry,
+    SourceProfile,
+)
 
 
-def test_inventory_file_details_applies_binance_filename_offset_to_min_and_max(tmp_path: Path) -> None:
+def test_inventory_file_details_applies_binance_filename_offset_to_min_and_max(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "Binance-Spot-Trade-History-202603230406(UTC--6)_abcd.csv"
     path.write_text(
         "Time,Pair,Side,Price,Executed,Amount,Fee\n"
@@ -23,7 +33,9 @@ def test_inventory_file_details_applies_binance_filename_offset_to_min_and_max(t
     assert details.timezone_value == "UTC-06:00"
 
 
-def test_inventory_file_details_detects_header_utc_and_date_only_modes(tmp_path: Path) -> None:
+def test_inventory_file_details_detects_header_utc_and_date_only_modes(
+    tmp_path: Path,
+) -> None:
     utc_path = tmp_path / "crypto_transactions.csv"
     utc_path.write_text(
         "Timestamp (UTC),Amount\n2021-07-06 17:37:09,1\n",
@@ -46,7 +58,9 @@ def test_inventory_file_details_detects_header_utc_and_date_only_modes(tmp_path:
     assert date_only_details.min_timestamp == "2021-05-09 00:00:00"
 
 
-def test_inventory_file_details_ignores_placeholder_no_data_rows(tmp_path: Path) -> None:
+def test_inventory_file_details_ignores_placeholder_no_data_rows(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "Binance-Futures-Order-History-202603230503(UTC--6)_abcd.csv"
     path.write_text(
         "Uid,Time,Order No\nNo data matches the criteria.\n",
@@ -61,7 +75,9 @@ def test_inventory_file_details_ignores_placeholder_no_data_rows(tmp_path: Path)
     assert details.timezone_mode == ""
 
 
-def test_inventory_file_details_skips_coinbase_retail_preamble_rows(tmp_path: Path) -> None:
+def test_inventory_file_details_skips_coinbase_retail_preamble_rows(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "retail-export.csv"
     path.write_text(
         "\n"
@@ -85,7 +101,9 @@ def test_inventory_file_details_skips_coinbase_retail_preamble_rows(tmp_path: Pa
     assert details.timezone_mode == "value_utc"
 
 
-def test_inventory_file_details_accepts_fractional_second_utc_timestamps(tmp_path: Path) -> None:
+def test_inventory_file_details_accepts_fractional_second_utc_timestamps(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "coinbase-pro-statement.csv"
     path.write_text(
         "portfolio,type,time,amount,balance,amount/balance unit,transfer id,trade id,order id\n"
@@ -102,7 +120,9 @@ def test_inventory_file_details_accepts_fractional_second_utc_timestamps(tmp_pat
     assert details.timezone_mode == "value_utc"
 
 
-def test_inventory_file_details_ignores_footer_rows_with_as_of_text(tmp_path: Path) -> None:
+def test_inventory_file_details_ignores_footer_rows_with_as_of_text(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "activities-export.csv"
     path.write_text(
         'transaction_date,settlement_date,account_type\n2021-05-09,,Crypto\n\n"As of 2026-03-23 15:47 GMT-06:00"\n',
@@ -118,7 +138,9 @@ def test_inventory_file_details_ignores_footer_rows_with_as_of_text(tmp_path: Pa
     assert details.timezone_mode == "date_only"
 
 
-def test_inventory_file_details_converts_explicit_offsets_to_utc(tmp_path: Path) -> None:
+def test_inventory_file_details_converts_explicit_offsets_to_utc(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "offset-timestamps.csv"
     path.write_text(
         "Timestamp,Amount\n2026-03-23 15:47:00-06:00,1\n",
@@ -131,3 +153,39 @@ def test_inventory_file_details_converts_explicit_offsets_to_utc(tmp_path: Path)
     assert details.date_field == "Timestamp"
     assert details.min_timestamp == "2026-03-23 21:47:00"
     assert details.max_timestamp == "2026-03-23 21:47:00"
+
+
+def test_profile_inventory_writer_emits_capture_scoped_columns(tmp_path: Path) -> None:
+    profile = SourceProfile(
+        source=SourceId("binance"),
+        raw_dir=str(tmp_path / "raw"),
+        adapter_id=AdapterId("binance"),
+        manifest_fingerprint="manifest:fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path="statement.pdf",
+                suffix=".pdf",
+                size_bytes=1024,
+                sha256="fixture",
+                capture_uid="01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                source="binance",
+                evidence_role="statement",
+                observed_period_start="2026-01-01",
+                observed_period_end="2026-03-23",
+                observed_period_label="2026-Q1",
+                statement_kind="balance_statement",
+                originality_class="original",
+            ),
+        ),
+        supported=True,
+    )
+    artifacts = FilesystemArtifactStore()
+    output_dir = tmp_path / "profile"
+
+    write_profile_artifacts(artifacts, profile, output_dir)
+
+    rows = artifacts.read_rows(output_dir / "profile_inventory.csv")
+
+    assert tuple(rows[0].keys()) == PROFILE_INVENTORY_HEADER
+    assert rows[0]["capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    assert rows[0]["evidence_role"] == "statement"

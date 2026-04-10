@@ -75,7 +75,9 @@ def test_source_assembly_merges_normalized_captures_and_excludes_overlap(
     assert summary["included_capture_uids"] == ["01HV4A5H7VJH7M3Y5A6B7C8D9E"]
     assert summary["excluded_capture_uids"] == ["01HV4A5H7VJH7M3Y5A6B7C8D9F"]
     assert balance_rows[0]["quantity"] == "1.0"
-    assert evidence_rows[0]["evidence_ref"] == "statement-a.pdf#page=1"
+    assert evidence_rows[0]["capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    assert evidence_rows[0]["relative_path"] == "statement-a.pdf"
+    assert evidence_rows[0]["anchor"] == "page=1"
     assert source_rows[0]["assembly_status"] == "assembled"
     assert source_rows[0]["assembled_root_ref"] == "working/normalized/sources/coinbase"
 
@@ -204,7 +206,11 @@ def _write_capture_outputs(
         (
             {
                 **_balance_row(quantity=quantity),
-                "evidence_ref": "statement-a.pdf#page=1",
+                "capture_uid": root.name,
+                "relative_path": "statement-a.pdf",
+                "archive_member_path": "",
+                "locator_kind": "raw_file",
+                "anchor": "page=1",
             },
         ),
     )
@@ -235,7 +241,11 @@ def _write_capture_outputs(
                 "controller": "coinbase",
                 "parent_location_label": "",
                 "evidence_kind": "normalized_transactions",
-                "evidence_path": "transactions.csv",
+                "evidence_capture_uid": root.name,
+                "evidence_relative_path": "transactions.csv",
+                "evidence_archive_member_path": "",
+                "evidence_locator_kind": "raw_file",
+                "evidence_anchor": "",
                 "confidence": "high",
                 "identifier_value": "coinbase:primary",
                 "notes": "",

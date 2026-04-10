@@ -9,38 +9,13 @@ from tallylot.application.checkpoints import (
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.csv_io import write_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
-
-
-def _location_inventory_header() -> tuple[str, ...]:
-    return (
-        "source",
-        "capture_uid",
-        "capture_label",
-        "capture_root_ref",
-        "location_id",
-        "identifier_kind",
-        "normalized_identifier",
-        "display_identifier",
-        "network_scope",
-        "controller",
-        "location_kind",
-        "location_label",
-        "parent_location_id",
-        "location_path",
-        "parent_location_label",
-        "evidence_kind",
-        "evidence_path",
-        "confidence",
-        "identifier_value",
-        "notes",
-    )
+from tallylot.ports.evidence import LOCATION_INVENTORY_HEADER
 
 
 def test_location_inventory_service_deduplicates_rows(tmp_path: Path) -> None:
     normalized_root = tmp_path / "normalized"
     normalized_a = normalized_root / "a" / "location_inventory.csv"
     normalized_b = normalized_root / "b" / "location_inventory.csv"
-    header = _location_inventory_header()
     row = {
         "source": "fixture",
         "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
@@ -58,13 +33,17 @@ def test_location_inventory_service_deduplicates_rows(tmp_path: Path) -> None:
         "location_path": "Account / Wallet",
         "parent_location_label": "",
         "evidence_kind": "normalized_transactions",
-        "evidence_path": "normalized/transactions.csv",
+        "evidence_capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+        "evidence_relative_path": "normalized/transactions.csv",
+        "evidence_archive_member_path": "",
+        "evidence_locator_kind": "raw_file",
+        "evidence_anchor": "",
         "confidence": "high",
         "identifier_value": "Account:Wallet",
         "notes": "primary",
     }
-    write_rows(normalized_a, header, (row,))
-    write_rows(normalized_b, header, (row,))
+    write_rows(normalized_a, LOCATION_INVENTORY_HEADER, (row,))
+    write_rows(normalized_b, LOCATION_INVENTORY_HEADER, (row,))
 
     response = RebuildLocationInventoryUseCase(FilesystemArtifactStore()).execute(
         LocationInventoryRequest(
@@ -92,10 +71,9 @@ def test_location_inventory_service_marks_aliases_and_flags_identifier_conflicts
     normalized_root = tmp_path / "normalized"
     alias_file = normalized_root / "alias" / "location_inventory.csv"
     address_file = normalized_root / "address" / "location_inventory.csv"
-    header = _location_inventory_header()
     write_rows(
         alias_file,
-        header,
+        LOCATION_INVENTORY_HEADER,
         (
             {
                 "source": "gtrade",
@@ -114,7 +92,11 @@ def test_location_inventory_service_marks_aliases_and_flags_identifier_conflicts
                 "location_path": "Trading",
                 "parent_location_label": "",
                 "evidence_kind": "statement_alias",
-                "evidence_path": "normalized/gtrade.csv",
+                "evidence_capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9F",
+                "evidence_relative_path": "normalized/gtrade.csv",
+                "evidence_archive_member_path": "",
+                "evidence_locator_kind": "raw_file",
+                "evidence_anchor": "",
                 "confidence": "medium",
                 "identifier_value": "0xabc123",
                 "notes": "truncated alias only",
@@ -123,7 +105,7 @@ def test_location_inventory_service_marks_aliases_and_flags_identifier_conflicts
     )
     write_rows(
         address_file,
-        header,
+        LOCATION_INVENTORY_HEADER,
         (
             {
                 "source": "evm_explorer",
@@ -142,7 +124,11 @@ def test_location_inventory_service_marks_aliases_and_flags_identifier_conflicts
                 "location_path": "Trading",
                 "parent_location_label": "",
                 "evidence_kind": "explorer_address",
-                "evidence_path": "normalized/explorer.csv",
+                "evidence_capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9G",
+                "evidence_relative_path": "normalized/explorer.csv",
+                "evidence_archive_member_path": "",
+                "evidence_locator_kind": "raw_file",
+                "evidence_anchor": "",
                 "confidence": "high",
                 "identifier_value": "0xabc123",
                 "notes": "",
@@ -176,7 +162,6 @@ def test_location_inventory_service_excludes_stale_aggregate_output(
     normalized_root = tmp_path / "normalized"
     wallet_file = normalized_root / "source" / "location_inventory.csv"
     output_path = tmp_path / "location_inventory.csv"
-    header = _location_inventory_header()
     row = {
         "source": "fixture",
         "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
@@ -194,12 +179,16 @@ def test_location_inventory_service_excludes_stale_aggregate_output(
         "location_path": "Account / Wallet",
         "parent_location_label": "",
         "evidence_kind": "normalized_transactions",
-        "evidence_path": "transactions.csv",
+        "evidence_capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+        "evidence_relative_path": "transactions.csv",
+        "evidence_archive_member_path": "",
+        "evidence_locator_kind": "raw_file",
+        "evidence_anchor": "",
         "confidence": "high",
         "identifier_value": "Account:Wallet",
         "notes": "",
     }
-    write_rows(wallet_file, header, (row,))
+    write_rows(wallet_file, LOCATION_INVENTORY_HEADER, (row,))
     service = RebuildLocationInventoryUseCase(FilesystemArtifactStore())
 
     first = service.execute(

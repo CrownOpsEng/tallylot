@@ -277,7 +277,11 @@ def test_evm_explorer_adapter_admits_same_chain_portfolio_evidence_only(
             "as_of_at": "2026-03-01",
             "as_of_precision": "date",
             "balance_kind": "available",
-            "evidence_ref": "Account1-bsc Portfolio.csv#row:2",
+            "capture_uid": "",
+            "relative_path": "Account1-bsc Portfolio.csv",
+            "archive_member_path": "",
+            "locator_kind": "raw_file",
+            "anchor": "row:2",
             "notes": (
                 "MetaMask portfolio quantity admitted for the source folder "
                 "chain only; wallet identity remains source-folder-scoped evidence."

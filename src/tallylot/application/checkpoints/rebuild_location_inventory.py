@@ -17,6 +17,7 @@ from tallylot.application.workspace.filesystem import (
     iter_tree_files,
 )
 from tallylot.ports.artifacts import ArtifactStorePort
+from tallylot.ports.evidence import EVIDENCE_PROVENANCE_HEADER
 
 INVENTORY_HEADER = (
     "location_id",
@@ -53,7 +54,7 @@ EVIDENCE_HEADER = (
     "controller",
     "parent_location_label",
     "evidence_kind",
-    "evidence_path",
+    *EVIDENCE_PROVENANCE_HEADER,
     "confidence",
     "note",
 )
@@ -139,7 +140,7 @@ class RebuildLocationInventoryUseCase:
                     "controller": row.get("controller", ""),
                     "parent_location_label": row.get("parent_location_label", ""),
                     "evidence_kind": row.get("evidence_kind", ""),
-                    "evidence_path": row.get("evidence_path", ""),
+                    **_evidence_provenance_columns(row),
                     "confidence": row.get("confidence", ""),
                     "note": row.get("notes", ""),
                 }
@@ -149,3 +150,7 @@ class RebuildLocationInventoryUseCase:
                 seen.add(key)
                 rows.append(evidence_row)
         return rows
+
+
+def _evidence_provenance_columns(row: dict[str, str]) -> dict[str, str]:
+    return {column: row.get(column, "") for column in EVIDENCE_PROVENANCE_HEADER}

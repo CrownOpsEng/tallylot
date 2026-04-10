@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections import defaultdict
 
+from tallylot.domain.captures import provenance_locator_from_row
+
 
 def summarize_location_inventory(
     evidence_rows: list[dict[str, str]],
@@ -17,7 +19,8 @@ def summarize_location_inventory(
         identifier_kinds_by_identifier[row["normalized_identifier"]].add(
             row["identifier_kind"]
         )
-        if not row["evidence_path"]:
+        evidence_path = _evidence_path(row)
+        if not evidence_path:
             issue_rows.append(
                 {
                     "source": row["source"],
@@ -68,7 +71,7 @@ def summarize_location_inventory(
                     )
                 ),
                 "evidence_count": str(len(rows)),
-                "primary_evidence_path": primary["evidence_path"],
+                "primary_evidence_path": _evidence_path(primary),
                 "status": status,
                 "notes": "; ".join(notes),
             }
@@ -94,3 +97,10 @@ def summarize_location_inventory(
         )
 
     return inventory_rows, issue_rows
+
+
+def _evidence_path(row: dict[str, str]) -> str:
+    evidence_locator = provenance_locator_from_row(row, prefix="evidence")
+    if evidence_locator is None:
+        return ""
+    return evidence_locator.to_reference_ref()

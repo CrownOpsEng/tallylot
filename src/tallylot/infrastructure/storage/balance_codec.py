@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot, normalize_balance_kind
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
@@ -48,7 +49,7 @@ def balance_evidence_from_row(row: dict[str, str]) -> BalanceEvidence:
         as_of_at=parse_temporal_value(row["as_of_at"], precision=precision),
         as_of_precision=precision,
         balance_kind=_balance_kind_from_row(row),
-        evidence_ref=row.get("evidence_ref", ""),
+        provenance=ProvenanceLocator.from_flat_dict(row),
         notes=row.get("notes", ""),
     )
 

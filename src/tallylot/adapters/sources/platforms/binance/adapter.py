@@ -18,6 +18,7 @@ from tallylot.adapters.support import (
     reviewed_timezone_summary,
 )
 from tallylot.adapters.support.drafts import symbol_claim
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.instruments import InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -257,7 +258,9 @@ def _extract_statement_balance_evidence(
                 as_of_at=latest_as_of,
                 as_of_precision=TemporalPrecision.DATE,
                 balance_kind="available",
-                evidence_ref=f"{','.join(sorted(files))}#{' + '.join(sorted(sections))}",
+                provenance=ProvenanceLocator.from_reference_ref(
+                    f"{','.join(sorted(files))}#{' + '.join(sorted(sections))}"
+                ),
                 notes="Statement-backed quantity aggregated from Binance holdings sections.",
             )
         )

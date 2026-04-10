@@ -11,6 +11,7 @@ from tallylot.adapters.support.drafts import (
     translation_batch_from_drafts,
 )
 from tallylot.adapters.support.issues import IssueSpec, issue_record
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import LocationId
@@ -145,7 +146,7 @@ def _location_record(
         parent_location_label="" if parent_location_id is None else account,
         evidence_kind="normalized_transactions",
         confidence="high",
-        evidence_path=TRANSACTIONS_FILENAME,
+        evidence_provenance=ProvenanceLocator.from_reference_ref(TRANSACTIONS_FILENAME),
     )
 
 

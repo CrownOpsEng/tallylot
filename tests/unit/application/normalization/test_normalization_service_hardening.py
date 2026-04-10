@@ -13,6 +13,7 @@ from tallylot.application.evidence.statement_extraction import (
 )
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.instruments import InstrumentId, InstrumentIdentityClaim
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
@@ -102,7 +103,7 @@ def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(
 
     assert exception_rows[0]["kind"] == "invalid_decimal"
     assert [row["kind"] for row in review_rows] == ["timestamp_timezone_assumed_utc"]
-    assert wallet_rows[0]["evidence_path"] == "transactions.csv"
+    assert wallet_rows[0]["evidence_relative_path"] == "transactions.csv"
     assert (output_dir / "timezone_issues.csv").exists()
 
 
@@ -537,7 +538,7 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
                     quantity=Decimal("2.5"),
                     as_of_at=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
                     as_of_precision=TemporalPrecision.TIMESTAMP,
-                    evidence_ref="statement:page:1",
+                    provenance=ProvenanceLocator.from_reference_ref("statement:page:1"),
                 ),
             ),
             issues=(),
@@ -573,7 +574,9 @@ class StatementEvidenceSourceAdapter(MatchingSourceAdapter):
                     quantity=Decimal("3.5"),
                     as_of_at=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
                     as_of_precision=TemporalPrecision.TIMESTAMP,
-                    evidence_ref="statement.pdf#page=1",
+                    provenance=ProvenanceLocator.from_reference_ref(
+                        "statement.pdf#page=1"
+                    ),
                 ),
             ),
             issues=(),
@@ -656,7 +659,11 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
             "as_of_at": "2023-08-06 12:00:00",
             "as_of_precision": "timestamp",
             "balance_kind": "available",
-            "evidence_ref": "statement:page:1",
+            "capture_uid": "",
+            "relative_path": "statement:page:1",
+            "archive_member_path": "",
+            "locator_kind": "raw_file",
+            "anchor": "",
             "notes": "",
         }
     ]
@@ -696,7 +703,11 @@ def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) 
             "as_of_at": "2023-08-06 12:00:00",
             "as_of_precision": "timestamp",
             "balance_kind": "available",
-            "evidence_ref": "statement.pdf#page=1",
+            "capture_uid": "",
+            "relative_path": "statement.pdf",
+            "archive_member_path": "",
+            "locator_kind": "raw_file",
+            "anchor": "page=1",
             "notes": "",
         }
     ]

@@ -14,6 +14,7 @@ from tallylot.adapters.support import (
     read_csv_rows,
 )
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.ports.evidence import LocationInventoryRecord
@@ -40,7 +41,9 @@ def extract_location_inventory(
                 location_record(
                     LocationRecordSpec(
                         source=source,
-                        location_id=location_id_from_parts(source, account_label or identifier_value),
+                        location_id=location_id_from_parts(
+                            source, account_label or identifier_value
+                        ),
                         location_kind=LocationKind.ACCOUNT,
                         location_label=account_label or identifier_value,
                         identifier_kind=kind,
@@ -48,7 +51,9 @@ def extract_location_inventory(
                         network_scope=account_type or _network_scope_from_kind(kind),
                         controller="Ledger Live",
                         evidence_kind="csv_row",
-                        evidence_path=path.name,
+                        evidence_provenance=ProvenanceLocator.from_reference_ref(
+                            path.name
+                        ),
                         confidence="high",
                     )
                 )
