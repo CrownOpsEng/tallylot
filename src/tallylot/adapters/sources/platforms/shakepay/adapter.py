@@ -28,6 +28,9 @@ from tallylot.adapters.support import (
     skip_files_outside_profile_families,
 )
 from tallylot.adapters.support.drafts import symbol_claim, translation_batch_from_drafts
+from tallylot.application.evidence.statement_extraction import (
+    StatementBalanceEvidenceBatch,
+)
 from tallylot.domain.instruments import InstrumentIdentityClaim, InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -146,35 +149,33 @@ class _ShakepayAdapter:
                 family_ids=("cash_summary", "crypto_summary"),
             ),
         )
-        statement_evidence, statement_issues, statement_reviews = (
-            _translate_statement_evidence(profile, raw_dir)
-        )
         return translation_batch_from_drafts(
             drafts,
-            balance_evidence=statement_evidence,
-            issues=(*issues, *statement_issues),
-            reviews=statement_reviews,
+            issues=issues,
         )
+
+    def extract_statement_balance_evidence(
+        self,
+        profile: SourceProfile,
+        raw_dir: Path,
+    ) -> StatementBalanceEvidenceBatch:
+        return _extract_statement_balance_evidence(profile, raw_dir)
 
 
 ADAPTER = _ShakepayAdapter()
 
 
-def _translate_statement_evidence(
+def _extract_statement_balance_evidence(
     profile: SourceProfile,
     raw_dir: Path,
-) -> tuple[
-    tuple[BalanceEvidence, ...],
-    tuple[IssueRecord, ...],
-    tuple[NormalizationReviewRecord, ...],
-]:
+) -> StatementBalanceEvidenceBatch:
     parsed_statements = tuple(
         parsed
         for pdf_path in sorted(raw_dir.rglob("*.pdf"))
         if (parsed := parse_statement_pdf(pdf_path)).recognized
     )
     if not parsed_statements:
-        return (), (), ()
+        return StatementBalanceEvidenceBatch(balance_evidence=(), issues=(), reviews=())
     latest_as_of = max(
         parsed.as_of_at for parsed in parsed_statements if parsed.as_of_at is not None
     )
@@ -262,7 +263,11 @@ def _translate_statement_evidence(
                     notes=row.notes,
                 )
             )
-    return tuple(evidence), tuple(issues), tuple(reviews)
+    return StatementBalanceEvidenceBatch(
+        balance_evidence=tuple(evidence),
+        issues=tuple(issues),
+        reviews=tuple(reviews),
+    )
 
 
 def _shakepay_instrument_claim(symbol: str) -> InstrumentIdentityClaim:

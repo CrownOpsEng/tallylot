@@ -18,6 +18,9 @@ from tallylot.adapters.support import (
     reviewed_timezone_summary,
 )
 from tallylot.adapters.support.drafts import symbol_claim
+from tallylot.application.evidence.statement_extraction import (
+    StatementBalanceEvidenceBatch,
+)
 from tallylot.domain.instruments import InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -144,37 +147,30 @@ class _BinanceAdapter:
     def translate(
         self, profile: SourceProfile, raw_dir: Path
     ) -> SourceTranslationBatch:
-        translation = translate_binance_exports(profile, raw_dir)
-        statement_evidence, statement_issues, statement_reviews = (
-            _translate_statement_evidence(profile, raw_dir)
-        )
-        return SourceTranslationBatch(
-            drafts=translation.drafts,
-            balance_evidence=statement_evidence,
-            issues=(*translation.issues, *statement_issues),
-            reviews=(*translation.reviews, *statement_reviews),
-            location_inventory=translation.location_inventory,
-        )
+        return translate_binance_exports(profile, raw_dir)
+
+    def extract_statement_balance_evidence(
+        self,
+        profile: SourceProfile,
+        raw_dir: Path,
+    ) -> StatementBalanceEvidenceBatch:
+        return _extract_statement_balance_evidence(profile, raw_dir)
 
 
 ADAPTER = _BinanceAdapter()
 
 
-def _translate_statement_evidence(
+def _extract_statement_balance_evidence(
     profile: SourceProfile,
     raw_dir: Path,
-) -> tuple[
-    tuple[BalanceEvidence, ...],
-    tuple[IssueRecord, ...],
-    tuple[NormalizationReviewRecord, ...],
-]:
+) -> StatementBalanceEvidenceBatch:
     parsed_statements = tuple(
         parsed
         for pdf_path in sorted(raw_dir.rglob("*.pdf"))
         if (parsed := parse_statement_pdf(pdf_path)).recognized
     )
     if not parsed_statements:
-        return (), (), ()
+        return StatementBalanceEvidenceBatch(balance_evidence=(), issues=(), reviews=())
     latest_as_of = max(
         parsed.as_of_at for parsed in parsed_statements if parsed.as_of_at is not None
     )
@@ -265,4 +261,8 @@ def _translate_statement_evidence(
                 notes="Statement-backed quantity aggregated from Binance holdings sections.",
             )
         )
-    return tuple(evidence), tuple(issues), tuple(reviews)
+    return StatementBalanceEvidenceBatch(
+        balance_evidence=tuple(evidence),
+        issues=tuple(issues),
+        reviews=tuple(reviews),
+    )

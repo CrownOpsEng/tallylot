@@ -5,21 +5,37 @@ from pathlib import Path
 import pytest
 from reportlab.pdfgen import canvas
 
-from tallylot.application.checkpoints import ExtractPdfBalancesUseCase, PdfBalanceExtractRequest
+from tallylot.application.checkpoints import (
+    ExtractPdfBalancesUseCase,
+    PdfBalanceExtractRequest,
+)
+from tallylot.application.evidence.statement_extraction import (
+    StatementExtractionService,
+)
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.adapter_contracts import AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
 from tallylot.ports.source_adapters import SourceAdapter
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
 class StubPdfAdapter:
-    def __init__(self, adapter_id: str, match_score: int, rows: list[dict[str, str]]) -> None:
+    def __init__(
+        self, adapter_id: str, match_score: int, rows: list[dict[str, str]]
+    ) -> None:
         self.manifest = AdapterManifest(
             adapter_id=AdapterId(adapter_id),
             display_name=adapter_id.title(),
@@ -29,7 +45,9 @@ class StubPdfAdapter:
         self._match_score = match_score
         self._rows = rows
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(
+        self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> int:
         del source, raw_dir, inventory
         return 0
 
@@ -74,7 +92,9 @@ class StubPdfAdapter:
         del pdf_path, text
         return self._rows
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
         del profile, raw_dir
         return SourceTranslationBatch(
             drafts=(),
@@ -109,7 +129,9 @@ def _make_pdf(path: Path, *lines: str) -> None:
     pdf.save()
 
 
-def test_pdf_balance_extraction_service_uses_requested_supported_adapter(tmp_path: Path) -> None:
+def test_pdf_balance_extraction_service_uses_requested_supported_adapter(
+    tmp_path: Path,
+) -> None:
     pdf_path = tmp_path / "statement.pdf"
     output_path = tmp_path / "balances.csv"
     _make_pdf(pdf_path, "Account statement")
@@ -145,10 +167,17 @@ def test_pdf_balance_extraction_service_uses_requested_supported_adapter(tmp_pat
     assert response.statement_kind == "example"
     assert response.row_count == 1
     written_rows = artifacts.read_rows(output_path)
+    service_rows = StatementExtractionService(registry).extract_pdf_balance_rows(
+        pdf_path,
+        requested_statement_kind="example",
+    )
     assert written_rows[0]["asset"] == "BTC"
+    assert list(service_rows.rows) == written_rows
 
 
-def test_pdf_balance_extraction_service_rejects_unknown_requested_kind(tmp_path: Path) -> None:
+def test_pdf_balance_extraction_service_rejects_unknown_requested_kind(
+    tmp_path: Path,
+) -> None:
     pdf_path = tmp_path / "statement.pdf"
     _make_pdf(pdf_path, "Account statement")
     artifacts = FilesystemArtifactStore()
@@ -163,7 +192,9 @@ def test_pdf_balance_extraction_service_rejects_unknown_requested_kind(tmp_path:
         )
 
 
-def test_pdf_balance_extraction_service_rejects_unknown_pdf_text(tmp_path: Path) -> None:
+def test_pdf_balance_extraction_service_rejects_unknown_pdf_text(
+    tmp_path: Path,
+) -> None:
     pdf_path = tmp_path / "statement.pdf"
     _make_pdf(pdf_path, "Generic account export")
     artifacts = FilesystemArtifactStore()
@@ -180,7 +211,9 @@ def test_pdf_balance_extraction_service_rejects_unknown_pdf_text(tmp_path: Path)
         )
 
 
-def test_pdf_balance_extraction_service_rejects_ambiguous_detection(tmp_path: Path) -> None:
+def test_pdf_balance_extraction_service_rejects_ambiguous_detection(
+    tmp_path: Path,
+) -> None:
     pdf_path = tmp_path / "statement.pdf"
     _make_pdf(pdf_path, "Ambiguous statement")
     artifacts = FilesystemArtifactStore()

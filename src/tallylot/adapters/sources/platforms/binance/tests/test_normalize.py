@@ -12,6 +12,9 @@ from tallylot.adapters.sources.platforms.binance.statement_evidence import (
     BinanceStatementParseResult,
 )
 from tallylot.adapters.support.drafts import compile_activity_drafts
+from tallylot.application.evidence.statement_extraction import (
+    StatementExtractionService,
+)
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
     AccountingIntentHint,
@@ -19,7 +22,7 @@ from tallylot.domain.transactions import (
     ProjectionHint,
     TaxTreatmentHint,
 )
-from tests.support.services import build_source_profile
+from tests.support.services import FakeSourceRegistry, build_source_profile
 
 
 def test_binance_adapter_handles_supported_and_review_required_rows(
@@ -221,7 +224,7 @@ def test_binance_adapter_surfaces_unmatched_export_files(tmp_path: Path) -> None
     assert result.issues[0].kind == "unsupported_file"
 
 
-def test_binance_adapter_emits_latest_statement_balance_evidence(
+def test_binance_statement_service_emits_latest_balance_evidence(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -283,7 +286,9 @@ def test_binance_adapter_emits_latest_statement_balance_evidence(
         fake_parse_statement_pdf,
     )
 
-    result = _BinanceAdapter().translate(
+    result = StatementExtractionService(
+        FakeSourceRegistry((_BinanceAdapter(),))
+    ).extract_source_balance_evidence(
         build_source_profile(
             adapter_id="binance", raw_dir=str(raw_dir), source="Binance"
         ),

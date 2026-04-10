@@ -14,6 +14,9 @@ from tallylot.adapters.sources.platforms.shakepay.statement_evidence import (
 from tallylot.adapters.sources.platforms.shakepay.translation import translate_row
 from tallylot.adapters.support import CsvRowContext
 from tallylot.adapters.support.drafts import compile_activity_drafts
+from tallylot.application.evidence.statement_extraction import (
+    StatementExtractionService,
+)
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
@@ -23,6 +26,7 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
 )
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
+from tests.support.services import FakeSourceRegistry
 
 
 def test_shakepay_adapter_normalizes_fixture_rows() -> None:
@@ -117,7 +121,7 @@ def test_shakepay_invalid_timestamp_surfaces_issue() -> None:
     assert parsed.raw_row_ref == "row:2"
 
 
-def test_shakepay_adapter_emits_latest_statement_balance_evidence(
+def test_shakepay_statement_service_emits_latest_balance_evidence(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -178,7 +182,9 @@ def test_shakepay_adapter_emits_latest_statement_balance_evidence(
         fake_parse_statement_pdf,
     )
 
-    result = _ShakepayAdapter().translate(
+    result = StatementExtractionService(
+        FakeSourceRegistry((_ShakepayAdapter(),))
+    ).extract_source_balance_evidence(
         profile_and_adapter("Shakepay", fixture_raw_dir("shakepay", "cash_crypto_mix"))[
             0
         ],

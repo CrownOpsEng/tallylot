@@ -8,6 +8,9 @@ from typing import override
 
 import pytest
 
+from tallylot.application.evidence.statement_extraction import (
+    StatementBalanceEvidenceBatch,
+)
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.instruments import InstrumentId, InstrumentIdentityClaim
@@ -42,9 +45,13 @@ from tests.support.services import (
 def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
-    registry = FakeSourceRegistry(source_adapters=(MatchingSourceAdapter("unsupported", supported=False),))
+    registry = FakeSourceRegistry(
+        source_adapters=(MatchingSourceAdapter("unsupported", supported=False),)
+    )
     artifacts = FilesystemArtifactStore()
-    service = build_registry_backed_normalization_service(registry=registry, artifacts=artifacts)
+    service = build_registry_backed_normalization_service(
+        registry=registry, artifacts=artifacts
+    )
 
     with pytest.raises(ValueError, match="is not supported for normalization"):
         service.execute(
@@ -56,7 +63,9 @@ def test_normalization_service_rejects_unsupported_adapters(tmp_path: Path) -> N
         )
 
 
-def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(tmp_path: Path) -> None:
+def test_structured_csv_normalization_surfaces_invalid_rows_as_issues(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
@@ -105,7 +114,8 @@ def test_structured_csv_normalization_rejects_zero_amounts(tmp_path: Path) -> No
         "tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,trade,BTC,0,CAD,10.0,CAD,0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n",
+        header
+        + "2023-08-06 10:00:00,trade,BTC,0,CAD,10.0,CAD,0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -180,8 +190,12 @@ class IdentityBlockingAdapter(MatchingSourceAdapter):
                             leg_id="primary_btc",
                             kind=LegKind.PRIMARY,
                             instrument=(
-                                InstrumentIdentityClaim(scheme="symbol", value="BTC", venue="venue-a"),
-                                InstrumentIdentityClaim(scheme="symbol", value="BTC", venue="venue-b"),
+                                InstrumentIdentityClaim(
+                                    scheme="symbol", value="BTC", venue="venue-a"
+                                ),
+                                InstrumentIdentityClaim(
+                                    scheme="symbol", value="BTC", venue="venue-b"
+                                ),
                             ),
                             quantity=Decimal("1"),
                         ),
@@ -197,7 +211,9 @@ class IdentityBlockingAdapter(MatchingSourceAdapter):
         )
 
 
-def test_normalization_service_excludes_annotations_for_blocked_identity_drafts(tmp_path: Path) -> None:
+def test_normalization_service_excludes_annotations_for_blocked_identity_drafts(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     artifacts = FilesystemArtifactStore()
@@ -216,7 +232,9 @@ def test_normalization_service_excludes_annotations_for_blocked_identity_drafts(
     )
 
     facts = FilesystemFactRepository().read_facts(output_dir / "facts.csv")
-    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
+    fact_annotations = json.loads(
+        (output_dir / "fact_annotations.json").read_text(encoding="utf-8")
+    )
     issue_rows = artifacts.read_rows(output_dir / "exceptions.csv")
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
 
@@ -245,7 +263,8 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
         "tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,trade,BTC,1.5,CAD,-10.0,CAD,-0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n",
+        header
+        + "2023-08-06 10:00:00,trade,BTC,1.5,CAD,-10.0,CAD,-0.1,out,,,,tx-1,BTC buy,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -265,9 +284,13 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
     assert response.review_count == 3
 
     facts = FilesystemFactRepository().read_facts(output_dir / "facts.csv")
-    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
+    fact_annotations = json.loads(
+        (output_dir / "fact_annotations.json").read_text(encoding="utf-8")
+    )
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
-    summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
 
     assert facts[0].legs[0].quantity == Decimal("1.5")
     assert facts[0].legs[1].quantity == Decimal("-10")
@@ -319,7 +342,9 @@ def test_structured_csv_normalization_normalizes_signed_amounts(tmp_path: Path) 
     ]
 
 
-def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path: Path) -> None:
+def test_structured_csv_normalization_rejects_conflicting_inbound_signs(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
@@ -328,7 +353,8 @@ def test_structured_csv_normalization_rejects_conflicting_inbound_signs(tmp_path
         "tx_hash,description,account,wallet\n"
     )
     (raw_dir / "transactions.csv").write_text(
-        header + "2023-08-06 10:00:00,trade,BTC,-1.5,,,,,,,,,tx-1,BTC transfer,Fixture,Primary\n",
+        header
+        + "2023-08-06 10:00:00,trade,BTC,-1.5,,,,,,,,,tx-1,BTC transfer,Fixture,Primary\n",
         encoding="utf-8",
     )
     artifacts = FilesystemArtifactStore()
@@ -431,6 +457,41 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
         )
 
 
+class StatementEvidenceSourceAdapter(MatchingSourceAdapter):
+    @override
+    def translate(self, profile: object, raw_dir: Path) -> SourceTranslationBatch:
+        del profile, raw_dir
+        return SourceTranslationBatch(
+            drafts=(),
+            balance_evidence=(),
+            issues=(),
+            reviews=(),
+            location_inventory=(),
+        )
+
+    def extract_statement_balance_evidence(
+        self,
+        profile: object,
+        raw_dir: Path,
+    ) -> StatementBalanceEvidenceBatch:
+        del profile, raw_dir
+        return StatementBalanceEvidenceBatch(
+            balance_evidence=(
+                BalanceEvidence(
+                    source=SourceId("fixture"),
+                    location_id=LocationId("fixture:primary"),
+                    instrument_id=InstrumentId("symbol:ETH"),
+                    quantity=Decimal("3.5"),
+                    as_of_at=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
+                    as_of_precision=TemporalPrecision.TIMESTAMP,
+                    evidence_ref="statement.pdf#page=1",
+                ),
+            ),
+            issues=(),
+            reviews=(),
+        )
+
+
 class EmptyFamilyTranslationAdapter(MatchingSourceAdapter):
     @override
     def classify_profile_families(
@@ -451,15 +512,23 @@ class EmptyFamilyTranslationAdapter(MatchingSourceAdapter):
     @override
     def translate(self, profile: object, raw_dir: Path) -> SourceTranslationBatch:
         del profile, raw_dir
-        return SourceTranslationBatch(drafts=(), balance_evidence=(), issues=(), reviews=(), location_inventory=())
+        return SourceTranslationBatch(
+            drafts=(), balance_evidence=(), issues=(), reviews=(), location_inventory=()
+        )
 
 
-def test_normalization_service_persists_balance_evidence_separately_from_derived_balances(tmp_path: Path) -> None:
+def test_normalization_service_persists_balance_evidence_separately_from_derived_balances(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
-    registry = FakeSourceRegistry(source_adapters=(EvidenceSourceAdapter("evidence_fixture"),))
+    registry = FakeSourceRegistry(
+        source_adapters=(EvidenceSourceAdapter("evidence_fixture"),)
+    )
     artifacts = FilesystemArtifactStore()
-    service = build_registry_backed_normalization_service(registry=registry, artifacts=artifacts)
+    service = build_registry_backed_normalization_service(
+        registry=registry, artifacts=artifacts
+    )
     output_dir = tmp_path / "normalized"
 
     response = service.execute(
@@ -472,7 +541,9 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
 
     balance_rows = artifacts.read_rows(output_dir / "balances.csv")
     balance_evidence_rows = artifacts.read_rows(output_dir / "balance_evidence.csv")
-    summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.balance_count == 1
     assert balance_rows == [
@@ -502,6 +573,44 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
     ]
     assert summary["balance_count"] == 1
     assert summary["balance_evidence_count"] == 1
+
+
+def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    registry = FakeSourceRegistry(
+        source_adapters=(StatementEvidenceSourceAdapter("statement_fixture"),)
+    )
+    artifacts = FilesystemArtifactStore()
+    service = build_registry_backed_normalization_service(
+        registry=registry, artifacts=artifacts
+    )
+    output_dir = tmp_path / "normalized"
+
+    response = service.execute(
+        NormalizeRequest(
+            source="fixture",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+
+    balance_evidence_rows = artifacts.read_rows(output_dir / "balance_evidence.csv")
+
+    assert response.balance_count == 0
+    assert balance_evidence_rows == [
+        {
+            "source": "fixture",
+            "location_id": "fixture:primary",
+            "instrument_id": "symbol:ETH",
+            "quantity": "3.5",
+            "as_of_at": "2023-08-06 12:00:00",
+            "as_of_precision": "timestamp",
+            "balance_kind": "available",
+            "evidence_ref": "statement.pdf#page=1",
+            "notes": "",
+        }
+    ]
 
 
 def test_normalization_service_blocks_mixed_capture_profiles(tmp_path: Path) -> None:
@@ -545,13 +654,17 @@ def test_normalization_service_blocks_mixed_capture_profiles(tmp_path: Path) -> 
         )
 
 
-def test_normalization_service_surfaces_no_supported_activity_for_recognized_empty_translation(tmp_path: Path) -> None:
+def test_normalization_service_surfaces_no_supported_activity_for_recognized_empty_translation(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "capture.csv").write_text("header\n", encoding="utf-8")
     artifacts = FilesystemArtifactStore()
     service = build_registry_backed_normalization_service(
-        registry=FakeSourceRegistry(source_adapters=(EmptyFamilyTranslationAdapter("recognized_empty"),)),
+        registry=FakeSourceRegistry(
+            source_adapters=(EmptyFamilyTranslationAdapter("recognized_empty"),)
+        ),
         artifacts=artifacts,
     )
     output_dir = tmp_path / "normalized"
@@ -571,7 +684,9 @@ def test_normalization_service_surfaces_no_supported_activity_for_recognized_emp
     assert [row["kind"] for row in issue_rows] == ["no_supported_activity"]
 
 
-def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp_path: Path) -> None:
+def test_normalization_service_persists_fact_annotations_for_filtered_drafts(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
@@ -600,7 +715,9 @@ def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp
     )
 
     fact_rows = artifacts.read_rows(output_dir / "facts.csv")
-    fact_annotations = json.loads((output_dir / "fact_annotations.json").read_text(encoding="utf-8"))
+    fact_annotations = json.loads(
+        (output_dir / "fact_annotations.json").read_text(encoding="utf-8")
+    )
 
     assert [row["fact_id"] for row in fact_rows] == ["fixture_source:3"]
     assert fact_annotations == [
@@ -613,7 +730,9 @@ def test_normalization_service_persists_fact_annotations_for_filtered_drafts(tmp
     ]
 
 
-def test_normalization_service_filters_row_reviews_outside_explicit_window(tmp_path: Path) -> None:
+def test_normalization_service_filters_row_reviews_outside_explicit_window(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     header = (
@@ -642,7 +761,9 @@ def test_normalization_service_filters_row_reviews_outside_explicit_window(tmp_p
     )
 
     review_rows = artifacts.read_rows(output_dir / "normalization_reviews.csv")
-    summary = json.loads((output_dir / "normalization_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.review_count == 1
     assert [row["kind"] for row in review_rows] == ["timestamp_timezone_assumed_utc"]
