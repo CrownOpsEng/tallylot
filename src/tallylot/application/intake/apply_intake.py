@@ -76,23 +76,22 @@ class ApplyIntakeUseCase:
                 for issue in scanned_tree.issues
             )
             capture_session_plan = batch.capture_session_plan
+            materializes_capture = _session_materializes_capture(
+                capture_session_plan.capture_status
+            )
             for item in planned_items:
                 if item.action not in {"copy", "extract_copy"}:
                     continue
-                if (
-                    item.category == "source_raw"
-                    and capture_session_plan.capture_status == "duplicate_blocked"
-                ):
+                if not materializes_capture:
                     continue
                 item.target_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(item.source_path, item.target_path)
                 copied_count += 1
-            if capture_session_plan.capture_status != "duplicate_blocked":
+            if materializes_capture:
                 write_capture_manifests(self._artifacts, workspace_root, planned_items)
         assert capture_session_plan is not None
-        if (
-            capture_session_plan.source_folder
-            and capture_session_plan.capture_status != "duplicate_blocked"
+        if capture_session_plan.source_folder and _session_materializes_capture(
+            capture_session_plan.capture_status
         ):
             capture_root = (
                 workspace_root
@@ -127,7 +126,9 @@ class ApplyIntakeUseCase:
                 capture_root_ref=(
                     f"evidence/raw/source/{capture_session_plan.source_folder}/{capture_session_plan.capture_label}"
                     if capture_session_plan.source_folder
-                    and capture_session_plan.capture_status != "duplicate_blocked"
+                    and _session_materializes_capture(
+                        capture_session_plan.capture_status
+                    )
                     else ""
                 ),
                 intake_started_at=intake_started_at,
@@ -135,7 +136,7 @@ class ApplyIntakeUseCase:
                 incoming_ref=incoming_ref,
             ),
         )
-        if capture_session_plan.source_folder:
+        if _session_updates_source_inventory(capture_session_plan.capture_status):
             update_source_inventory_summary(
                 artifacts=self._artifacts,
                 workspace_root=workspace_root,
@@ -169,3 +170,11 @@ def _incoming_ref(
         return incoming_dir.relative_to(workspace_root).as_posix()
     except ValueError:
         return f"incoming/{incoming_dir.name}"
+
+
+def _session_materializes_capture(capture_status: str) -> bool:
+    return capture_status not in {"capture_blocked", "duplicate_blocked"}
+
+
+def _session_updates_source_inventory(capture_status: str) -> bool:
+    return capture_status != "capture_blocked"

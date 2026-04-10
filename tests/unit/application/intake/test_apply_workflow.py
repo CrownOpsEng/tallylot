@@ -13,6 +13,7 @@ from tallylot.application.intake import (
 from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.ports.captures import SOURCE_INVENTORY_HEADER
 
 
 def test_source_intake_service_applies_loose_files_into_workspace(
@@ -495,6 +496,182 @@ def test_source_intake_service_blocks_duplicate_capture_by_manifest_fingerprint(
     assert capture_rows[1]["file_count"] == "1"
     assert capture_rows[1]["intake_started_at"] != ""
     assert capture_rows[1]["intake_completed_at"] != ""
+
+
+def test_duplicate_blocked_apply_does_not_overwrite_supporting_artifacts(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    issues_dir = workspace_root / "analysis" / "issues"
+    issues_dir.mkdir(parents=True, exist_ok=True)
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        issues_dir / "source_inventory.csv",
+        ("source",),
+        ({"source": "manual-main"},),
+    )
+    artifacts.write_rows(
+        issues_dir / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "manual-main",
+                "notes": "",
+            },
+        ),
+    )
+    service = ApplyIntakeUseCase(build_registry(), artifacts)
+    support_filename = "Binance Portfolio Notes.xlsx"
+
+    first_incoming = tmp_path / "incoming-1"
+    first_incoming.mkdir()
+    (first_incoming / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    (first_incoming / support_filename).write_bytes(b"first-support")
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(first_incoming),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(tmp_path / "reports-1"),
+        )
+    )
+
+    first_plan_rows = artifacts.read_rows(tmp_path / "reports-1" / "intake_plan.csv")
+    support_target = Path(
+        next(
+            row["target_path"]
+            for row in first_plan_rows
+            if row["relative_path"] == support_filename
+        )
+    )
+    assert support_target.read_bytes() == b"first-support"
+
+    second_incoming = tmp_path / "incoming-2"
+    second_incoming.mkdir()
+    (second_incoming / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    (second_incoming / support_filename).write_bytes(b"second-support")
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(second_incoming),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(tmp_path / "reports-2"),
+        )
+    )
+
+    second_summary = json.loads(
+        (tmp_path / "reports-2" / "intake_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert second_summary["capture_status"] == "duplicate_blocked"
+    assert second_summary["copied_count"] == 0
+    assert support_target.read_bytes() == b"first-support"
+
+
+def test_capture_blocked_apply_avoids_materialized_writes_and_source_mutation(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    issues_dir = workspace_root / "analysis" / "issues"
+    issues_dir.mkdir(parents=True, exist_ok=True)
+    artifacts = FilesystemArtifactStore()
+    source_rows = (
+        {
+            "source": "binance-main",
+            "activity_after_cutoff": "",
+            "scope_status": "",
+            "status": "",
+            "capture_count": "",
+            "latest_capture_uid": "",
+            "latest_capture_label": "",
+            "latest_capture_completed_at": "",
+            "assembly_status": "",
+            "assembled_root_ref": "",
+            "adapter_hints": "",
+            "notes": "",
+        },
+        {
+            "source": "coinbase-main",
+            "activity_after_cutoff": "",
+            "scope_status": "",
+            "status": "",
+            "capture_count": "",
+            "latest_capture_uid": "",
+            "latest_capture_label": "",
+            "latest_capture_completed_at": "",
+            "assembly_status": "",
+            "assembled_root_ref": "",
+            "adapter_hints": "",
+            "notes": "",
+        },
+    )
+    artifacts.write_rows(
+        issues_dir / "source_inventory.csv",
+        SOURCE_INVENTORY_HEADER,
+        source_rows,
+    )
+    artifacts.write_rows(
+        issues_dir / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": "binance",
+                "source": "binance-main",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": "coinbase",
+                "source": "coinbase-main",
+                "notes": "",
+            },
+        ),
+    )
+    incoming_dir = tmp_path / "incoming"
+    (incoming_dir / "binance").mkdir(parents=True)
+    (incoming_dir / "coinbase").mkdir(parents=True)
+    (incoming_dir / "binance" / "transactions.csv").write_text(
+        "a,b\n1,2\n", encoding="utf-8"
+    )
+    (incoming_dir / "coinbase" / "transactions.csv").write_text(
+        "a,b\n3,4\n", encoding="utf-8"
+    )
+    (incoming_dir / "binance" / "notes.png").write_bytes(b"support")
+
+    ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(tmp_path / "reports"),
+        )
+    )
+
+    summary = json.loads(
+        (tmp_path / "reports" / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+    updated_source_rows = artifacts.read_rows(issues_dir / "source_inventory.csv")
+
+    assert summary["capture_status"] == "capture_blocked"
+    assert summary["copied_count"] == 0
+    assert not (
+        workspace_root
+        / "working"
+        / "supporting_artifacts"
+        / "binance-main"
+        / "incoming"
+        / "notes.png"
+    ).exists()
+    assert not (
+        workspace_root / "evidence" / "raw" / "source" / "binance-main" / "capture.json"
+    ).exists()
+    assert capture_rows[0]["capture_root_ref"] == ""
+    assert updated_source_rows == list(source_rows)
 
 
 def test_source_intake_service_marks_overlapping_capture_for_review(
