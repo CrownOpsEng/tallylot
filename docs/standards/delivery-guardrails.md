@@ -64,7 +64,7 @@ when the higher-layer control is available.
 Prefer GitHub controls that reject bad actions before they land:
 
 - rulesets or branch protection that require pull requests
-- required status checks
+- required status checks pinned to their owning app, not only named by context
 - required reviews
 - blocked force pushes on protected branches
 - stale-review dismissal or last-push review requirements when the repo wants
@@ -227,6 +227,8 @@ push-to-mainline CI.
   PR metadata on pull requests only
 - the `pr-review` PR status runs `tools.run_pr_review_checks` against the PR
   diff and applies the repo's change-sensitive review verification matrix
+- required PR-only statuses must stay pinned to the GitHub Actions app through
+  branch-protection check app IDs, not only by status context name
 - push/mainline CI keeps the shared quality and parity path for landed changes
   through explicit lint, type, pylint, test, and build jobs rather than one
   opaque umbrella status, but it does not replace the PR-only review audit
@@ -252,6 +254,8 @@ Before calling delivery complete, verify and report:
   the repo currently has only one single review-capable collaborator
 - whether PR-only CI enforcement required both `commit-messages` and
   `pr-review` for mergeable pull requests
+- whether required PR-only statuses were pinned to the owning GitHub Actions
+  app instead of relying on unpinned status-context names alone
 
 ## Exception Handling
 

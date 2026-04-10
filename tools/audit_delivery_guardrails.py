@@ -149,6 +149,29 @@ def _required_status_contexts(protection: Mapping[str, object]) -> set[str]:
     return contexts
 
 
+def _required_status_check_app_ids(
+    protection: Mapping[str, object],
+) -> dict[str, int | None]:
+    required_status_checks = cast(
+        Mapping[str, object] | None,
+        protection.get("required_status_checks"),
+    )
+    if required_status_checks is None:
+        return {}
+
+    app_ids: dict[str, int | None] = {}
+    for raw_check in cast(list[object], required_status_checks.get("checks") or []):
+        if not isinstance(raw_check, Mapping):
+            continue
+        check = cast(Mapping[str, object], raw_check)
+        context = check.get("context")
+        if not isinstance(context, str):
+            continue
+        raw_app_id = check.get("app_id")
+        app_ids[context] = raw_app_id if isinstance(raw_app_id, int) else None
+    return app_ids
+
+
 def _collaborator_is_review_capable(collaborator: Mapping[str, object]) -> bool:
     permissions_object = collaborator.get("permissions")
     if not isinstance(permissions_object, Mapping):
@@ -203,6 +226,19 @@ def _evaluate_status_check_guardrails(
         errors.append(
             "branch protection is missing required status checks: "
             + ", ".join(missing_status_checks)
+        )
+
+    app_ids_by_context = _required_status_check_app_ids(protection)
+    unpinned_status_checks = sorted(
+        context
+        for context in expected_status_checks
+        if context in _required_status_contexts(protection)
+        and app_ids_by_context.get(context) is None
+    )
+    if unpinned_status_checks:
+        errors.append(
+            "branch protection must pin required status checks to their app: "
+            + ", ".join(unpinned_status_checks)
         )
     return tuple(errors)
 

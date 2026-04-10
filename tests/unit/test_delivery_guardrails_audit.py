@@ -13,8 +13,8 @@ def _protected_branch_payload() -> dict[str, object]:
             "strict": True,
             "contexts": ["commit-messages", "pr-review"],
             "checks": [
-                {"context": "commit-messages"},
-                {"context": "pr-review"},
+                {"context": "commit-messages", "app_id": 15368},
+                {"context": "pr-review", "app_id": 15368},
             ],
         },
         "required_pull_request_reviews": {
@@ -93,6 +93,32 @@ def test_evaluate_remote_guardrails_errors_for_missing_core_branch_controls() ->
     assert any("block force pushes" in error for error in report.errors)
     assert any("conversation resolution" in error for error in report.errors)
     assert any(".github/CODEOWNERS" in error for error in report.errors)
+
+
+def test_evaluate_remote_guardrails_errors_for_unpinned_required_status_checks() -> (
+    None
+):
+    payload = _protected_branch_payload()
+    payload["required_status_checks"] = {
+        "strict": True,
+        "contexts": ["commit-messages", "pr-review"],
+        "checks": [
+            {"context": "commit-messages", "app_id": 15368},
+            {"context": "pr-review", "app_id": None},
+        ],
+    }
+
+    report = audit._evaluate_remote_guardrails(
+        protection=payload,
+        rulesets=[],
+        collaborators=[{"login": "CrownOpsEng", "permissions": {"pull": True}}],
+        codeowners_patterns=audit.CONTROL_PLANE_CODEOWNER_PATTERNS,
+    )
+
+    assert any(
+        "pin required status checks to their app: pr-review" in error
+        for error in report.errors
+    )
 
 
 def test_missing_codeowners_entries_reports_missing_patterns() -> None:
