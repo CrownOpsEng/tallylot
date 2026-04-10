@@ -85,20 +85,24 @@ in `analysis/inventory/source_captures.csv`.
 
 Suggested `status` values:
 
-These values describe the current external import and verification workflow.
+These values describe the current typed capture and assembly lifecycle:
 
-- `needs_user_confirmation` → source is known from the baseline, but post-cutoff activity is not yet confirmed
-- `pending_inventory_confirmation` → source is expected to be active, but timing or scope still needs confirmation
-- `confirmed_active_pending_export` → post-cutoff activity is confirmed and the source is in scope, but capture files have not been pulled yet
-- `capture_complete` → the capture folder and manifest are present
-- `ready_for_import` → cleaned import file is prepared and overlap-screened
-- `imported_pending_verification` → source was imported into the current
-  external verification workflow and fresh exports still need review
-- `complete` → source import is verified and closed
-- `excluded_no_activity` → confirmed no post-cutoff activity
-- `excluded_dust_balance` → confirmed post-cutoff activity exists, but the source is excluded from the initial queue because its baseline balance is within the agreed dust threshold
+- `capture_complete` → at least one non-blocked capture row exists for the
+  source
+- `profiled` → the latest meaningful capture has profile artifacts
+- `normalized` → at least one capture has normalized output or the latest
+  assembly attempt excluded all captures without producing a source dataset
+- `assembled` → `source assemble` produced the current assembled source dataset
 
 Keep the values consistent so AI and manual review can sort and filter reliably.
+
+Suggested `assembly_status` values:
+
+- `pending` → no assembled source dataset exists yet
+- `excluded` → the latest assembly attempt excluded all candidate captures or
+  found only missing normalized outputs
+- `assembled` → the current assembled source dataset exists under
+  `working/normalized/sources/<source>/`
 
 ## `analysis/inventory/source_captures.csv`
 
@@ -110,7 +114,11 @@ Rules:
 - `capture_label` is the human-readable raw folder name
 - `capture_root_ref` is workspace-relative
 - `supersedes_capture_uid` is explicit when one capture replaces another
-- status captures intake, review, normalization, and assembly progression
+- status captures intake, review, profiling, normalization, and assembly
+  progression
+- expected status values include `captured`, `duplicate_blocked`,
+  `overlap_review_required`, `profiled`, `normalized`, `assembly_included`,
+  `assembly_excluded`, and `superseded`
 
 ## `source_label_map.csv`
 

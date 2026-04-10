@@ -21,7 +21,12 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source norm
   --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
 ```
 
-When the raw capture lives inside the workspace, the default output root is
+`source normalize` requires the exact materialized capture root under
+`evidence/raw/source/<source>/<capture_label>/`. The command rejects source
+roots, arbitrary directories, and any root whose `capture.json` metadata does
+not match the path and requested source.
+
+When the raw capture lives inside the workspace, the default output root stays
 `working/normalized/captures/<capture_uid>/`.
 
 Review:
@@ -32,11 +37,18 @@ Review:
 - `balance_evidence.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
+- `location_inventory.csv`
 - `normalization_summary.json`
 
 `checkpoint extract-pdf-balances` uses the same statement extraction path as
 normalization. Use it when you need the standalone statement parser output for
 the same supported PDF families.
+
+`balance_evidence.csv` flattens source-backed provenance into the shared locator
+columns `capture_uid`, `relative_path`, `archive_member_path`,
+`locator_kind`, and `anchor`. `exceptions.csv` and
+`normalization_reviews.csv` keep `raw_row_ref` plus the same locator family
+with `raw_` prefixes when they reference raw evidence.
 
 ## Assemble The Source Dataset
 
@@ -50,6 +62,10 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source asse
 
 Review the assembled source dataset under
 `<workspace>/working/normalized/sources/<source>/`.
+
+`source assemble` is rerun-safe. It rewrites only its known generated files
+such as `facts.csv`, `balance_evidence.csv`, `assembly_summary.json`, and
+`assembly_issues.csv`, and leaves unrelated operator-owned files in place.
 
 ## Submit Manual Balances When Needed
 

@@ -28,6 +28,11 @@ Preferred structure for new intake:
 - `evidence/raw/source/<source>/<capture_label>/capture.json`
 - `evidence/raw/source/<source>/<capture_label>/manifest.csv`
 
+`source profile` and `source normalize` are valid only when pointed at that
+exact capture root. They reject the source parent directory, arbitrary
+subdirectories, and capture roots whose `capture.json` metadata does not match
+the path and requested source.
+
 `<source>` is an operator-managed stable label, not an adapter contract. Use a
 name that is consistent and meaningful in the workspace, but do not rename a
 capture folder just to satisfy one adapter. Adapter resolution should come from

@@ -69,6 +69,14 @@ persists `instrument_id`, `as_of_at`, and `as_of_precision`.
 adapter actually provides it, using the same `instrument_id` and temporal
 precision fields as `balances.csv`.
 
+Each `balance_evidence.csv` row flattens the shared provenance locator columns:
+
+- `capture_uid`
+- `relative_path`
+- `archive_member_path`
+- `locator_kind`
+- `anchor`
+
 `balance_confirmations.csv` contains accepted operator confirmations written by
 checkpoint-owned manual balance submission. It is a lower-trust runtime
 reference surface than `balance_evidence.csv` and does not satisfy filing-ready
@@ -80,8 +88,26 @@ assembled source artifacts only as a working file. Only
 `working/import_batches/` should hold files that have passed overlap
 screening and are approved for import.
 
-`profile_inventory.csv` includes timezone provenance columns so agents and users
-can inspect timestamp semantics without reopening raw files.
+`profile_inventory.csv` is the capture-scoped discovery contract for downstream
+normalization. In addition to timezone provenance, it records fields such as
+`capture_uid`, `source`, `evidence_role`, `observed_period_start`,
+`observed_period_end`, `observed_period_label`, `statement_kind`, and
+`originality_class` so statement extraction and issue-context resolution do not
+need to rediscover raw files by crawling the tree.
+
+`exceptions.csv` and `normalization_reviews.csv` preserve `raw_row_ref` and the
+same flattened locator family with `raw_` prefixes:
+
+- `raw_capture_uid`
+- `raw_relative_path`
+- `raw_archive_member_path`
+- `raw_locator_kind`
+- `raw_anchor`
 
 `timezone_issues.csv` holds blocking provenance conflicts. Non-blocking
 assumptions are recorded in `normalization_reviews.csv`.
+
+`source assemble` owns the generated source dataset under
+`working/normalized/sources/<source>/`. Reruns rewrite only the known generated
+artifacts in that folder and preserve unrelated operator-owned files beside
+them.

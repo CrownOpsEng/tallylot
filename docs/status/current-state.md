@@ -31,12 +31,14 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - source intake planning and apply with archive-aware reports, capture
   metadata, and the append-only capture registry
 - source manifesting for settled raw captures
-- capture-scoped source profiling with timezone provenance
+- capture-scoped source profiling with timezone provenance and a
+  capture-scoped `profile_inventory.csv` discovery contract
 - capture-scoped source normalization with explicit fact artifacts, balance
   evidence, and archive member provenance under
   `working/normalized/captures/<capture_uid>/`
 - source assembly via `source assemble`, producing reconciliation-ready source
-  datasets under `working/normalized/sources/<source>/`
+  datasets under `working/normalized/sources/<source>/` and rewrites its owned
+  generated artifact set on rerun
 - shared statement extraction used by normalization and
   `checkpoint extract-pdf-balances`
 - normalization-owned statement-backed balance evidence for supported provider
@@ -53,6 +55,8 @@ The repo currently ships typed replacements for the core workflow capabilities:
   cross-source corroboration sidecars
 - repo-native workspace replay validation via
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_workspace_replay`
+  with optional expected-difference fixtures limited to issue and review count
+  drift
 - dev-only oracle baseline validation with the documented artifact package
 - dev-only oracle batch screening and staging with explicit issues, overlap
   summaries, and normalization window enforcement
@@ -64,9 +68,24 @@ The repo currently ships typed replacements for the core workflow capabilities:
 
 - Raw evidence stays outside the repo in the external workspace.
 - Untouched source originals stay under `evidence/raw/source/`.
+- `source profile` and `source normalize` accept only one materialized raw
+  capture root under `evidence/raw/source/<source>/<capture_label>/` with
+  matching `capture.json` metadata. They reject source roots, arbitrary
+  directories, and mismatched capture metadata.
 - Capture-scoped normalized outputs live under `working/normalized/captures/`.
 - Reconciliation reads assembled source datasets under
   `working/normalized/sources/`.
+- `profile_inventory.csv` is the downstream discovery contract for statement
+  extraction and issue or review context. It records capture-scoped fields such
+  as `capture_uid`, `source`, `evidence_role`, `observed_period_start`,
+  `observed_period_end`, `observed_period_label`, `statement_kind`, and
+  `originality_class`.
+- Provenance stays typed in runtime models and is flattened only at artifact
+  boundaries. `balance_evidence.csv` uses the shared locator columns
+  `capture_uid`, `relative_path`, `archive_member_path`, `locator_kind`, and
+  `anchor`; `exceptions.csv` and `normalization_reviews.csv` use the same
+  locator family with `raw_` prefixes plus `raw_row_ref`; aggregate location
+  inventory evidence uses the same locator family with `evidence_` prefixes.
 - ZIP inspection is on by default unless a command explicitly opts out.
 - Dev-only oracle batch screening and staging are blocking gates. A blocked run
   still writes artifacts for review.
@@ -77,6 +96,10 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - Manual submission can unblock runtime reconciliation as
   `operator_confirmed`, but filing-ready checkpoint state still requires
   source-backed `balance_evidence.csv`.
+- `tools.validate_workspace_replay` compares semantic capture-registry parity,
+  raw capture completeness, assembled source metrics, and reconciliation status
+  counts. Optional expected-difference fixtures may declare only
+  `issue_count_delta`, `review_count_delta`, and `reason`.
 - Repo docs and repo-local agent entrypoints must describe only implemented
   commands and artifacts.
 

@@ -91,7 +91,12 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source prof
   --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
 ```
 
-When the raw capture lives inside the workspace, the default output root is
+`source profile` requires the exact materialized capture root under
+`evidence/raw/source/<source>/<capture_label>/`. The command rejects source
+roots, arbitrary directories, and any root whose `capture.json` metadata does
+not match the path and requested source.
+
+When the raw capture lives inside the workspace, the default output root stays
 `working/normalized/captures/<capture_uid>/`.
 
 Review:
@@ -99,6 +104,13 @@ Review:
 - `profile.json`
 - `profile_inventory.csv`
 - `timezone_issues.csv`
+
+`profile_inventory.csv` is the capture-scoped discovery contract used later by
+shared statement extraction and normalization issue-context resolution. Review
+fields such as `capture_uid`, `source`, `evidence_role`,
+`observed_period_start`, `observed_period_end`, `observed_period_label`,
+`statement_kind`, and `originality_class` instead of rediscovering files by
+hand.
 
 ## Normalize And Assemble
 
@@ -110,6 +122,9 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source norm
   --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
 ```
 
+`source normalize` has the same strict input contract as `source profile`: one
+materialized capture root with matching `capture.json` metadata.
+
 Then assemble the accepted capture outputs into the source dataset used by
 reconciliation:
 
@@ -118,6 +133,11 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source asse
   --source <source> \
   --workspace-root <workspace>
 ```
+
+`source assemble` owns the generated artifact surface under
+`working/normalized/sources/<source>/` and is safe to rerun. It rewrites its
+known generated files without deleting unrelated operator-owned files beside
+them.
 
 Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the next
 step after the settled capture has been profiled and normalized.

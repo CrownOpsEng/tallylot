@@ -27,9 +27,13 @@ Use the linked task guides when you need the detailed procedure for one stage.
    `evidence/raw/source/<source>/<capture_label>/`.
 2. Run `source intake plan` before touching the workspace.
 3. Run `source intake apply` only after the plan artifacts look correct.
-4. Run `source manifest`, `source profile`, and `source normalize` for the
-   settled capture.
-5. Run `source assemble` before any reconciliation command.
+4. Run `source manifest`, `source profile`, and `source normalize` against the
+   settled materialized capture root. `source profile` and `source normalize`
+   reject source roots, arbitrary subdirectories, and capture roots whose
+   `capture.json` metadata does not match the path and source.
+5. Run `source assemble` before any reconciliation command. Reruns rewrite the
+   generated source dataset under `working/normalized/sources/<source>/` rather
+   than appending stale artifacts.
 6. Use [Source Intake](source-intake.md) for the detailed commands, review
    points, and artifact expectations.
 
