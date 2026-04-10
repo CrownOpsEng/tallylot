@@ -11,6 +11,7 @@ from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.captures import SOURCE_CAPTURE_HEADER, SOURCE_INVENTORY_HEADER
 from tallylot.ports.evidence import (
+    BALANCE_CONFIRMATION_HEADER,
     BALANCE_EVIDENCE_HEADER,
     BALANCE_SNAPSHOT_HEADER,
     ISSUE_HEADER,
@@ -128,9 +129,286 @@ def test_source_assembly_surfaces_semantic_balance_conflicts(
     assert issue_rows[0]["raw_file"] == "balances.csv"
 
 
+def test_source_assembly_removes_stale_optional_generated_artifacts_on_rerun(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    _write_source_inventory(artifacts, workspace_root)
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    _write_capture_registry(
+        artifacts,
+        workspace_root,
+        (_capture_row(capture_uid, status="normalized"),),
+    )
+    capture_root = workspace_root / "working" / "normalized" / "captures" / capture_uid
+    _write_capture_outputs(
+        artifacts,
+        capture_root,
+        quantity="1.0",
+        write_confirmation=True,
+    )
+    assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+
+    AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+    (assembled_root / "operator-notes.txt").write_text(
+        "operator-owned", encoding="utf-8"
+    )
+    (capture_root / "balance_confirmations.csv").unlink()
+
+    AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+
+    assert not (assembled_root / "balance_confirmations.csv").exists()
+    assert (assembled_root / "operator-notes.txt").read_text(
+        encoding="utf-8"
+    ) == "operator-owned"
+
+
+def test_source_assembly_summary_excludes_all_policy_blocked_captures(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    _write_source_inventory(artifacts, workspace_root)
+    _write_capture_registry(
+        artifacts,
+        workspace_root,
+        (
+            _capture_row(
+                "01HV4A5H7VJH7M3Y5A6B7C8D9F",
+                status="overlap_review_required",
+            ),
+        ),
+    )
+
+    response = AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+
+    source_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+
+    assert response.included_capture_count == 0
+    assert response.excluded_capture_count == 1
+    assert source_rows[0]["status"] == "normalized"
+    assert source_rows[0]["assembly_status"] == "excluded"
+    assert source_rows[0]["assembled_root_ref"] == ""
+
+
+def test_source_assembly_excludes_normalized_rows_missing_output_root(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    _write_source_inventory(artifacts, workspace_root)
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    _write_capture_registry(
+        artifacts,
+        workspace_root,
+        (_capture_row(capture_uid, status="normalized"),),
+    )
+
+    response = AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+
+    assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+    issue_rows = artifacts.read_rows(assembled_root / "assembly_issues.csv")
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+    source_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+
+    assert response.included_capture_count == 0
+    assert response.excluded_capture_count == 1
+    assert issue_rows[0]["kind"] == "assembly_missing_normalized_capture"
+    assert capture_rows[-1]["status"] == "assembly_excluded"
+    assert source_rows[0]["status"] == "normalized"
+    assert source_rows[0]["assembly_status"] == "excluded"
+    assert source_rows[0]["assembled_root_ref"] == ""
+
+
+def test_source_assembly_leaves_not_normalized_captures_pending(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    _write_source_inventory(artifacts, workspace_root, status="profiled")
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    _write_capture_registry(
+        artifacts,
+        workspace_root,
+        (_capture_row(capture_uid, status="profiled"),),
+    )
+
+    response = AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+
+    assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+    issue_rows = artifacts.read_rows(assembled_root / "assembly_issues.csv")
+    summary = json.loads(
+        (assembled_root / "assembly_summary.json").read_text(encoding="utf-8")
+    )
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+    source_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+
+    assert response.included_capture_count == 0
+    assert response.excluded_capture_count == 0
+    assert response.issue_count == 1
+    assert issue_rows[0]["kind"] == "assembly_capture_not_ready"
+    assert summary["pending_capture_uids"] == [capture_uid]
+    assert capture_rows == [_capture_row(capture_uid, status="profiled")]
+    assert source_rows[0]["status"] == "profiled"
+    assert source_rows[0]["assembly_status"] == "pending"
+    assert source_rows[0]["assembled_root_ref"] == ""
+
+
+def test_source_assembly_reincludes_restored_missing_capture_output(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    _write_source_inventory(artifacts, workspace_root)
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    _write_capture_registry(
+        artifacts,
+        workspace_root,
+        (
+            _capture_row(capture_uid, status="normalized"),
+            _capture_row(capture_uid, status="assembly_excluded"),
+        ),
+    )
+    capture_root = workspace_root / "working" / "normalized" / "captures" / capture_uid
+    _write_capture_outputs(artifacts, capture_root, quantity="1.0")
+
+    response = AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+
+    assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+    source_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+
+    assert response.included_capture_count == 1
+    assert response.excluded_capture_count == 0
+    assert artifacts.read_rows(assembled_root / "balances.csv")[0]["quantity"] == "1.0"
+    assert capture_rows[-1]["status"] == "assembly_included"
+    assert source_rows[0]["status"] == "assembled"
+    assert source_rows[0]["assembly_status"] == "assembled"
+
+
+def test_source_assembly_preserves_policy_exclusion_after_rerun(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    _write_source_inventory(artifacts, workspace_root)
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9F"
+    _write_capture_registry(
+        artifacts,
+        workspace_root,
+        (
+            _capture_row(capture_uid, status="overlap_review_required"),
+            _capture_row(capture_uid, status="assembly_excluded"),
+        ),
+    )
+    capture_root = workspace_root / "working" / "normalized" / "captures" / capture_uid
+    _write_capture_outputs(artifacts, capture_root, quantity="2.0")
+
+    response = AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+
+    assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+
+    assert response.included_capture_count == 0
+    assert response.excluded_capture_count == 1
+    assert not artifacts.read_rows(assembled_root / "balances.csv")
+    assert capture_rows[-1]["status"] == "assembly_excluded"
+
+
+def test_source_assembly_honors_policy_resolution_before_missing_output_rerun(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    _write_source_inventory(artifacts, workspace_root)
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9F"
+    _write_capture_registry(
+        artifacts,
+        workspace_root,
+        (
+            _capture_row(capture_uid, status="overlap_review_required"),
+            _capture_row(capture_uid, status="normalized"),
+            _capture_row(capture_uid, status="assembly_excluded"),
+        ),
+    )
+    capture_root = workspace_root / "working" / "normalized" / "captures" / capture_uid
+    _write_capture_outputs(artifacts, capture_root, quantity="2.0")
+
+    response = AssembleSourceUseCase(artifacts).execute(
+        AssembleSourceRequest(
+            source="coinbase",
+            workspace_root_ref=to_resource_ref(workspace_root),
+        )
+    )
+
+    assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+    capture_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    )
+
+    assert response.included_capture_count == 1
+    assert response.excluded_capture_count == 0
+    assert artifacts.read_rows(assembled_root / "balances.csv")[0]["quantity"] == "2.0"
+    assert capture_rows[-1]["status"] == "assembly_included"
+
+
 def _write_source_inventory(
     artifacts: FilesystemArtifactStore,
     workspace_root: Path,
+    *,
+    status: str = "normalized",
 ) -> None:
     artifacts.write_rows(
         workspace_root / "analysis" / "issues" / "source_inventory.csv",
@@ -140,7 +418,7 @@ def _write_source_inventory(
                 "source": "coinbase",
                 "activity_after_cutoff": "unknown",
                 "scope_status": "in_scope",
-                "status": "normalized",
+                "status": status,
                 "capture_count": "2",
                 "latest_capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9F",
                 "latest_capture_label": "2026-03-23T14-15-17Z",
@@ -192,6 +470,7 @@ def _write_capture_outputs(
     root: Path,
     *,
     quantity: str,
+    write_confirmation: bool = False,
 ) -> None:
     artifacts.write_rows(root / "facts.csv", FACT_HEADER, ())
     artifacts.write_json(root / "fact_annotations.json", [])
@@ -214,6 +493,22 @@ def _write_capture_outputs(
             },
         ),
     )
+    if write_confirmation:
+        artifacts.write_rows(
+            root / "balance_confirmations.csv",
+            BALANCE_CONFIRMATION_HEADER,
+            (
+                {
+                    **_balance_row(quantity=quantity),
+                    "confirmation_kind": "manual_assertion",
+                    "support_ref": "operator",
+                    "asserted_meaning": "operator confirmed balance",
+                    "reviewed_by": "operator",
+                    "reviewed_at": "2026-03-24 00:00:00",
+                    "reason": "test fixture",
+                },
+            ),
+        )
     artifacts.write_rows(root / "exceptions.csv", ISSUE_HEADER, ())
     artifacts.write_rows(
         root / "normalization_reviews.csv",

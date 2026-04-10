@@ -14,9 +14,13 @@ from tallylot.ports.captures import (
     SOURCE_CAPTURE_HEADER,
     CaptureMetadata,
     SourceCaptureRecord,
-    SourceInventorySummaryRecord,
 )
 
+from .lifecycle import (
+    SourceInventorySummaryReduction,
+    reduce_capture_status,
+    reduce_source_inventory_summary,
+)
 from .session import CaptureSessionPlan
 
 
@@ -124,7 +128,7 @@ def append_capture_status_record(
         return
     updated = {
         **latest,
-        "status": _reduced_capture_status(latest.get("status", ""), status),
+        "status": reduce_capture_status(latest.get("status", ""), status),
     }
     if notes:
         updated["notes"] = notes
@@ -138,8 +142,9 @@ def update_source_inventory_summary(  # pylint: disable=too-many-arguments
     workspace_root: Path,
     source: str,
     status: str | None = None,
-    assembly_status: str | None = None,
     assembled_root_ref: str | None = None,
+    assembled_output_present: bool | None = None,
+    assembly_excluded_capture_count: int | None = None,
 ) -> None:
     source_inventory_path = (
         workspace_root / "analysis" / "issues" / "source_inventory.csv"
@@ -155,92 +160,20 @@ def update_source_inventory_summary(  # pylint: disable=too-many-arguments
         if source_inventory_path.exists()
         else []
     )
-    matching = tuple(_latest_capture_rows_for_source(capture_rows, source).values())
-    meaningful_rows = tuple(
-        row for row in matching if row.get("status", "") != "duplicate_blocked"
+    updated_row = reduce_source_inventory_summary(
+        reduction=SourceInventorySummaryReduction(
+            source=source,
+            capture_rows=capture_rows,
+            source_rows=source_rows,
+            requested_status=status,
+            assembled_root_ref=assembled_root_ref,
+            assembled_output_present=assembled_output_present,
+            assembly_excluded_capture_count=assembly_excluded_capture_count,
+        )
     )
-    latest = (
-        _latest_completed_capture_row(meaningful_rows or matching) if matching else {}
-    )
-    existing_status = _existing_value(source_rows, source, "status")
-    updated_row = SourceInventorySummaryRecord(
-        source=SourceId(source),
-        activity_after_cutoff=_existing_value(
-            source_rows, source, "activity_after_cutoff"
-        ),
-        scope_status=_existing_value(source_rows, source, "scope_status") or "in_scope",
-        status=_reduced_source_status(
-            existing_status, matching, requested_status=status
-        ),
-        capture_count=len(matching),
-        latest_capture_uid=latest.get("capture_uid", ""),
-        latest_capture_label=latest.get("capture_label", ""),
-        latest_capture_completed_at=_parse_optional_timestamp(
-            latest.get("intake_completed_at", "")
-        ),
-        assembly_status=assembly_status
-        or _existing_value(source_rows, source, "assembly_status")
-        or "pending",
-        assembled_root_ref=assembled_root_ref
-        if assembled_root_ref is not None
-        else _existing_value(source_rows, source, "assembled_root_ref"),
-        adapter_hints=_existing_value(source_rows, source, "adapter_hints"),
-        notes=_existing_value(source_rows, source, "notes"),
-    ).to_row()
     remaining = [row for row in source_rows if row.get("source", "") != source]
     remaining.append(updated_row)
     artifacts.write_rows(source_inventory_path, tuple(updated_row.keys()), remaining)
-
-
-def _existing_value(rows: list[dict[str, str]], source: str, field: str) -> str:
-    for row in rows:
-        if row.get("source", "") == source:
-            return row.get(field, "")
-    return ""
-
-
-def _reduced_source_status(
-    existing_status: str,
-    capture_rows: tuple[dict[str, str], ...],
-    *,
-    requested_status: str | None = None,
-) -> str:
-    if requested_status is not None:
-        if _source_status_rank(requested_status) >= _source_status_rank(
-            existing_status
-        ):
-            return requested_status
-        return existing_status
-    if existing_status in {"profiled", "normalized", "assembled"}:
-        return existing_status
-    if capture_rows:
-        return "capture_complete"
-    return existing_status
-
-
-def _reduced_capture_status(existing_status: str, requested_status: str) -> str:
-    if requested_status == "profiled" and existing_status in {
-        "normalized",
-        "assembly_included",
-        "assembly_excluded",
-    }:
-        return existing_status
-    if requested_status == "normalized" and existing_status in {
-        "assembly_included",
-        "assembly_excluded",
-    }:
-        return existing_status
-    return requested_status
-
-
-def _source_status_rank(status: str) -> int:
-    return {
-        "": -1,
-        "capture_complete": 0,
-        "profiled": 1,
-        "normalized": 2,
-        "assembled": 3,
-    }.get(status, -1)
 
 
 def _latest_capture_row(
@@ -250,34 +183,3 @@ def _latest_capture_row(
         if row.get("capture_uid", "") == capture_uid:
             return row
     return None
-
-
-def _latest_capture_rows_for_source(
-    rows: list[dict[str, str]], source: str
-) -> dict[str, dict[str, str]]:
-    latest_by_uid: dict[str, dict[str, str]] = {}
-    for row in rows:
-        if row.get("source", "") != source:
-            continue
-        capture_uid = row.get("capture_uid", "")
-        if capture_uid:
-            latest_by_uid[capture_uid] = row
-    return latest_by_uid
-
-
-def _latest_completed_capture_row(rows: tuple[dict[str, str], ...]) -> dict[str, str]:
-    return max(
-        rows,
-        key=lambda row: (
-            _parse_optional_timestamp(row.get("intake_completed_at", ""))
-            or datetime.min.replace(tzinfo=UTC),
-            row.get("capture_label", ""),
-            row.get("capture_uid", ""),
-        ),
-    )
-
-
-def _parse_optional_timestamp(value: str) -> datetime | None:
-    if not value:
-        return None
-    return datetime.strptime(value, "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)

@@ -103,6 +103,26 @@ def test_balance_check_rejects_capture_normalized_roots(tmp_path: Path) -> None:
         )
 
 
+def test_balance_check_rejects_specific_capture_normalized_root(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "working" / "normalized" / "captures" / "capture-uid"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir(parents=True)
+    (input_root / "balances.csv").write_text("source\ncoinbase\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="assembled source datasets"):
+        BalanceCheckWorkflow(
+            FilesystemEvidenceRepository(),
+            FilesystemArtifactStore(),
+        ).execute(
+            BalanceCheckRequest(
+                input_root_ref=to_resource_ref(input_root),
+                output_root_ref=to_resource_ref(output_root),
+            )
+        )
+
+
 def test_balance_check_workflow_uses_per_source_output_dirs_for_batch_runs(
     tmp_path: Path,
 ) -> None:
