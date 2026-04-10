@@ -575,9 +575,20 @@ def test_duplicate_blocked_apply_does_not_overwrite_supporting_artifacts(
     second_summary = json.loads(
         (tmp_path / "reports-2" / "intake_summary.json").read_text(encoding="utf-8")
     )
+    second_plan_rows = artifacts.read_rows(tmp_path / "reports-2" / "intake_plan.csv")
+    second_support_row = next(
+        row for row in second_plan_rows if row["relative_path"] == support_filename
+    )
+    second_source_row = next(
+        row for row in second_plan_rows if row["relative_path"] == "transactions.csv"
+    )
 
     assert second_summary["capture_status"] == "duplicate_blocked"
     assert second_summary["copied_count"] == 0
+    assert second_summary["planned_copy_count"] == 0
+    assert second_support_row["action"] == "skip"
+    assert second_support_row["capture_status"] == "duplicate_blocked"
+    assert second_source_row["action"] == "skip"
     assert support_target.read_bytes() == b"first-support"
 
 
@@ -652,7 +663,7 @@ def test_capture_blocked_apply_avoids_materialized_writes_and_source_mutation(
     )
     (incoming_dir / "binance" / "notes.png").write_bytes(b"support")
 
-    ApplyIntakeUseCase(build_registry(), artifacts).execute(
+    response = ApplyIntakeUseCase(build_registry(), artifacts).execute(
         IntakeApplyRequest(
             incoming_capture_ref=to_resource_ref(incoming_dir),
             workspace_root_ref=to_workspace_path(workspace_root),
@@ -663,14 +674,20 @@ def test_capture_blocked_apply_avoids_materialized_writes_and_source_mutation(
     summary = json.loads(
         (tmp_path / "reports" / "intake_summary.json").read_text(encoding="utf-8")
     )
-    capture_rows = artifacts.read_rows(
-        workspace_root / "analysis" / "inventory" / "source_captures.csv"
-    )
+    plan_rows = artifacts.read_rows(tmp_path / "reports" / "intake_plan.csv")
     updated_source_rows = artifacts.read_rows(issues_dir / "source_inventory.csv")
+    support_row = next(
+        row for row in plan_rows if row["relative_path"] == "binance/notes.png"
+    )
 
+    assert response.source == ""
     assert summary["capture_status"] == "capture_blocked"
     assert summary["copied_count"] == 0
+    assert summary["planned_copy_count"] == 0
     assert summary["file_count"] == 2
+    assert support_row["action"] == "skip"
+    assert support_row["capture_status"] == "capture_blocked"
+    assert support_row["review_codes"] == "mixed_source_capture"
     assert not (
         workspace_root
         / "working"
@@ -682,7 +699,9 @@ def test_capture_blocked_apply_avoids_materialized_writes_and_source_mutation(
     assert not (
         workspace_root / "evidence" / "raw" / "source" / "binance-main" / "capture.json"
     ).exists()
-    assert capture_rows[0]["capture_root_ref"] == ""
+    assert not (
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    ).exists()
     assert updated_source_rows == list(source_rows)
 
 

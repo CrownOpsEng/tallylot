@@ -17,7 +17,7 @@ from tallylot.domain.types import LocationId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
 from tallylot.interfaces.cli import app
-from tallylot.ports.captures import SOURCE_CAPTURE_HEADER
+from tallylot.ports.captures import SOURCE_CAPTURE_HEADER, SOURCE_INVENTORY_HEADER
 from tallylot.ports.evidence import (
     ISSUE_HEADER,
     LOCATION_INVENTORY_HEADER,
@@ -487,6 +487,104 @@ def test_source_intake_cli_reports_blocked_capture_status(tmp_path: Path) -> Non
     assert payload["capture_status"] == "capture_blocked"
     assert payload["capture_label"] == ""
     assert payload["copied_count"] == 0
+
+
+def test_source_intake_cli_reports_mixed_source_capture_as_ambiguous(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv",
+        SOURCE_INVENTORY_HEADER,
+        (
+            {
+                "source": "binance-main",
+                "activity_after_cutoff": "",
+                "scope_status": "",
+                "status": "",
+                "capture_count": "",
+                "latest_capture_uid": "",
+                "latest_capture_label": "",
+                "latest_capture_completed_at": "",
+                "assembly_status": "",
+                "assembled_root_ref": "",
+                "adapter_hints": "",
+                "notes": "",
+            },
+            {
+                "source": "coinbase-main",
+                "activity_after_cutoff": "",
+                "scope_status": "",
+                "status": "",
+                "capture_count": "",
+                "latest_capture_uid": "",
+                "latest_capture_label": "",
+                "latest_capture_completed_at": "",
+                "assembly_status": "",
+                "assembled_root_ref": "",
+                "adapter_hints": "",
+                "notes": "",
+            },
+        ),
+    )
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": "binance",
+                "source": "binance-main",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": "coinbase",
+                "source": "coinbase-main",
+                "notes": "",
+            },
+        ),
+    )
+    incoming_dir = tmp_path / "incoming"
+    (incoming_dir / "binance").mkdir(parents=True)
+    (incoming_dir / "coinbase").mkdir(parents=True)
+    (incoming_dir / "binance" / "transactions.csv").write_text(
+        "a,b\n1,2\n", encoding="utf-8"
+    )
+    (incoming_dir / "coinbase" / "transactions.csv").write_text(
+        "a,b\n3,4\n", encoding="utf-8"
+    )
+    (incoming_dir / "binance" / "notes.png").write_bytes(b"support")
+    report_dir = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(report_dir),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+    plan_rows = artifacts.read_rows(report_dir / "intake_plan.csv")
+    support_row = next(
+        row for row in plan_rows if row["relative_path"] == "binance/notes.png"
+    )
+
+    assert result.exit_code == 1
+    assert payload["source"] == ""
+    assert payload["capture_status"] == "capture_blocked"
+    assert payload["copied_count"] == 0
+    assert support_row["action"] == "skip"
+    assert support_row["review_codes"] == "mixed_source_capture"
 
 
 def test_source_intake_cli_uses_nonzero_exit_for_duplicate_blocked_capture(

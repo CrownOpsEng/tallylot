@@ -57,6 +57,9 @@ class _PlannedItem(Protocol):
     def package_status(self) -> str: ...
 
     @property
+    def placement_status(self) -> str: ...
+
+    @property
     def relative_path(self) -> str: ...
 
     @property
@@ -171,11 +174,13 @@ def build_capture_session_plan(
             }
         )
         _mark_mixed_source_capture_blocked(planned_items)
-        return _capture_blocked_plan(
-            source_folder=distinct_sources[0] if distinct_sources else "",
-            file_count=len(source_items),
-        )
+        return _capture_blocked_plan(file_count=len(source_items))
     if not raw_items:
+        _mark_non_materialized_capture_items(
+            planned_items,
+            capture_status="capture_blocked",
+            placement_status="capture_blocked_skip",
+        )
         _mark_source_raw_items_capture_blocked(planned_items)
         return _capture_blocked_plan(file_count=len(source_items))
 
@@ -218,6 +223,12 @@ def build_capture_session_plan(
             overlap_capture_uids.append(row.get("capture_uid", ""))
     if capture_status != "duplicate_blocked" and overlap_capture_uids:
         capture_status = "overlap_review_required"
+    if capture_status == "duplicate_blocked":
+        _mark_non_materialized_capture_items(
+            planned_items,
+            capture_status=capture_status,
+            placement_status="duplicate_capture_skip",
+        )
     for index, item in enumerate(planned_items):
         if item.category != "source_raw":
             continue
@@ -320,16 +331,42 @@ def _mark_source_raw_items_capture_blocked(
         )
 
 
-def _mark_mixed_source_capture_blocked(planned_items: list[_PlannedItemT]) -> None:
+def _mark_non_materialized_capture_items(
+    planned_items: list[_PlannedItemT],
+    *,
+    capture_status: str,
+    placement_status: str,
+) -> None:
     for index, item in enumerate(planned_items):
-        if item.category != "source_raw":
-            continue
+        replacement = cast(
+            _PlannedItemT,
+            replace(
+                cast(Any, item),
+                action=(
+                    "skip" if item.action in {"copy", "extract_copy"} else item.action
+                ),
+                placement_status=(
+                    placement_status
+                    if item.action in {"copy", "extract_copy"}
+                    else item.placement_status
+                ),
+                capture_status=capture_status,
+            ),
+        )
+        planned_items[index] = replacement
+
+
+def _mark_mixed_source_capture_blocked(planned_items: list[_PlannedItemT]) -> None:
+    _mark_non_materialized_capture_items(
+        planned_items,
+        capture_status="capture_blocked",
+        placement_status="mixed_source_capture_blocked",
+    )
+    for index, item in enumerate(planned_items):
         planned_items[index] = cast(
             _PlannedItemT,
             replace(
                 cast(Any, item),
-                action="skip",
-                placement_status="mixed_source_capture_blocked",
                 review_required="yes",
                 review_codes=_merge_value(item.review_codes, "mixed_source_capture"),
                 review_reason=_merge_value(
