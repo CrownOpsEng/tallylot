@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+from tallylot.application.profiling import BuildProfileUseCase, ProfileRequest
+from tallylot.application.resource_refs import to_resource_ref
 from tallylot.application.profiling.artifacts import write_profile_artifacts
 from tallylot.domain.types import AdapterId, CaptureUid, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
@@ -19,6 +21,8 @@ from tallylot.ports.captures import (
     SourceCaptureRecord,
     SourceInventorySummaryRecord,
 )
+from repo_support.capture_roots import materialize_capture_root
+from tests.support.services import FakeSourceRegistry, MatchingSourceAdapter
 
 
 def test_capture_metadata_uses_expected_json_fields() -> None:
@@ -114,3 +118,31 @@ def test_profile_inventory_writer_uses_expected_header(tmp_path: Path) -> None:
     rows = artifacts.read_rows(output_dir / "profile_inventory.csv")
 
     assert tuple(rows[0].keys()) == PROFILE_INVENTORY_HEADER
+
+
+def test_profile_service_writes_capture_metadata_columns_from_capture_root(
+    tmp_path: Path,
+) -> None:
+    raw_capture_root = materialize_capture_root(tmp_path, source="fixture_source")
+    (raw_capture_root / "transactions.csv").write_text(
+        "timestamp,amount\n2026-03-23 14:15:16,1\n",
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "profile"
+    artifacts = FilesystemArtifactStore()
+
+    BuildProfileUseCase(
+        FakeSourceRegistry(source_adapters=(MatchingSourceAdapter("fixture_source"),)),
+        artifacts,
+    ).execute(
+        ProfileRequest(
+            source="fixture_source",
+            raw_capture_ref=to_resource_ref(raw_capture_root),
+            profile_output_ref=to_resource_ref(output_dir),
+        )
+    )
+
+    rows = artifacts.read_rows(output_dir / "profile_inventory.csv")
+
+    assert rows[0]["capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    assert rows[0]["source"] == "fixture_source"

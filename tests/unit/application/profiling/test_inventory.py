@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from tallylot.application.profiling.artifacts import write_profile_artifacts
-from tallylot.application.profiling.inventory import _inventory_file_details
+from tallylot.application.profiling.inventory import (
+    _inventory_file_details,
+    build_inventory,
+)
 from tallylot.domain.types import AdapterId, SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.source_profiles import (
@@ -153,6 +157,57 @@ def test_inventory_file_details_converts_explicit_offsets_to_utc(
     assert details.date_field == "Timestamp"
     assert details.min_timestamp == "2026-03-23 21:47:00"
     assert details.max_timestamp == "2026-03-23 21:47:00"
+
+
+def test_inventory_file_details_prefers_earliest_plausible_header_row(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "Wallet-eth portfolio.csv"
+    path.write_text(
+        "Chain,Token,Portfolio %,Price,Amount,Value\n"
+        "ETH,Ether (ETH),100.00%,$2,142.73,0.00178571,$3.83\n",
+        encoding="utf-8",
+    )
+
+    header, row_count, details = _inventory_file_details(path)
+
+    assert header == ("Chain", "Token", "Portfolio %", "Price", "Amount", "Value")
+    assert row_count == 1
+    assert details.date_field == ""
+
+
+def test_build_inventory_enriches_rows_from_capture_metadata(tmp_path: Path) -> None:
+    raw_dir = (
+        tmp_path / "workspace" / "evidence" / "raw" / "source" / "eth-wallet-fixture" / "2026-03"
+    )
+    raw_dir.mkdir(parents=True)
+    (raw_dir / "capture.json").write_text(
+        json.dumps(
+            {
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "source": "eth-wallet-fixture",
+                "capture_label": "2026-03",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/eth-wallet-fixture",
+                "manifest_fingerprint": "manifest:fixture",
+                "status": "captured",
+                "notes": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (raw_dir / "transactions.csv").write_text(
+        "Timestamp,Amount\n2026-03-23 15:47:00-06:00,1\n",
+        encoding="utf-8",
+    )
+
+    inventory, issues = build_inventory(raw_dir, inspect_archives=True)
+
+    assert issues == []
+    assert inventory[0].capture_uid == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    assert inventory[0].source == "eth-wallet-fixture"
 
 
 def test_profile_inventory_writer_emits_capture_scoped_columns(tmp_path: Path) -> None:

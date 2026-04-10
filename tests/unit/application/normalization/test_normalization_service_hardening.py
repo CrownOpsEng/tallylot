@@ -775,7 +775,7 @@ def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) 
             "as_of_at": "2023-08-06 12:00:00",
             "as_of_precision": "timestamp",
             "balance_kind": "available",
-            "capture_uid": "",
+            "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
             "relative_path": "statement.pdf",
             "archive_member_path": "",
             "locator_kind": "raw_file",

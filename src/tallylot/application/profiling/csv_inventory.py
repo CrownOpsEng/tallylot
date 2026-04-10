@@ -11,6 +11,37 @@ from io import TextIOBase
 from itertools import zip_longest
 from pathlib import Path
 
+_HEADER_SCAN_LIMIT = 25
+_HEADER_KEYWORDS = (
+    "account",
+    "amount",
+    "asset",
+    "balance",
+    "chain",
+    "currency",
+    "date",
+    "fee",
+    "hash",
+    "id",
+    "note",
+    "order",
+    "pair",
+    "portfolio",
+    "price",
+    "quantity",
+    "settlement",
+    "side",
+    "status",
+    "subtotal",
+    "time",
+    "timestamp",
+    "token",
+    "total",
+    "transaction",
+    "type",
+    "value",
+)
+
 
 def inventory_csv_content(path: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
@@ -22,14 +53,26 @@ def inventory_csv_content(path: Path) -> tuple[tuple[str, ...], list[dict[str, s
         return (), []
 
     header = tuple(cell.strip() for cell in rows[header_index])
-    content_rows = [_row_dict(header, row) for row in rows[header_index + 1 :] if any(cell.strip() for cell in row)]
+    content_rows = [
+        _row_dict(header, row)
+        for row in rows[header_index + 1 :]
+        if any(cell.strip() for cell in row)
+    ]
     filtered_rows = [row for row in content_rows if not is_placeholder_no_data_row(row)]
     return header, filtered_rows
 
 
 def is_timestamp_field(name: str) -> bool:
     normalized = re.sub(r"[^a-z]", "", name.lower())
-    return normalized in {"timestamp", "timestamputc", "date", "datetime", "datetimeutc", "time", "transactiondate"}
+    return normalized in {
+        "timestamp",
+        "timestamputc",
+        "date",
+        "datetime",
+        "datetimeutc",
+        "time",
+        "transactiondate",
+    }
 
 
 def timestamp_resolution(value: str) -> str:
@@ -48,7 +91,10 @@ def value_has_non_utc_offset(value: str) -> bool:
 
 
 def filename_timezone(filename: str) -> timezone | None:
-    match = re.search(r"\(UTC(?P<sign>[+-]{1,2})(?P<hours>\d{1,2})(?::(?P<minutes>\d{2}))?\)", filename)
+    match = re.search(
+        r"\(UTC(?P<sign>[+-]{1,2})(?P<hours>\d{1,2})(?::(?P<minutes>\d{2}))?\)",
+        filename,
+    )
     if match is None:
         return None
     sign_text = match.group("sign")
@@ -67,7 +113,9 @@ def format_timezone_value(value: timezone) -> str:
     return f"UTC{sign}{hours:02d}:{minutes:02d}"
 
 
-def parse_inventory_timestamp(value: str, *, source_timezone: timezone | None) -> datetime | None:
+def parse_inventory_timestamp(
+    value: str, *, source_timezone: timezone | None
+) -> datetime | None:
     text = value.strip()
     if not text:
         return None
@@ -96,6 +144,9 @@ def _sniff_csv_delimiter(handle: TextIOBase) -> str:
 
 
 def _header_row_index(rows: list[list[str]]) -> int | None:
+    for index, row in enumerate(rows[:_HEADER_SCAN_LIMIT]):
+        if _is_plausible_header_row(row):
+            return index
     candidates = [
         (len([cell for cell in row if cell.strip()]), index)
         for index, row in enumerate(rows)
@@ -108,7 +159,11 @@ def _header_row_index(rows: list[list[str]]) -> int | None:
 
 
 def _row_dict(header: tuple[str, ...], row: list[str]) -> dict[str, str]:
-    return {key: value.strip() for key, value in zip_longest(header, row, fillvalue="") if key}
+    return {
+        key: value.strip()
+        for key, value in zip_longest(header, row, fillvalue="")
+        if key
+    }
 
 
 def _row_values(row: Mapping[str, str | list[str]]) -> list[str]:
@@ -171,3 +226,52 @@ def _timestamp_from_format(
         parsed.tm_sec,
         tzinfo=source_timezone or UTC,
     ).astimezone(UTC)
+
+
+def _is_plausible_header_row(row: list[str]) -> bool:
+    non_empty = [cell.strip() for cell in row if cell.strip()]
+    if len(non_empty) < 2:
+        return False
+    keyword_hits = sum(1 for cell in non_empty if _has_header_keyword(cell))
+    if len(non_empty) <= 3 and keyword_hits < 2:
+        return False
+    payload_like_count = sum(1 for cell in non_empty if _is_payload_like_cell(cell))
+    if payload_like_count * 2 > len(non_empty):
+        return False
+    header_like_count = sum(1 for cell in non_empty if _is_header_like_cell(cell))
+    return header_like_count * 2 >= len(non_empty) or keyword_hits >= 2
+
+
+def _has_header_keyword(value: str) -> bool:
+    normalized = _normalized_header_text(value)
+    return any(keyword in normalized.split() for keyword in _HEADER_KEYWORDS)
+
+
+def _is_header_like_cell(value: str) -> bool:
+    text = value.strip()
+    if not text or _is_payload_like_cell(text):
+        return False
+    normalized = _normalized_header_text(text)
+    return bool(normalized and re.search(r"[a-z]", normalized))
+
+
+def _normalized_header_text(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def _is_payload_like_cell(value: str) -> bool:
+    text = value.strip()
+    if not text:
+        return False
+    if _exact_inventory_timestamp(text) is not None:
+        return True
+    if re.fullmatch(r"[A-Z]{2,10}", text):
+        return True
+    return bool(
+        re.fullmatch(
+            r"[$€£]?\d[\d,]*(?:\.\d+)?%?"
+            r"|[$€£]?\d[\d,]*(?:\.\d+)?/[A-Za-z]+"
+            r"|[+-]?\d+(?:\.\d+)?",
+            text,
+        )
+    )
