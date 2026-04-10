@@ -538,6 +538,75 @@ def test_source_intake_cli_uses_nonzero_exit_for_duplicate_blocked_capture(
     assert payload["copied_count"] == 0
 
 
+def test_source_intake_cli_uses_nonzero_exit_for_overlap_review_capture(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    first_incoming = tmp_path / "incoming-1"
+    second_incoming = tmp_path / "incoming-2"
+    first_incoming.mkdir()
+    second_incoming.mkdir()
+    payload_a = (
+        "Pair,Coin,Date,Amount,Type,Status\n"
+        "ADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    )
+    payload_b = (
+        "Pair,Coin,Date,Amount,Type,Status\n"
+        "ADA/USDT,USDT,2021-05-25 12:53:03,0.0500,Auto borrowing,CONFIRM\n"
+    )
+    (first_incoming / "borrow.csv").write_text(payload_a, encoding="utf-8")
+    (second_incoming / "borrow.csv").write_text(payload_b, encoding="utf-8")
+    first_report_dir = tmp_path / "reports-1"
+    second_report_dir = tmp_path / "reports-2"
+
+    first_result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(first_incoming),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(first_report_dir),
+        ],
+    )
+    second_result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(second_incoming),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(second_report_dir),
+        ],
+    )
+
+    payload = json.loads(second_result.stdout)
+
+    assert first_result.exit_code == 0
+    assert second_result.exit_code == 1
+    assert payload["source"] == "binance"
+    assert payload["capture_status"] == "overlap_review_required"
+    assert payload["capture_label"] != ""
+    assert payload["copied_count"] == 1
+    assert (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "binance"
+        / payload["capture_label"]
+        / "borrow.csv"
+    ).exists()
+
+
 def test_checkpoint_extract_pdf_balances_cli(tmp_path: Path) -> None:
     pdf_path = tmp_path / "shakepay_Performance report_2025.pdf"
     output_path = tmp_path / "balances.csv"
