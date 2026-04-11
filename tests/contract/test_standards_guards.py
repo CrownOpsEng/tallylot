@@ -345,7 +345,7 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert 'PR_BODY_OPTIONAL_SECTIONS = ("Follow-ups",)' in message_standards_text
     assert "PR_BODY_OPTIONAL_SECTIONS" in pr_validator_text
     assert "`Issue linkage:`" in pr_validator_text
-    assert "GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS" in commit_validator_text
+    assert "GENERATED_MAINLINE_COMMIT_OPTIONAL_SECTIONS" in commit_validator_text
     assert "`- Closes #123: <problem statement>`" in commits_text
     assert "`- Refs #123`" in issues_text
     assert "`- None: ...`" in issues_text

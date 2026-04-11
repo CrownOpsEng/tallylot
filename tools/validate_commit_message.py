@@ -10,7 +10,7 @@ from pathlib import Path
 
 from tools.message_standards import (
     AUTHORED_COMMIT_REQUIRED_SECTIONS,
-    GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS,
+    GENERATED_MAINLINE_COMMIT_OPTIONAL_SECTIONS,
     validate_structured_sections,
     validate_subject_line,
 )
@@ -47,9 +47,11 @@ def _validate_commit_message_text(message: str) -> tuple[str, ...]:
         return ("commit message subject is required",)
 
     subject = lines[0]
-    is_generated_squash_commit = SQUASH_PR_SUBJECT_PATTERN.search(subject) is not None
+    is_generated_mainline_commit = SQUASH_PR_SUBJECT_PATTERN.search(subject) is not None
     optional_sections = (
-        GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS if is_generated_squash_commit else ()
+        GENERATED_MAINLINE_COMMIT_OPTIONAL_SECTIONS
+        if is_generated_mainline_commit
+        else ()
     )
 
     errors = [
@@ -63,7 +65,7 @@ def _validate_commit_message_text(message: str) -> tuple[str, ...]:
             allow_footers=True,
         ),
     ]
-    if not is_generated_squash_commit:
+    if not is_generated_mainline_commit:
         for line in lines[2:]:
             if ISSUE_CLOSING_KEYWORD_PATTERN.search(line):
                 errors.append(
