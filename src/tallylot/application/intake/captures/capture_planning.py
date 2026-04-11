@@ -124,11 +124,10 @@ def mark_missing_source_raw_capture_blocked(
     planned_items: list[PlannedItem],
 ) -> None:
     for index, item in enumerate(planned_items):
-        keep_support_copy = (
-            item.category != "source_raw"
-            and item.source_folder not in {"", "unclassified"}
-            and item.action in {"copy", "extract_copy"}
-        )
+        keep_support_copy = item.category != "source_raw" and item.action in {
+            "copy",
+            "extract_copy",
+        }
         should_skip = (
             item.category == "source_raw" and item.action in {"copy", "extract_copy"}
         ) or (not keep_support_copy and item.action in {"copy", "extract_copy"})
@@ -149,21 +148,27 @@ def mark_missing_source_raw_capture_blocked(
 
 
 def mark_mixed_source_capture_blocked(planned_items: list[PlannedItem]) -> None:
-    mark_non_materialized_capture_items(
-        planned_items,
-        capture_status="capture_blocked",
-        placement_status="mixed_source_capture_blocked",
-    )
     for index, item in enumerate(planned_items):
+        is_source_raw_copy = item.category == "source_raw" and item.action in {
+            "copy",
+            "extract_copy",
+        }
         planned_items[index] = replace(
             item,
+            action="skip" if is_source_raw_copy else item.action,
+            placement_status=(
+                "mixed_source_capture_blocked"
+                if is_source_raw_copy
+                else item.placement_status
+            ),
+            capture_label="" if item.category == "source_raw" else item.capture_label,
+            capture_status="capture_blocked",
             review_required="yes",
             review_codes=_merge_value(item.review_codes, "mixed_source_capture"),
             review_reason=_merge_value(
                 item.review_reason,
                 "Intake run resolved multiple source folders.",
             ),
-            capture_status="capture_blocked",
         )
 
 

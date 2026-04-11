@@ -636,13 +636,19 @@ def test_source_intake_cli_reports_mixed_source_capture_as_ambiguous(
     support_row = next(
         row for row in plan_rows if row["relative_path"] == "binance/notes.png"
     )
+    source_row = next(
+        row for row in plan_rows if row["relative_path"] == "binance/transactions.csv"
+    )
+    support_target = Path(support_row["target_path"])
 
     assert result.exit_code == 1
     assert payload["source"] == ""
     assert payload["capture_status"] == "capture_blocked"
-    assert payload["copied_count"] == 0
-    assert support_row["action"] == "skip"
+    assert payload["copied_count"] == 1
+    assert support_row["action"] == "copy"
+    assert source_row["capture_label"] == ""
     assert support_row["review_codes"] == "mixed_source_capture"
+    assert support_target.exists()
 
 
 def test_source_intake_cli_uses_nonzero_exit_for_duplicate_blocked_capture(

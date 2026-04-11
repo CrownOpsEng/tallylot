@@ -828,15 +828,22 @@ def test_capture_blocked_apply_avoids_materialized_writes_and_source_mutation(
     support_row = next(
         row for row in plan_rows if row["relative_path"] == "binance/notes.png"
     )
+    source_row = next(
+        row for row in plan_rows if row["relative_path"] == "binance/transactions.csv"
+    )
+    support_target = Path(support_row["target_path"])
 
     assert response.source == ""
     assert summary["capture_status"] == "capture_blocked"
-    assert summary["copied_count"] == 0
-    assert summary["planned_copy_count"] == 0
+    assert response.copied_count == 1
+    assert summary["copied_count"] == 1
+    assert summary["planned_copy_count"] == 1
     assert summary["file_count"] == 2
-    assert support_row["action"] == "skip"
+    assert support_row["action"] == "copy"
     assert support_row["capture_status"] == "capture_blocked"
     assert support_row["review_codes"] == "mixed_source_capture"
+    assert source_row["capture_label"] == ""
+    assert support_target.read_bytes() == b"support"
     assert not (
         workspace_root
         / "working"
@@ -878,12 +885,15 @@ def test_support_only_apply_reports_missing_source_raw_issue(tmp_path: Path) -> 
 
     assert response.capture_status == "capture_blocked"
     assert response.issue_count == 1
+    assert response.copied_count == 1
     assert summary["issue_count"] == 1
-    assert summary["planned_copy_count"] == 0
+    assert summary["copied_count"] == 1
+    assert summary["planned_copy_count"] == 1
     assert issue_rows[0]["kind"] == "capture_missing_source_raw"
-    assert plan_rows[0]["action"] == "skip"
+    assert plan_rows[0]["action"] == "copy"
     assert plan_rows[0]["review_required"] == "yes"
     assert plan_rows[0]["review_codes"] == "missing_source_raw_capture"
+    assert Path(plan_rows[0]["target_path"]).exists()
     assert not (
         workspace_root / "analysis" / "inventory" / "source_captures.csv"
     ).exists()
