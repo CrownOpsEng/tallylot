@@ -199,6 +199,30 @@ def test_inspect_intake_file_preserves_title_row_wallet_scope_tokens(
     assert route.source_folder.startswith("ethereum-wallet-bc1")
 
 
+def test_inspect_intake_file_keeps_network_hint_order_from_title_rows(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "wallets.csv"
+    path.write_text(
+        "Polygon Ethereum Wallet,bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "Date,Amount\n"
+        "2024-01-01,1.0\n",
+        encoding="utf-8",
+    )
+
+    facts = inspect_intake_file(path, relative_path="incoming/neutral/wallets.csv")
+    route = resolve_inventory_route(
+        artifacts=FilesystemArtifactStore(),
+        workspace_root=tmp_path / "workspace",
+        source_folder="unclassified",
+        facts=facts,
+    )
+
+    assert facts.network_hints == ("polygon", "ethereum")
+    assert route.inventory_match_status == "generic_scope_routing"
+    assert route.source_folder.startswith("polygon-wallet-bc1")
+
+
 def test_inspect_intake_file_extracts_tron_scope_tokens_from_content(
     tmp_path: Path,
 ) -> None:

@@ -91,7 +91,7 @@ def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
     if path.suffix.lower() != ".csv":
         return IntakeFileFacts(
             scope_tokens=tuple(sorted(_scope_tokens(relative_path, [], []))),
-            network_hints=tuple(sorted(_network_hints(relative_path, (), [], []))),
+            network_hints=_network_hints(relative_path, (), [], []),
         )
 
     header, rows, title_rows = _read_csv_rows(path)
@@ -106,7 +106,7 @@ def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
         observed_period_end=_observed_period_end(timestamp_values),
         observed_period_label=_observed_period_label(timestamp_values),
         scope_tokens=tuple(sorted(scope_tokens)),
-        network_hints=tuple(sorted(network_hints)),
+        network_hints=network_hints,
     )
 
 
@@ -223,7 +223,7 @@ def _network_hints(
     header: tuple[str, ...],
     rows: list[dict[str, str]],
     title_rows: list[list[str]],
-) -> set[str]:
+) -> tuple[str, ...]:
     row_text = " ".join(
         _cell_text(value) for row in rows[:50] for value in row.values()
     )
@@ -231,11 +231,19 @@ def _network_hints(
         _cell_text(cell) for title_row in title_rows[:50] for cell in title_row
     )
     search_text = " ".join((relative_path, *header, row_text, title_text)).lower()
-    hints: set[str] = set()
+    ordered_matches: list[tuple[int, str]] = []
     for token, network in NETWORK_HINTS:
-        if token in search_text:
-            hints.add(network)
-    return hints
+        position = search_text.find(token)
+        if position != -1:
+            ordered_matches.append((position, network))
+    hints: list[str] = []
+    seen: set[str] = set()
+    for _, network in sorted(ordered_matches, key=lambda item: (item[0], item[1])):
+        if network in seen:
+            continue
+        seen.add(network)
+        hints.append(network)
+    return tuple(hints)
 
 
 def _row_dict(header: tuple[str, ...], row: list[str]) -> dict[str, str]:
