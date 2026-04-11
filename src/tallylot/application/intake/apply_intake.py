@@ -14,7 +14,6 @@ from tallylot.application.intake.captures.persistence import (
     update_source_inventory_summary,
     write_capture_metadata,
 )
-from tallylot.application.intake.captures.session import CaptureSessionPlan
 from tallylot.application.intake.contracts import (
     IntakeApplyRequest,
     IntakeApplyResponse,
@@ -26,6 +25,7 @@ from tallylot.application.intake.plan import (
     write_capture_manifests,
     write_reports,
 )
+from tallylot.application.intake.plan.models import CaptureSessionPlan
 from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort

@@ -5,15 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from tallylot.application.intake.captures.session import (
-    CaptureSessionSummaryContext,
-    CaptureSessionPlan,
-    apply_capture_session_plan,
-)
+from tallylot.application.intake.captures.session import apply_capture_session_plan
 from tallylot.application.intake.contracts import INTAKE_ISSUE_HEADER
 from tallylot.ports.artifacts import ArtifactStorePort
 
-from .models import PLAN_HEADER, PlannedItem
+from .models import (
+    PLAN_HEADER,
+    CaptureSessionPlan,
+    CaptureSessionSummaryContext,
+    PlannedItem,
+)
 
 
 @dataclass(frozen=True)

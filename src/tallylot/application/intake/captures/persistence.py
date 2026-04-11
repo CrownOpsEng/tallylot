@@ -9,6 +9,7 @@ from typing import cast
 
 from tallylot.domain.captures import generate_capture_uid
 from tallylot.domain.types import JsonValue, SourceId
+from tallylot.application.intake.plan.models import CaptureSessionPlan
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.captures import (
     SOURCE_CAPTURE_HEADER,
@@ -21,7 +22,6 @@ from .lifecycle import (
     reduce_capture_status,
     reduce_source_inventory_summary,
 )
-from .session import CaptureSessionPlan
 
 
 @dataclass(frozen=True)

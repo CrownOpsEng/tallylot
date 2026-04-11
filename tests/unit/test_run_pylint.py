@@ -12,7 +12,6 @@ from tools.run_pylint import _ADAPTER_TEST_IGNORE_PATHS, _PylintTarget, _pylint_
 
 def test_pylint_targets_split_repo_code_from_tests() -> None:
     targets = _pylint_targets()
-
     assert targets[0] == _PylintTarget(
         name="repo-code",
         command=(
@@ -23,6 +22,7 @@ def test_pylint_targets_split_repo_code_from_tests() -> None:
             "src",
             "tools",
             "repo_support",
+            ".agents/skills",
             "conftest.py",
         ),
     )
