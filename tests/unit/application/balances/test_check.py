@@ -7,8 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tallylot.adapters.support import location_id_from_parts
-from tallylot.application.reconciliation import (
+from tallylot.application.balances import (
     BalanceCheckRequest,
     BalanceCheckWorkflow,
 )
@@ -20,6 +19,7 @@ from tallylot.domain.balances import (
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.location_identifiers import location_id_from_parts
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -33,7 +33,7 @@ from tallylot.domain.transactions import (
     TransactionFact,
 )
 from tallylot.domain.types import AdapterId, SourceId, TransactionId
-from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.infrastructure.storage import (
     FilesystemEvidenceRepository,
     FilesystemFactRepository,

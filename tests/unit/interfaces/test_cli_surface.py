@@ -21,20 +21,21 @@ class HasWorkspaceRoot(Protocol):
     workspace_root_ref: WorkspacePath
 
 
-class HasBalanceCoverageRefs(Protocol):
+class HasBalanceInspectRefs(Protocol):
     input_root_ref: str
-    coverage_output_ref: str
+    inspect_output_ref: str
 
 
 class HasBalanceCheckRefs(Protocol):
     input_root_ref: str
     output_root_ref: str
     sources: tuple[str, ...]
+    hydrate_missing_references: bool
     reference_policy: str
 
 
 class HasBalanceSummaryRefs(Protocol):
-    coverage_input_ref: str
+    inspect_input_ref: str
     check_summary_input_ref: str
     summary_output_ref: str
 
@@ -161,16 +162,16 @@ def test_reconciliation_balance_inspect_cli(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_root = tmp_path / "normalized"
-    output_path = tmp_path / "balance_coverage.csv"
+    output_path = tmp_path / "balance_inspect.csv"
     seen: dict[str, object] = {}
 
-    class StubBalanceCoverageWorkflow:
+    class StubBalanceInspectWorkflow:
         def execute(self, request: object) -> object:
             seen["request"] = request
             return SimpleNamespace(
-                coverage_output_ref=str(output_path),
-                coverage_summary_output_ref=str(
-                    tmp_path / "balance_coverage_summary.json"
+                inspect_output_ref=str(output_path),
+                inspect_summary_output_ref=str(
+                    tmp_path / "balance_inspect_summary.json"
                 ),
                 source_count=1,
                 comparable_source_count=1,
@@ -178,8 +179,8 @@ def test_reconciliation_balance_inspect_cli(
 
     monkeypatch.setattr(
         cli_reconciliation,
-        "balance_coverage_workflow",
-        lambda: StubBalanceCoverageWorkflow(),
+        "balance_inspect_workflow",
+        lambda: StubBalanceInspectWorkflow(),
     )
 
     result = runner.invoke(
@@ -195,11 +196,11 @@ def test_reconciliation_balance_inspect_cli(
         ],
     )
 
-    request = cast(HasBalanceCoverageRefs, seen["request"])
+    request = cast(HasBalanceInspectRefs, seen["request"])
 
     assert result.exit_code == 0
     assert request.input_root_ref == str(input_root)
-    assert request.coverage_output_ref == str(output_path)
+    assert request.inspect_output_ref == str(output_path)
 
 
 def test_reconciliation_balance_check_cli(
@@ -251,13 +252,14 @@ def test_reconciliation_balance_check_cli(
     assert request.input_root_ref == str(input_root)
     assert request.output_root_ref == str(output_root)
     assert request.sources == ("coinbase", "shakepay")
+    assert request.hydrate_missing_references is False
     assert request.reference_policy == "default"
 
 
 def test_reconciliation_balance_summarize_cli(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    coverage_path = tmp_path / "balance_coverage.csv"
+    inspect_path = tmp_path / "balance_inspect.csv"
     check_summary_path = tmp_path / "balance_check_summary.csv"
     output_path = tmp_path / "balance_reconciliation_summary.json"
     seen: dict[str, object] = {}
@@ -288,8 +290,8 @@ def test_reconciliation_balance_summarize_cli(
             "reconciliation",
             "balances",
             "summarize",
-            "--coverage",
-            str(coverage_path),
+            "--inspect",
+            str(inspect_path),
             "--check-summary",
             str(check_summary_path),
             "--output",
@@ -300,6 +302,6 @@ def test_reconciliation_balance_summarize_cli(
     request = cast(HasBalanceSummaryRefs, seen["request"])
 
     assert result.exit_code == 0
-    assert request.coverage_input_ref == str(coverage_path)
+    assert request.inspect_input_ref == str(inspect_path)
     assert request.check_summary_input_ref == str(check_summary_path)
     assert request.summary_output_ref == str(output_path)

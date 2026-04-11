@@ -3,15 +3,15 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tallylot.application.reconciliation import (
+from tallylot.application.balances import (
     BALANCE_CHECK_SUMMARY_HEADER,
-    BALANCE_COVERAGE_HEADER,
+    BALANCE_INSPECT_HEADER,
     BalanceSummaryRequest,
     BalanceSummaryWorkflow,
 )
-from tallylot.application.reconciliation.balances.records import (
+from tallylot.application.balances.records import (
     BalanceCheckSummaryRecord,
-    BalanceCoverageRecord,
+    BalanceInspectRecord,
 )
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.csv_io import write_rows
@@ -21,17 +21,17 @@ from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactS
 def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
     tmp_path: Path,
 ) -> None:
-    coverage_path = tmp_path / "balance_coverage.csv"
+    inspect_path = tmp_path / "balance_inspect.csv"
     check_summary_path = tmp_path / "balance_check_summary.csv"
     output_path = tmp_path / "balance_reconciliation_summary.json"
 
     write_rows(
-        coverage_path,
-        BALANCE_COVERAGE_HEADER,
+        inspect_path,
+        BALANCE_INSPECT_HEADER,
         (
-            BalanceCoverageRecord(
+            BalanceInspectRecord(
                 source="clean-source",
-                coverage_status="resolved_reference",
+                inspect_status="resolved_reference",
                 snapshot_count=1,
                 reference_count=1,
                 source_document_count=1,
@@ -40,9 +40,9 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
                 min_reference_date="2026-03-23",
                 max_reference_date="2026-03-23",
             ).to_row(),
-            BalanceCoverageRecord(
+            BalanceInspectRecord(
                 source="empty-source",
-                coverage_status="empty_source",
+                inspect_status="empty_source",
                 snapshot_count=0,
                 reference_count=0,
             ).to_row(),
@@ -83,7 +83,7 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
 
     response = BalanceSummaryWorkflow(FilesystemArtifactStore()).execute(
         BalanceSummaryRequest(
-            coverage_input_ref=to_resource_ref(coverage_path),
+            inspect_input_ref=to_resource_ref(inspect_path),
             check_summary_input_ref=to_resource_ref(check_summary_path),
             summary_output_ref=to_resource_ref(output_path),
         )
@@ -108,24 +108,24 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
 def test_balance_summary_workflow_distinguishes_resolved_reference_dates(
     tmp_path: Path,
 ) -> None:
-    coverage_path = tmp_path / "balance_coverage.csv"
+    inspect_path = tmp_path / "balance_inspect.csv"
     check_summary_path = tmp_path / "balance_check_summary.csv"
     output_path = tmp_path / "balance_reconciliation_summary.json"
 
     write_rows(
-        coverage_path,
-        BALANCE_COVERAGE_HEADER,
+        inspect_path,
+        BALANCE_INSPECT_HEADER,
         (
-            BalanceCoverageRecord(
+            BalanceInspectRecord(
                 source="source-backed",
-                coverage_status="resolved_reference",
+                inspect_status="resolved_reference",
                 snapshot_count=1,
                 reference_count=1,
                 source_document_count=1,
             ).to_row(),
-            BalanceCoverageRecord(
+            BalanceInspectRecord(
                 source="operator-confirmed",
-                coverage_status="resolved_reference",
+                inspect_status="resolved_reference",
                 snapshot_count=1,
                 reference_count=1,
                 operator_assertion_count=1,
@@ -167,7 +167,7 @@ def test_balance_summary_workflow_distinguishes_resolved_reference_dates(
 
     response = BalanceSummaryWorkflow(FilesystemArtifactStore()).execute(
         BalanceSummaryRequest(
-            coverage_input_ref=to_resource_ref(coverage_path),
+            inspect_input_ref=to_resource_ref(inspect_path),
             check_summary_input_ref=to_resource_ref(check_summary_path),
             summary_output_ref=to_resource_ref(output_path),
         )
@@ -185,20 +185,20 @@ def test_balance_summary_workflow_distinguishes_resolved_reference_dates(
     assert not blocker_path.exists()
 
 
-def test_balance_summary_workflow_requires_resolved_coverage_for_portfolio_date(
+def test_balance_summary_workflow_requires_resolved_reference_for_portfolio_date(
     tmp_path: Path,
 ) -> None:
-    coverage_path = tmp_path / "balance_coverage.csv"
+    inspect_path = tmp_path / "balance_inspect.csv"
     check_summary_path = tmp_path / "balance_check_summary.csv"
     output_path = tmp_path / "balance_reconciliation_summary.json"
 
     write_rows(
-        coverage_path,
-        BALANCE_COVERAGE_HEADER,
+        inspect_path,
+        BALANCE_INSPECT_HEADER,
         (
-            BalanceCoverageRecord(
+            BalanceInspectRecord(
                 source="partial-source",
-                coverage_status="missing_reference",
+                inspect_status="missing_reference",
                 snapshot_count=2,
                 reference_count=1,
                 source_document_count=1,
@@ -235,7 +235,7 @@ def test_balance_summary_workflow_requires_resolved_coverage_for_portfolio_date(
 
     response = BalanceSummaryWorkflow(FilesystemArtifactStore()).execute(
         BalanceSummaryRequest(
-            coverage_input_ref=to_resource_ref(coverage_path),
+            inspect_input_ref=to_resource_ref(inspect_path),
             check_summary_input_ref=to_resource_ref(check_summary_path),
             summary_output_ref=to_resource_ref(output_path),
         )

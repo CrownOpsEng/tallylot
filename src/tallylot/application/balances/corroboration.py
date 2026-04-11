@@ -9,11 +9,9 @@ from tallylot.domain.balances import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import JsonValue
 from tallylot.domain.value_objects import format_decimal, format_temporal_value
-from tallylot.ports.artifacts import ArtifactStorePort
-from tallylot.ports.evidence import EvidenceRepositoryPort
 
+from .inputs import BalanceSourceInputs
 from .records import CrossSourceAssertionRecord
-from .sources import BalanceSourceDir
 
 
 @dataclass(frozen=True)
@@ -87,18 +85,14 @@ class _ComparablePair:
 
 
 def build_cross_source_corroboration(
-    source_dirs: tuple[BalanceSourceDir, ...],
-    *,
-    evidence: EvidenceRepositoryPort,
-    artifacts: ArtifactStorePort,
+    source_inputs: tuple[BalanceSourceInputs, ...],
 ) -> CrossSourceCorroborationResult:
     snapshots_by_source = {
-        source_dir.name: _read_snapshots(evidence, source_dir)
-        for source_dir in source_dirs
+        source_input.source: source_input.snapshots for source_input in source_inputs
     }
     inventory_by_source = {
-        source_dir.name: _read_location_inventory(artifacts, source_dir)
-        for source_dir in source_dirs
+        source_input.source: source_input.location_inventory
+        for source_input in source_inputs
     }
     identities_by_group: dict[tuple[str, str], list[_IdentityRecord]] = defaultdict(
         list
@@ -109,7 +103,13 @@ def build_cross_source_corroboration(
             if not row.normalized_identifier or not row.network_scope:
                 continue
             identities_by_group[(row.normalized_identifier, row.network_scope)].append(
-                row
+                _IdentityRecord(
+                    source=row.source,
+                    location_id=row.location_id,
+                    normalized_identifier=row.normalized_identifier,
+                    network_scope=row.network_scope,
+                    confidence=row.confidence,
+                )
             )
 
     assertions: list[CrossSourceAssertionRecord] = []
@@ -203,34 +203,6 @@ def build_cross_source_corroboration(
     return CrossSourceCorroborationResult(
         assertions=tuple(assertions),
         issues=tuple(issues),
-    )
-
-
-def _read_snapshots(
-    evidence: EvidenceRepositoryPort,
-    source_dir: BalanceSourceDir,
-) -> tuple[BalanceSnapshot, ...]:
-    if not source_dir.snapshot_path.is_file():
-        return ()
-    return evidence.read_balance_snapshots(source_dir.snapshot_path)
-
-
-def _read_location_inventory(
-    artifacts: ArtifactStorePort,
-    source_dir: BalanceSourceDir,
-) -> tuple[_IdentityRecord, ...]:
-    if not source_dir.location_inventory_path.is_file():
-        return ()
-    rows = artifacts.read_rows(source_dir.location_inventory_path)
-    return tuple(
-        _IdentityRecord(
-            source=row["source"],
-            location_id=row["location_id"],
-            normalized_identifier=row["normalized_identifier"],
-            network_scope=row["network_scope"],
-            confidence=row["confidence"],
-        )
-        for row in rows
     )
 
 

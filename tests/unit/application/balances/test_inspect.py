@@ -5,10 +5,9 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import location_id_from_parts
-from tallylot.application.reconciliation import (
-    BalanceCoverageRequest,
-    BalanceCoverageWorkflow,
+from tallylot.application.balances import (
+    BalanceInspectRequest,
+    BalanceInspectWorkflow,
 )
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.balances import (
@@ -17,11 +16,15 @@ from tallylot.domain.balances import (
     BalanceSnapshot,
     BalanceTarget,
 )
+from tallylot.domain.location_identifiers import location_id_from_parts
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import SourceId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from tallylot.infrastructure.storage import FilesystemEvidenceRepository
+from tallylot.infrastructure.storage import (
+    FilesystemEvidenceRepository,
+    FilesystemFactRepository,
+)
 
 
 def _target(source: str, instrument_id: str, as_of: datetime) -> BalanceTarget:
@@ -35,11 +38,12 @@ def _target(source: str, instrument_id: str, as_of: datetime) -> BalanceTarget:
     )
 
 
-def test_balance_coverage_workflow_classifies_source_coverage_states(
+def test_balance_inspect_workflow_classifies_source_inspection_states(
     tmp_path: Path,
 ) -> None:
     input_root = tmp_path / "normalized"
-    output_path = tmp_path / "balance_coverage.csv"
+    output_path = tmp_path / "balance_inspect.csv"
+    facts = FilesystemFactRepository()
     repository = FilesystemEvidenceRepository()
     input_root.mkdir()
     as_of = datetime(2026, 3, 23, tzinfo=UTC)
@@ -180,21 +184,25 @@ def test_balance_coverage_workflow_classifies_source_coverage_states(
         (),
     )
 
-    response = BalanceCoverageWorkflow(FilesystemArtifactStore()).execute(
-        BalanceCoverageRequest(
+    response = BalanceInspectWorkflow(
+        facts=facts,
+        evidence=repository,
+        artifacts=FilesystemArtifactStore(),
+    ).execute(
+        BalanceInspectRequest(
             input_root_ref=to_resource_ref(input_root),
-            coverage_output_ref=to_resource_ref(output_path),
+            inspect_output_ref=to_resource_ref(output_path),
         )
     )
 
     rows = FilesystemArtifactStore().read_rows(output_path)
     summary = json.loads(
-        (tmp_path / "balance_coverage_summary.json").read_text(encoding="utf-8")
+        (tmp_path / "balance_inspect_summary.json").read_text(encoding="utf-8")
     )
 
     assert response.source_count == 6
     assert response.comparable_source_count == 3
-    assert {row["source"]: row["coverage_status"] for row in rows} == {
+    assert {row["source"]: row["inspect_status"] for row in rows} == {
         "empty-source": "empty_source",
         "missing-reference": "missing_reference",
         "missing-snapshots": "missing_snapshots",

@@ -27,9 +27,9 @@ BALANCE_ASSERTION_HEADER = (
     "notes",
 )
 
-BALANCE_COVERAGE_HEADER = (
+BALANCE_INSPECT_HEADER = (
     "source",
-    "coverage_status",
+    "inspect_status",
     "snapshot_count",
     "reference_count",
     "source_document_count",
@@ -84,9 +84,9 @@ CROSS_SOURCE_ASSERTION_HEADER = (
 
 
 @dataclass(frozen=True)
-class BalanceCoverageRecord:
+class BalanceInspectRecord:
     source: str
-    coverage_status: str
+    inspect_status: str
     snapshot_count: int
     reference_count: int
     source_document_count: int = 0
@@ -101,7 +101,7 @@ class BalanceCoverageRecord:
     def to_row(self) -> dict[str, str]:
         return {
             "source": self.source,
-            "coverage_status": self.coverage_status,
+            "inspect_status": self.inspect_status,
             "snapshot_count": str(self.snapshot_count),
             "reference_count": str(self.reference_count),
             "source_document_count": str(self.source_document_count),
@@ -115,10 +115,10 @@ class BalanceCoverageRecord:
         }
 
     @classmethod
-    def from_row(cls, row: dict[str, str]) -> BalanceCoverageRecord:
+    def from_row(cls, row: dict[str, str]) -> BalanceInspectRecord:
         return cls(
             source=row["source"],
-            coverage_status=row["coverage_status"],
+            inspect_status=row["inspect_status"],
             snapshot_count=int(row["snapshot_count"]),
             reference_count=int(row["reference_count"]),
             source_document_count=int(row["source_document_count"]),

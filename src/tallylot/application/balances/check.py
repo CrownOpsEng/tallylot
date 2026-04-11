@@ -6,34 +6,37 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from tallylot.application.balances import (
+from tallylot.application.balances.filenames import (
     BALANCE_ASSERTION_FILENAME,
     BALANCE_CHECK_SUMMARY_FILENAME,
     BALANCE_RECONCILIATION_SUMMARY_FILENAME,
-    BalanceReferenceResolver,
-    derive_balance_snapshots,
-    latest_balance_targets,
-    parse_target_time_values,
-    targets_for_as_of_values,
 )
-from tallylot.application.reconciliation.balances.contracts import (
+from tallylot.application.balances.contracts import (
     BalanceCheckRequest,
     BalanceCheckResponse,
 )
-from tallylot.application.reconciliation.balances.cross_source import (
+from tallylot.application.balances.corroboration import (
     build_cross_source_corroboration,
 )
-from tallylot.application.reconciliation.balances.records import (
+from tallylot.application.balances.inputs import (
+    BalanceSourceDir,
+    BalanceSourceInputs,
+    build_balance_source_inputs,
+    discover_balance_source_dirs,
+    select_balance_source_dirs,
+    source_dir_input,
+)
+from tallylot.application.balances.references import BalanceReferenceResolver
+from tallylot.application.balances.snapshots import derive_balance_snapshots
+from tallylot.application.balances.records import (
     BALANCE_ASSERTION_HEADER,
     BALANCE_CHECK_SUMMARY_HEADER,
     CROSS_SOURCE_ASSERTION_HEADER,
     BalanceCheckSummaryRecord,
 )
-from tallylot.application.reconciliation.balances.sources import (
-    BalanceSourceDir,
-    discover_balance_source_dirs,
-    select_balance_source_dirs,
-    source_dir_input,
+from tallylot.application.balances.targets import (
+    parse_target_time_values,
+    targets_for_as_of_values,
 )
 from tallylot.application.resource_refs import path_from_ref, to_resource_ref
 from tallylot.application.workspace.filesystem import (
@@ -82,8 +85,17 @@ class BalanceCheckWorkflow:
             discover_balance_source_dirs(input_root),
             request.sources,
         )
+        source_inputs = tuple(
+            build_balance_source_inputs(
+                source_dir,
+                facts=self._facts,
+                evidence=self._evidence,
+                artifacts=self._artifacts,
+            )
+            for source_dir in source_dirs
+        )
         records: list[BalanceCheckSummaryRecord] = []
-        for source_dir in source_dirs:
+        for source_dir, source_input in zip(source_dirs, source_inputs):
             source_output_root = source_dir.output_root(
                 output_root,
                 single_source=single_source,
@@ -92,11 +104,12 @@ class BalanceCheckWorkflow:
             _clear_generated_balance_reference_issue_output(
                 source_dir.reference_issue_path
             )
-            if not _is_runnable_source_dir(source_dir):
+            if not _is_runnable_source_input(source_input):
                 continue
             records.append(
-                self._check_source_dir(
+                self._check_source_input(
                     source_dir,
+                    source_input,
                     output_root=source_output_root,
                     request=request,
                 )
@@ -109,11 +122,7 @@ class BalanceCheckWorkflow:
                 BALANCE_CHECK_SUMMARY_HEADER,
                 (record.to_row() for record in records),
             )
-        cross_source_result = build_cross_source_corroboration(
-            tuple(source_dirs),
-            evidence=self._evidence,
-            artifacts=self._artifacts,
-        )
+        cross_source_result = build_cross_source_corroboration(source_inputs)
         if cross_source_result.assertions:
             self._artifacts.write_rows(
                 output_root / "cross_source_assertions.csv",
@@ -140,9 +149,10 @@ class BalanceCheckWorkflow:
             no_assertion_source_count=status_counts.get("no_assertions", 0),
         )
 
-    def _check_source_dir(
+    def _check_source_input(
         self,
         source_dir: BalanceSourceDir,
+        source_input: BalanceSourceInputs,
         *,
         output_root: Path,
         request: BalanceCheckRequest,
@@ -159,20 +169,24 @@ class BalanceCheckWorkflow:
         _ensure_source_output_paths_are_safe(source_dir, output_root)
         ensure_directory(output_root)
         try:
-            facts = self._facts.read_facts(source_dir.facts_path)
             parsed_times = parse_target_time_values(request.as_of_values)
             _normalize_reference_policy(request.reference_policy)
-            targets = (
-                targets_for_as_of_values(facts, parsed_times)
-                if parsed_times
-                else latest_balance_targets(facts)
-            )
-            snapshots, snapshot_issues = derive_balance_snapshots(facts, targets)
-            existing_references = (
-                self._evidence.read_balance_references(source_dir.reference_path)
-                if source_dir.reference_path.is_file()
+            facts = (
+                self._facts.read_facts(source_dir.facts_path)
+                if parsed_times and source_input.has_facts
                 else ()
             )
+            targets = (
+                targets_for_as_of_values(facts, parsed_times)
+                if parsed_times and facts
+                else source_input.targets
+            )
+            snapshots, snapshot_issues = (
+                derive_balance_snapshots(facts, targets)
+                if parsed_times and facts
+                else (source_input.snapshots, ())
+            )
+            existing_references = source_input.references
             resolved_references, reference_issues = self._resolver.resolve(
                 existing_references=existing_references,
                 targets=targets,
@@ -285,8 +299,8 @@ def _check_status(*, assertion_count: int, issue_count: int) -> str:
     return "issues"
 
 
-def _is_runnable_source_dir(source_dir: BalanceSourceDir) -> bool:
-    return source_dir.facts_path.is_file()
+def _is_runnable_source_input(source_input: BalanceSourceInputs) -> bool:
+    return source_input.input_mode != "empty"
 
 
 def _assertion_row_dates(row: dict[str, str]) -> tuple[str, ...]:

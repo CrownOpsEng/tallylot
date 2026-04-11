@@ -69,6 +69,8 @@ Preferred body sections:
 Write `Why:` and `What:` directly:
 
 - `Why:` states the problem, constraint, or risk the change addresses
+- `Why:` should answer why the patch is needed in repo terms, not restate
+  the implementation steps or branch choreography
 - `What:` states the behavior, structure, or contract changed in this patch
 - do not use `Why:` to restate the implementation
 - do not use `What:` to repeat generic intent without naming the concrete

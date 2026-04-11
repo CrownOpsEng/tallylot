@@ -1,4 +1,4 @@
-"""Balance reconciliation request and response contracts."""
+"""Balance capability request and response contracts."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from tallylot.domain.types import ResourceRef
 
 
 @dataclass(frozen=True)
-class BalanceCoverageRequest:
+class BalanceInspectRequest:
     input_root_ref: ResourceRef
-    coverage_output_ref: ResourceRef
+    inspect_output_ref: ResourceRef
 
 
 @dataclass(frozen=True)
-class BalanceCoverageResponse:
-    coverage_output_ref: ResourceRef
-    coverage_summary_output_ref: ResourceRef
+class BalanceInspectResponse:
+    inspect_output_ref: ResourceRef
+    inspect_summary_output_ref: ResourceRef
     source_count: int
     comparable_source_count: int
 
@@ -27,7 +27,7 @@ class BalanceCheckRequest:
     output_root_ref: ResourceRef
     sources: tuple[str, ...] = ()
     as_of_values: tuple[str, ...] = ()
-    hydrate_missing_references: bool = True
+    hydrate_missing_references: bool = False
     reference_policy: str = "default"
 
 
@@ -44,7 +44,7 @@ class BalanceCheckResponse:
 
 @dataclass(frozen=True)
 class BalanceSummaryRequest:
-    coverage_input_ref: ResourceRef
+    inspect_input_ref: ResourceRef
     check_summary_input_ref: ResourceRef
     summary_output_ref: ResourceRef
 

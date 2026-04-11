@@ -759,10 +759,10 @@ def test_reconciliation_status_regression_is_a_hard_mismatch(
             reference_workspace=tmp_path / "reference",
             candidate_workspace=tmp_path / "candidate",
             reference_metrics=_workspace_metrics(
-                reconciliation_status_counts={"coverage_status_counts": {"covered": 1}}
+                reconciliation_status_counts={"inspect_status_counts": {"ready": 1}}
             ),
             candidate_metrics=_workspace_metrics(
-                reconciliation_status_counts={"coverage_status_counts": {"covered": 0}}
+                reconciliation_status_counts={"inspect_status_counts": {"ready": 0}}
             ),
         )
     )

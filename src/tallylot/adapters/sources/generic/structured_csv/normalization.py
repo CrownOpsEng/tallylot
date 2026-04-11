@@ -20,9 +20,14 @@ from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import LocationId
-from tallylot.ports.evidence import LocationInventoryRecord
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
+
+from tallylot.application.evidence.location_inventory import (
+    LocationInventoryBuildSpec,
+    build_location_inventory_record,
+)
+from tallylot.ports.evidence import LocationInventoryRecord
 
 from .contracts import REQUIRED_HEADER, TRANSACTIONS_FILENAME
 from .feedback import StructuredCsvFeedbackFactory
@@ -137,25 +142,27 @@ def _location_record(
         if account == wallet
         else location_id_from_parts(str(profile.source), account)
     )
-    return LocationInventoryRecord(
-        source=str(profile.source),
-        location_id=location_id,
-        location_kind=LocationKind.SUBACCOUNT
-        if account != wallet
-        else LocationKind.ACCOUNT,
-        location_label=wallet,
-        identifier_kind="account_wallet",
-        identifier_value=f"{account}:{wallet}",
-        parent_location_id=parent_location_id,
-        location_path=(account, wallet) if account != wallet else (wallet,),
-        normalized_identifier=f"{account}:{wallet}",
-        display_identifier=f"{account}:{wallet}",
-        network_scope="",
-        controller=account,
-        parent_location_label="" if parent_location_id is None else account,
-        evidence_kind="normalized_transactions",
-        confidence="high",
-        evidence_provenance=ProvenanceLocator.from_reference_ref(TRANSACTIONS_FILENAME),
+    return build_location_inventory_record(
+        LocationInventoryBuildSpec(
+            source=str(profile.source),
+            location_id=location_id,
+            location_kind=LocationKind.SUBACCOUNT
+            if account != wallet
+            else LocationKind.ACCOUNT,
+            location_label=wallet,
+            identifier_kind="account_wallet",
+            identifier_value=f"{account}:{wallet}",
+            parent_location_id=parent_location_id,
+            location_path=(account, wallet) if account != wallet else (wallet,),
+            network_scope="",
+            controller=account,
+            parent_location_label="" if parent_location_id is None else account,
+            evidence_kind="normalized_transactions",
+            confidence="high",
+            evidence_provenance=ProvenanceLocator.from_reference_ref(
+                TRANSACTIONS_FILENAME
+            ),
+        )
     )
 
 

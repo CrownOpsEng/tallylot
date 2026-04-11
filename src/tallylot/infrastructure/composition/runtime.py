@@ -22,13 +22,13 @@ from tallylot.application.normalization.normalize_source import (
     NormalizeSourceUseCase,
 )
 from tallylot.application.normalization.assembly import AssembleSourceUseCase
-from tallylot.application.outputs.render_output import RenderOutputUseCase
-from tallylot.application.profiling.build_profile import BuildProfileUseCase
-from tallylot.application.reconciliation import (
+from tallylot.application.balances import (
     BalanceCheckWorkflow,
-    BalanceCoverageWorkflow,
+    BalanceInspectWorkflow,
     BalanceSummaryWorkflow,
 )
+from tallylot.application.outputs.render_output import RenderOutputUseCase
+from tallylot.application.profiling.build_profile import BuildProfileUseCase
 from tallylot.application.workspace.initialize_workspace import (
     InitializeWorkspaceUseCase,
 )
@@ -126,9 +126,13 @@ def submit_balances_use_case() -> SubmitBalancesUseCase:
     return SubmitBalancesUseCase(evidence, artifacts)
 
 
-def balance_coverage_workflow() -> BalanceCoverageWorkflow:
-    _, _, artifacts, _, _ = runtime_dependencies()
-    return BalanceCoverageWorkflow(artifacts)
+def balance_inspect_workflow() -> BalanceInspectWorkflow:
+    _, _, artifacts, facts, evidence = runtime_dependencies()
+    return BalanceInspectWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    )
 
 
 def balance_check_workflow() -> BalanceCheckWorkflow:

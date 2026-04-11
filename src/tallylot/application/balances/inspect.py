@@ -1,4 +1,4 @@
-"""Coverage inspection for balance reconciliation inputs."""
+"""Inspection for balance reconciliation inputs."""
 
 from __future__ import annotations
 
@@ -6,31 +6,36 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from tallylot.application.balances import (
+from tallylot.application.balances.contracts import (
+    BalanceInspectRequest,
+    BalanceInspectResponse,
+)
+from tallylot.application.balances.filenames import (
     BALANCE_REFERENCE_FILENAME,
     BALANCE_SNAPSHOT_FILENAME,
 )
-from tallylot.application.reconciliation.balances.contracts import (
-    BalanceCoverageRequest,
-    BalanceCoverageResponse,
-)
-from tallylot.application.reconciliation.balances.records import (
-    BALANCE_COVERAGE_HEADER,
-    BalanceCoverageRecord,
-)
-from tallylot.application.reconciliation.balances.sources import (
+from tallylot.application.balances.inputs import (
+    BalanceSourceInputs,
+    build_balance_source_inputs,
     discover_balance_source_dirs,
+)
+from tallylot.application.balances.records import (
+    BALANCE_INSPECT_HEADER,
+    BalanceInspectRecord,
 )
 from tallylot.application.resource_refs import path_from_ref, to_resource_ref
 from tallylot.application.workspace.filesystem import (
     ensure_output_not_within_input_tree,
 )
+from tallylot.domain.balances import BalanceReference, BalanceSnapshot
 from tallylot.domain.types import JsonValue
 from tallylot.ports.artifacts import ArtifactStorePort
+from tallylot.ports.evidence import EvidenceRepositoryPort
+from tallylot.ports.facts import FactRepositoryPort
 
 
 @dataclass(frozen=True)
-class _CoverageInputs:
+class _InspectInputs:
     snapshot_exists: bool
     reference_exists: bool
     snapshot_count: int
@@ -40,58 +45,69 @@ class _CoverageInputs:
     reference_kind_count: int
 
 
-class BalanceCoverageWorkflow:
-    def __init__(self, artifacts: ArtifactStorePort) -> None:
+class BalanceInspectWorkflow:
+    def __init__(
+        self,
+        *,
+        facts: FactRepositoryPort,
+        evidence: EvidenceRepositoryPort,
+        artifacts: ArtifactStorePort,
+    ) -> None:
+        self._facts = facts
+        self._evidence = evidence
         self._artifacts = artifacts
 
-    def execute(self, request: BalanceCoverageRequest) -> BalanceCoverageResponse:
+    def execute(self, request: BalanceInspectRequest) -> BalanceInspectResponse:
         input_root = path_from_ref(request.input_root_ref)
-        coverage_output_path = path_from_ref(request.coverage_output_ref)
-        summary_output_path = coverage_output_path.with_name(
-            "balance_coverage_summary.json"
+        inspect_output_path = path_from_ref(request.inspect_output_ref)
+        summary_output_path = inspect_output_path.with_name(
+            "balance_inspect_summary.json"
         )
         _ensure_output_paths_are_safe(
-            input_root, coverage_output_path, summary_output_path
+            input_root, inspect_output_path, summary_output_path
         )
-        _clear_generated_balance_coverage_outputs(coverage_output_path)
+        _clear_generated_balance_inspect_outputs(inspect_output_path)
         source_dirs = discover_balance_source_dirs(input_root)
-        records = tuple(
-            _build_coverage_record(self._artifacts, source_dir.root)
+        source_inputs = tuple(
+            build_balance_source_inputs(
+                source_dir,
+                facts=self._facts,
+                evidence=self._evidence,
+                artifacts=self._artifacts,
+            )
             for source_dir in source_dirs
+        )
+        records = tuple(
+            _build_inspect_record(source_input) for source_input in source_inputs
         )
         if records:
             self._artifacts.write_rows(
-                coverage_output_path,
-                BALANCE_COVERAGE_HEADER,
+                inspect_output_path,
+                BALANCE_INSPECT_HEADER,
                 (record.to_row() for record in records),
             )
         self._artifacts.write_json(
             summary_output_path,
-            _coverage_summary_payload(records),
+            _inspect_summary_payload(records),
         )
-        return BalanceCoverageResponse(
-            coverage_output_ref=request.coverage_output_ref,
-            coverage_summary_output_ref=to_resource_ref(summary_output_path),
+        return BalanceInspectResponse(
+            inspect_output_ref=request.inspect_output_ref,
+            inspect_summary_output_ref=to_resource_ref(summary_output_path),
             source_count=len(records),
             comparable_source_count=sum(
-                record.coverage_status in {"resolved_reference", "mixed_reference"}
+                record.inspect_status in {"resolved_reference", "mixed_reference"}
                 for record in records
             ),
         )
 
 
-def _build_coverage_record(
-    artifacts: ArtifactStorePort,
-    source_root: Path,
-) -> BalanceCoverageRecord:
-    snapshot_path = source_root / BALANCE_SNAPSHOT_FILENAME
-    reference_path = source_root / BALANCE_REFERENCE_FILENAME
-    snapshot_rows = (
-        artifacts.read_rows(snapshot_path) if snapshot_path.is_file() else []
-    )
-    reference_rows = (
-        artifacts.read_rows(reference_path) if reference_path.is_file() else []
-    )
+def _build_inspect_record(
+    source_input: BalanceSourceInputs,
+) -> BalanceInspectRecord:
+    snapshot_exists = (source_input.root / BALANCE_SNAPSHOT_FILENAME).is_file()
+    reference_exists = (source_input.root / BALANCE_REFERENCE_FILENAME).is_file()
+    snapshot_rows = source_input.snapshots
+    reference_rows = source_input.references
     snapshot_dates = _row_dates(snapshot_rows)
     reference_dates = _reference_dates(reference_rows)
     snapshot_keys = _logical_keys(snapshot_rows)
@@ -100,9 +116,9 @@ def _build_coverage_record(
     for kind_keys in references_by_kind.values():
         resolved_reference_keys.update(kind_keys)
     missing_reference_count = len(snapshot_keys - resolved_reference_keys)
-    coverage_inputs = _CoverageInputs(
-        snapshot_exists=snapshot_path.is_file(),
-        reference_exists=reference_path.is_file(),
+    inspect_inputs = _InspectInputs(
+        snapshot_exists=snapshot_exists,
+        reference_exists=reference_exists,
         snapshot_count=len(snapshot_rows),
         reference_row_count=len(reference_rows),
         reference_count=len(snapshot_keys & resolved_reference_keys),
@@ -111,9 +127,9 @@ def _build_coverage_record(
             1 for kind_keys in references_by_kind.values() if kind_keys
         ),
     )
-    return BalanceCoverageRecord(
-        source=source_root.name,
-        coverage_status=_coverage_status(coverage_inputs),
+    return BalanceInspectRecord(
+        source=source_input.source,
+        inspect_status=_inspect_status(inspect_inputs),
         snapshot_count=len(snapshot_rows),
         reference_count=len(reference_rows),
         source_document_count=len(
@@ -131,7 +147,7 @@ def _build_coverage_record(
     )
 
 
-def _coverage_status(inputs: _CoverageInputs) -> str:
+def _inspect_status(inputs: _InspectInputs) -> str:
     if (
         inputs.snapshot_exists
         and inputs.reference_exists
@@ -150,34 +166,36 @@ def _coverage_status(inputs: _CoverageInputs) -> str:
     return status
 
 
-def _row_dates(rows: list[dict[str, str]]) -> tuple[str, ...]:
+def _row_dates(rows: tuple[BalanceSnapshot, ...]) -> tuple[str, ...]:
     return tuple(
-        row["target_at"][:10] for row in rows if row.get("target_at", "").strip()
+        str(row.target.target_at)[:10]
+        for row in rows
+        if str(row.target.target_at).strip()
     )
 
 
-def _logical_keys(rows: list[dict[str, str]]) -> set[tuple[str, ...]]:
+def _logical_keys(rows: tuple[BalanceSnapshot, ...]) -> set[tuple[str, ...]]:
     return {
         (
-            row.get("source", "").strip(),
-            row.get("location_id", "").strip(),
-            row.get("instrument_id", "").strip(),
-            row.get("balance_kind", "").strip() or "available",
-            row.get("target_at", "").strip(),
-            row.get("target_precision", "").strip(),
+            str(row.target.source).strip(),
+            str(row.target.location_id).strip(),
+            str(row.target.instrument_id).strip(),
+            str(row.target.balance_kind).strip() or "available",
+            str(row.target.target_at).strip(),
+            row.target.target_precision.value,
         )
         for row in rows
     }
 
 
-def _reference_dates(rows: list[dict[str, str]]) -> tuple[str, ...]:
+def _reference_dates(rows: tuple[BalanceReference, ...]) -> tuple[str, ...]:
     return tuple(
-        row["observed_at"][:10] for row in rows if row.get("observed_at", "").strip()
+        str(row.observed_at)[:10] for row in rows if str(row.observed_at).strip()
     )
 
 
 def _reference_keys_by_kind(
-    rows: list[dict[str, str]],
+    rows: tuple[BalanceReference, ...],
 ) -> dict[str, set[tuple[str, ...]]]:
     grouped: dict[str, set[tuple[str, ...]]] = {
         "source_document": set(),
@@ -185,45 +203,43 @@ def _reference_keys_by_kind(
         "operator_assertion": set(),
     }
     for row in rows:
-        reference_kind = row.get("reference_kind", "").strip()
+        reference_kind = row.reference_kind.value
         if reference_kind not in grouped:
             continue
         grouped[reference_kind].add(
             (
-                row.get("source", "").strip(),
-                row.get("location_id", "").strip(),
-                row.get("instrument_id", "").strip(),
-                row.get("balance_kind", "").strip() or "available",
-                row.get("target_at", "").strip(),
-                row.get("target_precision", "").strip(),
+                str(row.target.source).strip(),
+                str(row.target.location_id).strip(),
+                str(row.target.instrument_id).strip(),
+                str(row.target.balance_kind).strip() or "available",
+                str(row.target.target_at).strip(),
+                row.target.target_precision.value,
             )
         )
     return grouped
 
 
-def _coverage_summary_payload(
-    records: tuple[BalanceCoverageRecord, ...],
+def _inspect_summary_payload(
+    records: tuple[BalanceInspectRecord, ...],
 ) -> dict[str, JsonValue]:
-    coverage_status_counts = Counter(record.coverage_status for record in records)
+    inspect_status_counts = Counter(record.inspect_status for record in records)
     return {
         "source_count": len(records),
         "comparable_source_count": sum(
-            coverage_status_counts.get(status, 0)
+            inspect_status_counts.get(status, 0)
             for status in ("resolved_reference", "mixed_reference")
         ),
-        "resolved_reference_source_count": coverage_status_counts.get(
+        "resolved_reference_source_count": inspect_status_counts.get(
             "resolved_reference", 0
         ),
-        "mixed_reference_source_count": coverage_status_counts.get(
-            "mixed_reference", 0
-        ),
-        "missing_snapshot_source_count": coverage_status_counts.get(
+        "mixed_reference_source_count": inspect_status_counts.get("mixed_reference", 0),
+        "missing_snapshot_source_count": inspect_status_counts.get(
             "missing_snapshots", 0
         ),
-        "missing_reference_source_count": coverage_status_counts.get(
+        "missing_reference_source_count": inspect_status_counts.get(
             "missing_reference", 0
         ),
-        "empty_source_count": coverage_status_counts.get("empty_source", 0),
+        "empty_source_count": inspect_status_counts.get("empty_source", 0),
     }
 
 
@@ -233,14 +249,14 @@ def _ensure_output_paths_are_safe(input_root: Path, *output_paths: Path) -> None
             input_root,
             output_path,
             input_label="balance input root",
-            output_label="balance coverage output",
+            output_label="balance inspect output",
         )
 
 
-def _clear_generated_balance_coverage_outputs(coverage_output_path: Path) -> None:
+def _clear_generated_balance_inspect_outputs(inspect_output_path: Path) -> None:
     for path in (
-        coverage_output_path,
-        coverage_output_path.with_name("balance_coverage_summary.json"),
+        inspect_output_path,
+        inspect_output_path.with_name("balance_inspect_summary.json"),
     ):
         if path.is_file() or path.is_symlink():
             path.unlink()
