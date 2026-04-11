@@ -611,3 +611,62 @@ def test_balance_check_workflow_respects_explicit_as_of_values(
     assert assertion_rows[0]["target_at"] == "2025-12-30 00:00:00"
     assert assertion_rows[0]["snapshot_quantity"] == "1"
     assert assertion_rows[0]["status"] == "matched"
+
+
+def test_balance_check_workflow_respects_explicit_date_only_as_of_values(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    input_root.mkdir()
+
+    as_of = datetime(2025, 12, 30, tzinfo=UTC)
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=as_of,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+            as_of_values=("2025-12-30",),
+            hydrate_missing_references=False,
+        )
+    )
+
+    assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert len(assertion_rows) == 1
+    assert assertion_rows[0]["target_at"] == "2025-12-30"
+    assert assertion_rows[0]["target_precision"] == "date"
+    assert check_summary_rows[0]["max_assertion_date"] == "2025-12-30"

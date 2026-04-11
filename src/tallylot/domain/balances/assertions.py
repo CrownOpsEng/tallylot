@@ -41,12 +41,17 @@ def assert_balance_targets(
     assertions: list[BalanceAssertion] = []
     for target in sorted(set(snapshot_index) | set(reference_index)):
         snapshot = snapshot_index.get(target)
-        selected_reference, selection_issues = _selected_reference(
+        selected_reference, selection_status, selection_issues = _selected_reference(
             target,
             reference_index.get(target, ()),
         )
         issues.extend(selection_issues)
-        assertion = _build_assertion(target, snapshot, selected_reference)
+        assertion = _build_assertion(
+            target,
+            snapshot,
+            selected_reference,
+            selection_status,
+        )
         assertions.append(assertion)
         if assertion.status is not BalanceAssertionStatus.MATCHED:
             issues.append(_assertion_issue(assertion))
@@ -87,9 +92,13 @@ def _index_references(
 def _selected_reference(
     target: BalanceTarget,
     references: tuple[BalanceReference, ...],
-) -> tuple[BalanceReference | None, tuple[IssueRecord, ...]]:
+) -> tuple[
+    BalanceReference | None,
+    BalanceAssertionStatus | None,
+    tuple[IssueRecord, ...],
+]:
     if not references:
-        return None, ()
+        return None, None, ()
     for reference_kind in _REFERENCE_PRECEDENCE:
         matching = tuple(
             reference
@@ -99,42 +108,47 @@ def _selected_reference(
         if not matching:
             continue
         if len(matching) > 1:
-            return None, (
-                IssueRecord(
-                    issue_id=":".join(
-                        (
-                            str(target.source),
-                            str(target.location_id),
-                            str(target.instrument_id),
-                            target.balance_kind,
-                            "conflicting_balance_references",
-                            reference_kind.value,
-                        )
+            return (
+                None,
+                BalanceAssertionStatus.REFERENCE_CONFLICT,
+                (
+                    IssueRecord(
+                        issue_id=":".join(
+                            (
+                                str(target.source),
+                                str(target.location_id),
+                                str(target.instrument_id),
+                                target.balance_kind,
+                                "conflicting_balance_references",
+                                reference_kind.value,
+                            )
+                        ),
+                        source=str(target.source),
+                        adapter_id="balances",
+                        severity="high",
+                        kind="conflicting_balance_references",
+                        message=(
+                            "More than one balance reference with the same precedence "
+                            "matched one balance target."
+                        ),
+                        context_timestamp=format_temporal_value(
+                            target.target_at,
+                            precision=target.target_precision,
+                            label="conflicting balance references target_at",
+                        ),
+                        raw_file="",
                     ),
-                    source=str(target.source),
-                    adapter_id="balances",
-                    severity="high",
-                    kind="conflicting_balance_references",
-                    message=(
-                        "More than one balance reference with the same precedence "
-                        "matched one balance target."
-                    ),
-                    context_timestamp=format_temporal_value(
-                        target.target_at,
-                        precision=target.target_precision,
-                        label="conflicting balance references target_at",
-                    ),
-                    raw_file="",
                 ),
             )
-        return next(iter(matching)), ()
-    return None, ()
+        return next(iter(matching)), None, ()
+    return None, None, ()
 
 
 def _build_assertion(
     target: BalanceTarget,
     snapshot: BalanceSnapshot | None,
     reference: BalanceReference | None,
+    selection_status: BalanceAssertionStatus | None,
 ) -> BalanceAssertion:
     snapshot_quantity = None if snapshot is None else snapshot.quantity
     reference_quantity = None if reference is None else reference.quantity
@@ -144,7 +158,7 @@ def _build_assertion(
         reference_quantity=reference_quantity,
         difference=(snapshot_quantity or Decimal("0"))
         - (reference_quantity or Decimal("0")),
-        status=_assertion_status(snapshot, reference),
+        status=_assertion_status(snapshot, reference, selection_status),
         selected_reference_kind=(
             None if reference is None else reference.reference_kind
         ),
@@ -166,7 +180,10 @@ def _build_assertion(
 def _assertion_status(
     snapshot: BalanceSnapshot | None,
     reference: BalanceReference | None,
+    selection_status: BalanceAssertionStatus | None,
 ) -> BalanceAssertionStatus:
+    if selection_status is BalanceAssertionStatus.REFERENCE_CONFLICT:
+        return selection_status
     if snapshot is None:
         return BalanceAssertionStatus.MISSING_SNAPSHOT
     if reference is None:
@@ -183,6 +200,7 @@ def _observation_gap(target: BalanceTarget, reference: BalanceReference) -> str:
 
 def _assertion_issue(assertion: BalanceAssertion) -> IssueRecord:
     issue_kind = f"balance_{assertion.status.value}"
+    status_label = assertion.status.value.replace("_", " ")
     return IssueRecord(
         issue_id=":".join(
             (
@@ -198,7 +216,7 @@ def _assertion_issue(assertion: BalanceAssertion) -> IssueRecord:
         severity="high",
         kind=issue_kind,
         message=(
-            f"Balance assertion {assertion.status.value} for "
+            f"Balance assertion {status_label} for "
             f"{assertion.location_id} {assertion.instrument_id}."
         ),
         context_timestamp=format_temporal_value(

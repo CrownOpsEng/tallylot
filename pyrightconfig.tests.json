@@ -41,6 +41,14 @@
       "reportPrivateUsage": false
     },
     {
+      "root": "src/tallylot/adapters/sources/explorers/ronin/translation/tests",
+      "extraPaths": [
+        "src",
+        "."
+      ],
+      "reportPrivateUsage": false
+    },
+    {
       "root": "src/tallylot/adapters/sources/generic/structured_csv/tests",
       "extraPaths": [
         "src",

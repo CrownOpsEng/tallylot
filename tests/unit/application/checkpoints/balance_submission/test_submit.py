@@ -334,6 +334,84 @@ def test_submit_balances_rejects_missing_matching_reference_row(
     assert "missing_matching_reference" in {row["issue_kind"] for row in issue_rows}
 
 
+def test_submit_balances_rejects_conflicting_snapshot_rows_for_same_target(
+    tmp_path: Path,
+) -> None:
+    submission_root = tmp_path / "submission" / "coinbase"
+    output_root = tmp_path / "normalized" / "coinbase"
+    _write_valid_required_files(submission_root, source="coinbase")
+    snapshot_rows = FilesystemArtifactStore().read_rows(
+        submission_root / "balance_snapshots.csv"
+    )
+    snapshot_rows.append(
+        {
+            **snapshot_rows[0],
+            "quantity": "2.50",
+        }
+    )
+    _write_rows(
+        submission_root / "balance_snapshots.csv",
+        BALANCE_SNAPSHOTS_HEADER,
+        tuple(snapshot_rows),
+    )
+
+    response = submit_balances_use_case().execute(
+        SubmitBalancesRequest(
+            source="coinbase",
+            submission_root_ref=to_resource_ref(submission_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    issue_rows = FilesystemArtifactStore().read_rows(
+        output_root / "balance_submission_issues.csv"
+    )
+
+    assert response.blocked is True
+    assert response.wrote_balance_snapshots is False
+    assert "duplicate_row" in {row["issue_kind"] for row in issue_rows}
+    assert not (output_root / "balance_snapshots.csv").exists()
+
+
+def test_submit_balances_rejects_conflicting_reference_rows_for_same_target(
+    tmp_path: Path,
+) -> None:
+    submission_root = tmp_path / "submission" / "coinbase"
+    output_root = tmp_path / "normalized" / "coinbase"
+    _write_valid_required_files(submission_root, source="coinbase")
+    reference_rows = FilesystemArtifactStore().read_rows(
+        submission_root / "balance_references.csv"
+    )
+    reference_rows.append(
+        {
+            **reference_rows[0],
+            "quantity": "2.50",
+        }
+    )
+    _write_rows(
+        submission_root / "balance_references.csv",
+        BALANCE_REFERENCES_HEADER,
+        tuple(reference_rows),
+    )
+
+    response = submit_balances_use_case().execute(
+        SubmitBalancesRequest(
+            source="coinbase",
+            submission_root_ref=to_resource_ref(submission_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    issue_rows = FilesystemArtifactStore().read_rows(
+        output_root / "balance_submission_issues.csv"
+    )
+
+    assert response.blocked is True
+    assert response.wrote_balance_references is False
+    assert "duplicate_row" in {row["issue_kind"] for row in issue_rows}
+    assert not (output_root / "balance_references.csv").exists()
+
+
 def test_submit_balances_rejects_orphan_reference_row(tmp_path: Path) -> None:
     submission_root = tmp_path / "submission" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"

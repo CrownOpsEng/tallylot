@@ -59,7 +59,7 @@ Reconciliation reads only assembled source datasets from
 `fact_annotations.json` preserves fact-keyed provenance references and
 review markers that originate on drafts.
 
-`facts.csv` is schema-versioned and stores canonical signed legs keyed by
+`facts.csv` is schema-versioned and stores signed transaction legs keyed by
 `instrument_id`.
 
 `balance_snapshots.csv` contains application-derived balances from transaction

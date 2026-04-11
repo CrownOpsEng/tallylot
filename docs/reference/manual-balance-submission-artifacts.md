@@ -154,8 +154,12 @@ The submit workflow is strict and deterministic.
 - `target_at` and `target_precision` must form a valid persisted temporal
   value.
 - `balance_kind` must normalize successfully.
-- Duplicate logical snapshot rows block the run.
-- Duplicate logical reference rows block the run.
+- Duplicate logical snapshot rows block the run. The logical key is
+  `source`, `account`, `wallet`, `instrument_id`, `target_at`,
+  `target_precision`, and `balance_kind`.
+- Duplicate logical reference rows block the run. The logical key is
+  `source`, `account`, `wallet`, `instrument_id`, `target_at`,
+  `target_precision`, and `balance_kind`.
 - Every snapshot row must have exactly one matching reference row on
   `source`, `account`, `wallet`, `instrument_id`, `quantity`, `target_at`,
   `target_precision`, and `balance_kind`.

@@ -41,6 +41,32 @@ def test_balance_target_requires_temporal_value() -> None:
     assert target.target_at.tzinfo is UTC
 
 
+def test_balance_target_requires_midnight_for_date_precision() -> None:
+    target = BalanceTarget(
+        source=SourceId("fixture"),
+        location_id=LocationId("taxable:spot"),
+        instrument_id=InstrumentId("symbol:BTC"),
+        balance_kind="available",
+        target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+        target_precision=TemporalPrecision.DATE,
+    )
+
+    assert target.target_at == datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC)
+
+    with pytest.raises(
+        ValueError,
+        match="balance target target_at with date precision must be midnight UTC",
+    ):
+        BalanceTarget(
+            source=SourceId("fixture"),
+            location_id=LocationId("taxable:spot"),
+            instrument_id=InstrumentId("symbol:BTC"),
+            balance_kind="available",
+            target_at=datetime(2025, 1, 1, 1, 0, 0, tzinfo=UTC),
+            target_precision=TemporalPrecision.DATE,
+        )
+
+
 def test_balance_target_requires_non_blank_instrument_id() -> None:
     with pytest.raises(
         ValueError, match="balance target instrument_id must not be blank"
@@ -164,6 +190,44 @@ def test_balance_reference_requires_temporal_values_and_kind_rules() -> None:
     assert reference.observed_at.tzinfo is UTC
     assert reference.reviewed_at is not None
     assert reference.reviewed_at.tzinfo is UTC
+
+
+def test_balance_reference_requires_midnight_for_date_precision() -> None:
+    reference = BalanceReference(
+        target=BalanceTarget(
+            source=SourceId("fixture"),
+            location_id=LocationId("taxable:spot"),
+            instrument_id=InstrumentId("symbol:BTC"),
+            balance_kind="available",
+            target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            target_precision=TemporalPrecision.DATE,
+        ),
+        quantity=Decimal("1"),
+        reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+        observed_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+        observed_precision=TemporalPrecision.DATE,
+    )
+
+    assert reference.observed_at == datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC)
+
+    with pytest.raises(
+        ValueError,
+        match="balance reference observed_at with date precision must be midnight UTC",
+    ):
+        BalanceReference(
+            target=BalanceTarget(
+                source=SourceId("fixture"),
+                location_id=LocationId("taxable:spot"),
+                instrument_id=InstrumentId("symbol:BTC"),
+                balance_kind="available",
+                target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                target_precision=TemporalPrecision.DATE,
+            ),
+            quantity=Decimal("1"),
+            reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            observed_at=datetime(2025, 1, 1, 1, 0, 0, tzinfo=UTC),
+            observed_precision=TemporalPrecision.DATE,
+        )
 
 
 def test_balance_reference_rejects_invalid_reviewed_fields() -> None:

@@ -300,8 +300,12 @@ def test_assert_balance_targets_surfaces_conflicting_same_precedence_references(
         ),
     )
 
-    assert result.assertions[0].status is BalanceAssertionStatus.MISSING_REFERENCE
+    assert result.assertions[0].status is BalanceAssertionStatus.REFERENCE_CONFLICT
+    assert result.assertions[0].selected_reference_kind is None
+    assert result.assertions[0].reference_quantity is None
+    assert result.assertions[0].to_row()["status"] == "reference_conflict"
+    assert result.assertions[0].to_row()["selected_reference_kind"] == ""
     assert [issue.kind for issue in result.issues] == [
         "conflicting_balance_references",
-        "balance_missing_reference",
+        "balance_reference_conflict",
     ]

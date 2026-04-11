@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
 from tallylot.domain.balances import (
     BalanceReference,
     BalanceReferenceKind,
@@ -69,6 +71,54 @@ def test_balance_reference_from_row_defaults_blank_balance_kind() -> None:
     assert reference.target_at == datetime(2025, 12, 31, tzinfo=UTC)
     assert reference.observed_at == datetime(2025, 12, 31, tzinfo=UTC)
     assert reference.support_ref == "statement.pdf#page=1"
+
+
+def test_balance_reference_from_row_parses_network_api_reference_fields() -> None:
+    reference = balance_reference_from_row(
+        {
+            "source": "coinbase",
+            "location_id": "coinbase",
+            "instrument_id": "BTC",
+            "balance_kind": "available",
+            "target_at": "2025-12-31 23:59:59",
+            "target_precision": "timestamp",
+            "quantity": "1.25",
+            "reference_kind": "network_api",
+            "observed_at": "2025-12-31 23:59:59",
+            "observed_precision": "timestamp",
+            "support_ref": "",
+            "provider_family": "evm_json_rpc",
+            "provider_locator": "rpc://example",
+            "provider_block_ref": "block:123",
+            "reviewed_by": "",
+            "reviewed_at": "",
+            "notes": "network",
+        }
+    )
+
+    assert reference.reference_kind is BalanceReferenceKind.NETWORK_API
+    assert reference.provider_family == "evm_json_rpc"
+    assert reference.provider_locator == "rpc://example"
+    assert reference.provider_block_ref == "block:123"
+    assert reference.reviewed_at is None
+    assert reference.notes == "network"
+
+
+def test_balance_snapshot_from_row_rejects_missing_quantity() -> None:
+    with pytest.raises(ValueError, match="missing required decimal field: quantity"):
+        balance_snapshot_from_row(
+            {
+                "source": "coinbase",
+                "location_id": "coinbase",
+                "instrument_id": "BTC",
+                "balance_kind": "available",
+                "target_at": "2025-12-31 23:59:59",
+                "target_precision": "timestamp",
+                "quantity": "",
+                "snapshot_basis": "fact_cutoff",
+                "notes": "",
+            }
+        )
 
 
 def test_balance_snapshot_repository_round_trip(tmp_path: Path) -> None:
