@@ -89,6 +89,9 @@ class BalanceCheckWorkflow:
                 single_source=single_source,
             )
             _clear_generated_balance_check_outputs(source_output_root)
+            _clear_generated_balance_reference_issue_output(
+                source_dir.reference_issue_path
+            )
             if not _is_runnable_source_dir(source_dir):
                 continue
             records.append(

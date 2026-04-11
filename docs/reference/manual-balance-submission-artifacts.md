@@ -148,6 +148,7 @@ The submit workflow is strict and deterministic.
 - `balance_snapshots.csv` and `balance_references.csv` must exist as filled
   files.
 - Headers must match exactly.
+- Rows must not include extra values beyond the declared header.
 - Required fields must be non-blank.
 - `quantity` must parse as `Decimal`.
 - `target_at` and `target_precision` must form a valid persisted temporal

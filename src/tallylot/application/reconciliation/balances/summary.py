@@ -163,12 +163,16 @@ def _summary_payload(
             for source in operational_sources
         )
     )
-    all_sources_with_resolved_references = bool(coverage_records) and all(
-        (
-            source in check_by_source
-            and bool(check_by_source[source].latest_resolved_reference_checked_date)
+    all_sources_with_resolved_references = (
+        bool(coverage_records)
+        and len(operational_sources) == len(coverage_records)
+        and all(
+            (
+                source in check_by_source
+                and bool(check_by_source[source].latest_resolved_reference_checked_date)
+            )
+            for source in operational_sources
         )
-        for source in (record.source for record in coverage_records)
     )
     latest_portfolio_clean_date = (
         min(
@@ -180,8 +184,8 @@ def _summary_payload(
     )
     latest_portfolio_resolved_reference_date = (
         min(
-            check_by_source[record.source].latest_resolved_reference_checked_date
-            for record in coverage_records
+            check_by_source[source].latest_resolved_reference_checked_date
+            for source in operational_sources
         )
         if all_sources_with_resolved_references
         else ""

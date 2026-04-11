@@ -192,6 +192,32 @@ def test_submit_balances_rejects_invalid_header(tmp_path: Path) -> None:
     assert issue_rows[0]["issue_kind"] == "invalid_header"
 
 
+def test_submit_balances_rejects_extra_row_values(tmp_path: Path) -> None:
+    submission_root = tmp_path / "submission" / "coinbase"
+    output_root = tmp_path / "normalized" / "coinbase"
+    _write_valid_required_files(submission_root, source="coinbase")
+    reference_path = submission_root / "balance_references.csv"
+    reference_path.write_text(
+        reference_path.read_text(encoding="utf-8").rstrip() + ",EXTRA\n",
+        encoding="utf-8",
+    )
+
+    response = submit_balances_use_case().execute(
+        SubmitBalancesRequest(
+            source="coinbase",
+            submission_root_ref=to_resource_ref(submission_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    issue_rows = FilesystemArtifactStore().read_rows(
+        output_root / "balance_submission_issues.csv"
+    )
+
+    assert response.blocked is True
+    assert "unexpected_extra_value" in {row["issue_kind"] for row in issue_rows}
+
+
 @pytest.mark.parametrize(
     ("field", "value", "expected_issue_kind"),
     (

@@ -180,12 +180,37 @@ def _read_rows(
             )
         )
         return []
+    rows: list[tuple[int, dict[str, str]]] = []
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        dict_reader = csv.DictReader(handle)
-        return [
-            (index, {key: value for key, value in row.items() if key is not None})
-            for index, row in enumerate(dict_reader, start=2)
-        ]
+        reader = csv.reader(handle)
+        next(reader, None)
+        for index, raw_row in enumerate(reader, start=2):
+            extra_values = raw_row[len(header) :]
+            if extra_values:
+                issues.append(
+                    BalanceSubmissionIssue(
+                        file_name=path.name,
+                        row_number=str(index),
+                        column_name="",
+                        issue_kind="unexpected_extra_value",
+                        message=(
+                            f"{path.name} row has unexpected extra values beyond "
+                            "the declared header."
+                        ),
+                    )
+                )
+            rows.append(
+                (
+                    index,
+                    {
+                        field_name: (
+                            raw_row[position] if position < len(raw_row) else ""
+                        )
+                        for position, field_name in enumerate(header)
+                    },
+                )
+            )
+    return rows
 
 
 def _has_required_file_issue(

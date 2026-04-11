@@ -325,6 +325,75 @@ def test_balance_check_workflow_clears_stale_reference_issue_cache(
     assert not (input_root / "balance_reference_issues.csv").exists()
 
 
+def test_balance_check_workflow_clears_stale_reference_issue_cache_when_source_stops_runnable(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+    input_root.mkdir()
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+            _fact(
+                fact_id="fact-2",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="ETH",
+                quantity="2.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=as_of,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    workflow = BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    )
+    workflow.execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+    assert (input_root / "balance_reference_issues.csv").exists()
+    (input_root / "facts.csv").unlink()
+
+    workflow.execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    assert not (input_root / "balance_reference_issues.csv").exists()
+
+
 def test_balance_check_rejects_capture_normalized_roots(tmp_path: Path) -> None:
     input_root = tmp_path / "working" / "normalized" / "captures"
     output_root = tmp_path / "analysis"

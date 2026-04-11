@@ -50,7 +50,7 @@ Normal runtime operation must stay platform-agnostic:
 
 The first major milestone after fact-path alignment is deterministic
 reconciliation, not ACB math. Minimal accounting projection should advance in
-parallel on the same canonical facts.
+parallel on the same shared facts.
 
 Reason:
 
@@ -161,7 +161,7 @@ Rules:
 - Friendly source labels, wallet names, and renderer-facing labels stay in
   `source`, `location_label`, annotations, and output-adapter display logic.
 - Output adapters such as CoinTracking may render the source label for
-  on-chain facts, but they must not rewrite or own the canonical `location_id`.
+  on-chain facts, but they must not rewrite or own the runtime `location_id`.
 
 ### 10. Route Source Families By Content And Block Mixed Captures
 
@@ -187,7 +187,7 @@ export periods it contains.
 
 Rules:
 
-- use an immutable `capture_uid` as the canonical capture identity
+- use a stable `capture_uid` as the capture identity
 - use a human-readable `capture_label` only for the raw folder name
 - treat inferred periods and any inferred `capture_id` heuristics as metadata,
   not as the routing key, grouping identity, or capture ownership model
@@ -289,12 +289,12 @@ Rules:
 
 - the user-facing package under
   `working/supporting_artifacts/balance_submissions/<source>/` is a
-  pre-canonical checkpoint input surface
+  checkpoint-owned pre-reconciliation input surface
 - `checkpoint scaffold-balance-submission` and `checkpoint submit-balances`
   own that validation and materialization path inside
   `application/checkpoints/`
-- the canonical reconciliation schema still lives under the chosen output
-  root, normally `working/normalized/sources/<source>/`
+- the shared reconciliation schema still lives under the chosen output root,
+  normally `working/normalized/sources/<source>/`
 - manual submission records `operator_assertion` runtime references and must
   not fabricate or widen source-backed `source_document` references
 - runtime reconciliation resolves references through one unified
@@ -305,8 +305,8 @@ Rules:
 - optional submitted `location_inventory.csv` improves cross-source
   corroboration, but omitting it does not block source-local balance checks
 - manual submission must preserve explicit user-provided `instrument_id`
-  values and derive canonical `location_id` values through shared runtime
-  helpers rather than hand-authored location identifiers
+  values and derive `location_id` values through shared runtime helpers rather
+  than hand-authored location identifiers
 
 ## Target Architecture
 
@@ -491,7 +491,7 @@ The only lost capability should be comparison against the external oracle.
 
 ### Current Fact-Shape Contract
 
-- `TransactionFact` and `EconomicActivityDraft` use one canonical `legs` tuple.
+- `TransactionFact` and `EconomicActivityDraft` use one shared `legs` tuple.
 - Fact construction requires successful identifier resolution to exactly one
   `InstrumentId`. Unresolved or ambiguous identity must emit review output and a
   blocking issue rather than guessing.
@@ -564,7 +564,7 @@ The only lost capability should be comparison against the external oracle.
 ### Capture And Assembly Contract
 
 - raw capture roots use `evidence/raw/source/<source>/<capture_label>/`
-- capture metadata stores the canonical `capture_uid`, intake timestamps,
+- capture metadata stores the stable `capture_uid`, intake timestamps,
   manifest fingerprint, and workspace-relative refs
 - untouched upstream originals stay under the raw capture root even when they
   are statements, HTML exports, ZIP archives, or required sidecars
@@ -592,7 +592,7 @@ Required draft responsibilities:
 - optional `effective_at`
 - optional `effective_precision`
 - account and wallet scope
-- one canonical `legs` tuple only; no separate fee lane
+- one shared `legs` tuple only; no separate fee lane
 - explicit leg semantics per leg:
   - stable `leg_id`
   - `LegKind`
@@ -654,7 +654,7 @@ Required fields:
   - ownership scope
 - economics
   - `tuple[EconomicLeg, ...]`
-  - legs use canonical `InstrumentId`
+  - legs use `InstrumentId`
   - legs carry stable `leg_id`
   - legs use signed `quantity: Decimal`
   - explicit per-kind leg-shape policy

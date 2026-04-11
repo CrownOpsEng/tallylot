@@ -183,3 +183,68 @@ def test_balance_summary_workflow_distinguishes_resolved_reference_dates(
     assert payload["resolved_reference_source_count"] == 2
     assert payload["mixed_reference_source_count"] == 0
     assert not blocker_path.exists()
+
+
+def test_balance_summary_workflow_requires_resolved_coverage_for_portfolio_date(
+    tmp_path: Path,
+) -> None:
+    coverage_path = tmp_path / "balance_coverage.csv"
+    check_summary_path = tmp_path / "balance_check_summary.csv"
+    output_path = tmp_path / "balance_reconciliation_summary.json"
+
+    write_rows(
+        coverage_path,
+        BALANCE_COVERAGE_HEADER,
+        (
+            BalanceCoverageRecord(
+                source="partial-source",
+                coverage_status="missing_reference",
+                snapshot_count=2,
+                reference_count=1,
+                source_document_count=1,
+                missing_reference_count=1,
+                min_snapshot_date="2026-03-23",
+                max_snapshot_date="2026-03-23",
+                min_reference_date="2026-03-23",
+                max_reference_date="2026-03-23",
+            ).to_row(),
+        ),
+    )
+    write_rows(
+        check_summary_path,
+        BALANCE_CHECK_SUMMARY_HEADER,
+        (
+            BalanceCheckSummaryRecord(
+                source="partial-source",
+                check_status="issues",
+                assertion_count=2,
+                issue_count=2,
+                min_assertion_date="2026-03-23",
+                max_assertion_date="2026-03-23",
+                latest_clean_checked_date="",
+                latest_resolved_reference_checked_date="2026-03-23",
+                assertion_status_counts=(("matched", 1), ("missing_reference", 1)),
+                selected_reference_kind_counts=(("source_document", 1),),
+                issue_kind_counts=(
+                    ("balance_missing_reference", 1),
+                    ("missing_balance_reference", 1),
+                ),
+            ).to_row(),
+        ),
+    )
+
+    response = BalanceSummaryWorkflow(FilesystemArtifactStore()).execute(
+        BalanceSummaryRequest(
+            coverage_input_ref=to_resource_ref(coverage_path),
+            check_summary_input_ref=to_resource_ref(check_summary_path),
+            summary_output_ref=to_resource_ref(output_path),
+        )
+    )
+
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+    assert response.latest_portfolio_clean_date == ""
+    assert response.latest_portfolio_resolved_reference_date == ""
+    assert payload["latest_portfolio_clean_date"] == ""
+    assert payload["latest_portfolio_resolved_reference_date"] == ""
+    assert payload["blocker_kind_counts"]["missing_reference"] == 1
