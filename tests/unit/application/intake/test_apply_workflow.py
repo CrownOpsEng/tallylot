@@ -146,7 +146,7 @@ def test_source_intake_service_materializes_binance_statement_pdfs(
 
     assert response.copied_count == 5
     assert response.issue_count == 0
-    assert summary["capture_status"] == "planned"
+    assert summary["capture_status"] == "captured"
     assert capture_root.is_dir()
     assert (
         capture_root / "AccountStatementPeriod_fixtureacct_20240101-20241231_old.pdf"
