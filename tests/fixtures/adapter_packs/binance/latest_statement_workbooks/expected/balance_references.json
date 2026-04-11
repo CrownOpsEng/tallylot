@@ -2,7 +2,7 @@
   {
     "balance_kind": "available",
     "instrument_id": "symbol:BTC@binance",
-    "location_id": "binance",
+    "location_id": "binance:funding",
     "notes": "Statement-backed quantity from Binance Funding Top 10 Holdings.",
     "observed_at": "2026-03-23",
     "observed_precision": "date",
@@ -21,7 +21,7 @@
   {
     "balance_kind": "available",
     "instrument_id": "symbol:ETH@binance",
-    "location_id": "binance",
+    "location_id": "binance:funding",
     "notes": "Statement-backed quantity from Binance Funding Top 10 Holdings.",
     "observed_at": "2026-03-23",
     "observed_precision": "date",

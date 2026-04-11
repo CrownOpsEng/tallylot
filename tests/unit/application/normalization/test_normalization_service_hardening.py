@@ -791,7 +791,7 @@ def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) 
     assert balance_reference_rows == [
         {
             "source": "fixture",
-            "location_id": "fixture",
+            "location_id": "fixture:primary",
             "instrument_id": "symbol:ETH",
             "balance_kind": "available",
             "target_at": "2023-08-06 12:00:00",

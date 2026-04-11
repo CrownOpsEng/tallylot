@@ -690,6 +690,96 @@ def test_source_statement_extraction_keeps_older_unique_rows_for_same_snapshot(
     ]
 
 
+def test_source_statement_extraction_keeps_wallet_specific_locations(
+    tmp_path: Path,
+) -> None:
+    pdf_path = tmp_path / "statement.pdf"
+    _make_pdf(pdf_path, "Statement one")
+    statement_as_of = datetime(2026, 3, 23, 0, 0, tzinfo=UTC)
+    rows = (
+        StatementDocumentBalanceRow(
+            source="Example",
+            account="Example",
+            wallet="Funding",
+            balance_kind="available",
+            asset="BTC",
+            quantity=Decimal("1.0"),
+            as_of_at=statement_as_of,
+            as_of_precision=TemporalPrecision.DATE,
+            pdf_file=pdf_path.name,
+            raw_row_ref="page=1",
+        ),
+        StatementDocumentBalanceRow(
+            source="Example",
+            account="Example",
+            wallet="Spot",
+            balance_kind="available",
+            asset="BTC",
+            quantity=Decimal("2.0"),
+            as_of_at=statement_as_of,
+            as_of_precision=TemporalPrecision.DATE,
+            pdf_file=pdf_path.name,
+            raw_row_ref="page=2",
+        ),
+    )
+
+    class WalletAwareAdapter(StubPdfAdapter):
+        @override
+        def parse_statement_document(
+            self, pdf_path: Path, text: str
+        ) -> StatementDocumentParseResult:
+            del text
+            self.parse_calls += 1
+            return StatementDocumentParseResult(
+                pdf_file=pdf_path.name,
+                recognized=True,
+                statement_as_of_at=statement_as_of,
+                rows=rows,
+            )
+
+        @override
+        def resolve_statement_instrument_claims(
+            self, row: StatementDocumentBalanceRow
+        ) -> tuple[InstrumentIdentityClaim, ...]:
+            return (InstrumentIdentityClaim("symbol", row.asset),)
+
+    adapter = WalletAwareAdapter("example", 100, ())
+    registry = StubRegistry([adapter])
+    profile = SourceProfile(
+        source=SourceId("Example"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("example"),
+        manifest_fingerprint="fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path=pdf_path.name,
+                suffix=".pdf",
+                size_bytes=pdf_path.stat().st_size,
+                sha256="fixture",
+                source_path=str(pdf_path),
+                capture_uid="capture-1",
+                source="Example",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+        ),
+        supported=True,
+    )
+
+    result = StatementExtractionService(registry).extract_source_balance_references(
+        profile, tmp_path
+    )
+
+    assert not result.issues
+    assert [
+        (str(reference.location_id), reference.quantity)
+        for reference in result.balance_references
+    ] == [
+        ("example:funding", Decimal("1.0")),
+        ("example:spot", Decimal("2.0")),
+    ]
+
+
 def test_source_statement_extraction_reports_ambiguous_latest_inventory_pdfs(
     tmp_path: Path,
 ) -> None:

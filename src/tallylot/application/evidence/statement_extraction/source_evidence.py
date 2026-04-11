@@ -311,14 +311,14 @@ def _balance_references_from_statement_documents(
     issues: list[IssueRecord],
     reviews: list[NormalizationReviewRecord],
 ) -> tuple[BalanceReference, ...]:
-    location_id = location_id_from_parts(str(profile.source))
     seen_rows: set[tuple[object, ...]] = set()
     aggregated: dict[
-        tuple[str, str, datetime, TemporalPrecision, str],
+        tuple[str, str, str, datetime, TemporalPrecision, str],
         tuple[Decimal, set[str], set[str], InstrumentId, ProvenanceLocator],
     ] = {}
     for entry, parsed in documents:
         for row in parsed.rows:
+            row_location_id = _statement_row_location_id(profile, row)
             row_key = _statement_row_precedence_key(row)
             if row_key in seen_rows:
                 continue
@@ -342,6 +342,7 @@ def _balance_references_from_statement_documents(
                 continue
             provenance_key = replace(provenance, anchor="").to_reference_ref()
             key = (
+                str(row_location_id),
                 str(resolved.instrument.instrument_id),
                 row.balance_kind,
                 row.as_of_at,
@@ -369,7 +370,7 @@ def _balance_references_from_statement_documents(
                 instrument_id,
                 row_provenance,
             )
-    return _references_from_aggregated_rows(profile, location_id, aggregated)
+    return _references_from_aggregated_rows(profile, aggregated)
 
 
 def _document_precedence_value(parsed: StatementDocumentParseResult) -> datetime:
@@ -395,16 +396,29 @@ def _statement_row_precedence_key(
     )
 
 
+def _statement_row_location_id(
+    profile: SourceProfile,
+    row: StatementDocumentBalanceRow,
+) -> LocationId:
+    wallet_segment = row.wallet.strip()
+    account_segment = row.account.strip()
+    if wallet_segment:
+        return location_id_from_parts(str(profile.source), wallet_segment)
+    if account_segment:
+        return location_id_from_parts(str(profile.source), account_segment)
+    return location_id_from_parts(str(profile.source))
+
+
 def _references_from_aggregated_rows(
     profile: SourceProfile,
-    location_id: LocationId,
     aggregated: dict[
-        tuple[str, str, datetime, TemporalPrecision, str],
+        tuple[str, str, str, datetime, TemporalPrecision, str],
         tuple[Decimal, set[str], set[str], InstrumentId, ProvenanceLocator],
     ],
 ) -> tuple[BalanceReference, ...]:
     references: list[BalanceReference] = []
     for (
+        location_id,
         _instrument_key,
         balance_kind,
         as_of_at,
@@ -421,7 +435,7 @@ def _references_from_aggregated_rows(
             BalanceReference(
                 target=BalanceTarget(
                     source=profile.source,
-                    location_id=location_id,
+                    location_id=LocationId(location_id),
                     instrument_id=instrument_id,
                     balance_kind=balance_kind,
                     target_at=as_of_at,

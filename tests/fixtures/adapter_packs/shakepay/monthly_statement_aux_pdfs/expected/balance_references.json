@@ -2,7 +2,7 @@
   {
     "balance_kind": "available",
     "instrument_id": "symbol:BTC@shakepay",
-    "location_id": "shakepay",
+    "location_id": "shakepay:personal",
     "notes": "Statement-backed quantity from Shakepay monthly balance summary.",
     "observed_at": "2026-01-01 05:00:00",
     "observed_precision": "timestamp",
@@ -21,7 +21,7 @@
   {
     "balance_kind": "available",
     "instrument_id": "symbol:CAD@shakepay",
-    "location_id": "shakepay",
+    "location_id": "shakepay:personal",
     "notes": "Statement-backed quantity from Shakepay monthly balance summary.",
     "observed_at": "2026-01-01 05:00:00",
     "observed_precision": "timestamp",

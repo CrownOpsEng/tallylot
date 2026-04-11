@@ -388,13 +388,13 @@ def test_binance_statement_service_emits_latest_balance_references(
     )
 
     assert not result.issues
-    assert [reference.instrument_id for reference in result.balance_references] == [
-        "symbol:SOLO@binance",
-        "symbol:USDT@binance",
-    ]
-    assert [reference.quantity for reference in result.balance_references] == [
-        Decimal("0.920099"),
-        Decimal("0.009866"),
+    assert [
+        (str(reference.location_id), reference.instrument_id, reference.quantity)
+        for reference in result.balance_references
+    ] == [
+        ("binance:funding", "symbol:USDT@binance", Decimal("0.009526")),
+        ("binance:spot", "symbol:SOLO@binance", Decimal("0.920099")),
+        ("binance:spot", "symbol:USDT@binance", Decimal("0.000340")),
     ]
     assert all(
         reference.reference_kind.value == "source_document"
