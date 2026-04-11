@@ -150,9 +150,9 @@ Rules:
 - EVM-family owned locations use `evm:<network>:<address>`.
 - Native EVM-family assets use `asset:evm:<network>:native`.
 - Native NEAR assets use `asset:near:native`.
-- In-scope public-ledger adapters must emit canonical native asset ids
-  directly; symbol-only public-ledger asset ids remain unsupported for
-  provider hydration until immutable asset identity is proven.
+- In-scope public-ledger adapters must emit native asset ids with immutable
+  chain identity directly; symbol-only public-ledger asset ids remain
+  unsupported for provider hydration until immutable asset identity is proven.
 - Non-EVM on-chain locations use their chain namespace such as
   `near:<account>`, `bitcoin:<address>`, `tron:<address>`, or
   `solana:<address>`.
@@ -282,8 +282,8 @@ Rules:
 ### 17. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
 
 Manual balance submission is a supported operational path for producing
-canonical `balance_snapshots.csv` and `balance_references.csv`, but it is not
-an adapter-owned schema.
+`balance_snapshots.csv` and `balance_references.csv`, but it is not an
+adapter-owned schema.
 
 Rules:
 
@@ -408,9 +408,9 @@ Rules:
   references only when the source actually provides them.
 - normalization owns production statement-backed `source_document` references
   for supported providers through the shared statement extraction seam.
-  Adapters may publish canonical quantity evidence through
+  Adapters may publish quantity evidence through
   `SourceTranslationBatch.balance_references`, but market-value totals and
-  other valuation-only rows are not canonical balance assertions.
+  other valuation-only rows are not balance assertions.
 - adapters may declare numeric precision expectations for source fields when
   decimal scale is part of the source contract. Shared adapter support should
   validate displayed raw-text fractional digits and support exact or minimum
@@ -537,9 +537,9 @@ The only lost capability should be comparison against the external oracle.
 - `facts.csv` is schema-versioned and readers fail fast on unexpected
   `schema_version` values; re-deriving artifacts from raw evidence is the
   supported recovery path after fact-shape breaks.
-- `balance_snapshots.csv` and `balance_references.csv` persist canonical
-  `instrument_id` values and use `target_at` plus `target_precision`; balance
-  references also persist `observed_at` plus `observed_precision`.
+- `balance_snapshots.csv` and `balance_references.csv` persist `instrument_id`
+  values and use `target_at` plus `target_precision`; balance references also
+  persist `observed_at` plus `observed_precision`.
 - cross-source balance corroboration is additive in the first release. It
   consumes normalized balance snapshots plus `location_inventory.csv`, writes
   sidecar corroboration artifacts, and does not redefine the primary

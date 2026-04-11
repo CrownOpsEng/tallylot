@@ -2,9 +2,9 @@
 name: balance-submission-operations
 description: >-
   Scaffold manual balance submission packages, inspect missing required values,
-  and submit validated balances into canonical reconciliation artifacts
-  without guessing hidden facts. Use when the task is to prepare or run the
-  manual balance submission workflow for one source.
+  and submit validated balances into shared reconciliation artifacts without
+  guessing hidden facts. Use when the task is to prepare or run the manual
+  balance submission workflow for one source.
 ---
 
 # Balance Submission Operations
@@ -21,8 +21,8 @@ Use this skill for the manual balance submission path.
    explicitly.
 4. Submit only when the package is ready; do not guess `instrument_id`,
    timestamps, quantities, support refs, or identity values.
-5. Use `$reconciliation-balance-operations` only after canonical balance
-   artifacts already exist.
+5. Use `$reconciliation-balance-operations` only after balance artifacts
+   already exist.
 
 ## Preferred Execution
 
@@ -37,7 +37,7 @@ Use this skill for the manual balance submission path.
 - Scaffold creates `README.md` plus `.example` templates under the submission
   package.
 - Inspect reports missing required files and fields without materializing
-  canonical outputs.
-- Submit writes canonical `balance_snapshots.csv`,
-  `balance_references.csv`, optional `location_inventory.csv`, plus
-  `balance_submission_summary.json` and `balance_submission_issues.csv`.
+  outputs.
+- Submit writes `balance_snapshots.csv`, `balance_references.csv`, optional
+  `location_inventory.csv`, plus `balance_submission_summary.json` and
+  `balance_submission_issues.csv`.

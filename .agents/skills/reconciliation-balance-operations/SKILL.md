@@ -17,8 +17,8 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
    shell loops over source directories.
 2. Use `.claude/commands/reconciliation-balance-operations.md` when you need
    the repo's matching command-route checklist.
-3. Assume assembled source datasets include canonical `balance_snapshots.csv`
-   and, when available, unified `balance_references.csv`. Use
+3. Assume assembled source datasets include `balance_snapshots.csv` and, when
+   available, unified `balance_references.csv`. Use
    `$balance-submission-operations` first when the source still needs the
    manual submission path.
 4. Run coverage inspection first.
