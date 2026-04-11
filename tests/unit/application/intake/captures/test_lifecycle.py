@@ -89,36 +89,60 @@ def test_source_summary_reducer_keeps_pending_without_assembly_exclusions() -> N
     assert reduced["assembled_root_ref"] == ""
 
 
-def test_source_summary_reducer_does_not_promote_capture_blocked_rows() -> None:
+def test_source_summary_reducer_ignores_blocked_rows_after_a_valid_capture() -> None:
     reduced = reduce_source_inventory_summary(
         reduction=SourceInventorySummaryReduction(
-            source="coinbase",
+            source="binance",
             capture_rows=[
                 _capture_row(
                     "01HV4A5H7VJH7M3Y5A6B7C8D9E",
                     status="capture_blocked",
+                    source="binance",
+                    capture_label="2026-03-24T14-15-16Z",
+                    intake_completed_at="2026-03-24 14:15:16",
+                ),
+                _capture_row(
+                    "01HV4A5H7VJH7M3Y5A6B7C8D9F",
+                    status="normalized",
+                    source="binance",
+                    capture_label="2026-03-23T14-15-16Z",
+                    intake_completed_at="2026-03-23 14:15:16",
                 ),
             ],
             source_rows=[],
         )
     )
 
-    assert reduced["status"] == ""
-    assert reduced["capture_count"] == "1"
-    assert reduced["latest_capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    assert reduced["status"] == "normalized"
+    assert reduced["capture_count"] == "2"
+    assert reduced["latest_capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9F"
+    assert reduced["latest_capture_label"] == "2026-03-23T14-15-16Z"
+    assert reduced["latest_capture_completed_at"] == "2026-03-23 14:15:16"
 
 
-def _capture_row(capture_uid: str, *, status: str) -> dict[str, str]:
+def _capture_row(
+    capture_uid: str,
+    *,
+    status: str,
+    source: str = "coinbase",
+    capture_label: str = "2026-03-23T14-15-16Z",
+    intake_completed_at: str = "2026-03-23 14:15:16",
+    capture_root_ref: str | None = None,
+) -> dict[str, str]:
     return {
         "capture_uid": capture_uid,
-        "source": "coinbase",
-        "capture_label": "2026-03-23T14-15-16Z",
+        "source": source,
+        "capture_label": capture_label,
         "status": status,
         "intake_started_at": "2026-03-23 14:15:16",
-        "intake_completed_at": "2026-03-23 14:15:16",
+        "intake_completed_at": intake_completed_at,
         "intake_method": "source_intake_apply",
-        "incoming_ref": "incoming/coinbase",
-        "capture_root_ref": "evidence/raw/source/coinbase/2026-03-23T14-15-16Z",
+        "incoming_ref": f"incoming/{source}",
+        "capture_root_ref": (
+            capture_root_ref
+            if capture_root_ref is not None
+            else f"evidence/raw/source/{source}/{capture_label}"
+        ),
         "manifest_fingerprint": f"manifest:{capture_uid}",
         "file_count": "1",
         "observed_period_start": "2026-03-23",

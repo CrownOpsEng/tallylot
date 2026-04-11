@@ -53,7 +53,9 @@ def reduce_source_inventory_summary(
         if row.get("source", "") == reduction.source
     )
     meaningful_rows = tuple(
-        row for row in matching if row.get("status", "") != "duplicate_blocked"
+        row
+        for row in matching
+        if row.get("status", "") not in _BLOCKED_CAPTURE_STATUSES
     )
     latest = _latest_completed_capture_row(meaningful_rows or matching)
     existing_status = _existing_value(reduction.source_rows, reduction.source, "status")
