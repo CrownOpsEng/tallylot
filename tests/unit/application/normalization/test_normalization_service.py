@@ -42,7 +42,7 @@ def test_normalization_service_filters_events_outside_explicit_window(
         )
     )
 
-    canonical_rows = read_rows(output_dir / "facts.csv")
+    normalized_rows = read_rows(output_dir / "facts.csv")
     fact_annotations = json.loads(
         (output_dir / "fact_annotations.json").read_text(encoding="utf-8")
     )
@@ -52,12 +52,12 @@ def test_normalization_service_filters_events_outside_explicit_window(
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
 
     assert response.fact_count == 1
-    assert len(canonical_rows) == 1
-    assert canonical_rows[0]["tx_hash"] == "tx-keep"
-    assert canonical_rows[0]["fact_id"] == "fixture_source:3"
+    assert len(normalized_rows) == 1
+    assert normalized_rows[0]["tx_hash"] == "tx-keep"
+    assert normalized_rows[0]["fact_id"] == "fixture_source:3"
     assert fact_annotations == [
         {
-            "fact_id": canonical_rows[0]["fact_id"],
+            "fact_id": normalized_rows[0]["fact_id"],
             "provenance_refs": [],
             "review_markers": [],
             "adapter_metadata": [],

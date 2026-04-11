@@ -256,7 +256,7 @@ def _portfolio_asset_claim(
     if native_symbol and symbol == native_symbol:
         return evm_native_asset_claim(row_scope, display_name=symbol)
     raise ValueError(
-        "portfolio token rows without immutable contract identity cannot be canonicalized"
+        "portfolio token rows without immutable contract identity cannot be normalized"
     )
 
 

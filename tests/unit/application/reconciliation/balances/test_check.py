@@ -17,6 +17,7 @@ from tallylot.domain.balances import (
     BalanceReferenceKind,
     BalanceTarget,
 )
+from tallylot.domain.issues import IssueRecord
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
@@ -185,6 +186,143 @@ def test_balance_check_workflow_writes_single_source_outputs(
     assert summary["issue_count"] == 1
     assert check_summary_rows[0]["check_status"] == "issues"
     assert check_summary_rows[0]["max_assertion_date"] == "2025-12-31"
+
+
+def test_balance_check_workflow_clears_stale_outputs_when_source_stops_runnable(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=as_of,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    workflow = BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    )
+    workflow.execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+    (output_root / "balance_assertions.csv").write_text("stale\n", encoding="utf-8")
+    (input_root / "facts.csv").unlink()
+
+    response = workflow.execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    assert response.source_count == 0
+    assert not (output_root / "balance_assertions.csv").exists()
+    assert not (output_root / "reconciliation_issues.csv").exists()
+    assert not (output_root / "balance_reconciliation_summary.json").exists()
+    assert not (output_root / "balance_check_summary.csv").exists()
+
+
+def test_balance_check_workflow_clears_stale_reference_issue_cache(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=as_of,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    workflow = BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    )
+    workflow.execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+    evidence.write_issue_records(
+        input_root / "balance_reference_issues.csv",
+        (
+            IssueRecord(
+                issue_id="coinbase:balance_check:stale_issue",
+                source="coinbase",
+                adapter_id="balance_check",
+                severity="medium",
+                kind="stale_issue",
+                message="stale issue",
+            ),
+        ),
+    )
+
+    workflow.execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    assert not (input_root / "balance_reference_issues.csv").exists()
 
 
 def test_balance_check_rejects_capture_normalized_roots(tmp_path: Path) -> None:

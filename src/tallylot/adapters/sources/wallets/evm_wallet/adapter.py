@@ -7,13 +7,13 @@ from pathlib import Path
 from typing import cast
 
 from tallylot.adapters.support import (
-    canonical_location_id_from_identifier,
     location_identifier_kind,
     location_issue,
     location_record,
     match_intake_by_path_or_header,
     matching_file_paths,
     no_intake_route,
+    location_id_from_identifier,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
@@ -206,7 +206,7 @@ def _account_records(
             location_record(
                 LocationRecordSpec(
                     source=source,
-                    location_id=canonical_location_id_from_identifier(
+                    location_id=location_id_from_identifier(
                         identifier_kind,
                         address,
                         network_scope=network_scope,

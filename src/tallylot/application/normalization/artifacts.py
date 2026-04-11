@@ -41,10 +41,11 @@ def write_normalization_artifacts(
         output_dir / BALANCE_REFERENCE_FILENAME,
         outputs.balance_references,
     )
-    evidence.write_issue_records(
-        output_dir / BALANCE_REFERENCE_ISSUE_FILENAME,
-        outputs.balance_reference_issues,
-    )
+    if outputs.balance_reference_issues:
+        evidence.write_issue_records(
+            output_dir / BALANCE_REFERENCE_ISSUE_FILENAME,
+            outputs.balance_reference_issues,
+        )
     evidence.write_issue_records(output_dir / "exceptions.csv", outputs.issues)
     evidence.write_review_records(
         output_dir / "normalization_reviews.csv", outputs.reviews

@@ -83,9 +83,7 @@ def compile_activity_draft(draft: EconomicActivityDraft) -> TransactionFact:
 def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact:
     fact, issues, reviews = _compile_activity_draft(draft)
     if issues or reviews or fact is None:
-        raise ValueError(
-            f"draft {draft.activity_id} did not resolve to a canonical fact"
-        )
+        raise ValueError(f"draft {draft.activity_id} did not resolve to a fact")
     return fact
 
 

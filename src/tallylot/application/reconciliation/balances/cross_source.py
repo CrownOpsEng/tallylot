@@ -143,7 +143,7 @@ def build_cross_source_corroboration(
                         kind="cross_source_ambiguous_identity",
                         message=(
                             "Cross-source corroboration skipped because more than one high-confidence "
-                            "location matched the same canonical identity in one source."
+                            "location matched the same shared identity in one source."
                         ),
                     )
                 )
@@ -266,7 +266,7 @@ def _index_join_rows(
     )
     for snapshot in snapshots:
         join_key = _JoinKey(
-            instrument_id=_canonicalize_instrument_id(str(snapshot.instrument_id)),
+            instrument_id=_normalize_instrument_id(str(snapshot.instrument_id)),
             balance_kind=snapshot.balance_kind,
             target_at=snapshot.target_at,
             target_precision=snapshot.target_precision,
@@ -279,7 +279,7 @@ def _index_join_rows(
                     kind="cross_source_ambiguous_identity",
                     message=(
                         "Cross-source corroboration skipped because more than one balance row "
-                        "matched the same canonical join key in one source."
+                        "matched the same shared join key in one source."
                     ),
                     suffix=str(duplicate_counts[join_key]),
                 )
@@ -351,12 +351,12 @@ def _assertion_status(
 
 def _status_notes(status: str) -> str:
     if status == "missing_left":
-        return "No comparable left-side balance row was available for this canonical identity."
+        return "No comparable left-side balance row was available for this shared identity."
     if status == "missing_right":
-        return "No comparable right-side balance row was available for this canonical identity."
+        return "No comparable right-side balance row was available for this shared identity."
     if status == "drift":
-        return "Comparable sources resolved to the same canonical identity but reported different quantities."
-    return "Comparable sources resolved to the same canonical identity and quantity."
+        return "Comparable sources resolved to the same shared identity but reported different quantities."
+    return "Comparable sources resolved to the same shared identity and quantity."
 
 
 def _cross_source_issue(
@@ -380,7 +380,7 @@ def _cross_source_issue(
     )
 
 
-def _canonicalize_instrument_id(value: str) -> str:
+def _normalize_instrument_id(value: str) -> str:
     if value.startswith("symbol:") and "@" in value:
         return value.split("@", maxsplit=1)[0]
     return value

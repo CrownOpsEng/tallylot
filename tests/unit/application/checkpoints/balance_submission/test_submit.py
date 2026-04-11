@@ -17,9 +17,7 @@ from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactS
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
 
 
-def test_submit_balances_materializes_canonical_balance_outputs(
-    tmp_path: Path,
-) -> None:
+def test_submit_balances_materializes_balance_outputs(tmp_path: Path) -> None:
     submission_root = tmp_path / "submission" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"
     _write_valid_required_files(submission_root, source="coinbase")
@@ -32,7 +30,6 @@ def test_submit_balances_materializes_canonical_balance_outputs(
         )
     )
 
-    artifacts = FilesystemArtifactStore()
     evidence = FilesystemEvidenceRepository()
     summary = json.loads(
         (output_root / "balance_submission_summary.json").read_text(encoding="utf-8")
@@ -58,9 +55,14 @@ def test_submit_balances_materializes_canonical_balance_outputs(
         ].support_ref
         == "statement.pdf#page=1"
     )
-    assert artifacts.read_rows(output_root / "balance_submission_issues.csv") == []
+    assert not (output_root / "balance_submission_issues.csv").exists()
     assert summary["ready_for_balance_check"] is True
     assert summary["wrote_balance_references"] is True
+    expected_note = (
+        "No submission issues were found, so "
+        "balance_submission_issues.csv was not written."
+    )
+    assert summary["notes"][-1] == expected_note
 
 
 def test_submit_balances_materializes_optional_location_inventory(
@@ -435,10 +437,12 @@ def test_submit_balances_clears_stale_outputs_when_rerun_blocks(tmp_path: Path) 
     )
 
     assert response.blocked is True
-    assert (output_root / "balance_snapshots.csv").exists()
-    assert (output_root / "balance_references.csv").exists()
-    assert (output_root / "balance_assertions.csv").exists()
+    assert not (output_root / "balance_snapshots.csv").exists()
+    assert not (output_root / "balance_references.csv").exists()
+    assert not (output_root / "balance_assertions.csv").exists()
     assert not (output_root / "location_inventory.csv").exists()
+    assert (output_root / "balance_submission_summary.json").exists()
+    assert (output_root / "balance_submission_issues.csv").exists()
 
 
 def test_submit_balances_clears_stale_outputs_when_submission_root_is_missing(
@@ -467,9 +471,11 @@ def test_submit_balances_clears_stale_outputs_when_submission_root_is_missing(
     )
 
     assert response.blocked is True
-    assert (output_root / "balance_snapshots.csv").exists()
-    assert (output_root / "balance_references.csv").exists()
+    assert not (output_root / "balance_snapshots.csv").exists()
+    assert not (output_root / "balance_references.csv").exists()
     assert not (output_root / "location_inventory.csv").exists()
+    assert (output_root / "balance_submission_summary.json").exists()
+    assert (output_root / "balance_submission_issues.csv").exists()
 
 
 def test_submit_balances_clears_stale_optional_location_inventory_on_rerun(
@@ -515,7 +521,7 @@ def test_submit_balances_clears_stale_optional_location_inventory_on_rerun(
 
     assert response.blocked is False
     assert response.wrote_location_inventory is False
-    assert (output_root / "location_inventory.csv").exists()
+    assert not (output_root / "location_inventory.csv").exists()
 
 
 def _write_valid_required_files(submission_root: Path, *, source: str) -> None:

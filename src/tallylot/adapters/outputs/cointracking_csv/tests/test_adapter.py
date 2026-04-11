@@ -110,9 +110,7 @@ def test_cointracking_projection_reads_standard_fee_leg() -> None:
     assert row["Cur..2"] == "symbol:CAD"
 
 
-def test_cointracking_projection_uses_source_label_for_onchain_canonical_locations() -> (
-    None
-):
+def test_cointracking_projection_uses_source_label_for_onchain_locations() -> None:
     row = cointracking_row(
         TransactionFact(
             fact_id=TransactionId("txn-onchain"),

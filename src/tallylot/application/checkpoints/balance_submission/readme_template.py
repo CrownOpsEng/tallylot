@@ -41,10 +41,10 @@ Corroboration note:
 
 Reference note:
 
-- Manual submission writes `operator_assertion` rows into the canonical
-  balance reference artifact.
+- Manual submission writes `operator_assertion` rows into the shared balance
+  reference artifact.
 - `support_ref` is optional and may cite supporting material, but the row
   remains an operator assertion rather than a source-document reference.
-- Successful manual submission prepares canonical balance snapshots and
-  operator assertions for runtime balance checks.
+- Successful manual submission prepares balance snapshots and operator
+  assertions for runtime balance checks.
 """

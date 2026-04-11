@@ -167,6 +167,7 @@ def test_source_assembly_removes_stale_optional_generated_artifacts_on_rerun(
     )
 
     assert artifacts.read_rows(assembled_root / "balance_references.csv") == []
+    assert not (assembled_root / "balance_reference_issues.csv").exists()
     assert (assembled_root / "operator-notes.txt").read_text(
         encoding="utf-8"
     ) == "operator-owned"

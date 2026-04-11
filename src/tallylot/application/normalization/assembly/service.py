@@ -209,11 +209,12 @@ class AssembleSourceUseCase:
             BALANCE_REFERENCE_HEADER,
             balance_references,
         )
-        self._artifacts.write_rows(
-            output_root / BALANCE_REFERENCE_ISSUE_FILENAME,
-            ISSUE_HEADER,
-            reference_issues,
-        )
+        if reference_issues:
+            self._artifacts.write_rows(
+                output_root / BALANCE_REFERENCE_ISSUE_FILENAME,
+                ISSUE_HEADER,
+                reference_issues,
+            )
         self._artifacts.write_rows(
             output_root / "exceptions.csv", ISSUE_HEADER, exceptions
         )

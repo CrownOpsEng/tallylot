@@ -1,4 +1,4 @@
-"""Submit validated manual balance packages into canonical reconciliation artifacts."""
+"""Submit validated manual balance packages into balance outputs."""
 
 from __future__ import annotations
 
@@ -64,6 +64,7 @@ class SubmitBalancesUseCase:
             output_label="balance submission output root",
         )
         ensure_directory(output_root)
+        _clear_generated_balance_outputs(output_root)
         if not submission_root.is_dir():
             status = _SubmissionStatus(
                 balance_snapshot_row_count=0,
@@ -156,10 +157,10 @@ class SubmitBalancesUseCase:
             wrote_location_inventory=wrote_location_inventory,
             ready_for_balance_check=not blocked,
             notes=(
-                ("Canonical balance snapshots and balance references were written.",)
+                ("Balance snapshots and balance references were written.",)
                 if not blocked
                 else (
-                    "Submission is blocked. Canonical runtime artifacts were left unchanged.",
+                    "Submission is blocked. Only the summary and issues were written.",
                 )
             ),
         )
@@ -193,7 +194,10 @@ class SubmitBalancesUseCase:
         issues: list[dict[str, str]],
         summary_payload: dict[str, JsonValue],
     ) -> None:
-        self._artifacts.write_rows(output_root / ISSUES_FILENAME, ISSUE_HEADER, issues)
+        if issues:
+            self._artifacts.write_rows(
+                output_root / ISSUES_FILENAME, ISSUE_HEADER, issues
+            )
         self._artifacts.write_json(output_root / SUMMARY_FILENAME, summary_payload)
 
     def _summary_payload(
@@ -204,6 +208,11 @@ class SubmitBalancesUseCase:
         status: _SubmissionStatus,
     ) -> dict[str, JsonValue]:
         notes_payload: list[JsonValue] = list(status.notes)
+        if not status.issue_count:
+            notes_payload.append(
+                "No submission issues were found, so "
+                "balance_submission_issues.csv was not written."
+            )
         return {
             "submission_root": str(submission_root),
             "output_root": str(output_root),
@@ -282,3 +291,26 @@ def _merge_balance_references(
             ),
         )
     )
+
+
+_GENERATED_OUTPUT_FILENAMES = (
+    BALANCE_SNAPSHOTS_FILENAME,
+    BALANCE_REFERENCES_FILENAME,
+    LOCATION_INVENTORY_FILENAME,
+    SUMMARY_FILENAME,
+    ISSUES_FILENAME,
+    "balance_assertions.csv",
+    "balance_check_summary.csv",
+    "balance_reconciliation_summary.json",
+    "cross_source_assertions.csv",
+    "cross_source_issues.csv",
+    "cross_source_summary.json",
+    "reconciliation_issues.csv",
+)
+
+
+def _clear_generated_balance_outputs(output_root: Path) -> None:
+    for filename in _GENERATED_OUTPUT_FILENAMES:
+        path = output_root / filename
+        if path.is_file() or path.is_symlink():
+            path.unlink()

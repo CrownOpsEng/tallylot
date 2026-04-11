@@ -1,4 +1,4 @@
-"""Canonical balance artifact filenames."""
+"""Shared balance artifact filenames."""
 
 from __future__ import annotations
 

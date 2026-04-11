@@ -90,9 +90,7 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
     )
 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    blocker_rows = FilesystemArtifactStore().read_rows(
-        tmp_path / "balance_reconciliation_blockers.csv"
-    )
+    blocker_path = tmp_path / "balance_reconciliation_blockers.csv"
 
     assert response.latest_portfolio_clean_date == ""
     assert response.latest_portfolio_resolved_reference_date == ""
@@ -101,6 +99,8 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
     assert response.latest_observed_assertion_date == "2026-03-23"
     assert payload["blocker_kind_counts"]["empty_source"] == 1
     assert payload["blocker_kind_counts"]["no_assertions"] == 1
+    assert blocker_path.exists()
+    blocker_rows = FilesystemArtifactStore().read_rows(blocker_path)
     assert blocker_rows[0]["blocker_kind"] == "empty_source"
     assert blocker_rows[1]["blocker_kind"] == "no_assertions"
 
@@ -174,9 +174,7 @@ def test_balance_summary_workflow_distinguishes_resolved_reference_dates(
     )
 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    blocker_rows = FilesystemArtifactStore().read_rows(
-        tmp_path / "balance_reconciliation_blockers.csv"
-    )
+    blocker_path = tmp_path / "balance_reconciliation_blockers.csv"
 
     assert response.latest_portfolio_clean_date == "2026-03-23"
     assert response.latest_portfolio_resolved_reference_date == ""
@@ -184,4 +182,4 @@ def test_balance_summary_workflow_distinguishes_resolved_reference_dates(
     assert response.latest_resolved_reference_date == "2026-03-23"
     assert payload["resolved_reference_source_count"] == 2
     assert payload["mixed_reference_source_count"] == 0
-    assert blocker_rows == []
+    assert not blocker_path.exists()

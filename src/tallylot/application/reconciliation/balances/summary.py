@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from pathlib import Path
 
 from tallylot.application.reconciliation.balances.contracts import (
     BalanceSummaryRequest,
@@ -30,22 +31,24 @@ class BalanceSummaryWorkflow:
         blocker_output_path = summary_output_path.with_name(
             "balance_reconciliation_blockers.csv"
         )
+        _clear_generated_balance_summary_outputs(summary_output_path)
         coverage_records = tuple(
             BalanceCoverageRecord.from_row(row)
-            for row in self._artifacts.read_rows(coverage_input_path)
+            for row in _read_rows_if_present(self._artifacts, coverage_input_path)
         )
         check_records = tuple(
             BalanceCheckSummaryRecord.from_row(row)
-            for row in self._artifacts.read_rows(check_summary_input_path)
+            for row in _read_rows_if_present(self._artifacts, check_summary_input_path)
         )
         blockers = _build_blockers(coverage_records, check_records)
         summary_payload = _summary_payload(coverage_records, check_records, blockers)
         self._artifacts.write_json(summary_output_path, summary_payload)
-        self._artifacts.write_rows(
-            blocker_output_path,
-            BALANCE_RECONCILIATION_BLOCKER_HEADER,
-            (blocker.to_row() for blocker in blockers),
-        )
+        if blockers:
+            self._artifacts.write_rows(
+                blocker_output_path,
+                BALANCE_RECONCILIATION_BLOCKER_HEADER,
+                (blocker.to_row() for blocker in blockers),
+            )
         return BalanceSummaryResponse(
             summary_output_ref=request.summary_output_ref,
             blocker_output_ref=to_resource_ref(blocker_output_path),
@@ -210,3 +213,21 @@ def _summary_payload(
         "check_status_counts": dict(sorted(check_status_counts.items())),
         "blocker_kind_counts": dict(sorted(blocker_kind_counts.items())),
     }
+
+
+def _clear_generated_balance_summary_outputs(summary_output_path: Path) -> None:
+    for path in (
+        summary_output_path,
+        summary_output_path.with_name("balance_reconciliation_blockers.csv"),
+    ):
+        if path.is_file() or path.is_symlink():
+            path.unlink()
+
+
+def _read_rows_if_present(
+    artifacts: ArtifactStorePort,
+    path: Path,
+) -> list[dict[str, str]]:
+    if not path.is_file():
+        return []
+    return artifacts.read_rows(path)

@@ -12,13 +12,13 @@ from tallylot.adapters.sources.explorers.ronin.translation import translate_tran
 from tallylot.adapters.support import (
     EVM_ADDRESS_PATTERN,
     IssueSpec,
-    canonical_location_id_from_identifier,
     issue_record,
     location_issue,
     location_record,
     match_intake_by_path_or_header,
     no_intake_route,
     read_csv_rows,
+    location_id_from_identifier,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
@@ -172,7 +172,7 @@ class _RoninAdapter:
             location_record(
                 LocationRecordSpec(
                     source=source,
-                    location_id=canonical_location_id_from_identifier(
+                    location_id=location_id_from_identifier(
                         "evm_address",
                         address,
                         network_scope="ronin",

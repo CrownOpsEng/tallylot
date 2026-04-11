@@ -19,7 +19,7 @@ class ResolvedInstrument:
     identifiers: tuple[InstrumentIdentifierRecord, ...]
 
 
-def canonical_asset_claim(
+def asset_claim(
     asset_path: str,
     *,
     display_name: str,
@@ -27,7 +27,7 @@ def canonical_asset_claim(
 ) -> InstrumentIdentityClaim:
     normalized_path = asset_path.strip().lower()
     if not normalized_path:
-        raise ValueError("canonical asset claim path must not be blank")
+        raise ValueError("asset claim path must not be blank")
     return InstrumentIdentityClaim(
         scheme="asset",
         value=normalized_path,
@@ -46,7 +46,7 @@ def evm_native_asset_claim(
     normalized_network = network.strip().lower()
     if not normalized_network:
         raise ValueError("evm native asset claim network must not be blank")
-    return canonical_asset_claim(
+    return asset_claim(
         f"evm:{normalized_network}:native",
         display_name=display_name or normalized_network.upper(),
         precision_hint=precision_hint,
@@ -66,7 +66,7 @@ def evm_erc20_asset_claim(
         raise ValueError("evm erc20 asset claim network must not be blank")
     if not normalized_contract:
         raise ValueError("evm erc20 asset claim contract_address must not be blank")
-    return canonical_asset_claim(
+    return asset_claim(
         f"evm:{normalized_network}:erc20:{normalized_contract}",
         display_name=display_name or normalized_contract,
         precision_hint=precision_hint,
@@ -78,7 +78,7 @@ def near_native_asset_claim(
     display_name: str = "NEAR",
     precision_hint: int | None = None,
 ) -> InstrumentIdentityClaim:
-    return canonical_asset_claim(
+    return asset_claim(
         "near:native",
         display_name=display_name,
         precision_hint=precision_hint,

@@ -1,4 +1,4 @@
-"""Canonical materialization for validated manual balance submissions."""
+"""Materialization for validated manual balance submissions."""
 
 from __future__ import annotations
 

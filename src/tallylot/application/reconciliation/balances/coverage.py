@@ -53,16 +53,18 @@ class BalanceCoverageWorkflow:
         _ensure_output_paths_are_safe(
             input_root, coverage_output_path, summary_output_path
         )
+        _clear_generated_balance_coverage_outputs(coverage_output_path)
         source_dirs = discover_balance_source_dirs(input_root)
         records = tuple(
             _build_coverage_record(self._artifacts, source_dir.root)
             for source_dir in source_dirs
         )
-        self._artifacts.write_rows(
-            coverage_output_path,
-            BALANCE_COVERAGE_HEADER,
-            (record.to_row() for record in records),
-        )
+        if records:
+            self._artifacts.write_rows(
+                coverage_output_path,
+                BALANCE_COVERAGE_HEADER,
+                (record.to_row() for record in records),
+            )
         self._artifacts.write_json(
             summary_output_path,
             _coverage_summary_payload(records),
@@ -233,3 +235,12 @@ def _ensure_output_paths_are_safe(input_root: Path, *output_paths: Path) -> None
             input_label="balance input root",
             output_label="balance coverage output",
         )
+
+
+def _clear_generated_balance_coverage_outputs(coverage_output_path: Path) -> None:
+    for path in (
+        coverage_output_path,
+        coverage_output_path.with_name("balance_coverage_summary.json"),
+    ):
+        if path.is_file() or path.is_symlink():
+            path.unlink()

@@ -12,9 +12,9 @@ from tallylot.domain.location_identifiers import (
     EVM_ADDRESS_PATTERN,
     SOLANA_ADDRESS_PATTERN,
     TRON_ADDRESS_PATTERN,
-    canonical_location_id_from_identifier,
+    is_onchain_location_id,
     identifier_kind_for_value,
-    is_onchain_canonical_location_id,
+    location_id_from_identifier,
     normalized_identifier,
 )
 from tallylot.domain.locations import LocationKind
@@ -29,9 +29,9 @@ __all__ = (
     "TRON_ADDRESS_PATTERN",
     "LocationIssueSpec",
     "LocationRecordSpec",
-    "canonical_location_id_from_identifier",
-    "is_onchain_canonical_location_id",
+    "is_onchain_location_id",
     "location_id_from_parts",
+    "location_id_from_identifier",
     "location_identifier_kind",
     "location_issue",
     "location_record",

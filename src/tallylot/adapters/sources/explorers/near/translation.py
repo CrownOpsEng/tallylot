@@ -13,9 +13,9 @@ from tallylot.adapters.sources.explorers.near.families import (
 )
 from tallylot.adapters.support import (
     IssueSpec,
-    canonical_location_id_from_identifier,
     issue_record,
     near_native_asset_claim,
+    location_id_from_identifier,
     read_csv_rows,
 )
 from tallylot.adapters.support.drafts import (
@@ -92,7 +92,7 @@ def translate_transactions(
                         path.name,
                         raw_row_ref,
                         issue_id_suffix="missing_identifier",
-                        message="NEAR base transaction rows could not be tied to a canonical account identifier.",
+                        message="NEAR base transaction rows could not be tied to a NEAR account identifier.",
                     )
                 )
                 continue
@@ -372,6 +372,4 @@ def _parse_timestamp(value: str) -> datetime | None:
 
 
 def _near_location_id(account_id: str, *, suffix: tuple[str, ...] = ()) -> LocationId:
-    return canonical_location_id_from_identifier(
-        "near_account", account_id, suffix=suffix
-    )
+    return location_id_from_identifier("near_account", account_id, suffix=suffix)

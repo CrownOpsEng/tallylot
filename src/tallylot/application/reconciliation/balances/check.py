@@ -76,44 +76,52 @@ class BalanceCheckWorkflow:
         input_root = path_from_ref(request.input_root_ref)
         output_root = path_from_ref(request.output_root_ref)
         _ensure_output_root_is_safe(input_root, output_root)
+        _clear_generated_balance_check_outputs(output_root)
         single_source = source_dir_input(input_root)
         source_dirs = select_balance_source_dirs(
             discover_balance_source_dirs(input_root),
             request.sources,
         )
-        records = tuple(
-            self._check_source_dir(
-                source_dir,
-                output_root=source_dir.output_root(
-                    output_root,
-                    single_source=single_source,
-                ),
-                request=request,
+        records: list[BalanceCheckSummaryRecord] = []
+        for source_dir in source_dirs:
+            source_output_root = source_dir.output_root(
+                output_root,
+                single_source=single_source,
             )
-            for source_dir in source_dirs
-            if _is_runnable_source_dir(source_dir)
-        )
+            _clear_generated_balance_check_outputs(source_output_root)
+            if not _is_runnable_source_dir(source_dir):
+                continue
+            records.append(
+                self._check_source_dir(
+                    source_dir,
+                    output_root=source_output_root,
+                    request=request,
+                )
+            )
         ensure_directory(output_root)
         check_summary_output_path = output_root / BALANCE_CHECK_SUMMARY_FILENAME
-        self._artifacts.write_rows(
-            check_summary_output_path,
-            BALANCE_CHECK_SUMMARY_HEADER,
-            (record.to_row() for record in records),
-        )
+        if records:
+            self._artifacts.write_rows(
+                check_summary_output_path,
+                BALANCE_CHECK_SUMMARY_HEADER,
+                (record.to_row() for record in records),
+            )
         cross_source_result = build_cross_source_corroboration(
-            source_dirs,
+            tuple(source_dirs),
             evidence=self._evidence,
             artifacts=self._artifacts,
         )
-        self._artifacts.write_rows(
-            output_root / "cross_source_assertions.csv",
-            CROSS_SOURCE_ASSERTION_HEADER,
-            (record.to_row() for record in cross_source_result.assertions),
-        )
-        self._evidence.write_issue_records(
-            output_root / "cross_source_issues.csv",
-            cross_source_result.issues,
-        )
+        if cross_source_result.assertions:
+            self._artifacts.write_rows(
+                output_root / "cross_source_assertions.csv",
+                CROSS_SOURCE_ASSERTION_HEADER,
+                (record.to_row() for record in cross_source_result.assertions),
+            )
+        if cross_source_result.issues:
+            self._evidence.write_issue_records(
+                output_root / "cross_source_issues.csv",
+                cross_source_result.issues,
+            )
         self._artifacts.write_json(
             output_root / "cross_source_summary.json",
             cross_source_result.summary_payload(),
@@ -136,6 +144,7 @@ class BalanceCheckWorkflow:
         output_root: Path,
         request: BalanceCheckRequest,
     ) -> BalanceCheckSummaryRecord:
+        _clear_generated_balance_check_outputs(output_root)
         assertion_output_path = output_root / BALANCE_ASSERTION_FILENAME
         issue_output_path = output_root / "reconciliation_issues.csv"
         summary_output_path = output_root / BALANCE_RECONCILIATION_SUMMARY_FILENAME
@@ -178,12 +187,14 @@ class BalanceCheckWorkflow:
             )
             result = assert_balance_targets(snapshots, resolved_references)
             all_issues = (*snapshot_issues, *reference_issues, *result.issues)
-            self._artifacts.write_rows(
-                assertion_output_path,
-                BALANCE_ASSERTION_HEADER,
-                (assertion.to_row() for assertion in result.assertions),
-            )
-            self._evidence.write_issue_records(issue_output_path, all_issues)
+            if result.assertions:
+                self._artifacts.write_rows(
+                    assertion_output_path,
+                    BALANCE_ASSERTION_HEADER,
+                    (assertion.to_row() for assertion in result.assertions),
+                )
+            if all_issues:
+                self._evidence.write_issue_records(issue_output_path, all_issues)
             self._artifacts.write_json(
                 summary_output_path,
                 {
@@ -215,8 +226,8 @@ class BalanceCheckWorkflow:
                 issue_kind_counts=(),
                 error_message=str(exc),
             )
-        assertion_rows = self._artifacts.read_rows(assertion_output_path)
-        issue_rows = self._artifacts.read_rows(issue_output_path)
+        assertion_rows = _read_rows_if_present(self._artifacts, assertion_output_path)
+        issue_rows = _read_rows_if_present(self._artifacts, issue_output_path)
         all_dates = tuple(
             date_value
             for row in assertion_rows
@@ -328,19 +339,14 @@ def _persist_reference_cache(
             )
         ),
     )
-    existing_issue_rows = (
-        artifacts.read_rows(source_dir.reference_issue_path)
-        if source_dir.reference_issue_path.is_file()
-        else []
-    )
-    merged_issue_rows = {row["issue_id"]: row for row in existing_issue_rows}
-    for issue in update.reference_issues:
-        merged_issue_rows[issue.issue_id] = issue.to_row()
-    artifacts.write_rows(
-        source_dir.reference_issue_path,
-        ISSUE_HEADER,
-        tuple(merged_issue_rows.values()),
-    )
+    if update.reference_issues:
+        artifacts.write_rows(
+            source_dir.reference_issue_path,
+            ISSUE_HEADER,
+            tuple(issue.to_row() for issue in update.reference_issues),
+        )
+    else:
+        _clear_generated_balance_reference_issue_output(source_dir.reference_issue_path)
 
 
 def _ensure_output_root_is_safe(input_root: Path, output_root: Path) -> None:
@@ -374,3 +380,35 @@ def _ensure_output_paths_are_distinct(*paths: Path) -> None:
         if path in seen_paths:
             raise ValueError(f"balance check outputs must be distinct: {path}")
         seen_paths.add(path)
+
+
+def _read_rows_if_present(
+    artifacts: ArtifactStorePort,
+    path: Path,
+) -> list[dict[str, str]]:
+    if not path.is_file():
+        return []
+    return artifacts.read_rows(path)
+
+
+_GENERATED_OUTPUT_FILENAMES = (
+    BALANCE_ASSERTION_FILENAME,
+    BALANCE_CHECK_SUMMARY_FILENAME,
+    BALANCE_RECONCILIATION_SUMMARY_FILENAME,
+    "cross_source_assertions.csv",
+    "cross_source_issues.csv",
+    "cross_source_summary.json",
+    "reconciliation_issues.csv",
+)
+
+
+def _clear_generated_balance_check_outputs(output_root: Path) -> None:
+    for filename in _GENERATED_OUTPUT_FILENAMES:
+        path = output_root / filename
+        if path.is_file() or path.is_symlink():
+            path.unlink()
+
+
+def _clear_generated_balance_reference_issue_output(path: Path) -> None:
+    if path.is_file() or path.is_symlink():
+        path.unlink()

@@ -15,7 +15,6 @@ from tallylot.adapters.sources.explorers.evm_explorer.translation import (
 )
 from tallylot.adapters.support import (
     EVM_ADDRESS_PATTERN,
-    canonical_location_id_from_identifier,
     location_issue,
     location_record,
     match_intake_by_path_or_header,
@@ -23,6 +22,7 @@ from tallylot.adapters.support import (
     no_intake_route,
     passed_timezone_summary,
     read_csv_rows,
+    location_id_from_identifier,
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
@@ -144,7 +144,7 @@ class _EvmExplorerAdapter:
             location_record(
                 LocationRecordSpec(
                     source=source,
-                    location_id=canonical_location_id_from_identifier(
+                    location_id=location_id_from_identifier(
                         "evm_address",
                         address,
                         network_scope=_network_scope(source),
