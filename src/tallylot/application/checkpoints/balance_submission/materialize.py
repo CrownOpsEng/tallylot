@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from tallylot.adapters.support import (
-    LocationRecordSpec,
-    location_id_from_parts,
-    location_record,
+from tallylot.application.evidence.location_inventory import (
+    LocationInventoryBuildSpec,
+    build_location_inventory_record,
 )
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.balances import (
@@ -17,6 +16,7 @@ from tallylot.domain.balances import (
 )
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.locations import LocationKind
+from tallylot.domain.location_identifiers import location_id_from_parts
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.ports.evidence import LocationInventoryRecord
 
@@ -117,8 +117,8 @@ def _location_inventory_record_from_row(
     parent_location_id = (
         None if account_level else location_id_from_parts(row.source, row.account)
     )
-    return location_record(
-        LocationRecordSpec(
+    return build_location_inventory_record(
+        LocationInventoryBuildSpec(
             source=row.source,
             location_id=location_id,
             location_kind=(
@@ -138,7 +138,7 @@ def _location_inventory_record_from_row(
                 LOCATION_INVENTORY_FILENAME
             ),
             confidence=row.confidence,
-            note=row.notes,
+            notes=row.notes,
             capture_root_ref=str(submission_root),
             parent_location_label="" if account_level else row.account,
         )

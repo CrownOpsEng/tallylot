@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from tallylot.adapters.support.drafts import compile_activity_drafts_with_feedback
-from tallylot.adapters.support.issues import IssueSpec, issue_record
+from tallylot.application.facts.compiler import compile_activity_drafts_with_feedback
 from tallylot.application.balances import (
     derive_balance_snapshots,
     latest_balance_targets,
@@ -33,6 +32,7 @@ from tallylot.application.workspace.filesystem import (
     ensure_directory,
     ensure_output_not_within_input_tree,
 )
+from tallylot.domain.issues import IssueRecord
 from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.captures import CaptureMetadata
@@ -286,18 +286,16 @@ def _with_no_supported_activity_issue(
         balance_references=result.balance_references,
         balance_reference_issues=result.balance_reference_issues,
         issues=(
-            issue_record(
-                IssueSpec(
-                    issue_id=f"{profile.source}:no_supported_activity",
-                    source=str(profile.source),
-                    adapter_id=str(profile.adapter_id),
-                    severity="high",
-                    kind="no_supported_activity",
-                    message=(
-                        "The source matched a supported translation family but emitted no facts or explicit "
-                        "unsupported issues."
-                    ),
-                )
+            IssueRecord(
+                issue_id=f"{profile.source}:no_supported_activity",
+                source=str(profile.source),
+                adapter_id=str(profile.adapter_id),
+                severity="high",
+                kind="no_supported_activity",
+                message=(
+                    "The source matched a supported translation family but emitted no facts or explicit "
+                    "unsupported issues."
+                ),
             ),
         ),
         reviews=result.reviews,

@@ -8,10 +8,6 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Callable
 
-from tallylot.adapters.support import (
-    location_id_from_parts,
-    resolve_instrument_identity,
-)
 from tallylot.domain.balances import (
     BalanceReference,
     BalanceReferenceKind,
@@ -19,6 +15,8 @@ from tallylot.domain.balances import (
 )
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.instruments.identity import resolve_instrument_identity
+from tallylot.domain.location_identifiers import location_id_from_parts
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import CaptureUid, LocationId

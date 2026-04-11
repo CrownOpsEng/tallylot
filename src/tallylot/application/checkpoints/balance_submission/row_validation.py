@@ -5,8 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 
-from tallylot.adapters.support import location_id_from_parts
 from tallylot.domain.balances import BalanceReferenceKind, normalize_balance_kind
+from tallylot.domain.location_identifiers import location_id_from_parts
 from tallylot.domain.temporal import TemporalPrecision
 
 from .contracts import (

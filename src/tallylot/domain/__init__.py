@@ -16,6 +16,12 @@ from .instruments import (
     InstrumentIdentityClaim,
     InstrumentKind,
     InstrumentRecord,
+    ResolvedInstrument,
+    asset_claim,
+    evm_erc20_asset_claim,
+    evm_native_asset_claim,
+    near_native_asset_claim,
+    resolve_instrument_identity,
 )
 from .issues import IssueRecord, NormalizationReviewRecord
 from .locations import LocationKind, LocationRecord
@@ -55,6 +61,7 @@ __all__ = [
     "InstrumentIdentityClaim",
     "InstrumentKind",
     "InstrumentRecord",
+    "ResolvedInstrument",
     "IssueRecord",
     "LegKind",
     "LegShapeLimit",
@@ -65,5 +72,10 @@ __all__ = [
     "TaxTreatmentHint",
     "TemporalPrecision",
     "TransactionFact",
+    "asset_claim",
     "assert_balance_targets",
+    "evm_erc20_asset_claim",
+    "evm_native_asset_claim",
+    "near_native_asset_claim",
+    "resolve_instrument_identity",
 ]

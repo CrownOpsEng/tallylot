@@ -65,6 +65,15 @@ _LOCATION_ID_TRON_PATTERN = re.compile(
 )
 
 
+def location_id_from_parts(*parts: str) -> LocationId:
+    normalized_parts = tuple(_normalized_location_part(part) for part in parts)
+    if not normalized_parts:
+        raise ValueError("location_id parts must not be blank")
+    if any(not part for part in normalized_parts):
+        raise ValueError("location_id parts must not be blank")
+    return LocationId(":".join(normalized_parts))
+
+
 def normalized_identifier(identifier_kind: str, identifier_value: str) -> str:
     normalized = identifier_value.strip()
     if identifier_kind in {"evm_address", "address_alias"}:
@@ -130,10 +139,6 @@ def require_location_id(value: str, *, label: str) -> LocationId:
     raise ValueError(f"{label} {normalized!r} is not a supported location id")
 
 
-def _normalized_location_segment(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
-
-
 def _is_supported_location_id(value: str) -> bool:
     return any(
         pattern.fullmatch(value) is not None
@@ -147,3 +152,12 @@ def _is_supported_location_id(value: str) -> bool:
             _LOCATION_ID_TRON_PATTERN,
         )
     )
+
+
+def _normalized_location_part(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9_.]+", "_", value.strip().lower()).strip("_")
+    return normalized
+
+
+def _normalized_location_segment(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
