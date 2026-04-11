@@ -148,6 +148,11 @@ network-scoped rather than source-label-derived.
 Rules:
 
 - EVM-family owned locations use `evm:<network>:<address>`.
+- Native EVM-family assets use `asset:evm:<network>:native`.
+- Native NEAR assets use `asset:near:native`.
+- In-scope public-ledger adapters must emit canonical native asset ids
+  directly; symbol-only public-ledger asset ids remain unsupported for
+  provider hydration until immutable asset identity is proven.
 - Non-EVM on-chain locations use their chain namespace such as
   `near:<account>`, `bitcoin:<address>`, `tron:<address>`, or
   `solana:<address>`.
@@ -345,7 +350,8 @@ is inherently specific.
     detection over assembled source datasets
 - `application/checkpoints/`
   - build source-backed checkpoint evidence, validate manual balance
-    confirmations, and assemble checkpoint-supporting wallet aggregates
+    assertion submissions, and assemble checkpoint-supporting wallet
+    aggregates
 - `application/accounting/`
   - journal assembly, ledger validation, and accounting summaries
 - `application/tax/`

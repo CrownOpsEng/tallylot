@@ -20,7 +20,9 @@ nav_order: 10
   Crypto.com, Shakepay, Ledger Live, Near, Ronin, GTrade, EVM explorer, EVM
   wallet-state, plus the generic structured CSV adapter
 - Universal ZIP inspection enabled by default for source scanning workflows
-- Blockchain, platform API, SQLite, and provider-backed AI remain stubs behind
+- Separate balance-provider discovery is wired at runtime, but concrete live
+  network provider adapters remain deferred
+- Platform API expansion, SQLite, and provider-backed AI remain stubbed behind
   typed boundaries
 
 ## Current Operational Surface
@@ -44,6 +46,9 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - normalization-owned statement-backed `source_document` balance references for
   supported provider statements and constrained same-source-chain MetaMask
   portfolio evidence
+- canonical native public-ledger asset ids for in-scope EVM, NEAR, and Ronin
+  translations, with symbol-only public-ledger token identity surfaced as
+  explicit unsupported issues until immutable asset ids are proven
 - checkpoint-owned manual balance submission scaffolding and validation that
   materializes canonical balance snapshots, operator assertion references, and
   optional location inventory outputs
@@ -98,6 +103,8 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - Manual submission can unblock runtime reconciliation through
   `operator_assertion` references, but filing-ready checkpoint state still
   requires `source_document` evidence.
+- Separate balance-provider adapters may hydrate missing references only for
+  targets whose canonical location and asset identity are already known.
 - `tools.validate_workspace_replay` compares semantic capture-registry parity,
   raw capture completeness, assembled source metrics, and reconciliation status
   counts. Optional expected-difference fixtures may declare only
@@ -110,5 +117,5 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - HTTP/API runtime
 - SQLite-backed active storage
 - provider-backed AI runtime
-- broad provider coverage beyond the first public-ledger balance-provider
-  families
+- concrete live balance-provider adapters and broad provider coverage beyond
+  the first public-ledger families

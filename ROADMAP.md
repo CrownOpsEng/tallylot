@@ -24,6 +24,10 @@ state is expressed as derived `balance_snapshots.csv` plus unified
 
 Historical provider hydration is now a first-class balance concern, but the
 current implementation target remains public-ledger balance lookup only.
+The current codebase also ships the separate balance-provider discovery seam
+and canonical native public-ledger asset ids for the in-scope EVM, NEAR, and
+Ronin adapters. Contract-backed public-ledger assets remain blocked from
+historical provider hydration until immutable on-chain ids are available.
 
 ## Planning Anchors
 
@@ -137,6 +141,8 @@ Scope:
   of extending source adapters
 - require canonical on-chain asset ids before public-ledger provider hydration
   is considered supported
+- keep symbol-only public-ledger asset ids as explicit unsupported surfaces
+  rather than soft-mapping them into provider hydration
 - add additive cross-source corroboration as a sidecar evidence surface before
   promoting it into a harder reconciliation gate
 - transfer linking across owned wallets and exchanges

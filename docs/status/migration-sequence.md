@@ -121,6 +121,8 @@ Rules:
   in source adapters
 - require canonical on-chain asset ids before public-ledger provider hydration
   is treated as supported runtime behavior
+- keep symbol-only public-ledger asset ids as explicit unsupported outputs
+  until immutable on-chain identity is available
 - CoinTracking tax outputs stay in oracle comparison services
 - deterministic corrections such as redistributions must live in typed rules or
   fact metadata, not operator notes
