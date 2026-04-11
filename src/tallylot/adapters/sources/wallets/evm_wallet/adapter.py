@@ -17,13 +17,22 @@ from tallylot.adapters.support import (
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -32,18 +41,24 @@ class _EvmWalletAdapter:
         adapter_id=AdapterId("evm_wallet"),
         display_name="EVM Wallet",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}),
+        capabilities=frozenset(
+            {AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+        ),
         description="Extracts wallet identifiers from EVM wallet state exports.",
     )
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(
+        self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> int:
         if self.classify_profile_families(source, raw_dir, inventory):
             return 100
         lower_source = source.lower()
         if "evm wallet" in lower_source or "wallet state" in lower_source:
             return 100
         if any(
-            item.relative_path.lower().endswith(".json") and "state" in item.relative_path.lower() for item in inventory
+            item.relative_path.lower().endswith(".json")
+            and "state" in item.relative_path.lower()
+            for item in inventory
         ):
             return 80
         return 0
@@ -84,7 +99,12 @@ class _EvmWalletAdapter:
         profile: SourceProfile,
     ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
         del profile
-        return {"status": "passed", "issue_count": 0, "rows_with_dates": 0, "mode_counts": {}}, ()
+        return {
+            "status": "passed",
+            "issue_count": 0,
+            "rows_with_dates": 0,
+            "mode_counts": {},
+        }, ()
 
     def extract_location_inventory(
         self,
@@ -97,7 +117,9 @@ class _EvmWalletAdapter:
         issues: list[IssueRecord] = []
         for path in matching_file_paths(raw_dir, pattern="*.json"):
             payload = json.loads(path.read_text(encoding="utf-8"))
-            account_records, account_issues = _account_records(source, path.name, payload)
+            account_records, account_issues = _account_records(
+                source, path.name, payload
+            )
             evidence.extend(account_records)
             issues.extend(account_issues)
         if evidence:
@@ -114,8 +136,12 @@ class _EvmWalletAdapter:
             ),
         )
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
-        location_inventory, issues = self.extract_location_inventory(str(profile.source), raw_dir, profile)
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
+        location_inventory, issues = self.extract_location_inventory(
+            str(profile.source), raw_dir, profile
+        )
         return translation_batch_from_drafts(
             issues=issues,
             location_inventory=location_inventory,
@@ -156,10 +182,12 @@ def _account_records(
             for scope in cast(list[object], account_payload_dict.get("scopes", []))
             if isinstance(scope, str) and str(scope).strip()
         )
-        identifier_kind, network_scope, issue_kind, issue_message = _account_identifier_context(
-            address=address,
-            account_type=account_type,
-            scopes=scopes,
+        identifier_kind, network_scope, issue_kind, issue_message = (
+            _account_identifier_context(
+                address=address,
+                account_type=account_type,
+                scopes=scopes,
+            )
         )
         if issue_kind:
             issues.append(
@@ -190,7 +218,9 @@ def _account_records(
                     network_scope=network_scope,
                     controller=f"EVM wallet {keyring_type}".strip(),
                     evidence_kind="wallet_state",
-                    evidence_path=evidence_path,
+                    evidence_provenance=ProvenanceLocator.from_reference_ref(
+                        evidence_path
+                    ),
                     confidence="high",
                 )
             )
@@ -220,7 +250,7 @@ def _account_identifier_context(
             identifier_kind,
             "",
             "unsupported_wallet_identifier",
-            f"Wallet-state account {address} is not a supported canonical identifier.",
+            f"Wallet-state account {address} is not a supported identifier.",
         )
     namespace = account_type.split(":", 1)[0].strip().lower()
     if namespace == "eip155":
@@ -239,7 +269,7 @@ def _account_identifier_context(
                 "ambiguous_wallet_identifier",
                 (
                     f"Wallet-state account {address} is an EVM address without a single chain-scoped ownership "
-                    "claim; use chain-specific exports for canonical routing."
+                    "claim; use chain-specific exports for routing."
                 ),
             )
         return identifier_kind, network_scope, "", ""
@@ -264,7 +294,7 @@ def _account_identifier_context(
             "ambiguous_wallet_identifier",
             (
                 f"Wallet-state account {address} is an EVM address without chain-scoped ownership evidence; "
-                "use chain-specific exports for canonical routing."
+                "use chain-specific exports for routing."
             ),
         )
     return identifier_kind, _network_scope(identifier_kind), "", ""
@@ -274,7 +304,9 @@ def _evm_network_scope(scopes: tuple[str, ...]) -> str:
     chain_ids = {
         scope.split(":", 1)[1]
         for scope in scopes
-        if scope.lower().startswith("eip155:") and ":" in scope and scope.split(":", 1)[1] != "0"
+        if scope.lower().startswith("eip155:")
+        and ":" in scope
+        and scope.split(":", 1)[1] != "0"
     }
     if len(chain_ids) != 1:
         return ""

@@ -7,6 +7,7 @@ from tallylot.application.intake import IntakePlanRequest, PlanIntakeUseCase
 from tallylot.application.resource_refs import to_resource_ref, to_workspace_path
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.ports.evidence import EVIDENCE_PROVENANCE_HEADER
 
 
 def test_source_intake_service_plans_archive_members_without_copying_them(
@@ -94,6 +95,75 @@ def test_source_intake_service_routes_source_artifacts_to_source_aware_supportin
     )
 
 
+def test_source_intake_service_routes_binance_upstream_workbooks_to_raw_capture(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    order_workbook = incoming_dir / "Binance Order History 2023.xlsx"
+    withdrawal_workbook = incoming_dir / "Binance-Withdrawal History Report 2023.xlsx"
+    notes_workbook = incoming_dir / "Binance Portfolio Notes.xlsx"
+    order_workbook.write_bytes(b"PK\x03\x04")
+    withdrawal_workbook.write_bytes(b"PK\x03\x04")
+    notes_workbook.write_bytes(b"PK\x03\x04")
+
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    response = PlanIntakeUseCase(build_registry(), artifacts).execute(
+        IntakePlanRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    by_name = {
+        Path(row["path"]).name: row
+        for row in artifacts.read_rows(report_dir / "intake_plan.csv")
+    }
+
+    assert response.file_count == 3
+    assert response.planned_copy_count == 3
+    assert by_name["Binance Order History 2023.xlsx"]["category"] == "source_raw"
+    assert by_name["Binance Order History 2023.xlsx"]["role"] == "source_export"
+    assert (
+        by_name["Binance Order History 2023.xlsx"]["evidence_role"]
+        == "transaction_source"
+    )
+    assert (
+        by_name["Binance Order History 2023.xlsx"]["originality_class"]
+        == "upstream_original"
+    )
+    assert by_name["Binance Order History 2023.xlsx"]["capture_label"] != ""
+    assert (
+        "/evidence/raw/source/binance/"
+        in by_name["Binance Order History 2023.xlsx"]["target_path"]
+    )
+    assert by_name["Binance Order History 2023.xlsx"]["target_path"].endswith(
+        "/Binance Order History 2023.xlsx"
+    )
+    assert (
+        by_name["Binance-Withdrawal History Report 2023.xlsx"]["category"]
+        == "source_raw"
+    )
+    assert (
+        by_name["Binance-Withdrawal History Report 2023.xlsx"]["originality_class"]
+        == "upstream_original"
+    )
+    assert by_name["Binance Portfolio Notes.xlsx"]["category"] == "supporting_artifact"
+    assert by_name["Binance Portfolio Notes.xlsx"]["role"] == "working_derivative"
+    assert (
+        by_name["Binance Portfolio Notes.xlsx"]["evidence_role"]
+        == "supporting_artifact"
+    )
+    assert (
+        by_name["Binance Portfolio Notes.xlsx"]["originality_class"]
+        == "operator_authored"
+    )
+
+
 def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio_capture(
     tmp_path: Path,
 ) -> None:
@@ -136,14 +206,15 @@ def test_source_intake_service_routes_cointracking_html_and_sidecar_to_portfolio
         == "portfolio_export"
     )
     assert (
-        by_name["CoinTracking · Tax Declaration Export.html"]["capture_id"] == "2022-04"
+        by_name["CoinTracking · Tax Declaration Export.html"]["capture_label"]
+        == "2022-04"
     )
     assert (
         "/evidence/raw/portfolio/cointracking/2022-04/"
         in by_name["CoinTracking · Tax Declaration Export.html"]["target_path"]
     )
     assert by_name["style.min.css"]["role"] == "portfolio_sidecar"
-    assert by_name["style.min.css"]["capture_id"] == "2022-04"
+    assert by_name["style.min.css"]["capture_label"] == "2022-04"
 
 
 def test_source_intake_service_routes_wallet_export_to_existing_inventory_source(
@@ -158,18 +229,32 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
         source_inventory_path,
         (
             "source",
+            "activity_after_cutoff",
+            "scope_status",
             "status",
-            "capture_path",
-            "adapter",
-            "normalization_status",
+            "capture_count",
+            "latest_capture_uid",
+            "latest_capture_label",
+            "latest_capture_completed_at",
+            "assembly_status",
+            "assembled_root_ref",
+            "adapter_hints",
+            "notes",
         ),
         (
             {
-                "source": "eth-gala1",
+                "source": "eth-wallet-fixture",
+                "activity_after_cutoff": "unknown",
+                "scope_status": "in_scope",
                 "status": "capture_complete",
-                "capture_path": "evidence/raw/source/eth-gala1/2026-03",
-                "adapter": "evm_explorer",
-                "normalization_status": "ready",
+                "capture_count": "1",
+                "latest_capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "latest_capture_label": "2026-03-23T14-15-16Z",
+                "latest_capture_completed_at": "2026-03-23 14:15:16",
+                "assembly_status": "assembled",
+                "assembled_root_ref": "working/normalized/sources/eth-wallet-fixture",
+                "adapter_hints": "evm_explorer",
+                "notes": "",
             },
         ),
     )
@@ -181,7 +266,9 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
         location_evidence_path,
         (
             "source",
-            "capture_path",
+            "capture_uid",
+            "capture_label",
+            "capture_root_ref",
             "location_id",
             "location_kind",
             "location_label",
@@ -194,19 +281,21 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
             "controller",
             "parent_location_label",
             "evidence_kind",
-            "evidence_path",
+            *EVIDENCE_PROVENANCE_HEADER,
             "confidence",
             "note",
         ),
         (
             {
-                "source": "eth-gala1",
-                "capture_path": "/tmp/capture",
+                "source": "eth-wallet-fixture",
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "capture_label": "2026-03-23T14-15-16Z",
+                "capture_root_ref": "evidence/raw/source/eth-wallet-fixture/2026-03-23T14-15-16Z",
                 "location_id": "evm_address:0x2222222222222222222222222222222222222222",
                 "location_kind": "onchain_address",
-                "location_label": "Account 2",
+                "location_label": "Wallet 2",
                 "parent_location_id": "",
-                "location_path": "Account 2",
+                "location_path": "Wallet 2",
                 "identifier_kind": "evm_address",
                 "normalized_identifier": "0x2222222222222222222222222222222222222222",
                 "display_identifier": "0x2222222222222222222222222222222222222222",
@@ -214,7 +303,11 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
                 "controller": "Explorer export",
                 "parent_location_label": "",
                 "evidence_kind": "filename",
-                "evidence_path": "/tmp/evidence.csv",
+                "evidence_capture_uid": "",
+                "evidence_relative_path": "/tmp/evidence.csv",
+                "evidence_archive_member_path": "",
+                "evidence_locator_kind": "raw_file",
+                "evidence_anchor": "",
                 "confidence": "high",
                 "note": "",
             },
@@ -242,7 +335,7 @@ def test_source_intake_service_routes_wallet_export_to_existing_inventory_source
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
     row = next(item for item in plan_rows if item["archive_member_path"] == "")
 
-    assert row["source_folder"] == "eth-gala1"
+    assert row["source_folder"] == "eth-wallet-fixture"
     assert row["inventory_match_status"] == "inventory_source_match"
     assert row["review_required"] == "no"
 
@@ -261,9 +354,10 @@ def test_source_intake_service_uses_explicit_source_label_map_for_stable_source_
     )
     artifacts.write_rows(
         issues_dir / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
         (
             {
+                "incoming_capture_scope": "",
                 "incoming_path_prefix": "2021/Binance",
                 "source": "binance-main",
                 "notes": "",

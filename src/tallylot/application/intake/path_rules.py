@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .archive import ScannedFile
-from .packages import PlannedPackageItem
-from .plan.models import PlannedItem
+
+if TYPE_CHECKING:
+    from .packages import PlannedPackageItem
+    from .plan.models import PlannedItem
 
 
 def package_key(entry: ScannedFile) -> str:
@@ -49,12 +52,12 @@ def source_raw_target_path(
     workspace_root: Path,
     *,
     source_folder: str,
-    capture_id: str,
+    capture_label: str,
     bundle_id_value: str,
     bundle_relative_path_value: str,
 ) -> Path:
     capture_root = (
-        workspace_root / "evidence" / "raw" / "source" / source_folder / capture_id
+        workspace_root / "evidence" / "raw" / "source" / source_folder / capture_label
     )
     if bundle_id_value.endswith("-loose"):
         return capture_root / bundle_relative_path_value

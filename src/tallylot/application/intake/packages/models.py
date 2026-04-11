@@ -15,7 +15,7 @@ class PlannedPackageItem:
     relative_path: str
     archive_source_path: str
     source_folder: str
-    capture_id: str
+    capture_label: str
     category: str
     action: str
     sha256: str

@@ -23,6 +23,7 @@ from ..path_rules import (
     source_raw_target_path,
 )
 from ..routing import route_intake_file
+from ..routing.targets import WORKING_DERIVATIVE_SUFFIXES
 from .models import PlannedItem
 from .reviews import merge_review_required, merge_review_values
 
@@ -46,6 +47,7 @@ def build_planned_item(
         workspace_root=workspace_root,
         facts=facts,
     )
+    planned_capture_label = route.capture_label
     route_key = (
         entry.relative_path
         if not entry.archive_member_path
@@ -56,6 +58,7 @@ def build_planned_item(
         context=source_label_context,
         request=SourceLabelResolutionRequest(
             workspace_root=workspace_root,
+            incoming_capture_scope=incoming_dir.name,
             route_key=route_key,
             facts=facts,
             source_folder=route.source_folder,
@@ -69,7 +72,6 @@ def build_planned_item(
         request=IntakeOverlapRequest(
             workspace_root=workspace_root,
             source_folder=source_resolution.source_folder,
-            capture_id=route.capture_id,
             relative_path=relative_path,
             sha256=entry.sha256,
             size_bytes=entry.size_bytes,
@@ -80,7 +82,7 @@ def build_planned_item(
         source_raw_target_path(
             workspace_root,
             source_folder=source_resolution.source_folder,
-            capture_id=route.capture_id,
+            capture_label=planned_capture_label,
             bundle_id_value=bundle_id_value,
             bundle_relative_path_value=bundle_relative_path_value,
         )
@@ -96,10 +98,16 @@ def build_planned_item(
         archive_member_path=entry.archive_member_path,
         category=route.category,
         role=route.role,
+        evidence_role=_evidence_role(entry, route.category, route.role),
+        originality_class=_originality_class(entry, route.category),
         source_folder=source_resolution.source_folder,
-        capture_id=route.capture_id,
+        capture_label=planned_capture_label,
+        capture_status="planned",
         bundle_id=bundle_id_value,
         bundle_relative_path=bundle_relative_path_value,
+        observed_period_start=facts.observed_period_start,
+        observed_period_end=facts.observed_period_end,
+        observed_period_label=facts.observed_period_label,
         action="skip" if source_resolution.blocked else route.action,
         package_key=package_key(entry),
         package_status="primary",
@@ -138,3 +146,27 @@ def build_planned_item(
         scope_tokens=facts.scope_tokens,
         target_path=source_target_path,
     )
+
+
+def _evidence_role(entry: ScannedFile, category: str, role: str) -> str:
+    suffix = entry.file_path.suffix.lower()
+    if category != "source_raw":
+        return "supporting_artifact"
+    if role == "portfolio_export":
+        return "portfolio_export"
+    if role in {"portfolio_sidecar", "required_sidecar"}:
+        return "required_sidecar"
+    if suffix == ".pdf":
+        return "statement_source"
+    return "transaction_source"
+
+
+def _originality_class(entry: ScannedFile, category: str) -> str:
+    suffix = entry.file_path.suffix.lower()
+    if category == "source_raw":
+        return "upstream_original"
+    if suffix in WORKING_DERIVATIVE_SUFFIXES:
+        if suffix in {".xlsx", ".xls"}:
+            return "operator_authored"
+        return "derived_runtime"
+    return "upstream_original"

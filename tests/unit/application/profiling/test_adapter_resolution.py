@@ -20,19 +20,25 @@ from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactS
         ("ledger-live-main", "ledger_live"),
         ("near-main", "near"),
         ("GTrade 1CT", "gtrade"),
-        ("bsc-metamask1", "evm_explorer"),
+        ("bsc-wallet-fixture", "evm_explorer"),
         ("Ronin Wallet", "ronin"),
         ("Ledger Live", "ledger_live"),
         ("NEAR Wallet", "near"),
     ],
 )
-def test_profile_service_resolves_supported_sources(source: str, expected_adapter: str, tmp_path: Path) -> None:
-    profile = BuildProfileUseCase(build_registry(), FilesystemArtifactStore()).create_profile(source, tmp_path)
+def test_profile_service_resolves_supported_sources(
+    source: str, expected_adapter: str, tmp_path: Path
+) -> None:
+    profile = BuildProfileUseCase(
+        build_registry(), FilesystemArtifactStore()
+    ).create_profile(source, tmp_path)
 
     assert str(profile.adapter_id) == expected_adapter
 
 
-def test_profile_service_resolves_from_profile_inventory_before_source_label(tmp_path: Path) -> None:
+def test_profile_service_resolves_from_profile_inventory_before_source_label(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "broker-export.csv").write_text(
@@ -42,7 +48,9 @@ def test_profile_service_resolves_from_profile_inventory_before_source_label(tmp
         encoding="utf-8",
     )
 
-    profile = BuildProfileUseCase(build_registry(), FilesystemArtifactStore()).create_profile("Future Broker", raw_dir)
+    profile = BuildProfileUseCase(
+        build_registry(), FilesystemArtifactStore()
+    ).create_profile("Future Broker", raw_dir)
 
     assert str(profile.adapter_id) == "wealthsimple"
 
@@ -58,6 +66,8 @@ def test_profile_service_uses_content_family_for_ronin_exports(tmp_path: Path) -
         encoding="utf-8",
     )
 
-    profile = BuildProfileUseCase(build_registry(), FilesystemArtifactStore()).create_profile("wallet-a", raw_dir)
+    profile = BuildProfileUseCase(
+        build_registry(), FilesystemArtifactStore()
+    ).create_profile("wallet-a", raw_dir)
 
     assert str(profile.adapter_id) == "ronin"

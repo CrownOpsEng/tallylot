@@ -18,9 +18,16 @@ Run:
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize \
   --source <source> \
-  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
-  --output-dir <workspace>/working/normalized/<source>
+  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
 ```
+
+`source normalize` requires the exact materialized capture root under
+`evidence/raw/source/<source>/<capture_label>/`. The command rejects source
+roots, arbitrary directories, and any root whose `capture.json` metadata does
+not match the path and requested source.
+
+When the raw capture lives inside the workspace, the default output root stays
+`working/normalized/captures/<capture_uid>/`.
 
 Review:
 
@@ -30,10 +37,35 @@ Review:
 - `balance_evidence.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
+- `location_inventory.csv`
 - `normalization_summary.json`
 
-If normalization already produced canonical `balances.csv` and
-`balance_evidence.csv`, use them directly in the balance check flow below.
+`checkpoint extract-pdf-balances` uses the same statement extraction path as
+normalization. Use it when you need the standalone statement parser output for
+the same supported PDF families.
+
+`balance_evidence.csv` flattens source-backed provenance into the shared locator
+columns `capture_uid`, `relative_path`, `archive_member_path`,
+`locator_kind`, and `anchor`. `exceptions.csv` and
+`normalization_reviews.csv` keep `raw_row_ref` plus the same locator family
+with `raw_` prefixes when they reference raw evidence.
+
+## Assemble The Source Dataset
+
+Run:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source assemble \
+  --source <source> \
+  --workspace-root <workspace>
+```
+
+Review the assembled source dataset under
+`<workspace>/working/normalized/sources/<source>/`.
+
+`source assemble` is rerun-safe. It rewrites only its known generated files
+such as `facts.csv`, `balance_evidence.csv`, `assembly_summary.json`, and
+`assembly_issues.csv`, and leaves unrelated operator-owned files in place.
 
 ## Submit Manual Balances When Needed
 
@@ -62,7 +94,8 @@ Use this path when normalization did not already emit canonical balance
 artifacts or when the source's balance facts need to be entered through a
 validated manual package. By default, the submit workflow materializes
 canonical `balances.csv`, `balance_confirmations.csv`, and optional
-`location_inventory.csv` under `<workspace>/working/normalized/<source>/`.
+`location_inventory.csv` under
+`<workspace>/working/normalized/sources/<source>/`.
 
 Optional `location_inventory.csv` improves later cross-source corroboration,
 but source-local balance checks still work without it.
@@ -73,13 +106,14 @@ Run:
 
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances check \
-  --input-root <workspace>/working/normalized/<source> \
+  --input-root <workspace>/working/normalized/sources \
   --output-root <workspace>/analysis/reconciliation/<source>
 ```
 
-`<workspace>/working/normalized/<source>/` may come directly from
-normalization with source-backed evidence or from `checkpoint submit-balances`
-with operator-confirmed balance references.
+`<workspace>/working/normalized/sources/` is the assembled reconciliation
+input root. Each source subdirectory may contain source-backed evidence from
+normalization, operator-confirmed balance references from
+`checkpoint submit-balances`, or both.
 
 Review:
 
@@ -100,8 +134,8 @@ Run:
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot output render file \
   --output-adapter cointracking_csv \
-  --facts <workspace>/working/normalized/<source>/facts.csv \
-  --output <workspace>/working/normalized/<source>/cointracking_candidate.csv
+  --facts <workspace>/working/normalized/sources/<source>/facts.csv \
+  --output <workspace>/working/normalized/sources/<source>/cointracking_candidate.csv
 ```
 
 Render a candidate only when the round needs an external output artifact such
@@ -113,7 +147,7 @@ Run:
 
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen \
-  --candidate <workspace>/working/normalized/<source>/cointracking_candidate.csv \
+  --candidate <workspace>/working/normalized/sources/<source>/cointracking_candidate.csv \
   --baseline-export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
   --output-dir <workspace>/working/import_batches/<source>
 ```

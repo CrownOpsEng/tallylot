@@ -3,13 +3,37 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
+from reportlab.pdfgen import canvas
+
 from tallylot.adapters.sources.platforms.coinbase.adapter import _CoinbaseAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from tallylot.application.evidence.statement_extraction import (
+    StatementExtractionService,
+)
+from tallylot.application.profiling import BuildProfileUseCase
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
+from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tests.support.services import build_source_profile
 
 
-def test_coinbase_adapter_reports_missing_retail_csv_as_explicit_issue(tmp_path: Path) -> None:
+def _make_pdf(path: Path, *lines: str) -> None:
+    pdf = canvas.Canvas(str(path))
+    y = 750
+    for line in lines:
+        pdf.drawString(72, y, line)
+        y -= 15
+    pdf.save()
+
+
+def test_coinbase_adapter_reports_missing_retail_csv_as_explicit_issue(
+    tmp_path: Path,
+) -> None:
     result = _CoinbaseAdapter().translate(
         build_source_profile(adapter_id="coinbase", raw_dir=str(tmp_path)),
         tmp_path,
@@ -20,7 +44,9 @@ def test_coinbase_adapter_reports_missing_retail_csv_as_explicit_issue(tmp_path:
     assert "retail all-time CSV" in result.issues[0].message
 
 
-def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(tmp_path: Path) -> None:
+def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "retail-export.csv").write_text(
@@ -106,7 +132,9 @@ def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) 
     assert not result.issues
 
 
-def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_rows(tmp_path: Path) -> None:
+def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_rows(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "retail-export.csv").write_text(
@@ -133,7 +161,33 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
     assert result.issues[0].kind == "unsupported_row"
 
 
-def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_path: Path) -> None:
+def test_coinbase_adapter_preserves_title_row_issue_line_numbers(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail-export.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-2,2024-02-10 12:00:00 UTC,Convert,BTC,0.01000000,CAD,$60000.00,$600.00,"
+        "$610.00,$10.00,Unsupported convert row\n",
+        encoding="utf-8",
+    )
+
+    result = _CoinbaseAdapter().translate(
+        build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
+        raw_dir,
+    )
+
+    assert len(result.issues) == 1
+    assert result.issues[0].raw_row_ref == "row:4"
+
+
+def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "retail-export.csv").write_text(
@@ -172,3 +226,51 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(tmp_
     assert migration_event.legs[1].quantity == Decimal("-1.65526374")
     assert str(migration_event.legs[1].instrument_id) == "symbol:MATIC@coinbase"
     assert not result.issues
+
+
+def test_coinbase_source_statement_extraction_skips_auxiliary_and_history_pdfs(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail-export.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n",
+        encoding="utf-8",
+    )
+    _make_pdf(
+        raw_dir / "2025 Performance - auxiliary.pdf",
+        "Coinbase Canada, Inc.",
+        "Annual investment performance report",
+        "For the period ending December 31, 2025",
+    )
+    _make_pdf(
+        raw_dir / "2025 Charges & Compensation - auxiliary.pdf",
+        "Coinbase Canada, Inc.",
+        "Annual charges and compensation report",
+        "For the period from January 1, 2025 to December 31, 2025",
+    )
+    _make_pdf(
+        raw_dir / "2026-03-23 - transaction-history.pdf",
+        "Coinbase Canada, Inc.",
+        "Transaction History Report",
+        "Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD",
+        "Portfolio summary balances are as of 2026-03-22 23:59:59 UTC",
+        "ETH 0.001181807820874 N/A 2,817.007569 CAD/ETH 3.33 CAD",
+    )
+    registry = build_registry()
+    profile = BuildProfileUseCase(registry, FilesystemArtifactStore()).create_profile(
+        "coinbase",
+        raw_dir,
+    )
+
+    batch = StatementExtractionService(registry).extract_source_balance_evidence(
+        profile,
+        raw_dir,
+    )
+
+    assert not batch.balance_evidence
+    assert not batch.issues
+    assert not batch.reviews

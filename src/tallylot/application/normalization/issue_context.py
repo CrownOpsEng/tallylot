@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from collections import defaultdict
 from dataclasses import replace
 from pathlib import Path
 
@@ -12,6 +11,7 @@ from tallylot.application.profiling.csv_inventory import (
     inventory_csv_content,
     parse_inventory_timestamp,
 )
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.value_objects import format_timestamp
 from tallylot.ports.source_profiles import FileInventoryEntry
@@ -37,8 +37,16 @@ def enrich_issue_context_timestamps(
         if issue.context_timestamp:
             enriched.append(issue)
             continue
-        context_timestamp = resolver.resolve(issue.raw_file, issue.raw_row_ref)
-        enriched.append(issue if not context_timestamp else replace(issue, context_timestamp=context_timestamp))
+        context_timestamp = resolver.resolve(
+            issue.raw_file,
+            issue.raw_row_ref,
+            raw_provenance=issue.raw_provenance,
+        )
+        enriched.append(
+            issue
+            if not context_timestamp
+            else replace(issue, context_timestamp=context_timestamp)
+        )
     return tuple(enriched)
 
 
@@ -54,23 +62,35 @@ def enrich_review_context_timestamps(
         if review.context_timestamp:
             enriched.append(review)
             continue
-        context_timestamp = resolver.resolve(review.raw_file, review.raw_row_ref)
-        enriched.append(review if not context_timestamp else replace(review, context_timestamp=context_timestamp))
+        context_timestamp = resolver.resolve(
+            review.raw_file,
+            review.raw_row_ref,
+            raw_provenance=review.raw_provenance,
+        )
+        enriched.append(
+            review
+            if not context_timestamp
+            else replace(review, context_timestamp=context_timestamp)
+        )
     return tuple(enriched)
 
 
 class _ContextTimestampResolver:
-    def __init__(self, *, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> None:
+    def __init__(
+        self, *, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> None:
         self._raw_dir = raw_dir
-        self._by_relative_path = {entry.relative_path: entry for entry in inventory if entry.relative_path}
-        self._by_name: dict[str, list[FileInventoryEntry]] = defaultdict(list)
-        for entry in inventory:
-            if entry.relative_path:
-                self._by_name[Path(entry.relative_path).name].append(entry)
+        self._by_reference = _inventory_references(inventory)
         self._rows_by_relative_path: dict[str, list[dict[str, str]]] = {}
 
-    def resolve(self, raw_file: str, raw_row_ref: str) -> str:
-        entry = self._inventory_entry(raw_file)
+    def resolve(
+        self,
+        raw_file: str,
+        raw_row_ref: str,
+        *,
+        raw_provenance: ProvenanceLocator | None = None,
+    ) -> str:
+        entry = self._inventory_entry(raw_file, raw_provenance=raw_provenance)
         if entry is None:
             return ""
         if row_number := _row_number(raw_row_ref):
@@ -88,15 +108,21 @@ class _ContextTimestampResolver:
                 return format_timestamp(parsed)
         return ""
 
-    def _inventory_entry(self, raw_file: str) -> FileInventoryEntry | None:
+    def _inventory_entry(
+        self,
+        raw_file: str,
+        *,
+        raw_provenance: ProvenanceLocator | None,
+    ) -> FileInventoryEntry | None:
+        if raw_provenance is not None:
+            entry = self._by_reference.get(raw_provenance.relative_path)
+            if entry is not None:
+                return entry
         if not raw_file:
             return None
-        if raw_file in self._by_relative_path:
-            return self._by_relative_path[raw_file]
-        matches = self._by_name.get(Path(raw_file).name, [])
-        if len(matches) == 1:
-            return matches[0]
-        return None
+        return self._by_reference.get(raw_file) or self._by_reference.get(
+            raw_file.replace("\\", "/")
+        )
 
     def _row(self, entry: FileInventoryEntry, row_number: int) -> dict[str, str] | None:
         if row_number < 2:
@@ -124,10 +150,22 @@ class _ContextTimestampResolver:
         candidate = self._raw_dir / entry.relative_path
         if candidate.exists():
             return candidate
-        basename_matches = sorted(self._raw_dir.rglob(Path(entry.relative_path).name))
-        if len(basename_matches) == 1:
-            return basename_matches[0]
         return None
+
+
+def _inventory_references(
+    inventory: tuple[FileInventoryEntry, ...],
+) -> dict[str, FileInventoryEntry]:
+    references: dict[str, FileInventoryEntry] = {}
+    for entry in inventory:
+        for reference in (
+            entry.relative_path,
+            entry.source_path,
+            entry.archive_source_path,
+        ):
+            if reference and reference not in references:
+                references[reference] = entry
+    return references
 
 
 def _row_number(raw_row_ref: str) -> int | None:

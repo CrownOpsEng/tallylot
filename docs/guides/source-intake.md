@@ -13,11 +13,15 @@ capture.
 
 ## Start From A Settled Capture
 
-1. Start from an untouched incoming dump when the capture is not already in the
+1. Treat one intake run as one capture for one source.
+2. Start from an untouched incoming dump when the capture is not already in the
    workspace.
-2. Keep settled raw files under
-   `evidence/raw/source/<source>/<capture_id>/`.
-3. Do not rename or reshape raw evidence after it becomes the settled capture.
+3. Keep settled raw files under
+   `evidence/raw/source/<source>/<capture_label>/`.
+4. Keep inferred periods as metadata only. Do not rename or regroup a capture
+   folder around an inferred month or year.
+5. Keep untouched statements, HTML exports, and required upstream sidecars in
+   raw evidence.
 
 ## Plan The Intake
 
@@ -26,13 +30,19 @@ Before running intake for a known legacy or manually named source, update
 should yield to a stable operator-managed source label. The map applies to
 source-scoped destinations under both `evidence/raw/source/` and `working/`.
 
+Use `incoming_capture_scope` when one workspace is staging more than one
+incoming source tree at the same time. Set that scope to the operator-managed
+staging directory name, then keep `incoming_path_prefix` relative to that
+incoming directory. This allows multiple `.` mappings to coexist in the same
+workspace as long as each mapping is scoped to a different incoming capture.
+
 Run:
 
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake plan \
   --incoming-dir <incoming_dump> \
   --workspace-root <workspace> \
-  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
+  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_label>
 ```
 
 Review:
@@ -52,20 +62,36 @@ Run:
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake apply \
   --incoming-dir <incoming_dump> \
   --workspace-root <workspace> \
-  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_id>
+  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_label>
 ```
 
 Apply only after the plan artifacts look correct.
 
+`source intake apply` still writes its report artifacts before exit. When the
+run finishes with a non-`captured` `capture_status` such as
+`capture_blocked`, `duplicate_blocked`, or `overlap_review_required`, the CLI
+returns a nonzero exit code so shell automation does not treat the outcome as
+clean success.
+
+Review:
+
+- `intake_summary.json` and `intake_issues.csv` for every run
+- `capture.json` and `manifest.csv` when the run materializes a capture under
+  `evidence/raw/source/<source>/<capture_label>/`
+- `analysis/inventory/source_captures.csv` when the run records a capture or
+  duplicate-blocked attempt
+- `analysis/issues/source_inventory.csv` when the run resolves a concrete
+  source and updates source summary state
+
 ## Build The Capture Manifest
 
 If the capture is already settled under
-`evidence/raw/source/<source>/<capture_id>/`, run:
+`evidence/raw/source/<source>/<capture_label>/`, run:
 
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source manifest \
-  --source-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
-  --output <workspace>/evidence/raw/source/<source>/<capture_id>/manifest.csv
+  --source-dir <workspace>/evidence/raw/source/<source>/<capture_label> \
+  --output <workspace>/evidence/raw/source/<source>/<capture_label>/manifest.csv
 ```
 
 Keep `manifest.csv` inside the settled capture folder.
@@ -77,9 +103,16 @@ Run:
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source profile \
   --source <source> \
-  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_id> \
-  --output-dir <workspace>/working/normalized/<source>
+  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
 ```
+
+`source profile` requires the exact materialized capture root under
+`evidence/raw/source/<source>/<capture_label>/`. The command rejects source
+roots, arbitrary directories, and any root whose `capture.json` metadata does
+not match the path and requested source.
+
+When the raw capture lives inside the workspace, the default output root stays
+`working/normalized/captures/<capture_uid>/`.
 
 Review:
 
@@ -87,5 +120,39 @@ Review:
 - `profile_inventory.csv`
 - `timezone_issues.csv`
 
+`profile_inventory.csv` is the capture-scoped discovery contract used later by
+shared statement extraction and normalization issue-context resolution. Review
+fields such as `capture_uid`, `source`, `evidence_role`,
+`observed_period_start`, `observed_period_end`, `observed_period_label`,
+`statement_kind`, and `originality_class` instead of rediscovering files by
+hand.
+
+## Normalize And Assemble
+
+Run:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize \
+  --source <source> \
+  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
+```
+
+`source normalize` has the same strict input contract as `source profile`: one
+materialized capture root with matching `capture.json` metadata.
+
+Then assemble the accepted capture outputs into the source dataset used by
+reconciliation:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source assemble \
+  --source <source> \
+  --workspace-root <workspace>
+```
+
+`source assemble` owns the generated artifact surface under
+`working/normalized/sources/<source>/` and is safe to rerun. It rewrites its
+known generated files without deleting unrelated operator-owned files beside
+them.
+
 Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the next
-step after the settled capture has been profiled.
+step after the settled capture has been profiled and normalized.

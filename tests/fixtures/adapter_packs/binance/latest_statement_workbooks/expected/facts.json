@@ -1,0 +1,26 @@
+[
+  {
+    "accounting_intent_hint": "asset_exchange",
+    "adapter_id": "binance",
+    "confidence": "high",
+    "description": "Binance spot sell ALGOUSDT",
+    "economic_kind": "spot_trade",
+    "effective_at": "",
+    "effective_precision": "",
+    "fact_id": "binance:Binance-Spot-Trade-History-202603230406(UTC--6)_abcd.csv:row:2",
+    "leg_policy": "[{\"kind\":\"charge\",\"min_count\":0,\"max_count\":1,\"min_positive_count\":null,\"max_positive_count\":0,\"min_negative_count\":null,\"max_negative_count\":1},{\"kind\":\"primary\",\"min_count\":2,\"max_count\":2,\"min_positive_count\":1,\"max_positive_count\":1,\"min_negative_count\":1,\"max_negative_count\":1}]",
+    "legs": "[{\"leg_id\":\"primary_out\",\"kind\":\"primary\",\"subtype\":\"\",\"instrument_id\":\"symbol:ALGO@binance\",\"quantity\":\"-103\",\"attributed_to_leg_id\":\"\",\"location_id\":\"\"},{\"leg_id\":\"primary_in\",\"kind\":\"primary\",\"subtype\":\"\",\"instrument_id\":\"symbol:USDT@binance\",\"quantity\":\"10.2691\",\"attributed_to_leg_id\":\"\",\"location_id\":\"\"},{\"leg_id\":\"charge\",\"kind\":\"charge\",\"subtype\":\"trading_fee\",\"instrument_id\":\"symbol:BNB@binance\",\"quantity\":\"-0.00003593\",\"attributed_to_leg_id\":\"primary_in\",\"location_id\":\"\"}]",
+    "location_id": "binance:spot",
+    "operation_group_id": "",
+    "projection_hint": "trade",
+    "provider_operation_key": "spot:SELL",
+    "raw_file": "Binance-Spot-Trade-History-202603230406(UTC--6)_abcd.csv",
+    "raw_row_ref": "row:2",
+    "schema_version": "2",
+    "source": "Binance",
+    "status": "mapped",
+    "tax_treatment_hint": "capital_exchange",
+    "timestamp": "2023-09-21 00:20:55",
+    "tx_hash": ""
+  }
+]

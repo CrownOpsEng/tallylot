@@ -31,6 +31,7 @@ from .rows import (
     iter_csv_row_contexts,
     matching_file_paths,
     read_csv_header,
+    read_csv_row_contexts,
     read_csv_rows,
     skip_files_outside_profile_families,
 )
@@ -81,6 +82,7 @@ __all__ = [
     "normalized_identifier",
     "passed_timezone_summary",
     "read_csv_header",
+    "read_csv_row_contexts",
     "read_csv_rows",
     "resolve_instrument_identity",
     "review_record",

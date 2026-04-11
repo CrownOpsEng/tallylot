@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
-import sys
+import shlex
 import subprocess
+import sys
 from pathlib import Path
 
 PYTHON_SUFFIXES = {".py", ".pyi"}
@@ -59,6 +60,10 @@ def _run_command(command: list[str], *, env: dict[str, str] | None = None) -> in
     return subprocess.run(command, check=False, env=env).returncode
 
 
+def _log_command(command: list[str]) -> None:
+    print(f"+ {shlex.join(command)}", file=sys.stderr)
+
+
 def _run_pre_commit() -> int:
     env = os.environ.copy()
     command = [
@@ -108,6 +113,7 @@ def _format_and_stage(paths: tuple[str, ...]) -> int:
         [sys.executable, "-m", "ruff", "format", *paths],
         ["git", "add", "--", *paths],
     ):
+        _log_command(command)
         status = _run_command(command)
         if status != 0:
             return status

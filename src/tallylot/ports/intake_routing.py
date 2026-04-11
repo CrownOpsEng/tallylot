@@ -11,6 +11,9 @@ class IntakeFileFacts:
     header: tuple[str, ...] = ()
     min_timestamp: str = ""
     max_timestamp: str = ""
+    observed_period_start: str = ""
+    observed_period_end: str = ""
+    observed_period_label: str = ""
     scope_tokens: tuple[str, ...] = ()
     network_hints: tuple[str, ...] = ()
 
@@ -37,7 +40,7 @@ class IntakeRoute:
     category: str
     role: str
     source_folder: str
-    capture_id: str
+    capture_label: str
     action: str
     target_path: Path
     inventory_match_status: str = "unmatched"

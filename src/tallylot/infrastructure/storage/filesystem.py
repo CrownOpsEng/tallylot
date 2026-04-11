@@ -10,38 +10,23 @@ from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.transactions import TransactionFact
 from tallylot.infrastructure.serialization.csv_io import write_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from tallylot.ports.evidence import LocationInventoryRecord
+from tallylot.ports.evidence import (
+    BALANCE_CONFIRMATION_HEADER,
+    BALANCE_EVIDENCE_HEADER,
+    BALANCE_SNAPSHOT_HEADER,
+    ISSUE_HEADER,
+    LOCATION_INVENTORY_HEADER,
+    NORMALIZATION_REVIEW_HEADER,
+    LocationInventoryRecord,
+)
+from tallylot.ports.facts import FACT_HEADER
 
 from .balance_codec import (
-    BALANCE_EVIDENCE_HEADER,
-    BALANCE_CONFIRMATION_HEADER,
     balance_confirmation_from_row,
-    BALANCE_SNAPSHOT_HEADER,
     balance_evidence_from_row,
     balance_snapshot_from_row,
 )
-from .fact_codec import FACT_HEADER, fact_from_row
-
-LOCATION_INVENTORY_HEADER = (
-    "source",
-    "capture_path",
-    "location_id",
-    "location_kind",
-    "location_label",
-    "parent_location_id",
-    "location_path",
-    "identifier_kind",
-    "normalized_identifier",
-    "display_identifier",
-    "network_scope",
-    "controller",
-    "parent_location_label",
-    "evidence_kind",
-    "evidence_path",
-    "confidence",
-    "identifier_value",
-    "notes",
-)
+from .fact_codec import fact_from_row
 
 
 class FilesystemFactRepository:
@@ -113,18 +98,7 @@ class FilesystemEvidenceRepository:
     def write_issue_records(self, path: Path, issues: tuple[IssueRecord, ...]) -> None:
         write_rows(
             path,
-            (
-                "issue_id",
-                "source",
-                "adapter_id",
-                "severity",
-                "kind",
-                "message",
-                "context_timestamp",
-                "raw_file",
-                "raw_row_ref",
-                "status",
-            ),
+            ISSUE_HEADER,
             (issue.to_row() for issue in issues),
         )
 
@@ -135,21 +109,7 @@ class FilesystemEvidenceRepository:
     ) -> None:
         write_rows(
             path,
-            (
-                "review_id",
-                "source",
-                "adapter_id",
-                "scope",
-                "kind",
-                "message",
-                "context_timestamp",
-                "raw_file",
-                "raw_row_ref",
-                "field_name",
-                "original_value",
-                "normalized_value",
-                "status",
-            ),
+            NORMALIZATION_REVIEW_HEADER,
             (review.to_row() for review in reviews),
         )
 

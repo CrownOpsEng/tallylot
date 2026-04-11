@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from importlib import import_module
 import json
 import os
 import sys
@@ -17,9 +18,7 @@ def _repo_root() -> Path:
         ).is_dir():
             if str(candidate) not in sys.path:
                 sys.path.insert(0, str(candidate))
-            from repo_support.paths import repo_root
-
-            return repo_root()
+            return candidate
     raise RuntimeError("Could not locate repo root for reconciliation balance skill")
 
 
@@ -49,20 +48,18 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+_reconciliation = import_module("tallylot.application.reconciliation")
+BalanceCheckRequest = _reconciliation.BalanceCheckRequest
+BalanceCoverageRequest = _reconciliation.BalanceCoverageRequest
+BalanceSummaryRequest = _reconciliation.BalanceSummaryRequest
+to_resource_ref = import_module("tallylot.application.resource_refs").to_resource_ref
+_runtime = import_module("tallylot.infrastructure.composition.runtime")
+balance_check_workflow = _runtime.balance_check_workflow
+balance_coverage_workflow = _runtime.balance_coverage_workflow
+balance_summary_workflow = _runtime.balance_summary_workflow
+
 
 def main(argv: Sequence[str] | None = None) -> int:
-    from tallylot.application.reconciliation import (
-        BalanceCheckRequest,
-        BalanceCoverageRequest,
-        BalanceSummaryRequest,
-    )
-    from tallylot.application.resource_refs import to_resource_ref
-    from tallylot.infrastructure.composition.runtime import (
-        balance_check_workflow,
-        balance_coverage_workflow,
-        balance_summary_workflow,
-    )
-
     parser = argparse.ArgumentParser(
         description="Run balance reconciliation operations through runtime workflows.",
     )

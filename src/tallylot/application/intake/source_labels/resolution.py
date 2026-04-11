@@ -30,11 +30,15 @@ def resolve_source_label(
         source_folder=request.source_folder,
     ):
         return _non_source_scoped_resolution(request.source_folder)
-    explicit_issue = _matching_issue(context.issues, request.route_key)
-    explicit_rule = _matching_rule(context.rules, request.route_key)
+    explicit_issue = _matching_issue(
+        context.issues, request.incoming_capture_scope, request.route_key
+    )
+    explicit_rule = _matching_rule(
+        context.rules, request.incoming_capture_scope, request.route_key
+    )
     if explicit_issue is not None and (
         explicit_rule is None
-        or len(explicit_issue.matching_prefix) >= len(explicit_rule.prefix)
+        or _rule_priority(explicit_issue) >= _rule_priority(explicit_rule)
     ):
         return _blocked_resolution(request.source_folder, explicit_issue)
     if explicit_rule is not None:
@@ -80,11 +84,16 @@ def _blocked_resolution(
 
 
 def _explicit_rule_resolution(rule: SourceLabelRule) -> SourceLabelResolution:
+    scope_context = (
+        f" within incoming capture scope {rule.incoming_capture_scope!r}"
+        if rule.incoming_capture_scope
+        else ""
+    )
     return SourceLabelResolution(
         source_folder=rule.source,
         source_resolution_status="explicit_map",
         source_resolution_reason=(
-            f"Explicit source map matched prefix {rule.prefix} -> {rule.source}"
+            f"Explicit source map matched prefix {rule.prefix}{scope_context} -> {rule.source}"
         ),
         inventory_match_status="not_evaluated_explicit_map",
     )
@@ -142,17 +151,25 @@ def _inventory_or_routed_resolution(
 
 def _matching_issue(
     issues: tuple[SourceLabelConfigIssue, ...],
+    incoming_capture_scope: str,
     route_key: str,
 ) -> SourceLabelConfigIssue | None:
     matching_issues = [
         issue
         for issue in issues
-        if issue.matching_prefix and _prefix_matches(issue.matching_prefix, route_key)
+        if issue.matching_prefix
+        and _scope_matches(issue.incoming_capture_scope, incoming_capture_scope)
+        and _prefix_matches(issue.matching_prefix, route_key)
     ]
     if not matching_issues:
         return None
     matching_issues.sort(
-        key=lambda item: (len(item.matching_prefix), item.matching_prefix),
+        key=lambda item: (
+            1 if item.incoming_capture_scope else 0,
+            len(item.matching_prefix),
+            item.incoming_capture_scope,
+            item.matching_prefix,
+        ),
         reverse=True,
     )
     return matching_issues[0]
@@ -160,10 +177,13 @@ def _matching_issue(
 
 def _matching_rule(
     rules: tuple[SourceLabelRule, ...],
+    incoming_capture_scope: str,
     route_key: str,
 ) -> SourceLabelRule | None:
     for rule in rules:
-        if _prefix_matches(rule.prefix, route_key):
+        if _scope_matches(rule.incoming_capture_scope, incoming_capture_scope) and (
+            _prefix_matches(rule.prefix, route_key)
+        ):
             return rule
     return None
 
@@ -177,3 +197,18 @@ def _prefix_matches(prefix: str, route_key: str) -> bool:
         return False
     next_character = route_key[len(prefix) : len(prefix) + 1]
     return next_character in {"/", ":"}
+
+
+def _scope_matches(scope: str, incoming_capture_scope: str) -> bool:
+    return not scope or scope == incoming_capture_scope
+
+
+def _rule_priority(
+    rule: SourceLabelConfigIssue | SourceLabelRule,
+) -> tuple[int, int]:
+    return (
+        1 if rule.incoming_capture_scope else 0,
+        len(rule.matching_prefix)
+        if isinstance(rule, SourceLabelConfigIssue)
+        else len(rule.prefix),
+    )

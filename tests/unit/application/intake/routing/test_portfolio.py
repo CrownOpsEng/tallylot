@@ -8,7 +8,9 @@ from tallylot.application.intake.routing import route_intake_file
 from tallylot.infrastructure.discovery import build_registry
 
 
-def test_route_intake_file_routes_cointracking_pdf_to_portfolio_capture(tmp_path: Path) -> None:
+def test_route_intake_file_routes_cointracking_pdf_to_portfolio_capture(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     pdf_path = incoming_dir / "CoinTracking - 2021 Tax Export - Summary.pdf"
@@ -30,13 +32,16 @@ def test_route_intake_file_routes_cointracking_pdf_to_portfolio_capture(tmp_path
 
     assert route.category == "portfolio_raw"
     assert route.role == "portfolio_export"
-    assert route.capture_id == "2021"
+    assert route.capture_label == "2021"
     assert route.target_path == (
-        workspace_root / "evidence/raw/portfolio/cointracking/2021/CoinTracking - 2021 Tax Export - Summary.pdf"
+        workspace_root
+        / "evidence/raw/portfolio/cointracking/2021/CoinTracking - 2021 Tax Export - Summary.pdf"
     )
 
 
-def test_route_intake_file_routes_cointracking_sidecar_by_html_export_timestamp(tmp_path: Path) -> None:
+def test_route_intake_file_routes_cointracking_sidecar_by_html_export_timestamp(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     sidecar_dir = incoming_dir / "CoinTracking Export_files"
     sidecar_dir.mkdir(parents=True)
@@ -64,13 +69,16 @@ def test_route_intake_file_routes_cointracking_sidecar_by_html_export_timestamp(
 
     assert route.category == "portfolio_raw"
     assert route.role == "portfolio_sidecar"
-    assert route.capture_id == "2022-04"
+    assert route.capture_label == "2022-04"
     assert route.target_path == (
-        workspace_root / "evidence/raw/portfolio/cointracking/2022-04/CoinTracking Export_files/style.min.css"
+        workspace_root
+        / "evidence/raw/portfolio/cointracking/2022-04/CoinTracking Export_files/style.min.css"
     )
 
 
-def test_route_intake_file_routes_cointracking_sidecar_to_unknown_capture_without_html(tmp_path: Path) -> None:
+def test_route_intake_file_routes_cointracking_sidecar_to_unknown_capture_without_html(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     sidecar_dir = incoming_dir / "CoinTracking Export_files"
     sidecar_dir.mkdir(parents=True)
@@ -92,10 +100,12 @@ def test_route_intake_file_routes_cointracking_sidecar_to_unknown_capture_withou
     )
 
     assert route.category == "portfolio_raw"
-    assert route.capture_id == "unknown"
+    assert route.capture_label == "unknown"
 
 
-def test_route_intake_file_routes_archive_sidecar_by_archive_capture_id(tmp_path: Path) -> None:
+def test_route_intake_file_routes_archive_sidecar_by_archive_capture_label(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     archive_path = incoming_dir / "CoinTracking-202203.zip"
@@ -119,4 +129,4 @@ def test_route_intake_file_routes_archive_sidecar_by_archive_capture_id(tmp_path
 
     assert route.category == "portfolio_raw"
     assert route.role == "portfolio_sidecar"
-    assert route.capture_id == "2022-03"
+    assert route.capture_label == "2022-03"

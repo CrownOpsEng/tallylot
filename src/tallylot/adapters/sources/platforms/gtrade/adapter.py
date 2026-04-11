@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.adapters.sources.platforms.gtrade.translation import translate_transactions
+from tallylot.adapters.sources.platforms.gtrade.translation import (
+    translate_transactions,
+)
 from tallylot.adapters.support import (
     location_id_from_parts,
     location_issue,
@@ -18,13 +20,22 @@ from tallylot.adapters.support import (
 )
 from tallylot.adapters.support.drafts import translation_batch_from_drafts
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 
@@ -34,16 +45,26 @@ class _GTradeAdapter:
         display_name="GTrade",
         version="1.0.0",
         capabilities=frozenset(
-            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY, AdapterCapability.INTAKE_ROUTE}
+            {
+                AdapterCapability.SOURCE_TRANSLATE,
+                AdapterCapability.LOCATION_INVENTORY,
+                AdapterCapability.INTAKE_ROUTE,
+            }
         ),
         description="Normalizes GTrade realized PnL reports and extracts trader aliases.",
     )
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(
+        self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> int:
         del raw_dir
         if "gtrade" in source.lower():
             return 100
-        if any(item.header[:3] == ("DATE", "PAIR", "ADDR") for item in inventory if item.header):
+        if any(
+            item.header[:3] == ("DATE", "PAIR", "ADDR")
+            for item in inventory
+            if item.header
+        ):
             return 100
         return 0
 
@@ -65,7 +86,9 @@ class _GTradeAdapter:
         )
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
-        return match_intake_by_path_or_header(relative_path, facts, path_hints=("gtrade",))
+        return match_intake_by_path_or_header(
+            relative_path, facts, path_hints=("gtrade",)
+        )
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
         return no_intake_route(request)
@@ -104,7 +127,9 @@ class _GTradeAdapter:
                             network_scope="polygon",
                             controller="GTrade report",
                             evidence_kind="csv_row",
-                            evidence_path=path.name,
+                            evidence_provenance=ProvenanceLocator.from_reference_ref(
+                                path.name
+                            ),
                             confidence="medium",
                             note="The report exposes a truncated trader alias instead of a full on-chain address.",
                         )
@@ -120,7 +145,9 @@ class _GTradeAdapter:
                                 "GTrade evidence exposes only a truncated address alias; keep companion explorer "
                                 "evidence linked in the wallet inventory."
                             ),
-                            location_id=str(location_id_from_parts(source, "alias", alias)),
+                            location_id=str(
+                                location_id_from_parts(source, "alias", alias)
+                            ),
                             raw_file=path.name,
                         )
                     )
@@ -139,8 +166,12 @@ class _GTradeAdapter:
             )
         return tuple(evidence), tuple(issues)
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
-        location_inventory, _ = self.extract_location_inventory(str(profile.source), raw_dir, profile)
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
+        location_inventory, _ = self.extract_location_inventory(
+            str(profile.source), raw_dir, profile
+        )
         drafts, issues = translate_transactions(profile, raw_dir)
         return translation_batch_from_drafts(
             drafts,

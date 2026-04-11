@@ -3,16 +3,61 @@
 from __future__ import annotations
 
 import csv
+import re
 from collections import defaultdict
 from collections.abc import Callable, Collection, Hashable, Iterator
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from itertools import zip_longest
 from typing import TypeVar
 
 from tallylot.domain.issues import IssueRecord
 from tallylot.ports.source_profiles import SourceProfile, parse_family_claim_tokens
 
 from .drafts import EconomicActivityDraft
+
+_HEADER_SCAN_LIMIT = 25
+_HEADER_KEYWORDS = (
+    "account",
+    "amount",
+    "asset",
+    "balance",
+    "chain",
+    "coin",
+    "currency",
+    "date",
+    "fee",
+    "hash",
+    "id",
+    "name",
+    "network",
+    "note",
+    "order",
+    "pair",
+    "portfolio",
+    "price",
+    "quantity",
+    "settlement",
+    "side",
+    "status",
+    "subtotal",
+    "time",
+    "timestamp",
+    "token",
+    "total",
+    "transaction",
+    "type",
+    "value",
+    "wallet",
+)
+TIMESTAMP_FORMATS = (
+    "%Y-%m-%d %H:%M:%S",
+    "%Y-%m-%d %H:%M:%S UTC",
+    "%Y-%m-%dT%H:%M:%S.%fZ",
+    "%Y-%m-%dT%H:%M:%SZ",
+    "%Y-%m-%d",
+)
 
 type CsvRowParseResult = EconomicActivityDraft | IssueRecord | None
 type CsvRowParser = Callable[["CsvRowContext"], CsvRowParseResult]
@@ -71,14 +116,21 @@ def skip_files_outside_profile_families(
 
 
 def read_csv_header(path: Path) -> tuple[str, ...]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        return tuple(reader.fieldnames or ())
+    header, _, _ = _read_csv_table(path)
+    return header
 
 
 def read_csv_rows(path: Path) -> tuple[dict[str, str], ...]:
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        return tuple(csv.DictReader(handle))
+    _, rows, _ = _read_csv_table(path)
+    return tuple(row for _, row in rows)
+
+
+def read_csv_row_contexts(path: Path) -> tuple[CsvRowContext, ...]:
+    _, rows, _ = _read_csv_table(path)
+    return tuple(
+        CsvRowContext(path=path, row_index=row_index, row=row)
+        for row_index, row in rows
+    )
 
 
 def iter_csv_row_contexts(
@@ -90,7 +142,11 @@ def iter_csv_row_contexts(
     for path in matching_file_paths(raw_dir, pattern=pattern):
         if skip_file is not None and skip_file(path):
             continue
-        for row_index, row in enumerate(read_csv_rows(path), start=2):
+        header, rows, header_index = _read_csv_table(path)
+        del header
+        if header_index is None:
+            continue
+        for row_index, row in rows:
             yield CsvRowContext(path=path, row_index=row_index, row=row)
 
 
@@ -103,7 +159,9 @@ def collect_csv_row_results(
 ) -> tuple[tuple[EconomicActivityDraft, ...], tuple[IssueRecord, ...]]:
     drafts: list[EconomicActivityDraft] = []
     issues: list[IssueRecord] = []
-    for row_context in iter_csv_row_contexts(raw_dir, pattern=pattern, skip_file=skip_file):
+    for row_context in iter_csv_row_contexts(
+        raw_dir, pattern=pattern, skip_file=skip_file
+    ):
         parsed = parse_row(row_context)
         if isinstance(parsed, IssueRecord):
             issues.append(parsed)
@@ -121,9 +179,117 @@ def group_csv_row_contexts(
     skip_file: Callable[[Path], bool] | None = None,
 ) -> dict[GroupKeyT, tuple[CsvRowContext, ...]]:
     grouped: dict[GroupKeyT, list[CsvRowContext]] = defaultdict(list)
-    for row_context in iter_csv_row_contexts(raw_dir, pattern=pattern, skip_file=skip_file):
+    for row_context in iter_csv_row_contexts(
+        raw_dir, pattern=pattern, skip_file=skip_file
+    ):
         group_key = key_for_row(row_context)
         if group_key is None:
             continue
         grouped[group_key].append(row_context)
     return {group_key: tuple(rows) for group_key, rows in grouped.items()}
+
+
+def _read_csv_table(
+    path: Path,
+) -> tuple[tuple[str, ...], list[tuple[int, dict[str, str]]], int | None]:
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        sample = handle.read(4096)
+        handle.seek(0)
+        try:
+            dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
+        except csv.Error:
+            dialect = csv.excel
+        rows = list(csv.reader(handle, dialect=dialect))
+    header_index = _header_row_index(rows)
+    if header_index is None:
+        return (), [], None
+    header = tuple(cell.strip() for cell in rows[header_index])
+    content_rows = [
+        (row_index, _row_dict(header, row))
+        for row_index, row in enumerate(
+            rows[header_index + 1 :], start=header_index + 2
+        )
+        if any(cell.strip() for cell in row)
+    ]
+    return header, content_rows, header_index
+
+
+def _row_dict(header: tuple[str, ...], row: list[str]) -> dict[str, str]:
+    return {
+        key: value.strip()
+        for key, value in zip_longest(header, row, fillvalue="")
+        if key
+    }
+
+
+def _header_row_index(rows: list[list[str]]) -> int | None:
+    for index, row in enumerate(rows[:_HEADER_SCAN_LIMIT]):
+        if _is_plausible_header_row(row):
+            return index
+    candidates = [
+        (len([cell for cell in row if cell.strip()]), index)
+        for index, row in enumerate(rows)
+        if len([cell for cell in row if cell.strip()]) >= 2
+    ]
+    if not candidates:
+        return None
+    widest = max(width for width, _ in candidates)
+    return next(index for width, index in candidates if width == widest)
+
+
+def _is_plausible_header_row(row: list[str]) -> bool:
+    non_empty = [cell.strip() for cell in row if cell.strip()]
+    if len(non_empty) < 2:
+        return False
+    keyword_hits = sum(1 for cell in non_empty if _has_header_keyword(cell))
+    if len(non_empty) <= 3 and keyword_hits < 2:
+        return False
+    payload_like_count = sum(1 for cell in non_empty if _is_payload_like_cell(cell))
+    if payload_like_count * 2 > len(non_empty):
+        return False
+    header_like_count = sum(1 for cell in non_empty if _is_header_like_cell(cell))
+    return header_like_count * 2 >= len(non_empty) or keyword_hits >= 2
+
+
+def _has_header_keyword(value: str) -> bool:
+    normalized = _normalized_header_text(value)
+    return any(keyword in normalized.split() for keyword in _HEADER_KEYWORDS)
+
+
+def _is_header_like_cell(value: str) -> bool:
+    text = value.strip()
+    if not text or _is_payload_like_cell(text):
+        return False
+    normalized = _normalized_header_text(text)
+    return bool(normalized and re.search(r"[a-z]", normalized))
+
+
+def _normalized_header_text(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def _is_payload_like_cell(value: str) -> bool:
+    text = value.strip()
+    if not text:
+        return False
+    if _parse_timestamp(text) is not None:
+        return True
+    return bool(
+        re.fullmatch(
+            r"[$€£]?\d[\d,]*(?:\.\d+)?%?"
+            r"|[$€£]?\d[\d,]*(?:\.\d+)?/[A-Za-z]+"
+            r"|[+-]?\d+(?:\.\d+)?",
+            text,
+        )
+    )
+
+
+def _parse_timestamp(value: str) -> datetime | None:
+    if not value:
+        return None
+    for fmt in TIMESTAMP_FORMATS:
+        try:
+            return datetime.strptime(value, fmt).replace(tzinfo=UTC)
+        except ValueError:
+            continue
+    return None

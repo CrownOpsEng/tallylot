@@ -4,7 +4,7 @@ from pathlib import Path
 
 from tallylot.adapters.sources.platforms.shakepay.pdf_balances import (
     extract_pdf_balances,
-    match_pdf_statement,
+    match_statement_document,
 )
 
 
@@ -42,7 +42,9 @@ def test_shakepay_pdf_balances_extracts_annual_market_value_report() -> None:
         "shakepay.pdf",
     )
 
-    assert match_pdf_statement(Path("shakepay_Performance report_2025.pdf"), text) > 0
+    assert (
+        match_statement_document(Path("shakepay_Performance report_2025.pdf"), text) > 0
+    )
     assert len(rows) == 2
     assert rows[0]["balance_kind"] == "opening_market_value"
     assert rows[0]["value_amount"] == "256.37"

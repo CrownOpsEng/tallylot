@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints.balance_kinds import normalize_balance_kind
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.temporal import TemporalPrecision
@@ -25,8 +26,8 @@ class BalanceEvidence:
     quantity: Decimal
     as_of_at: datetime
     as_of_precision: TemporalPrecision
+    provenance: ProvenanceLocator
     balance_kind: str = "available"
-    evidence_ref: str = ""
     notes: str = ""
 
     def __post_init__(self) -> None:
@@ -60,6 +61,6 @@ class BalanceEvidence:
             ),
             "as_of_precision": self.as_of_precision.value,
             "balance_kind": self.balance_kind,
-            "evidence_ref": self.evidence_ref,
+            **self.provenance.to_flat_dict(),
             "notes": self.notes,
         }

@@ -8,16 +8,21 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from pypdf import PdfReader
-
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.value_objects import (
     format_decimal,
     format_temporal_value,
     parse_decimal,
 )
+from tallylot.ports.evidence import (
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
+)
 
 REPORT_DATE_PATTERN = re.compile(r"Report Date:?\s*(?P<report_date>\d{4}/\d{2}/\d{2})")
+STATEMENT_PERIOD_PATTERN = re.compile(
+    r"AccountStatementPeriod_[^_]+_(?P<period_start>\d{8})-(?P<period_end>\d{8})_"
+)
 SECTION_HEADER_PATTERN = re.compile(r"^(?P<section>.+Top 10 Holdings)$")
 ASSET_ROW_PATTERN = re.compile(
     r"^(?P<symbol>[A-Z0-9]+)\s+.+?\s+(?P<quantity>[0-9,]+\.\d+)\s+[0-9,]+\.\d+\s*/\s*[-0-9,]+\.\d+"
@@ -54,12 +59,6 @@ class BinanceStatementParseResult:
         return self.statement_as_of_at
 
 
-def parse_statement_pdf(pdf_path: Path) -> BinanceStatementParseResult:
-    reader = PdfReader(str(pdf_path))
-    text = "\n".join(page.extract_text() or "" for page in reader.pages)
-    return parse_statement_text(text, pdf_path.name)
-
-
 def parse_statement_text(text: str, pdf_file: str) -> BinanceStatementParseResult:
     report_date_match = REPORT_DATE_PATTERN.search(text)
     if report_date_match is None:
@@ -79,38 +78,70 @@ def parse_statement_text(text: str, pdf_file: str) -> BinanceStatementParseResul
     )
 
 
-def match_statement(pdf_path: Path, text: str) -> int:
+def match_statement_document(pdf_path: Path, text: str) -> int:
     del pdf_path
     if REPORT_DATE_PATTERN.search(text) is not None and "Top 10 Holdings" in text:
         return 100
     return 0
 
 
+def parse_statement_document(pdf_path: Path, text: str) -> StatementDocumentParseResult:
+    parsed = parse_statement_text(text, pdf_path.name)
+    return StatementDocumentParseResult(
+        pdf_file=parsed.pdf_file,
+        recognized=parsed.recognized,
+        statement_as_of_at=parsed.statement_as_of_at,
+        rows=tuple(
+            StatementDocumentBalanceRow(
+                source="Binance",
+                account="Binance",
+                wallet=row.section.removesuffix(" Top 10 Holdings"),
+                balance_kind="available",
+                asset=row.asset_symbol,
+                quantity=row.quantity,
+                as_of_at=row.as_of_at,
+                as_of_precision=row.as_of_precision,
+                pdf_file=parsed.pdf_file,
+                raw_row_ref=row.section,
+                notes=(f"Statement-backed quantity from Binance {row.section}."),
+            )
+            for row in parsed.rows
+        ),
+        document_effective_at=_statement_period_end(pdf_path.name),
+    )
+
+
 def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
-    result = parse_statement_text(text, pdf_file)
+    result = parse_statement_document(Path(pdf_file), text)
     return [
         {
-            "source": "Binance",
-            "account": "Binance",
-            "wallet": row.section.removesuffix(" Top 10 Holdings"),
-            "balance_kind": "available",
-            "asset": row.asset_symbol,
+            "source": row.source,
+            "account": row.account,
+            "wallet": row.wallet,
+            "balance_kind": row.balance_kind,
+            "asset": row.asset,
             "quantity": format_decimal(row.quantity),
             "staked_quantity": "",
             "value_amount": "",
             "value_currency": "",
             "price_amount": "",
             "price_currency": "",
-            "as_of": format_temporal_value(
-                row.as_of_at,
-                precision=row.as_of_precision,
-                label="binance statement as_of",
-            ),
-            "pdf_file": pdf_file,
-            "notes": f"Statement-backed quantity from Binance {row.section}.",
+            "as_of": _statement_as_of_text(row),
+            "pdf_file": row.pdf_file,
+            "notes": row.notes,
         }
         for row in result.rows
     ]
+
+
+def _statement_as_of_text(row: StatementDocumentBalanceRow) -> str:
+    if row.as_of_at is None:
+        return row.as_of_text
+    return format_temporal_value(
+        row.as_of_at,
+        precision=row.as_of_precision,
+        label="binance statement as_of",
+    )
 
 
 def _parse_section_rows(
@@ -155,3 +186,10 @@ def _parse_required_decimal(value: str) -> Decimal:
 
 def _parse_report_date(value: str) -> datetime:
     return datetime.strptime(value, "%Y/%m/%d").replace(tzinfo=UTC)
+
+
+def _statement_period_end(pdf_file: str) -> datetime | None:
+    match = STATEMENT_PERIOD_PATTERN.search(pdf_file)
+    if match is None:
+        return None
+    return datetime.strptime(match.group("period_end"), "%Y%m%d").replace(tzinfo=UTC)

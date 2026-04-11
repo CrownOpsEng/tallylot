@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from tallylot.application.intake.contracts import IntakePlanRequest
+from tallylot.application.intake.captures.session import build_capture_session_plan
 from tallylot.application.intake.source_labels import load_source_label_context
 from tallylot.application.resource_refs import path_from_ref
 from tallylot.ports.artifacts import ArtifactStorePort
@@ -33,9 +34,17 @@ def build_planned_items(
         )
         for entry in files
     ]
+    issue_rows = [issue.to_row() for issue in source_label_context.issues]
+    capture_session_plan = build_capture_session_plan(
+        planned_items=planned_items,
+        artifacts=artifacts,
+        request=request,
+        issue_rows=issue_rows,
+    )
     return PlannedItemBatch(
         planned_items=tuple(
             apply_package_rules_to_items(planned_items, request=request)
         ),
-        issue_rows=tuple(issue.to_row() for issue in source_label_context.issues),
+        issue_rows=tuple(issue_rows),
+        capture_session_plan=capture_session_plan,
     )

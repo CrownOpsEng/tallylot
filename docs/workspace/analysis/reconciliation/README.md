@@ -39,11 +39,16 @@ dates across the selected sources, and
 `balance_reconciliation_blockers.csv` breaks blockers down by source and
 reason.
 
+These workflows read assembled source datasets from
+`working/normalized/sources/`. Each source subdirectory there is the
+reconciliation input for one assembled source.
+
 When compatible location inventory is available across sources,
 `cross_source_assertions.csv`, `cross_source_issues.csv`, and
 `cross_source_summary.json` record the additive corroboration sidecars emitted
-by `reconciliation balances check`. These sidecars improve confidence across
-sources, but they do not replace the source-local balance assertion outputs.
+by `reconciliation balances check` over the assembled source datasets. These
+sidecars improve confidence across sources, but they do not replace the
+source-local balance assertion outputs.
 
 ## Oracle Baseline Package
 

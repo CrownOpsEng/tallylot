@@ -12,9 +12,7 @@ from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactS
 def test_source_intake_service_skips_subset_duplicate_packages(tmp_path: Path) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
-    borrow_payload = (
-        "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
-    )
+    borrow_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
     interest_payload = "Pair,Coin,Amount,Time,Interest Type\nADA/USDT,USDT,0.1,2021-05-25 12:53:03,Hourly\n"
     (incoming_dir / "borrow.csv").write_text(borrow_payload, encoding="utf-8")
     bundle_dir = incoming_dir / "2021" / "Binance" / "From Binance"
@@ -34,9 +32,15 @@ def test_source_intake_service_skips_subset_duplicate_packages(tmp_path: Path) -
     )
 
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
-    summary = json.loads((report_dir / "intake_summary.json").read_text(encoding="utf-8"))
-    loose_row = next(row for row in plan_rows if row["path"].endswith("/incoming/borrow.csv"))
-    bundle_row = next(row for row in plan_rows if row["path"].endswith("/From Binance/borrow.csv"))
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    loose_row = next(
+        row for row in plan_rows if row["path"].endswith("/incoming/borrow.csv")
+    )
+    bundle_row = next(
+        row for row in plan_rows if row["path"].endswith("/From Binance/borrow.csv")
+    )
 
     assert loose_row["package_status"] == "duplicate_package_subset"
     assert loose_row["placement_status"] == "package_duplicate_skip"
@@ -45,9 +49,13 @@ def test_source_intake_service_skips_subset_duplicate_packages(tmp_path: Path) -
     assert summary["duplicate_packages"] == 1
 
 
-def test_source_intake_service_flags_repo_manifest_overlap_for_review(tmp_path: Path) -> None:
+def test_source_intake_service_flags_repo_manifest_overlap_for_review(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
-    existing_capture = workspace_root / "evidence" / "raw" / "source" / "coinbase" / "2021-05"
+    existing_capture = (
+        workspace_root / "evidence" / "raw" / "source" / "coinbase" / "2021-05"
+    )
     existing_capture.mkdir(parents=True, exist_ok=True)
     existing_file = existing_capture / "retail-export.csv"
     payload = (
@@ -89,14 +97,25 @@ def test_source_intake_service_flags_repo_manifest_overlap_for_review(tmp_path: 
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
     row = next(item for item in plan_rows if item["archive_member_path"] == "")
 
+    assert row["source_folder"] == "coinbase"
     assert row["review_required"] == "yes"
     assert "repo_manifest_overlap" in row["review_codes"]
     assert "coinbase/2021-05" in row["review_reason"]
 
 
-def test_source_intake_service_flags_existing_capture_window_overlap_for_review(tmp_path: Path) -> None:
+def test_source_intake_service_flags_existing_capture_window_overlap_for_review(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
-    existing_capture = workspace_root / "evidence" / "raw" / "source" / "binance" / "2021-05" / "existing"
+    existing_capture = (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "binance"
+        / "2021-05"
+        / "existing"
+    )
     existing_capture.mkdir(parents=True, exist_ok=True)
     existing_file = existing_capture / "borrow.csv"
     existing_file.write_text(
@@ -107,7 +126,9 @@ def test_source_intake_service_flags_existing_capture_window_overlap_for_review(
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()
     incoming_file = incoming_dir / "borrow.csv"
-    incoming_file.write_text(existing_file.read_text(encoding="utf-8"), encoding="utf-8")
+    incoming_file.write_text(
+        existing_file.read_text(encoding="utf-8"), encoding="utf-8"
+    )
     report_dir = tmp_path / "reports"
 
     PlanIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
@@ -126,19 +147,17 @@ def test_source_intake_service_flags_existing_capture_window_overlap_for_review(
     assert "binance/2021-05" in row["review_reason"]
 
 
-def test_source_intake_service_keeps_different_cycle_packages_in_overlap_review(tmp_path: Path) -> None:
+def test_source_intake_service_keeps_different_cycle_packages_in_overlap_review(
+    tmp_path: Path,
+) -> None:
     incoming_dir = tmp_path / "incoming"
     older = incoming_dir / "2021" / "Binance" / "202203291730-export"
     newer = incoming_dir / "2021" / "Binance" / "202203301830-export"
     older.mkdir(parents=True)
     newer.mkdir(parents=True)
-    borrow_payload = (
-        "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
-    )
+    borrow_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
     interest_payload = "Pair,Coin,Amount,Time,Interest Type\nADA/USDT,USDT,0.1,2021-05-25 12:53:03,Hourly\n"
-    repay_payload = (
-        "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 13:53:03,0.0345,Auto repayment,CONFIRM\n"
-    )
+    repay_payload = "Pair,Coin,Date,Amount,Type,Status\nADA/USDT,USDT,2021-05-25 13:53:03,0.0345,Auto repayment,CONFIRM\n"
     (older / "borrow.csv").write_text(borrow_payload, encoding="utf-8")
     (older / "interest.csv").write_text(interest_payload, encoding="utf-8")
     (newer / "borrow.csv").write_text(borrow_payload, encoding="utf-8")
@@ -155,9 +174,13 @@ def test_source_intake_service_keeps_different_cycle_packages_in_overlap_review(
         )
     )
 
-    summary = json.loads((report_dir / "intake_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
-    borrow_rows = [row for row in plan_rows if row["bundle_relative_path"] == "borrow.csv"]
+    borrow_rows = [
+        row for row in plan_rows if row["bundle_relative_path"] == "borrow.csv"
+    ]
 
     assert summary["merged_packages"] == 0
     assert summary["overlap_packages"] == 2

@@ -43,7 +43,7 @@ The filled submission package should then contain:
 
 Run `checkpoint submit-balances` against the filled package to validate the
 submission and materialize canonical outputs elsewhere, normally under
-`working/normalized/<source>/`.
+`working/normalized/sources/<source>/`.
 
 The submit workflow writes:
 

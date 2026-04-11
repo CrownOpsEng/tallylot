@@ -7,6 +7,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from tallylot.application.capture_paths import load_capture_metadata
 from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.profiling.csv_inventory import (
     filename_timezone,
@@ -32,9 +33,16 @@ def build_inventory(
         raise NotADirectoryError(f"raw source path is not a directory: {raw_dir}")
     inventory: list[FileInventoryEntry] = []
     issues: list[IssueRecord] = []
-    with scanned_tree_files(raw_dir, inspect_archives=inspect_archives) as scanned_tree:
+    capture_metadata = load_capture_metadata(raw_dir)
+    with scanned_tree_files(
+        raw_dir,
+        inspect_archives=inspect_archives,
+        exclude_paths=_profile_excluded_paths(raw_dir),
+    ) as scanned_tree:
         for entry in scanned_tree.files:
-            header, row_count, timezone_details = _inventory_file_details(entry.file_path)
+            header, row_count, timezone_details = _inventory_file_details(
+                entry.file_path
+            )
             inventory.append(
                 FileInventoryEntry(
                     relative_path=entry.relative_path,
@@ -54,6 +62,14 @@ def build_inventory(
                     timezone_mode=timezone_details.timezone_mode,
                     timezone_value=timezone_details.timezone_value,
                     timezone_conflict=timezone_details.timezone_conflict,
+                    capture_uid=(
+                        ""
+                        if capture_metadata is None
+                        else str(capture_metadata.capture_uid)
+                    ),
+                    source=""
+                    if capture_metadata is None
+                    else str(capture_metadata.source),
                 )
             )
         issues.extend(
@@ -69,6 +85,18 @@ def build_inventory(
             for index, issue in enumerate(scanned_tree.issues, start=1)
         )
     return inventory, issues
+
+
+def _profile_excluded_paths(raw_dir: Path) -> tuple[Path, ...]:
+    return tuple(
+        path
+        for path in (
+            raw_dir / "capture.json",
+            raw_dir / "manifest.csv",
+            raw_dir / "manifest_issues.csv",
+        )
+        if path.exists()
+    )
 
 
 def manifest_fingerprint(inventory: list[FileInventoryEntry]) -> str:
@@ -98,7 +126,9 @@ class TimezoneDetails:
     timezone_conflict: str = ""
 
 
-def _inventory_file_details(path: Path) -> tuple[tuple[str, ...], int | None, TimezoneDetails]:
+def _inventory_file_details(
+    path: Path,
+) -> tuple[tuple[str, ...], int | None, TimezoneDetails]:
     if path.suffix.lower() != ".csv":
         return (), None, TimezoneDetails()
     header, rows = inventory_csv_content(path)
@@ -117,7 +147,11 @@ def csv_timezone_details(
     timestamp_field = next((name for name in header if is_timestamp_field(name)), "")
     if not timestamp_field:
         return TimezoneDetails()
-    values = [row.get(timestamp_field, "").strip() for row in rows if row.get(timestamp_field, "").strip()]
+    values = [
+        row.get(timestamp_field, "").strip()
+        for row in rows
+        if row.get(timestamp_field, "").strip()
+    ]
     sample_value = values[0] if values else ""
     header_utc = "utc" in timestamp_field.lower()
     resolution = timestamp_resolution(sample_value)
@@ -149,11 +183,16 @@ def csv_timezone_details(
     parsed_values = [
         parsed
         for value in values
-        if (parsed := parse_inventory_timestamp(value, source_timezone=source_timezone)) is not None
+        if (parsed := parse_inventory_timestamp(value, source_timezone=source_timezone))
+        is not None
     ]
     parsed_values.sort()
-    min_timestamp = parsed_values[0].strftime("%Y-%m-%d %H:%M:%S") if parsed_values else ""
-    max_timestamp = parsed_values[-1].strftime("%Y-%m-%d %H:%M:%S") if parsed_values else ""
+    min_timestamp = (
+        parsed_values[0].strftime("%Y-%m-%d %H:%M:%S") if parsed_values else ""
+    )
+    max_timestamp = (
+        parsed_values[-1].strftime("%Y-%m-%d %H:%M:%S") if parsed_values else ""
+    )
 
     return TimezoneDetails(
         date_field=timestamp_field,

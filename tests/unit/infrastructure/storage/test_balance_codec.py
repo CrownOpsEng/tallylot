@@ -5,17 +5,18 @@ from decimal import Decimal
 from pathlib import Path
 
 from tallylot.domain.instruments import InstrumentId
-from tallylot.domain.reconciliation import BalanceConfirmation
+from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
-from tallylot.domain.types import LocationId, SourceId
+from tallylot.domain.captures import ProvenanceLocator
+from tallylot.domain.types import CaptureUid, LocationId, SourceId
 from tallylot.infrastructure.storage.balance_codec import (
-    BALANCE_CONFIRMATION_HEADER,
     balance_confirmation_from_row,
     balance_evidence_from_row,
     balance_snapshot_from_row,
 )
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
 from tallylot.infrastructure.serialization.csv_io import read_rows
+from tallylot.ports.evidence import BALANCE_CONFIRMATION_HEADER, BALANCE_EVIDENCE_HEADER
 
 
 def test_balance_snapshot_from_row_defaults_blank_balance_kind() -> None:
@@ -46,14 +47,21 @@ def test_balance_evidence_from_row_defaults_blank_balance_kind() -> None:
             "as_of_at": "2025-12-31",
             "as_of_precision": "date",
             "balance_kind": "",
-            "evidence_ref": "statement.pdf",
+            "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+            "relative_path": "statement.pdf",
+            "archive_member_path": "",
+            "locator_kind": "raw_file",
+            "anchor": "",
             "notes": "statement",
         }
     )
 
     assert evidence.balance_kind == "available"
     assert evidence.as_of_at == datetime(2025, 12, 31, tzinfo=UTC)
-    assert evidence.evidence_ref == "statement.pdf"
+    assert evidence.provenance == ProvenanceLocator(
+        capture_uid=CaptureUid("01HV4A5H7VJH7M3Y5A6B7C8D9E"),
+        relative_path="statement.pdf",
+    )
 
 
 def test_balance_confirmation_from_row_defaults_blank_balance_kind() -> None:
@@ -108,3 +116,32 @@ def test_balance_confirmation_repository_round_trip(tmp_path: Path) -> None:
 
     assert tuple(read_rows(path)[0].keys()) == BALANCE_CONFIRMATION_HEADER
     assert repository.read_balance_confirmations(path) == confirmations
+
+
+def test_balance_evidence_repository_round_trip_with_provenance(tmp_path: Path) -> None:
+    path = tmp_path / "balance_evidence.csv"
+    repository = FilesystemEvidenceRepository()
+    evidence = (
+        BalanceEvidence(
+            source=SourceId("coinbase"),
+            location_id=LocationId("coinbase:primary"),
+            instrument_id=InstrumentId("symbol:BTC@coinbase"),
+            quantity=Decimal("1.25"),
+            as_of_at=datetime(2025, 12, 31, tzinfo=UTC),
+            as_of_precision=TemporalPrecision.DATE,
+            provenance=ProvenanceLocator(
+                capture_uid=CaptureUid("01HV4A5H7VJH7M3Y5A6B7C8D9E"),
+                relative_path="statement.pdf",
+                locator_kind="raw_file",
+            ),
+        ),
+    )
+
+    repository.write_balance_evidence(path, evidence)
+
+    rows = read_rows(path)
+
+    assert tuple(rows[0].keys()) == BALANCE_EVIDENCE_HEADER
+    assert rows[0]["capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    assert rows[0]["relative_path"] == "statement.pdf"
+    assert repository.read_balance_evidence(path) == evidence

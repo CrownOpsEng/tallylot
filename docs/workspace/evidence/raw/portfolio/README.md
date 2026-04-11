@@ -21,5 +21,5 @@ Rules:
 
 - never treat portfolio exports as raw source truth
 - keep the historical baseline oracle bundle in `evidence/raw/portfolio/cointracking/2023-08-05_full_export/`
-- place later CoinTracking export captures under `evidence/raw/portfolio/cointracking/history/<capture_id>/`
+- place later CoinTracking export captures under `evidence/raw/portfolio/cointracking/history/<capture_label>/`
 - keep saved HTML exports with their sidecar bundles together inside the same capture

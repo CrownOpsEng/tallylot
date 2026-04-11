@@ -1,2 +1,2 @@
-source,activity_after_cutoff,first_post_cutoff_tx,export_window_start,export_window_end,import_order,status,capture_path,profile_status,adapter,normalization_status,exception_count,candidate_path,notes
-Example Source,unknown,,,,,needs_user_confirmation,,pending_profile,generic,pending,,,Use candidate_path only for a staged batch under working/import_batches
+source,activity_after_cutoff,scope_status,status,capture_count,latest_capture_uid,latest_capture_label,latest_capture_completed_at,assembly_status,assembled_root_ref,adapter_hints,notes
+Example Source,unknown,unconfirmed,needs_user_confirmation,0,,,,pending,,generic,Source summary only; capture detail lives in analysis/inventory/source_captures.csv

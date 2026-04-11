@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 from tallylot.domain.types import ResourceRef, WorkspacePath
 
+INTAKE_ISSUE_HEADER = ("relative_path", "severity", "kind", "message")
+
 
 @dataclass(frozen=True)
 class ManifestRequest:
@@ -33,6 +35,9 @@ class IntakePlanRequest:
 @dataclass(frozen=True)
 class IntakePlanResponse:
     report_output_ref: ResourceRef
+    source: str
+    capture_status: str
+    capture_label: str
     file_count: int
     issue_count: int
     planned_copy_count: int
@@ -49,6 +54,9 @@ class IntakeApplyRequest:
 @dataclass(frozen=True)
 class IntakeApplyResponse:
     report_output_ref: ResourceRef
+    source: str
+    capture_status: str
+    capture_label: str
     file_count: int
     issue_count: int
     copied_count: int

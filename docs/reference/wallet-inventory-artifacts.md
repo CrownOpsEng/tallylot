@@ -16,7 +16,7 @@ artifacts.
 | File | Purpose |
 | ---- | ------- |
 | `location_inventory.csv` | One row per normalized wallet identifier |
-| `location_inventory_evidence.csv` | Evidence rows showing where each identifier came from |
+| `location_inventory_evidence.csv` | Evidence rows showing where each identifier came from through shared flattened locator columns |
 | `location_inventory_issues.csv` | Deterministic review items such as conflicting wallet IDs or missing evidence paths |
 | `location_inventory_summary.json` | High-level counts for agents and scripts |
 
@@ -34,7 +34,11 @@ outputs inside the scanned input root so reruns stay deterministic.
 ## Review Rules
 
 - Treat `location_inventory.csv` as the compact lookup table.
-- Use `location_inventory_evidence.csv` when you need the supporting capture path.
+- Use `location_inventory_evidence.csv` when you need the supporting
+  capture-scoped locator columns:
+  `evidence_capture_uid`, `evidence_relative_path`,
+  `evidence_archive_member_path`, `evidence_locator_kind`, and
+  `evidence_anchor`.
 - Review `location_inventory_issues.csv` before treating a newly discovered
   identifier as import-ready evidence.
 - Fix upstream normalized inputs when evidence paths or identifier assignments

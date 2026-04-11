@@ -6,6 +6,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceEvidence
@@ -55,7 +56,7 @@ def test_reconciliation_balance_skill_runner_executes_runtime_workflows(
                 quantity=Decimal("1.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.DATE,
-                evidence_ref="clean.csv",
+                provenance=ProvenanceLocator.from_reference_ref("clean.csv"),
             ),
         ),
     )

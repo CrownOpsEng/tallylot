@@ -223,7 +223,7 @@ def _index_evidence(
                         record.as_of_precision,
                         label="duplicate balance issue timestamp",
                     ),
-                    raw_file=record.evidence_ref,
+                    raw_file=record.provenance.to_reference_ref(),
                 )
             )
             continue
@@ -282,7 +282,7 @@ def _reference_ref(
     if record is None:
         return ""
     if isinstance(record, BalanceEvidence):
-        return record.evidence_ref
+        return record.provenance.to_reference_ref()
     return record.support_ref
 
 

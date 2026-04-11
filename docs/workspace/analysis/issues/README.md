@@ -11,8 +11,8 @@ This folder holds the live issue, inventory, and intake-control files that
 must stay current during execution.
 
 Related generated inventory artifacts now live beside them in
-`analysis/inventory/`, especially `location_inventory.csv` and
-`location_inventory_issues.csv`.
+`analysis/inventory/`, especially `source_captures.csv`,
+`location_inventory.csv`, and `location_inventory_issues.csv`.
 
 ## `issue_log.csv`
 
@@ -71,31 +71,54 @@ Prefix guidance:
 
 ## `source_inventory.csv`
 
-Use this file to track every source that may have activity after the baseline cutoff.
+Use this file for source-summary state only.
 
-Update the row continuously as facts are confirmed:
+Update the row continuously as source scope and assembly state become clearer:
 
 - when activity is confirmed or excluded
-- when the capture folder and manifest are present
-- when the import batch is overlap-screened and ready
-- when the source is imported and then fully verified
+- when capture counts and latest accepted captures change
+- when assembly is blocked, pending, or complete
+- when the external import and verification workflow advances
+
+This file does not store one source-level `capture_path`. Capture detail belongs
+in `analysis/inventory/source_captures.csv`.
 
 Suggested `status` values:
 
-These values describe the current external import and verification workflow.
+These values describe the current typed capture and assembly lifecycle:
 
-- `needs_user_confirmation` → source is known from the baseline, but post-cutoff activity is not yet confirmed
-- `pending_inventory_confirmation` → source is expected to be active, but timing or scope still needs confirmation
-- `confirmed_active_pending_export` → post-cutoff activity is confirmed and the source is in scope, but capture files have not been pulled yet
-- `capture_complete` → the capture folder and manifest are present
-- `ready_for_import` → cleaned import file is prepared and overlap-screened
-- `imported_pending_verification` → source was imported into the current
-  external verification workflow and fresh exports still need review
-- `complete` → source import is verified and closed
-- `excluded_no_activity` → confirmed no post-cutoff activity
-- `excluded_dust_balance` → confirmed post-cutoff activity exists, but the source is excluded from the initial queue because its baseline balance is within the agreed dust threshold
+- `capture_complete` → at least one non-blocked capture row exists for the
+  source
+- `profiled` → at least one capture has profile artifacts
+- `normalized` → at least one capture has normalized output
+- `assembled` → `source assemble` produced the current assembled source dataset
 
 Keep the values consistent so AI and manual review can sort and filter reliably.
+
+Suggested `assembly_status` values:
+
+- `pending` → no assembled source dataset exists yet
+- `excluded` → the latest assembly attempt excluded all candidate captures or
+  found only missing normalized outputs
+- `assembled` → the current assembled source dataset exists under
+  `working/normalized/sources/<source>/`
+
+## `analysis/inventory/source_captures.csv`
+
+Use this append-only registry to track each intake capture for a source.
+
+Rules:
+
+- `capture_uid` is the immutable capture identity
+- `capture_label` is the human-readable raw folder name
+- `capture_root_ref` is workspace-relative
+- `supersedes_capture_uid` is explicit when one capture replaces another
+- status captures intake, review, profiling, normalization, and assembly
+  progression
+- expected status values include `capture_blocked`, `captured`,
+  `duplicate_blocked`,
+  `overlap_review_required`, `profiled`, `normalized`, `assembly_included`,
+  `assembly_excluded`, and `superseded`
 
 ## `source_label_map.csv`
 
@@ -107,8 +130,13 @@ Each row maps an incoming path prefix to a source label that already exists in
 
 Rules:
 
+- `incoming_capture_scope` is optional; leave it blank for a workspace-global
+  rule or set it to the operator-managed incoming staging directory name when
+  multiple incoming captures share one workspace
 - `incoming_path_prefix` is relative to the intake `--incoming-dir`
 - `.` applies to the entire incoming capture
+- scoped `.` rows may coexist when each row uses a different
+  `incoming_capture_scope`
 - keep prefixes durable and operator-meaningful rather than adapter-specific
 - use the file when raw source evidence or source-scoped working artifacts
   should stay associated with an existing stable source label

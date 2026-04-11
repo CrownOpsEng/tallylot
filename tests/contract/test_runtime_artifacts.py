@@ -3,12 +3,16 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tallylot.application.checkpoints import LocationInventoryRequest, RebuildLocationInventoryUseCase
+from tallylot.application.checkpoints import (
+    LocationInventoryRequest,
+    RebuildLocationInventoryUseCase,
+)
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.profiling import BuildProfileUseCase, ProfileRequest
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from repo_support.capture_roots import materialize_capture_root
 from tests.support.services import build_normalization_service
 
 
@@ -16,13 +20,16 @@ def test_profile_service_emits_timezone_artifacts(
     structured_source_dir: Path,
     tmp_path: Path,
 ) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
     output_dir = tmp_path / "profile"
     artifacts = FilesystemArtifactStore()
 
     BuildProfileUseCase(build_registry(), artifacts).execute(
         ProfileRequest(
             source="fixture_source",
-            raw_capture_ref=to_resource_ref(structured_source_dir),
+            raw_capture_ref=to_resource_ref(raw_capture_root),
             profile_output_ref=to_resource_ref(output_dir),
         )
     )
@@ -40,6 +47,9 @@ def test_location_inventory_rebuild_emits_documented_outputs(
     structured_source_dir: Path,
     tmp_path: Path,
 ) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
     normalized_dir = tmp_path / "normalized"
     output_path = tmp_path / "location_inventory.csv"
     artifacts = FilesystemArtifactStore()
@@ -47,7 +57,7 @@ def test_location_inventory_rebuild_emits_documented_outputs(
     build_normalization_service(artifacts=artifacts).execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_capture_ref=to_resource_ref(structured_source_dir),
+            raw_capture_ref=to_resource_ref(raw_capture_root),
             normalized_output_ref=to_resource_ref(normalized_dir),
         )
     )
@@ -69,12 +79,15 @@ def test_normalization_emits_fact_and_balance_artifacts(
     structured_source_dir: Path,
     tmp_path: Path,
 ) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
     normalized_dir = tmp_path / "normalized"
 
     build_normalization_service(artifacts=FilesystemArtifactStore()).execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_capture_ref=to_resource_ref(structured_source_dir),
+            raw_capture_ref=to_resource_ref(raw_capture_root),
             normalized_output_ref=to_resource_ref(normalized_dir),
         )
     )

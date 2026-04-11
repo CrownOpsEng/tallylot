@@ -21,6 +21,7 @@ from tallylot.application.normalization.normalize_source import (
     NormalizationDependencies,
     NormalizeSourceUseCase,
 )
+from tallylot.application.normalization.assembly import AssembleSourceUseCase
 from tallylot.application.outputs.render_output import RenderOutputUseCase
 from tallylot.application.profiling.build_profile import BuildProfileUseCase
 from tallylot.application.reconciliation import (
@@ -76,6 +77,11 @@ def normalize_source_use_case() -> NormalizeSourceUseCase:
             artifacts=artifacts,
         )
     )
+
+
+def assemble_source_use_case() -> AssembleSourceUseCase:
+    _, artifacts, _, _ = runtime_dependencies()
+    return AssembleSourceUseCase(artifacts)
 
 
 def plan_intake_use_case() -> PlanIntakeUseCase:

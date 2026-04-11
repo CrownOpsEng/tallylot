@@ -41,14 +41,28 @@ part of the current round-close process.
 
 - Plan and apply intake before hand-shaping anything in the workspace.
 - Keep the settled raw files under
-  `evidence/raw/source/<source>/<capture_id>/`.
+  `evidence/raw/source/<source>/<capture_label>/`.
+- One intake run equals one capture. Inferred periods stay metadata-only.
+- Keep untouched statements, HTML exports, and required upstream sidecars in
+  raw evidence.
 - Build the capture manifest and profile the settled capture.
+- `source profile` and `source normalize` must point at the materialized
+  capture root with matching `capture.json` metadata. They do not accept source
+  roots or arbitrary directories.
 - Use [Source Intake](source-intake.md) for the full command sequence and
   artifact review points.
 
 ### 3. Normalize And Prepare A Candidate
 
-- Normalize the settled capture and review the emitted issues and summaries.
+- Normalize the settled capture and review the emitted issues and summaries
+  under `working/normalized/captures/<capture_uid>/`.
+- Review `profile_inventory.csv` as the capture-scoped discovery contract for
+  statement-backed evidence, archive-member provenance, and issue-context
+  resolution.
+- Run `source assemble` before reconciliation so the accepted capture outputs
+  land under `working/normalized/sources/<source>/`.
+- `source assemble` owns that source dataset surface and rewrites its known
+  generated files on rerun instead of leaving stale assembled artifacts behind.
 - Use normalization-owned `balances.csv` and `balance_evidence.csv` directly
   when the source adapter already produced canonical balance artifacts.
 - When balances need to be authored manually, run
@@ -107,4 +121,5 @@ part of the current round-close process.
   rules.
 - Use `checkpoint extract-pdf-balances` for supported Coinbase, Binance, and
   Shakepay PDF statements when source-backed balance evidence is only
-  available in PDF form.
+  available in PDF form. The command uses the same statement extraction path
+  as normalization.

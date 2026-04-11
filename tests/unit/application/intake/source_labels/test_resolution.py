@@ -26,21 +26,50 @@ def test_load_source_label_context_reads_rules_and_reports_conflicts(
     )
     artifacts.write_rows(
         issues_dir / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
         (
-            {"incoming_path_prefix": ".", "source": "binance-main", "notes": ""},
-            {"incoming_path_prefix": "capture", "source": "binance-main", "notes": ""},
-            {"incoming_path_prefix": "capture", "source": "binance-alt", "notes": ""},
-            {"incoming_path_prefix": "../bad", "source": "binance-main", "notes": ""},
+            {
+                "incoming_capture_scope": "batch-a",
+                "incoming_path_prefix": ".",
+                "source": "binance-main",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "batch-a",
+                "incoming_path_prefix": "capture",
+                "source": "binance-main",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "batch-a",
+                "incoming_path_prefix": "capture",
+                "source": "binance-alt",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "batch-b",
+                "incoming_path_prefix": ".",
+                "source": "binance-alt",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "../bad",
+                "incoming_path_prefix": ".",
+                "source": "binance-main",
+                "notes": "",
+            },
         ),
     )
 
     context = load_source_label_context(artifacts, workspace_root)
 
-    assert tuple(rule.prefix for rule in context.rules) == (".",)
+    assert tuple(
+        (rule.incoming_capture_scope, rule.prefix, rule.source)
+        for rule in context.rules
+    ) == (("batch-b", ".", "binance-alt"), ("batch-a", ".", "binance-main"))
     assert {issue.kind for issue in context.issues} == {
         "source_label_map_conflict",
-        "source_label_map_invalid_prefix",
+        "source_label_map_invalid_scope",
     }
 
 
@@ -58,9 +87,10 @@ def test_resolve_source_label_prefers_explicit_map_for_source_scoped_working_pat
     )
     artifacts.write_rows(
         issues_dir / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
         (
             {
+                "incoming_capture_scope": "batch-a",
                 "incoming_path_prefix": "2021/Binance",
                 "source": "binance-main",
                 "notes": "",
@@ -73,6 +103,7 @@ def test_resolve_source_label_prefers_explicit_map_for_source_scoped_working_pat
         context=load_source_label_context(artifacts, workspace_root),
         request=SourceLabelResolutionRequest(
             workspace_root=workspace_root,
+            incoming_capture_scope="batch-a",
             route_key="2021/Binance/trade Analysis - ADA-USDT - Binance.png",
             facts=IntakeFileFacts(),
             source_folder="binance",
@@ -104,8 +135,15 @@ def test_resolve_source_label_blocks_matching_unknown_source_mapping(
     )
     artifacts.write_rows(
         issues_dir / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
-        ({"incoming_path_prefix": ".", "source": "missing-source", "notes": ""},),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "batch-a",
+                "incoming_path_prefix": ".",
+                "source": "missing-source",
+                "notes": "",
+            },
+        ),
     )
 
     decision = resolve_source_label(
@@ -113,6 +151,7 @@ def test_resolve_source_label_blocks_matching_unknown_source_mapping(
         context=load_source_label_context(artifacts, workspace_root),
         request=SourceLabelResolutionRequest(
             workspace_root=workspace_root,
+            incoming_capture_scope="batch-a",
             route_key="transactions.csv",
             facts=IntakeFileFacts(),
             source_folder="unclassified",
@@ -167,8 +206,15 @@ def test_resolve_source_label_skips_non_source_scoped_working_paths(
     )
     artifacts.write_rows(
         issues_dir / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
-        ({"incoming_path_prefix": ".", "source": "binance-main", "notes": ""},),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "batch-a",
+                "incoming_path_prefix": ".",
+                "source": "binance-main",
+                "notes": "",
+            },
+        ),
     )
 
     decision = resolve_source_label(
@@ -176,6 +222,7 @@ def test_resolve_source_label_skips_non_source_scoped_working_paths(
         context=load_source_label_context(artifacts, workspace_root),
         request=SourceLabelResolutionRequest(
             workspace_root=workspace_root,
+            incoming_capture_scope="batch-a",
             route_key="batch-001/manifest.csv",
             facts=IntakeFileFacts(),
             source_folder="binance",
@@ -194,3 +241,58 @@ def test_resolve_source_label_skips_non_source_scoped_working_paths(
         == "Non-source-scoped destination keeps routed source binance."
     )
     assert decision.inventory_match_status == "unmatched"
+
+
+def test_resolve_source_label_prefers_capture_scoped_rule_over_global_rule(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    issues_dir = workspace_root / "analysis" / "issues"
+    issues_dir.mkdir(parents=True)
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        issues_dir / "source_inventory.csv",
+        ("source",),
+        ({"source": "wallet-main"}, {"source": "wallet-alt"}),
+    )
+    artifacts.write_rows(
+        issues_dir / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "wallet-main",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "eth-stage",
+                "incoming_path_prefix": ".",
+                "source": "wallet-alt",
+                "notes": "",
+            },
+        ),
+    )
+
+    decision = resolve_source_label(
+        artifacts=artifacts,
+        context=load_source_label_context(artifacts, workspace_root),
+        request=SourceLabelResolutionRequest(
+            workspace_root=workspace_root,
+            incoming_capture_scope="eth-stage",
+            route_key="transactions.csv",
+            facts=IntakeFileFacts(),
+            source_folder="unclassified",
+            target_path=workspace_root
+            / "evidence"
+            / "raw"
+            / "source"
+            / "unclassified"
+            / "incoming"
+            / "transactions.csv",
+        ),
+    )
+
+    assert decision.source_folder == "wallet-alt"
+    assert decision.source_resolution_status == "explicit_map"
+    assert "eth-stage" in decision.source_resolution_reason

@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import re
 from datetime import UTC, datetime
+from itertools import zip_longest
 from pathlib import Path
 
 from tallylot.domain.location_identifiers import (
@@ -17,7 +18,40 @@ from tallylot.domain.location_identifiers import (
 
 from .models import IntakeFileFacts
 
-type CsvCell = str | list[str]
+_HEADER_SCAN_LIMIT = 25
+_HEADER_KEYWORDS = (
+    "account",
+    "amount",
+    "asset",
+    "balance",
+    "chain",
+    "coin",
+    "currency",
+    "date",
+    "fee",
+    "hash",
+    "id",
+    "name",
+    "network",
+    "note",
+    "order",
+    "pair",
+    "portfolio",
+    "price",
+    "quantity",
+    "settlement",
+    "side",
+    "status",
+    "subtotal",
+    "time",
+    "timestamp",
+    "token",
+    "total",
+    "transaction",
+    "type",
+    "value",
+    "wallet",
+)
 
 TIMESTAMP_FORMATS = (
     "%Y-%m-%d %H:%M:%S",
@@ -56,20 +90,23 @@ ACCOUNT_SEGMENT_PATTERN = re.compile(r"account[-_ ]?[a-z0-9]+", re.IGNORECASE)
 def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
     if path.suffix.lower() != ".csv":
         return IntakeFileFacts(
-            scope_tokens=tuple(sorted(_scope_tokens(relative_path, []))),
-            network_hints=tuple(sorted(_network_hints(relative_path, (), []))),
+            scope_tokens=tuple(sorted(_scope_tokens(relative_path, [], []))),
+            network_hints=_network_hints(relative_path, (), [], []),
         )
 
-    header, rows = _read_csv_rows(path)
+    header, rows, title_rows = _read_csv_rows(path)
     timestamp_values = _timestamp_values(rows, header)
-    scope_tokens = _scope_tokens(relative_path, rows)
-    network_hints = _network_hints(relative_path, header, rows)
+    scope_tokens = _scope_tokens(relative_path, rows, title_rows)
+    network_hints = _network_hints(relative_path, header, rows, title_rows)
     return IntakeFileFacts(
         header=header,
         min_timestamp=timestamp_values[0] if timestamp_values else "",
         max_timestamp=timestamp_values[-1] if timestamp_values else "",
+        observed_period_start=_observed_period_start(timestamp_values),
+        observed_period_end=_observed_period_end(timestamp_values),
+        observed_period_label=_observed_period_label(timestamp_values),
         scope_tokens=tuple(sorted(scope_tokens)),
-        network_hints=tuple(sorted(network_hints)),
+        network_hints=network_hints,
     )
 
 
@@ -84,18 +121,54 @@ def parse_timestamp(value: str) -> datetime | None:
     return None
 
 
-def _timestamp_values(rows: list[dict[str, CsvCell]], header: tuple[str, ...]) -> list[str]:
+def _timestamp_values(
+    rows: list[dict[str, str]],
+    header: tuple[str, ...],
+) -> list[str]:
     field_name = next((name for name in TIMESTAMP_FIELD_NAMES if name in header), "")
     if not field_name:
         lowered = {name.lower(): name for name in header}
-        field_name = next((lowered[name.lower()] for name in TIMESTAMP_FIELD_NAMES if name.lower() in lowered), "")
+        field_name = next(
+            (
+                lowered[name.lower()]
+                for name in TIMESTAMP_FIELD_NAMES
+                if name.lower() in lowered
+            ),
+            "",
+        )
     if not field_name:
         return []
-    parsed_values = [parsed for row in rows if (parsed := parse_timestamp(_cell_text(row.get(field_name)))) is not None]
+    parsed_values = [
+        parsed
+        for row in rows
+        if (parsed := parse_timestamp(_cell_text(row.get(field_name)))) is not None
+    ]
     return [value.strftime("%Y-%m-%d %H:%M:%S") for value in sorted(parsed_values)]
 
 
-def _read_csv_rows(path: Path) -> tuple[tuple[str, ...], list[dict[str, CsvCell]]]:
+def _observed_period_start(timestamp_values: list[str]) -> str:
+    if not timestamp_values:
+        return ""
+    return timestamp_values[0][:10]
+
+
+def _observed_period_end(timestamp_values: list[str]) -> str:
+    if not timestamp_values:
+        return ""
+    return timestamp_values[-1][:10]
+
+
+def _observed_period_label(timestamp_values: list[str]) -> str:
+    if not timestamp_values:
+        return ""
+    start = timestamp_values[0][:7]
+    end = timestamp_values[-1][:7]
+    return start if start == end else f"{start}..{end}"
+
+
+def _read_csv_rows(
+    path: Path,
+) -> tuple[tuple[str, ...], list[dict[str, str]], list[list[str]]]:
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         sample = handle.read(4096)
         handle.seek(0)
@@ -103,45 +176,149 @@ def _read_csv_rows(path: Path) -> tuple[tuple[str, ...], list[dict[str, CsvCell]
             dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
         except csv.Error:
             dialect = csv.excel
-        reader = csv.DictReader(handle, dialect=dialect)
-        return tuple(reader.fieldnames or ()), list(reader)
+        rows = list(csv.reader(handle, dialect=dialect))
+    header_index = _header_row_index(rows)
+    if header_index is None:
+        return (), [], []
+    header = tuple(cell.strip() for cell in rows[header_index])
+    title_rows = rows[:header_index]
+    content_rows = [
+        _row_dict(header, row)
+        for row in rows[header_index + 1 :]
+        if any(cell.strip() for cell in row)
+    ]
+    return header, content_rows, title_rows
 
 
-def _scope_tokens(relative_path: str, rows: list[dict[str, CsvCell]]) -> set[str]:
+def _scope_tokens(
+    relative_path: str,
+    rows: list[dict[str, str]],
+    title_rows: list[list[str]],
+) -> set[str]:
     tokens: set[str] = set()
     lower_path = relative_path.lower()
     for token in _identifier_scope_tokens(relative_path):
         tokens.add(token)
     for match in ACCOUNT_SEGMENT_PATTERN.finditer(lower_path):
-        tokens.add(f"label:{match.group(0).lower().replace(' ', '-').replace('_', '-')}")
+        tokens.add(
+            f"label:{match.group(0).lower().replace(' ', '-').replace('_', '-')}"
+        )
     for row in rows[:50]:
         for value in row.values():
-            candidates = value if isinstance(value, list) else (value or "",)
-            for candidate in candidates:
-                for token in _identifier_scope_tokens(candidate):
-                    tokens.add(token)
+            for token in _identifier_scope_tokens(value):
+                tokens.add(token)
+    for title_row in title_rows[:50]:
+        title_text = " ".join(cell.strip() for cell in title_row)
+        for token in _identifier_scope_tokens(title_text):
+            tokens.add(token)
+        for match in ACCOUNT_SEGMENT_PATTERN.finditer(title_text.lower()):
+            tokens.add(
+                f"label:{match.group(0).lower().replace(' ', '-').replace('_', '-')}"
+            )
     return tokens
 
 
 def _network_hints(
     relative_path: str,
     header: tuple[str, ...],
-    rows: list[dict[str, CsvCell]],
-) -> set[str]:
-    row_text = " ".join(_cell_text(value) for row in rows[:50] for value in row.values())
-    search_text = " ".join((relative_path, *header, row_text)).lower()
-    hints: set[str] = set()
+    rows: list[dict[str, str]],
+    title_rows: list[list[str]],
+) -> tuple[str, ...]:
+    row_text = " ".join(
+        _cell_text(value) for row in rows[:50] for value in row.values()
+    )
+    title_text = " ".join(
+        _cell_text(cell) for title_row in title_rows[:50] for cell in title_row
+    )
+    search_text = " ".join((relative_path, *header, row_text, title_text)).lower()
+    ordered_matches: list[tuple[int, str]] = []
     for token, network in NETWORK_HINTS:
-        if token in search_text:
-            hints.add(network)
-    return hints
+        position = search_text.find(token)
+        if position != -1:
+            ordered_matches.append((position, network))
+    hints: list[str] = []
+    seen: set[str] = set()
+    for _, network in sorted(ordered_matches, key=lambda item: (item[0], item[1])):
+        if network in seen:
+            continue
+        seen.add(network)
+        hints.append(network)
+    return tuple(hints)
 
 
-def _cell_text(value: CsvCell | None) -> str:
+def _row_dict(header: tuple[str, ...], row: list[str]) -> dict[str, str]:
+    return {
+        key: value.strip()
+        for key, value in zip_longest(header, row, fillvalue="")
+        if key
+    }
+
+
+def _header_row_index(rows: list[list[str]]) -> int | None:
+    for index, row in enumerate(rows[:_HEADER_SCAN_LIMIT]):
+        if _is_plausible_header_row(row):
+            return index
+    candidates = [
+        (len([cell for cell in row if cell.strip()]), index)
+        for index, row in enumerate(rows)
+        if len([cell for cell in row if cell.strip()]) >= 2
+    ]
+    if not candidates:
+        return None
+    widest = max(width for width, _ in candidates)
+    return next(index for width, index in candidates if width == widest)
+
+
+def _is_plausible_header_row(row: list[str]) -> bool:
+    non_empty = [cell.strip() for cell in row if cell.strip()]
+    if len(non_empty) < 2:
+        return False
+    keyword_hits = sum(1 for cell in non_empty if _has_header_keyword(cell))
+    if len(non_empty) <= 3 and keyword_hits < 2:
+        return False
+    payload_like_count = sum(1 for cell in non_empty if _is_payload_like_cell(cell))
+    if payload_like_count * 2 > len(non_empty):
+        return False
+    header_like_count = sum(1 for cell in non_empty if _is_header_like_cell(cell))
+    return header_like_count * 2 >= len(non_empty) or keyword_hits >= 2
+
+
+def _has_header_keyword(value: str) -> bool:
+    normalized = _normalized_header_text(value)
+    return any(keyword in normalized.split() for keyword in _HEADER_KEYWORDS)
+
+
+def _is_header_like_cell(value: str) -> bool:
+    text = value.strip()
+    if not text or _is_payload_like_cell(text):
+        return False
+    normalized = _normalized_header_text(text)
+    return bool(normalized and re.search(r"[a-z]", normalized))
+
+
+def _normalized_header_text(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def _is_payload_like_cell(value: str) -> bool:
+    text = value.strip()
+    if not text:
+        return False
+    if parse_timestamp(text) is not None:
+        return True
+    return bool(
+        re.fullmatch(
+            r"[$€£]?\d[\d,]*(?:\.\d+)?%?"
+            r"|[$€£]?\d[\d,]*(?:\.\d+)?/[A-Za-z]+"
+            r"|[+-]?\d+(?:\.\d+)?",
+            text,
+        )
+    )
+
+
+def _cell_text(value: str | None) -> str:
     if value is None:
         return ""
-    if isinstance(value, list):
-        return " ".join(value).strip()
     return value.strip()
 
 

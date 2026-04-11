@@ -8,10 +8,12 @@ import pytest
 
 from tallylot.adapters.sources.platforms.binance.adapter import _BinanceAdapter
 from tallylot.adapters.sources.platforms.binance.statement_evidence import (
-    BinanceStatementBalanceRow,
-    BinanceStatementParseResult,
+    parse_statement_document,
 )
 from tallylot.adapters.support.drafts import compile_activity_drafts
+from tallylot.application.evidence.statement_extraction import (
+    StatementExtractionService,
+)
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
     AccountingIntentHint,
@@ -19,7 +21,12 @@ from tallylot.domain.transactions import (
     ProjectionHint,
     TaxTreatmentHint,
 )
-from tests.support.services import build_source_profile
+from tallylot.ports.evidence import (
+    StatementDocumentBalanceRow,
+    StatementDocumentParseResult,
+)
+from tallylot.ports.source_profiles import FileInventoryEntry
+from tests.support.services import FakeSourceRegistry, build_source_profile
 
 
 def test_binance_adapter_handles_supported_and_review_required_rows(
@@ -221,7 +228,24 @@ def test_binance_adapter_surfaces_unmatched_export_files(tmp_path: Path) -> None
     assert result.issues[0].kind == "unsupported_file"
 
 
-def test_binance_adapter_emits_latest_statement_balance_evidence(
+def test_binance_statement_document_uses_period_end_as_effective_date() -> None:
+    result = parse_statement_document(
+        Path("AccountStatementPeriod_fixtureacct_20260101-20260320_fixture.pdf"),
+        "\n".join(
+            (
+                "Report Date: 2026/03/23",
+                "Funding Top 10 Holdings",
+                "USDT Tether 1.000000 1.000000 / 1.000000",
+            )
+        ),
+    )
+
+    assert result.recognized is True
+    assert result.statement_as_of_at == datetime(2026, 3, 23, tzinfo=UTC)
+    assert result.document_effective_at == datetime(2026, 3, 20, tzinfo=UTC)
+
+
+def test_binance_statement_service_emits_latest_balance_evidence(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -230,68 +254,142 @@ def test_binance_adapter_emits_latest_statement_balance_evidence(
     (raw_dir / "older.pdf").write_bytes(b"older")
     (raw_dir / "latest.pdf").write_bytes(b"latest")
 
-    older_as_of = datetime(2026, 2, 1, tzinfo=UTC)
-    latest_as_of = datetime(2026, 3, 23, tzinfo=UTC)
+    shared_report_as_of = datetime(2026, 3, 23, tzinfo=UTC)
+    older_effective_at = datetime(2025, 12, 31, tzinfo=UTC)
+    latest_effective_at = datetime(2026, 3, 20, tzinfo=UTC)
 
-    def fake_parse_statement_pdf(path: Path) -> BinanceStatementParseResult:
+    def fake_parse_statement_document(
+        path: Path, text: str
+    ) -> StatementDocumentParseResult:
+        del text
         if path.name == "older.pdf":
-            return BinanceStatementParseResult(
+            return StatementDocumentParseResult(
                 pdf_file=path.name,
                 recognized=True,
-                statement_as_of_at=older_as_of,
+                statement_as_of_at=shared_report_as_of,
                 rows=(
-                    BinanceStatementBalanceRow(
-                        section="Spot Top 10 Holdings",
-                        asset_symbol="USDT",
+                    StatementDocumentBalanceRow(
+                        source="Binance",
+                        account="Binance",
+                        wallet="Spot",
+                        balance_kind="available",
+                        asset="USDT",
                         quantity=Decimal("1"),
-                        as_of_at=older_as_of,
+                        as_of_at=shared_report_as_of,
                         as_of_precision=TemporalPrecision.DATE,
+                        pdf_file=path.name,
+                        raw_row_ref="Spot Top 10 Holdings",
                     ),
                 ),
+                document_effective_at=older_effective_at,
             )
-        return BinanceStatementParseResult(
+        return StatementDocumentParseResult(
             pdf_file=path.name,
             recognized=True,
-            statement_as_of_at=latest_as_of,
+            statement_as_of_at=shared_report_as_of,
             rows=(
-                BinanceStatementBalanceRow(
-                    section="Funding Top 10 Holdings",
-                    asset_symbol="USDT",
+                StatementDocumentBalanceRow(
+                    source="Binance",
+                    account="Binance",
+                    wallet="Funding",
+                    balance_kind="available",
+                    asset="USDT",
                     quantity=Decimal("0.009526"),
-                    as_of_at=latest_as_of,
+                    as_of_at=shared_report_as_of,
                     as_of_precision=TemporalPrecision.DATE,
+                    pdf_file=path.name,
+                    raw_row_ref="Funding Top 10 Holdings",
+                    notes="Statement-backed quantity aggregated from Binance holdings sections.",
                 ),
-                BinanceStatementBalanceRow(
-                    section="Spot Top 10 Holdings",
-                    asset_symbol="USDT",
+                StatementDocumentBalanceRow(
+                    source="Binance",
+                    account="Binance",
+                    wallet="Spot",
+                    balance_kind="available",
+                    asset="USDT",
                     quantity=Decimal("0.000340"),
-                    as_of_at=latest_as_of,
+                    as_of_at=shared_report_as_of,
                     as_of_precision=TemporalPrecision.DATE,
+                    pdf_file=path.name,
+                    raw_row_ref="Spot Top 10 Holdings",
+                    notes="Statement-backed quantity aggregated from Binance holdings sections.",
                 ),
-                BinanceStatementBalanceRow(
-                    section="Spot Top 10 Holdings",
-                    asset_symbol="SOLO",
+                StatementDocumentBalanceRow(
+                    source="Binance",
+                    account="Binance",
+                    wallet="Spot",
+                    balance_kind="available",
+                    asset="SOLO",
                     quantity=Decimal("0.920099"),
-                    as_of_at=latest_as_of,
+                    as_of_at=shared_report_as_of,
                     as_of_precision=TemporalPrecision.DATE,
+                    pdf_file=path.name,
+                    raw_row_ref="Spot Top 10 Holdings",
+                    notes="Statement-backed quantity aggregated from Binance holdings sections.",
                 ),
             ),
+            document_effective_at=latest_effective_at,
         )
 
+    def fake_extract_pdf_text(path: Path) -> str:
+        del path
+        return "statement"
+
+    def fake_match_statement_document(path: Path, text: str) -> int:
+        del path, text
+        return 100
+
     monkeypatch.setattr(
-        "tallylot.adapters.sources.platforms.binance.adapter.parse_statement_pdf",
-        fake_parse_statement_pdf,
+        "tallylot.application.evidence.statement_extraction.service._extract_pdf_text",
+        fake_extract_pdf_text,
+    )
+    monkeypatch.setattr(
+        "tallylot.adapters.sources.platforms.binance.adapter._parse_statement_document",
+        fake_parse_statement_document,
+    )
+    monkeypatch.setattr(
+        "tallylot.adapters.sources.platforms.binance.adapter._match_statement_document",
+        fake_match_statement_document,
     )
 
-    result = _BinanceAdapter().translate(
+    result = StatementExtractionService(
+        FakeSourceRegistry((_BinanceAdapter(),))
+    ).extract_source_balance_evidence(
         build_source_profile(
-            adapter_id="binance", raw_dir=str(raw_dir), source="Binance"
+            adapter_id="binance",
+            raw_dir=str(raw_dir),
+            source="Binance",
+            file_inventory=(
+                FileInventoryEntry(
+                    relative_path="older.pdf",
+                    suffix=".pdf",
+                    size_bytes=5,
+                    sha256="older",
+                    source_path=str(raw_dir / "older.pdf"),
+                    capture_uid="capture-1",
+                    source="Binance",
+                    evidence_role="statement_source",
+                    originality_class="upstream_original",
+                ),
+                FileInventoryEntry(
+                    relative_path="latest.pdf",
+                    suffix=".pdf",
+                    size_bytes=6,
+                    sha256="latest",
+                    source_path=str(raw_dir / "latest.pdf"),
+                    capture_uid="capture-1",
+                    source="Binance",
+                    evidence_role="statement_source",
+                    originality_class="upstream_original",
+                ),
+            ),
         ),
         raw_dir,
     )
 
     evidence_rows = [row.to_row() for row in result.balance_evidence]
 
+    assert not result.issues
     assert evidence_rows == [
         {
             "source": "Binance",
@@ -301,7 +399,11 @@ def test_binance_adapter_emits_latest_statement_balance_evidence(
             "as_of_at": "2026-03-23",
             "as_of_precision": "date",
             "balance_kind": "available",
-            "evidence_ref": "latest.pdf#Spot Top 10 Holdings",
+            "capture_uid": "capture-1",
+            "relative_path": "latest.pdf",
+            "archive_member_path": "",
+            "locator_kind": "raw_file",
+            "anchor": "Spot Top 10 Holdings",
             "notes": "Statement-backed quantity aggregated from Binance holdings sections.",
         },
         {
@@ -312,7 +414,11 @@ def test_binance_adapter_emits_latest_statement_balance_evidence(
             "as_of_at": "2026-03-23",
             "as_of_precision": "date",
             "balance_kind": "available",
-            "evidence_ref": "latest.pdf#Funding Top 10 Holdings + Spot Top 10 Holdings",
+            "capture_uid": "capture-1",
+            "relative_path": "latest.pdf",
+            "archive_member_path": "",
+            "locator_kind": "raw_file",
+            "anchor": "Funding Top 10 Holdings + Spot Top 10 Holdings",
             "notes": "Statement-backed quantity aggregated from Binance holdings sections.",
         },
     ]

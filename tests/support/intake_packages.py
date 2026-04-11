@@ -8,7 +8,7 @@ from tallylot.application.intake import PlannedPackageItem
 @dataclass(frozen=True)
 class PackageContext:
     source_folder: str = "binance"
-    capture_id: str = "2021-05"
+    capture_label: str = "capture-a"
     scope_tokens: tuple[str, ...] = ()
 
 
@@ -28,7 +28,7 @@ def package_item(
         relative_path=relative_path,
         archive_source_path="",
         source_folder=context.source_folder,
-        capture_id=context.capture_id,
+        capture_label=context.capture_label,
         category="source_raw",
         action="copy",
         sha256=sha256,
@@ -51,9 +51,11 @@ def archive_item(
         relative_path=archive_source_path,
         archive_source_path=f"/incoming/{archive_source_path}",
         source_folder=context.source_folder,
-        capture_id=context.capture_id,
+        capture_label=context.capture_label,
         category="source_raw",
-        action="extract_copy" if bundle_relative_path.startswith("contents/") else "copy",
+        action="extract_copy"
+        if bundle_relative_path.startswith("contents/")
+        else "copy",
         sha256=sha256,
         bundle_id=bundle_id,
         bundle_relative_path=bundle_relative_path,

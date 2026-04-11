@@ -16,6 +16,53 @@ def _empty_object_map() -> dict[str, JsonValue]:
     return {}
 
 
+PROFILE_INVENTORY_HEADER = (
+    "source_path",
+    "relative_path",
+    "bundle_id",
+    "bundle_type",
+    "bundle_relative_path",
+    "alias_group",
+    "collision_status",
+    "path_scope_tokens",
+    "content_scope_tokens",
+    "scope_tokens",
+    "scope_preview",
+    "suffix",
+    "family",
+    "header_preview",
+    "size_bytes",
+    "sha256",
+    "archive_source_path",
+    "archive_member_path",
+    "row_count",
+    "header",
+    "date_field",
+    "min_timestamp",
+    "max_timestamp",
+    "timestamp_resolution",
+    "timezone_mode",
+    "timezone_value",
+    "timezone_conflict",
+    "export_timestamp",
+    "report_period_start",
+    "report_period_end",
+    "workbook_sheet_names",
+    "workbook_created_at",
+    "workbook_modified_at",
+    "artifact_kind",
+    "artifact_reason",
+    "capture_uid",
+    "source",
+    "evidence_role",
+    "observed_period_start",
+    "observed_period_end",
+    "observed_period_label",
+    "statement_kind",
+    "originality_class",
+)
+
+
 @dataclass(frozen=True)
 class FileInventoryEntry:
     relative_path: str
@@ -53,6 +100,14 @@ class FileInventoryEntry:
     workbook_modified_at: str = ""
     artifact_kind: str = ""
     artifact_reason: str = ""
+    capture_uid: str = ""
+    source: str = ""
+    evidence_role: str = ""
+    observed_period_start: str = ""
+    observed_period_end: str = ""
+    observed_period_label: str = ""
+    statement_kind: str = ""
+    originality_class: str = ""
 
 
 @dataclass(frozen=True)

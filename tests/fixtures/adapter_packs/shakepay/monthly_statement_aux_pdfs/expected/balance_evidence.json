@@ -1,0 +1,32 @@
+[
+  {
+    "anchor": "page:1:Balance summary",
+    "archive_member_path": "",
+    "as_of_at": "2026-01-01 05:00:00",
+    "as_of_precision": "timestamp",
+    "balance_kind": "available",
+    "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+    "instrument_id": "symbol:BTC@shakepay",
+    "location_id": "shakepay",
+    "locator_kind": "raw_file",
+    "notes": "Statement-backed quantity from Shakepay monthly balance summary.",
+    "quantity": "0.00172289",
+    "relative_path": "shakepay_2025-12.pdf",
+    "source": "shakepay"
+  },
+  {
+    "anchor": "page:1:Balance summary",
+    "archive_member_path": "",
+    "as_of_at": "2026-01-01 05:00:00",
+    "as_of_precision": "timestamp",
+    "balance_kind": "available",
+    "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+    "instrument_id": "symbol:CAD@shakepay",
+    "location_id": "shakepay",
+    "locator_kind": "raw_file",
+    "notes": "Statement-backed quantity from Shakepay monthly balance summary.",
+    "quantity": "436.54",
+    "relative_path": "shakepay_2025-12.pdf",
+    "source": "shakepay"
+  }
+]

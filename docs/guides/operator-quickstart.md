@@ -23,33 +23,46 @@ Use the linked task guides when you need the detailed procedure for one stage.
 
 ## Intake A Source
 
-1. Start from an untouched incoming dump or a settled raw capture under
-   `evidence/raw/source/<source>/<capture_id>/`.
+1. Treat one intake run as one capture and keep settled raw evidence under
+   `evidence/raw/source/<source>/<capture_label>/`.
 2. Run `source intake plan` before touching the workspace.
-3. Run `source intake apply` only after the plan artifacts look correct.
-4. Run `source manifest` and `source profile` for the settled capture.
-5. Use [Source Intake](source-intake.md) for the detailed commands, review
+3. Run `source intake apply` only after the plan artifacts look correct. A
+   non-`captured` intake outcome returns a nonzero exit code even though the
+   intake report artifacts are still written for review.
+4. Run `source manifest`, `source profile`, and `source normalize` against the
+   settled materialized capture root. `source profile` and `source normalize`
+   reject source roots, arbitrary subdirectories, and capture roots whose
+   `capture.json` metadata does not match the path and source.
+5. Run `source assemble` before any reconciliation command. Reruns rewrite the
+   generated source dataset under `working/normalized/sources/<source>/` rather
+   than appending stale artifacts.
+6. Use [Source Intake](source-intake.md) for the detailed commands, review
    points, and artifact expectations.
 
 ## Normalize, Screen, And Stage
 
-1. Run `source normalize` for the settled capture.
-2. Review the normalization artifacts and issues before rendering a candidate.
-3. If normalization did not already produce canonical `balances.csv` and
+1. Run `source normalize` for the settled capture and review the
+   capture-scoped outputs under `working/normalized/captures/<capture_uid>/`.
+2. Run `source assemble` and review the assembled source dataset under
+   `working/normalized/sources/<source>/`.
+3. Use `checkpoint extract-pdf-balances` when a supported statement PDF is the
+   source-backed evidence path; it uses the same statement extraction service
+   as normalization.
+4. If normalization did not already produce canonical `balances.csv` and
    source-backed `balance_evidence.csv`, run
    `checkpoint scaffold-balance-submission`, fill the submission package, then
    run `checkpoint submit-balances` and review the submission summary and
    issues.
-4. Run `reconciliation balances check` when canonical balance artifacts are
+5. Run `reconciliation balances check` when canonical balance artifacts are
    ready for a deterministic balance check, whether they came from
    normalization or from validated manual submission with
    `balance_confirmations.csv`.
-5. When you need a multi-source answer, run `reconciliation balances inspect`,
+6. When you need a multi-source answer, run `reconciliation balances inspect`,
    then `reconciliation balances check`, then `reconciliation balances summarize`.
-6. Run `output render file` only when the round needs
+7. Run `output render file` only when the round needs
    `cointracking_candidate.csv`.
-7. Run `batch screen`, then `batch stage` only after the screen passes.
-8. Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the
+8. Run `batch screen`, then `batch stage` only after the screen passes.
+9. Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the
    detailed command flow, artifact review, and stop conditions.
 
 ## Seed And Verify A Round

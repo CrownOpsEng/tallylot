@@ -9,7 +9,13 @@ from datetime import datetime
 from .duplicates import apply_duplicate_decisions
 from .markers import logical_key, material_indexes, package_sort_key, row_marker
 from .merges import apply_merge_decisions
-from .models import BundlePackage, PackageGroupKey, PackageRuleSummary, PlannedPackageItem, package_key
+from .models import (
+    BundlePackage,
+    PackageGroupKey,
+    PackageRuleSummary,
+    PlannedPackageItem,
+    package_key,
+)
 from .reviews import apply_default_decisions, apply_overlap_review_decisions
 
 
@@ -20,26 +26,44 @@ def apply_package_rules(
     for index, item in enumerate(items):
         if item.category != "source_raw":
             continue
-        row_indexes[(item.category, item.source_folder, item.capture_id, item.bundle_id)].append(index)
+        row_indexes[
+            (item.category, item.source_folder, item.capture_label, item.bundle_id)
+        ].append(index)
 
     packages_by_group: dict[PackageGroupKey, list[BundlePackage]] = defaultdict(list)
-    for (category, source_folder, capture_id, bundle_id), indexes in row_indexes.items():
-        group_key = (category, source_folder, capture_id)
-        packages_by_group[group_key].append(build_package(items, group_key, bundle_id, indexes))
+    for (
+        category,
+        source_folder,
+        capture_label,
+        bundle_id,
+    ), indexes in row_indexes.items():
+        group_key = (category, source_folder, capture_label)
+        packages_by_group[group_key].append(
+            build_package(items, group_key, bundle_id, indexes)
+        )
 
     summary = PackageRuleSummary()
     updates: dict[int, PlannedPackageItem] = {}
     for packages in packages_by_group.values():
         decisions, row_actions, package_summary = resolve_group(items, packages)
         summary = PackageRuleSummary(
-            duplicate_packages=summary.duplicate_packages + package_summary.duplicate_packages,
-            merge_primary_packages=summary.merge_primary_packages + package_summary.merge_primary_packages,
+            duplicate_packages=summary.duplicate_packages
+            + package_summary.duplicate_packages,
+            merge_primary_packages=summary.merge_primary_packages
+            + package_summary.merge_primary_packages,
             merged_packages=summary.merged_packages + package_summary.merged_packages,
-            overlap_packages=summary.overlap_packages + package_summary.overlap_packages,
-            mixed_cycle_packages=summary.mixed_cycle_packages + package_summary.mixed_cycle_packages,
+            overlap_packages=summary.overlap_packages
+            + package_summary.overlap_packages,
+            mixed_cycle_packages=summary.mixed_cycle_packages
+            + package_summary.mixed_cycle_packages,
         )
         for index, item in enumerate(items):
-            item_key = (item.category, item.source_folder, item.capture_id, item.bundle_id)
+            item_key = (
+                item.category,
+                item.source_folder,
+                item.capture_label,
+                item.bundle_id,
+            )
             decision = decisions.get(item_key)
             action = row_actions.get(index)
             if decision is None or action is None:
@@ -100,7 +124,9 @@ def build_package(
         bundle_id=bundle_id,
         row_indexes=tuple(indexes),
         material_indexes=resolved_material_indexes,
-        material_hashes=Counter(items[index].sha256 for index in resolved_material_indexes),
+        material_hashes=Counter(
+            items[index].sha256 for index in resolved_material_indexes
+        ),
         material_count=len(resolved_material_indexes),
         logical_hashes=dict(logical_hashes),
         logical_indexes={key: tuple(value) for key, value in logical_indexes.items()},
@@ -114,7 +140,11 @@ def build_package(
 def resolve_group(
     items: list[PlannedPackageItem],
     packages: list[BundlePackage],
-) -> tuple[dict[tuple[str, str, str, str], dict[str, str]], dict[int, dict[str, str]], PackageRuleSummary]:
+) -> tuple[
+    dict[tuple[str, str, str, str], dict[str, str]],
+    dict[int, dict[str, str]],
+    PackageRuleSummary,
+]:
     decisions: dict[tuple[str, str, str, str], dict[str, str]] = {}
     row_actions = {
         index: {
@@ -125,9 +155,15 @@ def resolve_group(
         for index in package.row_indexes
     }
     ordered = sorted(packages, key=package_sort_key, reverse=True)
-    duplicate_keys, duplicate_packages = apply_duplicate_decisions(ordered, decisions, row_actions)
-    remaining = [package for package in ordered if package_key(package) not in duplicate_keys]
-    merge_primary_packages, merged_packages = apply_merge_decisions(items, remaining, decisions, row_actions)
+    duplicate_keys, duplicate_packages = apply_duplicate_decisions(
+        ordered, decisions, row_actions
+    )
+    remaining = [
+        package for package in ordered if package_key(package) not in duplicate_keys
+    ]
+    merge_primary_packages, merged_packages = apply_merge_decisions(
+        items, remaining, decisions, row_actions
+    )
     mixed_cycle_packages = apply_default_decisions(ordered, decisions)
     apply_overlap_review_decisions(ordered, decisions)
     return (
@@ -138,7 +174,9 @@ def resolve_group(
             merge_primary_packages=merge_primary_packages,
             merged_packages=merged_packages,
             overlap_packages=sum(
-                1 for decision in decisions.values() if decision["package_status"] == "overlap_partial_review"
+                1
+                for decision in decisions.values()
+                if decision["package_status"] == "overlap_partial_review"
             ),
             mixed_cycle_packages=mixed_cycle_packages,
         ),

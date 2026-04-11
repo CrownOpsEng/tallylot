@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from tallylot.adapters.outputs.cointracking_csv.projection import _COINTRACKING_TYPE_LABELS, cointracking_row
+from tallylot.adapters.outputs.cointracking_csv.projection import (
+    _COINTRACKING_TYPE_LABELS,
+    cointracking_row,
+)
 from tallylot.adapters.outputs.cointracking_csv.schema import COINTRACKING_HEADER
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.outputs import RenderOutputRequest
@@ -28,6 +31,7 @@ from tallylot.domain.transactions import (
 from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from repo_support.capture_roots import materialize_capture_root
 from tests.support.services import build_normalization_service, build_render_service
 
 
@@ -39,6 +43,9 @@ def test_cointracking_output_matches_expected_schema_and_projection_mapping(
     structured_source_dir: Path,
     tmp_path: Path,
 ) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
     artifacts = FilesystemArtifactStore()
     normalization = build_normalization_service(artifacts=artifacts)
     render = build_render_service()
@@ -47,7 +54,7 @@ def test_cointracking_output_matches_expected_schema_and_projection_mapping(
     normalization.execute(
         NormalizeRequest(
             source="fixture_source",
-            raw_capture_ref=to_resource_ref(structured_source_dir),
+            raw_capture_ref=to_resource_ref(raw_capture_root),
             normalized_output_ref=to_resource_ref(normalized_dir),
         )
     )
@@ -87,7 +94,13 @@ def test_cointracking_projection_reads_standard_fee_leg() -> None:
             legs=(
                 _leg("primary_btc", LegKind.PRIMARY, "symbol:BTC", "1"),
                 _leg("primary_cad", LegKind.PRIMARY, "symbol:CAD", "-10"),
-                _leg("fee_cad", LegKind.CHARGE, "symbol:CAD", "-0.1", attributed_to_leg_id="primary_cad"),
+                _leg(
+                    "fee_cad",
+                    LegKind.CHARGE,
+                    "symbol:CAD",
+                    "-0.1",
+                    attributed_to_leg_id="primary_cad",
+                ),
             ),
             leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
         )
@@ -97,22 +110,34 @@ def test_cointracking_projection_reads_standard_fee_leg() -> None:
     assert row["Cur..2"] == "symbol:CAD"
 
 
-def test_cointracking_projection_uses_source_label_for_onchain_canonical_locations() -> None:
+def test_cointracking_projection_uses_source_label_for_onchain_canonical_locations() -> (
+    None
+):
     row = cointracking_row(
         TransactionFact(
             fact_id=TransactionId("txn-onchain"),
             source=SourceId("polygon-wallet"),
             adapter_id=AdapterId("evm_explorer"),
             timestamp=datetime(2025, 1, 1, tzinfo=UTC),
-            location_id=LocationId("evm:polygon:0x1111111111111111111111111111111111111111"),
+            location_id=LocationId(
+                "evm:polygon:0x1111111111111111111111111111111111111111"
+            ),
             semantics=FactSemantics(
                 economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
                 projection_hint=ProjectionHint.DEPOSIT,
                 accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
                 tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
             ),
-            legs=(_leg("primary_bnb", LegKind.PRIMARY, "symbol:BNB@evm_explorer", "1"),),
-            leg_policy=FactLegPolicy(limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1),)),
+            legs=(
+                _leg("primary_bnb", LegKind.PRIMARY, "symbol:BNB@evm_explorer", "1"),
+            ),
+            leg_policy=FactLegPolicy(
+                limits=(
+                    LegShapeLimit(
+                        kind=LegKind.PRIMARY, max_count=1, max_positive_count=1
+                    ),
+                )
+            ),
         )
     )
 
@@ -141,8 +166,18 @@ def test_cointracking_projection_rejects_unsupported_multi_leg_shapes() -> None:
                 ),
                 leg_policy=FactLegPolicy(
                     limits=(
-                        LegShapeLimit(kind=LegKind.PRIMARY, max_count=3, max_positive_count=2, max_negative_count=1),
-                        LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+                        LegShapeLimit(
+                            kind=LegKind.PRIMARY,
+                            max_count=3,
+                            max_positive_count=2,
+                            max_negative_count=1,
+                        ),
+                        LegShapeLimit(
+                            kind=LegKind.CHARGE,
+                            max_count=1,
+                            max_positive_count=0,
+                            max_negative_count=1,
+                        ),
                     )
                 ),
             )
@@ -166,7 +201,13 @@ def test_cointracking_projection_rejects_positive_charge_legs() -> None:
                 ),
                 legs=(
                     _leg("primary_cad", LegKind.PRIMARY, "symbol:CAD", "-1"),
-                    _leg("fee_cad", LegKind.CHARGE, "symbol:CAD", "1", attributed_to_leg_id="primary_cad"),
+                    _leg(
+                        "fee_cad",
+                        LegKind.CHARGE,
+                        "symbol:CAD",
+                        "1",
+                        attributed_to_leg_id="primary_cad",
+                    ),
                 ),
                 leg_policy=FactLegPolicy(
                     limits=(
@@ -177,7 +218,9 @@ def test_cointracking_projection_rejects_positive_charge_legs() -> None:
                             max_positive_count=0,
                             max_negative_count=1,
                         ),
-                        LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=1),
+                        LegShapeLimit(
+                            kind=LegKind.CHARGE, max_count=1, max_positive_count=1
+                        ),
                     )
                 ),
             )
@@ -201,7 +244,11 @@ def test_cointracking_projection_rejects_fee_only_shapes() -> None:
                 ),
                 legs=(_leg("fee_cad", LegKind.CHARGE, "symbol:CAD", "-1"),),
                 leg_policy=FactLegPolicy(
-                    limits=(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_negative_count=1),)
+                    limits=(
+                        LegShapeLimit(
+                            kind=LegKind.CHARGE, max_count=1, max_negative_count=1
+                        ),
+                    )
                 ),
             )
         )

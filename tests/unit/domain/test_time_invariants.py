@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import pytest
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
@@ -62,6 +63,7 @@ def test_balance_evidence_requires_temporal_value() -> None:
             quantity=Decimal("1"),
             as_of_at=datetime.fromisoformat("2025-01-01T00:00:00-06:00"),
             as_of_precision=TemporalPrecision.TIMESTAMP,
+            provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
         )
 
     evidence = BalanceEvidence(
@@ -71,6 +73,7 @@ def test_balance_evidence_requires_temporal_value() -> None:
         quantity=Decimal("1"),
         as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
         as_of_precision=TemporalPrecision.TIMESTAMP,
+        provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
     )
 
     assert evidence.as_of_at.tzinfo is UTC
@@ -87,6 +90,7 @@ def test_balance_evidence_requires_non_blank_instrument_id() -> None:
             quantity=Decimal("1"),
             as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
             as_of_precision=TemporalPrecision.TIMESTAMP,
+            provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
         )
 
 

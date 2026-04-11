@@ -37,6 +37,11 @@ These planning anchors drive phase order and acceptance criteria:
 - reconciliation remains the trust gate before tax
 - accounting validates journal structure and coverage in parallel with
   reconciliation once the fact path is stable
+- capture identity is metadata, not path
+- typed provenance stays a runtime model and is flattened only when writing
+  artifacts
+- normalization is capture-scoped and reconciliation is source-assembly-scoped
+- raw-evidence derivation is the supported semantic parity path
 
 ## Roadmap Sequence
 
@@ -68,12 +73,32 @@ reconciliation, accounting, and tax work expands.
 Scope:
 
 - keep direct fact artifacts as the only canonical runtime model
+- center intake on explicit capture identity, capture registries, and
+  raw-evidence preservation instead of inferred capture buckets
+- keep inferred period and capture heuristics as report metadata only; they do
+  not control runtime identity, routing, or normalization ownership
 - finish adapter parity and projection parity coverage on the current fact
   model
 - keep review and issue outputs explicit for ambiguous direction, precision, or
   classification decisions
-- continue tightening overlap heuristics, duplicate detection, and file-family
-  signatures where capture ownership is still ambiguous
+- continue tightening overlap heuristics, duplicate detection, file-family
+  signatures, and capture acceptance rules where capture ownership is still
+  ambiguous
+- split capture-scoped normalization from source-scoped assembly before
+  reconciliation expands further
+- centralize statement extraction, document discovery, provenance, and shared
+  issue or review handling behind one evidence seam
+- keep statement selection and portfolio evidence dating owned by typed capture
+  and profile metadata rather than by capture-label conventions or raw-path
+  rescans
+- allow adapter-owned upstream workbook exports to remain raw evidence when the
+  typed intake route classifies them as source originals
+- keep source profile and source normalize strict to one materialized raw
+  capture root and fail explicit on arbitrary directories or mismatched capture
+  metadata
+- make source assembly rerun-safe by rewriting its owned generated artifact
+  surface deterministically on each run
+- add a repo-native semantic parity validator for unchanged raw inputs
 
 Exit criteria:
 
@@ -82,6 +107,15 @@ Exit criteria:
 - CoinTracking CSV projection remains correct from facts alone
 - remaining normalization ambiguity paths emit explicit reviews or blocking
   issues instead of silent coercion
+- canonical balance evidence, issue rows, review rows, and location inventory
+  evidence rows share one flattened provenance locator family at artifact
+  boundaries while runtime models keep typed provenance
+- unchanged raw inputs preserve file completeness, fact counts, balance counts,
+  balance-evidence counts, and issue or review counts unless an
+  expected-difference fixture documents the exception
+- expected-difference fixtures may relax only issue-count or review-count
+  parity and must never excuse raw completeness, fact, balance, evidence, or
+  reconciliation drift
 
 ### 3. Reconciliation
 
@@ -90,6 +124,7 @@ balance evidence, and operator-confirmed balance references.
 
 Scope:
 
+- read only assembled source datasets produced from accepted captures
 - extend the first exact balance assertion workflow into broader checkpoint and
   transfer checks
 - keep statement-backed quantity evidence on the normalization path and treat
@@ -114,6 +149,8 @@ Exit criteria:
   primary clean-date gate and remain dependent on comparable location identity
 - fact history can be reconciled against source-backed evidence or
   operator-confirmed balance references without manual tracker logic
+- reconciliation inputs no longer depend on raw capture layout or direct
+  multi-capture crawling
 - reconciliation artifacts no longer depend on normalized-transaction-era
   stopgaps
 - material reconciliation issues surface explicitly and reproducibly
@@ -293,6 +330,8 @@ These workstreams continue across the major phases above.
 
 - maintain parser and adapter contract tests
 - expand projection parity tests
+- keep semantic parity, capture-registry, and source-assembly coverage as
+  first-class regression surfaces
 - add reconciliation parity and checkpoint continuity tests
 - add Ledger CLI validation coverage
 - add Canadian tax policy coverage including fees, income, realized PnL, and

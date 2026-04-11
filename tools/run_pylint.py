@@ -43,6 +43,7 @@ def _pylint_targets(*, root: Path | None = None) -> tuple[_PylintTarget, ...]:
                 "src",
                 "tools",
                 "repo_support",
+                ".agents/skills",
                 "conftest.py",
             ),
         ),

@@ -2,55 +2,53 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
+from tallylot.application.intake.captures.session import apply_capture_session_plan
+from tallylot.application.intake.contracts import INTAKE_ISSUE_HEADER
 from tallylot.ports.artifacts import ArtifactStorePort
 
-from .models import ISSUE_HEADER, PLAN_HEADER, PlannedItem
+from .models import (
+    PLAN_HEADER,
+    CaptureSessionPlan,
+    CaptureSessionSummaryContext,
+    PlannedItem,
+)
+
+
+@dataclass(frozen=True)
+class IntakeReportBundle:
+    planned_items: list[PlannedItem]
+    issue_rows: list[dict[str, str]]
+    capture_session_plan: CaptureSessionPlan
+    copied_count: int
+    summary_capture_status: str | None = None
 
 
 def write_reports(
     artifacts: ArtifactStorePort,
     report_dir: Path,
-    planned_items: list[PlannedItem],
-    issue_rows: list[dict[str, str]],
-    *,
-    copied_count: int,
+    bundle: IntakeReportBundle,
 ) -> None:
     artifacts.write_rows(
         report_dir / "intake_plan.csv",
         PLAN_HEADER,
-        (item.to_row() for item in planned_items),
+        (item.to_row() for item in bundle.planned_items),
     )
-    artifacts.write_rows(report_dir / "intake_issues.csv", ISSUE_HEADER, issue_rows)
-    artifacts.write_json(
-        report_dir / "intake_summary.json",
-        {
-            "file_count": len(planned_items),
-            "issue_count": len(issue_rows),
-            "copied_count": copied_count,
-            "planned_copy_count": sum(
-                1 for item in planned_items if item.action in {"copy", "extract_copy"}
-            ),
-            "explicit_map_count": sum(
-                1
-                for item in planned_items
-                if item.source_resolution_status == "explicit_map"
-            ),
-            "explicit_map_blocked_count": sum(
-                1
-                for item in planned_items
-                if item.source_resolution_status == "explicit_map_blocked"
-            ),
-            "source_label_map_issue_count": sum(
-                1 for row in issue_rows if row["kind"].startswith("source_label_map_")
-            ),
-            "duplicate_packages": _package_count(planned_items, "duplicate_package"),
-            "merge_primary_packages": _package_count(planned_items, "merge_primary"),
-            "merged_packages": _package_count(planned_items, "merge_member"),
-            "overlap_packages": _package_count(planned_items, "overlap_partial_review"),
-            "mixed_cycle_packages": _package_count(planned_items, "mixed_cycle_review"),
-        },
+    artifacts.write_rows(
+        report_dir / "intake_issues.csv", INTAKE_ISSUE_HEADER, bundle.issue_rows
+    )
+    apply_capture_session_plan(
+        artifacts=artifacts,
+        report_dir=report_dir,
+        plan=bundle.capture_session_plan,
+        context=CaptureSessionSummaryContext(
+            planned_items=bundle.planned_items,
+            issue_rows=bundle.issue_rows,
+            copied_count=bundle.copied_count,
+        ),
+        summary_capture_status=bundle.summary_capture_status,
     )
 
 
@@ -73,7 +71,7 @@ def write_capture_manifests(
             / "raw"
             / "source"
             / item.source_folder
-            / item.capture_id
+            / item.capture_label
         )
         capture_rows.setdefault(capture_root, []).append(
             {
@@ -93,17 +91,3 @@ def write_capture_manifests(
             ("filename", "sha256", "size_bytes", "source_paths"),
             rows,
         )
-
-
-def _package_count(planned_items: list[PlannedItem], package_status: str) -> int:
-    return len(
-        {
-            (item.source_folder, item.capture_id, item.bundle_id)
-            for item in planned_items
-            if item.package_status == package_status
-            or (
-                package_status == "duplicate_package"
-                and item.package_status.startswith("duplicate_package")
-            )
-        }
-    )

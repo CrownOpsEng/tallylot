@@ -1,8 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from tallylot.adapters.sources.platforms.coinbase.pdf_balances import extract_pdf_balances
+from tallylot.adapters.sources.platforms.coinbase.pdf_balances import (
+    extract_pdf_balances,
+    match_statement_document,
+    parse_statement_document,
+)
 
 
 def test_coinbase_pdf_balances_extract_asset_rows() -> None:
@@ -26,7 +32,9 @@ def test_coinbase_pdf_balances_extract_asset_rows() -> None:
 
 
 def test_coinbase_pdf_balances_reject_empty_supported_statement() -> None:
-    with pytest.raises(ValueError, match="no balance rows were extracted from the coinbase PDF"):
+    with pytest.raises(
+        ValueError, match="no balance rows were extracted from the coinbase PDF"
+    ):
         extract_pdf_balances("Coinbase Account Statement", "statement.pdf")
 
 
@@ -46,7 +54,9 @@ def test_coinbase_pdf_balances_accepts_thousands_separators_in_prices() -> None:
     assert rows[0]["value_amount"] == "3.33"
 
 
-def test_coinbase_pdf_balances_extracts_closing_cash_when_as_of_precedes_amount() -> None:
+def test_coinbase_pdf_balances_extracts_closing_cash_when_as_of_precedes_amount() -> (
+    None
+):
     rows = extract_pdf_balances(
         """
         Coinbase Account Statement
@@ -64,3 +74,70 @@ def test_coinbase_pdf_balances_extracts_closing_cash_when_as_of_precedes_amount(
     assert rows[0]["asset"] == "CAD"
     assert rows[0]["quantity"] == "0"
     assert rows[0]["as_of"] == "2026-03-22 23:59:59"
+
+
+def test_coinbase_statement_matching_rejects_auxiliary_reports() -> None:
+    performance_score = match_statement_document(
+        Path("2025 Performance - statement.pdf"),
+        """
+        Coinbase Canada, Inc.
+        Annual investment performance report
+        For the period ending December 31, 2025
+        """,
+    )
+    charges_score = match_statement_document(
+        Path("2025 Charges & Compensation - statement.pdf"),
+        """
+        Coinbase Canada, Inc.
+        Annual charges and compensation report
+        For the period from January 1, 2025 to December 31, 2025
+        """,
+    )
+
+    assert performance_score == 0
+    assert charges_score == 0
+
+
+def test_coinbase_parse_statement_document_returns_unrecognized_for_auxiliary_pdf() -> (
+    None
+):
+    parsed = parse_statement_document(
+        Path("2025 Performance - statement.pdf"),
+        """
+        Coinbase Canada, Inc.
+        Annual investment performance report
+        For the period ending December 31, 2025
+        """,
+    )
+
+    assert parsed.recognized is False
+    assert not parsed.rows
+
+
+def test_coinbase_parse_statement_document_accepts_balance_report_without_statement_title() -> (
+    None
+):
+    score = match_statement_document(
+        Path("2026-03-23 - transaction-history.pdf"),
+        """
+        Coinbase Canada, Inc.
+        Transaction History Report
+        Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD
+        Portfolio summary balances are as of 2026-03-22 23:59:59 UTC
+        ETH 0.001181807820874 N/A 2,817.007569 CAD/ETH 3.33 CAD
+        """,
+    )
+    parsed = parse_statement_document(
+        Path("2026-03-23 - transaction-history.pdf"),
+        """
+        Coinbase Canada, Inc.
+        Transaction History Report
+        Closing Balance as of 2026-03-22 23:59:59 UTC 0 CAD
+        Portfolio summary balances are as of 2026-03-22 23:59:59 UTC
+        ETH 0.001181807820874 N/A 2,817.007569 CAD/ETH 3.33 CAD
+        """,
+    )
+
+    assert score == 0
+    assert parsed.recognized is True
+    assert len(parsed.rows) == 2

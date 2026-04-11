@@ -8,7 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from tallylot.adapters.sources.explorers.evm_explorer.families import (
-    classified_csv_paths,
+    family_id_for_header,
 )
 from tallylot.adapters.support import (
     IssueSpec,
@@ -19,13 +19,18 @@ from tallylot.adapters.support import (
     review_record,
 )
 from tallylot.adapters.support.drafts import symbol_claim
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.instruments import InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
-from tallylot.domain.value_objects import parse_decimal
+from tallylot.domain.value_objects import parse_decimal, parse_temporal_value
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.source_profiles import SourceProfile
+from tallylot.ports.source_profiles import (
+    FileInventoryEntry,
+    SourceProfile,
+    parse_family_claim_tokens,
+)
 
 CHAIN_SCOPE_BY_LABEL = {
     "ARB": "arbitrum",
@@ -34,7 +39,6 @@ CHAIN_SCOPE_BY_LABEL = {
     "POL": "polygon",
 }
 TOKEN_SYMBOL_PATTERN = re.compile(r"\((?P<symbol>[^()]+)\)\s*$")
-CAPTURE_MONTH_PATTERN = re.compile(r"^(?P<year>\d{4})-(?P<month>\d{2})$")
 
 
 def extract_portfolio_balance_evidence(
@@ -48,12 +52,8 @@ def extract_portfolio_balance_evidence(
     tuple[IssueRecord, ...],
     tuple[NormalizationReviewRecord, ...],
 ]:
-    portfolio_paths = tuple(
-        path
-        for path, family_id in classified_csv_paths(raw_dir)
-        if family_id == "portfolio_balances"
-    )
-    if not portfolio_paths:
+    portfolio_entries = _portfolio_entries(profile, raw_dir)
+    if not portfolio_entries:
         return (), (), ()
     if len(location_inventory) != 1:
         return (
@@ -69,14 +69,16 @@ def extract_portfolio_balance_evidence(
                         kind="portfolio_location_unresolved",
                         message=(
                             "MetaMask portfolio rows were not admitted because the source folder "
-                            "did not resolve to exactly one canonical location."
+                            "did not resolve to exactly one location."
                         ),
-                        raw_file=",".join(path.name for path in portfolio_paths),
+                        raw_file=",".join(
+                            entry.relative_path for entry, _ in portfolio_entries
+                        ),
                     )
                 ),
             ),
         )
-    as_of_at = _capture_month_as_of(raw_dir)
+    as_of_at = _portfolio_as_of(profile, portfolio_entries)
     if as_of_at is None:
         return (
             (),
@@ -90,10 +92,12 @@ def extract_portfolio_balance_evidence(
                         scope="balance_evidence",
                         kind="portfolio_as_of_unresolved",
                         message=(
-                            "MetaMask portfolio rows were not admitted because the source folder "
-                            "capture month could not be resolved to a deterministic as-of date."
+                            "MetaMask portfolio rows were not admitted because no deterministic "
+                            "as-of date could be resolved from typed profile metadata."
                         ),
-                        raw_file=",".join(path.name for path in portfolio_paths),
+                        raw_file=",".join(
+                            entry.relative_path for entry, _ in portfolio_entries
+                        ),
                     )
                 ),
             ),
@@ -102,7 +106,7 @@ def extract_portfolio_balance_evidence(
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
     location = location_inventory[0]
-    for path in portfolio_paths:
+    for entry, path in portfolio_entries:
         for row_index, row in enumerate(read_csv_rows(path), start=2):
             chain_label = (row.get("Chain") or "").strip().upper()
             row_scope = CHAIN_SCOPE_BY_LABEL.get(chain_label, "")
@@ -111,7 +115,10 @@ def extract_portfolio_balance_evidence(
                 reviews.append(
                     review_record(
                         ReviewSpec(
-                            review_id=f"{profile.source}:{path.name}:row:{row_index}:portfolio_row_not_admitted",
+                            review_id=(
+                                f"{profile.source}:{entry.relative_path}:row:{row_index}:"
+                                "portfolio_row_not_admitted"
+                            ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             scope="balance_evidence",
@@ -122,7 +129,7 @@ def extract_portfolio_balance_evidence(
                                 f"{probable_destination}. "
                                 "This remains advisory because other wallets or undiscovered captures may exist."
                             ),
-                            raw_file=path.name,
+                            raw_file=entry.relative_path,
                             raw_row_ref=f"row:{row_index}",
                             field_name="Chain",
                             original_value=chain_label,
@@ -136,7 +143,7 @@ def extract_portfolio_balance_evidence(
                 issues.append(
                     issue_record(
                         IssueSpec(
-                            issue_id=f"{profile.source}:{path.name}:row:{row_index}:invalid_portfolio_row",
+                            issue_id=f"{profile.source}:{entry.relative_path}:row:{row_index}:invalid_portfolio_row",
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             severity="medium",
@@ -145,7 +152,7 @@ def extract_portfolio_balance_evidence(
                                 "MetaMask portfolio row did not include a valid "
                                 "same-chain quantity and token symbol."
                             ),
-                            raw_file=path.name,
+                            raw_file=entry.relative_path,
                             raw_row_ref=f"row:{row_index}",
                         )
                     )
@@ -164,13 +171,16 @@ def extract_portfolio_balance_evidence(
                 issues.append(
                     issue_record(
                         IssueSpec(
-                            issue_id=f"{profile.source}:{path.name}:row:{row_index}:instrument_identity_blocked",
+                            issue_id=(
+                                f"{profile.source}:{entry.relative_path}:row:{row_index}:"
+                                "instrument_identity_blocked"
+                            ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             severity="high",
                             kind="instrument_identity_blocked",
                             message=f"MetaMask portfolio row could not resolve token symbol {symbol}.",
-                            raw_file=path.name,
+                            raw_file=entry.relative_path,
                             raw_row_ref=f"row:{row_index}",
                         )
                     )
@@ -178,13 +188,16 @@ def extract_portfolio_balance_evidence(
                 reviews.append(
                     review_record(
                         ReviewSpec(
-                            review_id=f"{profile.source}:{path.name}:row:{row_index}:instrument_identity_review",
+                            review_id=(
+                                f"{profile.source}:{entry.relative_path}:row:{row_index}:"
+                                "instrument_identity_review"
+                            ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             scope="balance_evidence",
                             kind="instrument_identity_review",
                             message=f"Review required for MetaMask portfolio token symbol {symbol}.",
-                            raw_file=path.name,
+                            raw_file=entry.relative_path,
                             raw_row_ref=f"row:{row_index}",
                             field_name="Token",
                             original_value=row.get("Token") or "",
@@ -200,7 +213,9 @@ def extract_portfolio_balance_evidence(
                     quantity=amount,
                     as_of_at=as_of_at,
                     as_of_precision=TemporalPrecision.DATE,
-                    evidence_ref=f"{path.name}#row:{row_index}",
+                    provenance=ProvenanceLocator.from_reference_ref(
+                        f"{entry.relative_path}#row:{row_index}"
+                    ),
                     notes=(
                         "MetaMask portfolio quantity admitted for the source folder chain only; "
                         "wallet identity remains source-folder-scoped evidence."
@@ -210,16 +225,109 @@ def extract_portfolio_balance_evidence(
     return tuple(evidence), tuple(issues), tuple(reviews)
 
 
-def _capture_month_as_of(raw_dir: Path) -> datetime | None:
-    match = CAPTURE_MONTH_PATTERN.fullmatch(raw_dir.name)
-    if match is None:
-        return None
-    return datetime(
-        int(match.group("year")),
-        int(match.group("month")),
-        1,
-        tzinfo=UTC,
+def _portfolio_entries(
+    profile: SourceProfile,
+    raw_dir: Path,
+) -> tuple[tuple[FileInventoryEntry, Path], ...]:
+    entries: list[tuple[FileInventoryEntry, Path]] = []
+    for entry in profile.file_inventory:
+        if entry.suffix.lower() != ".csv":
+            continue
+        if not _is_portfolio_entry(entry):
+            continue
+        path = _inventory_path(raw_dir, entry)
+        if path is None:
+            continue
+        entries.append((entry, path))
+    return tuple(sorted(entries, key=lambda item: item[0].relative_path))
+
+
+def _is_portfolio_entry(entry: FileInventoryEntry) -> bool:
+    family_ids = {
+        family_id
+        for adapter_id, family_id in parse_family_claim_tokens(entry.family)
+        if adapter_id == "evm_explorer"
+    }
+    if "portfolio_balances" in family_ids:
+        return True
+    return family_id_for_header(entry.header) == "portfolio_balances"
+
+
+def _inventory_path(raw_dir: Path, entry: FileInventoryEntry) -> Path | None:
+    candidates: list[Path] = []
+    if entry.source_path:
+        candidates.append(Path(entry.source_path))
+    candidates.append(raw_dir / entry.relative_path)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _portfolio_as_of(
+    profile: SourceProfile,
+    portfolio_entries: tuple[tuple[FileInventoryEntry, Path], ...],
+) -> datetime | None:
+    report_period_end = max(
+        (
+            parsed
+            for entry, _ in portfolio_entries
+            if (parsed := _parse_inventory_date(entry.report_period_end)) is not None
+        ),
+        default=None,
     )
+    if report_period_end is not None:
+        return report_period_end
+    observed_period_end = max(
+        (
+            parsed
+            for entry, _ in portfolio_entries
+            if (parsed := _parse_inventory_date(entry.observed_period_end)) is not None
+        ),
+        default=None,
+    )
+    if observed_period_end is not None:
+        return observed_period_end
+    latest_timestamp = max(
+        (
+            parsed
+            for entry in profile.file_inventory
+            if (parsed := _parse_inventory_timestamp(entry.max_timestamp)) is not None
+        ),
+        default=None,
+    )
+    if latest_timestamp is None:
+        return None
+    return latest_timestamp.astimezone(UTC).replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+
+
+def _parse_inventory_date(value: str) -> datetime | None:
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        parsed = parse_temporal_value(text, precision=TemporalPrecision.DATE)
+    except ValueError:
+        try:
+            parsed = parse_temporal_value(text, precision=TemporalPrecision.TIMESTAMP)
+        except ValueError:
+            return None
+    return parsed.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def _parse_inventory_timestamp(value: str) -> datetime | None:
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        return parse_temporal_value(text, precision=TemporalPrecision.TIMESTAMP)
+    except ValueError:
+        return None
 
 
 def _extract_symbol(value: str) -> str:

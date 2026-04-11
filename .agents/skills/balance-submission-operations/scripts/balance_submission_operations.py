@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from importlib import import_module
 import json
 import os
 import sys
@@ -23,9 +24,7 @@ def _repo_root() -> Path:
         ).is_dir():
             if str(candidate) not in sys.path:
                 sys.path.insert(0, str(candidate))
-            from repo_support.paths import repo_root
-
-            return repo_root()
+            return candidate
     raise RuntimeError("Could not locate repo root for balance submission skill")
 
 
@@ -55,10 +54,33 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+_balance_submission_schema = import_module(
+    "tallylot.application.checkpoints.balance_submission.schema"
+)
+BALANCE_CONFIRMATIONS_FILENAME = (
+    _balance_submission_schema.BALANCE_CONFIRMATIONS_FILENAME
+)
+BALANCES_FILENAME = _balance_submission_schema.BALANCES_FILENAME
+ISSUES_FILENAME = _balance_submission_schema.ISSUES_FILENAME
+LOCATION_INVENTORY_FILENAME = _balance_submission_schema.LOCATION_INVENTORY_FILENAME
+SUMMARY_FILENAME = _balance_submission_schema.SUMMARY_FILENAME
+
+validate_balance_submission = import_module(
+    "tallylot.application.checkpoints.balance_submission.validation"
+).validate_balance_submission
+_checkpoints_contracts = import_module("tallylot.application.checkpoints.contracts")
+ScaffoldBalanceSubmissionRequest = (
+    _checkpoints_contracts.ScaffoldBalanceSubmissionRequest
+)
+SubmitBalancesRequest = _checkpoints_contracts.SubmitBalancesRequest
+to_resource_ref = import_module("tallylot.application.resource_refs").to_resource_ref
+_runtime = import_module("tallylot.infrastructure.composition.runtime")
+configured_workspace_root = _runtime.configured_workspace_root
+scaffold_balance_submission_use_case = _runtime.scaffold_balance_submission_use_case
+submit_balances_use_case = _runtime.submit_balances_use_case
+
 
 def _default_submission_root(source: str) -> Path:
-    from tallylot.infrastructure.composition.runtime import configured_workspace_root
-
     return (
         configured_workspace_root()
         / "working"
@@ -69,32 +91,10 @@ def _default_submission_root(source: str) -> Path:
 
 
 def _default_output_root(source: str) -> Path:
-    from tallylot.infrastructure.composition.runtime import configured_workspace_root
-
     return configured_workspace_root() / "working" / "normalized" / source
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    from tallylot.application.checkpoints.balance_submission.schema import (
-        BALANCE_CONFIRMATIONS_FILENAME,
-        BALANCES_FILENAME,
-        ISSUES_FILENAME,
-        LOCATION_INVENTORY_FILENAME,
-        SUMMARY_FILENAME,
-    )
-    from tallylot.application.checkpoints.contracts import (
-        ScaffoldBalanceSubmissionRequest,
-        SubmitBalancesRequest,
-    )
-    from tallylot.application.resource_refs import to_resource_ref
-    from tallylot.infrastructure.composition.runtime import (
-        scaffold_balance_submission_use_case,
-        submit_balances_use_case,
-    )
-    from tallylot.application.checkpoints.balance_submission.validation import (
-        validate_balance_submission,
-    )
-
     parser = argparse.ArgumentParser(
         description="Run manual balance submission operations through runtime workflows.",
     )
@@ -222,12 +222,6 @@ def _inspection_payload(
     balance_confirmations_path: Path,
     location_inventory_path: Path,
 ) -> dict[str, object]:
-    from tallylot.application.checkpoints.balance_submission.schema import (
-        BALANCE_CONFIRMATIONS_FILENAME,
-        BALANCES_FILENAME,
-        LOCATION_INVENTORY_FILENAME,
-    )
-
     issues = [issue.to_row() for issue in validation.issues]
     return {
         "submission_root": str(submission_root),

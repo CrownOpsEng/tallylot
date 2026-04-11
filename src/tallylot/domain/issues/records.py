@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from tallylot.domain.captures import ProvenanceLocator, flatten_optional_provenance
+
 
 @dataclass(frozen=True)
 class IssueRecord:
@@ -15,6 +17,7 @@ class IssueRecord:
     message: str
     context_timestamp: str = ""
     raw_file: str = ""
+    raw_provenance: ProvenanceLocator | None = None
     raw_row_ref: str = ""
     status: str = "open"
 
@@ -29,6 +32,7 @@ class IssueRecord:
             "context_timestamp": self.context_timestamp,
             "raw_file": self.raw_file,
             "raw_row_ref": self.raw_row_ref,
+            **flatten_optional_provenance(self.raw_provenance, prefix="raw"),
             "status": self.status,
         }
 
@@ -43,6 +47,7 @@ class NormalizationReviewRecord:
     message: str
     context_timestamp: str = ""
     raw_file: str = ""
+    raw_provenance: ProvenanceLocator | None = None
     raw_row_ref: str = ""
     field_name: str = ""
     original_value: str = ""
@@ -60,6 +65,7 @@ class NormalizationReviewRecord:
             "context_timestamp": self.context_timestamp,
             "raw_file": self.raw_file,
             "raw_row_ref": self.raw_row_ref,
+            **flatten_optional_provenance(self.raw_provenance, prefix="raw"),
             "field_name": self.field_name,
             "original_value": self.original_value,
             "normalized_value": self.normalized_value,

@@ -3,11 +3,19 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.generic.structured_csv.adapter import _StructuredCsvSourceAdapter
+from tallylot.adapters.sources.generic.structured_csv.adapter import (
+    _StructuredCsvSourceAdapter,
+)
 from tallylot.adapters.sources.generic.structured_csv.contracts import REQUIRED_HEADER
-from tallylot.adapters.sources.generic.structured_csv.feedback import StructuredCsvFeedbackFactory
-from tallylot.adapters.sources.generic.structured_csv.normalization import translate_structured_csv
-from tallylot.adapters.sources.generic.structured_csv.validation import StructuredCsvRowValidator
+from tallylot.adapters.sources.generic.structured_csv.feedback import (
+    StructuredCsvFeedbackFactory,
+)
+from tallylot.adapters.sources.generic.structured_csv.normalization import (
+    translate_structured_csv,
+)
+from tallylot.adapters.sources.generic.structured_csv.validation import (
+    StructuredCsvRowValidator,
+)
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import LegKind
 from tallylot.ports.source_profiles import FileInventoryEntry
@@ -91,7 +99,11 @@ def test_translate_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
     )
 
     result = translate_structured_csv(
-        build_source_profile(adapter_id="structured_csv", raw_dir=str(raw_dir), source="Structured Example"),
+        build_source_profile(
+            adapter_id="structured_csv",
+            raw_dir=str(raw_dir),
+            source="Structured Example",
+        ),
         raw_dir,
         adapter_id="structured_csv",
     )
@@ -102,7 +114,39 @@ def test_translate_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
     assert result.issues[0].kind == "invalid_schema"
 
 
-def test_structured_csv_validator_rejects_side_attribution_without_matching_primary_leg() -> None:
+def test_translate_structured_csv_preserves_title_row_line_numbers(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "transactions.csv").write_text(
+        "Transactions\n"
+        "User,Example,acct\n"
+        "timestamp,category,asset_in,amount_in,asset_out,amount_out,charge_asset,"
+        "charge_amount,charge_side,rebate_asset,rebate_amount,rebate_side,tx_hash,"
+        "description,account,wallet\n"
+        "2023-08-06 10:00:00,trade,BTC,1.0,CAD,-100.0,CAD,-1.0,out,BTC,0.01,in,"
+        "tx-1,fixture,Primary,Primary\n",
+        encoding="utf-8",
+    )
+
+    result = translate_structured_csv(
+        build_source_profile(
+            adapter_id="structured_csv",
+            raw_dir=str(raw_dir),
+            source="Structured Example",
+        ),
+        raw_dir,
+        adapter_id="structured_csv",
+    )
+
+    assert len(result.drafts) == 1
+    assert result.drafts[0].raw_row_ref == "4"
+
+
+def test_structured_csv_validator_rejects_side_attribution_without_matching_primary_leg() -> (
+    None
+):
     feedback = StructuredCsvFeedbackFactory(
         profile=build_source_profile(adapter_id="structured_csv"),
         adapter_id="structured_csv",
@@ -147,7 +191,11 @@ def test_translate_structured_csv_maps_charge_and_rebate_legs(tmp_path: Path) ->
     )
 
     result = translate_structured_csv(
-        build_source_profile(adapter_id="structured_csv", raw_dir=str(raw_dir), source="Structured Example"),
+        build_source_profile(
+            adapter_id="structured_csv",
+            raw_dir=str(raw_dir),
+            source="Structured Example",
+        ),
         raw_dir,
         adapter_id="structured_csv",
     )

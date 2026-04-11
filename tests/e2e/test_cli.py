@@ -8,14 +8,24 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 from typer.testing import CliRunner
 
+from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.checkpoints import BalanceSnapshot
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
+from tallylot.application.capture_paths import default_capture_normalized_root
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
 from tallylot.interfaces.cli import app
+from tallylot.ports.captures import SOURCE_CAPTURE_HEADER, SOURCE_INVENTORY_HEADER
+from tallylot.ports.evidence import (
+    ISSUE_HEADER,
+    LOCATION_INVENTORY_HEADER,
+    NORMALIZATION_REVIEW_HEADER,
+)
+from tallylot.ports.facts import FACT_HEADER
+from repo_support.capture_roots import materialize_capture_root
 
 runner = CliRunner()
 
@@ -35,6 +45,9 @@ def test_workspace_init_cli(tmp_path: Path) -> None:
 def test_profile_normalize_and_render_cli(
     structured_source_dir: Path, tmp_path: Path
 ) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
     normalized_dir = tmp_path / "normalized"
     rendered_path = tmp_path / "cointracking.csv"
 
@@ -46,7 +59,7 @@ def test_profile_normalize_and_render_cli(
             "--source",
             "fixture_source",
             "--raw-dir",
-            str(structured_source_dir),
+            str(raw_capture_root),
             "--output-dir",
             str(normalized_dir),
         ],
@@ -59,7 +72,7 @@ def test_profile_normalize_and_render_cli(
             "--source",
             "fixture_source",
             "--raw-dir",
-            str(structured_source_dir),
+            str(raw_capture_root),
             "--output-dir",
             str(normalized_dir),
         ],
@@ -86,6 +99,94 @@ def test_profile_normalize_and_render_cli(
     assert (normalized_dir / "facts.csv").exists()
     assert (normalized_dir / "fact_annotations.json").exists()
     assert (normalized_dir / "normalization_reviews.csv").exists()
+
+
+def test_source_profile_cli_rejects_non_capture_root(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "profile",
+            "--source",
+            "fixture_source",
+            "--raw-dir",
+            str(raw_dir),
+            "--output-dir",
+            str(tmp_path / "profile"),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "capture.json" in result.stdout
+
+
+def test_source_profile_cli_defaults_output_dir_to_capture_root_neighbor(
+    structured_source_dir: Path, tmp_path: Path
+) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
+    expected_output_dir = default_capture_normalized_root(raw_capture_root)
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "profile",
+            "--source",
+            "fixture_source",
+            "--raw-dir",
+            str(raw_capture_root),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["profile_output_ref"] == str(expected_output_dir)
+    assert (expected_output_dir / "profile.json").exists()
+    assert (expected_output_dir / "profile_inventory.csv").exists()
+
+
+def test_source_normalize_cli_rejects_mismatched_capture_root(tmp_path: Path) -> None:
+    raw_capture_root = materialize_capture_root(tmp_path, source="fixture_source")
+    (raw_capture_root / "capture.json").write_text(
+        json.dumps(
+            {
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "source": "other_source",
+                "capture_label": "2026-03-23T14-15-16Z",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/other_source",
+                "manifest_fingerprint": "manifest:fixture",
+                "status": "captured",
+                "notes": "",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "normalize",
+            "--source",
+            "fixture_source",
+            "--raw-dir",
+            str(raw_capture_root),
+            "--output-dir",
+            str(tmp_path / "normalized"),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "does not match requested source" in result.stdout
 
 
 def test_source_manifest_cli(tmp_path: Path) -> None:
@@ -116,6 +217,9 @@ def test_source_manifest_cli(tmp_path: Path) -> None:
 def test_checkpoint_location_inventory_rebuild_cli(
     structured_source_dir: Path, tmp_path: Path
 ) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
     normalized_dir = tmp_path / "normalized"
     output_path = tmp_path / "location_inventory.csv"
 
@@ -127,7 +231,7 @@ def test_checkpoint_location_inventory_rebuild_cli(
             "--source",
             "fixture_source",
             "--raw-dir",
-            str(structured_source_dir),
+            str(raw_capture_root),
             "--output-dir",
             str(normalized_dir),
         ],
@@ -187,14 +291,119 @@ def test_source_intake_plan_and_apply_cli(tmp_path: Path) -> None:
     )
 
     payload = json.loads(apply_result.stdout)
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    capture_label = summary["planned_capture_label"]
 
     assert plan_result.exit_code == 0
     assert apply_result.exit_code == 0
     assert (report_dir / "intake_plan.csv").exists()
+    assert payload["source"] == "unclassified"
+    assert payload["capture_status"] == "captured"
+    assert payload["capture_label"] == capture_label
     assert payload["copied_count"] == 1
     assert (
-        workspace_root / "evidence/raw/source/unclassified/incoming/transactions.csv"
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "unclassified"
+        / capture_label
+        / "transactions.csv"
     ).exists()
+
+
+def test_source_assemble_cli_writes_assembled_source_dataset(tmp_path: Path) -> None:
+    workspace_root = tmp_path / "workspace"
+    capture_uid = "01HV4A5H7VJH7M3Y5A6B7C8D9E"
+    capture_root = workspace_root / "working" / "normalized" / "captures" / capture_uid
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2026, 3, 23, tzinfo=UTC)
+    artifacts.write_rows(
+        workspace_root / "analysis" / "inventory" / "source_captures.csv",
+        SOURCE_CAPTURE_HEADER,
+        (
+            {
+                "capture_uid": capture_uid,
+                "source": "coinbase",
+                "capture_label": "2026-03-23T14-15-16Z",
+                "status": "normalized",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/coinbase",
+                "capture_root_ref": "evidence/raw/source/coinbase/2026-03-23T14-15-16Z",
+                "manifest_fingerprint": "manifest:fixture",
+                "file_count": "1",
+                "observed_period_start": "2026-03-23",
+                "observed_period_end": "2026-03-23",
+                "observed_group_count": "1",
+                "supersedes_capture_uid": "",
+                "notes": "",
+            },
+        ),
+    )
+    artifacts.write_rows(capture_root / "facts.csv", FACT_HEADER, ())
+    artifacts.write_json(capture_root / "fact_annotations.json", [])
+    FilesystemEvidenceRepository().write_balance_snapshots(
+        capture_root / "balances.csv",
+        (
+            BalanceSnapshot(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase:primary"),
+                instrument_id=InstrumentId("symbol:BTC@coinbase"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.DATE,
+            ),
+        ),
+    )
+    FilesystemEvidenceRepository().write_balance_evidence(
+        capture_root / "balance_evidence.csv",
+        (
+            BalanceEvidence(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase:primary"),
+                instrument_id=InstrumentId("symbol:BTC@coinbase"),
+                quantity=Decimal("1.0"),
+                as_of_at=as_of,
+                as_of_precision=TemporalPrecision.DATE,
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+            ),
+        ),
+    )
+    artifacts.write_rows(capture_root / "exceptions.csv", ISSUE_HEADER, ())
+    artifacts.write_rows(
+        capture_root / "normalization_reviews.csv",
+        NORMALIZATION_REVIEW_HEADER,
+        (),
+    )
+    artifacts.write_rows(
+        capture_root / "location_inventory.csv",
+        LOCATION_INVENTORY_HEADER,
+        (),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "assemble",
+            "--source",
+            "coinbase",
+            "--workspace-root",
+            str(workspace_root),
+        ],
+    )
+
+    assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["included_capture_count"] == 1
+    assert (assembled_root / "assembly_summary.json").exists()
+    assert FilesystemArtifactStore().read_rows(assembled_root / "balance_evidence.csv")
 
 
 def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> None:
@@ -209,8 +418,15 @@ def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> No
     )
     FilesystemArtifactStore().write_rows(
         workspace_root / "analysis" / "issues" / "source_label_map.csv",
-        ("incoming_path_prefix", "source", "notes"),
-        ({"incoming_path_prefix": ".", "source": "manual-main", "notes": ""},),
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "manual-main",
+                "notes": "",
+            },
+        ),
     )
     report_dir = tmp_path / "reports"
 
@@ -231,12 +447,290 @@ def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> No
 
     payload = json.loads(result.stdout)
     plan_rows = FilesystemArtifactStore().read_rows(report_dir / "intake_plan.csv")
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    capture_label = summary["planned_capture_label"]
 
     assert result.exit_code == 0
+    assert payload["source"] == "manual-main"
+    assert payload["capture_status"] == "captured"
+    assert payload["capture_label"] == capture_label
     assert payload["copied_count"] == 1
     assert plan_rows[0]["source_resolution_status"] == "explicit_map"
     assert (
-        workspace_root / "evidence/raw/source/manual-main/incoming/transactions.csv"
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "manual-main"
+        / capture_label
+        / "transactions.csv"
+    ).exists()
+
+
+def test_source_intake_cli_reports_blocked_capture_status(tmp_path: Path) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv",
+        ("source",),
+        ({"source": "manual-main"},),
+    )
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "missing-source",
+                "notes": "",
+            },
+        ),
+    )
+    report_dir = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(report_dir),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 1
+    assert payload["source"] == ""
+    assert payload["capture_status"] == "capture_blocked"
+    assert payload["capture_label"] == ""
+    assert payload["copied_count"] == 0
+
+
+def test_source_intake_cli_reports_mixed_source_capture_as_ambiguous(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv",
+        SOURCE_INVENTORY_HEADER,
+        (
+            {
+                "source": "binance-main",
+                "activity_after_cutoff": "",
+                "scope_status": "",
+                "status": "",
+                "capture_count": "",
+                "latest_capture_uid": "",
+                "latest_capture_label": "",
+                "latest_capture_completed_at": "",
+                "assembly_status": "",
+                "assembled_root_ref": "",
+                "adapter_hints": "",
+                "notes": "",
+            },
+            {
+                "source": "coinbase-main",
+                "activity_after_cutoff": "",
+                "scope_status": "",
+                "status": "",
+                "capture_count": "",
+                "latest_capture_uid": "",
+                "latest_capture_label": "",
+                "latest_capture_completed_at": "",
+                "assembly_status": "",
+                "assembled_root_ref": "",
+                "adapter_hints": "",
+                "notes": "",
+            },
+        ),
+    )
+    artifacts.write_rows(
+        workspace_root / "analysis" / "issues" / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": "binance",
+                "source": "binance-main",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": "coinbase",
+                "source": "coinbase-main",
+                "notes": "",
+            },
+        ),
+    )
+    incoming_dir = tmp_path / "incoming"
+    (incoming_dir / "binance").mkdir(parents=True)
+    (incoming_dir / "coinbase").mkdir(parents=True)
+    (incoming_dir / "binance" / "transactions.csv").write_text(
+        "a,b\n1,2\n", encoding="utf-8"
+    )
+    (incoming_dir / "coinbase" / "transactions.csv").write_text(
+        "a,b\n3,4\n", encoding="utf-8"
+    )
+    (incoming_dir / "binance" / "notes.png").write_bytes(b"support")
+    report_dir = tmp_path / "reports"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(report_dir),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+    plan_rows = artifacts.read_rows(report_dir / "intake_plan.csv")
+    support_row = next(
+        row for row in plan_rows if row["relative_path"] == "binance/notes.png"
+    )
+
+    assert result.exit_code == 1
+    assert payload["source"] == ""
+    assert payload["capture_status"] == "capture_blocked"
+    assert payload["copied_count"] == 0
+    assert support_row["action"] == "skip"
+    assert support_row["review_codes"] == "mixed_source_capture"
+
+
+def test_source_intake_cli_uses_nonzero_exit_for_duplicate_blocked_capture(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    first_report_dir = tmp_path / "reports-1"
+    second_report_dir = tmp_path / "reports-2"
+
+    first_result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(first_report_dir),
+        ],
+    )
+    second_result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(incoming_dir),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(second_report_dir),
+        ],
+    )
+
+    payload = json.loads(second_result.stdout)
+
+    assert first_result.exit_code == 0
+    assert second_result.exit_code == 1
+    assert payload["source"] == "unclassified"
+    assert payload["capture_status"] == "duplicate_blocked"
+    assert payload["capture_label"] == ""
+    assert payload["copied_count"] == 0
+
+
+def test_source_intake_cli_uses_nonzero_exit_for_overlap_review_capture(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    first_incoming = tmp_path / "incoming-1"
+    second_incoming = tmp_path / "incoming-2"
+    first_incoming.mkdir()
+    second_incoming.mkdir()
+    payload_a = (
+        "Pair,Coin,Date,Amount,Type,Status\n"
+        "ADA/USDT,USDT,2021-05-25 12:53:03,0.0345,Auto borrowing,CONFIRM\n"
+    )
+    payload_b = (
+        "Pair,Coin,Date,Amount,Type,Status\n"
+        "ADA/USDT,USDT,2021-05-25 12:53:03,0.0500,Auto borrowing,CONFIRM\n"
+    )
+    (first_incoming / "borrow.csv").write_text(payload_a, encoding="utf-8")
+    (second_incoming / "borrow.csv").write_text(payload_b, encoding="utf-8")
+    first_report_dir = tmp_path / "reports-1"
+    second_report_dir = tmp_path / "reports-2"
+
+    first_result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(first_incoming),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(first_report_dir),
+        ],
+    )
+    second_result = runner.invoke(
+        app,
+        [
+            "source",
+            "intake",
+            "apply",
+            "--incoming-dir",
+            str(second_incoming),
+            "--workspace-root",
+            str(workspace_root),
+            "--report-dir",
+            str(second_report_dir),
+        ],
+    )
+
+    payload = json.loads(second_result.stdout)
+
+    assert first_result.exit_code == 0
+    assert second_result.exit_code == 1
+    assert payload["source"] == "binance"
+    assert payload["capture_status"] == "overlap_review_required"
+    assert payload["capture_label"] != ""
+    assert payload["copied_count"] == 1
+    assert (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "binance"
+        / payload["capture_label"]
+        / "borrow.csv"
     ).exists()
 
 
@@ -595,7 +1089,7 @@ def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None
                 quantity=Decimal("1.5"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
@@ -690,7 +1184,7 @@ def test_reconciliation_balance_check_cli_rejects_output_inside_input_root(
                 quantity=Decimal("1.0"),
                 as_of_at=as_of,
                 as_of_precision=TemporalPrecision.TIMESTAMP,
-                evidence_ref="statement.pdf#page=1",
+                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
             ),
         ),
     )
