@@ -274,7 +274,7 @@ Rules:
 - do not add one-off migration utilities or compatibility wrappers just to
   preserve a superseded capture layout
 
-### 15. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
+### 17. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
 
 Manual balance submission is a supported operational path for producing
 canonical `balances.csv` and `balance_confirmations.csv`, but it is not an
@@ -332,7 +332,7 @@ is inherently specific.
 - `application/normalization/`
   - orchestrate one capture's translation into fact artifacts and source-backed
     evidence
-- `application/assembly/`
+- `application/normalization/assembly/`
   - deterministic merge of accepted capture outputs into assembled
     source-scoped normalization datasets
 - `application/reconciliation/`
