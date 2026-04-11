@@ -89,13 +89,12 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint 
 Review:
 
 - `balance_submission_summary.json`
-- `balance_submission_issues.csv`
+- `balance_submission_issues.csv` when the submit run reports issues
 
-Use this path when normalization did not already emit canonical balance
-artifacts or when the source's balance facts need to be entered through a
-validated manual package. By default, the submit workflow materializes
-canonical `balance_snapshots.csv`, `balance_references.csv`, and optional
-`location_inventory.csv` under
+Use this path when normalization did not already emit balance outputs or when
+the source's balance facts need to be entered through a validated manual
+package. By default, the submit workflow materializes `balance_snapshots.csv`,
+`balance_references.csv`, and optional `location_inventory.csv` under
 `<workspace>/working/normalized/sources/<source>/`.
 
 Optional `location_inventory.csv` improves later cross-source corroboration,

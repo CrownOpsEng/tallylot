@@ -48,13 +48,13 @@ Use the linked task guides when you need the detailed procedure for one stage.
 3. Use `checkpoint extract-pdf-balances` when a supported statement PDF is the
    source-backed evidence path; it uses the same statement extraction service
    as normalization.
-4. If normalization did not already produce canonical
-   `balance_snapshots.csv` and source-backed `balance_references.csv`, run
+4. If normalization did not already produce `balance_snapshots.csv` and
+   source-backed `balance_references.csv`, run
    `checkpoint scaffold-balance-submission`, fill the submission package, then
    run `checkpoint submit-balances` and review the submission summary and
-   issues.
-5. Run `reconciliation balances check` when canonical balance artifacts are
-   ready for a deterministic balance check, whether they came from
+   issues when they are present.
+5. Run `reconciliation balances check` when balance outputs are ready for a
+   deterministic balance check, whether they came from
    normalization or from validated manual submission with
    `operator_assertion` reference rows in `balance_references.csv`.
 6. When you need a multi-source answer, run `reconciliation balances inspect`,

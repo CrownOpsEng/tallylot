@@ -65,17 +65,16 @@ part of the current round-close process.
   generated files on rerun instead of leaving stale assembled artifacts behind.
 - Use normalization-owned `balance_snapshots.csv` and
   `balance_references.csv` directly when the source adapter already produced
-  canonical balance artifacts.
+  balance outputs.
 - When balances need to be authored manually, run
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission --source <source>`,
   fill the submission package under
   `working/supporting_artifacts/balance_submissions/<source>/`, then run
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances --source <source>`
-  and review `balance_submission_summary.json` plus
-  `balance_submission_issues.csv`.
-- Run `reconciliation balances check` once canonical
-  `balance_snapshots.csv` and `balance_references.csv` are available for the
-  runtime balance check.
+  and review `balance_submission_summary.json`; review
+  `balance_submission_issues.csv` when the submit run reports issues.
+- Run `reconciliation balances check` once `balance_snapshots.csv` and
+  `balance_references.csv` are available for the runtime balance check.
 - Use normalization-owned `source_document` rows when the source is already
   source-backed.
 - Use submission-owned `operator_assertion` rows when the source is only
@@ -119,7 +118,7 @@ part of the current round-close process.
   verification export set.
 - Use
   [Manual Balance Submission Artifacts](../reference/manual-balance-submission-artifacts.md)
-  for the scaffolded submission package contract and canonical materialization
+  for the scaffolded submission package contract and balance materialization
   rules.
 - Use `checkpoint extract-pdf-balances` for supported Coinbase, Binance, and
   Shakepay PDF statements when source-backed balance references are only

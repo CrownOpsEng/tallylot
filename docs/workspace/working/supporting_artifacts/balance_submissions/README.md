@@ -16,12 +16,12 @@ This subtree mirrors the runtime path for manual balance submission packages:
 - `working/supporting_artifacts/balance_submissions/<source>/`
 
 These packages are operator- or agent-authored support artifacts. They are not
-raw evidence and they are not themselves the canonical reconciliation inputs.
+raw evidence and they are not themselves the runtime reconciliation inputs.
 
 ## Package Role
 
 Use this subtree when balances need to be authored into a repo-owned package
-before they can be validated and materialized into canonical runtime files.
+before they can be validated and materialized into runtime files.
 
 These packages record operator assertions for runtime use. They do not create
 source-backed evidence.
@@ -42,20 +42,20 @@ The filled submission package should then contain:
 ## Submit Handoff
 
 Run `checkpoint submit-balances` against the filled package to validate the
-submission and materialize canonical outputs elsewhere, normally under
+submission and materialize balance outputs elsewhere, normally under
 `working/normalized/sources/<source>/`.
 
 The submit workflow writes:
 
-- canonical `balance_snapshots.csv`
-- canonical `balance_references.csv`
-- canonical `location_inventory.csv` when present
+- `balance_snapshots.csv`
+- `balance_references.csv`
+- `location_inventory.csv` when present
 - `balance_submission_summary.json`
-- `balance_submission_issues.csv`
+- `balance_submission_issues.csv` when validation finds issues
 
 Successful manual submission is ready for runtime balance checks through
 `operator_assertion` references, but it is not yet ready for a source-backed
 checkpoint.
 
-Keep the submission package and the canonical output tree separate. The submit
+Keep the submission package and the balance output tree separate. The submit
 workflow rejects output paths inside the submission package tree.

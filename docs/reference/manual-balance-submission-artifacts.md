@@ -1,6 +1,6 @@
 ---
 title: "Manual Balance Submission Artifacts"
-summary: "Reference contract for scaffolded manual balance submission packages and their canonical outputs."
+summary: "Reference contract for scaffolded manual balance submission packages and their balance outputs."
 doc_type: reference
 audience: human
 owner: repo
@@ -13,9 +13,9 @@ related:
 ---
 
 Use this reference when a source needs a validated manual submission package to
-materialize canonical balance artifacts.
+materialize balance outputs.
 
-Manual submission is a checkpoint-owned input path. It produces canonical
+Manual submission is a checkpoint-owned input path. It produces
 `balance_snapshots.csv` and `balance_references.csv` rows for runtime balance
 checks, but it does not create source-backed document evidence on its own.
 
@@ -26,8 +26,8 @@ checks, but it does not create source-backed document evidence on its own.
    `location_inventory.csv`, under
    `working/supporting_artifacts/balance_submissions/<source>/`.
 3. Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances --source <source>`.
-4. Review `balance_submission_summary.json` and
-   `balance_submission_issues.csv`.
+4. Review `balance_submission_summary.json`. When the submit run has issues,
+   review `balance_submission_issues.csv` as well.
 5. If the submit run is not blocked, continue with
    `reconciliation balances inspect`, `reconciliation balances check`, and
    `reconciliation balances summarize`.
@@ -67,7 +67,7 @@ Optional file:
 - `location_inventory.csv`
 
 The user-facing schema does not require `location_id`. The submit workflow
-derives canonical location identifiers from `source`, `account`, and `wallet`.
+derives location identifiers from `source`, `account`, and `wallet`.
 
 The user-facing schema does require `instrument_id`. The workflow preserves the
 entered `instrument_id` exactly and does not infer it from symbols, labels, or
@@ -172,9 +172,9 @@ Fill the real CSVs only from explicit operator-reviewed facts. Do not infer
 missing identifiers, timestamps, quantities, support references, or identity
 values.
 
-## Canonical Outputs
+## Materialized Outputs
 
-By default, a successful submit run materializes canonical outputs under
+By default, a successful submit run materializes balance outputs under
 `working/normalized/sources/<source>/`. The CLI also accepts an explicit output
 directory as long as it is not inside the submission package tree.
 
@@ -184,7 +184,7 @@ Written files:
 - `balance_references.csv`
 - `location_inventory.csv` when the optional submission file is present
 - `balance_submission_summary.json`
-- `balance_submission_issues.csv`
+- `balance_submission_issues.csv` when validation finds issues
 
 Successful submission reports:
 
@@ -192,7 +192,7 @@ Successful submission reports:
 - `wrote_balance_snapshots=true`
 - `wrote_balance_references=true`
 
-Manual submission writes `operator_assertion` rows into the canonical unified
+Manual submission writes `operator_assertion` rows into the shared unified
 reference artifact. It does not create `source_document` evidence or satisfy a
 filing-ready source-backed checkpoint on its own.
 
