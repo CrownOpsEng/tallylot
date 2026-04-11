@@ -346,6 +346,39 @@ def _replay_capture(
     )
 
 
+def _validate_reference_sources_ready(
+    *,
+    workspace_root: Path,
+    captures: tuple[ReferenceCapture, ...],
+) -> None:
+    for source in sorted({capture.source for capture in captures}):
+        assembly_summary_path = (
+            workspace_root
+            / "working"
+            / "normalized"
+            / "sources"
+            / source
+            / "assembly_summary.json"
+        )
+        if not assembly_summary_path.is_file():
+            raise ValueError(
+                "reference workspace is missing an assembled source summary for "
+                f"{source}: {assembly_summary_path}"
+            )
+        payload = json.loads(assembly_summary_path.read_text(encoding="utf-8"))
+        pending_capture_count = payload.get("pending_capture_count", 0)
+        if not isinstance(pending_capture_count, int):
+            raise ValueError(
+                "reference workspace assembly summary contains a non-integer "
+                f"pending_capture_count for {source}: {assembly_summary_path}"
+            )
+        if pending_capture_count:
+            raise ValueError(
+                "reference workspace source is not replay-ready because it still "
+                f"has {pending_capture_count} pending captures: {source}"
+            )
+
+
 def validate_workspace_replay(
     request: WorkspaceReplayValidationRequest,
 ) -> ReplayResult:
@@ -357,6 +390,10 @@ def validate_workspace_replay(
         artifacts=artifacts,
         workspace_root=request.reference_workspace,
         selected_sources=request.selected_sources,
+    )
+    _validate_reference_sources_ready(
+        workspace_root=request.reference_workspace,
+        captures=captures,
     )
     _seed_candidate_workspace(
         artifacts=artifacts,
@@ -425,4 +462,8 @@ def validate_workspace_replay(
     )
 
 
-__all__ = ["validate_workspace_replay", "_reference_captures"]
+__all__ = [
+    "validate_workspace_replay",
+    "_reference_captures",
+    "_validate_reference_sources_ready",
+]

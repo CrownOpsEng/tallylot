@@ -28,6 +28,7 @@ from tools.workspace_replay_validation.models import (
 from tools.workspace_replay_validation.workflow import (
     _reference_captures,
     _seed_candidate_workspace,
+    _validate_reference_sources_ready,
 )
 
 
@@ -276,6 +277,55 @@ def test_seed_candidate_workspace_adds_replay_scope_rows_without_reference_map(
             "notes": "workspace replay staged capture scope",
         }
     ]
+
+
+def test_validate_reference_sources_ready_rejects_pending_capture_sources(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    source_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
+    source_root.mkdir(parents=True, exist_ok=True)
+    (source_root / "assembly_summary.json").write_text(
+        json.dumps(
+            {
+                "source": "coinbase",
+                "pending_capture_count": 1,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="not replay-ready"):
+        _validate_reference_sources_ready(
+            workspace_root=workspace_root,
+            captures=(
+                ReferenceCapture(
+                    source="coinbase",
+                    manifest_fingerprint="manifest:coinbase",
+                    raw_capture_root=workspace_root / "raw" / "coinbase",
+                    report_slug="001_coinbase",
+                ),
+            ),
+        )
+
+
+def test_validate_reference_sources_ready_rejects_missing_assembly_summary(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+
+    with pytest.raises(ValueError, match="missing an assembled source summary"):
+        _validate_reference_sources_ready(
+            workspace_root=workspace_root,
+            captures=(
+                ReferenceCapture(
+                    source="coinbase",
+                    manifest_fingerprint="manifest:coinbase",
+                    raw_capture_root=workspace_root / "raw" / "coinbase",
+                    report_slug="001_coinbase",
+                ),
+            ),
+        )
 
 
 def test_raw_capture_signature_ignores_derived_capture_files(tmp_path: Path) -> None:
