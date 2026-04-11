@@ -93,8 +93,8 @@ def missing_quantity_issue(
             severity="high",
             message=(
                 f"{adapter.manifest.display_name} statement row for "
-                f"{row.asset or row.balance_kind} did not contain a canonical "
-                "quantity and timestamp."
+                f"{row.asset or row.balance_kind} did not contain a quantity "
+                "and timestamp."
             ),
             raw_row_ref=row.raw_row_ref,
             context_timestamp=row_context_timestamp(row),

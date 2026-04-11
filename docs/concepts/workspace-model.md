@@ -56,13 +56,13 @@ datasets.
 Rules:
 
 - `source_inventory.csv` is source-summary state only; it does not pretend one
-  source has one canonical `capture_path`
+  source has one capture path
 - `analysis/inventory/source_captures.csv` is the append-only capture registry
   keyed by immutable `capture_uid`
 - one intake run materializes one raw capture root under
   `evidence/raw/source/<source>/<capture_label>/`
 - `capture_label` is a human-facing folder name, while `capture_uid` remains
-  the canonical capture identity
+  the capture identity
 - inferred periods and inferred capture buckets stay in metadata and reports;
   they do not control capture routing or normalization identity
 - untouched upstream originals remain under raw evidence even when they are

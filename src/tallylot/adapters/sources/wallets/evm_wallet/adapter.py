@@ -250,7 +250,7 @@ def _account_identifier_context(
             identifier_kind,
             "",
             "unsupported_wallet_identifier",
-            f"Wallet-state account {address} is not a supported canonical identifier.",
+            f"Wallet-state account {address} is not a supported identifier.",
         )
     namespace = account_type.split(":", 1)[0].strip().lower()
     if namespace == "eip155":
@@ -269,7 +269,7 @@ def _account_identifier_context(
                 "ambiguous_wallet_identifier",
                 (
                     f"Wallet-state account {address} is an EVM address without a single chain-scoped ownership "
-                    "claim; use chain-specific exports for canonical routing."
+                    "claim; use chain-specific exports for routing."
                 ),
             )
         return identifier_kind, network_scope, "", ""
@@ -294,7 +294,7 @@ def _account_identifier_context(
             "ambiguous_wallet_identifier",
             (
                 f"Wallet-state account {address} is an EVM address without chain-scoped ownership evidence; "
-                "use chain-specific exports for canonical routing."
+                "use chain-specific exports for routing."
             ),
         )
     return identifier_kind, _network_scope(identifier_kind), "", ""

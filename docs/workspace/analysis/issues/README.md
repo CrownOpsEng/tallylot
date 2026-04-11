@@ -89,9 +89,8 @@ These values describe the current typed capture and assembly lifecycle:
 
 - `capture_complete` → at least one non-blocked capture row exists for the
   source
-- `profiled` → the latest meaningful capture has profile artifacts
-- `normalized` → at least one capture has normalized output or the latest
-  assembly attempt excluded all captures without producing a source dataset
+- `profiled` → at least one capture has profile artifacts
+- `normalized` → at least one capture has normalized output
 - `assembled` → `source assemble` produced the current assembled source dataset
 
 Keep the values consistent so AI and manual review can sort and filter reliably.
@@ -110,7 +109,7 @@ Use this append-only registry to track each intake capture for a source.
 
 Rules:
 
-- `capture_uid` is the immutable canonical capture identity
+- `capture_uid` is the immutable capture identity
 - `capture_label` is the human-readable raw folder name
 - `capture_root_ref` is workspace-relative
 - `supersedes_capture_uid` is explicit when one capture replaces another

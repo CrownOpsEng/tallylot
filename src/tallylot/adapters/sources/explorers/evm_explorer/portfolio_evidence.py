@@ -69,7 +69,7 @@ def extract_portfolio_balance_evidence(
                         kind="portfolio_location_unresolved",
                         message=(
                             "MetaMask portfolio rows were not admitted because the source folder "
-                            "did not resolve to exactly one canonical location."
+                            "did not resolve to exactly one location."
                         ),
                         raw_file=",".join(
                             entry.relative_path for entry, _ in portfolio_entries
