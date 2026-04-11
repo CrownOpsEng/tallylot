@@ -150,7 +150,7 @@ class ApplyIntakeUseCase:
                 ),
                 assembly_excluded_capture_count=(
                     0 if capture_session_plan.capture_status == "planned" else None
-                ),
+                    ),
             )
         summary_capture_status = (
             capture_metadata.status

@@ -311,6 +311,40 @@ def test_source_intake_service_applies_explicit_source_label_map(
     assert summary["explicit_map_count"] == 1
 
 
+def test_source_intake_service_skips_blank_source_inventory_for_support_only_inputs(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    support_path = incoming_dir / "2021" / "Binance" / "note.png"
+    support_path.parent.mkdir(parents=True, exist_ok=True)
+    support_path.write_bytes(b"support")
+
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    response = ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    plan_rows = artifacts.read_rows(report_dir / "intake_plan.csv")
+    support_target = Path(plan_rows[0]["target_path"])
+
+    assert response.copied_count == 1
+    assert support_target.read_bytes() == b"support"
+    assert not (
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    ).exists()
+    assert not (
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    ).exists()
+
+
 def test_source_intake_service_skips_rows_blocked_by_invalid_source_label_map(
     tmp_path: Path,
 ) -> None:
