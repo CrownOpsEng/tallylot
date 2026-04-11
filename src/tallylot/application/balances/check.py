@@ -260,7 +260,15 @@ class BalanceCheckWorkflow:
             ),
         )
         result = assert_balance_targets(plan.snapshots, resolved_references)
-        all_issues = (*plan.snapshot_issues, *reference_issues, *result.issues)
+        # The resolver already records unresolved targets. Keep the workflow
+        # issue stream on the resolver/provider surface instead of duplicating
+        # the same missing-reference row from the assertion layer.
+        assertion_issues = tuple(
+            issue
+            for issue in result.issues
+            if issue.kind != "balance_missing_reference"
+        )
+        all_issues = (*plan.snapshot_issues, *reference_issues, *assertion_issues)
         if result.assertions:
             self._artifacts.write_rows(
                 assertion_output_path,

@@ -450,7 +450,7 @@ def test_balance_check_workflow_emits_missing_balance_reference_in_offline_mode(
     assert response.source_count == 1
     assert response.issue_source_count == 1
     assert response.resolution_mode == "offline"
-    assert issue_rows[0]["kind"] == "missing_balance_reference"
+    assert [row["kind"] for row in issue_rows] == ["missing_balance_reference"]
     assert all(row["kind"] != "unsupported_balance_provider" for row in issue_rows)
     assert check_summary_rows[0]["check_status"] == "issues"
     assert check_summary_rows[0]["resolution_mode"] == "offline"
@@ -507,7 +507,7 @@ def test_balance_check_workflow_emits_unsupported_balance_provider_when_hydrated
     assert response.source_count == 1
     assert response.issue_source_count == 1
     assert response.resolution_mode == "hydrated"
-    assert issue_rows[0]["kind"] == "unsupported_balance_provider"
+    assert [row["kind"] for row in issue_rows] == ["unsupported_balance_provider"]
     assert check_summary_rows[0]["check_status"] == "issues"
     assert check_summary_rows[0]["resolution_mode"] == "hydrated"
 
