@@ -145,7 +145,18 @@ class ApplyIntakeUseCase:
                 artifacts=self._artifacts,
                 workspace_root=workspace_root,
                 source=capture_session_plan.source_folder,
+                assembled_output_present=(
+                    False if capture_session_plan.capture_status == "planned" else None
+                ),
+                assembly_excluded_capture_count=(
+                    0 if capture_session_plan.capture_status == "planned" else None
+                ),
             )
+        summary_capture_status = (
+            capture_metadata.status
+            if capture_metadata is not None
+            else capture_session_plan.capture_status
+        )
         write_reports(
             self._artifacts,
             report_dir,
@@ -154,6 +165,7 @@ class ApplyIntakeUseCase:
                 issue_rows=issue_rows,
                 capture_session_plan=capture_session_plan,
                 copied_count=copied_count,
+                summary_capture_status=summary_capture_status,
             ),
         )
         return IntakeApplyResponse(

@@ -22,6 +22,7 @@ class IntakeReportBundle:
     issue_rows: list[dict[str, str]]
     capture_session_plan: CaptureSessionPlan
     copied_count: int
+    summary_capture_status: str | None = None
 
 
 def write_reports(
@@ -46,6 +47,7 @@ def write_reports(
             issue_rows=bundle.issue_rows,
             copied_count=bundle.copied_count,
         ),
+        summary_capture_status=bundle.summary_capture_status,
     )
 
 

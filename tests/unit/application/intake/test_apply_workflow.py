@@ -824,6 +824,152 @@ def test_source_inventory_summary_updates_after_apply(tmp_path: Path) -> None:
     ]
 
 
+def test_apply_summary_reports_captured_status_for_materialized_capture(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+
+    response = ApplyIntakeUseCase(build_registry(), FilesystemArtifactStore()).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+
+    assert response.capture_status == "captured"
+    assert summary["capture_status"] == "captured"
+
+
+def test_new_capture_clears_stale_assembly_state_for_existing_source(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    issues_dir = workspace_root / "analysis" / "issues"
+    inventory_dir = workspace_root / "analysis" / "inventory"
+    issues_dir.mkdir(parents=True, exist_ok=True)
+    inventory_dir.mkdir(parents=True, exist_ok=True)
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        issues_dir / "source_inventory.csv",
+        SOURCE_INVENTORY_HEADER,
+        (
+            {
+                "source": "manual-main",
+                "activity_after_cutoff": "",
+                "scope_status": "in_scope",
+                "status": "assembled",
+                "capture_count": "1",
+                "latest_capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "latest_capture_label": "2026-03-23T14-15-16Z",
+                "latest_capture_completed_at": "2026-03-23 14:15:16",
+                "assembly_status": "assembled",
+                "assembled_root_ref": "working/normalized/sources/manual-main",
+                "adapter_hints": "",
+                "notes": "",
+            },
+        ),
+    )
+    artifacts.write_rows(
+        inventory_dir / "source_captures.csv",
+        (
+            "capture_uid",
+            "source",
+            "capture_label",
+            "status",
+            "intake_started_at",
+            "intake_completed_at",
+            "intake_method",
+            "incoming_ref",
+            "capture_root_ref",
+            "manifest_fingerprint",
+            "file_count",
+            "observed_period_start",
+            "observed_period_end",
+            "observed_group_count",
+            "supersedes_capture_uid",
+            "notes",
+        ),
+        (
+            {
+                "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
+                "source": "manual-main",
+                "capture_label": "2026-03-23T14-15-16Z",
+                "status": "assembly_included",
+                "intake_started_at": "2026-03-23 14:15:16",
+                "intake_completed_at": "2026-03-23 14:15:16",
+                "intake_method": "source_intake_apply",
+                "incoming_ref": "incoming/manual-main",
+                "capture_root_ref": "evidence/raw/source/manual-main/2026-03-23T14-15-16Z",
+                "manifest_fingerprint": "manifest:existing",
+                "file_count": "1",
+                "observed_period_start": "2026-03-23",
+                "observed_period_end": "2026-03-23",
+                "observed_group_count": "1",
+                "supersedes_capture_uid": "",
+                "notes": "",
+            },
+        ),
+    )
+    artifacts.write_rows(
+        issues_dir / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "",
+                "incoming_path_prefix": ".",
+                "source": "manual-main",
+                "notes": "",
+            },
+        ),
+    )
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    (incoming_dir / "transactions.csv").write_text("a,b\n3,4\n", encoding="utf-8")
+
+    ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(tmp_path / "reports"),
+        )
+    )
+
+    summary = json.loads(
+        (tmp_path / "reports" / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    updated_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+
+    assert updated_rows == [
+        {
+            "source": "manual-main",
+            "activity_after_cutoff": "",
+            "scope_status": "in_scope",
+            "status": "normalized",
+            "capture_count": "2",
+            "latest_capture_uid": updated_rows[0]["latest_capture_uid"],
+            "latest_capture_label": summary["planned_capture_label"],
+            "latest_capture_completed_at": updated_rows[0][
+                "latest_capture_completed_at"
+            ],
+            "assembly_status": "pending",
+            "assembled_root_ref": "",
+            "adapter_hints": "",
+            "notes": "",
+        }
+    ]
+
+
 def test_source_inventory_summary_does_not_regress_after_duplicate_blocked_attempt(
     tmp_path: Path,
 ) -> None:

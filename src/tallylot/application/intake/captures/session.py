@@ -281,10 +281,13 @@ def apply_capture_session_plan(
     report_dir: Path,
     plan: CaptureSessionPlan,
     context: CaptureSessionSummaryContext,
+    summary_capture_status: str | None = None,
 ) -> None:
     summary = plan.to_summary(
         planned_items=context.planned_items, issue_rows=context.issue_rows
     )
+    if summary_capture_status is not None:
+        summary["capture_status"] = summary_capture_status
     summary["copied_count"] = context.copied_count
     artifacts.write_json(report_dir / "intake_summary.json", cast(JsonValue, summary))
 
