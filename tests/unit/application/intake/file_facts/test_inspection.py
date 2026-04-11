@@ -8,8 +8,10 @@ from tallylot.application.intake.file_facts import (
     inspect_intake_file,
 )
 from tallylot.application.intake.file_facts.inspection import parse_timestamp
+from tallylot.application.intake.inventory import resolve_inventory_route
 from tallylot.application.intake.routing.service import _detect_source_folder
 from tallylot.infrastructure.discovery import build_registry
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_inspect_intake_file_extracts_timestamps_scope_tokens_and_network_hints(
@@ -170,6 +172,31 @@ def test_inspect_intake_file_extracts_non_evm_scope_tokens_from_content(
         "cardano:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         in facts.scope_tokens
     )
+
+
+def test_inspect_intake_file_preserves_title_row_wallet_scope_tokens(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "wallets.csv"
+    path.write_text(
+        "Ethereum Wallet,bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "Date,Amount\n"
+        "2024-01-01,1.0\n",
+        encoding="utf-8",
+    )
+
+    facts = inspect_intake_file(path, relative_path="incoming/neutral/wallets.csv")
+    route = resolve_inventory_route(
+        artifacts=FilesystemArtifactStore(),
+        workspace_root=tmp_path / "workspace",
+        source_folder="unclassified",
+        facts=facts,
+    )
+
+    assert "btc:bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" in facts.scope_tokens
+    assert "ethereum" in facts.network_hints
+    assert route.inventory_match_status == "generic_scope_routing"
+    assert route.source_folder.startswith("ethereum-wallet-bc1")
 
 
 def test_inspect_intake_file_extracts_tron_scope_tokens_from_content(

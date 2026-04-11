@@ -90,14 +90,14 @@ ACCOUNT_SEGMENT_PATTERN = re.compile(r"account[-_ ]?[a-z0-9]+", re.IGNORECASE)
 def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
     if path.suffix.lower() != ".csv":
         return IntakeFileFacts(
-            scope_tokens=tuple(sorted(_scope_tokens(relative_path, []))),
-            network_hints=tuple(sorted(_network_hints(relative_path, (), []))),
+            scope_tokens=tuple(sorted(_scope_tokens(relative_path, [], []))),
+            network_hints=tuple(sorted(_network_hints(relative_path, (), [], []))),
         )
 
-    header, rows = _read_csv_rows(path)
+    header, rows, title_rows = _read_csv_rows(path)
     timestamp_values = _timestamp_values(rows, header)
-    scope_tokens = _scope_tokens(relative_path, rows)
-    network_hints = _network_hints(relative_path, header, rows)
+    scope_tokens = _scope_tokens(relative_path, rows, title_rows)
+    network_hints = _network_hints(relative_path, header, rows, title_rows)
     return IntakeFileFacts(
         header=header,
         min_timestamp=timestamp_values[0] if timestamp_values else "",
@@ -166,7 +166,9 @@ def _observed_period_label(timestamp_values: list[str]) -> str:
     return start if start == end else f"{start}..{end}"
 
 
-def _read_csv_rows(path: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
+def _read_csv_rows(
+    path: Path,
+) -> tuple[tuple[str, ...], list[dict[str, str]], list[list[str]]]:
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         sample = handle.read(4096)
         handle.seek(0)
@@ -177,17 +179,22 @@ def _read_csv_rows(path: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
         rows = list(csv.reader(handle, dialect=dialect))
     header_index = _header_row_index(rows)
     if header_index is None:
-        return (), []
+        return (), [], []
     header = tuple(cell.strip() for cell in rows[header_index])
+    title_rows = rows[:header_index]
     content_rows = [
         _row_dict(header, row)
         for row in rows[header_index + 1 :]
         if any(cell.strip() for cell in row)
     ]
-    return header, content_rows
+    return header, content_rows, title_rows
 
 
-def _scope_tokens(relative_path: str, rows: list[dict[str, str]]) -> set[str]:
+def _scope_tokens(
+    relative_path: str,
+    rows: list[dict[str, str]],
+    title_rows: list[list[str]],
+) -> set[str]:
     tokens: set[str] = set()
     lower_path = relative_path.lower()
     for token in _identifier_scope_tokens(relative_path):
@@ -200,6 +207,14 @@ def _scope_tokens(relative_path: str, rows: list[dict[str, str]]) -> set[str]:
         for value in row.values():
             for token in _identifier_scope_tokens(value):
                 tokens.add(token)
+    for title_row in title_rows[:50]:
+        title_text = " ".join(cell.strip() for cell in title_row)
+        for token in _identifier_scope_tokens(title_text):
+            tokens.add(token)
+        for match in ACCOUNT_SEGMENT_PATTERN.finditer(title_text.lower()):
+            tokens.add(
+                f"label:{match.group(0).lower().replace(' ', '-').replace('_', '-')}"
+            )
     return tokens
 
 
@@ -207,11 +222,15 @@ def _network_hints(
     relative_path: str,
     header: tuple[str, ...],
     rows: list[dict[str, str]],
+    title_rows: list[list[str]],
 ) -> set[str]:
     row_text = " ".join(
         _cell_text(value) for row in rows[:50] for value in row.values()
     )
-    search_text = " ".join((relative_path, *header, row_text)).lower()
+    title_text = " ".join(
+        _cell_text(cell) for title_row in title_rows[:50] for cell in title_row
+    )
+    search_text = " ".join((relative_path, *header, row_text, title_text)).lower()
     hints: set[str] = set()
     for token, network in NETWORK_HINTS:
         if token in search_text:
