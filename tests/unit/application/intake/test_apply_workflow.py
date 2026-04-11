@@ -15,6 +15,7 @@ from tallylot.application.resource_refs import to_resource_ref, to_workspace_pat
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.captures import SOURCE_INVENTORY_HEADER
+from tests.support.adapter_packs import fixture_raw_dir
 
 
 def test_source_intake_service_applies_loose_files_into_workspace(
@@ -107,14 +108,14 @@ def test_source_intake_service_applies_archive_members_into_workspace(
     assert member_target.exists()
 
 
-def test_source_intake_service_applies_binance_statement_bundle_into_workspace(
+def test_source_intake_service_materializes_binance_statement_pdfs(
     tmp_path: Path,
 ) -> None:
-    source_dir = Path(
-        "tests/fixtures/adapter_packs/binance/latest_statement_workbooks/raw"
-    )
     incoming_dir = tmp_path / "incoming"
-    shutil.copytree(source_dir, incoming_dir)
+    incoming_dir.mkdir()
+    for path in fixture_raw_dir("binance", "latest_statement_workbooks").iterdir():
+        if path.is_file():
+            shutil.copy2(path, incoming_dir / path.name)
 
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
@@ -134,7 +135,25 @@ def test_source_intake_service_applies_binance_statement_bundle_into_workspace(
     source_rows = artifacts.read_rows(
         workspace_root / "analysis" / "issues" / "source_inventory.csv"
     )
+    capture_root = (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "binance"
+        / summary["planned_capture_label"]
+    )
 
+    assert response.copied_count == 5
+    assert response.issue_count == 0
+    assert summary["capture_status"] == "planned"
+    assert capture_root.is_dir()
+    assert (
+        capture_root / "AccountStatementPeriod_fixtureacct_20240101-20241231_old.pdf"
+    ).exists()
+    assert (
+        capture_root / "AccountStatementPeriod_fixtureacct_20250101-20251231_latest.pdf"
+    ).exists()
     assert response.source == "binance"
     assert response.capture_status == "captured"
     assert response.copied_count == 5
