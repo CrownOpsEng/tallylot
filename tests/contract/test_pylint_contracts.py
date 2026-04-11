@@ -7,7 +7,9 @@ from tools.run_pylint import _pylint_targets
 
 
 def _python_files(root: Path) -> tuple[Path, ...]:
-    return tuple(sorted(root.rglob("*.py")))
+    return tuple(
+        sorted(path for path in root.rglob("*.py") if ".venv" not in path.parts)
+    )
 
 
 def _production_python_files() -> tuple[Path, ...]:
