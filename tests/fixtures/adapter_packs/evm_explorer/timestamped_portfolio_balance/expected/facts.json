@@ -9,7 +9,7 @@
     "effective_precision": "",
     "fact_id": "evm_explorer:Wallet-eth export-0x2222222222222222222222222222222222222222.csv:0xabc",
     "leg_policy": "[{\"kind\":\"primary\",\"min_count\":1,\"max_count\":1,\"min_positive_count\":null,\"max_positive_count\":1,\"min_negative_count\":null,\"max_negative_count\":1}]",
-    "legs": "[{\"leg_id\":\"primary\",\"kind\":\"primary\",\"subtype\":\"\",\"instrument_id\":\"symbol:ETH@evm_explorer\",\"quantity\":\"0.5\",\"attributed_to_leg_id\":\"\",\"location_id\":\"\"}]",
+    "legs": "[{\"leg_id\":\"primary\",\"kind\":\"primary\",\"subtype\":\"\",\"instrument_id\":\"asset:evm:ethereum:native\",\"quantity\":\"0.5\",\"attributed_to_leg_id\":\"\",\"location_id\":\"\"}]",
     "location_id": "evm:ethereum:0x2222222222222222222222222222222222222222",
     "operation_group_id": "",
     "projection_hint": "deposit",

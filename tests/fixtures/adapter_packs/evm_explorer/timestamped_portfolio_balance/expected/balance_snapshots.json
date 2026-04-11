@@ -1,7 +1,7 @@
 [
   {
     "balance_kind": "available",
-    "instrument_id": "symbol:ETH@evm_explorer",
+    "instrument_id": "asset:evm:ethereum:native",
     "location_id": "evm:ethereum:0x2222222222222222222222222222222222222222",
     "notes": "",
     "quantity": "0.5",

@@ -1,7 +1,7 @@
 [
   {
     "balance_kind": "available",
-    "instrument_id": "symbol:NEAR@near",
+    "instrument_id": "asset:near:native",
     "location_id": "near:example.near",
     "notes": "",
     "quantity": "-1.11",
@@ -12,7 +12,7 @@
   },
   {
     "balance_kind": "available",
-    "instrument_id": "symbol:NEAR@near",
+    "instrument_id": "asset:near:native",
     "location_id": "near:example.near:staking",
     "notes": "",
     "quantity": "2",

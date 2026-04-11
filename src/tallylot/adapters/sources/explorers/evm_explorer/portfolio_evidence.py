@@ -182,15 +182,16 @@ def extract_portfolio_balance_references(
                     issue_record(
                         IssueSpec(
                             issue_id=(
-                                f"{profile.source}:{entry.relative_path}:row:{row_index}:"
-                                "instrument_identity_blocked"
+                                f"{profile.source}:{entry.relative_path}:row:"
+                                f"{row_index}:instrument_identity_blocked"
                             ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             severity="high",
                             kind="instrument_identity_blocked",
                             message=(
-                                "MetaMask portfolio row could not resolve an immutable on-chain asset id "
+                                "MetaMask portfolio row could not resolve an "
+                                "immutable on-chain asset id "
                                 f"for token symbol {symbol}."
                             ),
                             raw_file=entry.relative_path,

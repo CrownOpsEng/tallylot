@@ -120,7 +120,7 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(
     assert facts[0].tax_treatment_hint == TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN
     assert facts[0].legs[0].leg_id == "primary"
     assert facts[0].legs[0].quantity == Decimal("1.50000000")
-    assert str(facts[0].legs[0].instrument_id) == "symbol:BNB@evm_explorer"
+    assert str(facts[0].legs[0].instrument_id) == "asset:evm:ethereum:native"
     assert not result.issues
 
 
@@ -209,7 +209,7 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames() -> None:
     assert facts[0].projection_hint == ProjectionHint.DEPOSIT
     assert facts[0].legs[0].leg_id == "primary"
     assert facts[0].legs[0].quantity == Decimal("1.50000000")
-    assert str(facts[0].legs[0].instrument_id) == "symbol:BNB@evm_explorer"
+    assert str(facts[0].legs[0].instrument_id) == "asset:evm:bsc:native"
 
 
 def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(
@@ -341,8 +341,33 @@ def test_evm_explorer_adapter_uses_profile_inventory_timestamps_for_portfolio_as
 
     assert str(profile.adapter_id) == "evm_explorer"
     assert not result.balance_references
-    assert not result.issues
+    assert [issue.kind for issue in result.issues] == ["noncanonical_token_identity"]
     assert any(review.kind == "instrument_identity_review" for review in result.reviews)
+
+
+def test_evm_explorer_adapter_flags_symbol_only_token_identity_for_history_lookup(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    address = "0x2222222222222222222222222222222222222222"
+    (
+        raw_dir
+        / "Wallet-eth export-address-token-0x2222222222222222222222222222222222222222.csv"
+    ).write_text(
+        "Transaction Hash,DateTime (UTC),From,To,TokenValue,TokenSymbol\n"
+        f"0xdef,2025-03-24 22:55:59,0x0000000000000000000000000000000000000000,{address},1000,GALA\n",
+        encoding="utf-8",
+    )
+
+    profile, adapter = profile_and_adapter("eth-wallet-fixture", raw_dir)
+    result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
+
+    assert str(profile.adapter_id) == "evm_explorer"
+    assert len(facts) == 1
+    assert str(facts[0].legs[0].instrument_id) == "symbol:GALA@evm_explorer"
+    assert [issue.kind for issue in result.issues] == ["noncanonical_token_identity"]
 
 
 def test_evm_explorer_adapter_requires_single_location_for_portfolio_evidence(

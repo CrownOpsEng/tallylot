@@ -14,6 +14,7 @@ from tallylot.adapters.sources.explorers.evm_explorer.families import (
 from tallylot.adapters.support import (
     IssueSpec,
     canonical_location_id_from_identifier,
+    evm_native_asset_claim,
     issue_record,
     read_csv_header,
     read_csv_rows,
@@ -27,7 +28,13 @@ from tallylot.adapters.support.drafts import (
     symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.instruments import InstrumentIdentityClaim
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.types import LocationId
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
@@ -49,7 +56,7 @@ class EvmDraftContext:
     timestamp: datetime
     location_id: LocationId
     quantity: Decimal
-    symbol: str
+    instrument: InstrumentIdentityClaim
 
 
 def translate_transactions(
@@ -81,9 +88,15 @@ def translate_transactions(
                 context,
             )
         elif family_id == "internal_transfers":
-            path_drafts, path_issues = (), _unsupported_internal_transfer_issues(profile, path)
+            path_drafts, path_issues = (
+                (),
+                _unsupported_internal_transfer_issues(profile, path),
+            )
         elif family_id == "nft_transfers":
-            path_drafts, path_issues = (), _nft_transfer_issues(profile, path, owned_addresses=owned_addresses)
+            path_drafts, path_issues = (
+                (),
+                _nft_transfer_issues(profile, path, owned_addresses=owned_addresses),
+            )
         else:
             path_drafts, path_issues = (), ()
         drafts.extend(path_drafts)
@@ -98,7 +111,9 @@ def _translate_native_transfers(
 ) -> tuple[tuple[EconomicActivityDraft, ...], tuple[IssueRecord, ...]]:
     drafts: list[EconomicActivityDraft] = []
     issues: list[IssueRecord] = []
-    symbol = native_symbol_for_header(read_csv_header(path)) or context.network_scope.upper()
+    symbol = (
+        native_symbol_for_header(read_csv_header(path)) or context.network_scope.upper()
+    )
     for index, row in enumerate(read_csv_rows(path), start=2):
         tx_hash = (row.get("Transaction Hash") or "").strip()
         timestamp_text = (row.get("DateTime (UTC)") or "").strip()
@@ -134,7 +149,11 @@ def _translate_native_transfers(
                 )
             )
             continue
-        if amount_in > Decimal("0") and amount_out == Decimal("0") and to_address in context.owned_addresses:
+        if (
+            amount_in > Decimal("0")
+            and amount_out == Decimal("0")
+            and to_address in context.owned_addresses
+        ):
             drafts.append(
                 _draft(
                     profile,
@@ -149,7 +168,10 @@ def _translate_native_transfers(
                             network_scope=context.network_scope,
                         ),
                         quantity=amount_in,
-                        symbol=symbol,
+                        instrument=evm_native_asset_claim(
+                            context.network_scope,
+                            display_name=symbol,
+                        ),
                     ),
                     ActivitySemantics(
                         economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
@@ -160,7 +182,11 @@ def _translate_native_transfers(
                 )
             )
             continue
-        if amount_out > Decimal("0") and amount_in == Decimal("0") and from_address in context.owned_addresses:
+        if (
+            amount_out > Decimal("0")
+            and amount_in == Decimal("0")
+            and from_address in context.owned_addresses
+        ):
             drafts.append(
                 _draft(
                     profile,
@@ -175,7 +201,10 @@ def _translate_native_transfers(
                             network_scope=context.network_scope,
                         ),
                         quantity=-amount_out,
-                        symbol=symbol,
+                        instrument=evm_native_asset_claim(
+                            context.network_scope,
+                            display_name=symbol,
+                        ),
                     ),
                     ActivitySemantics(
                         economic_kind=EconomicKind.ASSET_WITHDRAWAL,
@@ -213,8 +242,22 @@ def _translate_token_transfers(
         symbol = (row.get("TokenSymbol") or "").strip().upper()
         amount = parse_decimal((row.get("TokenValue") or "").replace(",", "").strip())
         timestamp = _parse_utc_timestamp(timestamp_text)
-        if not tx_hash or timestamp is None or amount is None or amount <= Decimal("0") or not symbol:
-            issues.append(_row_issue(profile, path.name, index, "invalid_row", "EVM explorer token row is invalid."))
+        if (
+            not tx_hash
+            or timestamp is None
+            or amount is None
+            or amount <= Decimal("0")
+            or not symbol
+        ):
+            issues.append(
+                _row_issue(
+                    profile,
+                    path.name,
+                    index,
+                    "invalid_row",
+                    "EVM explorer token row is invalid.",
+                )
+            )
             continue
         if tx_hash in context.blocked_tx_hashes:
             continue
@@ -233,7 +276,27 @@ def _translate_token_transfers(
                 )
             )
             continue
-        if to_address in context.owned_addresses and from_address not in context.owned_addresses:
+        token_identity_issue = issue_record(
+            IssueSpec(
+                source=str(profile.source),
+                adapter_id="evm_explorer",
+                issue_id=f"evm_explorer:{path.name}:row:{index}:noncanonical_token_identity",
+                severity="high",
+                kind="noncanonical_token_identity",
+                message=(
+                    "EVM explorer token transfer rows do not expose immutable contract identity; "
+                    "the normalized fact keeps a symbol-only instrument id and cannot participate "
+                    "in historical API-backed balance lookup."
+                ),
+                raw_file=path.name,
+                raw_row_ref=f"row:{index}",
+            )
+        )
+        if (
+            to_address in context.owned_addresses
+            and from_address not in context.owned_addresses
+        ):
+            issues.append(token_identity_issue)
             drafts.append(
                 _draft(
                     profile,
@@ -248,7 +311,7 @@ def _translate_token_transfers(
                             network_scope=context.network_scope,
                         ),
                         quantity=amount,
-                        symbol=symbol,
+                        instrument=symbol_claim(symbol, venue="evm_explorer"),
                     ),
                     ActivitySemantics(
                         economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
@@ -259,7 +322,11 @@ def _translate_token_transfers(
                 )
             )
             continue
-        if from_address in context.owned_addresses and to_address not in context.owned_addresses:
+        if (
+            from_address in context.owned_addresses
+            and to_address not in context.owned_addresses
+        ):
+            issues.append(token_identity_issue)
             drafts.append(
                 _draft(
                     profile,
@@ -274,7 +341,7 @@ def _translate_token_transfers(
                             network_scope=context.network_scope,
                         ),
                         quantity=-amount,
-                        symbol=symbol,
+                        instrument=symbol_claim(symbol, venue="evm_explorer"),
                     ),
                     ActivitySemantics(
                         economic_kind=EconomicKind.ASSET_WITHDRAWAL,
@@ -297,7 +364,9 @@ def _translate_token_transfers(
     return tuple(drafts), tuple(issues)
 
 
-def _unsupported_internal_transfer_issues(profile: SourceProfile, path: Path) -> tuple[IssueRecord, ...]:
+def _unsupported_internal_transfer_issues(
+    profile: SourceProfile, path: Path
+) -> tuple[IssueRecord, ...]:
     return tuple(
         _row_issue(
             profile,
@@ -399,7 +468,7 @@ def _draft(
                 leg_id="primary",
                 kind=LegKind.PRIMARY,
                 quantity=draft_context.quantity,
-                instrument=symbol_claim(draft_context.symbol, venue="evm_explorer"),
+                instrument=draft_context.instrument,
             ),
         ),
     )
@@ -426,7 +495,9 @@ def _row_issue(
 
 
 def _parse_amount(row: dict[str, str], prefix: str) -> Decimal:
-    value = next((text for field, text in row.items() if field.startswith(f"{prefix}(")), "")
+    value = next(
+        (text for field, text in row.items() if field.startswith(f"{prefix}(")), ""
+    )
     parsed = parse_decimal(value.replace(",", "").strip())
     return parsed or Decimal("0")
 
