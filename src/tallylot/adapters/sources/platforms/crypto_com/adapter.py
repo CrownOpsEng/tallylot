@@ -112,6 +112,10 @@ class _CryptoComAdapter:
             relative_path,
             facts,
             path_hints=("crypto.com", "crypto_com"),
+            header_hints=(
+                "timestamp (utc),transaction description,currency,amount,to currency,to amount",
+                "transaction kind,transaction hash",
+            ),
         )
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
@@ -243,6 +247,26 @@ def _normalize_row(
                     instrument=symbol_claim(currency, venue="crypto_com"),
                 ),
             ),
+        )
+    if (
+        kind == "viban_purchase"
+        and amount is not None
+        and amount > Decimal("0")
+        and to_amount is not None
+    ):
+        return issue_record(
+            IssueSpec(
+                source=str(profile.source),
+                adapter_id="crypto_com",
+                issue_id=f"{transaction_id}:unsupported_cash_purchase",
+                kind="unsupported_row",
+                message=(
+                    "Crypto.com cash-side purchase rows with positive CAD amounts "
+                    "are not yet supported."
+                ),
+                raw_file=row_context.raw_file,
+                raw_row_ref=row_context.raw_row_ref,
+            )
         )
     if kind == "crypto_withdrawal" and amount is not None and amount < Decimal("0"):
         return EconomicActivityDraft(
