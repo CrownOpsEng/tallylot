@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import json
 import shutil
 from datetime import UTC, datetime
@@ -187,14 +188,36 @@ def _seed_candidate_workspace(
         SOURCE_INVENTORY_HEADER,
         seeded_rows,
     )
-    if reference_map_path.is_file():
-        target_path = (
-            candidate_workspace / "analysis" / "issues" / "source_label_map.csv"
-        )
-        target_path.write_text(
-            reference_map_path.read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
+    _seed_source_label_map(
+        reference_map_path=reference_map_path,
+        candidate_workspace=candidate_workspace,
+        needed_sources=needed_sources,
+    )
+
+
+def _seed_source_label_map(
+    *,
+    reference_map_path: Path,
+    candidate_workspace: Path,
+    needed_sources: set[str],
+) -> None:
+    if not reference_map_path.is_file():
+        return
+    with reference_map_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames is None:
+            return
+        fieldnames = tuple(reader.fieldnames)
+        filtered_rows = [
+            {field_name: row.get(field_name, "") for field_name in fieldnames}
+            for row in reader
+            if (row.get("source") or "").strip() in needed_sources
+        ]
+    target_path = candidate_workspace / "analysis" / "issues" / "source_label_map.csv"
+    with target_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(filtered_rows)
 
 
 def _copy_replay_inputs(

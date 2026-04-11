@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
-from tallylot.ports.captures import SOURCE_CAPTURE_HEADER
+from tallylot.ports.captures import SOURCE_CAPTURE_HEADER, SOURCE_INVENTORY_HEADER
 from tools.workspace_replay_validation.comparison import (
     _raw_capture_signature,
     collect_workspace_metrics,
@@ -23,8 +23,12 @@ from tools.workspace_replay_validation.models import (
     ParityReportRequest,
     SourceMetrics,
     WorkspaceMetrics,
+    ReferenceCapture,
 )
-from tools.workspace_replay_validation.workflow import _reference_captures
+from tools.workspace_replay_validation.workflow import (
+    _reference_captures,
+    _seed_candidate_workspace,
+)
 
 
 def _empty_reconciliation_counts(
@@ -110,6 +114,109 @@ def test_reference_captures_ignore_non_materialized_registry_rows(
 
     assert len(captures) == 1
     assert captures[0].manifest_fingerprint == "manifest:present"
+
+
+def test_seed_candidate_workspace_filters_source_label_map_to_replayed_sources(
+    tmp_path: Path,
+) -> None:
+    reference_workspace = tmp_path / "reference"
+    candidate_workspace = tmp_path / "candidate"
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        reference_workspace / "analysis" / "issues" / "source_inventory.csv",
+        SOURCE_INVENTORY_HEADER,
+        (
+            {
+                "source": "coinbase",
+                "activity_after_cutoff": "",
+                "scope_status": "in_scope",
+                "status": "",
+                "capture_count": "",
+                "latest_capture_uid": "",
+                "latest_capture_label": "",
+                "latest_capture_completed_at": "",
+                "assembly_status": "",
+                "assembled_root_ref": "",
+                "adapter_hints": "",
+                "notes": "",
+            },
+            {
+                "source": "binance",
+                "activity_after_cutoff": "",
+                "scope_status": "in_scope",
+                "status": "",
+                "capture_count": "",
+                "latest_capture_uid": "",
+                "latest_capture_label": "",
+                "latest_capture_completed_at": "",
+                "assembly_status": "",
+                "assembled_root_ref": "",
+                "adapter_hints": "",
+                "notes": "",
+            },
+        ),
+    )
+    artifacts.write_rows(
+        reference_workspace / "analysis" / "issues" / "source_label_map.csv",
+        ("incoming_capture_scope", "incoming_path_prefix", "source", "notes"),
+        (
+            {
+                "incoming_capture_scope": "coinbase-stage",
+                "incoming_path_prefix": ".",
+                "source": "coinbase",
+                "notes": "",
+            },
+            {
+                "incoming_capture_scope": "binance-stage",
+                "incoming_path_prefix": ".",
+                "source": "binance",
+                "notes": "",
+            },
+        ),
+    )
+
+    _seed_candidate_workspace(
+        artifacts=artifacts,
+        reference_workspace=reference_workspace,
+        candidate_workspace=candidate_workspace,
+        captures=(
+            ReferenceCapture(
+                source="coinbase",
+                manifest_fingerprint="manifest:coinbase",
+                raw_capture_root=reference_workspace / "raw" / "coinbase",
+                report_slug="001_coinbase",
+            ),
+        ),
+    )
+
+    assert artifacts.read_rows(
+        candidate_workspace / "analysis" / "issues" / "source_inventory.csv"
+    ) == [
+        {
+            "source": "coinbase",
+            "activity_after_cutoff": "",
+            "scope_status": "in_scope",
+            "status": "",
+            "capture_count": "",
+            "latest_capture_uid": "",
+            "latest_capture_label": "",
+            "latest_capture_completed_at": "",
+            "assembly_status": "",
+            "assembled_root_ref": "",
+            "adapter_hints": "",
+            "notes": "",
+        }
+    ]
+    assert artifacts.read_rows(
+        candidate_workspace / "analysis" / "issues" / "source_label_map.csv"
+    ) == [
+        {
+            "incoming_capture_scope": "coinbase-stage",
+            "incoming_path_prefix": ".",
+            "source": "coinbase",
+            "notes": "",
+        }
+    ]
 
 
 def test_raw_capture_signature_ignores_derived_capture_files(tmp_path: Path) -> None:
