@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from repo_support.paths import repo_root
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.domain.balances import (
     BalanceReference,
     BalanceReferenceKind,
@@ -28,7 +29,7 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, SourceId, TransactionId
 from tallylot.infrastructure.storage import (
     FilesystemEvidenceRepository,
     FilesystemFactRepository,
@@ -43,7 +44,7 @@ def _fact(
         source=SourceId(source),
         adapter_id=AdapterId("structured_csv"),
         timestamp=as_of,
-        location_id=LocationId(source),
+        location_id=location_id_from_parts(source),
         semantics=FactSemantics(
             economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
             projection_hint=ProjectionHint.DEPOSIT,
@@ -68,7 +69,7 @@ def _reference(
     return BalanceReference(
         target=BalanceTarget(
             source=SourceId(source),
-            location_id=LocationId(source),
+            location_id=location_id_from_parts(source),
             instrument_id=InstrumentId(instrument_id),
             balance_kind="available",
             target_at=as_of,
@@ -88,7 +89,7 @@ def _snapshot(
     return BalanceSnapshot(
         target=BalanceTarget(
             source=SourceId(source),
-            location_id=LocationId(source),
+            location_id=location_id_from_parts(source),
             instrument_id=InstrumentId(instrument_id),
             balance_kind="available",
             target_at=as_of,

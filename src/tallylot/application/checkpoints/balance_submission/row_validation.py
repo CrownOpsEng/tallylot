@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
@@ -30,19 +29,6 @@ from .schema import (
 )
 
 
-@dataclass(frozen=True)
-class _ValidatedBalanceLikeRow:
-    source: str
-    account: str
-    wallet: str
-    instrument_id: str
-    quantity: Decimal
-    target_at: datetime
-    target_precision: TemporalPrecision
-    balance_kind: str
-    notes: str
-
-
 def validate_balance_rows(
     rows: list[tuple[int, dict[str, str]]],
     *,
@@ -60,19 +46,7 @@ def validate_balance_rows(
         )
         if base is None:
             continue
-        parsed_rows.append(
-            BalanceSnapshotSubmissionRow(
-                source=base.source,
-                account=base.account,
-                wallet=base.wallet,
-                instrument_id=base.instrument_id,
-                quantity=base.quantity,
-                target_at=base.target_at,
-                target_precision=base.target_precision,
-                balance_kind=base.balance_kind,
-                notes=base.notes,
-            )
-        )
+        parsed_rows.append(base)
     return parsed_rows
 
 
@@ -201,7 +175,7 @@ def validate_balance_reference_rows(
                 target_at=base.target_at,
                 target_precision=base.target_precision,
                 balance_kind=base.balance_kind,
-                reference_kind=normalized_kind.value,
+                reference_kind=normalized_kind,
                 observed_at=parsed_observed_at_value,
                 observed_precision=parsed_observed_precision_value,
                 support_ref=support_ref,
@@ -302,7 +276,7 @@ def _validate_balance_like_row(
     row: dict[str, str],
     expected_source: str,
     issues: list[BalanceSubmissionIssue],
-) -> _ValidatedBalanceLikeRow | None:
+) -> BalanceSnapshotSubmissionRow | None:
     required = {
         field: row.get(field, "").strip()
         for field in (
@@ -367,11 +341,9 @@ def _validate_balance_like_row(
         raw_value=required["target_at"],
         precision=precision,
     )
-    if required["balance_kind"]:
-        normalize_balance_kind(required["balance_kind"])
     if not row_valid or quantity is None or precision is None or target_at is None:
         return None
-    return _ValidatedBalanceLikeRow(
+    return BalanceSnapshotSubmissionRow(
         source=required["source"],
         account=required["account"],
         wallet=required["wallet"],

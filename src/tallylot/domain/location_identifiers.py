@@ -46,6 +46,23 @@ _ONCHAIN_LOCATION_PREFIXES = (
     "solana:",
     "tron:",
 )
+_LOCATION_ID_GENERIC_PATTERN = re.compile(r"^[a-z0-9_]+(?::[a-z0-9_]+)*$")
+_LOCATION_ID_NEAR_PATTERN = re.compile(r"^near:[a-z0-9_.-]{6,64}(?::[a-z0-9_]+)*$")
+_LOCATION_ID_EVM_PATTERN = re.compile(
+    r"^evm:[a-z0-9_]+:0x[a-fA-F0-9]{40}(?::[a-z0-9_]+)*$"
+)
+_LOCATION_ID_BITCOIN_PATTERN = re.compile(
+    r"^bitcoin:(?:xpub[1-9A-HJ-NP-Za-km-z]+|"
+    r"bc1[ac-hj-np-z02-9]{11,71}|"
+    r"[13][1-9A-HJ-NP-Za-km-z]{25,34})(?::[a-z0-9_]+)*$"
+)
+_LOCATION_ID_CARDANO_PATTERN = re.compile(r"^cardano:[a-fA-F0-9]{64,}(?::[a-z0-9_]+)*$")
+_LOCATION_ID_SOLANA_PATTERN = re.compile(
+    r"^solana:[1-9A-HJ-NP-Za-km-z]{32,44}(?::[a-z0-9_]+)*$"
+)
+_LOCATION_ID_TRON_PATTERN = re.compile(
+    r"^tron:T[1-9A-HJ-NP-Za-km-z]{33}(?::[a-z0-9_]+)*$"
+)
 
 
 def normalized_identifier(identifier_kind: str, identifier_value: str) -> str:
@@ -104,5 +121,29 @@ def is_onchain_location_id(location_id: str) -> bool:
     return location_id.startswith(_ONCHAIN_LOCATION_PREFIXES)
 
 
+def require_location_id(value: str, *, label: str) -> LocationId:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{label} must not be blank")
+    if _is_supported_location_id(normalized):
+        return LocationId(normalized)
+    raise ValueError(f"{label} {normalized!r} is not a supported location id")
+
+
 def _normalized_location_segment(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
+
+
+def _is_supported_location_id(value: str) -> bool:
+    return any(
+        pattern.fullmatch(value) is not None
+        for pattern in (
+            _LOCATION_ID_GENERIC_PATTERN,
+            _LOCATION_ID_NEAR_PATTERN,
+            _LOCATION_ID_EVM_PATTERN,
+            _LOCATION_ID_BITCOIN_PATTERN,
+            _LOCATION_ID_CARDANO_PATTERN,
+            _LOCATION_ID_SOLANA_PATTERN,
+            _LOCATION_ID_TRON_PATTERN,
+        )
+    )

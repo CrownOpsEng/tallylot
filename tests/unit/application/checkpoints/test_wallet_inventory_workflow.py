@@ -21,7 +21,7 @@ def test_location_inventory_service_deduplicates_rows(tmp_path: Path) -> None:
         "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
         "capture_label": "2026-03-23T14-15-16Z",
         "capture_root_ref": "evidence/raw/source/fixture/2026-03-23T14-15-16Z",
-        "location_id": "location-1",
+        "location_id": "location_1",
         "identifier_kind": "account_wallet",
         "normalized_identifier": "Account:Wallet",
         "display_identifier": "Account:Wallet",
@@ -80,7 +80,7 @@ def test_location_inventory_service_marks_aliases_and_flags_identifier_conflicts
                 "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9F",
                 "capture_label": "2026-03-23T14-15-16Z",
                 "capture_root_ref": "evidence/raw/source/gtrade/2026-03-23T14-15-16Z",
-                "location_id": "location-alias",
+                "location_id": "location_alias",
                 "identifier_kind": "address_alias",
                 "normalized_identifier": "0xabc123",
                 "display_identifier": "0xabc...123",
@@ -112,7 +112,7 @@ def test_location_inventory_service_marks_aliases_and_flags_identifier_conflicts
                 "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9G",
                 "capture_label": "2026-03-23T14-15-17Z",
                 "capture_root_ref": "evidence/raw/source/evm_explorer/2026-03-23T14-15-17Z",
-                "location_id": "location-address",
+                "location_id": "location_address",
                 "identifier_kind": "address",
                 "normalized_identifier": "0xabc123",
                 "display_identifier": "0xabc123",
@@ -151,7 +151,7 @@ def test_location_inventory_service_marks_aliases_and_flags_identifier_conflicts
 
     assert response.location_count == 2
     assert response.issue_count == 1
-    assert inventory_by_location["location-alias"]["status"] == "needs_linked_evidence"
+    assert inventory_by_location["location_alias"]["status"] == "needs_linked_evidence"
     assert issue_rows[0]["issue_kind"] == "identifier_kind_conflict"
     assert issue_rows[0]["evidence_path"] == "0xabc123"
 
@@ -167,7 +167,7 @@ def test_location_inventory_service_excludes_stale_aggregate_output(
         "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
         "capture_label": "2026-03-23T14-15-16Z",
         "capture_root_ref": "evidence/raw/source/fixture/2026-03-23T14-15-16Z",
-        "location_id": "location-1",
+        "location_id": "location_1",
         "identifier_kind": "account_wallet",
         "normalized_identifier": "Account:Wallet",
         "display_identifier": "Account:Wallet",

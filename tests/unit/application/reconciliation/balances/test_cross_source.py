@@ -12,8 +12,9 @@ from tallylot.application.reconciliation.balances.sources import (
 )
 from tallylot.domain.balances import BalanceSnapshot, BalanceTarget
 from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.location_identifiers import require_location_id
 from tallylot.domain.temporal import TemporalPrecision
-from tallylot.domain.types import LocationId, SourceId
+from tallylot.domain.types import SourceId
 from tallylot.infrastructure.serialization.csv_io import write_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
@@ -38,7 +39,7 @@ def test_cross_source_corroboration_keeps_later_groups_after_an_earlier_ambiguit
         source_a / "balance_snapshots.csv",
         (
             BalanceSnapshot(
-                target=_target("alpha", "alpha:wallet-3", native_asset_id, as_of),
+                target=_target("alpha", "alpha:wallet_3", native_asset_id, as_of),
                 quantity=Decimal("1"),
                 snapshot_basis="fact_cutoff",
             ),
@@ -48,7 +49,7 @@ def test_cross_source_corroboration_keeps_later_groups_after_an_earlier_ambiguit
         source_b / "balance_snapshots.csv",
         (
             BalanceSnapshot(
-                target=_target("beta", "beta:wallet-1", native_asset_id, as_of),
+                target=_target("beta", "beta:wallet_1", native_asset_id, as_of),
                 quantity=Decimal("1"),
                 snapshot_basis="fact_cutoff",
             ),
@@ -60,21 +61,21 @@ def test_cross_source_corroboration_keeps_later_groups_after_an_earlier_ambiguit
         (
             {
                 "source": "alpha",
-                "location_id": "alpha:wallet-1",
+                "location_id": "alpha:wallet_1",
                 "normalized_identifier": "shared-one",
                 "network_scope": "ethereum",
                 "confidence": "high",
             },
             {
                 "source": "alpha",
-                "location_id": "alpha:wallet-2",
+                "location_id": "alpha:wallet_2",
                 "normalized_identifier": "shared-one",
                 "network_scope": "ethereum",
                 "confidence": "high",
             },
             {
                 "source": "alpha",
-                "location_id": "alpha:wallet-3",
+                "location_id": "alpha:wallet_3",
                 "normalized_identifier": "shared-two",
                 "network_scope": "ethereum",
                 "confidence": "high",
@@ -87,7 +88,7 @@ def test_cross_source_corroboration_keeps_later_groups_after_an_earlier_ambiguit
         (
             {
                 "source": "beta",
-                "location_id": "beta:wallet-1",
+                "location_id": "beta:wallet_1",
                 "normalized_identifier": "shared-two",
                 "network_scope": "ethereum",
                 "confidence": "high",
@@ -138,7 +139,7 @@ def test_cross_source_corroboration_keeps_high_confidence_row_when_low_confidenc
         source_a / "balance_snapshots.csv",
         (
             BalanceSnapshot(
-                target=_target("alpha", "alpha:wallet-1", native_asset_id, as_of),
+                target=_target("alpha", "alpha:wallet_1", native_asset_id, as_of),
                 quantity=Decimal("1"),
                 snapshot_basis="fact_cutoff",
             ),
@@ -148,7 +149,7 @@ def test_cross_source_corroboration_keeps_high_confidence_row_when_low_confidenc
         source_b / "balance_snapshots.csv",
         (
             BalanceSnapshot(
-                target=_target("beta", "beta:wallet-1", native_asset_id, as_of),
+                target=_target("beta", "beta:wallet_1", native_asset_id, as_of),
                 quantity=Decimal("1"),
                 snapshot_basis="fact_cutoff",
             ),
@@ -160,14 +161,14 @@ def test_cross_source_corroboration_keeps_high_confidence_row_when_low_confidenc
         (
             {
                 "source": "alpha",
-                "location_id": "alpha:wallet-1",
+                "location_id": "alpha:wallet_1",
                 "normalized_identifier": "shared-one",
                 "network_scope": "ethereum",
                 "confidence": "high",
             },
             {
                 "source": "alpha",
-                "location_id": "alpha:wallet-1",
+                "location_id": "alpha:wallet_1",
                 "normalized_identifier": "shared-one",
                 "network_scope": "ethereum",
                 "confidence": "low",
@@ -180,7 +181,7 @@ def test_cross_source_corroboration_keeps_high_confidence_row_when_low_confidenc
         (
             {
                 "source": "beta",
-                "location_id": "beta:wallet-1",
+                "location_id": "beta:wallet_1",
                 "normalized_identifier": "shared-one",
                 "network_scope": "ethereum",
                 "confidence": "high",
@@ -208,7 +209,9 @@ def _target(
 ) -> BalanceTarget:
     return BalanceTarget(
         source=SourceId(source),
-        location_id=LocationId(location_id),
+        location_id=require_location_id(
+            location_id, label="cross source target location_id"
+        ),
         instrument_id=instrument_id,
         balance_kind="available",
         target_at=as_of,

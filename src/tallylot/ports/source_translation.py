@@ -27,6 +27,7 @@ from tallylot.domain.transactions import (
     TransactionFact,
 )
 from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
+from tallylot.domain.location_identifiers import require_location_id
 from tallylot.domain.value_objects import (
     require_temporal_datetime,
     require_utc_datetime,
@@ -147,6 +148,13 @@ class EconomicActivityDraft:
                 self.timestamp, label="economic activity draft timestamp"
             ),
         )
+        object.__setattr__(
+            self,
+            "location_id",
+            require_location_id(
+                str(self.location_id), label="economic activity draft location_id"
+            ),
+        )
         if self.effective_at is None:
             if self.effective_precision is not None:
                 raise ValueError(
@@ -188,6 +196,24 @@ class LocationDraft:
     label: str
     parent_location_id: LocationId | None = None
     path: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "location_id",
+            require_location_id(
+                str(self.location_id), label="location draft location_id"
+            ),
+        )
+        if self.parent_location_id is not None:
+            object.__setattr__(
+                self,
+                "parent_location_id",
+                require_location_id(
+                    str(self.parent_location_id),
+                    label="location draft parent_location_id",
+                ),
+            )
 
     def to_record(self) -> LocationRecord:
         return LocationRecord(

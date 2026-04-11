@@ -2,7 +2,7 @@
   {
     "balance_kind": "available",
     "instrument_id": "symbol:BTC@crypto_com",
-    "location_id": "Future Card",
+    "location_id": "future_card",
     "notes": "",
     "quantity": "0.004",
     "snapshot_basis": "fact_cutoff",
@@ -13,7 +13,7 @@
   {
     "balance_kind": "available",
     "instrument_id": "symbol:CAD@crypto_com",
-    "location_id": "Future Card",
+    "location_id": "future_card",
     "notes": "",
     "quantity": "250",
     "snapshot_basis": "fact_cutoff",

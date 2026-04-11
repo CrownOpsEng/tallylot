@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from tallylot.adapters.support import location_id_from_parts
 from tallylot.application.reconciliation import (
     BalanceCheckRequest,
     BalanceCheckWorkflow,
@@ -31,7 +32,7 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
     TransactionFact,
 )
-from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
+from tallylot.domain.types import AdapterId, SourceId, TransactionId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import (
     FilesystemEvidenceRepository,
@@ -53,7 +54,7 @@ def _fact(
         source=SourceId(source),
         adapter_id=AdapterId("structured_csv"),
         timestamp=timestamp,
-        location_id=LocationId(location_id),
+        location_id=location_id_from_parts(location_id),
         semantics=FactSemantics(
             economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
             projection_hint=ProjectionHint.DEPOSIT,
@@ -75,7 +76,7 @@ def _fact(
 def _target(source: str, instrument_id: str, target_at: datetime) -> BalanceTarget:
     return BalanceTarget(
         source=SourceId(source),
-        location_id=LocationId(source),
+        location_id=location_id_from_parts(source),
         instrument_id=InstrumentId(instrument_id),
         balance_kind="available",
         target_at=target_at,

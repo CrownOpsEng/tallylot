@@ -10,6 +10,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.location_identifiers import require_location_id
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
 from tallylot.domain.value_objects import (
@@ -20,7 +21,12 @@ from tallylot.domain.value_objects import (
     require_utc_datetime,
 )
 
-from .classification import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from .classification import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from .validation import (
     fact_leg_counts,
     validate_fact_counts,
@@ -69,7 +75,9 @@ class FactLegPolicy:
 
     def __post_init__(self) -> None:
         if not self.limits:
-            raise ValueError("fact leg policy must declare at least one supported leg kind")
+            raise ValueError(
+                "fact leg policy must declare at least one supported leg kind"
+            )
         seen_kinds: set[LegKind] = set()
         for limit in self.limits:
             if limit.kind in seen_kinds:
@@ -107,11 +115,23 @@ class EconomicLeg:
             raise ValueError("fact leg instrument_id must not be blank")
         if self.quantity == Decimal("0"):
             raise ValueError("fact leg quantity must not be zero")
+        if self.location_id is not None:
+            object.__setattr__(
+                self,
+                "location_id",
+                require_location_id(
+                    str(self.location_id), label="fact leg location_id"
+                ),
+            )
         if self.kind is LegKind.PRIMARY and self.attributed_to_leg_id is not None:
             raise ValueError("primary legs must not declare attributed_to_leg_id")
         if self.attributed_to_leg_id is not None:
-            _validate_leg_id(self.attributed_to_leg_id, label="fact leg attributed_to_leg_id")
-        if self.subtype is not None and not _LEG_SUBTYPE_PATTERN.fullmatch(self.subtype):
+            _validate_leg_id(
+                self.attributed_to_leg_id, label="fact leg attributed_to_leg_id"
+            )
+        if self.subtype is not None and not _LEG_SUBTYPE_PATTERN.fullmatch(
+            self.subtype
+        ):
             raise ValueError("fact leg subtype must be lowercase snake_case")
 
 
@@ -142,12 +162,23 @@ class TransactionFact:
             "timestamp",
             require_utc_datetime(self.timestamp, label="transaction fact timestamp"),
         )
+        object.__setattr__(
+            self,
+            "location_id",
+            require_location_id(
+                str(self.location_id), label="transaction fact location_id"
+            ),
+        )
         if self.effective_at is None:
             if self.effective_precision is not None:
-                raise ValueError("transaction fact effective_precision requires effective_at")
+                raise ValueError(
+                    "transaction fact effective_precision requires effective_at"
+                )
         else:
             if self.effective_precision is None:
-                raise ValueError("transaction fact effective_at requires effective_precision")
+                raise ValueError(
+                    "transaction fact effective_at requires effective_precision"
+                )
             object.__setattr__(
                 self,
                 "effective_at",
@@ -159,7 +190,9 @@ class TransactionFact:
             )
         if not self.legs:
             raise ValueError("transaction fact must include at least one leg")
-        counts_by_kind, signed_counts, leg_ids_by_kind = fact_leg_counts(self.legs, self.leg_policy)
+        counts_by_kind, signed_counts, leg_ids_by_kind = fact_leg_counts(
+            self.legs, self.leg_policy
+        )
         validate_fact_counts(self.leg_policy, counts_by_kind, signed_counts)
         validate_fact_leg_attribution(self.legs, leg_ids_by_kind)
 
@@ -195,10 +228,14 @@ class TransactionFact:
                     label="transaction fact effective_at",
                 )
             ),
-            "effective_precision": "" if self.effective_precision is None else self.effective_precision.value,
+            "effective_precision": ""
+            if self.effective_precision is None
+            else self.effective_precision.value,
             "location_id": str(self.location_id),
             "economic_kind": self.economic_kind.value,
-            "projection_hint": "" if self.projection_hint is None else self.projection_hint.value,
+            "projection_hint": ""
+            if self.projection_hint is None
+            else self.projection_hint.value,
             "accounting_intent_hint": self.accounting_intent_hint.value,
             "tax_treatment_hint": self.tax_treatment_hint.value,
             "description": self.description,
@@ -222,7 +259,9 @@ def _legs_json(legs: tuple[EconomicLeg, ...]) -> list[dict[str, object]]:
             "subtype": "" if leg.subtype is None else leg.subtype,
             "instrument_id": str(leg.instrument_id),
             "quantity": format_decimal(leg.quantity),
-            "attributed_to_leg_id": "" if leg.attributed_to_leg_id is None else leg.attributed_to_leg_id,
+            "attributed_to_leg_id": ""
+            if leg.attributed_to_leg_id is None
+            else leg.attributed_to_leg_id,
             "location_id": "" if leg.location_id is None else str(leg.location_id),
         }
         for leg in legs

@@ -12,7 +12,6 @@ from tallylot.adapters.support import (
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.balances import (
     BalanceReference,
-    BalanceReferenceKind,
     BalanceSnapshot,
     BalanceTarget,
 )
@@ -94,7 +93,7 @@ def _balance_reference_from_row(
             target_precision=row.target_precision,
         ),
         quantity=row.quantity,
-        reference_kind=BalanceReferenceKind(row.reference_kind),
+        reference_kind=row.reference_kind,
         observed_at=row.observed_at,
         observed_precision=row.observed_precision,
         support_ref=row.support_ref,

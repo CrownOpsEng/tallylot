@@ -10,6 +10,7 @@ from tallylot.adapters.support import (
     CsvRowContext,
     IssueSpec,
     collect_csv_row_results,
+    location_id_from_parts,
     issue_record,
     match_intake_by_path_or_header,
     no_intake_route,
@@ -34,12 +35,20 @@ from tallylot.domain.transactions import (
     ProjectionHint,
     TaxTreatmentHint,
 )
-from tallylot.domain.types import AdapterId, JsonValue, LocationId
+from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 HEADER_FIELDS = {
@@ -51,7 +60,9 @@ HEADER_FIELDS = {
     "To Amount",
     "Transaction Kind",
 }
-SUPPORTED_TRANSACTION_KINDS = frozenset({"viban_deposit", "viban_purchase", "crypto_withdrawal"})
+SUPPORTED_TRANSACTION_KINDS = frozenset(
+    {"viban_deposit", "viban_purchase", "crypto_withdrawal"}
+)
 
 
 class _CryptoComAdapter:
@@ -59,15 +70,23 @@ class _CryptoComAdapter:
         adapter_id=AdapterId("crypto_com"),
         display_name="Crypto.com",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.INTAKE_ROUTE}),
+        capabilities=frozenset(
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.INTAKE_ROUTE}
+        ),
         description="Normalizes Crypto.com transaction exports.",
     )
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(
+        self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> int:
         del raw_dir
         if "crypto.com" in source.lower() or "crypto_com" in source.lower():
             return 100
-        if any(HEADER_FIELDS.issubset(set(item.header)) for item in inventory if item.header):
+        if any(
+            HEADER_FIELDS.issubset(set(item.header))
+            for item in inventory
+            if item.header
+        ):
             return 100
         return 0
 
@@ -113,7 +132,9 @@ class _CryptoComAdapter:
         del source, raw_dir, profile
         return (), ()
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
         drafts, issues = collect_csv_row_results(
             raw_dir,
             lambda row_context: _normalize_row(profile, row_context),
@@ -161,7 +182,7 @@ def _normalize_row(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="crypto_com",
-            location_id=LocationId(str(profile.source)),
+            location_id=location_id_from_parts(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.FIAT_DEPOSIT,
@@ -184,12 +205,17 @@ def _normalize_row(
                 ),
             ),
         )
-    if kind == "viban_purchase" and amount is not None and amount < Decimal("0") and to_amount is not None:
+    if (
+        kind == "viban_purchase"
+        and amount is not None
+        and amount < Decimal("0")
+        and to_amount is not None
+    ):
         return EconomicActivityDraft(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="crypto_com",
-            location_id=LocationId(str(profile.source)),
+            location_id=location_id_from_parts(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.SPOT_TRADE,
@@ -223,7 +249,7 @@ def _normalize_row(
             activity_id=transaction_id,
             source=str(profile.source),
             adapter_id="crypto_com",
-            location_id=LocationId(str(profile.source)),
+            location_id=location_id_from_parts(str(profile.source)),
             timestamp=timestamp,
             classification=classification(
                 economic_kind=EconomicKind.ASSET_WITHDRAWAL,

@@ -8,6 +8,7 @@ from decimal import Decimal
 from enum import StrEnum
 
 from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.location_identifiers import require_location_id
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.domain.value_objects import (
@@ -47,6 +48,13 @@ class BalanceTarget:
     def __post_init__(self) -> None:
         if not str(self.instrument_id):
             raise ValueError("balance target instrument_id must not be blank")
+        object.__setattr__(
+            self,
+            "location_id",
+            require_location_id(
+                str(self.location_id), label="balance target location_id"
+            ),
+        )
         object.__setattr__(
             self, "balance_kind", normalize_balance_kind(self.balance_kind)
         )

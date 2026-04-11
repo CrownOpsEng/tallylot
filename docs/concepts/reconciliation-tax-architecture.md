@@ -133,6 +133,7 @@ Use `pydantic` for:
 
 - config
 - external artifact parsing
+- manual balance submission row models
 - CoinTracking report row models
 - CLI or API request validation
 - adapter manifest validation
@@ -140,7 +141,7 @@ Use `pydantic` for:
 Keep domain models as frozen dataclasses, enums, and value objects so business
 rules remain explicit and tool-friendly.
 
-### 9. Keep On-Chain Identity Canonical And Output Labels Separate
+### 9. Keep On-Chain Identity Identifier-Rooted And Output Labels Separate
 
 On-chain runtime location identity must be identifier-rooted and chain- or
 network-scoped rather than source-label-derived.
@@ -279,7 +280,7 @@ Rules:
 - do not add one-off migration utilities or compatibility wrappers just to
   preserve a superseded capture layout
 
-### 17. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
+### 17. Keep Manual Balance Submission Checkpoint-Owned And Boundary-Validated
 
 Manual balance submission is a supported operational path for producing
 `balance_snapshots.csv` and `balance_references.csv`, but it is not an
@@ -307,6 +308,8 @@ Rules:
 - manual submission must preserve explicit user-provided `instrument_id`
   values and derive `location_id` values through shared runtime helpers rather
   than hand-authored location identifiers
+- checkpoint submission row models stay validated at the boundary with
+  `pydantic` so malformed or unsupported rows fail with explicit issues
 
 ## Target Architecture
 

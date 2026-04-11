@@ -178,6 +178,9 @@ Scope:
 - keep manual/operator-authored balance submission packages as a supported
   checkpoint-owned input path for balance snapshots and operator assertion
   references
+- keep manual submission row contracts boundary-validated and derive
+  `location_id` values through shared helpers instead of handwritten generic
+  ids
 - source-backed checkpoint builder centered on the best-supported balance date
   near `2026-03-23`
 - intentional opening-state adoption flow with provenance
