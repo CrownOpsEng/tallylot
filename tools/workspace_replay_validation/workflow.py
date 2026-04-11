@@ -192,6 +192,7 @@ def _seed_candidate_workspace(
         reference_map_path=reference_map_path,
         candidate_workspace=candidate_workspace,
         needed_sources=needed_sources,
+        captures=captures,
     )
 
 
@@ -200,24 +201,55 @@ def _seed_source_label_map(
     reference_map_path: Path,
     candidate_workspace: Path,
     needed_sources: set[str],
+    captures: tuple[ReferenceCapture, ...],
 ) -> None:
-    if not reference_map_path.is_file():
-        return
-    with reference_map_path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle)
-        if reader.fieldnames is None:
-            return
-        fieldnames = tuple(reader.fieldnames)
-        filtered_rows = [
-            {field_name: row.get(field_name, "") for field_name in fieldnames}
-            for row in reader
-            if (row.get("source") or "").strip() in needed_sources
-        ]
+    filtered_rows: list[dict[str, str]] = []
+    fieldnames: tuple[str, ...] = (
+        "incoming_capture_scope",
+        "incoming_path_prefix",
+        "source",
+        "notes",
+    )
+    if reference_map_path.is_file():
+        with reference_map_path.open(encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            if reader.fieldnames is not None:
+                fieldnames = _source_label_map_fieldnames(tuple(reader.fieldnames))
+                filtered_rows = [
+                    {field_name: row.get(field_name, "") for field_name in fieldnames}
+                    for row in reader
+                    if (row.get("source") or "").strip() in needed_sources
+                ]
+    filtered_rows.extend(
+        {
+            "incoming_capture_scope": capture.report_slug,
+            "incoming_path_prefix": ".",
+            "source": capture.source,
+            "notes": "workspace replay staged capture scope",
+        }
+        for capture in captures
+    )
     target_path = candidate_workspace / "analysis" / "issues" / "source_label_map.csv"
     with target_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(filtered_rows)
+
+
+def _source_label_map_fieldnames(
+    fieldnames: tuple[str, ...],
+) -> tuple[str, ...]:
+    ordered = list(fieldnames)
+    for required in (
+        "incoming_capture_scope",
+        "incoming_path_prefix",
+        "source",
+        "notes",
+    ):
+        if required not in ordered:
+            insert_at = 0 if required == "incoming_capture_scope" else len(ordered)
+            ordered.insert(insert_at, required)
+    return tuple(ordered)
 
 
 def _copy_replay_inputs(
@@ -267,6 +299,11 @@ def _replay_capture(
     summary = json.loads(
         (replay_report_dir / "intake_summary.json").read_text(encoding="utf-8")
     )
+    if summary.get("capture_status") == "capture_blocked":
+        raise ValueError(
+            "workspace replay intake apply did not materialize a capture; "
+            f"see {replay_report_dir / 'intake_issues.csv'}"
+        )
     capture_label = str(summary["planned_capture_label"])
     raw_capture_root = (
         candidate_workspace

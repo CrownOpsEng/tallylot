@@ -199,12 +199,14 @@ def build_capture_session_plan(
         return _capture_blocked_plan(file_count=len(source_items))
 
     source_folder = distinct_sources[0] if distinct_sources else ""
+    manifest_fingerprint = _manifest_fingerprint(raw_items)
+    workspace_root = path_from_ref(request.workspace_root_ref)
     capture_label = _planned_capture_label(
         report_dir=report_dir,
-        workspace_root=path_from_ref(request.workspace_root_ref),
+        workspace_root=workspace_root,
         source_folder=source_folder,
+        manifest_fingerprint=manifest_fingerprint,
     )
-    manifest_fingerprint = _manifest_fingerprint(raw_items)
     observed_period_start = min(
         (
             item.observed_period_start
@@ -297,6 +299,7 @@ def _planned_capture_label(
     report_dir: Path,
     workspace_root: Path,
     source_folder: str,
+    manifest_fingerprint: str,
 ) -> str:
     summary_path = report_dir / "intake_summary.json"
     if summary_path.exists():
@@ -310,11 +313,38 @@ def _planned_capture_label(
             else {}
         )
         planned = payload.get("planned_capture_label", "")
-        if isinstance(planned, str) and planned.strip():
+        planned_manifest_fingerprint = payload.get("manifest_fingerprint", "")
+        planned_source = payload.get("source", "")
+        if (
+            isinstance(planned, str)
+            and planned.strip()
+            and isinstance(planned_manifest_fingerprint, str)
+            and planned_manifest_fingerprint == manifest_fingerprint
+            and isinstance(planned_source, str)
+            and planned_source == source_folder
+            and not _capture_label_exists(
+                workspace_root=workspace_root,
+                source_folder=source_folder,
+                capture_label=planned,
+            )
+        ):
             return planned
     return _next_capture_label(
         workspace_root=workspace_root, source_folder=source_folder
     )
+
+
+def _capture_label_exists(
+    *,
+    workspace_root: Path,
+    source_folder: str,
+    capture_label: str,
+) -> bool:
+    if not source_folder or not capture_label:
+        return False
+    return (
+        workspace_root / "evidence" / "raw" / "source" / source_folder / capture_label
+    ).exists()
 
 
 def _capture_blocked_plan(

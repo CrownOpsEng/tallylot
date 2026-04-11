@@ -215,6 +215,65 @@ def test_seed_candidate_workspace_filters_source_label_map_to_replayed_sources(
             "incoming_path_prefix": ".",
             "source": "coinbase",
             "notes": "",
+        },
+        {
+            "incoming_capture_scope": "001_coinbase",
+            "incoming_path_prefix": ".",
+            "source": "coinbase",
+            "notes": "workspace replay staged capture scope",
+        },
+    ]
+
+
+def test_seed_candidate_workspace_adds_replay_scope_rows_without_reference_map(
+    tmp_path: Path,
+) -> None:
+    reference_workspace = tmp_path / "reference"
+    candidate_workspace = tmp_path / "candidate"
+    artifacts = FilesystemArtifactStore()
+    artifacts.write_rows(
+        reference_workspace / "analysis" / "issues" / "source_inventory.csv",
+        SOURCE_INVENTORY_HEADER,
+        (
+            {
+                "source": "coinbase",
+                "activity_after_cutoff": "",
+                "scope_status": "in_scope",
+                "status": "",
+                "capture_count": "",
+                "latest_capture_uid": "",
+                "latest_capture_label": "",
+                "latest_capture_completed_at": "",
+                "assembly_status": "",
+                "assembled_root_ref": "",
+                "adapter_hints": "",
+                "notes": "",
+            },
+        ),
+    )
+
+    _seed_candidate_workspace(
+        artifacts=artifacts,
+        reference_workspace=reference_workspace,
+        candidate_workspace=candidate_workspace,
+        captures=(
+            ReferenceCapture(
+                source="coinbase",
+                manifest_fingerprint="manifest:coinbase",
+                raw_capture_root=reference_workspace / "raw" / "coinbase",
+                report_slug="001_coinbase",
+            ),
+        ),
+    )
+
+    assert artifacts.read_rows(
+        candidate_workspace / "analysis" / "issues" / "source_label_map.csv"
+    ) == [
+        {
+            "incoming_capture_scope": "001_coinbase",
+            "incoming_path_prefix": ".",
+            "source": "coinbase",
+            "notes": "workspace replay staged capture scope",
         }
     ]
 

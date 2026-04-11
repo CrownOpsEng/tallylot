@@ -453,6 +453,59 @@ def test_source_intake_service_reuses_planned_capture_label_on_apply(
     assert applied_summary["planned_capture_label"] == planned_label
 
 
+def test_source_intake_service_does_not_merge_new_capture_into_stale_report_label(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+    service = ApplyIntakeUseCase(build_registry(), artifacts)
+
+    first_incoming = tmp_path / "incoming-1"
+    first_incoming.mkdir()
+    (first_incoming / "first.csv").write_text("a,b\n1,2\n", encoding="utf-8")
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(first_incoming),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+    first_summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+
+    second_incoming = tmp_path / "incoming-2"
+    second_incoming.mkdir()
+    (second_incoming / "second.csv").write_text("a,b\n3,4\n", encoding="utf-8")
+
+    service.execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(second_incoming),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+    second_summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+
+    source_root = workspace_root / "evidence" / "raw" / "source" / "unclassified"
+
+    assert (
+        second_summary["planned_capture_label"]
+        != first_summary["planned_capture_label"]
+    )
+    assert (source_root / first_summary["planned_capture_label"] / "first.csv").exists()
+    assert not (
+        source_root / first_summary["planned_capture_label"] / "second.csv"
+    ).exists()
+    assert (
+        source_root / second_summary["planned_capture_label"] / "second.csv"
+    ).exists()
+
+
 def test_source_intake_service_blocks_duplicate_capture_by_manifest_fingerprint(
     tmp_path: Path,
 ) -> None:
