@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
-import csv
 from pathlib import Path
+from typing import cast
 
-from tallylot.adapters.support import location_id_from_parts
+from tallylot.adapters.support import (
+    CsvRowContext,
+    location_id_from_parts,
+    read_csv_header,
+    read_csv_row_contexts,
+)
 from tallylot.adapters.support.drafts import (
     EconomicActivityDraft,
     translation_batch_from_drafts,
@@ -34,31 +39,33 @@ def translate_structured_csv(
     path = raw_dir / TRANSACTIONS_FILENAME
     feedback = StructuredCsvFeedbackFactory(profile=profile, adapter_id=adapter_id)
     validator = StructuredCsvRowValidator(feedback=feedback)
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        reader = csv.DictReader(handle)
-        if tuple(reader.fieldnames or ()) != REQUIRED_HEADER:
-            return translation_batch_from_drafts(
-                issues=(
-                    issue_record(
-                        IssueSpec(
-                            issue_id=f"{profile.source}:schema",
-                            source=str(profile.source),
-                            adapter_id=adapter_id,
-                            severity="high",
-                            kind="invalid_schema",
-                            message="transactions.csv does not match the structured CSV schema.",
-                            raw_file=TRANSACTIONS_FILENAME,
-                        )
-                    ),
+    if read_csv_header(path) != REQUIRED_HEADER:
+        return translation_batch_from_drafts(
+            issues=(
+                issue_record(
+                    IssueSpec(
+                        issue_id=f"{profile.source}:schema",
+                        source=str(profile.source),
+                        adapter_id=adapter_id,
+                        severity="high",
+                        kind="invalid_schema",
+                        message="transactions.csv does not match the structured CSV schema.",
+                        raw_file=TRANSACTIONS_FILENAME,
+                    )
                 ),
-            )
-        return _normalized_result(profile, raw_dir, reader, feedback, validator)
+            ),
+        )
+    return _normalized_result(
+        profile,
+        read_csv_row_contexts(path),
+        feedback,
+        validator,
+    )
 
 
 def _normalized_result(
     profile: SourceProfile,
-    raw_dir: Path,
-    reader: csv.DictReader[str],
+    row_contexts: tuple[CsvRowContext, ...],
     feedback: StructuredCsvFeedbackFactory,
     validator: StructuredCsvRowValidator,
 ) -> SourceTranslationBatch:
@@ -66,8 +73,13 @@ def _normalized_result(
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
     location_rows: dict[str, LocationInventoryRecord] = {}
-    for index, row in enumerate(reader, start=2):
-        row_issue = validator.validate_row(row, index)
+    for row_context in row_contexts:
+        index = row_context.row_index
+        row = row_context.row
+        row_issue = validator.validate_row(
+            cast(dict[str, str | None], row),
+            index,
+        )
         if row_issue is not None:
             issues.append(row_issue)
             continue
@@ -83,7 +95,6 @@ def _normalized_result(
             _location_id(profile, row["account"].strip(), row["wallet"].strip())
         ] = _location_record(
             profile,
-            raw_dir,
             row["account"].strip(),
             row["wallet"].strip(),
         )
@@ -117,11 +128,9 @@ def _location_id(profile: SourceProfile, account: str, wallet: str) -> LocationI
 
 def _location_record(
     profile: SourceProfile,
-    raw_dir: Path,
     account: str,
     wallet: str,
 ) -> LocationInventoryRecord:
-    del raw_dir
     location_id = _location_id(profile, account, wallet)
     parent_location_id = (
         None

@@ -122,7 +122,15 @@ def read_csv_header(path: Path) -> tuple[str, ...]:
 
 def read_csv_rows(path: Path) -> tuple[dict[str, str], ...]:
     _, rows, _ = _read_csv_table(path)
-    return tuple(rows)
+    return tuple(row for _, row in rows)
+
+
+def read_csv_row_contexts(path: Path) -> tuple[CsvRowContext, ...]:
+    _, rows, _ = _read_csv_table(path)
+    return tuple(
+        CsvRowContext(path=path, row_index=row_index, row=row)
+        for row_index, row in rows
+    )
 
 
 def iter_csv_row_contexts(
@@ -138,7 +146,7 @@ def iter_csv_row_contexts(
         del header
         if header_index is None:
             continue
-        for row_index, row in enumerate(rows, start=header_index + 2):
+        for row_index, row in rows:
             yield CsvRowContext(path=path, row_index=row_index, row=row)
 
 
@@ -183,7 +191,7 @@ def group_csv_row_contexts(
 
 def _read_csv_table(
     path: Path,
-) -> tuple[tuple[str, ...], list[dict[str, str]], int | None]:
+) -> tuple[tuple[str, ...], list[tuple[int, dict[str, str]]], int | None]:
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         sample = handle.read(4096)
         handle.seek(0)
@@ -197,8 +205,10 @@ def _read_csv_table(
         return (), [], None
     header = tuple(cell.strip() for cell in rows[header_index])
     content_rows = [
-        _row_dict(header, row)
-        for row in rows[header_index + 1 :]
+        (row_index, _row_dict(header, row))
+        for row_index, row in enumerate(
+            rows[header_index + 1 :], start=header_index + 2
+        )
         if any(cell.strip() for cell in row)
     ]
     return header, content_rows, header_index

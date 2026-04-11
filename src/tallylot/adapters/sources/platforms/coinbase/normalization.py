@@ -4,19 +4,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.adapters.support import IssueSpec, issue_record
-from tallylot.adapters.support.drafts import EconomicActivityDraft, translation_batch_from_drafts
+from tallylot.adapters.support import IssueSpec, issue_record, read_csv_row_contexts
+from tallylot.adapters.support.drafts import (
+    EconomicActivityDraft,
+    translation_batch_from_drafts,
+)
 from tallylot.domain.issues import IssueRecord
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .asset_migrations import normalize_asset_migration as _normalize_asset_migration
 from .matching import retail_path as _retail_path
-from .retail_csv import read_retail_rows as _read_retail_rows
 from .retail_rows import normalize_retail_row as _normalize_row
 
 
-def translate_coinbase_exports(profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+def translate_coinbase_exports(
+    profile: SourceProfile, raw_dir: Path
+) -> SourceTranslationBatch:
     retail_path = _retail_path(raw_dir)
     if retail_path is None:
         return translation_batch_from_drafts(
@@ -37,7 +41,9 @@ def translate_coinbase_exports(profile: SourceProfile, raw_dir: Path) -> SourceT
     drafts: list[EconomicActivityDraft] = []
     issues: list[IssueRecord] = []
     asset_migrations: dict[str, list[dict[str, str]]] = {}
-    for index, row in enumerate(_read_retail_rows(retail_path), start=2):
+    for row_context in read_csv_row_contexts(retail_path):
+        index = row_context.row_index
+        row = row_context.row
         row_id = (row.get("ID") or "").strip()
         tx_type = (row.get("Transaction Type") or "").strip().lower()
         if tx_type == "asset migration":
@@ -62,7 +68,9 @@ def translate_coinbase_exports(profile: SourceProfile, raw_dir: Path) -> SourceT
             )
     for timestamp, rows in sorted(asset_migrations.items()):
         try:
-            drafts.append(_normalize_asset_migration(profile, retail_path.name, timestamp, rows))
+            drafts.append(
+                _normalize_asset_migration(profile, retail_path.name, timestamp, rows)
+            )
         except ValueError as error:
             issues.append(
                 issue_record(

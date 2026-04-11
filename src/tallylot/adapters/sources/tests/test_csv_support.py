@@ -96,6 +96,32 @@ def test_read_csv_header_and_rows_skip_title_lines(tmp_path: Path) -> None:
     assert seen_row_refs == ["row:4"]
 
 
+def test_collect_csv_row_results_preserves_line_numbers_after_blank_rows(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "rows.csv"
+    path.write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,"
+        "Price at Transaction,Subtotal,Total (inclusive of fees and/or spread),"
+        "Fees and/or Spread,Notes\n"
+        "\n"
+        "tx-1,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,"
+        "$610.00,$10.00,Bought 0.01 BTC for 610 CAD\n",
+        encoding="utf-8",
+    )
+
+    seen_row_refs: list[str] = []
+
+    def parse_row(row_context: CsvRowContext) -> None:
+        seen_row_refs.append(row_context.raw_row_ref)
+
+    collect_csv_row_results(tmp_path, parse_row)
+
+    assert seen_row_refs == ["row:5"]
+
+
 def test_collect_csv_row_results_partitions_drafts_and_issues(tmp_path: Path) -> None:
     path = tmp_path / "rows.csv"
     path.write_text("kind,value\ntransaction,1\nissue,2\nskip,3\n", encoding="utf-8")

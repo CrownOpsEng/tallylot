@@ -161,6 +161,30 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
     assert result.issues[0].kind == "unsupported_row"
 
 
+def test_coinbase_adapter_preserves_title_row_issue_line_numbers(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail-export.csv").write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-2,2024-02-10 12:00:00 UTC,Convert,BTC,0.01000000,CAD,$60000.00,$600.00,"
+        "$610.00,$10.00,Unsupported convert row\n",
+        encoding="utf-8",
+    )
+
+    result = _CoinbaseAdapter().translate(
+        build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
+        raw_dir,
+    )
+
+    assert len(result.issues) == 1
+    assert result.issues[0].raw_row_ref == "row:4"
+
+
 def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(
     tmp_path: Path,
 ) -> None:
