@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from tallylot.domain.balances import BalanceTarget
+from tallylot.domain.balances import BalanceReference, BalanceTarget
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import TransactionFact
@@ -103,8 +103,56 @@ def parse_target_time_values(
     return tuple(parsed)
 
 
+def select_reference_targets_for_as_of_values(
+    references: tuple[BalanceReference, ...],
+    as_of_values: tuple[str, ...],
+    *,
+    timezone_value: str = "",
+) -> tuple[BalanceTarget, ...]:
+    if not references or not as_of_values:
+        return ()
+    default_timezone = _parse_timezone_value(timezone_value)
+    selected: dict[tuple[str, str, str, str, datetime, str], BalanceTarget] = {}
+    for value in as_of_values:
+        text = value.strip()
+        if _looks_like_date_only(text):
+            requested_date = datetime.strptime(text, "%Y-%m-%d").date()
+            for reference in references:
+                if reference.target.target_at.astimezone(default_timezone).date() != (
+                    requested_date
+                ):
+                    continue
+                selected[_target_identity(reference.target)] = reference.target
+            continue
+        parsed_target_at, _precision = parse_target_time_values(
+            (text,),
+            timezone_value=timezone_value,
+        )[0]
+        for reference in references:
+            if reference.target.target_at != parsed_target_at:
+                continue
+            selected[_target_identity(reference.target)] = reference.target
+    return tuple(
+        target
+        for _identity, target in sorted(selected.items(), key=lambda item: item[0])
+    )
+
+
 def _looks_like_date_only(value: str) -> bool:
     return len(value) == 10 and value[4] == "-" and value[7] == "-"
+
+
+def _target_identity(
+    target: BalanceTarget,
+) -> tuple[str, str, str, str, datetime, str]:
+    return (
+        str(target.source),
+        str(target.location_id),
+        str(target.instrument_id),
+        target.balance_kind,
+        target.target_at,
+        target.target_precision.value,
+    )
 
 
 def _parse_timestamp_value(value: str, default_timezone: tzinfo) -> datetime:

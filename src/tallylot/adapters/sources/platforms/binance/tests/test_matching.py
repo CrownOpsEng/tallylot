@@ -5,7 +5,9 @@ from pathlib import Path
 from tallylot.adapters.sources.platforms.binance.adapter import _BinanceAdapter
 from tallylot.adapters.sources.platforms.binance.csv_rows import is_no_data_row
 from tallylot.adapters.sources.platforms.binance.matching import SPOT_HEADER
-from tallylot.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
+from tallylot.adapters.sources.platforms.binance.timestamps import (
+    parse_export_timestamp,
+)
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.ports.source_profiles import FileInventoryEntry
 from tests.support.adapter_packs import profile_and_adapter
@@ -27,7 +29,9 @@ def test_parse_export_timestamp_handles_inline_utc_date_without_separator() -> N
     assert parsed.strftime("%Y-%m-%d %H:%M:%S") == "2025-12-31 00:00:00"
 
 
-def test_binance_adapter_matches_known_headers_without_source_label(tmp_path: Path) -> None:
+def test_binance_adapter_matches_known_headers_without_source_label(
+    tmp_path: Path,
+) -> None:
     inventory = (
         FileInventoryEntry(
             relative_path="nested/export.csv",
@@ -41,7 +45,9 @@ def test_binance_adapter_matches_known_headers_without_source_label(tmp_path: Pa
     assert _BinanceAdapter().match("unknown_source", tmp_path, inventory) == 100
 
 
-def test_binance_adapter_returns_zero_for_unknown_source_without_matching_headers(tmp_path: Path) -> None:
+def test_binance_adapter_returns_zero_for_unknown_source_without_matching_headers(
+    tmp_path: Path,
+) -> None:
     score = _BinanceAdapter().match(
         "unknown_source",
         tmp_path,
@@ -83,12 +89,13 @@ def test_binance_adapter_reports_timezone_validation_summary_from_inventory() ->
 
     summary, issues = _BinanceAdapter().validate_profile_timezones(profile)
 
-    assert summary == {
-        "status": "passed",
-        "issue_count": 0,
-        "rows_with_dates": 1,
-        "mode_counts": {"filename_offset": 1},
-    }
+    assert summary["status"] == "passed"
+    assert summary["issue_count"] == 0
+    assert summary["rows_with_dates"] == 1
+    assert summary["mode_counts"] == {"filename_offset": 1}
+    assert summary["declared_mode"] == "naive"
+    assert summary["accepted_modes"] == ["filename_offset"]
+    assert not summary["timezone_values"]
     assert not issues
 
 
@@ -108,7 +115,9 @@ def test_is_no_data_row_detects_binance_sentinel() -> None:
     assert not is_no_data_row({"User ID": "123"})
 
 
-def test_binance_translation_uses_family_classification_without_filename_dependency(tmp_path: Path) -> None:
+def test_binance_translation_uses_family_classification_without_filename_dependency(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "renamed.csv").write_text(

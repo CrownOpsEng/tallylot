@@ -2,7 +2,7 @@
   "adapter_id": "binance",
   "fact_count": 5,
   "facts_outside_normalization_window": 0,
-  "issue_count": 3,
+  "issue_count": 2,
   "issues_outside_normalization_window": 0,
   "location_count": 0,
   "normalization_window_end": "",

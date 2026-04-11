@@ -39,6 +39,10 @@ from tallylot.application.balances.io import (
     persist_balance_reference_cache,
     read_rows_if_present,
 )
+from tallylot.application.balances.planning import (
+    missing_fact_coverage_issues,
+    select_targets_for_requested_times,
+)
 from tallylot.application.balances.snapshots import derive_balance_snapshots
 from tallylot.application.balances.records import (
     BALANCE_ASSERTION_HEADER,
@@ -50,6 +54,7 @@ from tallylot.application.balances.records import (
 )
 from tallylot.application.balances.targets import (
     parse_target_time_values,
+    select_reference_targets_for_as_of_values,
     targets_for_as_of_values,
 )
 from tallylot.application.resource_refs import path_from_ref, to_resource_ref
@@ -75,6 +80,15 @@ class _CheckPlan:
     snapshot_issues: tuple[IssueRecord, ...]
     status: BalanceCheckStatus = "clean"
     not_runnable_reason: str = ""
+
+
+@dataclass(frozen=True)
+class _FactBackedPlanInputs:
+    source_input: BalanceSourceInputs
+    as_of_values: tuple[str, ...]
+    parsed_times: tuple[tuple[datetime, TemporalPrecision], ...]
+    timezone_value: str
+    resolution_mode: BalanceResolutionMode
 
 
 class BalanceCheckWorkflow:
@@ -387,36 +401,34 @@ def _build_check_plan(
         )
 
     if not parsed_times:
+        snapshot_issues: tuple[IssueRecord, ...] = ()
+        if source_input.input_mode == "fact_backed" and source_input.references:
+            snapshot_issues = missing_fact_coverage_issues(
+                facts.read_facts(source_dir.facts_path),
+                source_input.targets,
+            )
         return _CheckPlan(
             resolution_mode=resolution_mode,
             targets=source_input.targets,
             snapshots=source_input.snapshots,
-            snapshot_issues=(),
-        )
-
-    if source_input.input_mode == "fact_backed":
-        fact_rows = facts.read_facts(source_dir.facts_path)
-        targets = targets_for_as_of_values(fact_rows, parsed_times)
-        if not targets:
-            return _CheckPlan(
-                resolution_mode=resolution_mode,
-                targets=(),
-                snapshots=(),
-                snapshot_issues=(),
-                status="no_balance_targets",
-            )
-        snapshots, snapshot_issues = derive_balance_snapshots(fact_rows, targets)
-        return _CheckPlan(
-            resolution_mode=resolution_mode,
-            targets=targets,
-            snapshots=snapshots,
             snapshot_issues=snapshot_issues,
         )
 
-    if source_input.input_mode == "manual_only":
-        targets = _select_targets_for_requested_times(
-            source_input.targets, parsed_times
+    if source_input.input_mode == "fact_backed":
+        return _fact_backed_check_plan(
+            plan_inputs=_FactBackedPlanInputs(
+                source_input=source_input,
+                as_of_values=request.as_of_values,
+                parsed_times=parsed_times,
+                timezone_value=timezone_value,
+                resolution_mode=resolution_mode,
+            ),
+            facts=facts,
+            facts_path=source_dir.facts_path,
         )
+
+    if source_input.input_mode == "manual_only":
+        targets = select_targets_for_requested_times(source_input.targets, parsed_times)
         if not targets:
             return _CheckPlan(
                 resolution_mode=resolution_mode,
@@ -439,14 +451,47 @@ def _build_check_plan(
     assert_never(source_input.input_mode)
 
 
-def _select_targets_for_requested_times(
-    targets: tuple[BalanceTarget, ...],
-    requested_times: tuple[tuple[datetime, TemporalPrecision], ...],
-) -> tuple[BalanceTarget, ...]:
-    selected: list[BalanceTarget] = []
-    for target in targets:
-        if any(
-            target.target_at == target_at for target_at, _precision in requested_times
-        ):
-            selected.append(target)
-    return tuple(selected)
+def _fact_backed_check_plan(
+    *,
+    plan_inputs: _FactBackedPlanInputs,
+    facts: FactRepositoryPort,
+    facts_path: Path,
+) -> _CheckPlan:
+    fact_rows = facts.read_facts(facts_path)
+    reference_targets = select_reference_targets_for_as_of_values(
+        plan_inputs.source_input.references,
+        plan_inputs.as_of_values,
+        timezone_value=plan_inputs.timezone_value,
+    )
+    targets = reference_targets or targets_for_as_of_values(
+        fact_rows,
+        plan_inputs.parsed_times,
+    )
+    if not targets:
+        return _CheckPlan(
+            resolution_mode=plan_inputs.resolution_mode,
+            targets=(),
+            snapshots=(),
+            snapshot_issues=(),
+            status="no_balance_targets",
+        )
+    snapshots, snapshot_issues = derive_balance_snapshots(fact_rows, targets)
+    if not reference_targets:
+        return _CheckPlan(
+            resolution_mode=plan_inputs.resolution_mode,
+            targets=targets,
+            snapshots=snapshots,
+            snapshot_issues=snapshot_issues,
+        )
+    return _CheckPlan(
+        resolution_mode=plan_inputs.resolution_mode,
+        targets=targets,
+        snapshots=snapshots,
+        snapshot_issues=(
+            *snapshot_issues,
+            *missing_fact_coverage_issues(
+                fact_rows,
+                targets,
+            ),
+        ),
+    )

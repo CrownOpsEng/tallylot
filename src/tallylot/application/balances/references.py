@@ -53,7 +53,11 @@ class BalanceReferenceResolver:
                 unresolved.append(target)
         if not hydrate_missing or not unresolved or self._providers is None:
             return tuple(matched), tuple(
-                _missing_reference_issue(target) for target in unresolved
+                _missing_reference_issue(
+                    target,
+                    existing_references=existing_references,
+                )
+                for target in unresolved
             )
         hydrated, hydration_issues = self._hydrate(tuple(unresolved))
         return tuple((*matched, *hydrated)), hydration_issues
@@ -118,8 +122,23 @@ class BalanceReferenceResolver:
 def _missing_reference_issue(
     target: BalanceTarget,
     *,
+    existing_references: tuple[BalanceReference, ...] = (),
     kind: str = "missing_balance_reference",
 ) -> IssueRecord:
+    nearest_reference = _nearest_reference(target, existing_references)
+    message = "No balance reference satisfied the requested target."
+    if nearest_reference is not None:
+        target_at = format_temporal_value(
+            nearest_reference.target.target_at,
+            precision=nearest_reference.target.target_precision,
+            label="nearest balance reference target_at",
+        )
+        message = (
+            "No balance reference satisfied the requested target. "
+            f"Closest available {nearest_reference.reference_kind.value.replace('_', ' ')} "
+            "reference target_at is "
+            f"{target_at}."
+        )
     return IssueRecord(
         issue_id=":".join(
             (
@@ -134,11 +153,35 @@ def _missing_reference_issue(
         adapter_id="balances",
         severity="high",
         kind=kind,
-        message="No balance reference satisfied the requested target.",
+        message=message,
         context_timestamp=format_temporal_value(
             target.target_at,
             precision=target.target_precision,
             label="missing balance reference target_at",
         ),
         raw_file="",
+    )
+
+
+def _nearest_reference(
+    target: BalanceTarget,
+    references: tuple[BalanceReference, ...],
+) -> BalanceReference | None:
+    matching = tuple(
+        reference
+        for reference in references
+        if (
+            reference.target.source == target.source
+            and reference.target.location_id == target.location_id
+            and str(reference.target.instrument_id) == str(target.instrument_id)
+            and reference.target.balance_kind == target.balance_kind
+        )
+    )
+    if not matching:
+        return None
+    return min(
+        matching,
+        key=lambda reference: abs(
+            (reference.target.target_at - target.target_at).total_seconds()
+        ),
     )

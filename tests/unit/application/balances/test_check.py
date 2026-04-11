@@ -520,6 +520,152 @@ def test_balance_check_workflow_emits_missing_balance_reference_in_offline_mode(
     assert check_summary_rows[0]["resolution_mode"] == "offline"
 
 
+def test_balance_check_workflow_reports_closest_reference_for_missing_as_of_target(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    fact_time = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+    later_reference_time = datetime(2026, 1, 2, 23, 59, 59, tzinfo=UTC)
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=fact_time,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=later_reference_time,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+            as_of_values=("2025-12-31",),
+            hydrate_missing_references=False,
+        )
+    )
+
+    issue_rows = artifacts.read_rows(output_root / "reconciliation_issues.csv")
+
+    assert [row["kind"] for row in issue_rows] == ["missing_balance_reference"]
+    assert (
+        issue_rows[0]["message"]
+        == "No balance reference satisfied the requested target. "
+        "Closest available source document reference target_at is "
+        "2026-01-02 23:59:59."
+    )
+
+
+def test_balance_check_workflow_surfaces_missing_transition_reference_instead_of_aliasing(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2026, 3, 22, 23, 59, 59, tzinfo=UTC)
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            TransactionFact(
+                fact_id=TransactionId("fact-1"),
+                source=SourceId("coinbase"),
+                adapter_id=AdapterId("structured_csv"),
+                timestamp=as_of,
+                location_id=location_id_from_parts("coinbase"),
+                semantics=FactSemantics(
+                    economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
+                    projection_hint=ProjectionHint.DEPOSIT,
+                    accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                    tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+                ),
+                legs=(
+                    EconomicLeg(
+                        leg_id="primary_in",
+                        kind=LegKind.PRIMARY,
+                        instrument_id=InstrumentId("symbol:MATIC@coinbase"),
+                        quantity=Decimal("1.65526374"),
+                    ),
+                ),
+                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            BalanceReference(
+                target=BalanceTarget(
+                    source=SourceId("coinbase"),
+                    location_id=location_id_from_parts("coinbase"),
+                    instrument_id=InstrumentId("symbol:POL@coinbase"),
+                    balance_kind="available",
+                    target_at=as_of,
+                    target_precision=TemporalPrecision.TIMESTAMP,
+                ),
+                quantity=Decimal("1.65526374"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=as_of,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
+            ),
+        ),
+    )
+
+    response = BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    issue_rows = artifacts.read_rows(output_root / "reconciliation_issues.csv")
+    assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+
+    assert response.issue_source_count == 1
+    assert len(assertion_rows) == 1
+    assert assertion_rows[0]["status"] == "drift"
+    assert assertion_rows[0]["instrument_id"] == "symbol:POL@coinbase"
+    assert assertion_rows[0]["selected_reference_kind"] == "source_document"
+    assert [row["kind"] for row in issue_rows] == [
+        "missing_fact_coverage_for_reference_target",
+        "balance_drift",
+    ]
+
+
 def test_balance_check_workflow_emits_unsupported_balance_provider_when_hydrated(
     tmp_path: Path,
 ) -> None:
@@ -1108,3 +1254,63 @@ def test_balance_check_workflow_applies_timezone_to_date_only_as_of_values(
     assert len(assertion_rows) == 1
     assert assertion_rows[0]["target_at"] == "2025-12-30 07:00:00"
     assert assertion_rows[0]["status"] == "matched"
+
+
+def test_balance_check_workflow_matches_date_only_as_of_to_same_day_reference(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    input_root.mkdir()
+
+    fact_time = datetime(2021, 5, 10, 18, 59, 7, tzinfo=UTC)
+    statement_time = datetime(2026, 3, 23, 5, 59, 59, tzinfo=UTC)
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=fact_time,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=statement_time,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+            as_of_values=("2026-03-22",),
+            timezone="America/Denver",
+            hydrate_missing_references=False,
+        )
+    )
+
+    assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+    assert len(assertion_rows) == 1
+    assert not (output_root / "reconciliation_issues.csv").exists()
+    assert assertion_rows[0]["target_at"] == "2026-03-23 05:59:59"
+    assert assertion_rows[0]["status"] == "matched"
+    assert assertion_rows[0]["selected_reference_kind"] == "source_document"
