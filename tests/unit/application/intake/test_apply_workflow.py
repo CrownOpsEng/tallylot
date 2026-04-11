@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -104,6 +105,48 @@ def test_source_intake_service_applies_archive_members_into_workspace(
     assert response.copied_count == 2
     assert archive_target.exists()
     assert member_target.exists()
+
+
+def test_source_intake_service_applies_binance_statement_bundle_into_workspace(
+    tmp_path: Path,
+) -> None:
+    source_dir = Path(
+        "tests/fixtures/adapter_packs/binance/latest_statement_workbooks/raw"
+    )
+    incoming_dir = tmp_path / "incoming"
+    shutil.copytree(source_dir, incoming_dir)
+
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    response = ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    summary = json.loads(
+        (report_dir / "intake_summary.json").read_text(encoding="utf-8")
+    )
+    source_rows = artifacts.read_rows(
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
+
+    assert response.source == "binance"
+    assert response.capture_status == "captured"
+    assert response.copied_count == 5
+    assert summary["source"] == "binance"
+    assert summary["capture_status"] == "captured"
+    assert summary["issue_count"] == 0
+    assert summary["planned_copy_count"] == 5
+    assert summary["copied_count"] == 5
+    assert source_rows[0]["source"] == "binance"
+    assert source_rows[0]["status"] == "capture_complete"
+    assert source_rows[0]["capture_count"] == "1"
+    assert source_rows[0]["latest_capture_label"] == summary["planned_capture_label"]
 
 
 def test_source_intake_service_merges_same_cycle_near_duplicate_packages_on_apply(

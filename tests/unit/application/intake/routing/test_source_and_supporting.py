@@ -102,6 +102,39 @@ def test_route_intake_file_routes_binance_upstream_workbooks_to_raw_source_tree(
     )
 
 
+def test_route_intake_file_routes_binance_statement_pdfs_to_raw_source_tree(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    pdf_path = (
+        incoming_dir / "AccountStatementPeriod_fixtureacct_20240101-20241231_old.pdf"
+    )
+    pdf_path.write_bytes(b"%PDF-1.4\n")
+    workspace_root = tmp_path / "workspace"
+
+    route = route_intake_file(
+        ScannedFile(
+            relative_path=pdf_path.name,
+            file_path=pdf_path,
+            size_bytes=pdf_path.stat().st_size,
+            sha256="fixture",
+        ),
+        registry=build_registry(),
+        incoming_dir=incoming_dir,
+        workspace_root=workspace_root,
+        facts=IntakeFileFacts(),
+    )
+
+    assert route.category == "source_raw"
+    assert route.role == "source_export"
+    assert route.source_folder == "binance"
+    assert route.target_path == (
+        workspace_root
+        / "evidence/raw/source/binance/incoming/AccountStatementPeriod_fixtureacct_20240101-20241231_old.pdf"
+    )
+
+
 def test_route_intake_file_keeps_generic_workbooks_as_supporting_artifacts(
     tmp_path: Path,
 ) -> None:

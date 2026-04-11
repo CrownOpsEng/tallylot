@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from tallylot.adapters.support import (
     TimezoneReviewPolicy,
-    match_intake_by_path_or_header,
     reviewed_timezone_summary,
 )
 from tallylot.adapters.support.drafts import symbol_claim
@@ -42,17 +40,10 @@ from .matching import (
     match_binance_inventory,
 )
 from .pdf_balances import match_statement_document as _match_statement_document
+from .routing import match_intake as _match_intake
+from .routing import route_intake as _route_intake
 from .statement_evidence import parse_statement_document as _parse_statement_document
 from .translation import translate_binance_exports
-
-_RAW_WORKBOOK_PATTERNS = (
-    re.compile(
-        r"^binance(?:-| )order history(?: report)? \d{4}\.(?:xlsx|xls)$", re.IGNORECASE
-    ),
-    re.compile(
-        r"^binance(?:-| )withdrawal history report \d{4}\.(?:xlsx|xls)$", re.IGNORECASE
-    ),
-)
 
 
 class _BinanceAdapter:
@@ -102,28 +93,10 @@ class _BinanceAdapter:
         return tuple(claims)
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
-        return match_intake_by_path_or_header(
-            relative_path,
-            facts,
-            path_hints=("binance",),
-            header_hints=(
-                "pair,coin,date,amount,type,status",
-                "pair,coin,amount,time,interest type",
-                "date(utc),pair,side,price,executed,amount,fee",
-            ),
-        )
+        return _match_intake(relative_path, facts)
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:
-        if not _is_raw_binance_workbook(request.relative_path):
-            return None
-        return IntakeRoute(
-            category="source_raw",
-            role="source_export",
-            source_folder="binance",
-            capture_label=request.incoming_dir.name,
-            action="extract_copy" if request.archive_member_path else "copy",
-            target_path=_raw_workbook_target_path(request),
-        )
+        return _route_intake(request)
 
     def validate_profile_timezones(
         self,
@@ -173,25 +146,3 @@ class _BinanceAdapter:
 
 
 ADAPTER = _BinanceAdapter()
-
-
-def _is_raw_binance_workbook(relative_path: str) -> bool:
-    filename = Path(relative_path).name
-    return any(pattern.match(filename) for pattern in _RAW_WORKBOOK_PATTERNS)
-
-
-def _raw_workbook_target_path(request: IntakeRoutingRequest) -> Path:
-    capture_root = (
-        request.workspace_root
-        / "evidence"
-        / "raw"
-        / "source"
-        / "binance"
-        / request.incoming_dir.name
-    )
-    if request.archive_member_path:
-        archive_stem = Path(request.archive_source_path).stem
-        return (
-            capture_root / archive_stem / "contents" / Path(request.archive_member_path)
-        )
-    return capture_root / Path(request.relative_path)
