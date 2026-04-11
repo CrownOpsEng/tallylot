@@ -113,10 +113,13 @@ Rules:
 
 - reconciliation consumes facts plus checkpoint evidence only
 - keep balance orchestration behind one shared balance capability for target
-  planning, snapshot derivation, reference resolution, hydration, and
-  assertion assembly
+  planning, snapshot derivation, reference resolution, inspect and check
+  workflows, hydration, corroboration, and assertion assembly
 - replace split balance evidence or confirmation artifacts directly with
   unified `balance_references.csv`
+- fact-backed balance checks derive snapshots from facts; manual-only balance
+  checks consume explicit snapshot rows
+- check defaults to offline resolution; provider hydration is opt-in
 - keep historical API lookup in separate balance-provider adapters rather than
   in source adapters
 - require immutable on-chain asset ids before public-ledger provider hydration

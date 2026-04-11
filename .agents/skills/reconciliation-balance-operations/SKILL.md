@@ -1,10 +1,10 @@
 ---
 name: reconciliation-balance-operations
 description: >-
-  Run neutral balance coverage inspection, balance checks, and reconciliation
-  summaries for one source or many using the repo's runtime contracts. Use when
-  the task is to answer the latest clean reconciliation date, diagnose balance
-  blockers, or execute the balance workflow without ad hoc shell loops.
+  Run neutral balance inspection, balance checks, and reconciliation summaries
+  for one source or many using the repo's runtime contracts. Use when the task
+  is to answer the latest clean reconciliation date, diagnose balance blockers,
+  or execute the balance workflow without ad hoc shell loops.
 ---
 
 # Reconciliation Balance Operations
@@ -21,8 +21,9 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
    available, unified `balance_references.csv`. Use
    `$balance-submission-operations` first when the source still needs the
    manual submission path.
-4. Run coverage inspection first.
-5. Run balance checks second.
+4. Run inspect first.
+5. Run balance checks second. `check` runs offline by default; add
+   `--hydrate-missing-references` only when provider hydration is intended.
 6. Run reconciliation summary third.
 7. Use oracle commands only when the summary shows they are needed for
    explanation or trust validation.
@@ -38,11 +39,18 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
 
 ## Outputs
 
-- Coverage artifacts describe whether a source is source-backed,
-  resolved-reference, mixed-reference, missing-reference, missing-snapshots,
-  or empty.
+- Inspect artifacts write `balance_inspect.csv` and
+  `balance_inspect_summary.json`.
+- Inspect readiness states are `ready`, `missing_references`,
+  `no_balance_targets`, and `no_balance_inputs`.
+- Cross-source readiness states are `ready`, `missing_location_inventory`,
+  `not_comparable`, and `not_applicable`.
 - Check artifacts write per-source `balance_assertions.csv`,
-  `reconciliation_issues.csv`, and `balance_reconciliation_summary.json`.
+  `reconciliation_issues.csv`, `balance_check_summary.csv`, and
+  `balance_reconciliation_summary.json`.
+- Check statuses are `clean`, `issues`, `failed`, `no_balance_targets`, and
+  `not_runnable`.
+- Check resolution modes are `offline` and `hydrated`.
 - Cross-source corroboration sidecars include `cross_source_assertions.csv`,
   `cross_source_issues.csv`, and `cross_source_summary.json`.
 - Summary artifacts answer:

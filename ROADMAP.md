@@ -16,11 +16,14 @@ This roadmap assumes the repo stays on the current fact-based architecture. It
 tracks remaining phases, sequencing, and delivery gates. It does not restate
 the detailed architecture contract.
 
-The current runtime now uses one shared balance capability across
-normalization, reconciliation, and checkpoint submission. Balance state is
-expressed as derived `balance_snapshots.csv` plus unified
+The current runtime now uses `application/balances` as the shared balance
+capability across normalization, reconciliation, and checkpoint submission.
+Inspect, check, and summarize are the operator-facing balance commands.
+Balance state is expressed as derived `balance_snapshots.csv` plus unified
 `balance_references.csv`, where each reference row declares its
-`reference_kind`.
+`reference_kind`. Fact-backed checks derive snapshots from facts;
+manual-only checks consume explicit snapshot rows; check runs offline by
+default and hydrates only when requested.
 
 Historical provider hydration is now a first-class balance concern, but the
 current implementation target remains public-ledger balance lookup only. The
@@ -129,8 +132,9 @@ balance snapshots, and unified balance references.
 Scope:
 
 - read only assembled source datasets produced from accepted captures
-- keep target planning, snapshot derivation, reference resolution, hydration,
-  and assertion assembly behind the shared balance capability
+- keep target planning, snapshot derivation, reference resolution, inspect and
+  check workflows, hydration, and assertion assembly behind the shared balance
+  capability
 - extend the first exact balance assertion workflow into broader checkpoint and
   transfer checks
 - keep statement-backed quantity evidence on the normalization path and treat

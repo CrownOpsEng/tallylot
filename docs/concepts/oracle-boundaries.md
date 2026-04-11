@@ -45,7 +45,7 @@ The normal filing-capable workflow is:
 
 1. Ingest source evidence.
 2. Normalize to transaction facts.
-3. Reconcile transfers, balances, and coverage windows.
+3. Reconcile transfers, balances, and reconciliation windows.
 4. Build or validate checkpoints.
 5. Render a double-entry journal.
 6. Compute tax state from reconciled facts.

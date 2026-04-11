@@ -57,10 +57,11 @@ The repo currently ships typed replacements for the core workflow capabilities:
   artifacts
 - checkpoint PDF balance extraction for supported statement families through
   the shared statement extraction seam
-- reconciliation balance coverage, checking, and summary workflows with
-  explicit drift, missing-side, duplicate-input, blocker outputs, additive
-  cross-source corroboration sidecars, explicit `--as-of` target planning, and
-  optional provider hydration through separate balance-provider adapters
+- `application/balances` owns the shared balance capability: inspect, check,
+  and summarize workflows with explicit drift, missing-side, duplicate-input,
+  blocker outputs, additive cross-source corroboration sidecars, explicit
+  `--as-of` target planning, offline-by-default checks, and optional provider
+  hydration through separate balance-provider adapters
 - repo-native workspace replay validation via
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_workspace_replay`
   with optional expected-difference fixtures limited to issue and review count
@@ -109,6 +110,9 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - On-chain asset ids with immutable chain identity are the prerequisite for
   historical public-ledger provider hydration. Symbol-only token rows remain
   explicit unsupported surfaces until immutable identity is proven.
+- `balance_snapshots.csv` and `balance_references.csv` are the only runtime
+  balance artifacts. `balances.csv` and `balance_evidence.csv` are superseded
+  generated outputs and are not runtime inputs.
 - `tools.validate_workspace_replay` compares semantic capture-registry parity,
   raw capture completeness, assembled source metrics, and reconciliation status
   counts. Optional expected-difference fixtures may declare only
@@ -121,5 +125,5 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - HTTP/API runtime
 - SQLite-backed active storage
 - provider-backed AI runtime
-- concrete live balance-provider adapters and broad provider coverage beyond
-  the first public-ledger families
+- concrete live balance-provider adapters and broad balance-provider support
+  beyond the first public-ledger families

@@ -296,6 +296,10 @@ Rules:
   `application/checkpoints/`
 - the shared reconciliation schema still lives under the chosen output root,
   normally `working/normalized/sources/<source>/`
+- `balance_snapshots.csv` and `balance_references.csv` are the only runtime
+  balance inputs; `balances.csv` and `balance_evidence.csv` are superseded
+  generated outputs and are not read at runtime, and no compatibility wrappers
+  or dual-read logic should keep them alive
 - manual submission records `operator_assertion` runtime references and must
   not fabricate or widen source-backed `source_document` references
 - runtime reconciliation resolves references through one unified
@@ -340,21 +344,22 @@ is inherently specific.
 - `application/profiling/`
   - capture profile construction, inventory inspection, and timezone review
 - `application/normalization/`
-  - orchestrate one capture's translation into fact artifacts and source-backed
-    evidence
+  - orchestrate one capture's translation into fact artifacts, source-backed
+    evidence, and fact-backed balance packages through `application/balances`
 - `application/balances/`
-  - target planning, snapshot derivation, reference resolution, provider
-    hydration, and assertion assembly
+  - target planning, snapshot derivation, reference resolution, exact-balance
+    inspection and check workflows, cross-source corroboration, summary and
+    blocker assembly, and deterministic merge policy
 - `application/normalization/assembly/`
   - deterministic merge of accepted capture outputs into assembled
     source-scoped normalization datasets
 - `application/reconciliation/`
-  - reserve for transfer linking, checkpoint continuity, and fact-level drift
-    detection over assembled source datasets
+  - reserve for transfer linking, checkpoint continuity, correction and
+    supersession chains, and higher-order reconciliation beyond exact balance
+    assertions over assembled source datasets
 - `application/checkpoints/`
   - build source-backed checkpoint evidence, validate manual balance
-    assertion submissions, and assemble checkpoint-supporting wallet
-    aggregates
+    submission packages, and assemble checkpoint-supporting wallet aggregates
 - `application/accounting/`
   - journal assembly, ledger validation, and accounting summaries
 - `application/tax/`

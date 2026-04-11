@@ -48,7 +48,10 @@ def _check_balances(  # pylint: disable=too-many-arguments,too-many-positional-a
     as_of: Annotated[list[str] | None, typer.Option("--as-of")] = None,
     hydrate_missing_references: Annotated[
         bool,
-        typer.Option("--hydrate-missing-references/--no-hydrate-missing-references"),
+        typer.Option(
+            "--hydrate-missing-references/--no-hydrate-missing-references",
+            help="Hydrate missing references from balance providers. Default: offline.",
+        ),
     ] = False,
     reference_policy: Annotated[str, typer.Option()] = "default",
 ) -> None:

@@ -1,6 +1,6 @@
 # Reconciliation Balance Operations
 
-Use this route when the task is to inspect balance coverage, run balance
+Use this route when the task is to inspect balance readiness, run balance
 checks, or summarize reconciliation status across one source or many.
 
 1. Read:
@@ -15,11 +15,13 @@ checks, or summarize reconciliation status across one source or many.
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances inspect`
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances check`
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances summarize`
+   - `check` runs offline by default; add `--hydrate-missing-references` only
+     when provider hydration is intended.
 4. For agent execution, use the repo-local skill runner at
    `.agents/skills/reconciliation-balance-operations/scripts/reconciliation_balance_operations.py`
    instead of ad hoc shell loops or one-off Python snippets.
 5. Run these steps in order:
-   - inspect coverage first
+   - inspect readiness first
    - run balance checks second
    - summarize dates and blockers third
 6. Current balance-check outputs also include cross-source corroboration

@@ -1113,7 +1113,7 @@ def test_submitted_balance_output_can_be_checked_by_reconciliation_cli(
 def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None:
     input_root = tmp_path / "coinbase"
     analysis_root = tmp_path / "analysis"
-    coverage_path = tmp_path / "balance_coverage.csv"
+    inspect_path = tmp_path / "balance_inspect.csv"
     summary_path = tmp_path / "balance_reconciliation_summary.json"
     as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
     input_root.mkdir()
@@ -1177,7 +1177,7 @@ def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None
             "--input-root",
             str(input_root),
             "--output",
-            str(coverage_path),
+            str(inspect_path),
         ],
     )
     check_result = runner.invoke(
@@ -1198,8 +1198,8 @@ def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None
             "reconciliation",
             "balances",
             "summarize",
-            "--coverage",
-            str(coverage_path),
+            "--inspect",
+            str(inspect_path),
             "--check-summary",
             str(analysis_root / "balance_check_summary.csv"),
             "--output",
