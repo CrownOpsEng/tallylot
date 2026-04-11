@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
-from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.checkpoints import BalanceSnapshot, normalize_balance_kind
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceSnapshot,
+    BalanceTarget,
+    normalize_balance_kind,
+)
 from tallylot.domain.instruments import InstrumentId
-from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.temporal import parse_temporal_precision
 from tallylot.domain.types import LocationId, SourceId
 from tallylot.domain.value_objects import (
@@ -16,65 +20,70 @@ from tallylot.domain.value_objects import (
 
 
 def balance_snapshot_from_row(row: dict[str, str]) -> BalanceSnapshot:
-    precision = parse_temporal_precision(row["as_of_precision"])
+    precision = parse_temporal_precision(row["target_precision"])
     if precision is None:
-        raise ValueError("missing required enum field: as_of_precision")
+        raise ValueError("missing required enum field: target_precision")
     quantity = parse_decimal(row["quantity"])
     if quantity is None:
         raise ValueError("missing required decimal field: quantity")
     return BalanceSnapshot(
-        source=SourceId(row["source"]),
-        location_id=LocationId(row["location_id"]),
-        instrument_id=InstrumentId(row["instrument_id"]),
+        target=BalanceTarget(
+            source=SourceId(row["source"]),
+            location_id=LocationId(row["location_id"]),
+            instrument_id=InstrumentId(row["instrument_id"]),
+            balance_kind=_balance_kind_from_row(row),
+            target_at=parse_temporal_value(row["target_at"], precision=precision),
+            target_precision=precision,
+        ),
         quantity=quantity,
-        as_of_at=parse_temporal_value(row["as_of_at"], precision=precision),
-        as_of_precision=precision,
-        balance_kind=_balance_kind_from_row(row),
+        snapshot_basis=row.get("snapshot_basis", ""),
         notes=row.get("notes", ""),
     )
 
 
-def balance_evidence_from_row(row: dict[str, str]) -> BalanceEvidence:
-    precision = parse_temporal_precision(row["as_of_precision"])
-    if precision is None:
-        raise ValueError("missing required enum field: as_of_precision")
+def balance_reference_from_row(row: dict[str, str]) -> BalanceReference:
+    target_precision = parse_temporal_precision(row["target_precision"])
+    if target_precision is None:
+        raise ValueError("missing required enum field: target_precision")
+    observed_precision = parse_temporal_precision(row["observed_precision"])
+    if observed_precision is None:
+        raise ValueError("missing required enum field: observed_precision")
+    try:
+        reference_kind = BalanceReferenceKind(row["reference_kind"].strip())
+    except ValueError as exc:
+        raise ValueError("missing required enum field: reference_kind") from exc
     quantity = parse_decimal(row["quantity"])
     if quantity is None:
         raise ValueError("missing required decimal field: quantity")
-    return BalanceEvidence(
-        source=SourceId(row["source"]),
-        location_id=LocationId(row["location_id"]),
-        instrument_id=InstrumentId(row["instrument_id"]),
+    return BalanceReference(
+        target=BalanceTarget(
+            source=SourceId(row["source"]),
+            location_id=LocationId(row["location_id"]),
+            instrument_id=InstrumentId(row["instrument_id"]),
+            balance_kind=_balance_kind_from_row(row),
+            target_at=parse_temporal_value(
+                row["target_at"],
+                precision=target_precision,
+            ),
+            target_precision=target_precision,
+        ),
         quantity=quantity,
-        as_of_at=parse_temporal_value(row["as_of_at"], precision=precision),
-        as_of_precision=precision,
-        balance_kind=_balance_kind_from_row(row),
-        provenance=ProvenanceLocator.from_flat_dict(row),
-        notes=row.get("notes", ""),
-    )
-
-
-def balance_confirmation_from_row(row: dict[str, str]) -> BalanceConfirmation:
-    precision = parse_temporal_precision(row["as_of_precision"])
-    if precision is None:
-        raise ValueError("missing required enum field: as_of_precision")
-    quantity = parse_decimal(row["quantity"])
-    if quantity is None:
-        raise ValueError("missing required decimal field: quantity")
-    return BalanceConfirmation(
-        source=SourceId(row["source"]),
-        location_id=LocationId(row["location_id"]),
-        instrument_id=InstrumentId(row["instrument_id"]),
-        quantity=quantity,
-        as_of_at=parse_temporal_value(row["as_of_at"], precision=precision),
-        as_of_precision=precision,
-        balance_kind=_balance_kind_from_row(row),
-        confirmation_kind=row.get("confirmation_kind", ""),
+        reference_kind=reference_kind,
+        observed_at=parse_temporal_value(
+            row["observed_at"],
+            precision=observed_precision,
+        ),
+        observed_precision=observed_precision,
         support_ref=row.get("support_ref", ""),
-        asserted_meaning=row.get("asserted_meaning", ""),
+        provider_family=row.get("provider_family", ""),
+        provider_locator=row.get("provider_locator", ""),
+        provider_block_ref=row.get("provider_block_ref", ""),
         reviewed_by=row.get("reviewed_by", ""),
-        reviewed_at=parse_timestamp(row.get("reviewed_at", "")),
-        reason=row.get("reason", ""),
+        reviewed_at=(
+            parse_timestamp(row["reviewed_at"])
+            if row.get("reviewed_at", "").strip()
+            else None
+        ),
         notes=row.get("notes", ""),
     )
 

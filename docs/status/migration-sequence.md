@@ -112,6 +112,15 @@ Move these capabilities off normalized transactions:
 Rules:
 
 - reconciliation consumes facts plus checkpoint evidence only
+- keep balance orchestration behind one shared balance capability for target
+  planning, snapshot derivation, reference resolution, hydration, and
+  assertion assembly
+- replace split balance evidence or confirmation artifacts directly with
+  unified `balance_references.csv`
+- keep historical API lookup in separate balance-provider adapters rather than
+  in source adapters
+- require canonical on-chain asset ids before public-ledger provider hydration
+  is treated as supported runtime behavior
 - CoinTracking tax outputs stay in oracle comparison services
 - deterministic corrections such as redistributions must live in typed rules or
   fact metadata, not operator notes
@@ -125,6 +134,8 @@ Rules:
 Exit criteria:
 
 - checkpoint assembly works from facts and source-backed evidence
+- reconciliation resolves explicit balance targets from facts and unified
+  references rather than from a latest-only balance artifact assumption
 - reconciliation artifacts no longer depend on normalized-transaction-specific
   stopgaps
 

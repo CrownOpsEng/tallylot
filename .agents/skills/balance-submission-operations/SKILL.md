@@ -38,6 +38,6 @@ Use this skill for the manual balance submission path.
   package.
 - Inspect reports missing required files and fields without materializing
   canonical outputs.
-- Submit writes canonical `balances.csv`,
-  `balance_confirmations.csv`, optional `location_inventory.csv`, plus
+- Submit writes canonical `balance_snapshots.csv`,
+  `balance_references.csv`, optional `location_inventory.csv`, plus
   `balance_submission_summary.json` and `balance_submission_issues.csv`.

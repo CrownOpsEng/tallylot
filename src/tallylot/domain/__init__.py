@@ -1,6 +1,15 @@
 """Domain concepts."""
 
-from .checkpoints import BalanceSnapshot
+from .balances import (
+    BalanceAssertion,
+    BalanceAssertionResult,
+    BalanceAssertionStatus,
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceSnapshot,
+    BalanceTarget,
+    assert_balance_targets,
+)
 from .instruments import (
     InstrumentId,
     InstrumentIdentifierRecord,
@@ -10,14 +19,6 @@ from .instruments import (
 )
 from .issues import IssueRecord, NormalizationReviewRecord
 from .locations import LocationKind, LocationRecord
-from .reconciliation import (
-    BalanceAssertion,
-    BalanceAssertionResult,
-    BalanceAssertionStatus,
-    BalanceConfirmation,
-    BalanceEvidence,
-    assert_balance_snapshots,
-)
 from .temporal import TemporalPrecision
 from .transactions import (
     FACT_SCHEMA_VERSION,
@@ -40,12 +41,13 @@ __all__ = [
     "TWO_SIDED_PRIMARY_EXCHANGE_POLICY",
     "TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY",
     "AccountingIntentHint",
-    "BalanceEvidence",
     "BalanceAssertion",
     "BalanceAssertionResult",
     "BalanceAssertionStatus",
-    "BalanceConfirmation",
+    "BalanceReference",
+    "BalanceReferenceKind",
     "BalanceSnapshot",
+    "BalanceTarget",
     "EconomicKind",
     "FactLegPolicy",
     "InstrumentId",
@@ -63,5 +65,5 @@ __all__ = [
     "TaxTreatmentHint",
     "TemporalPrecision",
     "TransactionFact",
-    "assert_balance_snapshots",
+    "assert_balance_targets",
 ]

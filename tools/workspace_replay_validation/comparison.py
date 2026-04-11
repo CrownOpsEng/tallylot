@@ -152,9 +152,11 @@ def collect_workspace_metrics(request: MetricCollectionRequest) -> WorkspaceMetr
         source_metrics[source_root.name] = SourceMetrics(
             source=source_root.name,
             fact_count=len(artifacts.read_rows(source_root / "facts.csv")),
-            balance_count=len(artifacts.read_rows(source_root / "balances.csv")),
-            balance_evidence_count=len(
-                artifacts.read_rows(source_root / "balance_evidence.csv")
+            snapshot_count=len(
+                artifacts.read_rows(source_root / "balance_snapshots.csv")
+            ),
+            reference_count=len(
+                artifacts.read_rows(source_root / "balance_references.csv")
             ),
             issue_count=len(issue_rows) + len(assembly_issue_rows),
             review_count=len(

@@ -33,26 +33,28 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - source manifesting for settled raw captures
 - capture-scoped source profiling with timezone provenance and a
   capture-scoped `profile_inventory.csv` discovery contract
-- capture-scoped source normalization with explicit fact artifacts, balance
-  evidence, and archive member provenance under
+- capture-scoped source normalization with explicit fact artifacts, derived
+  balance snapshots, unified balance references, and archive member provenance under
   `working/normalized/captures/<capture_uid>/`
 - source assembly via `source assemble`, producing reconciliation-ready source
   datasets under `working/normalized/sources/<source>/` and rewrites its owned
   generated artifact set on rerun
 - shared statement extraction used by normalization and
   `checkpoint extract-pdf-balances`
-- normalization-owned statement-backed balance evidence for supported provider
-  statements and constrained same-source-chain MetaMask portfolio evidence
+- normalization-owned statement-backed `source_document` balance references for
+  supported provider statements and constrained same-source-chain MetaMask
+  portfolio evidence
 - checkpoint-owned manual balance submission scaffolding and validation that
-  materializes canonical balances, balance confirmations, and optional
-  location inventory outputs
+  materializes canonical balance snapshots, operator assertion references, and
+  optional location inventory outputs
 - checkpoint location inventory rebuild with evidence, issues, and summary
   artifacts
 - checkpoint PDF balance extraction for supported statement families through
   the shared statement extraction seam
 - reconciliation balance coverage, checking, and summary workflows with
-  explicit drift, missing-side, duplicate-input, blocker outputs, and additive
-  cross-source corroboration sidecars
+  explicit drift, missing-side, duplicate-input, blocker outputs, additive
+  cross-source corroboration sidecars, explicit `--as-of` target planning, and
+  optional provider hydration through separate balance-provider adapters
 - repo-native workspace replay validation via
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_workspace_replay`
   with optional expected-difference fixtures limited to issue and review count
@@ -81,11 +83,11 @@ The repo currently ships typed replacements for the core workflow capabilities:
   `observed_period_end`, `observed_period_label`, `statement_kind`, and
   `originality_class`.
 - Provenance stays typed in runtime models and is flattened only at artifact
-  boundaries. `balance_evidence.csv` uses the shared locator columns
-  `capture_uid`, `relative_path`, `archive_member_path`, `locator_kind`, and
-  `anchor`; `exceptions.csv` and `normalization_reviews.csv` use the same
-  locator family with `raw_` prefixes plus `raw_row_ref`; aggregate location
-  inventory evidence uses the same locator family with `evidence_` prefixes.
+  boundaries. `balance_references.csv` uses the shared locator-support fields
+  available for the emitting reference kind; `exceptions.csv` and
+  `normalization_reviews.csv` use the same locator family with `raw_` prefixes
+  plus `raw_row_ref`; aggregate location inventory evidence uses the same
+  locator family with `evidence_` prefixes.
 - ZIP inspection is on by default unless a command explicitly opts out.
 - Dev-only oracle batch screening and staging are blocking gates. A blocked run
   still writes artifacts for review.
@@ -93,9 +95,9 @@ The repo currently ships typed replacements for the core workflow capabilities:
   `working/supporting_artifacts/balance_submissions/` are pre-canonical support
   artifacts. Canonical balance outputs still live under the chosen assembled
   source root, normally `working/normalized/sources/<source>/`.
-- Manual submission can unblock runtime reconciliation as
-  `operator_confirmed`, but filing-ready checkpoint state still requires
-  source-backed `balance_evidence.csv`.
+- Manual submission can unblock runtime reconciliation through
+  `operator_assertion` references, but filing-ready checkpoint state still
+  requires `source_document` evidence.
 - `tools.validate_workspace_replay` compares semantic capture-registry parity,
   raw capture completeness, assembled source metrics, and reconciliation status
   counts. Optional expected-difference fixtures may declare only
@@ -108,3 +110,5 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - HTTP/API runtime
 - SQLite-backed active storage
 - provider-backed AI runtime
+- broad provider coverage beyond the first public-ledger balance-provider
+  families

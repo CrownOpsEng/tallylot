@@ -31,20 +31,20 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
         (
             BalanceCoverageRecord(
                 source="clean-source",
-                coverage_status="source_backed",
+                coverage_status="resolved_reference",
                 snapshot_count=1,
-                evidence_count=1,
-                source_backed_reference_count=1,
+                reference_count=1,
+                source_document_count=1,
                 min_snapshot_date="2026-03-23",
                 max_snapshot_date="2026-03-23",
-                min_evidence_date="2026-03-23",
-                max_evidence_date="2026-03-23",
+                min_reference_date="2026-03-23",
+                max_reference_date="2026-03-23",
             ).to_row(),
             BalanceCoverageRecord(
                 source="empty-source",
                 coverage_status="empty_source",
                 snapshot_count=0,
-                evidence_count=0,
+                reference_count=0,
             ).to_row(),
         ),
     )
@@ -60,9 +60,9 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
                 min_assertion_date="2026-03-23",
                 max_assertion_date="2026-03-23",
                 latest_clean_checked_date="2026-03-23",
-                latest_source_backed_checked_date="2026-03-23",
+                latest_resolved_reference_checked_date="2026-03-23",
                 assertion_status_counts=(("matched", 1),),
-                reference_basis_counts=(("source_backed_evidence", 1),),
+                selected_reference_kind_counts=(("source_document", 1),),
                 issue_kind_counts=(),
             ).to_row(),
             BalanceCheckSummaryRecord(
@@ -73,9 +73,9 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
                 min_assertion_date="",
                 max_assertion_date="",
                 latest_clean_checked_date="",
-                latest_source_backed_checked_date="",
+                latest_resolved_reference_checked_date="",
                 assertion_status_counts=(),
-                reference_basis_counts=(),
+                selected_reference_kind_counts=(),
                 issue_kind_counts=(),
             ).to_row(),
         ),
@@ -95,9 +95,9 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
     )
 
     assert response.latest_portfolio_clean_date == ""
-    assert response.latest_portfolio_source_backed_date == ""
+    assert response.latest_portfolio_resolved_reference_date == ""
     assert response.latest_clean_source_date == "2026-03-23"
-    assert response.latest_source_backed_date == "2026-03-23"
+    assert response.latest_resolved_reference_date == "2026-03-23"
     assert response.latest_observed_assertion_date == "2026-03-23"
     assert payload["blocker_kind_counts"]["empty_source"] == 1
     assert payload["blocker_kind_counts"]["no_assertions"] == 1
@@ -105,7 +105,7 @@ def test_balance_summary_workflow_keeps_no_assertion_sources_out_of_clean_dates(
     assert blocker_rows[1]["blocker_kind"] == "no_assertions"
 
 
-def test_balance_summary_workflow_distinguishes_source_backed_dates(
+def test_balance_summary_workflow_distinguishes_resolved_reference_dates(
     tmp_path: Path,
 ) -> None:
     coverage_path = tmp_path / "balance_coverage.csv"
@@ -118,17 +118,17 @@ def test_balance_summary_workflow_distinguishes_source_backed_dates(
         (
             BalanceCoverageRecord(
                 source="source-backed",
-                coverage_status="source_backed",
+                coverage_status="resolved_reference",
                 snapshot_count=1,
-                evidence_count=1,
-                source_backed_reference_count=1,
+                reference_count=1,
+                source_document_count=1,
             ).to_row(),
             BalanceCoverageRecord(
                 source="operator-confirmed",
-                coverage_status="operator_confirmed",
+                coverage_status="resolved_reference",
                 snapshot_count=1,
-                evidence_count=0,
-                operator_confirmation_count=1,
+                reference_count=1,
+                operator_assertion_count=1,
             ).to_row(),
         ),
     )
@@ -144,9 +144,9 @@ def test_balance_summary_workflow_distinguishes_source_backed_dates(
                 min_assertion_date="2026-03-23",
                 max_assertion_date="2026-03-23",
                 latest_clean_checked_date="2026-03-23",
-                latest_source_backed_checked_date="2026-03-23",
+                latest_resolved_reference_checked_date="2026-03-23",
                 assertion_status_counts=(("matched", 1),),
-                reference_basis_counts=(("source_backed_evidence", 1),),
+                selected_reference_kind_counts=(("source_document", 1),),
                 issue_kind_counts=(),
             ).to_row(),
             BalanceCheckSummaryRecord(
@@ -157,9 +157,9 @@ def test_balance_summary_workflow_distinguishes_source_backed_dates(
                 min_assertion_date="2026-03-24",
                 max_assertion_date="2026-03-24",
                 latest_clean_checked_date="2026-03-24",
-                latest_source_backed_checked_date="",
+                latest_resolved_reference_checked_date="",
                 assertion_status_counts=(("matched", 1),),
-                reference_basis_counts=(("operator_confirmation", 1),),
+                selected_reference_kind_counts=(("operator_assertion", 1),),
                 issue_kind_counts=(),
             ).to_row(),
         ),
@@ -179,9 +179,9 @@ def test_balance_summary_workflow_distinguishes_source_backed_dates(
     )
 
     assert response.latest_portfolio_clean_date == "2026-03-23"
-    assert response.latest_portfolio_source_backed_date == ""
+    assert response.latest_portfolio_resolved_reference_date == ""
     assert response.latest_clean_source_date == "2026-03-24"
-    assert response.latest_source_backed_date == "2026-03-23"
-    assert payload["operator_confirmed_source_count"] == 1
-    assert payload["source_backed_source_count"] == 1
+    assert response.latest_resolved_reference_date == "2026-03-23"
+    assert payload["resolved_reference_source_count"] == 2
+    assert payload["mixed_reference_source_count"] == 0
     assert blocker_rows == []

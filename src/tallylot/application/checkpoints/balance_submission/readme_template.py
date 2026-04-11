@@ -10,8 +10,8 @@ This package holds a user-facing manual balance submission for `{source}`.
 
 Required files:
 
-- `balances.csv`
-- `balance_confirmations.csv`
+- `balance_snapshots.csv`
+- `balance_references.csv`
 
 Optional file:
 
@@ -21,6 +21,8 @@ Template files:
 
 - `.example` files are templates only. Keep them as examples and copy their rows
   into real `.csv` files only when you have explicit facts to enter.
+- do not create real submission CSVs until you have explicit user-provided facts
+  for every required value.
 
 Required data rules:
 
@@ -37,13 +39,12 @@ Corroboration note:
 - Omitting `location_inventory.csv` still allows source-local balance checking
   after a successful submit.
 
-Trust note:
+Reference note:
 
-- Confirmations accept balances for runtime use; they do not create
-  source-backed evidence.
-- `external_support` may cite supporting material, but the operator still
-  records the asserted meaning of that support.
-- Successful manual submission is `operator_confirmed` and ready for runtime
-  balance checks.
-- Filing-ready source-backed checkpoint status remains separate.
+- Manual submission writes `operator_assertion` rows into the canonical
+  balance reference artifact.
+- `support_ref` is optional and may cite supporting material, but the row
+  remains an operator assertion rather than a source-document reference.
+- Successful manual submission prepares canonical balance snapshots and
+  operator assertions for runtime balance checks.
 """

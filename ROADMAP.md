@@ -16,15 +16,14 @@ This roadmap assumes the repo stays on the current fact-based architecture. It
 tracks remaining phases, sequencing, and delivery gates. It does not restate
 the detailed architecture contract.
 
-The current runtime already supports manual balance submission as a
-checkpoint-owned pre-canonical path. Canonical balance artifacts may therefore
-enter later reconciliation work through normalization or through validated
-manual submission packages, but only normalization and explicit source-backed
-checkpoint builders write canonical `balance_evidence.csv`.
+The current runtime now uses one shared balance capability across
+normalization, reconciliation, and checkpoint submission. Canonical balance
+state is expressed as derived `balance_snapshots.csv` plus unified
+`balance_references.csv`, where each reference row declares its
+`reference_kind`.
 
-The later generic operator confirmation framework is tracked separately in
-GitHub issue `#45` so the current balance-specific confirmation slice can stay
-narrow and complete.
+Historical provider hydration is now a first-class balance concern, but the
+current implementation target remains public-ledger balance lookup only.
 
 ## Planning Anchors
 
@@ -107,32 +106,37 @@ Exit criteria:
 - CoinTracking CSV projection remains correct from facts alone
 - remaining normalization ambiguity paths emit explicit reviews or blocking
   issues instead of silent coercion
-- canonical balance evidence, issue rows, review rows, and location inventory
-  evidence rows share one flattened provenance locator family at artifact
-  boundaries while runtime models keep typed provenance
-- unchanged raw inputs preserve file completeness, fact counts, balance counts,
-  balance-evidence counts, and issue or review counts unless an
+- canonical balance references, issue rows, review rows, and location
+  inventory evidence rows share one flattened provenance locator family at
+  artifact boundaries while runtime models keep typed provenance
+- unchanged raw inputs preserve file completeness, fact counts, snapshot
+  counts, reference counts, and issue or review counts unless an
   expected-difference fixture documents the exception
 - expected-difference fixtures may relax only issue-count or review-count
-  parity and must never excuse raw completeness, fact, balance, evidence, or
+  parity and must never excuse raw completeness, fact, snapshot, reference, or
   reconciliation drift
 
 ### 3. Reconciliation
 
-Build deterministic reconciliation on top of transaction facts, source-backed
-balance evidence, and operator-confirmed balance references.
+Build deterministic reconciliation on top of transaction facts, derived
+balance snapshots, and unified balance references.
 
 Scope:
 
 - read only assembled source datasets produced from accepted captures
+- keep target planning, snapshot derivation, reference resolution, hydration,
+  and assertion assembly behind the shared balance capability
 - extend the first exact balance assertion workflow into broader checkpoint and
   transfer checks
 - keep statement-backed quantity evidence on the normalization path and treat
   valuation totals as non-canonical
-- accept canonical `balances.csv` plus source-backed `balance_evidence.csv`
-  from normalization and operator-confirmed `balance_confirmations.csv` from
-  validated manual submission without splitting the downstream reconciliation
-  contracts
+- accept canonical `balance_snapshots.csv` plus unified
+  `balance_references.csv` from normalization, manual submission, or later
+  provider hydration without splitting the downstream reconciliation contracts
+- keep historical API lookup behind separate balance-provider adapters instead
+  of extending source adapters
+- require canonical on-chain asset ids before public-ledger provider hydration
+  is considered supported
 - add additive cross-source corroboration as a sidecar evidence surface before
   promoting it into a harder reconciliation gate
 - transfer linking across owned wallets and exchanges
@@ -165,7 +169,8 @@ Scope:
 - checkpoint artifact contracts
 - checkpoint provenance and evidence requirements
 - keep manual/operator-authored balance submission packages as a supported
-  checkpoint-owned input path for canonical balances and balance confirmations
+  checkpoint-owned input path for canonical balance snapshots and operator
+  assertion references
 - source-backed checkpoint builder centered on the best-supported balance date
   near `2026-03-23`
 - intentional opening-state adoption flow with provenance
@@ -173,7 +178,7 @@ Scope:
 
 Exit criteria:
 
-- an operator-confirmed runtime balance package can be created and reused as a
+- an operator-authored runtime balance package can be created and reused as a
   typed input without weakening the later source-backed checkpoint requirement
 - opening-state adoption is explicit, auditable, and not dependent on operator
   memory

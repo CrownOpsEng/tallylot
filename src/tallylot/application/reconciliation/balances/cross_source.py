@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 
-from tallylot.domain.checkpoints import BalanceSnapshot
+from tallylot.domain.balances import BalanceSnapshot
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import JsonValue
 from tallylot.domain.value_objects import format_decimal, format_temporal_value
@@ -58,8 +58,8 @@ class _IdentityRecord:
 class _JoinKey:
     instrument_id: str
     balance_kind: str
-    as_of_at: object
-    as_of_precision: object
+    target_at: object
+    target_precision: object
 
 
 @dataclass(frozen=True)
@@ -187,8 +187,8 @@ def build_cross_source_corroboration(
                     key=lambda item: (
                         item.instrument_id,
                         item.balance_kind,
-                        str(item.as_of_at),
-                        str(item.as_of_precision),
+                        str(item.target_at),
+                        str(item.target_precision),
                     ),
                 ):
                     assertions.append(
@@ -268,8 +268,8 @@ def _index_join_rows(
         join_key = _JoinKey(
             instrument_id=_canonicalize_instrument_id(str(snapshot.instrument_id)),
             balance_kind=snapshot.balance_kind,
-            as_of_at=snapshot.as_of_at,
-            as_of_precision=snapshot.as_of_precision,
+            target_at=snapshot.target_at,
+            target_precision=snapshot.target_precision,
         )
         if join_key in indexed:
             duplicate_counts[join_key] += 1
@@ -327,11 +327,11 @@ def _build_assertion(pair: _ComparablePair) -> CrossSourceAssertionRecord:
         as_of_at=""
         if snapshot is None
         else format_temporal_value(
-            snapshot.as_of_at,
-            precision=snapshot.as_of_precision,
-            label="cross-source balance assertion as_of_at",
+            snapshot.target_at,
+            precision=snapshot.target_precision,
+            label="cross-source balance assertion target_at",
         ),
-        as_of_precision="" if snapshot is None else snapshot.as_of_precision.value,
+        as_of_precision="" if snapshot is None else snapshot.target_precision.value,
         notes=_status_notes(status),
     )
 

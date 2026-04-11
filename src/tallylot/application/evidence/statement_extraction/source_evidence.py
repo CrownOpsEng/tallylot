@@ -12,14 +12,18 @@ from tallylot.adapters.support import (
     location_id_from_parts,
     resolve_instrument_identity,
 )
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceTarget,
+)
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import CaptureUid, LocationId
 from tallylot.ports.evidence import (
-    StatementBalanceEvidenceBatch,
+    StatementBalanceReferenceBatch,
     StatementDocumentBalanceRow,
     StatementDocumentParseResult,
 )
@@ -36,16 +40,21 @@ from .issues import (
 )
 
 
-def extract_source_balance_evidence_from_inventory(
+def extract_source_balance_references_from_inventory(
     adapter: StatementDocumentEvidenceAdapter,
     profile: SourceProfile,
     raw_dir: Path,
     *,
     extract_pdf_text: Callable[[Path], str],
-) -> StatementBalanceEvidenceBatch:
+) -> StatementBalanceReferenceBatch:
     candidates = tuple(_statement_document_candidates(profile, raw_dir))
     if not candidates:
-        return StatementBalanceEvidenceBatch(balance_evidence=(), issues=(), reviews=())
+        return StatementBalanceReferenceBatch(
+            balance_references=(),
+            reference_issues=(),
+            issues=(),
+            reviews=(),
+        )
     recognized: list[tuple[FileInventoryEntry, StatementDocumentParseResult]] = []
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
@@ -101,8 +110,11 @@ def extract_source_balance_evidence_from_inventory(
             recognized,
             issues,
         )
-        return StatementBalanceEvidenceBatch(
-            balance_evidence=(), issues=tuple(issues), reviews=tuple(reviews)
+        return StatementBalanceReferenceBatch(
+            balance_references=(),
+            reference_issues=(),
+            issues=tuple(issues),
+            reviews=tuple(reviews),
         )
     if len(latest_documents) > 1:
         _append_ambiguous_statement_issues(
@@ -111,18 +123,22 @@ def extract_source_balance_evidence_from_inventory(
             latest_documents,
             issues,
         )
-        return StatementBalanceEvidenceBatch(
-            balance_evidence=(), issues=tuple(issues), reviews=tuple(reviews)
+        return StatementBalanceReferenceBatch(
+            balance_references=(),
+            reference_issues=(),
+            issues=tuple(issues),
+            reviews=tuple(reviews),
         )
-    evidence = _balance_evidence_from_statement_documents(
+    references = _balance_references_from_statement_documents(
         adapter,
         profile,
         _evidence_documents_for_latest_snapshot(recognized, latest_documents),
         issues=issues,
         reviews=reviews,
     )
-    return StatementBalanceEvidenceBatch(
-        balance_evidence=evidence,
+    return StatementBalanceReferenceBatch(
+        balance_references=references,
+        reference_issues=(),
         issues=tuple(issues),
         reviews=tuple(reviews),
     )
@@ -287,14 +303,14 @@ def _evidence_documents_for_latest_snapshot(
     )
 
 
-def _balance_evidence_from_statement_documents(
+def _balance_references_from_statement_documents(
     adapter: StatementDocumentEvidenceAdapter,
     profile: SourceProfile,
     documents: tuple[tuple[FileInventoryEntry, StatementDocumentParseResult], ...],
     *,
     issues: list[IssueRecord],
     reviews: list[NormalizationReviewRecord],
-) -> tuple[BalanceEvidence, ...]:
+) -> tuple[BalanceReference, ...]:
     location_id = location_id_from_parts(str(profile.source))
     seen_rows: set[tuple[object, ...]] = set()
     aggregated: dict[
@@ -353,7 +369,7 @@ def _balance_evidence_from_statement_documents(
                 instrument_id,
                 row_provenance,
             )
-    return _evidence_from_aggregated_rows(profile, location_id, aggregated)
+    return _references_from_aggregated_rows(profile, location_id, aggregated)
 
 
 def _document_precedence_value(parsed: StatementDocumentParseResult) -> datetime:
@@ -379,15 +395,15 @@ def _statement_row_precedence_key(
     )
 
 
-def _evidence_from_aggregated_rows(
+def _references_from_aggregated_rows(
     profile: SourceProfile,
     location_id: LocationId,
     aggregated: dict[
         tuple[str, str, datetime, TemporalPrecision, str],
         tuple[Decimal, set[str], set[str], InstrumentId, ProvenanceLocator],
     ],
-) -> tuple[BalanceEvidence, ...]:
-    evidence: list[BalanceEvidence] = []
+) -> tuple[BalanceReference, ...]:
+    references: list[BalanceReference] = []
     for (
         _instrument_key,
         balance_kind,
@@ -401,20 +417,25 @@ def _evidence_from_aggregated_rows(
         instrument_id,
         provenance,
     ) in sorted(aggregated.items()):
-        evidence.append(
-            BalanceEvidence(
-                source=profile.source,
-                location_id=location_id,
-                instrument_id=instrument_id,
+        references.append(
+            BalanceReference(
+                target=BalanceTarget(
+                    source=profile.source,
+                    location_id=location_id,
+                    instrument_id=instrument_id,
+                    balance_kind=balance_kind,
+                    target_at=as_of_at,
+                    target_precision=as_of_precision,
+                ),
                 quantity=quantity,
-                as_of_at=as_of_at,
-                as_of_precision=as_of_precision,
-                balance_kind=balance_kind,
-                provenance=replace(
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=as_of_at,
+                observed_precision=as_of_precision,
+                support_ref=replace(
                     provenance,
                     anchor=" + ".join(sorted(anchors)) or provenance.anchor,
-                ),
+                ).to_reference_ref(),
                 notes=" | ".join(sorted(notes)),
             )
         )
-    return tuple(evidence)
+    return tuple(references)

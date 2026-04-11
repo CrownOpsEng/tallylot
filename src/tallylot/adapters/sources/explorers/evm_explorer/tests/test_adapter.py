@@ -270,20 +270,24 @@ def test_evm_explorer_adapter_admits_same_chain_portfolio_evidence_only(
     result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "evm_explorer"
-    assert [row.to_row() for row in result.balance_evidence] == [
+    assert [row.to_row() for row in result.balance_references] == [
         {
             "source": "bsc-wallet-fixture",
             "location_id": "evm:bsc:0x1111111111111111111111111111111111111111",
-            "instrument_id": "symbol:BNB@evm_explorer",
-            "quantity": "1.25",
-            "as_of_at": "2024-03-09",
-            "as_of_precision": "date",
+            "instrument_id": "asset:evm:bsc:native",
             "balance_kind": "available",
-            "capture_uid": "",
-            "relative_path": "Account1-bsc Portfolio.csv",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "row:2",
+            "target_at": "2024-03-09",
+            "target_precision": "date",
+            "quantity": "1.25",
+            "reference_kind": "source_document",
+            "observed_at": "2024-03-09",
+            "observed_precision": "date",
+            "support_ref": "Account1-bsc Portfolio.csv#row:2",
+            "provider_family": "",
+            "provider_locator": "",
+            "provider_block_ref": "",
+            "reviewed_by": "",
+            "reviewed_at": "",
             "notes": (
                 "MetaMask portfolio quantity admitted for the source folder "
                 "chain only; wallet identity remains source-folder-scoped evidence."
@@ -294,6 +298,7 @@ def test_evm_explorer_adapter_admits_same_chain_portfolio_evidence_only(
     assert {review.kind for review in result.reviews} == {
         "portfolio_row_not_admitted",
     }
+    assert not result.issues
     assert any(
         "probable destination chain is ethereum" in review.message.lower()
         for review in result.reviews
@@ -335,27 +340,9 @@ def test_evm_explorer_adapter_uses_profile_inventory_timestamps_for_portfolio_as
     result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "evm_explorer"
-    assert [row.to_row() for row in result.balance_evidence] == [
-        {
-            "source": "eth-wallet-fixture",
-            "location_id": "evm:ethereum:0x2222222222222222222222222222222222222222",
-            "instrument_id": "symbol:GALA@evm_explorer",
-            "quantity": "1000",
-            "as_of_at": "2025-03-24",
-            "as_of_precision": "date",
-            "balance_kind": "available",
-            "capture_uid": "",
-            "relative_path": "Wallet-eth portfolio.csv",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "row:2",
-            "notes": (
-                "MetaMask portfolio quantity admitted for the source folder "
-                "chain only; wallet identity remains source-folder-scoped evidence."
-            ),
-        }
-    ]
-    assert result.reviews == ()
+    assert not result.balance_references
+    assert not result.issues
+    assert any(review.kind == "instrument_identity_review" for review in result.reviews)
 
 
 def test_evm_explorer_adapter_requires_single_location_for_portfolio_evidence(
@@ -372,7 +359,7 @@ def test_evm_explorer_adapter_requires_single_location_for_portfolio_evidence(
     profile, adapter = profile_and_adapter("bsc-wallet-fixture", raw_dir)
     result = adapter.translate(profile, raw_dir)
 
-    assert not result.balance_evidence
+    assert not result.balance_references
     assert any(issue.kind == "missing_identifier" for issue in result.issues)
     assert any(
         review.kind == "portfolio_location_unresolved" for review in result.reviews

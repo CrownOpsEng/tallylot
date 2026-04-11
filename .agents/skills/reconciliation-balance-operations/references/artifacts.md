@@ -9,8 +9,7 @@ Use these artifacts when interpreting the balance reconciliation workflow.
 
 Coverage statuses:
 
-- `source_backed`
-- `operator_confirmed`
+- `resolved_reference`
 - `mixed_reference`
 - `missing_snapshots`
 - `missing_reference`
@@ -21,7 +20,7 @@ Coverage statuses:
 - `balance_check_summary.csv`
 - per-source `balance_assertions.csv`
 - per-source `reconciliation_issues.csv`
-- per-source `balance_assertion_summary.json`
+- per-source `balance_reconciliation_summary.json`
 
 Check statuses:
 
@@ -43,7 +42,7 @@ Reference basis fields:
 Date fields:
 
 - `latest_portfolio_clean_date`
-- `latest_portfolio_source_backed_date`
+- `latest_portfolio_resolved_reference_date`
 - `latest_clean_source_date`
-- `latest_source_backed_date`
+- `latest_resolved_reference_date`
 - `latest_observed_assertion_date`

@@ -5,9 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-BALANCE_SNAPSHOT_FILENAME = "balances.csv"
-BALANCE_EVIDENCE_FILENAME = "balance_evidence.csv"
-BALANCE_CONFIRMATIONS_FILENAME = "balance_confirmations.csv"
+from tallylot.application.balances import (
+    BALANCE_REFERENCE_FILENAME,
+    BALANCE_REFERENCE_ISSUE_FILENAME,
+    BALANCE_SNAPSHOT_FILENAME,
+)
+
+FACT_FILENAME = "facts.csv"
 LOCATION_INVENTORY_FILENAME = "location_inventory.csv"
 
 
@@ -17,16 +21,20 @@ class BalanceSourceDir:
     root: Path
 
     @property
+    def facts_path(self) -> Path:
+        return self.root / FACT_FILENAME
+
+    @property
     def snapshot_path(self) -> Path:
         return self.root / BALANCE_SNAPSHOT_FILENAME
 
     @property
-    def evidence_path(self) -> Path:
-        return self.root / BALANCE_EVIDENCE_FILENAME
+    def reference_path(self) -> Path:
+        return self.root / BALANCE_REFERENCE_FILENAME
 
     @property
-    def confirmation_path(self) -> Path:
-        return self.root / BALANCE_CONFIRMATIONS_FILENAME
+    def reference_issue_path(self) -> Path:
+        return self.root / BALANCE_REFERENCE_ISSUE_FILENAME
 
     @property
     def location_inventory_path(self) -> Path:
@@ -76,7 +84,7 @@ def source_dir_input(input_root: Path) -> bool:
 
 def _has_balance_inputs(path: Path) -> bool:
     return (
-        (path / BALANCE_SNAPSHOT_FILENAME).is_file()
-        or (path / BALANCE_EVIDENCE_FILENAME).is_file()
-        or (path / BALANCE_CONFIRMATIONS_FILENAME).is_file()
+        (path / FACT_FILENAME).is_file()
+        or (path / BALANCE_SNAPSHOT_FILENAME).is_file()
+        or (path / BALANCE_REFERENCE_FILENAME).is_file()
     )

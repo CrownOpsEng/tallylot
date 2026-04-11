@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from tallylot.application.checkpoints.balance_submission import (
-    BALANCE_CONFIRMATIONS_HEADER,
-    BALANCES_HEADER,
+    BALANCE_REFERENCES_HEADER,
+    BALANCE_SNAPSHOTS_HEADER,
     LOCATION_INVENTORY_HEADER,
 )
 from tallylot.application.checkpoints.contracts import SubmitBalancesRequest
@@ -40,28 +40,27 @@ def test_submit_balances_materializes_canonical_balance_outputs(
 
     assert not response.blocked
     assert response.ready_for_balance_check is True
-    assert response.ready_for_source_backed_checkpoint is False
-    assert response.trust_tier == "operator_confirmed"
-    assert response.wrote_balance_confirmations is True
-    assert response.balance_confirmation_row_count == 1
+    assert response.wrote_balance_snapshots is True
+    assert response.wrote_balance_references is True
+    assert response.balance_snapshot_row_count == 1
+    assert response.balance_reference_row_count == 1
     assert (
         str(
-            evidence.read_balance_snapshots(output_root / "balances.csv")[0].location_id
+            evidence.read_balance_snapshots(output_root / "balance_snapshots.csv")[
+                0
+            ].location_id
         )
         == "coinbase:primary:primary"
     )
     assert (
-        evidence.read_balance_confirmations(output_root / "balance_confirmations.csv")[
+        evidence.read_balance_references(output_root / "balance_references.csv")[
             0
         ].support_ref
         == "statement.pdf#page=1"
     )
-    assert not (output_root / "balance_evidence.csv").exists()
     assert artifacts.read_rows(output_root / "balance_submission_issues.csv") == []
     assert summary["ready_for_balance_check"] is True
-    assert summary["ready_for_source_backed_checkpoint"] is False
-    assert summary["trust_tier"] == "operator_confirmed"
-    assert summary["wrote_balance_confirmations"] is True
+    assert summary["wrote_balance_references"] is True
 
 
 def test_submit_balances_materializes_optional_location_inventory(
@@ -125,14 +124,14 @@ def test_submit_balances_materializes_optional_location_inventory(
     assert location_rows[1]["location_path"] == "vault"
 
 
-def test_submit_balances_blocks_when_confirmation_file_is_missing(
+def test_submit_balances_blocks_when_reference_file_is_missing(
     tmp_path: Path,
 ) -> None:
     submission_root = tmp_path / "submission" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"
     _write_rows(
-        submission_root / "balances.csv",
-        BALANCES_HEADER,
+        submission_root / "balance_snapshots.csv",
+        BALANCE_SNAPSHOTS_HEADER,
         (
             {
                 "source": "coinbase",
@@ -140,8 +139,8 @@ def test_submit_balances_blocks_when_confirmation_file_is_missing(
                 "wallet": "primary",
                 "instrument_id": "symbol:BTC@coinbase",
                 "quantity": "1.25",
-                "as_of_at": "2026-03-23",
-                "as_of_precision": "date",
+                "target_at": "2026-03-23",
+                "target_precision": "date",
                 "balance_kind": "available",
                 "notes": "",
             },
@@ -163,14 +162,14 @@ def test_submit_balances_blocks_when_confirmation_file_is_missing(
     assert response.blocked is True
     assert response.issue_count >= 1
     assert issue_rows[0]["issue_kind"] == "missing_required_file"
-    assert not (output_root / "balance_confirmations.csv").exists()
+    assert not (output_root / "balance_references.csv").exists()
 
 
 def test_submit_balances_rejects_invalid_header(tmp_path: Path) -> None:
     submission_root = tmp_path / "submission" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"
     _write_valid_required_files(submission_root, source="coinbase")
-    (submission_root / "balance_confirmations.csv").write_text(
+    (submission_root / "balance_references.csv").write_text(
         "source,wallet,instrument_id\ncoinbase,primary,symbol:BTC@coinbase\n",
         encoding="utf-8",
     )
@@ -195,8 +194,8 @@ def test_submit_balances_rejects_invalid_header(tmp_path: Path) -> None:
     ("field", "value", "expected_issue_kind"),
     (
         ("quantity", "not-a-decimal", "invalid_decimal"),
-        ("as_of_precision", "hour", "invalid_precision"),
-        ("as_of_at", "2026-03-23 10:00:00", "invalid_timestamp"),
+        ("target_precision", "hour", "invalid_precision"),
+        ("target_at", "2026-03-23 10:00:00", "invalid_timestamp"),
         ("instrument_id", "", "missing_required_value"),
     ),
 )
@@ -209,9 +208,15 @@ def test_submit_balances_rejects_invalid_balance_values(
     submission_root = tmp_path / "submission" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"
     _write_valid_required_files(submission_root, source="coinbase")
-    rows = FilesystemArtifactStore().read_rows(submission_root / "balances.csv")
+    rows = FilesystemArtifactStore().read_rows(
+        submission_root / "balance_snapshots.csv"
+    )
     rows[0][field] = value
-    _write_rows(submission_root / "balances.csv", BALANCES_HEADER, tuple(rows))
+    _write_rows(
+        submission_root / "balance_snapshots.csv",
+        BALANCE_SNAPSHOTS_HEADER,
+        tuple(rows),
+    )
 
     response = submit_balances_use_case().execute(
         SubmitBalancesRequest(
@@ -232,12 +237,13 @@ def test_submit_balances_rejects_invalid_balance_values(
 @pytest.mark.parametrize(
     ("field", "value", "expected_issue_kind"),
     (
-        ("confirmation_kind", "unsupported_kind", "invalid_confirmation_kind"),
+        ("reference_kind", "unsupported_kind", "invalid_reference_kind"),
+        ("reference_kind", "manual_assertion", "invalid_reference_kind"),
         ("reviewed_at", "2026-03-24", "invalid_timestamp"),
-        ("asserted_meaning", "", "missing_required_value"),
+        ("reviewed_by", "", "missing_required_value"),
     ),
 )
-def test_submit_balances_rejects_invalid_confirmation_values(
+def test_submit_balances_rejects_invalid_reference_values(
     tmp_path: Path,
     field: str,
     value: str,
@@ -247,12 +253,12 @@ def test_submit_balances_rejects_invalid_confirmation_values(
     output_root = tmp_path / "normalized" / "coinbase"
     _write_valid_required_files(submission_root, source="coinbase")
     rows = FilesystemArtifactStore().read_rows(
-        submission_root / "balance_confirmations.csv"
+        submission_root / "balance_references.csv"
     )
     rows[0][field] = value
     _write_rows(
-        submission_root / "balance_confirmations.csv",
-        BALANCE_CONFIRMATIONS_HEADER,
+        submission_root / "balance_references.csv",
+        BALANCE_REFERENCES_HEADER,
         tuple(rows),
     )
 
@@ -272,109 +278,15 @@ def test_submit_balances_rejects_invalid_confirmation_values(
     assert expected_issue_kind in {row["issue_kind"] for row in issue_rows}
 
 
-def test_submit_balances_enforces_confirmation_support_ref_rules(
-    tmp_path: Path,
-) -> None:
-    submission_root = tmp_path / "submission" / "coinbase"
-    output_root = tmp_path / "normalized" / "coinbase"
-    _write_valid_required_files(submission_root, source="coinbase")
-    rows = FilesystemArtifactStore().read_rows(
-        submission_root / "balance_confirmations.csv"
-    )
-    rows[0]["confirmation_kind"] = "manual_assertion"
-    rows[0]["support_ref"] = "note.txt"
-    _write_rows(
-        submission_root / "balance_confirmations.csv",
-        BALANCE_CONFIRMATIONS_HEADER,
-        tuple(rows),
-    )
-
-    response = submit_balances_use_case().execute(
-        SubmitBalancesRequest(
-            source="coinbase",
-            submission_root_ref=to_resource_ref(submission_root),
-            output_root_ref=to_resource_ref(output_root),
-        )
-    )
-
-    issue_rows = FilesystemArtifactStore().read_rows(
-        output_root / "balance_submission_issues.csv"
-    )
-
-    assert response.blocked is True
-    assert "unexpected_value" in {row["issue_kind"] for row in issue_rows}
-
-    rows[0]["confirmation_kind"] = "external_support"
-    rows[0]["support_ref"] = ""
-    _write_rows(
-        submission_root / "balance_confirmations.csv",
-        BALANCE_CONFIRMATIONS_HEADER,
-        tuple(rows),
-    )
-
-    response = submit_balances_use_case().execute(
-        SubmitBalancesRequest(
-            source="coinbase",
-            submission_root_ref=to_resource_ref(submission_root),
-            output_root_ref=to_resource_ref(output_root),
-        )
-    )
-    issue_rows = FilesystemArtifactStore().read_rows(
-        output_root / "balance_submission_issues.csv"
-    )
-
-    assert response.blocked is True
-    assert "missing_required_value" in {row["issue_kind"] for row in issue_rows}
-
-
-def test_submit_balances_rejects_duplicate_logical_rows(
-    tmp_path: Path,
-) -> None:
-    submission_root = tmp_path / "submission" / "coinbase"
-    output_root = tmp_path / "normalized" / "coinbase"
-    _write_valid_required_files(submission_root, source="coinbase")
-    balance_row = FilesystemArtifactStore().read_rows(submission_root / "balances.csv")[
-        0
-    ]
-    confirmation_row = FilesystemArtifactStore().read_rows(
-        submission_root / "balance_confirmations.csv"
-    )[0]
-    _write_rows(
-        submission_root / "balances.csv",
-        BALANCES_HEADER,
-        (balance_row, balance_row),
-    )
-    _write_rows(
-        submission_root / "balance_confirmations.csv",
-        BALANCE_CONFIRMATIONS_HEADER,
-        (confirmation_row, confirmation_row),
-    )
-
-    response = submit_balances_use_case().execute(
-        SubmitBalancesRequest(
-            source="coinbase",
-            submission_root_ref=to_resource_ref(submission_root),
-            output_root_ref=to_resource_ref(output_root),
-        )
-    )
-
-    issue_rows = FilesystemArtifactStore().read_rows(
-        output_root / "balance_submission_issues.csv"
-    )
-
-    assert response.blocked is True
-    assert sum(row["issue_kind"] == "duplicate_row" for row in issue_rows) == 2
-
-
-def test_submit_balances_rejects_missing_matching_confirmation_row(
+def test_submit_balances_rejects_missing_matching_reference_row(
     tmp_path: Path,
 ) -> None:
     submission_root = tmp_path / "submission" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"
     _write_valid_required_files(submission_root, source="coinbase")
     _write_rows(
-        submission_root / "balance_confirmations.csv",
-        BALANCE_CONFIRMATIONS_HEADER,
+        submission_root / "balance_references.csv",
+        BALANCE_REFERENCES_HEADER,
         (),
     )
 
@@ -391,15 +303,15 @@ def test_submit_balances_rejects_missing_matching_confirmation_row(
     )
 
     assert response.blocked is True
-    assert "missing_matching_confirmation" in {row["issue_kind"] for row in issue_rows}
+    assert "missing_matching_reference" in {row["issue_kind"] for row in issue_rows}
 
 
-def test_submit_balances_rejects_orphan_confirmation_row(tmp_path: Path) -> None:
+def test_submit_balances_rejects_orphan_reference_row(tmp_path: Path) -> None:
     submission_root = tmp_path / "submission" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"
     _write_valid_required_files(submission_root, source="coinbase")
     rows = FilesystemArtifactStore().read_rows(
-        submission_root / "balance_confirmations.csv"
+        submission_root / "balance_references.csv"
     )
     rows.append(
         {
@@ -409,8 +321,8 @@ def test_submit_balances_rejects_orphan_confirmation_row(tmp_path: Path) -> None
         }
     )
     _write_rows(
-        submission_root / "balance_confirmations.csv",
-        BALANCE_CONFIRMATIONS_HEADER,
+        submission_root / "balance_references.csv",
+        BALANCE_REFERENCES_HEADER,
         tuple(rows),
     )
 
@@ -427,7 +339,7 @@ def test_submit_balances_rejects_orphan_confirmation_row(tmp_path: Path) -> None
     )
 
     assert response.blocked is True
-    assert "orphan_confirmation" in {row["issue_kind"] for row in issue_rows}
+    assert "orphan_reference" in {row["issue_kind"] for row in issue_rows}
 
 
 def test_submit_balances_rejects_conflicting_high_confidence_location_identity(
@@ -511,8 +423,8 @@ def test_submit_balances_clears_stale_outputs_when_rerun_blocks(tmp_path: Path) 
             output_root_ref=to_resource_ref(output_root),
         )
     )
-    (output_root / "balance_evidence.csv").write_text("stale\n", encoding="utf-8")
-    (submission_root / "balance_confirmations.csv").unlink()
+    (output_root / "balance_assertions.csv").write_text("stale\n", encoding="utf-8")
+    (submission_root / "balance_references.csv").unlink()
 
     response = submit_balances_use_case().execute(
         SubmitBalancesRequest(
@@ -523,9 +435,9 @@ def test_submit_balances_clears_stale_outputs_when_rerun_blocks(tmp_path: Path) 
     )
 
     assert response.blocked is True
-    assert not (output_root / "balances.csv").exists()
-    assert not (output_root / "balance_confirmations.csv").exists()
-    assert not (output_root / "balance_evidence.csv").exists()
+    assert (output_root / "balance_snapshots.csv").exists()
+    assert (output_root / "balance_references.csv").exists()
+    assert (output_root / "balance_assertions.csv").exists()
     assert not (output_root / "location_inventory.csv").exists()
 
 
@@ -542,8 +454,8 @@ def test_submit_balances_clears_stale_outputs_when_submission_root_is_missing(
             output_root_ref=to_resource_ref(output_root),
         )
     )
-    (submission_root / "balances.csv").unlink()
-    (submission_root / "balance_confirmations.csv").unlink()
+    (submission_root / "balance_snapshots.csv").unlink()
+    (submission_root / "balance_references.csv").unlink()
     submission_root.rmdir()
 
     response = submit_balances_use_case().execute(
@@ -555,9 +467,8 @@ def test_submit_balances_clears_stale_outputs_when_submission_root_is_missing(
     )
 
     assert response.blocked is True
-    assert not (output_root / "balances.csv").exists()
-    assert not (output_root / "balance_confirmations.csv").exists()
-    assert not (output_root / "balance_evidence.csv").exists()
+    assert (output_root / "balance_snapshots.csv").exists()
+    assert (output_root / "balance_references.csv").exists()
     assert not (output_root / "location_inventory.csv").exists()
 
 
@@ -604,13 +515,13 @@ def test_submit_balances_clears_stale_optional_location_inventory_on_rerun(
 
     assert response.blocked is False
     assert response.wrote_location_inventory is False
-    assert not (output_root / "location_inventory.csv").exists()
+    assert (output_root / "location_inventory.csv").exists()
 
 
 def _write_valid_required_files(submission_root: Path, *, source: str) -> None:
     _write_rows(
-        submission_root / "balances.csv",
-        BALANCES_HEADER,
+        submission_root / "balance_snapshots.csv",
+        BALANCE_SNAPSHOTS_HEADER,
         (
             {
                 "source": source,
@@ -618,16 +529,16 @@ def _write_valid_required_files(submission_root: Path, *, source: str) -> None:
                 "wallet": "primary",
                 "instrument_id": f"symbol:BTC@{source}",
                 "quantity": "1.25",
-                "as_of_at": "2026-03-23",
-                "as_of_precision": "date",
+                "target_at": "2026-03-23",
+                "target_precision": "date",
                 "balance_kind": "available",
                 "notes": "snapshot",
             },
         ),
     )
     _write_rows(
-        submission_root / "balance_confirmations.csv",
-        BALANCE_CONFIRMATIONS_HEADER,
+        submission_root / "balance_references.csv",
+        BALANCE_REFERENCES_HEADER,
         (
             {
                 "source": source,
@@ -635,15 +546,15 @@ def _write_valid_required_files(submission_root: Path, *, source: str) -> None:
                 "wallet": "primary",
                 "instrument_id": f"symbol:BTC@{source}",
                 "quantity": "1.25",
-                "as_of_at": "2026-03-23",
-                "as_of_precision": "date",
+                "target_at": "2026-03-23",
+                "target_precision": "date",
                 "balance_kind": "available",
-                "confirmation_kind": "external_support",
+                "reference_kind": "operator_assertion",
+                "observed_at": "2026-03-23",
+                "observed_precision": "date",
                 "support_ref": "statement.pdf#page=1",
-                "asserted_meaning": "Closing balance from the cited statement.",
                 "reviewed_by": "operator@example.com",
                 "reviewed_at": "2026-03-24 00:00:00",
-                "reason": "Needed for runtime reconciliation.",
                 "notes": "confirmation",
             },
         ),

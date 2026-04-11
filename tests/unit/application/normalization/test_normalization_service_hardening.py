@@ -12,13 +12,16 @@ from reportlab.pdfgen import canvas
 from tallylot.adapters.support.drafts import symbol_claim
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
-from tallylot.domain.captures import ProvenanceLocator
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceTarget,
+)
 from tallylot.domain.instruments import (
     InstrumentId,
     InstrumentIdentityClaim,
     InstrumentKind,
 )
-from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
@@ -356,7 +359,8 @@ class IdentityBlockingAdapter(MatchingSourceAdapter):
                     provenance_refs=("prov:blocked",),
                 ),
             ),
-            balance_evidence=(),
+            balance_references=(),
+            balance_reference_issues=(),
             issues=(),
             reviews=(),
             location_inventory=(),
@@ -588,17 +592,24 @@ class EvidenceSourceAdapter(MatchingSourceAdapter):
                     tx_hash="tx-1",
                 ),
             ),
-            balance_evidence=(
-                BalanceEvidence(
-                    source=SourceId("fixture"),
-                    location_id=LocationId("fixture:primary"),
-                    instrument_id=InstrumentId("symbol:BTC"),
+            balance_references=(
+                BalanceReference(
+                    target=BalanceTarget(
+                        source=SourceId("fixture"),
+                        location_id=LocationId("fixture:primary"),
+                        instrument_id=InstrumentId("symbol:BTC"),
+                        balance_kind="available",
+                        target_at=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
+                        target_precision=TemporalPrecision.TIMESTAMP,
+                    ),
                     quantity=Decimal("2.5"),
-                    as_of_at=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
-                    as_of_precision=TemporalPrecision.TIMESTAMP,
-                    provenance=ProvenanceLocator.from_reference_ref("statement:page:1"),
+                    reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                    observed_at=datetime(2023, 8, 6, 12, 0, 0, tzinfo=UTC),
+                    observed_precision=TemporalPrecision.TIMESTAMP,
+                    support_ref="statement:page:1",
                 ),
             ),
+            balance_reference_issues=(),
             issues=(),
             reviews=(),
             location_inventory=(),
@@ -611,7 +622,8 @@ class StatementEvidenceSourceAdapter(MatchingSourceAdapter):
         del profile, raw_dir
         return SourceTranslationBatch(
             drafts=(),
-            balance_evidence=(),
+            balance_references=(),
+            balance_reference_issues=(),
             issues=(),
             reviews=(),
             location_inventory=(),
@@ -678,11 +690,16 @@ class EmptyFamilyTranslationAdapter(MatchingSourceAdapter):
     def translate(self, profile: object, raw_dir: Path) -> SourceTranslationBatch:
         del profile, raw_dir
         return SourceTranslationBatch(
-            drafts=(), balance_evidence=(), issues=(), reviews=(), location_inventory=()
+            drafts=(),
+            balance_references=(),
+            balance_reference_issues=(),
+            issues=(),
+            reviews=(),
+            location_inventory=(),
         )
 
 
-def test_normalization_service_persists_balance_evidence_separately_from_derived_balances(
+def test_normalization_service_persists_balance_references_separately_from_derived_balances(
     tmp_path: Path,
 ) -> None:
     raw_dir = materialize_capture_root(tmp_path, source="fixture")
@@ -703,8 +720,8 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
         )
     )
 
-    balance_rows = artifacts.read_rows(output_dir / "balances.csv")
-    balance_evidence_rows = artifacts.read_rows(output_dir / "balance_evidence.csv")
+    balance_rows = artifacts.read_rows(output_dir / "balance_snapshots.csv")
+    balance_reference_rows = artifacts.read_rows(output_dir / "balance_references.csv")
     summary = json.loads(
         (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
     )
@@ -715,32 +732,37 @@ def test_normalization_service_persists_balance_evidence_separately_from_derived
             "source": "fixture",
             "location_id": "fixture:primary",
             "instrument_id": "symbol:BTC",
-            "quantity": "1.5",
-            "as_of_at": "2023-08-06 10:00:00",
-            "as_of_precision": "timestamp",
             "balance_kind": "available",
+            "target_at": "2023-08-06 10:00:00",
+            "target_precision": "timestamp",
+            "quantity": "1.5",
+            "snapshot_basis": "fact_cutoff",
             "notes": "",
         }
     ]
-    assert balance_evidence_rows == [
+    assert balance_reference_rows == [
         {
             "source": "fixture",
             "location_id": "fixture:primary",
             "instrument_id": "symbol:BTC",
-            "quantity": "2.5",
-            "as_of_at": "2023-08-06 12:00:00",
-            "as_of_precision": "timestamp",
             "balance_kind": "available",
-            "capture_uid": "",
-            "relative_path": "statement:page:1",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "",
+            "target_at": "2023-08-06 12:00:00",
+            "target_precision": "timestamp",
+            "quantity": "2.5",
+            "reference_kind": "source_document",
+            "observed_at": "2023-08-06 12:00:00",
+            "observed_precision": "timestamp",
+            "support_ref": "statement:page:1",
+            "provider_family": "",
+            "provider_locator": "",
+            "provider_block_ref": "",
+            "reviewed_by": "",
+            "reviewed_at": "",
             "notes": "",
         }
     ]
-    assert summary["balance_count"] == 1
-    assert summary["balance_evidence_count"] == 1
+    assert summary["snapshot_count"] == 1
+    assert summary["reference_count"] == 1
 
 
 def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) -> None:
@@ -763,23 +785,27 @@ def test_normalization_service_uses_shared_statement_extraction(tmp_path: Path) 
         )
     )
 
-    balance_evidence_rows = artifacts.read_rows(output_dir / "balance_evidence.csv")
+    balance_reference_rows = artifacts.read_rows(output_dir / "balance_references.csv")
 
     assert response.balance_count == 0
-    assert balance_evidence_rows == [
+    assert balance_reference_rows == [
         {
             "source": "fixture",
             "location_id": "fixture",
             "instrument_id": "symbol:ETH",
-            "quantity": "3.5",
-            "as_of_at": "2023-08-06 12:00:00",
-            "as_of_precision": "timestamp",
             "balance_kind": "available",
-            "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
-            "relative_path": "statement.pdf",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "page=1",
+            "target_at": "2023-08-06 12:00:00",
+            "target_precision": "timestamp",
+            "quantity": "3.5",
+            "reference_kind": "source_document",
+            "observed_at": "2023-08-06 12:00:00",
+            "observed_precision": "timestamp",
+            "support_ref": "statement.pdf#page=1",
+            "provider_family": "",
+            "provider_locator": "",
+            "provider_block_ref": "",
+            "reviewed_by": "",
+            "reviewed_at": "",
             "notes": "",
         }
     ]

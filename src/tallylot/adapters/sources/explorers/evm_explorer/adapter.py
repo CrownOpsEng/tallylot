@@ -8,7 +8,7 @@ from tallylot.adapters.sources.explorers.evm_explorer.families import (
     classify_inventory_families,
 )
 from tallylot.adapters.sources.explorers.evm_explorer.portfolio_evidence import (
-    extract_portfolio_balance_evidence,
+    extract_portfolio_balance_references,
 )
 from tallylot.adapters.sources.explorers.evm_explorer.translation import (
     translate_transactions,
@@ -178,8 +178,8 @@ class _EvmExplorerAdapter:
             owned_addresses=_owned_addresses(raw_dir),
             network_scope=_network_scope(str(profile.source)),
         )
-        balance_evidence, evidence_issues, evidence_reviews = (
-            extract_portfolio_balance_evidence(
+        balance_references, evidence_issues, evidence_reviews = (
+            extract_portfolio_balance_references(
                 profile,
                 raw_dir,
                 location_inventory=location_inventory,
@@ -188,8 +188,9 @@ class _EvmExplorerAdapter:
         )
         return translation_batch_from_drafts(
             drafts,
-            balance_evidence=balance_evidence,
-            issues=(*issues, *location_issues, *evidence_issues),
+            balance_references=balance_references,
+            balance_reference_issues=evidence_issues,
+            issues=(*issues, *location_issues),
             reviews=evidence_reviews,
             location_inventory=location_inventory,
         )

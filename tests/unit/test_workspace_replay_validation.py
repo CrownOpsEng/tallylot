@@ -567,8 +567,8 @@ def test_source_metric_parity_allows_declared_issue_review_drift_only(
                     "binance": SourceMetrics(
                         source="binance",
                         fact_count=4,
-                        balance_count=2,
-                        balance_evidence_count=2,
+                        snapshot_count=2,
+                        reference_count=2,
                         issue_count=1,
                         review_count=3,
                     )
@@ -579,8 +579,8 @@ def test_source_metric_parity_allows_declared_issue_review_drift_only(
                     "binance": SourceMetrics(
                         source="binance",
                         fact_count=4,
-                        balance_count=2,
-                        balance_evidence_count=2,
+                        snapshot_count=2,
+                        reference_count=2,
                         issue_count=2,
                         review_count=1,
                     )
@@ -617,29 +617,29 @@ def test_source_metric_parity_allows_declared_issue_review_drift_only(
         SourceMetrics(
             source="binance",
             fact_count=5,
-            balance_count=2,
-            balance_evidence_count=2,
+            snapshot_count=2,
+            reference_count=2,
             issue_count=2,
             review_count=1,
         ),
         SourceMetrics(
             source="binance",
             fact_count=4,
-            balance_count=3,
-            balance_evidence_count=2,
+            snapshot_count=3,
+            reference_count=2,
             issue_count=2,
             review_count=1,
         ),
         SourceMetrics(
             source="binance",
             fact_count=4,
-            balance_count=2,
-            balance_evidence_count=3,
+            snapshot_count=2,
+            reference_count=3,
             issue_count=2,
             review_count=1,
         ),
     ),
-    ids=("fact-count", "balance-count", "balance-evidence-count"),
+    ids=("fact-count", "snapshot-count", "reference-count"),
 )
 def test_source_metric_parity_rejects_fact_balance_or_evidence_drift(
     tmp_path: Path,
@@ -659,8 +659,8 @@ def test_source_metric_parity_rejects_fact_balance_or_evidence_drift(
                     "binance": SourceMetrics(
                         source="binance",
                         fact_count=4,
-                        balance_count=2,
-                        balance_evidence_count=2,
+                        snapshot_count=2,
+                        reference_count=2,
                         issue_count=1,
                         review_count=1,
                     )

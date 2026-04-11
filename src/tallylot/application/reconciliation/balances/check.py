@@ -3,8 +3,19 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
+from tallylot.application.balances import (
+    BALANCE_ASSERTION_FILENAME,
+    BALANCE_CHECK_SUMMARY_FILENAME,
+    BALANCE_RECONCILIATION_SUMMARY_FILENAME,
+    BalanceReferenceResolver,
+    derive_balance_snapshots,
+    latest_balance_targets,
+    parse_target_time_values,
+    targets_for_as_of_values,
+)
 from tallylot.application.reconciliation.balances.contracts import (
     BalanceCheckRequest,
     BalanceCheckResponse,
@@ -29,19 +40,37 @@ from tallylot.application.workspace.filesystem import (
     ensure_directory,
     ensure_output_not_within_input_tree,
 )
-from tallylot.domain.reconciliation import assert_balance_snapshots
+from tallylot.domain.balances import BalanceReference, assert_balance_targets
+from tallylot.domain.issues import IssueRecord
 from tallylot.ports.artifacts import ArtifactStorePort
-from tallylot.ports.evidence import EvidenceRepositoryPort
+from tallylot.ports.balance_providers import BalanceProviderRegistryPort
+from tallylot.ports.evidence import EvidenceRepositoryPort, ISSUE_HEADER
+from tallylot.ports.facts import FactRepositoryPort
+
+
+@dataclass(frozen=True)
+class _ReferenceCacheUpdate:
+    existing_references: tuple[BalanceReference, ...]
+    resolved_references: tuple[BalanceReference, ...]
+    reference_issues: tuple[IssueRecord, ...]
 
 
 class BalanceCheckWorkflow:
     def __init__(
         self,
+        *,
+        facts: FactRepositoryPort,
         evidence: EvidenceRepositoryPort,
         artifacts: ArtifactStorePort,
+        providers: BalanceProviderRegistryPort | None = None,
     ) -> None:
+        self._facts = facts
         self._evidence = evidence
         self._artifacts = artifacts
+        self._resolver = BalanceReferenceResolver(
+            evidence=evidence,
+            providers=providers,
+        )
 
     def execute(self, request: BalanceCheckRequest) -> BalanceCheckResponse:
         input_root = path_from_ref(request.input_root_ref)
@@ -56,14 +85,16 @@ class BalanceCheckWorkflow:
             self._check_source_dir(
                 source_dir,
                 output_root=source_dir.output_root(
-                    output_root, single_source=single_source
+                    output_root,
+                    single_source=single_source,
                 ),
+                request=request,
             )
             for source_dir in source_dirs
             if _is_runnable_source_dir(source_dir)
         )
         ensure_directory(output_root)
-        check_summary_output_path = output_root / "balance_check_summary.csv"
+        check_summary_output_path = output_root / BALANCE_CHECK_SUMMARY_FILENAME
         self._artifacts.write_rows(
             check_summary_output_path,
             BALANCE_CHECK_SUMMARY_HEADER,
@@ -103,10 +134,11 @@ class BalanceCheckWorkflow:
         source_dir: BalanceSourceDir,
         *,
         output_root: Path,
+        request: BalanceCheckRequest,
     ) -> BalanceCheckSummaryRecord:
-        assertion_output_path = output_root / "balance_assertions.csv"
+        assertion_output_path = output_root / BALANCE_ASSERTION_FILENAME
         issue_output_path = output_root / "reconciliation_issues.csv"
-        summary_output_path = output_root / "balance_assertion_summary.json"
+        summary_output_path = output_root / BALANCE_RECONCILIATION_SUMMARY_FILENAME
         _ensure_output_paths_are_distinct(
             assertion_output_path,
             issue_output_path,
@@ -115,39 +147,53 @@ class BalanceCheckWorkflow:
         _ensure_source_output_paths_are_safe(source_dir, output_root)
         ensure_directory(output_root)
         try:
-            snapshots = self._evidence.read_balance_snapshots(source_dir.snapshot_path)
-            evidence = (
-                self._evidence.read_balance_evidence(source_dir.evidence_path)
-                if source_dir.evidence_path.is_file()
+            facts = self._facts.read_facts(source_dir.facts_path)
+            parsed_times = parse_target_time_values(request.as_of_values)
+            targets = (
+                targets_for_as_of_values(facts, parsed_times)
+                if parsed_times
+                else latest_balance_targets(facts)
+            )
+            snapshots, snapshot_issues = derive_balance_snapshots(facts, targets)
+            existing_references = (
+                self._evidence.read_balance_references(source_dir.reference_path)
+                if source_dir.reference_path.is_file()
                 else ()
             )
-            confirmations = (
-                self._evidence.read_balance_confirmations(source_dir.confirmation_path)
-                if source_dir.confirmation_path.is_file()
-                else ()
+            resolved_references, reference_issues = self._resolver.resolve(
+                existing_references=existing_references,
+                targets=targets,
+                hydrate_missing=request.hydrate_missing_references,
             )
-            result = assert_balance_snapshots(
-                snapshots,
-                evidence,
-                confirmations=confirmations,
+            _persist_reference_cache(
+                source_dir=source_dir,
+                artifacts=self._artifacts,
+                evidence=self._evidence,
+                update=_ReferenceCacheUpdate(
+                    existing_references=existing_references,
+                    resolved_references=resolved_references,
+                    reference_issues=reference_issues,
+                ),
             )
+            result = assert_balance_targets(snapshots, resolved_references)
+            all_issues = (*snapshot_issues, *reference_issues, *result.issues)
             self._artifacts.write_rows(
                 assertion_output_path,
                 BALANCE_ASSERTION_HEADER,
                 (assertion.to_row() for assertion in result.assertions),
             )
-            self._evidence.write_issue_records(issue_output_path, result.issues)
+            self._evidence.write_issue_records(issue_output_path, all_issues)
             self._artifacts.write_json(
                 summary_output_path,
                 {
                     "assertion_count": len(result.assertions),
-                    "issue_count": len(result.issues),
-                    "reference_basis_counts": dict(
+                    "issue_count": len(all_issues),
+                    "reference_kind_counts": dict(
                         sorted(
                             Counter(
-                                assertion.reference_basis
+                                assertion.selected_reference_kind.value
                                 for assertion in result.assertions
-                                if assertion.reference_basis
+                                if assertion.selected_reference_kind is not None
                             ).items()
                         )
                     ),
@@ -162,9 +208,9 @@ class BalanceCheckWorkflow:
                 min_assertion_date="",
                 max_assertion_date="",
                 latest_clean_checked_date="",
-                latest_source_backed_checked_date="",
+                latest_resolved_reference_checked_date="",
                 assertion_status_counts=(),
-                reference_basis_counts=(),
+                selected_reference_kind_counts=(),
                 issue_kind_counts=(),
                 error_message=str(exc),
             )
@@ -176,29 +222,23 @@ class BalanceCheckWorkflow:
             for date_value in _assertion_row_dates(row)
         )
         matched_dates = tuple(
-            date_value
+            row["target_at"][:10]
             for row in assertion_rows
-            if row["status"] == "matched"
-            for date_value in _assertion_row_dates(row)
+            if row["status"] == "matched" and row.get("target_at", "").strip()
         )
         check_status = _check_status(
             assertion_count=len(assertion_rows),
             issue_count=len(issue_rows),
         )
-        reference_basis_counts = tuple(
+        selected_reference_kind_counts = tuple(
             sorted(
                 Counter(
-                    row["reference_basis"]
+                    row["selected_reference_kind"]
                     for row in assertion_rows
-                    if row.get("reference_basis", "").strip()
+                    if row.get("selected_reference_kind", "").strip()
                 ).items()
             )
         )
-        reference_basis_values = {
-            row["reference_basis"]
-            for row in assertion_rows
-            if row.get("reference_basis", "").strip()
-        }
         return BalanceCheckSummaryRecord(
             source=source_dir.name,
             check_status=check_status,
@@ -209,17 +249,13 @@ class BalanceCheckWorkflow:
             latest_clean_checked_date=(
                 max(matched_dates) if check_status == "clean" and matched_dates else ""
             ),
-            latest_source_backed_checked_date=(
-                max(matched_dates)
-                if check_status == "clean"
-                and matched_dates
-                and reference_basis_values <= {"source_backed_evidence"}
-                else ""
+            latest_resolved_reference_checked_date=(
+                max(matched_dates) if matched_dates else ""
             ),
             assertion_status_counts=tuple(
                 sorted(Counter(row["status"] for row in assertion_rows).items())
             ),
-            reference_basis_counts=reference_basis_counts,
+            selected_reference_kind_counts=selected_reference_kind_counts,
             issue_kind_counts=tuple(
                 sorted(Counter(row["kind"] for row in issue_rows).items())
             ),
@@ -235,19 +271,67 @@ def _check_status(*, assertion_count: int, issue_count: int) -> str:
 
 
 def _is_runnable_source_dir(source_dir: BalanceSourceDir) -> bool:
-    return source_dir.snapshot_path.is_file() and (
-        source_dir.evidence_path.is_file() or source_dir.confirmation_path.is_file()
-    )
+    return source_dir.facts_path.is_file()
 
 
 def _assertion_row_dates(row: dict[str, str]) -> tuple[str, ...]:
     return tuple(
         value[:10]
         for value in (
-            row.get("snapshot_as_of_at", "").strip(),
-            row.get("evidence_as_of_at", "").strip(),
+            row.get("target_at", "").strip(),
+            row.get("observed_at", "").strip(),
         )
         if value
+    )
+
+
+def _persist_reference_cache(
+    *,
+    source_dir: BalanceSourceDir,
+    artifacts: ArtifactStorePort,
+    evidence: EvidenceRepositoryPort,
+    update: _ReferenceCacheUpdate,
+) -> None:
+    merged_references = {
+        (
+            reference.target,
+            reference.reference_kind.value,
+            reference.observed_at,
+            reference.observed_precision.value,
+            reference.support_ref,
+        ): reference
+        for reference in (*update.existing_references, *update.resolved_references)
+    }
+    evidence.write_balance_references(
+        source_dir.reference_path,
+        tuple(
+            merged_references[key]
+            for key in sorted(
+                merged_references,
+                key=lambda item: (
+                    str(item[0].source),
+                    str(item[0].location_id),
+                    str(item[0].instrument_id),
+                    item[0].balance_kind,
+                    item[0].target_at,
+                    item[1],
+                    item[2],
+                ),
+            )
+        ),
+    )
+    existing_issue_rows = (
+        artifacts.read_rows(source_dir.reference_issue_path)
+        if source_dir.reference_issue_path.is_file()
+        else []
+    )
+    merged_issue_rows = {row["issue_id"]: row for row in existing_issue_rows}
+    for issue in update.reference_issues:
+        merged_issue_rows[issue.issue_id] = issue.to_row()
+    artifacts.write_rows(
+        source_dir.reference_issue_path,
+        ISSUE_HEADER,
+        tuple(merged_issue_rows.values()),
     )
 
 
@@ -264,9 +348,9 @@ def _ensure_source_output_paths_are_safe(
     source_dir: BalanceSourceDir, output_root: Path
 ) -> None:
     for input_label, input_path in (
+        ("balance facts input", source_dir.facts_path),
         ("balance snapshot input", source_dir.snapshot_path),
-        ("balance evidence input", source_dir.evidence_path),
-        ("balance confirmation input", source_dir.confirmation_path),
+        ("balance reference input", source_dir.reference_path),
     ):
         ensure_output_not_within_input_tree(
             input_path,

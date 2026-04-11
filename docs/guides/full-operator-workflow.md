@@ -63,8 +63,9 @@ part of the current round-close process.
   land under `working/normalized/sources/<source>/`.
 - `source assemble` owns that source dataset surface and rewrites its known
   generated files on rerun instead of leaving stale assembled artifacts behind.
-- Use normalization-owned `balances.csv` and `balance_evidence.csv` directly
-  when the source adapter already produced canonical balance artifacts.
+- Use normalization-owned `balance_snapshots.csv` and
+  `balance_references.csv` directly when the source adapter already produced
+  canonical balance artifacts.
 - When balances need to be authored manually, run
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission --source <source>`,
   fill the submission package under
@@ -72,12 +73,13 @@ part of the current round-close process.
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances --source <source>`
   and review `balance_submission_summary.json` plus
   `balance_submission_issues.csv`.
-- Run `reconciliation balances check` once canonical `balances.csv` and
-  a reference artifact are available for the runtime balance check.
-- Use normalization-owned `balance_evidence.csv` when the source is already
+- Run `reconciliation balances check` once canonical
+  `balance_snapshots.csv` and `balance_references.csv` are available for the
+  runtime balance check.
+- Use normalization-owned `source_document` rows when the source is already
   source-backed.
-- Use submission-owned `balance_confirmations.csv` when the source is only
-  operator-confirmed.
+- Use submission-owned `operator_assertion` rows when the source is only
+  operator-authored so far.
 - Treat source-backed checkpoint readiness separately from operator-confirmed
   runtime readiness.
 - Use `reconciliation balances inspect` plus
@@ -120,6 +122,6 @@ part of the current round-close process.
   for the scaffolded submission package contract and canonical materialization
   rules.
 - Use `checkpoint extract-pdf-balances` for supported Coinbase, Binance, and
-  Shakepay PDF statements when source-backed balance evidence is only
+  Shakepay PDF statements when source-backed balance references are only
   available in PDF form. The command uses the same statement extraction path
   as normalization.

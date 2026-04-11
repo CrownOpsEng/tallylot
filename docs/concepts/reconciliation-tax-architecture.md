@@ -277,8 +277,8 @@ Rules:
 ### 17. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
 
 Manual balance submission is a supported operational path for producing
-canonical `balances.csv` and `balance_confirmations.csv`, but it is not an
-adapter-owned schema.
+canonical `balance_snapshots.csv` and `balance_references.csv`, but it is not
+an adapter-owned schema.
 
 Rules:
 
@@ -290,11 +290,13 @@ Rules:
   `application/checkpoints/`
 - the canonical reconciliation schema still lives under the chosen output
   root, normally `working/normalized/sources/<source>/`
-- manual submission records operator-confirmed runtime references and must not
-  fabricate or widen source-backed `balance_evidence.csv`
-- runtime reconciliation may use source-backed evidence first and operator
-  confirmations second for uncovered balance keys
-- filing-ready checkpoint status still requires source-backed evidence
+- manual submission records `operator_assertion` runtime references and must
+  not fabricate or widen source-backed `source_document` references
+- runtime reconciliation resolves references through one unified
+  `balance_references.csv` artifact with precedence
+  `source_document`, `network_api`, then `operator_assertion`
+- filing-ready checkpoint status still requires source-backed or otherwise
+  acceptable first-party references under the shared model
 - optional submitted `location_inventory.csv` improves cross-source
   corroboration, but omitting it does not block source-local balance checks
 - manual submission must preserve explicit user-provided `instrument_id`
@@ -312,8 +314,8 @@ is inherently specific.
 
 - `domain/transactions/`
   - transaction facts, legs, valuations, ids, corrections, projection enums
-- `domain/reconciliation/`
-  - balance assertions, transfer links, checkpoint continuity, materiality rules
+- `domain/balances/`
+  - balance targets, snapshots, references, assertions, and selection rules
 - `domain/accounting/`
   - journal entries, postings, balance checks, journal intents
 - `domain/tax/`
@@ -332,6 +334,9 @@ is inherently specific.
 - `application/normalization/`
   - orchestrate one capture's translation into fact artifacts and source-backed
     evidence
+- `application/balances/`
+  - target planning, snapshot derivation, reference resolution, provider
+    hydration, and assertion assembly
 - `application/normalization/assembly/`
   - deterministic merge of accepted capture outputs into assembled
     source-scoped normalization datasets
@@ -394,12 +399,12 @@ Rules:
   manipulation, verification, and workflow policy belong in application and
   domain code.
 - application services own derived-balance assembly. Adapters return balance
-  evidence only when the source actually provides it.
-- normalization owns production statement-backed balance evidence for supported
-  providers through the shared statement extraction seam. Adapters may publish
-  canonical quantity evidence through `SourceTranslationBatch.balance_evidence`,
-  but market-value totals and other valuation-only rows are not canonical
-  balance assertions.
+  references only when the source actually provides them.
+- normalization owns production statement-backed `source_document` references
+  for supported providers through the shared statement extraction seam.
+  Adapters may publish canonical quantity evidence through
+  `SourceTranslationBatch.balance_references`, but market-value totals and
+  other valuation-only rows are not canonical balance assertions.
 - adapters may declare numeric precision expectations for source fields when
   decimal scale is part of the source contract. Shared adapter support should
   validate displayed raw-text fractional digits and support exact or minimum
@@ -517,8 +522,8 @@ The only lost capability should be comparison against the external oracle.
 
 ### Current Normalization Window Contract
 
-- Runtime timestamps are timezone-aware UTC in drafts, facts, balances, and
-  balance evidence. Persisted artifact timestamp text remains
+- Runtime timestamps are timezone-aware UTC in drafts, facts, balance
+  snapshots, and balance references. Persisted artifact timestamp text remains
   `YYYY-MM-DD HH:MM:SS` and is interpreted as UTC on read.
 - Fields that may be date-only or exact-time persist both `*_at` and
   `*_precision` so exact midnight timestamps remain distinguishable from
@@ -526,22 +531,21 @@ The only lost capability should be comparison against the external oracle.
 - `facts.csv` is schema-versioned and readers fail fast on unexpected
   `schema_version` values; re-deriving artifacts from raw evidence is the
   supported recovery path after fact-shape breaks.
-- `balances.csv`, `balance_evidence.csv`, and `balance_confirmations.csv`
-  persist canonical `instrument_id` values and use `as_of_at` plus
-  `as_of_precision` rather than bare symbol or timestamp columns.
+- `balance_snapshots.csv` and `balance_references.csv` persist canonical
+  `instrument_id` values and use `target_at` plus `target_precision`; balance
+  references also persist `observed_at` plus `observed_precision`.
 - cross-source balance corroboration is additive in the first release. It
-  consumes normalized `balances.csv` plus `location_inventory.csv`, writes
+  consumes normalized balance snapshots plus `location_inventory.csv`, writes
   sidecar corroboration artifacts, and does not redefine the primary
   source-local clean-date gate yet.
 - Windowed normalization applies to:
   - `facts.csv`
   - `fact_annotations.json`
-  - `balances.csv`
+  - `balance_snapshots.csv`
   - `exceptions.csv`
   - `normalization_reviews.csv`
 - Windowed normalization does not apply to:
-  - `balance_evidence.csv`
-  - `balance_confirmations.csv`
+  - `balance_references.csv`
   - `location_inventory.csv`
 - source-scope portfolio evidence that does not itself prove wallet ownership,
   such as MetaMask portfolio CSV rows, may contribute balance evidence only for
@@ -937,9 +941,9 @@ Do not:
 ### Reconciliation
 
 - transfer pairing across owned wallets and exchanges
-- exact balance assertion workflow over `balances.csv` with
-  source-backed `balance_evidence.csv` precedence and
-  `balance_confirmations.csv` fallback
+- exact balance assertion workflow over unified balance targets with
+  `source_document` precedence, optional `network_api` hydration, and
+  `operator_assertion` fallback
 - redistribution corrections
 - checkpoint balance assertions
 - forward continuity from oracle boundary to checkpoint

@@ -75,7 +75,7 @@ def test_balance_submission_skill_run_mode_does_not_guess_missing_values(
     assert payload["blocked"] is True
     assert payload["stage"] == "inspect"
     assert payload["ready_for_submit"] is False
-    assert not (output_root / "balances.csv").exists()
+    assert not (output_root / "balance_snapshots.csv").exists()
 
 
 def test_balance_submission_skill_submit_writes_runtime_artifacts(
@@ -87,15 +87,15 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
     output_root = tmp_path / "normalized" / "manual-source"
     artifacts = FilesystemArtifactStore()
     artifacts.write_rows(
-        submission_root / "balances.csv",
+        submission_root / "balance_snapshots.csv",
         (
             "source",
             "account",
             "wallet",
             "instrument_id",
             "quantity",
-            "as_of_at",
-            "as_of_precision",
+            "target_at",
+            "target_precision",
             "balance_kind",
             "notes",
         ),
@@ -106,30 +106,30 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
                 "wallet": "primary",
                 "instrument_id": "symbol:BTC",
                 "quantity": "1.25",
-                "as_of_at": "2026-03-23",
-                "as_of_precision": "date",
+                "target_at": "2026-03-23",
+                "target_precision": "date",
                 "balance_kind": "available",
                 "notes": "",
             },
         ),
     )
     artifacts.write_rows(
-        submission_root / "balance_confirmations.csv",
+        submission_root / "balance_references.csv",
         (
             "source",
             "account",
             "wallet",
             "instrument_id",
             "quantity",
-            "as_of_at",
-            "as_of_precision",
+            "target_at",
+            "target_precision",
             "balance_kind",
-            "confirmation_kind",
+            "reference_kind",
+            "observed_at",
+            "observed_precision",
             "support_ref",
-            "asserted_meaning",
             "reviewed_by",
             "reviewed_at",
-            "reason",
             "notes",
         ),
         (
@@ -139,15 +139,15 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
                 "wallet": "primary",
                 "instrument_id": "symbol:BTC",
                 "quantity": "1.25",
-                "as_of_at": "2026-03-23",
-                "as_of_precision": "date",
+                "target_at": "2026-03-23",
+                "target_precision": "date",
                 "balance_kind": "available",
-                "confirmation_kind": "external_support",
+                "reference_kind": "operator_assertion",
+                "observed_at": "2026-03-23",
+                "observed_precision": "date",
                 "support_ref": "manual-note:test",
-                "asserted_meaning": "Closing balance from the cited note.",
                 "reviewed_by": "operator@example.com",
                 "reviewed_at": "2026-03-24 00:00:00",
-                "reason": "Needed for runtime reconciliation.",
                 "notes": "",
             },
         ),
@@ -174,10 +174,8 @@ def test_balance_submission_skill_submit_writes_runtime_artifacts(
     assert captured.err == ""
     payload = json.loads(captured.out)
     assert payload["blocked"] is False
-    assert payload["trust_tier"] == "operator_confirmed"
     assert payload["summary_path"] == str(
         output_root / "balance_submission_summary.json"
     )
-    assert (output_root / "balances.csv").exists()
-    assert (output_root / "balance_confirmations.csv").exists()
-    assert not (output_root / "balance_evidence.csv").exists()
+    assert (output_root / "balance_snapshots.csv").exists()
+    assert (output_root / "balance_references.csv").exists()

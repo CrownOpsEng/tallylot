@@ -11,8 +11,7 @@ from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.captures import SOURCE_CAPTURE_HEADER, SOURCE_INVENTORY_HEADER
 from tallylot.ports.evidence import (
-    BALANCE_CONFIRMATION_HEADER,
-    BALANCE_EVIDENCE_HEADER,
+    BALANCE_REFERENCE_HEADER,
     BALANCE_SNAPSHOT_HEADER,
     ISSUE_HEADER,
     LOCATION_INVENTORY_HEADER,
@@ -65,8 +64,8 @@ def test_source_assembly_merges_normalized_captures_and_excludes_overlap(
     summary = json.loads(
         (assembled_root / "assembly_summary.json").read_text(encoding="utf-8")
     )
-    balance_rows = artifacts.read_rows(assembled_root / "balances.csv")
-    evidence_rows = artifacts.read_rows(assembled_root / "balance_evidence.csv")
+    balance_rows = artifacts.read_rows(assembled_root / "balance_snapshots.csv")
+    evidence_rows = artifacts.read_rows(assembled_root / "balance_references.csv")
     source_rows = artifacts.read_rows(
         workspace_root / "analysis" / "issues" / "source_inventory.csv"
     )
@@ -76,9 +75,8 @@ def test_source_assembly_merges_normalized_captures_and_excludes_overlap(
     assert summary["included_capture_uids"] == ["01HV4A5H7VJH7M3Y5A6B7C8D9E"]
     assert summary["excluded_capture_uids"] == ["01HV4A5H7VJH7M3Y5A6B7C8D9F"]
     assert balance_rows[0]["quantity"] == "1.0"
-    assert evidence_rows[0]["capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
-    assert evidence_rows[0]["relative_path"] == "statement-a.pdf"
-    assert evidence_rows[0]["anchor"] == "page=1"
+    assert evidence_rows[0]["reference_kind"] == "source_document"
+    assert evidence_rows[0]["support_ref"] == "statement-a.pdf#page=1"
     assert source_rows[0]["assembly_status"] == "assembled"
     assert source_rows[0]["assembled_root_ref"] == "working/normalized/sources/coinbase"
 
@@ -124,9 +122,9 @@ def test_source_assembly_surfaces_semantic_balance_conflicts(
     assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
     issue_rows = artifacts.read_rows(assembled_root / "assembly_issues.csv")
 
-    assert response.balance_count == 2
+    assert response.balance_snapshot_count == 2
     assert issue_rows[0]["kind"] == "assembly_semantic_conflict"
-    assert issue_rows[0]["raw_file"] == "balances.csv"
+    assert issue_rows[0]["raw_file"] == "balance_snapshots.csv"
 
 
 def test_source_assembly_removes_stale_optional_generated_artifacts_on_rerun(
@@ -146,7 +144,7 @@ def test_source_assembly_removes_stale_optional_generated_artifacts_on_rerun(
         artifacts,
         capture_root,
         quantity="1.0",
-        write_confirmation=True,
+        write_reference=True,
     )
     assembled_root = workspace_root / "working" / "normalized" / "sources" / "coinbase"
 
@@ -159,7 +157,7 @@ def test_source_assembly_removes_stale_optional_generated_artifacts_on_rerun(
     (assembled_root / "operator-notes.txt").write_text(
         "operator-owned", encoding="utf-8"
     )
-    (capture_root / "balance_confirmations.csv").unlink()
+    (capture_root / "balance_references.csv").unlink()
 
     AssembleSourceUseCase(artifacts).execute(
         AssembleSourceRequest(
@@ -168,7 +166,7 @@ def test_source_assembly_removes_stale_optional_generated_artifacts_on_rerun(
         )
     )
 
-    assert not (assembled_root / "balance_confirmations.csv").exists()
+    assert artifacts.read_rows(assembled_root / "balance_references.csv") == []
     assert (assembled_root / "operator-notes.txt").read_text(
         encoding="utf-8"
     ) == "operator-owned"
@@ -364,7 +362,10 @@ def test_source_assembly_reincludes_restored_missing_capture_output(
 
     assert response.included_capture_count == 1
     assert response.excluded_capture_count == 0
-    assert artifacts.read_rows(assembled_root / "balances.csv")[0]["quantity"] == "1.0"
+    assert (
+        artifacts.read_rows(assembled_root / "balance_snapshots.csv")[0]["quantity"]
+        == "1.0"
+    )
     assert capture_rows[-1]["status"] == "assembly_included"
     assert source_rows[0]["status"] == "assembled"
     assert source_rows[0]["assembly_status"] == "assembled"
@@ -402,7 +403,7 @@ def test_source_assembly_preserves_policy_exclusion_after_rerun(
 
     assert response.included_capture_count == 0
     assert response.excluded_capture_count == 1
-    assert not artifacts.read_rows(assembled_root / "balances.csv")
+    assert not artifacts.read_rows(assembled_root / "balance_snapshots.csv")
     assert capture_rows[-1]["status"] == "assembly_excluded"
 
 
@@ -439,7 +440,10 @@ def test_source_assembly_honors_policy_resolution_before_missing_output_rerun(
 
     assert response.included_capture_count == 1
     assert response.excluded_capture_count == 0
-    assert artifacts.read_rows(assembled_root / "balances.csv")[0]["quantity"] == "2.0"
+    assert (
+        artifacts.read_rows(assembled_root / "balance_snapshots.csv")[0]["quantity"]
+        == "2.0"
+    )
     assert capture_rows[-1]["status"] == "assembly_included"
 
 
@@ -509,42 +513,51 @@ def _write_capture_outputs(
     root: Path,
     *,
     quantity: str,
-    write_confirmation: bool = False,
+    write_reference: bool = False,
 ) -> None:
     artifacts.write_rows(root / "facts.csv", FACT_HEADER, ())
     artifacts.write_json(root / "fact_annotations.json", [])
     artifacts.write_rows(
-        root / "balances.csv",
+        root / "balance_snapshots.csv",
         BALANCE_SNAPSHOT_HEADER,
         (_balance_row(quantity=quantity),),
     )
     artifacts.write_rows(
-        root / "balance_evidence.csv",
-        BALANCE_EVIDENCE_HEADER,
+        root / "balance_references.csv",
+        BALANCE_REFERENCE_HEADER,
         (
             {
-                **_balance_row(quantity=quantity),
-                "capture_uid": root.name,
-                "relative_path": "statement-a.pdf",
-                "archive_member_path": "",
-                "locator_kind": "raw_file",
-                "anchor": "page=1",
+                **_reference_row(quantity=quantity),
+                "reference_kind": "source_document",
+                "observed_at": "2026-03-23",
+                "observed_precision": "date",
+                "support_ref": "statement-a.pdf#page=1",
+                "provider_family": "",
+                "provider_locator": "",
+                "provider_block_ref": "",
+                "reviewed_by": "",
+                "reviewed_at": "",
+                "notes": "",
             },
         ),
     )
-    if write_confirmation:
+    if write_reference:
         artifacts.write_rows(
-            root / "balance_confirmations.csv",
-            BALANCE_CONFIRMATION_HEADER,
+            root / "balance_references.csv",
+            BALANCE_REFERENCE_HEADER,
             (
                 {
-                    **_balance_row(quantity=quantity),
-                    "confirmation_kind": "manual_assertion",
+                    **_reference_row(quantity=quantity),
+                    "reference_kind": "operator_assertion",
+                    "observed_at": "2026-03-23",
+                    "observed_precision": "date",
                     "support_ref": "operator",
-                    "asserted_meaning": "operator confirmed balance",
+                    "provider_family": "",
+                    "provider_locator": "",
+                    "provider_block_ref": "",
                     "reviewed_by": "operator",
                     "reviewed_at": "2026-03-24 00:00:00",
-                    "reason": "test fixture",
+                    "notes": "test fixture",
                 },
             ),
         )
@@ -594,8 +607,21 @@ def _balance_row(*, quantity: str) -> dict[str, str]:
         "location_id": "coinbase:primary",
         "instrument_id": "symbol:BTC@coinbase",
         "quantity": quantity,
-        "as_of_at": "2026-03-23",
-        "as_of_precision": "date",
+        "target_at": "2026-03-23",
+        "target_precision": "date",
         "balance_kind": "available",
+        "snapshot_basis": "fact_cutoff",
         "notes": "",
+    }
+
+
+def _reference_row(*, quantity: str) -> dict[str, str]:
+    return {
+        "source": "coinbase",
+        "location_id": "coinbase:primary",
+        "instrument_id": "symbol:BTC@coinbase",
+        "quantity": quantity,
+        "target_at": "2026-03-23",
+        "target_precision": "date",
+        "balance_kind": "available",
     }

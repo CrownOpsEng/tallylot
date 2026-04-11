@@ -589,20 +589,21 @@ def test_future_capability_roots_remain_available_for_next_phase() -> None:
     src_root = repo_root() / "src" / "tallylot"
 
     required_packages = (
+        src_root / "application" / "balances",
         src_root / "application" / "reconciliation",
         src_root / "application" / "checkpoints",
         src_root / "application" / "accounting",
         src_root / "application" / "tax",
+        src_root / "domain" / "balances",
         src_root / "domain" / "accounting",
         src_root / "domain" / "tax",
         src_root / "domain" / "transactions",
-        src_root / "domain" / "checkpoints",
-        src_root / "domain" / "reconciliation",
         src_root / "infrastructure" / "composition",
     )
     required_modules = (
         src_root / "ports" / "facts.py",
         src_root / "ports" / "evidence.py",
+        src_root / "ports" / "balance_providers.py",
         src_root / "ports" / "source_translation.py",
         src_root / "ports" / "source_adapters.py",
         src_root / "ports" / "output_adapters.py",
@@ -822,11 +823,11 @@ def test_projection_hint_runtime_values_remain_machine_oriented() -> None:
     assert ProjectionHint.WITHDRAWAL.value == "withdrawal"
 
 
-def test_balance_evidence_has_single_production_owner() -> None:
+def test_balance_reference_has_single_production_owner() -> None:
     occurrences = 0
     for path in _python_files(repo_root() / "src" / "tallylot"):
         text = path.read_text(encoding="utf-8")
-        occurrences += text.count("class BalanceEvidence")
+        occurrences += text.count("class BalanceReference:")
     assert occurrences == 1
 
 

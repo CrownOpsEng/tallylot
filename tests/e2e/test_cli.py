@@ -8,15 +8,32 @@ from pathlib import Path
 from reportlab.pdfgen import canvas
 from typer.testing import CliRunner
 
-from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.checkpoints import BalanceSnapshot
-from tallylot.domain.instruments import InstrumentId
-from tallylot.domain.reconciliation import BalanceEvidence
-from tallylot.domain.temporal import TemporalPrecision
-from tallylot.domain.types import LocationId, SourceId
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceSnapshot,
+    BalanceTarget,
+)
 from tallylot.application.capture_paths import default_capture_normalized_root
+from tallylot.domain.instruments import InstrumentId
+from tallylot.domain.temporal import TemporalPrecision
+from tallylot.domain.transactions import (
+    SINGLE_PRIMARY_ACTIVITY_POLICY,
+    AccountingIntentHint,
+    EconomicKind,
+    EconomicLeg,
+    FactSemantics,
+    LegKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+    TransactionFact,
+)
+from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from tallylot.infrastructure.storage import FilesystemEvidenceRepository
+from tallylot.infrastructure.storage import (
+    FilesystemEvidenceRepository,
+    FilesystemFactRepository,
+)
 from tallylot.interfaces.cli import app
 from tallylot.ports.captures import SOURCE_CAPTURE_HEADER, SOURCE_INVENTORY_HEADER
 from tallylot.ports.evidence import (
@@ -347,29 +364,39 @@ def test_source_assemble_cli_writes_assembled_source_dataset(tmp_path: Path) -> 
     artifacts.write_rows(capture_root / "facts.csv", FACT_HEADER, ())
     artifacts.write_json(capture_root / "fact_annotations.json", [])
     FilesystemEvidenceRepository().write_balance_snapshots(
-        capture_root / "balances.csv",
+        capture_root / "balance_snapshots.csv",
         (
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase:primary"),
-                instrument_id=InstrumentId("symbol:BTC@coinbase"),
+                target=BalanceTarget(
+                    source=SourceId("coinbase"),
+                    location_id=LocationId("coinbase:primary"),
+                    instrument_id=InstrumentId("symbol:BTC@coinbase"),
+                    balance_kind="available",
+                    target_at=as_of,
+                    target_precision=TemporalPrecision.DATE,
+                ),
                 quantity=Decimal("1.0"),
-                as_of_at=as_of,
-                as_of_precision=TemporalPrecision.DATE,
+                snapshot_basis="fact_cutoff",
             ),
         ),
     )
-    FilesystemEvidenceRepository().write_balance_evidence(
-        capture_root / "balance_evidence.csv",
+    FilesystemEvidenceRepository().write_balance_references(
+        capture_root / "balance_references.csv",
         (
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase:primary"),
-                instrument_id=InstrumentId("symbol:BTC@coinbase"),
+            BalanceReference(
+                target=BalanceTarget(
+                    source=SourceId("coinbase"),
+                    location_id=LocationId("coinbase:primary"),
+                    instrument_id=InstrumentId("symbol:BTC@coinbase"),
+                    balance_kind="available",
+                    target_at=as_of,
+                    target_precision=TemporalPrecision.DATE,
+                ),
                 quantity=Decimal("1.0"),
-                as_of_at=as_of,
-                as_of_precision=TemporalPrecision.DATE,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=as_of,
+                observed_precision=TemporalPrecision.DATE,
+                support_ref="statement.pdf#page=1",
             ),
         ),
     )
@@ -403,7 +430,9 @@ def test_source_assemble_cli_writes_assembled_source_dataset(tmp_path: Path) -> 
     payload = json.loads(result.stdout)
     assert payload["included_capture_count"] == 1
     assert (assembled_root / "assembly_summary.json").exists()
-    assert FilesystemArtifactStore().read_rows(assembled_root / "balance_evidence.csv")
+    assert FilesystemArtifactStore().read_rows(
+        assembled_root / "balance_references.csv"
+    )
 
 
 def test_source_intake_cli_uses_workspace_source_label_map(tmp_path: Path) -> None:
@@ -841,8 +870,10 @@ def test_checkpoint_scaffold_balance_submission_cli(tmp_path: Path) -> None:
     assert result.exit_code == 0
     assert payload["source"] == "coinbase"
     assert (submission_root / "README.md").exists()
-    assert (submission_root / "balances.csv.example").exists()
-    assert not (submission_root / "balances.csv").exists()
+    assert (submission_root / "balance_snapshots.csv.example").exists()
+    assert (submission_root / "balance_references.csv.example").exists()
+    assert not (submission_root / "balance_snapshots.csv").exists()
+    assert not (submission_root / "balance_references.csv").exists()
 
 
 def test_checkpoint_submit_balances_cli(tmp_path: Path) -> None:
@@ -868,10 +899,11 @@ def test_checkpoint_submit_balances_cli(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert payload["blocked"] is False
-    assert payload["trust_tier"] == "operator_confirmed"
-    assert (output_root / "balances.csv").exists()
-    assert (output_root / "balance_confirmations.csv").exists()
-    assert not (output_root / "balance_evidence.csv").exists()
+    assert payload["ready_for_balance_check"] is True
+    assert payload["wrote_balance_snapshots"] is True
+    assert payload["wrote_balance_references"] is True
+    assert (output_root / "balance_snapshots.csv").exists()
+    assert (output_root / "balance_references.csv").exists()
     assert (output_root / "balance_submission_summary.json").exists()
 
 
@@ -881,15 +913,15 @@ def test_checkpoint_submit_balances_cli_blocks_when_required_file_missing(
     submission_root = tmp_path / "supporting" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"
     FilesystemArtifactStore().write_rows(
-        submission_root / "balances.csv",
+        submission_root / "balance_snapshots.csv",
         (
             "source",
             "account",
             "wallet",
             "instrument_id",
             "quantity",
-            "as_of_at",
-            "as_of_precision",
+            "target_at",
+            "target_precision",
             "balance_kind",
             "notes",
         ),
@@ -900,8 +932,8 @@ def test_checkpoint_submit_balances_cli_blocks_when_required_file_missing(
                 "wallet": "primary",
                 "instrument_id": "symbol:BTC@coinbase",
                 "quantity": "1.25",
-                "as_of_at": "2026-03-23",
-                "as_of_precision": "date",
+                "target_at": "2026-03-23",
+                "target_precision": "date",
                 "balance_kind": "available",
                 "notes": "",
             },
@@ -936,7 +968,7 @@ def test_checkpoint_submit_balances_cli_blocks_for_bad_header(tmp_path: Path) ->
     submission_root = tmp_path / "supporting" / "coinbase"
     output_root = tmp_path / "normalized" / "coinbase"
     _write_submission_rows(submission_root, source="coinbase")
-    (submission_root / "balances.csv").write_text(
+    (submission_root / "balance_snapshots.csv").write_text(
         "source,wallet,instrument_id\ncoinbase,primary,symbol:BTC@coinbase\n",
         encoding="utf-8",
     )
@@ -1023,6 +1055,18 @@ def test_submitted_balance_output_can_be_checked_by_reconciliation_cli(
     normalized_root = tmp_path / "normalized" / "coinbase"
     analysis_root = tmp_path / "analysis"
     _write_submission_rows(submission_root, source="coinbase")
+    FilesystemFactRepository().write_facts(
+        normalized_root / "facts.csv",
+        (
+            _fact(
+                source="coinbase",
+                instrument_id="symbol:BTC@coinbase",
+                quantity="1.25",
+                as_of=datetime(2026, 3, 23, tzinfo=UTC),
+                location_id="coinbase:primary:primary",
+            ),
+        ),
+    )
 
     submit_result = runner.invoke(
         app,
@@ -1047,6 +1091,8 @@ def test_submitted_balance_output_can_be_checked_by_reconciliation_cli(
             str(normalized_root),
             "--output-root",
             str(analysis_root),
+            "--as-of",
+            "2026-03-23",
         ],
     )
 
@@ -1066,30 +1112,52 @@ def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None
     as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
     input_root.mkdir()
 
-    FilesystemEvidenceRepository().write_balance_snapshots(
-        input_root / "balances.csv",
+    FilesystemFactRepository().write_facts(
+        input_root / "facts.csv",
         (
-            BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
-                quantity=Decimal("1.0"),
-                as_of_at=as_of,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+            _fact(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                as_of=as_of,
+                location_id="coinbase",
             ),
         ),
     )
-    FilesystemEvidenceRepository().write_balance_evidence(
-        input_root / "balance_evidence.csv",
+    FilesystemEvidenceRepository().write_balance_snapshots(
+        input_root / "balance_snapshots.csv",
         (
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+            BalanceSnapshot(
+                target=BalanceTarget(
+                    source=SourceId("coinbase"),
+                    location_id=LocationId("coinbase"),
+                    instrument_id=InstrumentId("BTC"),
+                    balance_kind="available",
+                    target_at=as_of,
+                    target_precision=TemporalPrecision.TIMESTAMP,
+                ),
+                quantity=Decimal("1.0"),
+                snapshot_basis="fact_cutoff",
+            ),
+        ),
+    )
+    FilesystemEvidenceRepository().write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            BalanceReference(
+                target=BalanceTarget(
+                    source=SourceId("coinbase"),
+                    location_id=LocationId("coinbase"),
+                    instrument_id=InstrumentId("BTC"),
+                    balance_kind="available",
+                    target_at=as_of,
+                    target_precision=TemporalPrecision.TIMESTAMP,
+                ),
                 quantity=Decimal("1.5"),
-                as_of_at=as_of,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=as_of,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
             ),
         ),
     )
@@ -1140,7 +1208,9 @@ def test_reconciliation_balance_commands_write_artifacts(tmp_path: Path) -> None
         analysis_root / "reconciliation_issues.csv"
     )
     assertion_summary = json.loads(
-        (analysis_root / "balance_assertion_summary.json").read_text(encoding="utf-8")
+        (analysis_root / "balance_reconciliation_summary.json").read_text(
+            encoding="utf-8"
+        )
     )
     reconciliation_summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
@@ -1162,29 +1232,39 @@ def test_reconciliation_balance_check_cli_rejects_output_inside_input_root(
     input_root.mkdir()
 
     FilesystemEvidenceRepository().write_balance_snapshots(
-        input_root / "balances.csv",
+        input_root / "balance_snapshots.csv",
         (
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=BalanceTarget(
+                    source=SourceId("coinbase"),
+                    location_id=LocationId("coinbase"),
+                    instrument_id=InstrumentId("BTC"),
+                    balance_kind="available",
+                    target_at=as_of,
+                    target_precision=TemporalPrecision.TIMESTAMP,
+                ),
                 quantity=Decimal("1.0"),
-                as_of_at=as_of,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
         ),
     )
-    FilesystemEvidenceRepository().write_balance_evidence(
-        input_root / "balance_evidence.csv",
+    FilesystemEvidenceRepository().write_balance_references(
+        input_root / "balance_references.csv",
         (
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+            BalanceReference(
+                target=BalanceTarget(
+                    source=SourceId("coinbase"),
+                    location_id=LocationId("coinbase"),
+                    instrument_id=InstrumentId("BTC"),
+                    balance_kind="available",
+                    target_at=as_of,
+                    target_precision=TemporalPrecision.TIMESTAMP,
+                ),
                 quantity=Decimal("1.0"),
-                as_of_at=as_of,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=as_of,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
             ),
         ),
     )
@@ -1210,15 +1290,15 @@ def test_reconciliation_balance_check_cli_rejects_output_inside_input_root(
 def _write_submission_rows(submission_root: Path, *, source: str) -> None:
     artifacts = FilesystemArtifactStore()
     artifacts.write_rows(
-        submission_root / "balances.csv",
+        submission_root / "balance_snapshots.csv",
         (
             "source",
             "account",
             "wallet",
             "instrument_id",
             "quantity",
-            "as_of_at",
-            "as_of_precision",
+            "target_at",
+            "target_precision",
             "balance_kind",
             "notes",
         ),
@@ -1229,30 +1309,30 @@ def _write_submission_rows(submission_root: Path, *, source: str) -> None:
                 "wallet": "primary",
                 "instrument_id": f"symbol:BTC@{source}",
                 "quantity": "1.25",
-                "as_of_at": "2026-03-23",
-                "as_of_precision": "date",
+                "target_at": "2026-03-23",
+                "target_precision": "date",
                 "balance_kind": "available",
                 "notes": "snapshot",
             },
         ),
     )
     artifacts.write_rows(
-        submission_root / "balance_confirmations.csv",
+        submission_root / "balance_references.csv",
         (
             "source",
             "account",
             "wallet",
             "instrument_id",
             "quantity",
-            "as_of_at",
-            "as_of_precision",
+            "target_at",
+            "target_precision",
             "balance_kind",
-            "confirmation_kind",
+            "reference_kind",
+            "observed_at",
+            "observed_precision",
             "support_ref",
-            "asserted_meaning",
             "reviewed_by",
             "reviewed_at",
-            "reason",
             "notes",
         ),
         (
@@ -1262,16 +1342,48 @@ def _write_submission_rows(submission_root: Path, *, source: str) -> None:
                 "wallet": "primary",
                 "instrument_id": f"symbol:BTC@{source}",
                 "quantity": "1.25",
-                "as_of_at": "2026-03-23",
-                "as_of_precision": "date",
+                "target_at": "2026-03-23",
+                "target_precision": "date",
                 "balance_kind": "available",
-                "confirmation_kind": "external_support",
+                "reference_kind": "operator_assertion",
+                "observed_at": "2026-03-23",
+                "observed_precision": "date",
                 "support_ref": "statement.pdf#page=1",
-                "asserted_meaning": "Closing balance from the cited statement.",
                 "reviewed_by": "operator@example.com",
                 "reviewed_at": "2026-03-24 00:00:00",
-                "reason": "Needed for runtime reconciliation.",
                 "notes": "confirmation",
             },
         ),
+    )
+
+
+def _fact(
+    *,
+    source: str,
+    instrument_id: str,
+    quantity: str,
+    as_of: datetime,
+    location_id: str,
+) -> TransactionFact:
+    return TransactionFact(
+        fact_id=TransactionId(f"{source}:{instrument_id}:{as_of.isoformat()}"),
+        source=SourceId(source),
+        adapter_id=AdapterId("structured_csv"),
+        timestamp=as_of,
+        location_id=LocationId(location_id),
+        semantics=FactSemantics(
+            economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
+            projection_hint=ProjectionHint.DEPOSIT,
+            accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+            tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
+        ),
+        legs=(
+            EconomicLeg(
+                leg_id="primary",
+                kind=LegKind.PRIMARY,
+                instrument_id=InstrumentId(instrument_id),
+                quantity=Decimal(quantity),
+            ),
+        ),
+        leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
     )

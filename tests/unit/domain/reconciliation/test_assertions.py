@@ -3,94 +3,93 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
-import pytest
-
-from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.checkpoints import BalanceSnapshot
-from tallylot.domain.instruments import InstrumentId
-from tallylot.domain.reconciliation import (
-    BalanceAssertion,
+from tallylot.domain.balances import (
     BalanceAssertionStatus,
-    BalanceConfirmation,
-    BalanceEvidence,
-    assert_balance_snapshots,
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceSnapshot,
+    BalanceTarget,
+    assert_balance_targets,
 )
+from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
 
 _AS_OF = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
 
 
-def test_assert_balance_snapshots_marks_exact_matches() -> None:
-    result = assert_balance_snapshots(
+def _target(instrument_id: str) -> BalanceTarget:
+    return BalanceTarget(
+        source=SourceId("coinbase"),
+        location_id=LocationId("coinbase"),
+        instrument_id=InstrumentId(instrument_id),
+        balance_kind="available",
+        target_at=_AS_OF,
+        target_precision=TemporalPrecision.TIMESTAMP,
+    )
+
+
+def test_assert_balance_targets_marks_exact_matches() -> None:
+    result = assert_balance_targets(
         snapshots=(
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("1.25"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
         ),
-        evidence=(
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+        references=(
+            BalanceReference(
+                target=_target("BTC"),
                 quantity=Decimal("1.25"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
             ),
         ),
     )
 
     assert result.issues == ()
     assert result.assertions[0].status is BalanceAssertionStatus.MATCHED
-    assert result.assertions[0].reference_basis == "source_backed_evidence"
-    assert result.assertions[0].quantity_difference == Decimal("0")
-    assert result.assertions[0].to_row()["evidence_ref"] == "statement.pdf#page=1"
+    assert (
+        result.assertions[0].selected_reference_kind
+        is BalanceReferenceKind.SOURCE_DOCUMENT
+    )
+    assert result.assertions[0].difference == Decimal("0")
+    assert result.assertions[0].to_row()["support_ref"] == "statement.pdf#page=1"
 
 
-def test_assert_balance_snapshots_emits_drift_and_missing_issues() -> None:
-    result = assert_balance_snapshots(
+def test_assert_balance_targets_emits_drift_and_missing_issues() -> None:
+    result = assert_balance_targets(
         snapshots=(
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("1.0"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("ETH"),
+                target=_target("ETH"),
                 quantity=Decimal("2.0"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
         ),
-        evidence=(
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+        references=(
+            BalanceReference(
+                target=_target("BTC"),
                 quantity=Decimal("1.5"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
             ),
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("SOL"),
+            BalanceReference(
+                target=_target("SOL"),
                 quantity=Decimal("3.0"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
             ),
         ),
     )
@@ -107,65 +106,55 @@ def test_assert_balance_snapshots_emits_drift_and_missing_issues() -> None:
     ]
 
 
-def test_assert_balance_snapshots_flags_timestamp_mismatch() -> None:
-    result = assert_balance_snapshots(
+def test_assert_balance_targets_accepts_observation_gap() -> None:
+    result = assert_balance_targets(
         snapshots=(
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("1.25"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
         ),
-        evidence=(
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+        references=(
+            BalanceReference(
+                target=_target("BTC"),
                 quantity=Decimal("1.25"),
-                as_of_at=datetime(2026, 1, 1, tzinfo=UTC),
-                as_of_precision=TemporalPrecision.DATE,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.NETWORK_API,
+                observed_at=datetime(2025, 12, 31, tzinfo=UTC),
+                observed_precision=TemporalPrecision.DATE,
+                provider_family="evm_json_rpc",
+                provider_block_ref="block:1",
             ),
         ),
     )
 
-    assert result.assertions[0].status is BalanceAssertionStatus.TIMESTAMP_MISMATCH
-    assert result.assertions[0].quantity_difference == Decimal("0")
-    assert result.issues[0].kind == "balance_timestamp_mismatch"
+    assert result.assertions[0].status is BalanceAssertionStatus.MATCHED
+    assert result.assertions[0].observation_gap == "86399"
+    assert result.issues == ()
 
 
-def test_assert_balance_snapshots_surfaces_duplicate_inputs() -> None:
-    result = assert_balance_snapshots(
+def test_assert_balance_targets_surfaces_duplicate_snapshots() -> None:
+    result = assert_balance_targets(
         snapshots=(
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("1"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("2"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
         ),
-        evidence=(
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+        references=(
+            BalanceReference(
+                target=_target("BTC"),
                 quantity=Decimal("1"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
             ),
         ),
     )
@@ -177,35 +166,26 @@ def test_assert_balance_snapshots_surfaces_duplicate_inputs() -> None:
     ]
 
 
-def test_assert_balance_snapshots_assigns_distinct_duplicate_issue_ids() -> None:
-    result = assert_balance_snapshots(
+def test_assert_balance_targets_assigns_distinct_duplicate_issue_ids() -> None:
+    result = assert_balance_targets(
         snapshots=(
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("1"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("2"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("3"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
         ),
-        evidence=(),
+        references=(),
     )
 
     assert [issue.issue_id for issue in result.issues] == [
@@ -215,136 +195,113 @@ def test_assert_balance_snapshots_assigns_distinct_duplicate_issue_ids() -> None
     ]
 
 
-def test_assert_balance_snapshots_uses_confirmation_when_evidence_is_absent() -> None:
-    result = assert_balance_snapshots(
+def test_assert_balance_targets_uses_operator_assertion_when_it_is_only_reference() -> (
+    None
+):
+    result = assert_balance_targets(
         snapshots=(
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("1.25"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
         ),
-        evidence=(),
-        confirmations=(
-            BalanceConfirmation(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+        references=(
+            BalanceReference(
+                target=_target("BTC"),
                 quantity=Decimal("1.25"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                confirmation_kind="external_support",
+                reference_kind=BalanceReferenceKind.OPERATOR_ASSERTION,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
                 support_ref="statement.pdf#page=1",
-                asserted_meaning="Closing balance from the cited statement.",
                 reviewed_by="operator@example.com",
                 reviewed_at=datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC),
-                reason="Needed for runtime reconciliation.",
             ),
         ),
     )
 
     assert result.issues == ()
-    assert result.assertions[0].reference_basis == "operator_confirmation"
-    assert result.assertions[0].to_row()["evidence_ref"] == "statement.pdf#page=1"
+    assert (
+        result.assertions[0].selected_reference_kind
+        is BalanceReferenceKind.OPERATOR_ASSERTION
+    )
+    assert result.assertions[0].to_row()["support_ref"] == "statement.pdf#page=1"
 
 
-def test_assert_balance_snapshots_prefers_evidence_over_confirmation() -> None:
-    result = assert_balance_snapshots(
+def test_assert_balance_targets_prefers_source_document_over_operator_assertion() -> (
+    None
+):
+    result = assert_balance_targets(
         snapshots=(
             BalanceSnapshot(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+                target=_target("BTC"),
                 quantity=Decimal("1.25"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
+                snapshot_basis="fact_cutoff",
             ),
         ),
-        evidence=(
-            BalanceEvidence(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
+        references=(
+            BalanceReference(
+                target=_target("BTC"),
                 quantity=Decimal("1.25"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
             ),
-        ),
-        confirmations=(
-            BalanceConfirmation(
-                source=SourceId("coinbase"),
-                location_id=LocationId("coinbase"),
-                instrument_id=InstrumentId("BTC"),
-                quantity=Decimal("9.99"),
-                as_of_at=_AS_OF,
-                as_of_precision=TemporalPrecision.TIMESTAMP,
-                confirmation_kind="manual_assertion",
-                asserted_meaning="Operator asserted a conflicting balance.",
+            BalanceReference(
+                target=_target("BTC"),
+                quantity=Decimal("9.0"),
+                reference_kind=BalanceReferenceKind.OPERATOR_ASSERTION,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
                 reviewed_by="operator@example.com",
                 reviewed_at=datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC),
-                reason="Needed for runtime reconciliation.",
             ),
         ),
     )
 
-    assert result.issues == ()
-    assert result.assertions[0].reference_basis == "source_backed_evidence"
-    assert result.assertions[0].evidence_quantity == Decimal("1.25")
-
-
-def test_balance_assertion_requires_valid_temporal_pairs() -> None:
-    with pytest.raises(
-        ValueError,
-        match="balance assertion snapshot_as_of_at requires a matching precision",
-    ):
-        BalanceAssertion(
-            source=SourceId("coinbase"),
-            location_id=LocationId("coinbase"),
-            instrument_id=InstrumentId("BTC"),
-            balance_kind="available",
-            snapshot_quantity=Decimal("1"),
-            evidence_quantity=Decimal("1"),
-            quantity_difference=Decimal("0"),
-            status=BalanceAssertionStatus.MATCHED,
-            snapshot_as_of_at=_AS_OF,
-        )
-
-
-def test_assertion_and_balance_models_normalize_blank_balance_kinds() -> None:
-    snapshot = BalanceSnapshot(
-        source=SourceId("coinbase"),
-        location_id=LocationId("coinbase"),
-        instrument_id=InstrumentId("BTC"),
-        quantity=Decimal("1"),
-        as_of_at=_AS_OF,
-        as_of_precision=TemporalPrecision.TIMESTAMP,
-        balance_kind=" ",
+    assert (
+        result.assertions[0].selected_reference_kind
+        is BalanceReferenceKind.SOURCE_DOCUMENT
     )
-    evidence = BalanceEvidence(
-        source=SourceId("coinbase"),
-        location_id=LocationId("coinbase"),
-        instrument_id=InstrumentId("BTC"),
-        quantity=Decimal("1"),
-        as_of_at=_AS_OF,
-        as_of_precision=TemporalPrecision.TIMESTAMP,
-        balance_kind="",
-        provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
-    )
-    assertion = BalanceAssertion(
-        source=SourceId("coinbase"),
-        location_id=LocationId("coinbase"),
-        instrument_id=InstrumentId("BTC"),
-        balance_kind=" locked ",
-        snapshot_quantity=Decimal("1"),
-        evidence_quantity=Decimal("1"),
-        quantity_difference=Decimal("0"),
-        status=BalanceAssertionStatus.MATCHED,
+    assert result.assertions[0].difference == Decimal("0")
+
+
+def test_assert_balance_targets_surfaces_conflicting_same_precedence_references() -> (
+    None
+):
+    result = assert_balance_targets(
+        snapshots=(
+            BalanceSnapshot(
+                target=_target("BTC"),
+                quantity=Decimal("1.25"),
+                snapshot_basis="fact_cutoff",
+            ),
+        ),
+        references=(
+            BalanceReference(
+                target=_target("BTC"),
+                quantity=Decimal("1.25"),
+                reference_kind=BalanceReferenceKind.NETWORK_API,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                provider_family="evm_json_rpc",
+                provider_block_ref="block:1",
+            ),
+            BalanceReference(
+                target=_target("BTC"),
+                quantity=Decimal("1.25"),
+                reference_kind=BalanceReferenceKind.NETWORK_API,
+                observed_at=_AS_OF,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                provider_family="evm_json_rpc",
+                provider_block_ref="block:2",
+            ),
+        ),
     )
 
-    assert snapshot.balance_kind == "available"
-    assert evidence.balance_kind == "available"
-    assert assertion.balance_kind == "locked"
+    assert result.assertions[0].status is BalanceAssertionStatus.MISSING_REFERENCE
+    assert [issue.kind for issue in result.issues] == [
+        "conflicting_balance_references",
+        "balance_missing_reference",
+    ]

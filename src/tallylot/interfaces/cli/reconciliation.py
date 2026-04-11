@@ -41,10 +41,16 @@ def _inspect_balances(
 
 
 @reconciliation_balances_app.command("check")
-def _check_balances(
+def _check_balances(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     input_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     source: Annotated[list[str] | None, typer.Option()] = None,
+    as_of: Annotated[list[str] | None, typer.Option("--as-of")] = None,
+    hydrate_missing_references: Annotated[
+        bool,
+        typer.Option("--hydrate-missing-references/--no-hydrate-missing-references"),
+    ] = True,
+    reference_policy: Annotated[str, typer.Option()] = "default",
 ) -> None:
     try:
         response = balance_check_workflow().execute(
@@ -52,6 +58,9 @@ def _check_balances(
                 input_root_ref=to_resource_ref(input_root),
                 output_root_ref=to_resource_ref(output_root),
                 sources=tuple(source or ()),
+                as_of_values=tuple(as_of or ()),
+                hydrate_missing_references=hydrate_missing_references,
+                reference_policy=reference_policy,
             )
         )
     except ValueError as exc:

@@ -131,7 +131,8 @@ class StubPdfAdapter:
         del profile, raw_dir
         return SourceTranslationBatch(
             drafts=(),
-            balance_evidence=(),
+            balance_references=(),
+            balance_reference_issues=(),
             issues=(),
             reviews=(),
             location_inventory=(),
@@ -388,11 +389,11 @@ def test_source_statement_extraction_skips_unmatched_inventory_pdf(
         supported=True,
     )
 
-    result = StatementExtractionService(registry).extract_source_balance_evidence(
+    result = StatementExtractionService(registry).extract_source_balance_references(
         profile, tmp_path
     )
 
-    assert not result.balance_evidence
+    assert not result.balance_references
     assert not result.issues
     assert not result.reviews
     assert adapter.parse_calls == 0
@@ -425,11 +426,11 @@ def test_source_statement_extraction_reports_unrecognized_matched_inventory_pdf(
         supported=True,
     )
 
-    result = StatementExtractionService(registry).extract_source_balance_evidence(
+    result = StatementExtractionService(registry).extract_source_balance_references(
         profile, tmp_path
     )
 
-    assert not result.balance_evidence
+    assert not result.balance_references
     assert not result.reviews
     assert [issue.kind for issue in result.issues] == [
         "statement_document_unrecognized"
@@ -552,13 +553,13 @@ def test_source_statement_extraction_prefers_document_effective_at(
         supported=True,
     )
 
-    result = StatementExtractionService(registry).extract_source_balance_evidence(
+    result = StatementExtractionService(registry).extract_source_balance_references(
         profile, tmp_path
     )
 
     assert not result.issues
-    assert [row.provenance.relative_path for row in result.balance_evidence] == [
-        "second.pdf"
+    assert [row.support_ref for row in result.balance_references] == [
+        "second.pdf#page=1"
     ]
 
 
@@ -672,18 +673,20 @@ def test_source_statement_extraction_keeps_older_unique_rows_for_same_snapshot(
         supported=True,
     )
 
-    result = StatementExtractionService(registry).extract_source_balance_evidence(
+    result = StatementExtractionService(registry).extract_source_balance_references(
         profile, tmp_path
     )
 
     assert not result.issues
-    assert [(row.instrument_id, row.quantity) for row in result.balance_evidence] == [
+    assert [
+        (str(row.instrument_id), row.quantity) for row in result.balance_references
+    ] == [
         ("symbol:BTC", Decimal("2.0")),
         ("symbol:ETH", Decimal("3.0")),
     ]
-    assert [row.provenance.relative_path for row in result.balance_evidence] == [
-        "second.pdf",
-        "first.pdf",
+    assert [row.support_ref for row in result.balance_references] == [
+        "second.pdf#page=1",
+        "first.pdf#page=2",
     ]
 
 
@@ -744,11 +747,11 @@ def test_source_statement_extraction_reports_ambiguous_latest_inventory_pdfs(
         supported=True,
     )
 
-    result = StatementExtractionService(registry).extract_source_balance_evidence(
+    result = StatementExtractionService(registry).extract_source_balance_references(
         profile, tmp_path
     )
 
-    assert not result.balance_evidence
+    assert not result.balance_references
     assert not result.reviews
     assert [issue.kind for issue in result.issues] == [
         "statement_document_ambiguous",

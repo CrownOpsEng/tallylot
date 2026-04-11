@@ -17,10 +17,10 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
    shell loops over source directories.
 2. Use `.claude/commands/reconciliation-balance-operations.md` when you need
    the repo's matching command-route checklist.
-3. Assume canonical `balances.csv` already exists with either
-   source-backed `balance_evidence.csv` or operator-confirmed
-   `balance_confirmations.csv`. Use `$balance-submission-operations` first
-   when the source still needs the manual submission path.
+3. Assume assembled source datasets include canonical `balance_snapshots.csv`
+   and, when available, unified `balance_references.csv`. Use
+   `$balance-submission-operations` first when the source still needs the
+   manual submission path.
 4. Run coverage inspection first.
 5. Run balance checks second.
 6. Run reconciliation summary third.
@@ -39,16 +39,17 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
 ## Outputs
 
 - Coverage artifacts describe whether a source is source-backed,
-  operator-confirmed, mixed-reference, missing-reference, missing-snapshots,
+  resolved-reference, mixed-reference, missing-reference, missing-snapshots,
   or empty.
 - Check artifacts write per-source `balance_assertions.csv`,
-  `reconciliation_issues.csv`, and `balance_assertion_summary.json`.
+  `reconciliation_issues.csv`, and `balance_reconciliation_summary.json`.
 - Cross-source corroboration sidecars include `cross_source_assertions.csv`,
   `cross_source_issues.csv`, and `cross_source_summary.json`.
 - Summary artifacts answer:
   - latest portfolio clean date
-  - latest portfolio source-backed date
-  - latest clean source-backed date
+  - latest portfolio resolved-reference date
+  - latest clean source date
+  - latest resolved-reference date
   - latest observed assertion date
   - blocker counts by source and reason
 

@@ -22,8 +22,8 @@ _EXPECTED_NORMALIZATION_ARTIFACTS = (
     "facts",
     "fact_annotations",
     "location_annotations",
-    "balances",
-    "balance_evidence",
+    "balance_snapshots",
+    "balance_references",
     "exceptions",
     "normalization_reviews",
     "normalization_summary",
@@ -133,9 +133,11 @@ def _collect_pack_outputs(pack: AdapterPack) -> dict[str, object]:
                             encoding="utf-8"
                         )
                     ),
-                    "balances": artifacts.read_rows(output_dir / "balances.csv"),
-                    "balance_evidence": artifacts.read_rows(
-                        output_dir / "balance_evidence.csv"
+                    "balance_snapshots": artifacts.read_rows(
+                        output_dir / "balance_snapshots.csv"
+                    ),
+                    "balance_references": artifacts.read_rows(
+                        output_dir / "balance_references.csv"
                     ),
                     "exceptions": artifacts.read_rows(output_dir / "exceptions.csv"),
                     "normalization_reviews": artifacts.read_rows(

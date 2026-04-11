@@ -40,7 +40,7 @@ class AssembleSourceResponse:
     included_capture_count: int
     excluded_capture_count: int
     fact_count: int
-    balance_count: int
-    balance_evidence_count: int
+    balance_snapshot_count: int
+    balance_reference_count: int
     issue_count: int
     review_count: int

@@ -1,22 +1,24 @@
 [
   {
-    "as_of_at": "2024-02-08 16:31:22",
-    "as_of_precision": "timestamp",
     "balance_kind": "available",
     "instrument_id": "symbol:BTC@coinbase",
     "location_id": "coinbase",
     "notes": "",
     "quantity": "0.01",
-    "source": "coinbase"
+    "snapshot_basis": "fact_cutoff",
+    "source": "coinbase",
+    "target_at": "2024-02-08 16:31:22",
+    "target_precision": "timestamp"
   },
   {
-    "as_of_at": "2024-02-08 16:31:22",
-    "as_of_precision": "timestamp",
     "balance_kind": "available",
     "instrument_id": "symbol:CAD@coinbase",
     "location_id": "coinbase",
     "notes": "",
     "quantity": "-610",
-    "source": "coinbase"
+    "snapshot_basis": "fact_cutoff",
+    "source": "coinbase",
+    "target_at": "2024-02-08 16:31:22",
+    "target_precision": "timestamp"
   }
 ]

@@ -109,7 +109,7 @@ def test_translate_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
     )
 
     assert not compile_activity_drafts(result.drafts)
-    assert not result.balance_evidence
+    assert not result.balance_references
     assert len(result.issues) == 1
     assert result.issues[0].kind == "invalid_schema"
 
@@ -142,8 +142,6 @@ def test_translate_structured_csv_preserves_title_row_line_numbers(
 
     assert len(result.drafts) == 1
     assert result.drafts[0].raw_row_ref == "4"
-
-
 def test_structured_csv_validator_rejects_side_attribution_without_matching_primary_leg() -> (
     None
 ):

@@ -1,6 +1,5 @@
 """Normalization capability."""
 
-from .balances import derive_balance_snapshots
 from .assembly import AssembleSourceUseCase
 from .contracts import (
     AssembleSourceRequest,
@@ -23,7 +22,6 @@ __all__ = [
     "NormalizeRequest",
     "NormalizeResponse",
     "NormalizeSourceUseCase",
-    "derive_balance_snapshots",
     "filter_drafts_by_window",
     "filter_issues_by_window",
     "filter_reviews_by_window",

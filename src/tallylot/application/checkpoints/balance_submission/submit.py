@@ -14,14 +14,15 @@ from tallylot.application.workspace.filesystem import (
     ensure_directory,
     ensure_output_not_within_input_tree,
 )
+from tallylot.domain.balances import BalanceReference, BalanceSnapshot
 from tallylot.domain.types import JsonValue
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.evidence import EvidenceRepositoryPort
 
 from .materialize import materialize_balance_submission
 from .schema import (
-    BALANCE_CONFIRMATIONS_FILENAME,
-    BALANCES_FILENAME,
+    BALANCE_REFERENCES_FILENAME,
+    BALANCE_SNAPSHOTS_FILENAME,
     ISSUES_FILENAME,
     ISSUE_HEADER,
     LOCATION_INVENTORY_FILENAME,
@@ -32,16 +33,15 @@ from .validation import validate_balance_submission
 
 @dataclass(frozen=True)
 class _SubmissionStatus:
-    balance_row_count: int
-    balance_confirmation_row_count: int
+    balance_snapshot_row_count: int
+    balance_reference_row_count: int
     location_inventory_row_count: int
     issue_count: int
     blocked: bool
-    wrote_balance_confirmations: bool
+    wrote_balance_snapshots: bool
+    wrote_balance_references: bool
     wrote_location_inventory: bool
     ready_for_balance_check: bool
-    ready_for_source_backed_checkpoint: bool
-    trust_tier: str
     notes: tuple[str, ...]
 
 
@@ -65,18 +65,16 @@ class SubmitBalancesUseCase:
         )
         ensure_directory(output_root)
         if not submission_root.is_dir():
-            _clear_canonical_outputs(output_root)
             status = _SubmissionStatus(
-                balance_row_count=0,
-                balance_confirmation_row_count=0,
+                balance_snapshot_row_count=0,
+                balance_reference_row_count=0,
                 location_inventory_row_count=0,
                 issue_count=1,
                 blocked=True,
-                wrote_balance_confirmations=False,
+                wrote_balance_snapshots=False,
+                wrote_balance_references=False,
                 wrote_location_inventory=False,
                 ready_for_balance_check=False,
-                ready_for_source_backed_checkpoint=False,
-                trust_tier="operator_confirmed",
                 notes=("Submission root is missing.",),
             )
             issues = [
@@ -100,67 +98,68 @@ class SubmitBalancesUseCase:
             return SubmitBalancesResponse(
                 submission_root_ref=request.submission_root_ref,
                 output_root_ref=request.output_root_ref,
-                balance_row_count=status.balance_row_count,
-                balance_confirmation_row_count=status.balance_confirmation_row_count,
+                balance_snapshot_row_count=status.balance_snapshot_row_count,
+                balance_reference_row_count=status.balance_reference_row_count,
                 location_inventory_row_count=status.location_inventory_row_count,
                 issue_count=status.issue_count,
                 blocked=status.blocked,
-                wrote_balance_confirmations=status.wrote_balance_confirmations,
+                wrote_balance_snapshots=status.wrote_balance_snapshots,
+                wrote_balance_references=status.wrote_balance_references,
                 wrote_location_inventory=status.wrote_location_inventory,
                 ready_for_balance_check=status.ready_for_balance_check,
-                ready_for_source_backed_checkpoint=status.ready_for_source_backed_checkpoint,
-                trust_tier=status.trust_tier,
             )
         validation = validate_balance_submission(
             submission_root,
             expected_source=request.source,
         )
         blocked = bool(validation.issues)
-        wrote_balance_confirmations = False
+        wrote_balance_snapshots = False
+        wrote_balance_references = False
         wrote_location_inventory = False
         if not blocked:
             materialized = materialize_balance_submission(
                 submission_root=str(submission_root),
-                balance_rows=validation.balance_rows,
-                balance_confirmation_rows=validation.balance_confirmation_rows,
+                balance_snapshot_rows=validation.balance_snapshot_rows,
+                balance_reference_rows=validation.balance_reference_rows,
                 location_inventory_rows=validation.location_inventory_rows,
             )
             self._evidence.write_balance_snapshots(
-                output_root / BALANCES_FILENAME,
-                materialized.balances,
+                output_root / BALANCE_SNAPSHOTS_FILENAME,
+                _merge_balance_snapshots(
+                    existing_snapshots=self._read_existing_snapshots(output_root),
+                    submitted_snapshots=materialized.balance_snapshots,
+                ),
             )
-            self._evidence.write_balance_confirmations(
-                output_root / BALANCE_CONFIRMATIONS_FILENAME,
-                materialized.balance_confirmations,
+            wrote_balance_snapshots = True
+            self._evidence.write_balance_references(
+                output_root / BALANCE_REFERENCES_FILENAME,
+                _merge_balance_references(
+                    existing_references=self._read_existing_references(output_root),
+                    submitted_references=materialized.balance_references,
+                ),
             )
-            wrote_balance_confirmations = True
-            _remove_file_if_present(output_root / "balance_evidence.csv")
+            wrote_balance_references = True
             if materialized.location_inventory:
                 self._evidence.write_location_inventory(
                     output_root / LOCATION_INVENTORY_FILENAME,
                     materialized.location_inventory,
                 )
                 wrote_location_inventory = True
-            else:
-                _remove_file_if_present(output_root / LOCATION_INVENTORY_FILENAME)
-        else:
-            _clear_canonical_outputs(output_root)
         status = _SubmissionStatus(
-            balance_row_count=len(validation.balance_rows),
-            balance_confirmation_row_count=len(validation.balance_confirmation_rows),
+            balance_snapshot_row_count=len(validation.balance_snapshot_rows),
+            balance_reference_row_count=len(validation.balance_reference_rows),
             location_inventory_row_count=len(validation.location_inventory_rows),
             issue_count=len(validation.issues),
             blocked=blocked,
-            wrote_balance_confirmations=wrote_balance_confirmations,
+            wrote_balance_snapshots=wrote_balance_snapshots,
+            wrote_balance_references=wrote_balance_references,
             wrote_location_inventory=wrote_location_inventory,
             ready_for_balance_check=not blocked,
-            ready_for_source_backed_checkpoint=False,
-            trust_tier="operator_confirmed",
             notes=(
-                ("Canonical balances and balance confirmations were written.",)
+                ("Canonical balance snapshots and balance references were written.",)
                 if not blocked
                 else (
-                    "Submission is blocked. Manual-submission-owned canonical artifacts were cleared.",
+                    "Submission is blocked. Canonical runtime artifacts were left unchanged.",
                 )
             ),
         )
@@ -176,16 +175,15 @@ class SubmitBalancesUseCase:
         return SubmitBalancesResponse(
             submission_root_ref=request.submission_root_ref,
             output_root_ref=request.output_root_ref,
-            balance_row_count=status.balance_row_count,
-            balance_confirmation_row_count=status.balance_confirmation_row_count,
+            balance_snapshot_row_count=status.balance_snapshot_row_count,
+            balance_reference_row_count=status.balance_reference_row_count,
             location_inventory_row_count=status.location_inventory_row_count,
             issue_count=status.issue_count,
             blocked=status.blocked,
-            wrote_balance_confirmations=status.wrote_balance_confirmations,
+            wrote_balance_snapshots=status.wrote_balance_snapshots,
+            wrote_balance_references=status.wrote_balance_references,
             wrote_location_inventory=status.wrote_location_inventory,
             ready_for_balance_check=status.ready_for_balance_check,
-            ready_for_source_backed_checkpoint=status.ready_for_source_backed_checkpoint,
-            trust_tier=status.trust_tier,
         )
 
     def _write_status_artifacts(
@@ -209,30 +207,78 @@ class SubmitBalancesUseCase:
         return {
             "submission_root": str(submission_root),
             "output_root": str(output_root),
-            "balance_row_count": status.balance_row_count,
-            "balance_confirmation_row_count": status.balance_confirmation_row_count,
+            "balance_snapshot_row_count": status.balance_snapshot_row_count,
+            "balance_reference_row_count": status.balance_reference_row_count,
             "location_inventory_row_count": status.location_inventory_row_count,
             "issue_count": status.issue_count,
             "blocked": status.blocked,
-            "wrote_balance_confirmations": status.wrote_balance_confirmations,
+            "wrote_balance_snapshots": status.wrote_balance_snapshots,
+            "wrote_balance_references": status.wrote_balance_references,
             "wrote_location_inventory": status.wrote_location_inventory,
             "ready_for_balance_check": status.ready_for_balance_check,
-            "ready_for_source_backed_checkpoint": status.ready_for_source_backed_checkpoint,
-            "trust_tier": status.trust_tier,
             "notes": notes_payload,
         }
 
+    def _read_existing_snapshots(
+        self,
+        output_root: Path,
+    ) -> tuple[BalanceSnapshot, ...]:
+        path = output_root / BALANCE_SNAPSHOTS_FILENAME
+        if not path.is_file():
+            return ()
+        return self._evidence.read_balance_snapshots(path)
 
-def _clear_canonical_outputs(output_root: Path) -> None:
-    for filename in (
-        BALANCES_FILENAME,
-        BALANCE_CONFIRMATIONS_FILENAME,
-        LOCATION_INVENTORY_FILENAME,
-        "balance_evidence.csv",
-    ):
-        _remove_file_if_present(output_root / filename)
+    def _read_existing_references(
+        self,
+        output_root: Path,
+    ) -> tuple[BalanceReference, ...]:
+        path = output_root / BALANCE_REFERENCES_FILENAME
+        if not path.is_file():
+            return ()
+        return self._evidence.read_balance_references(path)
 
 
-def _remove_file_if_present(path: Path) -> None:
-    if path.is_file():
-        path.unlink()
+def _merge_balance_snapshots(
+    *,
+    existing_snapshots: tuple[BalanceSnapshot, ...],
+    submitted_snapshots: tuple[BalanceSnapshot, ...],
+) -> tuple[BalanceSnapshot, ...]:
+    merged = {
+        snapshot.target: snapshot
+        for snapshot in (*existing_snapshots, *submitted_snapshots)
+    }
+    return tuple(merged[target] for target in sorted(merged))
+
+
+def _merge_balance_references(
+    *,
+    existing_references: tuple[BalanceReference, ...],
+    submitted_references: tuple[BalanceReference, ...],
+) -> tuple[BalanceReference, ...]:
+    merged = {
+        (
+            reference.target,
+            reference.reference_kind.value,
+            reference.observed_at,
+            reference.observed_precision.value,
+            reference.support_ref,
+            reference.reviewed_by,
+        ): reference
+        for reference in (*existing_references, *submitted_references)
+    }
+    return tuple(
+        merged[key]
+        for key in sorted(
+            merged,
+            key=lambda item: (
+                str(item[0].source),
+                str(item[0].location_id),
+                str(item[0].instrument_id),
+                item[0].balance_kind,
+                item[0].target_at,
+                item[1],
+                item[2],
+                item[5],
+            ),
+        )
+    )

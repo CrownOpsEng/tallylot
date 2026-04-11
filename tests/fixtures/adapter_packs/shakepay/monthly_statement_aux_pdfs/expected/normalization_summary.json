@@ -1,7 +1,5 @@
 {
   "adapter_id": "shakepay",
-  "balance_count": 2,
-  "balance_evidence_count": 2,
   "fact_count": 6,
   "facts_outside_normalization_window": 0,
   "issue_count": 0,
@@ -9,8 +7,11 @@
   "location_count": 0,
   "normalization_window_end": "",
   "normalization_window_start": "",
+  "reference_count": 2,
+  "reference_issue_count": 0,
   "review_count": 0,
   "review_summary": [],
   "reviews_outside_normalization_window": 0,
+  "snapshot_count": 2,
   "source": "shakepay"
 }

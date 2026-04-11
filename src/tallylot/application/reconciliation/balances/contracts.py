@@ -26,6 +26,9 @@ class BalanceCheckRequest:
     input_root_ref: ResourceRef
     output_root_ref: ResourceRef
     sources: tuple[str, ...] = ()
+    as_of_values: tuple[str, ...] = ()
+    hydrate_missing_references: bool = True
+    reference_policy: str = "default"
 
 
 @dataclass(frozen=True)
@@ -52,7 +55,7 @@ class BalanceSummaryResponse:
     blocker_output_ref: ResourceRef
     source_count: int
     latest_portfolio_clean_date: str
-    latest_portfolio_source_backed_date: str
+    latest_portfolio_resolved_reference_date: str
     latest_clean_source_date: str
-    latest_source_backed_date: str
+    latest_resolved_reference_date: str
     latest_observed_assertion_date: str

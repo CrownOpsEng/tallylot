@@ -26,8 +26,9 @@ def build_normalization_summary(
             "source": request.source,
             "adapter_id": str(profile.adapter_id),
             "fact_count": len(outputs.facts),
-            "balance_count": len(outputs.derived_balances),
-            "balance_evidence_count": len(outputs.balance_evidence),
+            "snapshot_count": len(outputs.balance_snapshots),
+            "reference_count": len(outputs.balance_references),
+            "reference_issue_count": len(outputs.balance_reference_issues),
             "issue_count": len(outputs.issues),
             "review_count": len(outputs.reviews),
             "review_summary": _review_summary(outputs.reviews),
@@ -41,7 +42,9 @@ def build_normalization_summary(
     )
 
 
-def _review_summary(reviews: tuple[NormalizationReviewRecord, ...]) -> list[dict[str, object]]:
+def _review_summary(
+    reviews: tuple[NormalizationReviewRecord, ...],
+) -> list[dict[str, object]]:
     counts = Counter((review.scope, review.kind) for review in reviews)
     return [
         {
@@ -54,13 +57,21 @@ def _review_summary(reviews: tuple[NormalizationReviewRecord, ...]) -> list[dict
                     {
                         review.field_name
                         for review in reviews
-                        if review.scope == scope and review.kind == kind and review.field_name
+                        if review.scope == scope
+                        and review.kind == kind
+                        and review.field_name
                     }
                 ),
             ),
             "messages": cast(
                 list[object],
-                sorted({review.message for review in reviews if review.scope == scope and review.kind == kind}),
+                sorted(
+                    {
+                        review.message
+                        for review in reviews
+                        if review.scope == scope and review.kind == kind
+                    }
+                ),
             ),
         }
         for (scope, kind), count in sorted(counts.items())

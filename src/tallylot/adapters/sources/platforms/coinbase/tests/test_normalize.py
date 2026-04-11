@@ -266,11 +266,11 @@ def test_coinbase_source_statement_extraction_skips_auxiliary_and_history_pdfs(
         raw_dir,
     )
 
-    batch = StatementExtractionService(registry).extract_source_balance_evidence(
+    batch = StatementExtractionService(registry).extract_source_balance_references(
         profile,
         raw_dir,
     )
 
-    assert not batch.balance_evidence
+    assert not batch.balance_references
     assert not batch.issues
     assert not batch.reviews

@@ -12,11 +12,11 @@ from tallylot.adapters.support.issues import (
     issue_record,
     review_record,
 )
+from tallylot.domain.balances import BalanceReference
 from tallylot.domain.instruments import (
     InstrumentIdentityClaim,
 )
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import EconomicLeg, FactSemantics, TransactionFact
 from tallylot.domain.types import AdapterId, SourceId, TransactionId
 from tallylot.domain.value_objects import format_timestamp
@@ -57,17 +57,19 @@ def compile_activity_drafts_with_feedback(
     )
 
 
-def translation_batch_from_drafts(
+def translation_batch_from_drafts(  # pylint: disable=too-many-arguments
     drafts: Iterable[EconomicActivityDraft] = (),
     *,
-    balance_evidence: Iterable[BalanceEvidence] = (),
+    balance_references: Iterable[BalanceReference] = (),
+    balance_reference_issues: Iterable[IssueRecord] = (),
     issues: Iterable[IssueRecord] = (),
     reviews: Iterable[NormalizationReviewRecord] = (),
     location_inventory: Iterable[LocationInventoryRecord] = (),
 ) -> SourceTranslationBatch:
     return SourceTranslationBatch(
         drafts=tuple(drafts),
-        balance_evidence=tuple(balance_evidence),
+        balance_references=tuple(balance_references),
+        balance_reference_issues=tuple(balance_reference_issues),
         issues=tuple(issues),
         reviews=tuple(reviews),
         location_inventory=tuple(location_inventory),

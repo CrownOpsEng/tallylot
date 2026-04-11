@@ -1,7 +1,14 @@
 """Shared adapter support contracts."""
 
 from .intake import match_intake_by_path_or_header, no_intake_route
-from .instruments import ResolvedInstrument, resolve_instrument_identity
+from .instruments import (
+    ResolvedInstrument,
+    canonical_asset_claim,
+    evm_erc20_asset_claim,
+    evm_native_asset_claim,
+    near_native_asset_claim,
+    resolve_instrument_identity,
+)
 from .issues import IssueSpec, ReviewSpec, issue_record, review_record
 from .locations import (
     BTC_ADDRESS_PATTERN,
@@ -64,10 +71,13 @@ __all__ = [
     "ReviewSpec",
     "ResolvedInstrument",
     "TimezoneReviewPolicy",
+    "canonical_asset_claim",
     "canonical_location_id_from_identifier",
     "check_decimal_precision",
     "collect_csv_row_results",
     "decimal_fraction_digits",
+    "evm_erc20_asset_claim",
+    "evm_native_asset_claim",
     "group_csv_row_contexts",
     "is_onchain_canonical_location_id",
     "issue_record",
@@ -79,6 +89,7 @@ __all__ = [
     "match_intake_by_path_or_header",
     "matching_file_paths",
     "no_intake_route",
+    "near_native_asset_claim",
     "normalized_identifier",
     "passed_timezone_summary",
     "read_csv_header",

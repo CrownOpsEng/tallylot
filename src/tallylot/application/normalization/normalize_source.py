@@ -6,6 +6,10 @@ from dataclasses import dataclass, replace
 
 from tallylot.adapters.support.drafts import compile_activity_drafts_with_feedback
 from tallylot.adapters.support.issues import IssueSpec, issue_record
+from tallylot.application.balances import (
+    derive_balance_snapshots,
+    latest_balance_targets,
+)
 from tallylot.application.evidence.statement_extraction import (
     StatementExtractionService,
 )
@@ -40,7 +44,6 @@ from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .annotations import annotation_records_from_drafts, location_annotation_records
 from .artifacts import write_normalization_artifacts
-from .balances import derive_balance_snapshots
 from .models import NormalizationOutputs, NormalizationWindowStats
 from .summary import build_normalization_summary
 from .window import (
@@ -106,14 +109,18 @@ class NormalizeSourceUseCase:
                 f"source adapter {profile.adapter_id} is not supported for normalization in this phase"
             )
         result = adapter.translate(profile, raw_dir)
-        statement_result = self._statement_extraction.extract_source_balance_evidence(
+        statement_result = self._statement_extraction.extract_source_balance_references(
             profile, raw_dir
         )
         result = SourceTranslationBatch(
             drafts=result.drafts,
-            balance_evidence=(
-                *result.balance_evidence,
-                *statement_result.balance_evidence,
+            balance_references=(
+                *result.balance_references,
+                *statement_result.balance_references,
+            ),
+            balance_reference_issues=(
+                *result.balance_reference_issues,
+                *statement_result.reference_issues,
             ),
             issues=(*result.issues, *statement_result.issues),
             reviews=(*result.reviews, *statement_result.reviews),
@@ -152,7 +159,11 @@ class NormalizeSourceUseCase:
             window_start=request.window_start,
             window_end=request.window_end,
         )
-        derived_balances = derive_balance_snapshots(facts)
+        balance_targets = latest_balance_targets(facts)
+        balance_snapshots, balance_snapshot_issues = derive_balance_snapshots(
+            facts,
+            balance_targets,
+        )
         outputs = NormalizationOutputs(
             facts=facts,
             fact_annotations=annotation_records_from_drafts(
@@ -161,9 +172,10 @@ class NormalizeSourceUseCase:
                 )
             ),
             location_annotations=location_annotation_records(result.location_inventory),
-            derived_balances=derived_balances,
-            balance_evidence=result.balance_evidence,
-            issues=issue_records,
+            balance_snapshots=balance_snapshots,
+            balance_references=result.balance_references,
+            balance_reference_issues=result.balance_reference_issues,
+            issues=(*issue_records, *balance_snapshot_issues),
             reviews=review_records,
             location_inventory=result.location_inventory,
         )
@@ -203,8 +215,8 @@ class NormalizeSourceUseCase:
             normalized_output_ref=request.normalized_output_ref,
             adapter_id=str(profile.adapter_id),
             fact_count=len(facts),
-            balance_count=len(derived_balances),
-            issue_count=len(issue_records),
+            balance_count=len(balance_snapshots),
+            issue_count=len(outputs.issues),
             review_count=len(review_records),
         )
 
@@ -271,7 +283,8 @@ def _with_no_supported_activity_issue(
         return result
     return SourceTranslationBatch(
         drafts=result.drafts,
-        balance_evidence=result.balance_evidence,
+        balance_references=result.balance_references,
+        balance_reference_issues=result.balance_reference_issues,
         issues=(
             issue_record(
                 IssueSpec(

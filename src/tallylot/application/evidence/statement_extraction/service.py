@@ -8,7 +8,7 @@ from typing import cast
 from pypdf import PdfReader
 
 from tallylot.ports.evidence import (
-    StatementBalanceEvidenceBatch,
+    StatementBalanceReferenceBatch,
     StatementDocumentParseResult,
 )
 from tallylot.ports.source_adapters import SourceAdapterRegistryPort
@@ -22,7 +22,7 @@ from .hooks import (
 )
 from .models import PdfBalanceRows
 from .rows import statement_row_to_pdf_balance_row
-from .source_evidence import extract_source_balance_evidence_from_inventory
+from .source_evidence import extract_source_balance_references_from_inventory
 
 
 class StatementExtractionService:
@@ -49,17 +49,20 @@ class StatementExtractionService:
             rows=tuple(statement_row_to_pdf_balance_row(row) for row in parsed.rows),
         )
 
-    def extract_source_balance_evidence(
+    def extract_source_balance_references(
         self,
         profile: SourceProfile,
         raw_dir: Path,
-    ) -> StatementBalanceEvidenceBatch:
+    ) -> StatementBalanceReferenceBatch:
         adapter = self._registry.source_adapter(str(profile.adapter_id))
         if not supports_statement_document_evidence(adapter):
-            return StatementBalanceEvidenceBatch(
-                balance_evidence=(), issues=(), reviews=()
+            return StatementBalanceReferenceBatch(
+                balance_references=(),
+                reference_issues=(),
+                issues=(),
+                reviews=(),
             )
-        return extract_source_balance_evidence_from_inventory(
+        return extract_source_balance_references_from_inventory(
             cast(StatementDocumentEvidenceAdapter, adapter),
             profile,
             raw_dir,

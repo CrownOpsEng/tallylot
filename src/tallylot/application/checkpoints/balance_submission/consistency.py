@@ -10,14 +10,14 @@ from decimal import Decimal
 from tallylot.domain.temporal import TemporalPrecision
 
 from .contracts import (
+    BalanceReferenceSubmissionRow,
     BalanceSubmissionIssue,
-    BalanceSubmissionRow,
+    BalanceSnapshotSubmissionRow,
     LocationInventorySubmissionRow,
-    SubmittedBalanceConfirmationRow,
 )
 from .schema import (
-    BALANCE_CONFIRMATIONS_FILENAME,
-    BALANCES_FILENAME,
+    BALANCE_REFERENCES_FILENAME,
+    BALANCE_SNAPSHOTS_FILENAME,
     LOCATION_INVENTORY_FILENAME,
 )
 
@@ -61,40 +61,39 @@ def collect_duplicate_rows(
         )
 
 
-def collect_balance_confirmation_mismatches(
-    balance_rows: tuple[BalanceSubmissionRow, ...],
-    confirmation_rows: tuple[SubmittedBalanceConfirmationRow, ...],
+def collect_balance_reference_mismatches(
+    balance_rows: tuple[BalanceSnapshotSubmissionRow, ...],
+    reference_rows: tuple[BalanceReferenceSubmissionRow, ...],
     *,
     issues: list[BalanceSubmissionIssue],
 ) -> None:
     balance_counts = Counter(_logical_balance_key(row) for row in balance_rows)
-    confirmation_counts = Counter(
-        _logical_balance_key(row) for row in confirmation_rows
-    )
+    reference_counts = Counter(_logical_balance_key(row) for row in reference_rows)
     for key in sorted(balance_counts):
-        if balance_counts[key] == 1 and confirmation_counts.get(key, 0) == 0:
+        if balance_counts[key] == 1 and reference_counts.get(key, 0) == 0:
             issues.append(
                 BalanceSubmissionIssue(
-                    file_name=BALANCES_FILENAME,
+                    file_name=BALANCE_SNAPSHOTS_FILENAME,
                     row_number="",
                     column_name="",
-                    issue_kind="missing_matching_confirmation",
+                    issue_kind="missing_matching_reference",
                     message=(
-                        "Each balance row must have exactly one matching "
-                        "balance_confirmations.csv row."
+                        "Each balance_snapshots.csv row must have exactly one "
+                        "matching balance_references.csv row."
                     ),
                 )
             )
-    for key in sorted(confirmation_counts):
-        if confirmation_counts[key] == 1 and balance_counts.get(key, 0) == 0:
+    for key in sorted(reference_counts):
+        if reference_counts[key] == 1 and balance_counts.get(key, 0) == 0:
             issues.append(
                 BalanceSubmissionIssue(
-                    file_name=BALANCE_CONFIRMATIONS_FILENAME,
+                    file_name=BALANCE_REFERENCES_FILENAME,
                     row_number="",
                     column_name="",
-                    issue_kind="orphan_confirmation",
+                    issue_kind="orphan_reference",
                     message=(
-                        "Each confirmation row must match exactly one balances.csv row."
+                        "Each balance_references.csv row must match exactly one "
+                        "balance_snapshots.csv row."
                     ),
                 )
             )
@@ -135,7 +134,7 @@ def collect_location_inventory_conflicts(
 
 
 def _logical_balance_key(
-    row: BalanceSubmissionRow | SubmittedBalanceConfirmationRow,
+    row: BalanceSnapshotSubmissionRow | BalanceReferenceSubmissionRow,
 ) -> _LogicalBalanceKey:
     return _LogicalBalanceKey(
         source=row.source,
@@ -143,7 +142,7 @@ def _logical_balance_key(
         wallet=row.wallet,
         instrument_id=row.instrument_id,
         quantity=row.quantity,
-        as_of_at=row.as_of_at,
-        as_of_precision=row.as_of_precision,
+        as_of_at=row.target_at,
+        as_of_precision=row.target_precision,
         balance_kind=row.balance_kind,
     )

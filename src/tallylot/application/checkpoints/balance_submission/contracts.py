@@ -28,34 +28,34 @@ class BalanceSubmissionIssue:
 
 
 @dataclass(frozen=True)
-class BalanceSubmissionRow:
+class BalanceSnapshotSubmissionRow:
     source: str
     account: str
     wallet: str
     instrument_id: str
     quantity: Decimal
-    as_of_at: datetime
-    as_of_precision: TemporalPrecision
+    target_at: datetime
+    target_precision: TemporalPrecision
     balance_kind: str
     notes: str
 
 
 @dataclass(frozen=True)
-class SubmittedBalanceConfirmationRow:
+class BalanceReferenceSubmissionRow:
     source: str
     account: str
     wallet: str
     instrument_id: str
     quantity: Decimal
-    as_of_at: datetime
-    as_of_precision: TemporalPrecision
+    target_at: datetime
+    target_precision: TemporalPrecision
     balance_kind: str
-    confirmation_kind: str
+    reference_kind: str
+    observed_at: datetime
+    observed_precision: TemporalPrecision
     support_ref: str
-    asserted_meaning: str
     reviewed_by: str
     reviewed_at: datetime
-    reason: str
     notes: str
 
 
@@ -74,7 +74,7 @@ class LocationInventorySubmissionRow:
 
 @dataclass(frozen=True)
 class BalanceSubmissionValidationResult:
-    balance_rows: tuple[BalanceSubmissionRow, ...]
-    balance_confirmation_rows: tuple[SubmittedBalanceConfirmationRow, ...]
+    balance_snapshot_rows: tuple[BalanceSnapshotSubmissionRow, ...]
+    balance_reference_rows: tuple[BalanceReferenceSubmissionRow, ...]
     location_inventory_rows: tuple[LocationInventorySubmissionRow, ...]
     issues: tuple[BalanceSubmissionIssue, ...]

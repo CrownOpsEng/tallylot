@@ -12,10 +12,10 @@ from tallylot.ports.artifacts import ArtifactStorePort
 
 from .readme_template import render_balance_submission_readme
 from .schema import (
-    BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME,
-    BALANCE_CONFIRMATIONS_HEADER,
-    BALANCES_EXAMPLE_FILENAME,
-    BALANCES_HEADER,
+    BALANCE_REFERENCES_EXAMPLE_FILENAME,
+    BALANCE_REFERENCES_HEADER,
+    BALANCE_SNAPSHOTS_EXAMPLE_FILENAME,
+    BALANCE_SNAPSHOTS_HEADER,
     LOCATION_INVENTORY_EXAMPLE_FILENAME,
     LOCATION_INVENTORY_HEADER,
     README_FILENAME,
@@ -37,8 +37,8 @@ class ScaffoldBalanceSubmissionUseCase:
             encoding="utf-8",
         )
         self._artifacts.write_rows(
-            submission_root / BALANCES_EXAMPLE_FILENAME,
-            BALANCES_HEADER,
+            submission_root / BALANCE_SNAPSHOTS_EXAMPLE_FILENAME,
+            BALANCE_SNAPSHOTS_HEADER,
             (
                 {
                     "source": request.source,
@@ -46,16 +46,16 @@ class ScaffoldBalanceSubmissionUseCase:
                     "wallet": "primary",
                     "instrument_id": f"symbol:BTC@{request.source}",
                     "quantity": "0.0",
-                    "as_of_at": "2026-03-23",
-                    "as_of_precision": "date",
+                    "target_at": "2026-03-23",
+                    "target_precision": "date",
                     "balance_kind": "available",
                     "notes": "Replace every example value with user-provided facts.",
                 },
             ),
         )
         self._artifacts.write_rows(
-            submission_root / BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME,
-            BALANCE_CONFIRMATIONS_HEADER,
+            submission_root / BALANCE_REFERENCES_EXAMPLE_FILENAME,
+            BALANCE_REFERENCES_HEADER,
             (
                 {
                     "source": request.source,
@@ -63,16 +63,19 @@ class ScaffoldBalanceSubmissionUseCase:
                     "wallet": "primary",
                     "instrument_id": f"symbol:BTC@{request.source}",
                     "quantity": "0.0",
-                    "as_of_at": "2026-03-23",
-                    "as_of_precision": "date",
+                    "target_at": "2026-03-23",
+                    "target_precision": "date",
                     "balance_kind": "available",
-                    "confirmation_kind": "external_support",
+                    "reference_kind": "operator_assertion",
+                    "observed_at": "2026-03-23",
+                    "observed_precision": "date",
                     "support_ref": "statement.pdf#page=1",
-                    "asserted_meaning": "Closing balance from the cited statement.",
                     "reviewed_by": "operator@example.com",
                     "reviewed_at": "2026-03-24 00:00:00",
-                    "reason": "Needed for runtime reconciliation.",
-                    "notes": "Point to the supporting material or leave support_ref blank for manual_assertion.",
+                    "notes": (
+                        "Use support_ref only when you have a concrete citation "
+                        "for the asserted operator reference."
+                    ),
                 },
             ),
         )
@@ -97,11 +100,11 @@ class ScaffoldBalanceSubmissionUseCase:
             source=request.source,
             submission_root_ref=request.submission_root_ref,
             readme_ref=to_resource_ref(readme_path),
-            balances_example_ref=to_resource_ref(
-                submission_root / BALANCES_EXAMPLE_FILENAME
+            balance_snapshots_example_ref=to_resource_ref(
+                submission_root / BALANCE_SNAPSHOTS_EXAMPLE_FILENAME
             ),
-            balance_confirmations_example_ref=to_resource_ref(
-                submission_root / BALANCE_CONFIRMATIONS_EXAMPLE_FILENAME
+            balance_references_example_ref=to_resource_ref(
+                submission_root / BALANCE_REFERENCES_EXAMPLE_FILENAME
             ),
             location_inventory_example_ref=to_resource_ref(
                 submission_root / LOCATION_INVENTORY_EXAMPLE_FILENAME

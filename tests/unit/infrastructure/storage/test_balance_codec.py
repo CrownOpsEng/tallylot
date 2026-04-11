@@ -4,19 +4,22 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceSnapshot,
+    BalanceTarget,
+)
 from tallylot.domain.instruments import InstrumentId
-from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
-from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.types import CaptureUid, LocationId, SourceId
+from tallylot.domain.types import LocationId, SourceId
+from tallylot.infrastructure.serialization.csv_io import read_rows
+from tallylot.infrastructure.storage import FilesystemEvidenceRepository
 from tallylot.infrastructure.storage.balance_codec import (
-    balance_confirmation_from_row,
-    balance_evidence_from_row,
+    balance_reference_from_row,
     balance_snapshot_from_row,
 )
-from tallylot.infrastructure.storage import FilesystemEvidenceRepository
-from tallylot.infrastructure.serialization.csv_io import read_rows
-from tallylot.ports.evidence import BALANCE_CONFIRMATION_HEADER, BALANCE_EVIDENCE_HEADER
+from tallylot.ports.evidence import BALANCE_REFERENCE_HEADER, BALANCE_SNAPSHOT_HEADER
 
 
 def test_balance_snapshot_from_row_defaults_blank_balance_kind() -> None:
@@ -25,123 +28,106 @@ def test_balance_snapshot_from_row_defaults_blank_balance_kind() -> None:
             "source": "coinbase",
             "location_id": "coinbase",
             "instrument_id": "BTC",
-            "quantity": "1.25",
-            "as_of_at": "2025-12-31 23:59:59",
-            "as_of_precision": "timestamp",
             "balance_kind": "",
+            "target_at": "2025-12-31 23:59:59",
+            "target_precision": "timestamp",
+            "quantity": "1.25",
+            "snapshot_basis": "fact_cutoff",
             "notes": "",
         }
     )
 
     assert snapshot.balance_kind == "available"
     assert snapshot.quantity == Decimal("1.25")
+    assert snapshot.snapshot_basis == "fact_cutoff"
 
 
-def test_balance_evidence_from_row_defaults_blank_balance_kind() -> None:
-    evidence = balance_evidence_from_row(
+def test_balance_reference_from_row_defaults_blank_balance_kind() -> None:
+    reference = balance_reference_from_row(
         {
             "source": "coinbase",
             "location_id": "coinbase",
             "instrument_id": "BTC",
-            "quantity": "1.25",
-            "as_of_at": "2025-12-31",
-            "as_of_precision": "date",
             "balance_kind": "",
-            "capture_uid": "01HV4A5H7VJH7M3Y5A6B7C8D9E",
-            "relative_path": "statement.pdf",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "",
+            "target_at": "2025-12-31",
+            "target_precision": "date",
+            "quantity": "1.25",
+            "reference_kind": "source_document",
+            "observed_at": "2025-12-31",
+            "observed_precision": "date",
+            "support_ref": "statement.pdf#page=1",
+            "provider_family": "",
+            "provider_locator": "",
+            "provider_block_ref": "",
+            "reviewed_by": "",
+            "reviewed_at": "",
             "notes": "statement",
         }
     )
 
-    assert evidence.balance_kind == "available"
-    assert evidence.as_of_at == datetime(2025, 12, 31, tzinfo=UTC)
-    assert evidence.provenance == ProvenanceLocator(
-        capture_uid=CaptureUid("01HV4A5H7VJH7M3Y5A6B7C8D9E"),
-        relative_path="statement.pdf",
-    )
+    assert reference.balance_kind == "available"
+    assert reference.target_at == datetime(2025, 12, 31, tzinfo=UTC)
+    assert reference.observed_at == datetime(2025, 12, 31, tzinfo=UTC)
+    assert reference.support_ref == "statement.pdf#page=1"
 
 
-def test_balance_confirmation_from_row_defaults_blank_balance_kind() -> None:
-    confirmation = balance_confirmation_from_row(
-        {
-            "source": "coinbase",
-            "location_id": "coinbase",
-            "instrument_id": "BTC",
-            "quantity": "1.25",
-            "as_of_at": "2025-12-31",
-            "as_of_precision": "date",
-            "balance_kind": "",
-            "confirmation_kind": "external_support",
-            "support_ref": "statement.pdf#page=1",
-            "asserted_meaning": "Closing balance from the cited statement.",
-            "reviewed_by": "operator",
-            "reviewed_at": "2026-01-01 00:00:00",
-            "reason": "Needed for runtime reconciliation.",
-            "notes": "manual review",
-        }
-    )
-
-    assert confirmation.balance_kind == "available"
-    assert confirmation.as_of_at == datetime(2025, 12, 31, tzinfo=UTC)
-    assert confirmation.reviewed_at == datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
-    assert confirmation.support_ref == "statement.pdf#page=1"
-
-
-def test_balance_confirmation_repository_round_trip(tmp_path: Path) -> None:
-    path = tmp_path / "balance_confirmations.csv"
+def test_balance_snapshot_repository_round_trip(tmp_path: Path) -> None:
+    path = tmp_path / "balance_snapshots.csv"
     repository = FilesystemEvidenceRepository()
-    confirmations = (
-        BalanceConfirmation(
-            source=SourceId("coinbase"),
-            location_id=LocationId("coinbase:primary"),
-            instrument_id=InstrumentId("symbol:BTC@coinbase"),
+    snapshots = (
+        BalanceSnapshot(
+            target=BalanceTarget(
+                source=SourceId("coinbase"),
+                location_id=LocationId("coinbase:primary"),
+                instrument_id=InstrumentId("symbol:BTC@coinbase"),
+                balance_kind="available",
+                target_at=datetime(2025, 12, 31, tzinfo=UTC),
+                target_precision=TemporalPrecision.DATE,
+            ),
             quantity=Decimal("1.25"),
-            as_of_at=datetime(2025, 12, 31, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.DATE,
-            balance_kind="available",
-            confirmation_kind="external_support",
+            snapshot_basis="fact_cutoff",
+            notes="derived",
+        ),
+    )
+
+    repository.write_balance_snapshots(path, snapshots)
+
+    assert tuple(read_rows(path)[0].keys()) == BALANCE_SNAPSHOT_HEADER
+    assert repository.read_balance_snapshots(path) == snapshots
+
+
+def test_balance_reference_repository_round_trip_operator_assertion(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "balance_references.csv"
+    repository = FilesystemEvidenceRepository()
+    target = BalanceTarget(
+        source=SourceId("coinbase"),
+        location_id=LocationId("coinbase:primary"),
+        instrument_id=InstrumentId("symbol:BTC@coinbase"),
+        balance_kind="available",
+        target_at=datetime(2025, 12, 31, tzinfo=UTC),
+        target_precision=TemporalPrecision.DATE,
+    )
+    references = (
+        BalanceReference(
+            target=target,
+            quantity=Decimal("1.25"),
+            reference_kind=BalanceReferenceKind.OPERATOR_ASSERTION,
+            observed_at=datetime(2025, 12, 31, tzinfo=UTC),
+            observed_precision=TemporalPrecision.DATE,
             support_ref="statement.pdf#page=1",
-            asserted_meaning="Closing balance from the cited statement.",
             reviewed_by="operator",
             reviewed_at=datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC),
-            reason="Needed for runtime reconciliation.",
             notes="manual review",
         ),
     )
 
-    repository.write_balance_confirmations(path, confirmations)
-
-    assert tuple(read_rows(path)[0].keys()) == BALANCE_CONFIRMATION_HEADER
-    assert repository.read_balance_confirmations(path) == confirmations
-
-
-def test_balance_evidence_repository_round_trip_with_provenance(tmp_path: Path) -> None:
-    path = tmp_path / "balance_evidence.csv"
-    repository = FilesystemEvidenceRepository()
-    evidence = (
-        BalanceEvidence(
-            source=SourceId("coinbase"),
-            location_id=LocationId("coinbase:primary"),
-            instrument_id=InstrumentId("symbol:BTC@coinbase"),
-            quantity=Decimal("1.25"),
-            as_of_at=datetime(2025, 12, 31, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.DATE,
-            provenance=ProvenanceLocator(
-                capture_uid=CaptureUid("01HV4A5H7VJH7M3Y5A6B7C8D9E"),
-                relative_path="statement.pdf",
-                locator_kind="raw_file",
-            ),
-        ),
-    )
-
-    repository.write_balance_evidence(path, evidence)
+    repository.write_balance_references(path, references)
 
     rows = read_rows(path)
 
-    assert tuple(rows[0].keys()) == BALANCE_EVIDENCE_HEADER
-    assert rows[0]["capture_uid"] == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
-    assert rows[0]["relative_path"] == "statement.pdf"
-    assert repository.read_balance_evidence(path) == evidence
+    assert tuple(rows[0].keys()) == BALANCE_REFERENCE_HEADER
+    assert rows[0]["reference_kind"] == "operator_assertion"
+    assert rows[0]["support_ref"] == "statement.pdf#page=1"
+    assert repository.read_balance_references(path) == references

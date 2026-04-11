@@ -1,4 +1,4 @@
-"""Balance-kind normalization helpers."""
+"""Balance kind normalization helpers."""
 
 from __future__ import annotations
 

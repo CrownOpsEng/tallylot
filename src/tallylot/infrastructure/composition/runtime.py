@@ -125,8 +125,12 @@ def balance_coverage_workflow() -> BalanceCoverageWorkflow:
 
 
 def balance_check_workflow() -> BalanceCheckWorkflow:
-    _, artifacts, _, evidence = runtime_dependencies()
-    return BalanceCheckWorkflow(evidence, artifacts)
+    _, artifacts, facts, evidence = runtime_dependencies()
+    return BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    )
 
 
 def balance_summary_workflow() -> BalanceSummaryWorkflow:
