@@ -1069,7 +1069,7 @@ def test_submitted_balance_output_can_be_checked_by_reconciliation_cli(
                 instrument_id="symbol:BTC@coinbase",
                 quantity="1.25",
                 as_of=datetime(2026, 3, 23, tzinfo=UTC),
-                location_id="coinbase:primary:primary",
+                location_id="coinbase:primary",
             ),
         ),
     )

@@ -18,7 +18,7 @@ from tallylot.domain.balances import (
 )
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.locations import LocationKind
-from tallylot.domain.types import SourceId
+from tallylot.domain.types import LocationId, SourceId
 from tallylot.ports.evidence import LocationInventoryRecord
 
 from .contracts import (
@@ -61,7 +61,11 @@ def _balance_snapshot_from_row(row: BalanceSnapshotSubmissionRow) -> BalanceSnap
     return BalanceSnapshot(
         target=BalanceTarget(
             source=SourceId(row.source),
-            location_id=location_id_from_parts(row.source, row.account, row.wallet),
+            location_id=_location_id_for_submission_row(
+                row.source,
+                row.account,
+                row.wallet,
+            ),
             instrument_id=InstrumentId(row.instrument_id),
             balance_kind=row.balance_kind,
             target_at=row.target_at,
@@ -79,7 +83,11 @@ def _balance_reference_from_row(
     return BalanceReference(
         target=BalanceTarget(
             source=SourceId(row.source),
-            location_id=location_id_from_parts(row.source, row.account, row.wallet),
+            location_id=_location_id_for_submission_row(
+                row.source,
+                row.account,
+                row.wallet,
+            ),
             instrument_id=InstrumentId(row.instrument_id),
             balance_kind=row.balance_kind,
             target_at=row.target_at,
@@ -101,7 +109,11 @@ def _location_inventory_record_from_row(
     *,
     submission_root: str,
 ) -> LocationInventoryRecord:
-    location_id = location_id_from_parts(row.source, row.account, row.wallet)
+    location_id = _location_id_for_submission_row(
+        row.source,
+        row.account,
+        row.wallet,
+    )
     account_level = row.account == row.wallet
     parent_location_id = (
         None if account_level else location_id_from_parts(row.source, row.account)
@@ -132,3 +144,13 @@ def _location_inventory_record_from_row(
             parent_location_label="" if account_level else row.account,
         )
     )
+
+
+def _location_id_for_submission_row(
+    source: str,
+    account: str,
+    wallet: str,
+) -> LocationId:
+    if account == wallet:
+        return location_id_from_parts(source, account)
+    return location_id_from_parts(source, account, wallet)

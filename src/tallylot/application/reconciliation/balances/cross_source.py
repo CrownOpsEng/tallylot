@@ -31,7 +31,11 @@ class CrossSourceCorroborationResult:
         skipped_count = sum(
             1
             for issue in self.issues
-            if issue.kind == "cross_source_low_confidence_identity"
+            if issue.kind
+            in {
+                "cross_source_low_confidence_identity",
+                "cross_source_ambiguous_identity",
+            }
         )
         return {
             "assertion_count": len(self.assertions),
@@ -120,9 +124,8 @@ def build_cross_source_corroboration(
                 normalized_identifier=normalized_identifier,
                 network_scope=network_scope,
             )
-            deduped_rows = {row.location_id: row for row in source_rows}
             high_confidence_rows = [
-                row for row in deduped_rows.values() if row.confidence.lower() == "high"
+                row for row in source_rows if row.confidence.lower() == "high"
             ]
             if not high_confidence_rows:
                 issues.append(
@@ -166,16 +169,7 @@ def build_cross_source_corroboration(
             )
             join_rows_by_source[source] = join_rows
             issues.extend(duplicate_issues)
-        comparable_sources = tuple(
-            source
-            for source in sorted(join_rows_by_source)
-            if source
-            not in {
-                issue.source
-                for issue in issues
-                if issue.kind == "cross_source_ambiguous_identity"
-            }
-        )
+        comparable_sources = tuple(sorted(join_rows_by_source))
         for left_index, left_source in enumerate(comparable_sources):
             for right_source in comparable_sources[left_index + 1 :]:
                 left_identity = eligible_identities[left_source]

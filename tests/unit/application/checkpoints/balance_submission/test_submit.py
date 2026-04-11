@@ -31,6 +31,9 @@ def test_submit_balances_materializes_balance_outputs(tmp_path: Path) -> None:
     )
 
     evidence = FilesystemEvidenceRepository()
+    reference_rows = evidence.read_balance_references(
+        output_root / "balance_references.csv"
+    )
     summary = json.loads(
         (output_root / "balance_submission_summary.json").read_text(encoding="utf-8")
     )
@@ -47,14 +50,10 @@ def test_submit_balances_materializes_balance_outputs(tmp_path: Path) -> None:
                 0
             ].location_id
         )
-        == "coinbase:primary:primary"
+        == "coinbase:primary"
     )
-    assert (
-        evidence.read_balance_references(output_root / "balance_references.csv")[
-            0
-        ].support_ref
-        == "statement.pdf#page=1"
-    )
+    assert reference_rows[0].support_ref == "statement.pdf#page=1"
+    assert str(reference_rows[0].location_id) == "coinbase:primary"
     assert not (output_root / "balance_submission_issues.csv").exists()
     assert summary["ready_for_balance_check"] is True
     assert summary["wrote_balance_references"] is True
@@ -123,6 +122,7 @@ def test_submit_balances_materializes_optional_location_inventory(
     assert location_rows[0]["evidence_relative_path"] == "location_inventory.csv"
     assert location_rows[1]["location_kind"] == "account"
     assert location_rows[1]["parent_location_id"] == ""
+    assert location_rows[1]["location_id"] == "ledger:vault"
     assert location_rows[1]["location_path"] == "vault"
 
 
