@@ -271,6 +271,12 @@ def test_coinbase_source_statement_extraction_skips_auxiliary_and_history_pdfs(
         raw_dir,
     )
 
-    assert not batch.balance_references
+    assert [
+        (str(reference.instrument_id), reference.balance_kind, reference.quantity)
+        for reference in batch.balance_references
+    ] == [
+        ("symbol:ETH@coinbase", "available", Decimal("0.001181807820874")),
+        ("symbol:CAD@coinbase", "available", Decimal("0")),
+    ]
     assert not batch.issues
     assert not batch.reviews

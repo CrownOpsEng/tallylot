@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from tallylot.application.intake.contracts import IntakePlanRequest
 from tallylot.application.intake.source_labels import (
     SourceLabelContext,
@@ -59,6 +61,7 @@ def build_planned_item(
         request=SourceLabelResolutionRequest(
             workspace_root=workspace_root,
             incoming_capture_scope=incoming_dir.name,
+            incoming_source_folder=_incoming_source_folder(incoming_dir),
             route_key=route_key,
             facts=facts,
             source_folder=route.source_folder,
@@ -170,3 +173,10 @@ def _originality_class(entry: ScannedFile, category: str) -> str:
             return "operator_authored"
         return "derived_runtime"
     return "upstream_original"
+
+
+def _incoming_source_folder(incoming_dir: Path) -> str:
+    if incoming_dir.parent.parent.name not in {"source", "portfolio"}:
+        return ""
+    source_folder = str(incoming_dir.parent.name)
+    return source_folder.strip()

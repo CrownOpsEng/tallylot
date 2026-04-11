@@ -28,6 +28,7 @@ class BalanceCheckRequest:
     output_root_ref: ResourceRef
     sources: tuple[str, ...] = ()
     as_of_values: tuple[str, ...] = ()
+    timezone: str = ""
     hydrate_missing_references: bool = False
     reference_policy: str = "default"
 

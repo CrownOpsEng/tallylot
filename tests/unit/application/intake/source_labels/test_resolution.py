@@ -5,6 +5,7 @@ from pathlib import Path
 from tallylot.application.intake.file_facts import IntakeFileFacts
 from tallylot.application.intake.path_rules import override_target_source
 from tallylot.application.intake.source_labels import (
+    SourceLabelContext,
     load_source_label_context,
     resolve_source_label,
     SourceLabelResolutionRequest,
@@ -296,3 +297,34 @@ def test_resolve_source_label_prefers_capture_scoped_rule_over_global_rule(
     assert decision.source_folder == "wallet-alt"
     assert decision.source_resolution_status == "explicit_map"
     assert "eth-stage" in decision.source_resolution_reason
+
+
+def test_resolve_source_label_preserves_incoming_source_scope_before_inventory_fallback(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+
+    decision = resolve_source_label(
+        artifacts=artifacts,
+        context=SourceLabelContext(rules=(), issues=()),
+        request=SourceLabelResolutionRequest(
+            workspace_root=workspace_root,
+            incoming_capture_scope="2026-03",
+            incoming_source_folder="coinbase",
+            route_key="statement.pdf",
+            facts=IntakeFileFacts(),
+            source_folder="unclassified",
+            target_path=workspace_root
+            / "evidence"
+            / "raw"
+            / "source"
+            / "unclassified"
+            / "2026-03"
+            / "statement.pdf",
+        ),
+    )
+
+    assert decision.source_folder == "coinbase"
+    assert decision.source_resolution_status == "incoming_source_scope"
+    assert decision.inventory_match_status == "not_evaluated_incoming_source_scope"

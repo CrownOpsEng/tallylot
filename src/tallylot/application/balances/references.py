@@ -9,6 +9,7 @@ from tallylot.domain.balances import (
     BalanceReference,
     BalanceTarget,
 )
+from tallylot.domain.balances.matching import balance_target_match_key
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.value_objects import format_temporal_value
 from tallylot.ports.balance_providers import (
@@ -35,13 +36,16 @@ class BalanceReferenceResolver:
         targets: tuple[BalanceTarget, ...],
         hydrate_missing: bool,
     ) -> tuple[tuple[BalanceReference, ...], tuple[IssueRecord, ...]]:
+        references_by_target: dict[object, list[BalanceReference]] = defaultdict(list)
+        for reference in existing_references:
+            references_by_target[balance_target_match_key(reference.target)].append(
+                reference
+            )
         matched: list[BalanceReference] = []
         unresolved: list[BalanceTarget] = []
         for target in targets:
             matching = tuple(
-                reference
-                for reference in existing_references
-                if reference.target == target
+                references_by_target.get(balance_target_match_key(target), ())
             )
             if matching:
                 matched.extend(matching)

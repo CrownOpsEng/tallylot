@@ -924,6 +924,123 @@ def test_balance_check_workflow_respects_explicit_date_only_as_of_values(
 
     assert len(assertion_rows) == 1
     assert check_summary_rows[0]["resolution_mode"] == "offline"
-    assert assertion_rows[0]["target_at"] == "2025-12-30"
-    assert assertion_rows[0]["target_precision"] == "date"
+    assert assertion_rows[0]["target_at"] == "2025-12-30 00:00:00"
+    assert assertion_rows[0]["target_precision"] == "timestamp"
     assert check_summary_rows[0]["max_assertion_date"] == "2025-12-30"
+
+
+def test_balance_check_workflow_matches_date_only_as_of_to_same_instant_reference(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    input_root.mkdir()
+
+    fact_time = datetime(2025, 12, 30, tzinfo=UTC)
+    reference_time = fact_time
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=fact_time,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=reference_time,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+            as_of_values=("2025-12-30",),
+            hydrate_missing_references=False,
+        )
+    )
+
+    assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+
+    assert len(assertion_rows) == 1
+    assert assertion_rows[0]["status"] == "matched"
+    assert assertion_rows[0]["selected_reference_kind"] == "source_document"
+    assert assertion_rows[0]["observation_gap"] == "0"
+
+
+def test_balance_check_workflow_applies_timezone_to_date_only_as_of_values(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    input_root.mkdir()
+
+    cutoff_at = datetime(2025, 12, 30, 7, 0, 0, tzinfo=UTC)
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=cutoff_at,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=cutoff_at,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+            as_of_values=("2025-12-30",),
+            timezone="America/Denver",
+            hydrate_missing_references=False,
+        )
+    )
+
+    assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+
+    assert len(assertion_rows) == 1
+    assert assertion_rows[0]["target_at"] == "2025-12-30 07:00:00"
+    assert assertion_rows[0]["status"] == "matched"

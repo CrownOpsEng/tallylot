@@ -849,3 +849,140 @@ def test_source_statement_extraction_reports_ambiguous_latest_inventory_pdfs(
     ]
     assert {issue.raw_file for issue in result.issues} == {"first.pdf", "second.pdf"}
     assert all("first.pdf, second.pdf" in issue.message for issue in result.issues)
+
+
+def test_source_statement_extraction_uses_base_source_location_when_wallet_matches_source(
+    tmp_path: Path,
+) -> None:
+    pdf_path = tmp_path / "statement.pdf"
+    _make_pdf(pdf_path, "Statement")
+    statement_as_of = datetime(2026, 3, 23, 0, 0, tzinfo=UTC)
+    rows = (
+        StatementDocumentBalanceRow(
+            source="Coinbase",
+            account="Coinbase",
+            wallet="Coinbase",
+            balance_kind="available",
+            asset="BTC",
+            quantity=Decimal("1.0"),
+            as_of_at=statement_as_of,
+            as_of_precision=TemporalPrecision.DATE,
+            pdf_file=pdf_path.name,
+            raw_row_ref="page=1",
+        ),
+    )
+
+    class BaseLocationAdapter(StubPdfAdapter):
+        @override
+        def resolve_statement_instrument_claims(
+            self, row: StatementDocumentBalanceRow
+        ) -> tuple[InstrumentIdentityClaim, ...]:
+            return (InstrumentIdentityClaim("symbol", row.asset),)
+
+    adapter = BaseLocationAdapter("coinbase", 100, rows)
+    adapter.statement_as_of_at = statement_as_of
+    registry = StubRegistry([adapter])
+    profile = SourceProfile(
+        source=SourceId("coinbase"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("coinbase"),
+        manifest_fingerprint="fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path=pdf_path.name,
+                suffix=".pdf",
+                size_bytes=pdf_path.stat().st_size,
+                sha256="fixture",
+                source_path=str(pdf_path),
+                capture_uid="capture-1",
+                source="coinbase",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+        ),
+        supported=True,
+    )
+
+    result = StatementExtractionService(registry).extract_source_balance_references(
+        profile, tmp_path
+    )
+
+    assert not result.issues
+    assert [str(reference.location_id) for reference in result.balance_references] == [
+        "coinbase"
+    ]
+
+
+def test_source_statement_extraction_normalizes_statement_balance_kinds_for_matching(
+    tmp_path: Path,
+) -> None:
+    pdf_path = tmp_path / "statement.pdf"
+    _make_pdf(pdf_path, "Statement")
+    statement_as_of = datetime(2026, 3, 23, 0, 0, tzinfo=UTC)
+    rows = (
+        StatementDocumentBalanceRow(
+            source="Coinbase",
+            account="Coinbase",
+            wallet="Coinbase",
+            balance_kind="asset_balance",
+            asset="BTC",
+            quantity=Decimal("1.0"),
+            as_of_at=statement_as_of,
+            as_of_precision=TemporalPrecision.DATE,
+            pdf_file=pdf_path.name,
+            raw_row_ref="page=1",
+        ),
+        StatementDocumentBalanceRow(
+            source="Coinbase",
+            account="Coinbase",
+            wallet="Coinbase Cash",
+            balance_kind="cash_closing_balance",
+            asset="USD",
+            quantity=Decimal("2.0"),
+            as_of_at=statement_as_of,
+            as_of_precision=TemporalPrecision.DATE,
+            pdf_file=pdf_path.name,
+            raw_row_ref="page=2",
+        ),
+    )
+
+    class MatchingKindAdapter(StubPdfAdapter):
+        @override
+        def resolve_statement_instrument_claims(
+            self, row: StatementDocumentBalanceRow
+        ) -> tuple[InstrumentIdentityClaim, ...]:
+            return (InstrumentIdentityClaim("symbol", row.asset),)
+
+    adapter = MatchingKindAdapter("coinbase", 100, rows)
+    adapter.statement_as_of_at = statement_as_of
+    registry = StubRegistry([adapter])
+    profile = SourceProfile(
+        source=SourceId("coinbase"),
+        raw_dir=str(tmp_path),
+        adapter_id=AdapterId("coinbase"),
+        manifest_fingerprint="fixture",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path=pdf_path.name,
+                suffix=".pdf",
+                size_bytes=pdf_path.stat().st_size,
+                sha256="fixture",
+                source_path=str(pdf_path),
+                capture_uid="capture-1",
+                source="coinbase",
+                evidence_role="statement_source",
+                originality_class="upstream_original",
+            ),
+        ),
+        supported=True,
+    )
+
+    result = StatementExtractionService(registry).extract_source_balance_references(
+        profile, tmp_path
+    )
+
+    assert not result.issues
+    assert [reference.balance_kind for reference in result.balance_references] == [
+        "available",
+        "available",
+    ]

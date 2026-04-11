@@ -46,6 +46,16 @@ def _check_balances(  # pylint: disable=too-many-arguments,too-many-positional-a
     output_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     source: Annotated[list[str] | None, typer.Option()] = None,
     as_of: Annotated[list[str] | None, typer.Option("--as-of")] = None,
+    timezone: Annotated[
+        str,
+        typer.Option(
+            "--timezone",
+            help=(
+                "Interpret date-only or naive as-of values in this timezone before "
+                "matching exact UTC cutoffs."
+            ),
+        ),
+    ] = "",
     hydrate_missing_references: Annotated[
         bool,
         typer.Option(
@@ -62,6 +72,7 @@ def _check_balances(  # pylint: disable=too-many-arguments,too-many-positional-a
                 output_root_ref=to_resource_ref(output_root),
                 sources=tuple(source or ()),
                 as_of_values=tuple(as_of or ()),
+                timezone=timezone,
                 hydrate_missing_references=hydrate_missing_references,
                 reference_policy=reference_policy,
             )

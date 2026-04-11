@@ -76,6 +76,7 @@ def _source_input(
         root=Path("/tmp"),
         input_mode=input_mode,
         snapshot_origin=snapshot_origin,
+        timezone="UTC",
         targets=targets,
         snapshots=snapshots,
         references=references,

@@ -9,6 +9,7 @@ from decimal import Decimal
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.value_objects import format_temporal_value
 
+from .matching import BalanceTargetMatchKey, balance_target_match_key
 from .models import (
     BalanceAssertion,
     BalanceAssertionStatus,
@@ -39,15 +40,19 @@ def assert_balance_targets(
     reference_index, reference_issues = _index_references(references)
     issues: list[IssueRecord] = [*snapshot_issues, *reference_issues]
     assertions: list[BalanceAssertion] = []
-    for target in sorted(set(snapshot_index) | set(reference_index)):
-        snapshot = snapshot_index.get(target)
+    for match_key in sorted(set(snapshot_index) | set(reference_index)):
+        snapshot = snapshot_index.get(match_key)
+        references_for_target = reference_index.get(match_key, ())
+        assertion_target = (
+            snapshot.target if snapshot is not None else references_for_target[0].target
+        )
         selected_reference, selection_status, selection_issues = _selected_reference(
-            target,
-            reference_index.get(target, ()),
+            assertion_target,
+            references_for_target,
         )
         issues.extend(selection_issues)
         assertion = _build_assertion(
-            target,
+            assertion_target,
             snapshot,
             selected_reference,
             selection_status,
@@ -60,32 +65,35 @@ def assert_balance_targets(
 
 def _index_snapshots(
     snapshots: tuple[BalanceSnapshot, ...],
-) -> tuple[dict[BalanceTarget, BalanceSnapshot], tuple[IssueRecord, ...]]:
-    indexed: dict[BalanceTarget, BalanceSnapshot] = {}
+) -> tuple[dict[BalanceTargetMatchKey, BalanceSnapshot], tuple[IssueRecord, ...]]:
+    indexed: dict[BalanceTargetMatchKey, BalanceSnapshot] = {}
     issues: list[IssueRecord] = []
-    duplicate_counts: dict[BalanceTarget, int] = defaultdict(int)
+    duplicate_counts: dict[BalanceTargetMatchKey, int] = defaultdict(int)
     for snapshot in snapshots:
-        target = snapshot.target
-        if target in indexed:
-            duplicate_counts[target] += 1
+        match_key = balance_target_match_key(snapshot.target)
+        if match_key in indexed:
+            duplicate_counts[match_key] += 1
             issues.append(
                 _duplicate_issue(
-                    target,
+                    snapshot.target,
                     kind="duplicate_balance_snapshot",
-                    duplicate_index=duplicate_counts[target],
+                    duplicate_index=duplicate_counts[match_key],
                 )
             )
             continue
-        indexed[target] = snapshot
+        indexed[match_key] = snapshot
     return indexed, tuple(issues)
 
 
 def _index_references(
     references: tuple[BalanceReference, ...],
-) -> tuple[dict[BalanceTarget, tuple[BalanceReference, ...]], tuple[IssueRecord, ...]]:
-    grouped: dict[BalanceTarget, list[BalanceReference]] = defaultdict(list)
+) -> tuple[
+    dict[BalanceTargetMatchKey, tuple[BalanceReference, ...]],
+    tuple[IssueRecord, ...],
+]:
+    grouped: dict[BalanceTargetMatchKey, list[BalanceReference]] = defaultdict(list)
     for reference in references:
-        grouped[reference.target].append(reference)
+        grouped[balance_target_match_key(reference.target)].append(reference)
     return {target: tuple(items) for target, items in grouped.items()}, ()
 
 

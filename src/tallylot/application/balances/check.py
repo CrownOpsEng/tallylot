@@ -370,7 +370,11 @@ def _build_check_plan(
     facts: FactRepositoryPort,
     resolution_mode: BalanceResolutionMode,
 ) -> _CheckPlan:
-    parsed_times = parse_target_time_values(request.as_of_values)
+    timezone_value = request.timezone or source_input.timezone
+    parsed_times = parse_target_time_values(
+        request.as_of_values,
+        timezone_value=timezone_value,
+    )
     _normalize_reference_policy(request.reference_policy)
     if source_input.input_mode == "empty":
         return _CheckPlan(
@@ -442,8 +446,7 @@ def _select_targets_for_requested_times(
     selected: list[BalanceTarget] = []
     for target in targets:
         if any(
-            target.target_at == target_at and target.target_precision == precision
-            for target_at, precision in requested_times
+            target.target_at == target_at for target_at, _precision in requested_times
         ):
             selected.append(target)
     return tuple(selected)

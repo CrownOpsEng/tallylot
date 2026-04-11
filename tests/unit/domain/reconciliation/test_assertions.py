@@ -133,6 +133,50 @@ def test_assert_balance_targets_accepts_observation_gap() -> None:
     assert result.issues == ()
 
 
+def test_assert_balance_targets_matches_same_instant_across_precisions() -> None:
+    target_at = datetime(2025, 12, 30, tzinfo=UTC)
+    date_target = BalanceTarget(
+        source=SourceId("coinbase"),
+        location_id=LocationId("coinbase"),
+        instrument_id=InstrumentId("BTC"),
+        balance_kind="available",
+        target_at=target_at,
+        target_precision=TemporalPrecision.DATE,
+    )
+    reference_target = BalanceTarget(
+        source=SourceId("coinbase"),
+        location_id=LocationId("coinbase"),
+        instrument_id=InstrumentId("BTC"),
+        balance_kind="available",
+        target_at=target_at,
+        target_precision=TemporalPrecision.TIMESTAMP,
+    )
+
+    result = assert_balance_targets(
+        snapshots=(
+            BalanceSnapshot(
+                target=date_target,
+                quantity=Decimal("1.25"),
+                snapshot_basis="fact_cutoff",
+            ),
+        ),
+        references=(
+            BalanceReference(
+                target=reference_target,
+                quantity=Decimal("1.25"),
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                observed_at=reference_target.target_at,
+                observed_precision=TemporalPrecision.TIMESTAMP,
+                support_ref="statement.pdf#page=1",
+            ),
+        ),
+    )
+
+    assert result.issues == ()
+    assert result.assertions[0].status is BalanceAssertionStatus.MATCHED
+    assert result.assertions[0].observation_gap == "0"
+
+
 def test_assert_balance_targets_surfaces_duplicate_snapshots() -> None:
     result = assert_balance_targets(
         snapshots=(

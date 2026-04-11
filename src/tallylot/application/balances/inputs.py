@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 from typing import Literal
 
+from tallylot.application.capture_paths import capture_normalized_root
 from tallylot.application.balances.filenames import (
     BALANCE_REFERENCE_FILENAME,
     BALANCE_REFERENCE_ISSUE_FILENAME,
@@ -83,6 +86,7 @@ class BalanceSourceInputs:
     root: Path
     input_mode: BalanceInputMode
     snapshot_origin: BalanceSnapshotOrigin
+    timezone: str
     targets: tuple[BalanceTarget, ...]
     snapshots: tuple[BalanceSnapshot, ...]
     references: tuple[BalanceReference, ...]
@@ -115,6 +119,7 @@ def build_balance_source_inputs(
     location_inventory = _read_location_inventory(
         artifacts, source_dir.location_inventory_path
     )
+    timezone_value = _infer_timezone(source_dir, artifacts)
     unexpected_superseded_outputs = tuple(
         path
         for path in (
@@ -152,6 +157,7 @@ def build_balance_source_inputs(
         root=source_dir.root,
         input_mode=input_mode,
         snapshot_origin=snapshot_origin,
+        timezone=timezone_value,
         targets=targets,
         snapshots=snapshots,
         references=reference_rows,
@@ -294,3 +300,69 @@ def _location_inventory_record_from_row(
             notes=row.get("notes", ""),
         )
     )
+
+
+def _infer_timezone(
+    source_dir: BalanceSourceDir,
+    artifacts: ArtifactStorePort,
+) -> str:
+    workspace_root = _workspace_root_from_source_root(source_dir.root)
+    assembly_summary_path = source_dir.root / "assembly_summary.json"
+    payload = _assembly_summary_payload(assembly_summary_path, workspace_root)
+    if payload is None:
+        return "UTC"
+    assert workspace_root is not None
+    capture_uids = payload.get("included_capture_uids", [])
+    timezone_values: set[str] = set()
+    for capture_uid in capture_uids:
+        capture_uid_text = capture_uid.strip()
+        if not capture_uid_text:
+            continue
+        inventory_path = (
+            capture_normalized_root(workspace_root, capture_uid_text)
+            / "profile_inventory.csv"
+        )
+        if not inventory_path.is_file():
+            continue
+        for row in artifacts.read_rows(inventory_path):
+            timezone_value = row.get("timezone_value", "").strip()
+            timezone_mode = row.get("timezone_mode", "").strip()
+            if timezone_mode == "conflict":
+                return "UTC"
+            if row.get("date_field", "").strip() and timezone_value:
+                timezone_values.add(timezone_value)
+    return next(iter(timezone_values)) if len(timezone_values) == 1 else "UTC"
+
+
+def _assembly_summary_payload(
+    assembly_summary_path: Path,
+    workspace_root: Path | None,
+) -> dict[str, list[str]] | None:
+    if workspace_root is None or not assembly_summary_path.is_file():
+        return None
+    try:
+        payload = json.loads(assembly_summary_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    payload_map = cast(dict[str, object], payload)
+    raw_capture_uids = payload_map.get("included_capture_uids")
+    if not isinstance(raw_capture_uids, list):
+        return None
+    capture_uids: list[str] = []
+    for item in cast(list[object], raw_capture_uids):
+        if not isinstance(item, str):
+            return None
+        capture_uids.append(item)
+    return {"included_capture_uids": capture_uids}
+
+
+def _workspace_root_from_source_root(source_root: Path) -> Path | None:
+    if (
+        source_root.parent.name != "sources"
+        or source_root.parent.parent.name != "normalized"
+        or source_root.parent.parent.parent.name != "working"
+    ):
+        return None
+    return source_root.parent.parent.parent.parent

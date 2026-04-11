@@ -138,6 +138,6 @@ def test_coinbase_parse_statement_document_accepts_balance_report_without_statem
         """,
     )
 
-    assert score == 0
+    assert score > 0
     assert parsed.recognized is True
     assert len(parsed.rows) == 2

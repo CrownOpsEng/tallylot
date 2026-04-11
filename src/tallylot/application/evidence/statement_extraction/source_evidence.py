@@ -400,11 +400,15 @@ def _statement_row_location_id(
 ) -> LocationId:
     wallet_segment = row.wallet.strip()
     account_segment = row.account.strip()
-    if wallet_segment:
+    if wallet_segment and not _matches_source_label(profile, wallet_segment):
         return location_id_from_parts(str(profile.source), wallet_segment)
-    if account_segment:
+    if account_segment and not _matches_source_label(profile, account_segment):
         return location_id_from_parts(str(profile.source), account_segment)
     return location_id_from_parts(str(profile.source))
+
+
+def _matches_source_label(profile: SourceProfile, segment: str) -> bool:
+    return segment.strip().casefold() == str(profile.source).strip().casefold()
 
 
 def _references_from_aggregated_rows(
@@ -435,7 +439,7 @@ def _references_from_aggregated_rows(
                     source=profile.source,
                     location_id=LocationId(location_id),
                     instrument_id=instrument_id,
-                    balance_kind=balance_kind,
+                    balance_kind=_reference_balance_kind(balance_kind),
                     target_at=as_of_at,
                     target_precision=as_of_precision,
                 ),
@@ -451,3 +455,10 @@ def _references_from_aggregated_rows(
             )
         )
     return tuple(references)
+
+
+def _reference_balance_kind(balance_kind: str) -> str:
+    normalized = balance_kind.strip()
+    if normalized in {"asset_balance", "cash_closing_balance"}:
+        return "available"
+    return normalized

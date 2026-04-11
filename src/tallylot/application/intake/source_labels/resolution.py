@@ -43,6 +43,8 @@ def resolve_source_label(
         return _blocked_resolution(request.source_folder, explicit_issue)
     if explicit_rule is not None:
         return _explicit_rule_resolution(explicit_rule)
+    if request.incoming_source_folder:
+        return _incoming_source_scope_resolution(request.incoming_source_folder)
     inventory_route = resolve_inventory_route(
         artifacts=artifacts,
         workspace_root=request.workspace_root,
@@ -96,6 +98,17 @@ def _explicit_rule_resolution(rule: SourceLabelRule) -> SourceLabelResolution:
             f"Explicit source map matched prefix {rule.prefix}{scope_context} -> {rule.source}"
         ),
         inventory_match_status="not_evaluated_explicit_map",
+    )
+
+
+def _incoming_source_scope_resolution(source_folder: str) -> SourceLabelResolution:
+    return SourceLabelResolution(
+        source_folder=source_folder,
+        source_resolution_status="incoming_source_scope",
+        source_resolution_reason=(
+            f"Incoming capture path preserved the stable source label {source_folder}."
+        ),
+        inventory_match_status="not_evaluated_incoming_source_scope",
     )
 
 

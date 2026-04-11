@@ -60,3 +60,4 @@ class SourceLabelResolutionRequest:
     facts: IntakeFileFacts
     source_folder: str
     target_path: Path
+    incoming_source_folder: str = ""
