@@ -15,7 +15,10 @@ from tallylot.adapters.support import (
     no_intake_route,
     location_id_from_identifier,
 )
-from tallylot.adapters.support.drafts import translation_batch_from_drafts
+from tallylot.adapters.support.drafts import (
+    TranslationBatchDrafts,
+    translation_batch_from_drafts,
+)
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
@@ -143,8 +146,10 @@ class _EvmWalletAdapter:
             str(profile.source), raw_dir, profile
         )
         return translation_batch_from_drafts(
-            issues=issues,
-            location_inventory=location_inventory,
+            TranslationBatchDrafts(
+                issues=issues,
+                location_inventory=location_inventory,
+            )
         )
 
 

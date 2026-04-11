@@ -7,6 +7,7 @@ from pathlib import Path
 from tallylot.adapters.support import IssueSpec, issue_record, read_csv_row_contexts
 from tallylot.adapters.support.drafts import (
     EconomicActivityDraft,
+    TranslationBatchDrafts,
     translation_batch_from_drafts,
 )
 from tallylot.domain.issues import IssueRecord
@@ -24,18 +25,20 @@ def translate_coinbase_exports(
     retail_path = _retail_path(raw_dir)
     if retail_path is None:
         return translation_batch_from_drafts(
-            issues=(
-                issue_record(
-                    IssueSpec(
-                        source=str(profile.source),
-                        adapter_id="coinbase",
-                        issue_id="coinbase:missing_retail_csv",
-                        kind="missing_required_input",
-                        message="Coinbase retail all-time CSV is required for deterministic normalization.",
-                        severity="high",
-                    )
+            TranslationBatchDrafts(
+                issues=(
+                    issue_record(
+                        IssueSpec(
+                            source=str(profile.source),
+                            adapter_id="coinbase",
+                            issue_id="coinbase:missing_retail_csv",
+                            kind="missing_required_input",
+                            message="Coinbase retail all-time CSV is required for deterministic normalization.",
+                            severity="high",
+                        )
+                    ),
                 ),
-            ),
+            )
         )
 
     drafts: list[EconomicActivityDraft] = []
@@ -86,6 +89,5 @@ def translate_coinbase_exports(
                 )
             )
     return translation_batch_from_drafts(
-        drafts,
-        issues=issues,
+        TranslationBatchDrafts(drafts=tuple(drafts), issues=tuple(issues))
     )

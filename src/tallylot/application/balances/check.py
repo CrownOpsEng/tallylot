@@ -29,6 +29,16 @@ from tallylot.application.balances.inputs import (
     source_dir_input,
 )
 from tallylot.application.balances.references import BalanceReferenceResolver
+from tallylot.application.balances.io import (
+    BalanceReferenceCacheUpdate,
+    clear_generated_balance_check_outputs,
+    clear_generated_balance_reference_issue_output,
+    ensure_balance_check_output_root_is_safe,
+    ensure_balance_output_paths_are_distinct,
+    ensure_balance_source_output_paths_are_safe,
+    persist_balance_reference_cache,
+    read_rows_if_present,
+)
 from tallylot.application.balances.snapshots import derive_balance_snapshots
 from tallylot.application.balances.records import (
     BALANCE_ASSERTION_HEADER,
@@ -43,12 +53,8 @@ from tallylot.application.balances.targets import (
     targets_for_as_of_values,
 )
 from tallylot.application.resource_refs import path_from_ref, to_resource_ref
-from tallylot.application.workspace.filesystem import (
-    ensure_directory,
-    ensure_output_not_within_input_tree,
-)
+from tallylot.application.workspace.filesystem import ensure_directory
 from tallylot.domain.balances import (
-    BalanceReference,
     BalanceSnapshot,
     BalanceTarget,
     assert_balance_targets,
@@ -57,15 +63,8 @@ from tallylot.domain.issues import IssueRecord
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.balance_providers import BalanceProviderRegistryPort
-from tallylot.ports.evidence import EvidenceRepositoryPort, ISSUE_HEADER
+from tallylot.ports.evidence import EvidenceRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
-
-
-@dataclass(frozen=True)
-class _ReferenceCacheUpdate:
-    existing_references: tuple[BalanceReference, ...]
-    resolved_references: tuple[BalanceReference, ...]
-    reference_issues: tuple[IssueRecord, ...]
 
 
 @dataclass(frozen=True)
@@ -98,8 +97,8 @@ class BalanceCheckWorkflow:
     def execute(self, request: BalanceCheckRequest) -> BalanceCheckResponse:
         input_root = path_from_ref(request.input_root_ref)
         output_root = path_from_ref(request.output_root_ref)
-        _ensure_output_root_is_safe(input_root, output_root)
-        _clear_generated_balance_check_outputs(output_root)
+        ensure_balance_check_output_root_is_safe(input_root, output_root)
+        clear_generated_balance_check_outputs(output_root)
         single_source = source_dir_input(input_root)
         source_dirs = select_balance_source_dirs(
             discover_balance_source_dirs(input_root),
@@ -120,8 +119,8 @@ class BalanceCheckWorkflow:
                 output_root,
                 single_source=single_source,
             )
-            _clear_generated_balance_check_outputs(source_output_root)
-            _clear_generated_balance_reference_issue_output(
+            clear_generated_balance_check_outputs(source_output_root)
+            clear_generated_balance_reference_issue_output(
                 source_dir.reference_issue_path
             )
             records.append(
@@ -180,16 +179,16 @@ class BalanceCheckWorkflow:
         output_root: Path,
         request: BalanceCheckRequest,
     ) -> BalanceCheckSummaryRecord:
-        _clear_generated_balance_check_outputs(output_root)
+        clear_generated_balance_check_outputs(output_root)
         assertion_output_path = output_root / BALANCE_ASSERTION_FILENAME
         issue_output_path = output_root / "reconciliation_issues.csv"
         summary_output_path = output_root / BALANCE_RECONCILIATION_SUMMARY_FILENAME
-        _ensure_output_paths_are_distinct(
+        ensure_balance_output_paths_are_distinct(
             assertion_output_path,
             issue_output_path,
             summary_output_path,
         )
-        _ensure_source_output_paths_are_safe(source_dir, output_root)
+        ensure_balance_source_output_paths_are_safe(source_dir, output_root)
         ensure_directory(output_root)
         resolution_mode: BalanceResolutionMode = (
             "hydrated" if request.hydrate_missing_references else "offline"
@@ -250,11 +249,11 @@ class BalanceCheckWorkflow:
             targets=plan.targets,
             hydrate_missing=request.hydrate_missing_references,
         )
-        _persist_reference_cache(
+        persist_balance_reference_cache(
             source_dir=source_dir,
             artifacts=self._artifacts,
             evidence=self._evidence,
-            update=_ReferenceCacheUpdate(
+            update=BalanceReferenceCacheUpdate(
                 existing_references=existing_references,
                 resolved_references=resolved_references,
                 reference_issues=reference_issues,
@@ -286,8 +285,8 @@ class BalanceCheckWorkflow:
                 ),
             },
         )
-        assertion_rows = _read_rows_if_present(self._artifacts, assertion_output_path)
-        issue_rows = _read_rows_if_present(self._artifacts, issue_output_path)
+        assertion_rows = read_rows_if_present(self._artifacts, assertion_output_path)
+        issue_rows = read_rows_if_present(self._artifacts, issue_output_path)
         all_dates = tuple(
             date_value
             for row in assertion_rows
@@ -440,113 +439,3 @@ def _select_targets_for_requested_times(
         ):
             selected.append(target)
     return tuple(selected)
-
-
-def _persist_reference_cache(
-    *,
-    source_dir: BalanceSourceDir,
-    artifacts: ArtifactStorePort,
-    evidence: EvidenceRepositoryPort,
-    update: _ReferenceCacheUpdate,
-) -> None:
-    merged_references = {
-        (
-            reference.target,
-            reference.reference_kind.value,
-            reference.observed_at,
-            reference.observed_precision.value,
-            reference.support_ref,
-        ): reference
-        for reference in (*update.existing_references, *update.resolved_references)
-    }
-    evidence.write_balance_references(
-        source_dir.reference_path,
-        tuple(
-            merged_references[key]
-            for key in sorted(
-                merged_references,
-                key=lambda item: (
-                    str(item[0].source),
-                    str(item[0].location_id),
-                    str(item[0].instrument_id),
-                    item[0].balance_kind,
-                    item[0].target_at,
-                    item[1],
-                    item[2],
-                ),
-            )
-        ),
-    )
-    if update.reference_issues:
-        artifacts.write_rows(
-            source_dir.reference_issue_path,
-            ISSUE_HEADER,
-            tuple(issue.to_row() for issue in update.reference_issues),
-        )
-    else:
-        _clear_generated_balance_reference_issue_output(source_dir.reference_issue_path)
-
-
-def _ensure_output_root_is_safe(input_root: Path, output_root: Path) -> None:
-    ensure_output_not_within_input_tree(
-        input_root,
-        output_root,
-        input_label="balance input root",
-        output_label="balance check output root",
-    )
-
-
-def _ensure_source_output_paths_are_safe(
-    source_dir: BalanceSourceDir, output_root: Path
-) -> None:
-    for input_label, input_path in (
-        ("balance facts input", source_dir.facts_path),
-        ("balance snapshot input", source_dir.snapshot_path),
-        ("balance reference input", source_dir.reference_path),
-    ):
-        ensure_output_not_within_input_tree(
-            input_path,
-            output_root,
-            input_label=input_label,
-            output_label="balance check output root",
-        )
-
-
-def _ensure_output_paths_are_distinct(*paths: Path) -> None:
-    seen_paths: set[Path] = set()
-    for path in paths:
-        if path in seen_paths:
-            raise ValueError(f"balance check outputs must be distinct: {path}")
-        seen_paths.add(path)
-
-
-def _read_rows_if_present(
-    artifacts: ArtifactStorePort,
-    path: Path,
-) -> list[dict[str, str]]:
-    if not path.is_file():
-        return []
-    return artifacts.read_rows(path)
-
-
-_GENERATED_OUTPUT_FILENAMES = (
-    BALANCE_ASSERTION_FILENAME,
-    BALANCE_CHECK_SUMMARY_FILENAME,
-    BALANCE_RECONCILIATION_SUMMARY_FILENAME,
-    "cross_source_assertions.csv",
-    "cross_source_issues.csv",
-    "cross_source_summary.json",
-    "reconciliation_issues.csv",
-)
-
-
-def _clear_generated_balance_check_outputs(output_root: Path) -> None:
-    for filename in _GENERATED_OUTPUT_FILENAMES:
-        path = output_root / filename
-        if path.is_file() or path.is_symlink():
-            path.unlink()
-
-
-def _clear_generated_balance_reference_issue_output(path: Path) -> None:
-    if path.is_file() or path.is_symlink():
-        path.unlink()

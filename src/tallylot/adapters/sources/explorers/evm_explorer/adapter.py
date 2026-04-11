@@ -24,7 +24,10 @@ from tallylot.adapters.support import (
     read_csv_rows,
     location_id_from_identifier,
 )
-from tallylot.adapters.support.drafts import translation_batch_from_drafts
+from tallylot.adapters.support.drafts import (
+    TranslationBatchDrafts,
+    translation_batch_from_drafts,
+)
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
@@ -187,12 +190,14 @@ class _EvmExplorerAdapter:
             )
         )
         return translation_batch_from_drafts(
-            drafts,
-            balance_references=balance_references,
-            balance_reference_issues=evidence_issues,
-            issues=(*issues, *location_issues),
-            reviews=evidence_reviews,
-            location_inventory=location_inventory,
+            TranslationBatchDrafts(
+                drafts=drafts,
+                balance_references=balance_references,
+                balance_reference_issues=evidence_issues,
+                issues=(*issues, *location_issues),
+                reviews=evidence_reviews,
+                location_inventory=location_inventory,
+            )
         )
 
 

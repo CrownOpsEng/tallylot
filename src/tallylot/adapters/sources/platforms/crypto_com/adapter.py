@@ -23,6 +23,7 @@ from tallylot.adapters.support.drafts import (
     TWO_SIDED_PRIMARY_EXCHANGE_POLICY,
     EconomicActivityDraft,
     LegKind,
+    TranslationBatchDrafts,
     classification,
     economic_leg,
     symbol_claim,
@@ -150,8 +151,7 @@ class _CryptoComAdapter:
             ),
         )
         return translation_batch_from_drafts(
-            drafts,
-            issues=issues,
+            TranslationBatchDrafts(drafts=drafts, issues=issues)
         )
 
 

@@ -13,20 +13,20 @@ from tallylot.adapters.support import (
 )
 from tallylot.adapters.support.drafts import (
     EconomicActivityDraft,
+    TranslationBatchDrafts,
     translation_batch_from_drafts,
 )
 from tallylot.adapters.support.issues import IssueSpec, issue_record
+from tallylot.adapters.support.locations import (
+    LocationRecordSpec,
+    location_record,
+)
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import LocationId
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
-
-from tallylot.application.evidence.location_inventory import (
-    LocationInventoryBuildSpec,
-    build_location_inventory_record,
-)
 from tallylot.ports.evidence import LocationInventoryRecord
 
 from .contracts import REQUIRED_HEADER, TRANSACTIONS_FILENAME
@@ -46,19 +46,21 @@ def translate_structured_csv(
     validator = StructuredCsvRowValidator(feedback=feedback)
     if read_csv_header(path) != REQUIRED_HEADER:
         return translation_batch_from_drafts(
-            issues=(
-                issue_record(
-                    IssueSpec(
-                        issue_id=f"{profile.source}:schema",
-                        source=str(profile.source),
-                        adapter_id=adapter_id,
-                        severity="high",
-                        kind="invalid_schema",
-                        message="transactions.csv does not match the structured CSV schema.",
-                        raw_file=TRANSACTIONS_FILENAME,
-                    )
+            TranslationBatchDrafts(
+                issues=(
+                    issue_record(
+                        IssueSpec(
+                            issue_id=f"{profile.source}:schema",
+                            source=str(profile.source),
+                            adapter_id=adapter_id,
+                            severity="high",
+                            kind="invalid_schema",
+                            message="transactions.csv does not match the structured CSV schema.",
+                            raw_file=TRANSACTIONS_FILENAME,
+                        )
+                    ),
                 ),
-            ),
+            )
         )
     return _normalized_result(
         profile,
@@ -105,15 +107,19 @@ def _normalized_result(
         )
     reviews.extend(_dataset_reviews(feedback, has_transactions=bool(drafts)))
     return translation_batch_from_drafts(
-        drafts,
-        issues=_issues_with_no_valid_rows(
-            profile,
-            feedback.adapter_id,
-            issues,
-            has_transactions=bool(drafts),
-        ),
-        reviews=reviews,
-        location_inventory=tuple(location_rows.values()),
+        TranslationBatchDrafts(
+            drafts=tuple(drafts),
+            issues=tuple(
+                _issues_with_no_valid_rows(
+                    profile,
+                    feedback.adapter_id,
+                    issues,
+                    has_transactions=bool(drafts),
+                )
+            ),
+            reviews=tuple(reviews),
+            location_inventory=tuple(location_rows.values()),
+        )
     )
 
 
@@ -142,8 +148,8 @@ def _location_record(
         if account == wallet
         else location_id_from_parts(str(profile.source), account)
     )
-    return build_location_inventory_record(
-        LocationInventoryBuildSpec(
+    return location_record(
+        LocationRecordSpec(
             source=str(profile.source),
             location_id=location_id,
             location_kind=LocationKind.SUBACCOUNT

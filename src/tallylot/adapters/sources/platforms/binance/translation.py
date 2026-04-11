@@ -11,7 +11,10 @@ from tallylot.adapters.support import (
     FileTranslationRule,
     translate_file_families,
 )
-from tallylot.adapters.support.drafts import translation_batch_from_drafts
+from tallylot.adapters.support.drafts import (
+    TranslationBatchDrafts,
+    translation_batch_from_drafts,
+)
 from tallylot.adapters.support.drafts.models import EconomicActivityDraft
 from tallylot.domain.issues import IssueRecord
 from tallylot.ports.source_profiles import SourceProfile
@@ -22,7 +25,9 @@ from .funding_history import normalize_withdraw_rows as _normalize_withdraw_rows
 from .order_history import normalize_c2c_order_rows as _normalize_c2c_order_rows
 from .order_history import normalize_convert_order_rows as _normalize_convert_order_rows
 from .spot_trades import normalize_spot_rows as _normalize_spot_rows
-from .transaction_history import normalize_transaction_rows as _normalize_transaction_rows
+from .transaction_history import (
+    normalize_transaction_rows as _normalize_transaction_rows,
+)
 
 
 def _translate_spot_history(
@@ -67,16 +72,26 @@ def _translate_transaction_history(
     convert_match_times = context.state.get("convert_match_times")
     p2p_match_times = context.state.get("p2p_match_times")
     resolved_convert_match_times = (
-        cast(set[datetime], convert_match_times) if isinstance(convert_match_times, set) else None
+        cast(set[datetime], convert_match_times)
+        if isinstance(convert_match_times, set)
+        else None
     )
-    resolved_p2p_match_times = cast(set[datetime], p2p_match_times) if isinstance(p2p_match_times, set) else None
+    resolved_p2p_match_times = (
+        cast(set[datetime], p2p_match_times)
+        if isinstance(p2p_match_times, set)
+        else None
+    )
     drafts, issues = _normalize_transaction_rows(
         context.profile,
         context.path,
         convert_match_times=(
-            frozenset(resolved_convert_match_times) if resolved_convert_match_times is not None else None
+            frozenset(resolved_convert_match_times)
+            if resolved_convert_match_times is not None
+            else None
         ),
-        p2p_match_times=frozenset(resolved_p2p_match_times) if resolved_p2p_match_times is not None else None,
+        p2p_match_times=frozenset(resolved_p2p_match_times)
+        if resolved_p2p_match_times is not None
+        else None,
     )
     return tuple(drafts), tuple(issues)
 
@@ -111,7 +126,9 @@ BINANCE_FILE_TRANSLATION_RULES = (
     ),
     FileTranslationRule(
         family="convert_order_history",
-        matches_path=lambda path: path.name.startswith("Binance-Convert-Order-History-"),
+        matches_path=lambda path: path.name.startswith(
+            "Binance-Convert-Order-History-"
+        ),
         translate=_translate_convert_history,
         priority=10,
     ),
@@ -130,7 +147,9 @@ BINANCE_FILE_TRANSLATION_RULES = (
 )
 
 
-def translate_binance_exports(profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+def translate_binance_exports(
+    profile: SourceProfile, raw_dir: Path
+) -> SourceTranslationBatch:
     translation = translate_file_families(
         raw_dir,
         profile=profile,
@@ -138,6 +157,5 @@ def translate_binance_exports(profile: SourceProfile, raw_dir: Path) -> SourceTr
         state={"convert_match_times": set(), "p2p_match_times": set()},
     )
     return translation_batch_from_drafts(
-        translation.drafts,
-        issues=translation.issues,
+        TranslationBatchDrafts(drafts=translation.drafts, issues=translation.issues)
     )

@@ -14,6 +14,7 @@ from tallylot.adapters.support import (
 )
 from tallylot.adapters.support.drafts import (
     EconomicActivityDraft,
+    TranslationBatchDrafts,
     classification,
     compile_activity_draft,
     compile_activity_drafts,
@@ -130,35 +131,37 @@ def test_translation_batch_from_drafts_compiles_transactions_and_preserves_side_
     None
 ):
     result = translation_batch_from_drafts(
-        (
-            EconomicActivityDraft(
-                activity_id="txn-1",
-                source="fixture",
-                adapter_id="fixture_adapter",
-                location_id=LocationId("fixture:primary"),
-                timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
-                classification=classification(
-                    economic_kind=EconomicKind.ASSET_DEPOSIT,
-                    projection_hint=ProjectionHint.DEPOSIT,
-                    accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
-                    tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
-                ),
-                raw_file="fixture.csv",
-                raw_row_ref="row:2",
-                legs=(
-                    economic_leg(
-                        leg_id="primary_in",
-                        kind=LegKind.PRIMARY,
-                        instrument="BTC",
-                        quantity=Decimal("1.5"),
+        TranslationBatchDrafts(
+            drafts=(
+                EconomicActivityDraft(
+                    activity_id="txn-1",
+                    source="fixture",
+                    adapter_id="fixture_adapter",
+                    location_id=LocationId("fixture:primary"),
+                    timestamp=datetime(2023, 8, 6, 10, 0, 0, tzinfo=UTC),
+                    classification=classification(
+                        economic_kind=EconomicKind.ASSET_DEPOSIT,
+                        projection_hint=ProjectionHint.DEPOSIT,
+                        accounting_intent_hint=AccountingIntentHint.FUNDING_INFLOW,
+                        tax_treatment_hint=TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
                     ),
+                    raw_file="fixture.csv",
+                    raw_row_ref="row:2",
+                    legs=(
+                        economic_leg(
+                            leg_id="primary_in",
+                            kind=LegKind.PRIMARY,
+                            instrument="BTC",
+                            quantity=Decimal("1.5"),
+                        ),
+                    ),
+                    leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
                 ),
-                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
             ),
-        ),
-        issues=(),
-        reviews=(),
-        location_inventory=(),
+            issues=(),
+            reviews=(),
+            location_inventory=(),
+        )
     )
 
     facts = compile_activity_drafts(result.drafts)

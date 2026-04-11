@@ -21,10 +21,6 @@ from tallylot.domain.locations import LocationKind
 from tallylot.domain.types import LocationId
 from tallylot.ports.annotations import AdapterMetadata
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.application.evidence.location_inventory import (
-    LocationInventoryBuildSpec,
-    build_location_inventory_record,
-)
 
 __all__ = (
     "BTC_ADDRESS_PATTERN",
@@ -114,28 +110,30 @@ def location_id_from_identifier(
 
 
 def location_record(spec: LocationRecordSpec) -> LocationInventoryRecord:
-    return build_location_inventory_record(
-        LocationInventoryBuildSpec(
-            source=spec.source,
-            location_id=spec.location_id,
-            location_kind=spec.location_kind,
-            location_label=spec.location_label,
-            parent_location_id=spec.parent_location_id,
-            location_path=spec.location_path,
-            identifier_kind=spec.identifier_kind,
-            identifier_value=spec.identifier_value,
-            capture_uid=spec.capture_uid,
-            capture_label=spec.capture_label,
-            capture_root_ref=spec.capture_root_ref,
-            network_scope=spec.network_scope,
-            controller=spec.controller,
-            parent_location_label=spec.parent_location_label,
-            evidence_kind=spec.evidence_kind,
-            evidence_provenance=spec.evidence_provenance,
-            confidence=spec.confidence,
-            notes=spec.note,
-            adapter_metadata=spec.adapter_metadata,
-        )
+    return LocationInventoryRecord(
+        source=spec.source,
+        location_id=spec.location_id,
+        location_kind=spec.location_kind,
+        location_label=spec.location_label,
+        parent_location_id=spec.parent_location_id,
+        location_path=spec.location_path,
+        identifier_kind=spec.identifier_kind,
+        identifier_value=spec.identifier_value,
+        capture_uid=spec.capture_uid,
+        capture_label=spec.capture_label,
+        capture_root_ref=spec.capture_root_ref,
+        normalized_identifier=normalized_identifier(
+            spec.identifier_kind, spec.identifier_value
+        ),
+        display_identifier=spec.identifier_value,
+        network_scope=spec.network_scope,
+        controller=spec.controller,
+        parent_location_label=spec.parent_location_label,
+        evidence_kind=spec.evidence_kind,
+        evidence_provenance=spec.evidence_provenance,
+        confidence=spec.confidence,
+        notes=spec.note,
+        adapter_metadata=spec.adapter_metadata,
     )
 
 

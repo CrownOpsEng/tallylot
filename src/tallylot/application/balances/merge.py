@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import overload
 
@@ -26,6 +27,18 @@ from tallylot.ports.evidence import (
 
 BalanceSnapshotSemanticKey = tuple[str, str, str, str, str, str]
 BalanceReferenceSemanticKey = tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class _BalanceCsvMergeSpec:
+    artifacts: ArtifactStorePort
+    roots: tuple[Path, ...]
+    source: str
+    filename: str
+    header: tuple[str, ...]
+    semantic_key: Callable[[Mapping[str, str]], tuple[str, ...]]
+    conflict_key: Callable[[Mapping[str, str]], str]
+    conflict_message: str
 
 
 @overload
@@ -167,17 +180,19 @@ def merge_balance_snapshot_rows(
     source: str,
 ) -> tuple[tuple[dict[str, str], ...], tuple[IssueRecord, ...]]:
     return _merge_balance_csv_rows(
-        artifacts,
-        roots,
-        source=source,
-        filename=BALANCE_SNAPSHOT_FILENAME,
-        header=BALANCE_SNAPSHOT_HEADER,
-        semantic_key=balance_snapshot_semantic_key,
-        conflict_key=balance_snapshot_conflict_key,
-        conflict_message=(
-            "Source assembly found conflicting balance snapshot rows for the same "
-            "semantic key."
-        ),
+        _BalanceCsvMergeSpec(
+            artifacts=artifacts,
+            roots=roots,
+            source=source,
+            filename=BALANCE_SNAPSHOT_FILENAME,
+            header=BALANCE_SNAPSHOT_HEADER,
+            semantic_key=balance_snapshot_semantic_key,
+            conflict_key=balance_snapshot_conflict_key,
+            conflict_message=(
+                "Source assembly found conflicting balance snapshot rows for the same "
+                "semantic key."
+            ),
+        )
     )
 
 
@@ -188,17 +203,19 @@ def merge_balance_reference_rows(
     source: str,
 ) -> tuple[tuple[dict[str, str], ...], tuple[IssueRecord, ...]]:
     return _merge_balance_csv_rows(
-        artifacts,
-        roots,
-        source=source,
-        filename=BALANCE_REFERENCE_FILENAME,
-        header=BALANCE_REFERENCE_HEADER,
-        semantic_key=balance_reference_semantic_key,
-        conflict_key=balance_reference_conflict_key,
-        conflict_message=(
-            "Source assembly found conflicting balance reference rows for the same "
-            "semantic key."
-        ),
+        _BalanceCsvMergeSpec(
+            artifacts=artifacts,
+            roots=roots,
+            source=source,
+            filename=BALANCE_REFERENCE_FILENAME,
+            header=BALANCE_REFERENCE_HEADER,
+            semantic_key=balance_reference_semantic_key,
+            conflict_key=balance_reference_conflict_key,
+            conflict_message=(
+                "Source assembly found conflicting balance reference rows for the same "
+                "semantic key."
+            ),
+        )
     )
 
 
@@ -227,31 +244,16 @@ def merge_balance_references(
 
 
 def _merge_balance_csv_rows(
-    artifacts: ArtifactStorePort,
-    roots: tuple[Path, ...],
-    *,
-    source: str,
-    filename: str,
-    header: tuple[str, ...],
-    semantic_key: Callable[[Mapping[str, str]], tuple[str, ...]],
-    conflict_key: Callable[[Mapping[str, str]], str],
-    conflict_message: str,
+    spec: _BalanceCsvMergeSpec,
 ) -> tuple[tuple[dict[str, str], ...], tuple[IssueRecord, ...]]:
     rows = tuple(
         row
-        for root in roots
-        if (root / filename).is_file()
-        for row in artifacts.read_rows(root / filename)
+        for root in spec.roots
+        if (root / spec.filename).is_file()
+        for row in spec.artifacts.read_rows(root / spec.filename)
     )
-    merged = _dedupe_rows(rows, header=header)
-    issues = _conflict_issues(
-        merged,
-        artifact_name=filename,
-        source=source,
-        semantic_key=semantic_key,
-        conflict_key=conflict_key,
-        message=conflict_message,
-    )
+    merged = _dedupe_rows(rows, header=spec.header)
+    issues = _conflict_issues(spec, merged)
     return merged, issues
 
 
@@ -272,19 +274,14 @@ def _dedupe_rows(
 
 
 def _conflict_issues(
+    spec: _BalanceCsvMergeSpec,
     rows: tuple[dict[str, str], ...],
-    *,
-    artifact_name: str,
-    source: str,
-    semantic_key: Callable[[Mapping[str, str]], tuple[str, ...]],
-    conflict_key: Callable[[Mapping[str, str]], str],
-    message: str,
 ) -> tuple[IssueRecord, ...]:
     conflict_values: dict[tuple[str, ...], set[str]] = defaultdict(set)
     for row in rows:
-        key = semantic_key(row)
+        key = spec.semantic_key(row)
         if key:
-            conflict_values[key].add(conflict_key(row))
+            conflict_values[key].add(spec.conflict_key(row))
     issues: list[IssueRecord] = []
     for index, (key, values) in enumerate(
         sorted(conflict_values.items(), key=lambda item: item[0]),
@@ -294,13 +291,13 @@ def _conflict_issues(
             continue
         issues.append(
             IssueRecord(
-                issue_id=f"assembly:{source}:{artifact_name}:{index}",
-                source=source,
+                issue_id=f"assembly:{spec.source}:{spec.filename}:{index}",
+                source=spec.source,
                 adapter_id="source_assembly",
                 severity="high",
                 kind="assembly_semantic_conflict",
-                message=message,
-                raw_file=artifact_name,
+                message=spec.conflict_message,
+                raw_file=spec.filename,
                 raw_row_ref=str(key),
             )
         )

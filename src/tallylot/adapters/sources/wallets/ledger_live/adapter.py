@@ -16,7 +16,10 @@ from tallylot.adapters.support import (
     no_intake_route,
     passed_timezone_summary,
 )
-from tallylot.adapters.support.drafts import translation_batch_from_drafts
+from tallylot.adapters.support.drafts import (
+    TranslationBatchDrafts,
+    translation_batch_from_drafts,
+)
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
@@ -111,10 +114,12 @@ class _LedgerLiveAdapter:
             str(profile.source), raw_dir, profile
         )
         return translation_batch_from_drafts(
-            drafts,
-            issues=issues,
-            reviews=reviews,
-            location_inventory=location_inventory,
+            TranslationBatchDrafts(
+                drafts=drafts,
+                issues=issues,
+                reviews=reviews,
+                location_inventory=location_inventory,
+            )
         )
 
 
