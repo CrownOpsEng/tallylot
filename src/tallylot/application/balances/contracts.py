@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from tallylot.application.balances.records import BalanceResolutionMode
 from tallylot.domain.types import ResourceRef
 
 
@@ -39,7 +40,9 @@ class BalanceCheckResponse:
     clean_source_count: int
     issue_source_count: int
     failed_source_count: int
-    no_assertion_source_count: int
+    no_balance_target_source_count: int
+    not_runnable_source_count: int
+    resolution_mode: BalanceResolutionMode
 
 
 @dataclass(frozen=True)

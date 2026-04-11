@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from typing import assert_never
 
 from tallylot.application.balances.filenames import (
     BALANCE_ASSERTION_FILENAME,
@@ -32,7 +34,9 @@ from tallylot.application.balances.records import (
     BALANCE_ASSERTION_HEADER,
     BALANCE_CHECK_SUMMARY_HEADER,
     CROSS_SOURCE_ASSERTION_HEADER,
+    BalanceCheckStatus,
     BalanceCheckSummaryRecord,
+    BalanceResolutionMode,
 )
 from tallylot.application.balances.targets import (
     parse_target_time_values,
@@ -43,8 +47,14 @@ from tallylot.application.workspace.filesystem import (
     ensure_directory,
     ensure_output_not_within_input_tree,
 )
-from tallylot.domain.balances import BalanceReference, assert_balance_targets
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceSnapshot,
+    BalanceTarget,
+    assert_balance_targets,
+)
 from tallylot.domain.issues import IssueRecord
+from tallylot.domain.temporal import TemporalPrecision
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.balance_providers import BalanceProviderRegistryPort
 from tallylot.ports.evidence import EvidenceRepositoryPort, ISSUE_HEADER
@@ -56,6 +66,16 @@ class _ReferenceCacheUpdate:
     existing_references: tuple[BalanceReference, ...]
     resolved_references: tuple[BalanceReference, ...]
     reference_issues: tuple[IssueRecord, ...]
+
+
+@dataclass(frozen=True)
+class _CheckPlan:
+    resolution_mode: BalanceResolutionMode
+    targets: tuple[BalanceTarget, ...]
+    snapshots: tuple[BalanceSnapshot, ...]
+    snapshot_issues: tuple[IssueRecord, ...]
+    status: BalanceCheckStatus = "clean"
+    not_runnable_reason: str = ""
 
 
 class BalanceCheckWorkflow:
@@ -104,8 +124,6 @@ class BalanceCheckWorkflow:
             _clear_generated_balance_reference_issue_output(
                 source_dir.reference_issue_path
             )
-            if not _is_runnable_source_input(source_input):
-                continue
             records.append(
                 self._check_source_input(
                     source_dir,
@@ -139,6 +157,9 @@ class BalanceCheckWorkflow:
             cross_source_result.summary_payload(),
         )
         status_counts = Counter(record.check_status for record in records)
+        resolution_mode: BalanceResolutionMode = (
+            "hydrated" if request.hydrate_missing_references else "offline"
+        )
         return BalanceCheckResponse(
             output_root_ref=request.output_root_ref,
             check_summary_output_ref=to_resource_ref(check_summary_output_path),
@@ -146,7 +167,9 @@ class BalanceCheckWorkflow:
             clean_source_count=status_counts.get("clean", 0),
             issue_source_count=status_counts.get("issues", 0),
             failed_source_count=status_counts.get("failed", 0),
-            no_assertion_source_count=status_counts.get("no_assertions", 0),
+            no_balance_target_source_count=status_counts.get("no_balance_targets", 0),
+            not_runnable_source_count=status_counts.get("not_runnable", 0),
+            resolution_mode=resolution_mode,
         )
 
     def _check_source_input(
@@ -168,69 +191,21 @@ class BalanceCheckWorkflow:
         )
         _ensure_source_output_paths_are_safe(source_dir, output_root)
         ensure_directory(output_root)
+        resolution_mode: BalanceResolutionMode = (
+            "hydrated" if request.hydrate_missing_references else "offline"
+        )
         try:
-            parsed_times = parse_target_time_values(request.as_of_values)
-            _normalize_reference_policy(request.reference_policy)
-            facts = (
-                self._facts.read_facts(source_dir.facts_path)
-                if parsed_times and source_input.has_facts
-                else ()
-            )
-            targets = (
-                targets_for_as_of_values(facts, parsed_times)
-                if parsed_times and facts
-                else source_input.targets
-            )
-            snapshots, snapshot_issues = (
-                derive_balance_snapshots(facts, targets)
-                if parsed_times and facts
-                else (source_input.snapshots, ())
-            )
-            existing_references = source_input.references
-            resolved_references, reference_issues = self._resolver.resolve(
-                existing_references=existing_references,
-                targets=targets,
-                hydrate_missing=request.hydrate_missing_references,
-            )
-            _persist_reference_cache(
+            plan = _build_check_plan(
                 source_dir=source_dir,
-                artifacts=self._artifacts,
-                evidence=self._evidence,
-                update=_ReferenceCacheUpdate(
-                    existing_references=existing_references,
-                    resolved_references=resolved_references,
-                    reference_issues=reference_issues,
-                ),
-            )
-            result = assert_balance_targets(snapshots, resolved_references)
-            all_issues = (*snapshot_issues, *reference_issues, *result.issues)
-            if result.assertions:
-                self._artifacts.write_rows(
-                    assertion_output_path,
-                    BALANCE_ASSERTION_HEADER,
-                    (assertion.to_row() for assertion in result.assertions),
-                )
-            if all_issues:
-                self._evidence.write_issue_records(issue_output_path, all_issues)
-            self._artifacts.write_json(
-                summary_output_path,
-                {
-                    "assertion_count": len(result.assertions),
-                    "issue_count": len(all_issues),
-                    "reference_kind_counts": dict(
-                        sorted(
-                            Counter(
-                                assertion.selected_reference_kind.value
-                                for assertion in result.assertions
-                                if assertion.selected_reference_kind is not None
-                            ).items()
-                        )
-                    ),
-                },
+                source_input=source_input,
+                request=request,
+                facts=self._facts,
+                resolution_mode=resolution_mode,
             )
         except ValueError as exc:
             return BalanceCheckSummaryRecord(
                 source=source_dir.name,
+                resolution_mode=resolution_mode,
                 check_status="failed",
                 assertion_count=0,
                 issue_count=0,
@@ -241,8 +216,76 @@ class BalanceCheckWorkflow:
                 assertion_status_counts=(),
                 selected_reference_kind_counts=(),
                 issue_kind_counts=(),
+                not_runnable_reason="",
                 error_message=str(exc),
             )
+        if plan.status in {"not_runnable", "no_balance_targets"}:
+            self._artifacts.write_json(
+                summary_output_path,
+                {
+                    "assertion_count": 0,
+                    "issue_count": 0,
+                    "reference_kind_counts": {},
+                },
+            )
+            return BalanceCheckSummaryRecord(
+                source=source_dir.name,
+                resolution_mode=resolution_mode,
+                check_status=plan.status,
+                not_runnable_reason=plan.not_runnable_reason,
+                assertion_count=0,
+                issue_count=0,
+                min_assertion_date="",
+                max_assertion_date="",
+                latest_clean_checked_date="",
+                latest_resolved_reference_checked_date="",
+                assertion_status_counts=(),
+                selected_reference_kind_counts=(),
+                issue_kind_counts=(),
+            )
+
+        existing_references = source_input.references
+        resolved_references, reference_issues = self._resolver.resolve(
+            existing_references=existing_references,
+            targets=plan.targets,
+            hydrate_missing=request.hydrate_missing_references,
+        )
+        _persist_reference_cache(
+            source_dir=source_dir,
+            artifacts=self._artifacts,
+            evidence=self._evidence,
+            update=_ReferenceCacheUpdate(
+                existing_references=existing_references,
+                resolved_references=resolved_references,
+                reference_issues=reference_issues,
+            ),
+        )
+        result = assert_balance_targets(plan.snapshots, resolved_references)
+        all_issues = (*plan.snapshot_issues, *reference_issues, *result.issues)
+        if result.assertions:
+            self._artifacts.write_rows(
+                assertion_output_path,
+                BALANCE_ASSERTION_HEADER,
+                (assertion.to_row() for assertion in result.assertions),
+            )
+        if all_issues:
+            self._evidence.write_issue_records(issue_output_path, all_issues)
+        self._artifacts.write_json(
+            summary_output_path,
+            {
+                "assertion_count": len(result.assertions),
+                "issue_count": len(all_issues),
+                "reference_kind_counts": dict(
+                    sorted(
+                        Counter(
+                            assertion.selected_reference_kind.value
+                            for assertion in result.assertions
+                            if assertion.selected_reference_kind is not None
+                        ).items()
+                    )
+                ),
+            },
+        )
         assertion_rows = _read_rows_if_present(self._artifacts, assertion_output_path)
         issue_rows = _read_rows_if_present(self._artifacts, issue_output_path)
         all_dates = tuple(
@@ -255,10 +298,7 @@ class BalanceCheckWorkflow:
             for row in assertion_rows
             if row["status"] == "matched" and row.get("target_at", "").strip()
         )
-        check_status = _check_status(
-            assertion_count=len(assertion_rows),
-            issue_count=len(issue_rows),
-        )
+        check_status = _check_status(issue_count=len(issue_rows))
         selected_reference_kind_counts = tuple(
             sorted(
                 Counter(
@@ -270,7 +310,9 @@ class BalanceCheckWorkflow:
         )
         return BalanceCheckSummaryRecord(
             source=source_dir.name,
+            resolution_mode=resolution_mode,
             check_status=check_status,
+            not_runnable_reason="",
             assertion_count=len(assertion_rows),
             issue_count=len(issue_rows),
             min_assertion_date=min(all_dates) if all_dates else "",
@@ -291,16 +333,8 @@ class BalanceCheckWorkflow:
         )
 
 
-def _check_status(*, assertion_count: int, issue_count: int) -> str:
-    if assertion_count == 0:
-        return "no_assertions"
-    if issue_count == 0:
-        return "clean"
-    return "issues"
-
-
-def _is_runnable_source_input(source_input: BalanceSourceInputs) -> bool:
-    return source_input.input_mode != "empty"
+def _check_status(*, issue_count: int) -> BalanceCheckStatus:
+    return "clean" if issue_count == 0 else "issues"
 
 
 def _assertion_row_dates(row: dict[str, str]) -> tuple[str, ...]:
@@ -319,6 +353,93 @@ def _normalize_reference_policy(reference_policy: str) -> str:
     if normalized != "default":
         raise ValueError(f"unsupported balance reference_policy: {reference_policy}")
     return normalized
+
+
+def _build_check_plan(
+    *,
+    source_dir: BalanceSourceDir,
+    source_input: BalanceSourceInputs,
+    request: BalanceCheckRequest,
+    facts: FactRepositoryPort,
+    resolution_mode: BalanceResolutionMode,
+) -> _CheckPlan:
+    parsed_times = parse_target_time_values(request.as_of_values)
+    _normalize_reference_policy(request.reference_policy)
+    if source_input.input_mode == "empty":
+        return _CheckPlan(
+            resolution_mode=resolution_mode,
+            targets=(),
+            snapshots=(),
+            snapshot_issues=(),
+            status="not_runnable",
+            not_runnable_reason="no_balance_inputs",
+        )
+
+    if not parsed_times:
+        return _CheckPlan(
+            resolution_mode=resolution_mode,
+            targets=source_input.targets,
+            snapshots=source_input.snapshots,
+            snapshot_issues=(),
+        )
+
+    if source_input.input_mode == "fact_backed":
+        fact_rows = facts.read_facts(source_dir.facts_path)
+        targets = targets_for_as_of_values(fact_rows, parsed_times)
+        if not targets:
+            return _CheckPlan(
+                resolution_mode=resolution_mode,
+                targets=(),
+                snapshots=(),
+                snapshot_issues=(),
+                status="no_balance_targets",
+            )
+        snapshots, snapshot_issues = derive_balance_snapshots(fact_rows, targets)
+        return _CheckPlan(
+            resolution_mode=resolution_mode,
+            targets=targets,
+            snapshots=snapshots,
+            snapshot_issues=snapshot_issues,
+        )
+
+    if source_input.input_mode == "manual_only":
+        targets = _select_targets_for_requested_times(
+            source_input.targets, parsed_times
+        )
+        if not targets:
+            return _CheckPlan(
+                resolution_mode=resolution_mode,
+                targets=(),
+                snapshots=(),
+                snapshot_issues=(),
+                status="no_balance_targets",
+            )
+        return _CheckPlan(
+            resolution_mode=resolution_mode,
+            targets=targets,
+            snapshots=tuple(
+                snapshot
+                for snapshot in source_input.snapshots
+                if snapshot.target in targets
+            ),
+            snapshot_issues=(),
+        )
+
+    assert_never(source_input.input_mode)
+
+
+def _select_targets_for_requested_times(
+    targets: tuple[BalanceTarget, ...],
+    requested_times: tuple[tuple[datetime, TemporalPrecision], ...],
+) -> tuple[BalanceTarget, ...]:
+    selected: list[BalanceTarget] = []
+    for target in targets:
+        if any(
+            target.target_at == target_at and target.target_precision == precision
+            for target_at, precision in requested_times
+        ):
+            selected.append(target)
+    return tuple(selected)
 
 
 def _persist_reference_cache(

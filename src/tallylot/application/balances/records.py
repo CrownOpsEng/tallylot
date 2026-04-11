@@ -4,6 +4,12 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from typing import Literal, cast
+
+from tallylot.application.balances.inputs import (
+    BalanceInputMode,
+    BalanceSnapshotOrigin,
+)
 
 BALANCE_ASSERTION_HEADER = (
     "source",
@@ -27,24 +33,53 @@ BALANCE_ASSERTION_HEADER = (
     "notes",
 )
 
+BalanceOfflineReadyStatus = Literal[
+    "ready",
+    "missing_references",
+    "no_balance_targets",
+    "no_balance_inputs",
+]
+BalanceCrossSourceReadyStatus = Literal[
+    "ready",
+    "missing_location_inventory",
+    "not_comparable",
+    "not_applicable",
+]
+BalanceCheckStatus = Literal[
+    "clean",
+    "issues",
+    "failed",
+    "no_balance_targets",
+    "not_runnable",
+]
+BalanceResolutionMode = Literal["offline", "hydrated"]
+
 BALANCE_INSPECT_HEADER = (
     "source",
-    "inspect_status",
+    "input_mode",
+    "snapshot_origin",
+    "target_count",
     "snapshot_count",
-    "reference_count",
+    "reference_row_count",
+    "matched_reference_count",
+    "missing_reference_count",
     "source_document_count",
     "network_api_count",
     "operator_assertion_count",
-    "missing_reference_count",
-    "min_snapshot_date",
-    "max_snapshot_date",
+    "cross_source_ready",
+    "offline_ready",
+    "unexpected_superseded_output_count",
+    "min_target_date",
+    "max_target_date",
     "min_reference_date",
     "max_reference_date",
 )
 
 BALANCE_CHECK_SUMMARY_HEADER = (
     "source",
+    "resolution_mode",
     "check_status",
+    "not_runnable_reason",
     "assertion_count",
     "issue_count",
     "min_assertion_date",
@@ -86,30 +121,44 @@ CROSS_SOURCE_ASSERTION_HEADER = (
 @dataclass(frozen=True)
 class BalanceInspectRecord:
     source: str
-    inspect_status: str
+    input_mode: BalanceInputMode
+    snapshot_origin: BalanceSnapshotOrigin
+    target_count: int
     snapshot_count: int
-    reference_count: int
+    reference_row_count: int
+    matched_reference_count: int
+    missing_reference_count: int
     source_document_count: int = 0
     network_api_count: int = 0
     operator_assertion_count: int = 0
-    missing_reference_count: int = 0
-    min_snapshot_date: str = ""
-    max_snapshot_date: str = ""
+    cross_source_ready: BalanceCrossSourceReadyStatus = "not_applicable"
+    offline_ready: BalanceOfflineReadyStatus = "no_balance_inputs"
+    unexpected_superseded_output_count: int = 0
+    min_target_date: str = ""
+    max_target_date: str = ""
     min_reference_date: str = ""
     max_reference_date: str = ""
 
     def to_row(self) -> dict[str, str]:
         return {
             "source": self.source,
-            "inspect_status": self.inspect_status,
+            "input_mode": self.input_mode,
+            "snapshot_origin": self.snapshot_origin,
+            "target_count": str(self.target_count),
             "snapshot_count": str(self.snapshot_count),
-            "reference_count": str(self.reference_count),
+            "reference_row_count": str(self.reference_row_count),
+            "matched_reference_count": str(self.matched_reference_count),
+            "missing_reference_count": str(self.missing_reference_count),
             "source_document_count": str(self.source_document_count),
             "network_api_count": str(self.network_api_count),
             "operator_assertion_count": str(self.operator_assertion_count),
-            "missing_reference_count": str(self.missing_reference_count),
-            "min_snapshot_date": self.min_snapshot_date,
-            "max_snapshot_date": self.max_snapshot_date,
+            "cross_source_ready": self.cross_source_ready,
+            "offline_ready": self.offline_ready,
+            "unexpected_superseded_output_count": str(
+                self.unexpected_superseded_output_count
+            ),
+            "min_target_date": self.min_target_date,
+            "max_target_date": self.max_target_date,
             "min_reference_date": self.min_reference_date,
             "max_reference_date": self.max_reference_date,
         }
@@ -118,15 +167,25 @@ class BalanceInspectRecord:
     def from_row(cls, row: dict[str, str]) -> BalanceInspectRecord:
         return cls(
             source=row["source"],
-            inspect_status=row["inspect_status"],
+            input_mode=cast(BalanceInputMode, row["input_mode"]),
+            snapshot_origin=cast(BalanceSnapshotOrigin, row["snapshot_origin"]),
+            target_count=int(row["target_count"]),
             snapshot_count=int(row["snapshot_count"]),
-            reference_count=int(row["reference_count"]),
+            reference_row_count=int(row["reference_row_count"]),
+            matched_reference_count=int(row["matched_reference_count"]),
+            missing_reference_count=int(row["missing_reference_count"]),
             source_document_count=int(row["source_document_count"]),
             network_api_count=int(row["network_api_count"]),
             operator_assertion_count=int(row["operator_assertion_count"]),
-            missing_reference_count=int(row["missing_reference_count"]),
-            min_snapshot_date=row["min_snapshot_date"],
-            max_snapshot_date=row["max_snapshot_date"],
+            cross_source_ready=cast(
+                BalanceCrossSourceReadyStatus, row["cross_source_ready"]
+            ),
+            offline_ready=cast(BalanceOfflineReadyStatus, row["offline_ready"]),
+            unexpected_superseded_output_count=int(
+                row["unexpected_superseded_output_count"]
+            ),
+            min_target_date=row["min_target_date"],
+            max_target_date=row["max_target_date"],
             min_reference_date=row["min_reference_date"],
             max_reference_date=row["max_reference_date"],
         )
@@ -135,7 +194,8 @@ class BalanceInspectRecord:
 @dataclass(frozen=True)
 class BalanceCheckSummaryRecord:
     source: str
-    check_status: str
+    resolution_mode: BalanceResolutionMode
+    check_status: BalanceCheckStatus
     assertion_count: int
     issue_count: int
     min_assertion_date: str
@@ -145,12 +205,15 @@ class BalanceCheckSummaryRecord:
     assertion_status_counts: tuple[tuple[str, int], ...]
     selected_reference_kind_counts: tuple[tuple[str, int], ...]
     issue_kind_counts: tuple[tuple[str, int], ...]
+    not_runnable_reason: str = ""
     error_message: str = ""
 
     def to_row(self) -> dict[str, str]:
         return {
             "source": self.source,
+            "resolution_mode": self.resolution_mode,
             "check_status": self.check_status,
+            "not_runnable_reason": self.not_runnable_reason,
             "assertion_count": str(self.assertion_count),
             "issue_count": str(self.issue_count),
             "min_assertion_date": self.min_assertion_date,
@@ -176,7 +239,9 @@ class BalanceCheckSummaryRecord:
     def from_row(cls, row: dict[str, str]) -> BalanceCheckSummaryRecord:
         return cls(
             source=row["source"],
-            check_status=row["check_status"],
+            resolution_mode=cast(BalanceResolutionMode, row["resolution_mode"]),
+            check_status=cast(BalanceCheckStatus, row["check_status"]),
+            not_runnable_reason=row["not_runnable_reason"],
             assertion_count=int(row["assertion_count"]),
             issue_count=int(row["issue_count"]),
             min_assertion_date=row["min_assertion_date"],

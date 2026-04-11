@@ -220,7 +220,9 @@ def test_reconciliation_balance_check_cli(
                 clean_source_count=1,
                 issue_source_count=0,
                 failed_source_count=0,
-                no_assertion_source_count=0,
+                no_balance_target_source_count=0,
+                not_runnable_source_count=0,
+                resolution_mode="offline",
             )
 
     monkeypatch.setattr(

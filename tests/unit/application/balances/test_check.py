@@ -15,6 +15,7 @@ from tallylot.application.resource_refs import to_resource_ref
 from tallylot.domain.balances import (
     BalanceReference,
     BalanceReferenceKind,
+    BalanceSnapshot,
     BalanceTarget,
 )
 from tallylot.domain.issues import IssueRecord
@@ -38,6 +39,7 @@ from tallylot.infrastructure.storage import (
     FilesystemEvidenceRepository,
     FilesystemFactRepository,
 )
+from tallylot.ports.balance_providers import BalanceProviderPort
 
 
 def _fact(
@@ -180,11 +182,13 @@ def test_balance_check_workflow_writes_single_source_outputs(
 
     assert response.source_count == 1
     assert response.issue_source_count == 1
+    assert response.resolution_mode == "offline"
     assert assertion_rows[0]["status"] == "drift"
     assert assertion_rows[0]["selected_reference_kind"] == "source_document"
     assert issue_rows[0]["kind"] == "balance_drift"
     assert summary["assertion_count"] == 1
     assert summary["issue_count"] == 1
+    assert check_summary_rows[0]["resolution_mode"] == "offline"
     assert check_summary_rows[0]["check_status"] == "issues"
     assert check_summary_rows[0]["max_assertion_date"] == "2025-12-31"
 
@@ -231,7 +235,7 @@ def test_balance_check_workflow_clears_stale_outputs_when_source_stops_runnable(
         evidence=evidence,
         artifacts=artifacts,
     )
-    workflow.execute(
+    response = workflow.execute(
         BalanceCheckRequest(
             input_root_ref=to_resource_ref(input_root),
             output_root_ref=to_resource_ref(output_root),
@@ -247,11 +251,15 @@ def test_balance_check_workflow_clears_stale_outputs_when_source_stops_runnable(
         )
     )
 
-    assert response.source_count == 0
+    assert response.source_count == 1
+    assert response.not_runnable_source_count == 1
     assert not (output_root / "balance_assertions.csv").exists()
     assert not (output_root / "reconciliation_issues.csv").exists()
-    assert not (output_root / "balance_reconciliation_summary.json").exists()
-    assert not (output_root / "balance_check_summary.csv").exists()
+    assert (output_root / "balance_reconciliation_summary.json").exists()
+    assert (output_root / "balance_check_summary.csv").exists()
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+    assert check_summary_rows[0]["check_status"] == "not_runnable"
+    assert check_summary_rows[0]["not_runnable_reason"] == "no_balance_inputs"
 
 
 def test_balance_check_workflow_clears_stale_reference_issue_cache(
@@ -316,13 +324,15 @@ def test_balance_check_workflow_clears_stale_reference_issue_cache(
         ),
     )
 
-    workflow.execute(
+    response = workflow.execute(
         BalanceCheckRequest(
             input_root_ref=to_resource_ref(input_root),
             output_root_ref=to_resource_ref(output_root),
         )
     )
 
+    assert response.source_count == 1
+    assert response.not_runnable_source_count == 0
     assert not (input_root / "balance_reference_issues.csv").exists()
 
 
@@ -376,7 +386,7 @@ def test_balance_check_workflow_clears_stale_reference_issue_cache_when_source_s
         evidence=evidence,
         artifacts=artifacts,
     )
-    workflow.execute(
+    response = workflow.execute(
         BalanceCheckRequest(
             input_root_ref=to_resource_ref(input_root),
             output_root_ref=to_resource_ref(output_root),
@@ -385,14 +395,256 @@ def test_balance_check_workflow_clears_stale_reference_issue_cache_when_source_s
     assert (input_root / "balance_reference_issues.csv").exists()
     (input_root / "facts.csv").unlink()
 
-    workflow.execute(
+    second_response = workflow.execute(
         BalanceCheckRequest(
             input_root_ref=to_resource_ref(input_root),
             output_root_ref=to_resource_ref(output_root),
         )
     )
 
+    assert response.source_count == 1
+    assert response.not_runnable_source_count == 0
+    assert second_response.not_runnable_source_count == 1
     assert not (input_root / "balance_reference_issues.csv").exists()
+
+
+def test_balance_check_workflow_emits_missing_balance_reference_in_offline_mode(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+
+    response = BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    issue_rows = artifacts.read_rows(output_root / "reconciliation_issues.csv")
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert response.source_count == 1
+    assert response.issue_source_count == 1
+    assert response.resolution_mode == "offline"
+    assert issue_rows[0]["kind"] == "missing_balance_reference"
+    assert all(row["kind"] != "unsupported_balance_provider" for row in issue_rows)
+    assert check_summary_rows[0]["check_status"] == "issues"
+    assert check_summary_rows[0]["resolution_mode"] == "offline"
+
+
+def test_balance_check_workflow_emits_unsupported_balance_provider_when_hydrated(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+
+    class _UnsupportedBalanceProviderRegistry:
+        providers: tuple[BalanceProviderPort, ...] = ()
+
+        def provider_for_requests(self, requests: tuple[object, ...]) -> None:
+            del requests
+            return None
+
+    response = BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+        providers=_UnsupportedBalanceProviderRegistry(),
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+            hydrate_missing_references=True,
+        )
+    )
+
+    issue_rows = artifacts.read_rows(output_root / "reconciliation_issues.csv")
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert response.source_count == 1
+    assert response.issue_source_count == 1
+    assert response.resolution_mode == "hydrated"
+    assert issue_rows[0]["kind"] == "unsupported_balance_provider"
+    assert check_summary_rows[0]["check_status"] == "issues"
+    assert check_summary_rows[0]["resolution_mode"] == "hydrated"
+
+
+def test_balance_check_workflow_reports_no_balance_targets_for_manual_sources(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 30, tzinfo=UTC)
+
+    evidence.write_balance_snapshots(
+        input_root / "balance_snapshots.csv",
+        (
+            BalanceSnapshot(
+                target=_target("coinbase", "BTC", as_of),
+                quantity=Decimal("1.0"),
+                snapshot_basis="fact_cutoff",
+            ),
+        ),
+    )
+
+    response = BalanceCheckWorkflow(
+        facts=FilesystemFactRepository(),
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+            as_of_values=("2025-12-31",),
+        )
+    )
+
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert response.source_count == 1
+    assert response.no_balance_target_source_count == 1
+    assert response.resolution_mode == "offline"
+    assert check_summary_rows[0]["check_status"] == "no_balance_targets"
+    assert check_summary_rows[0]["resolution_mode"] == "offline"
+    assert check_summary_rows[0]["not_runnable_reason"] == ""
+
+
+def test_balance_check_workflow_reports_not_runnable_for_empty_sources(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    evidence.write_balance_references(input_root / "balance_references.csv", ())
+
+    response = BalanceCheckWorkflow(
+        facts=FilesystemFactRepository(),
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert response.source_count == 1
+    assert response.not_runnable_source_count == 1
+    assert response.resolution_mode == "offline"
+    assert check_summary_rows[0]["check_status"] == "not_runnable"
+    assert check_summary_rows[0]["resolution_mode"] == "offline"
+    assert check_summary_rows[0]["not_runnable_reason"] == "no_balance_inputs"
+
+
+def test_balance_check_workflow_reports_failed_status_for_invalid_reference_policy(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2025, 12, 31, 23, 59, 59, tzinfo=UTC)
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=as_of,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    response = BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+            reference_policy="bogus",
+        )
+    )
+
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert response.source_count == 1
+    assert response.failed_source_count == 1
+    assert response.resolution_mode == "offline"
+    assert check_summary_rows[0]["check_status"] == "failed"
+    assert check_summary_rows[0]["resolution_mode"] == "offline"
+    assert (
+        "unsupported balance reference_policy" in check_summary_rows[0]["error_message"]
+    )
 
 
 def test_balance_check_rejects_capture_normalized_roots(tmp_path: Path) -> None:
@@ -538,7 +790,9 @@ def test_balance_check_workflow_uses_operator_assertions_when_selected(
     check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
 
     assert response.clean_source_count == 1
+    assert response.resolution_mode == "offline"
     assert assertion_rows[0]["selected_reference_kind"] == "operator_assertion"
+    assert check_summary_rows[0]["resolution_mode"] == "offline"
     assert check_summary_rows[0]["latest_clean_checked_date"] == "2025-12-31"
     assert (
         check_summary_rows[0]["selected_reference_kind_counts"]
@@ -606,8 +860,10 @@ def test_balance_check_workflow_respects_explicit_as_of_values(
     )
 
     assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
 
     assert len(assertion_rows) == 1
+    assert check_summary_rows[0]["resolution_mode"] == "offline"
     assert assertion_rows[0]["target_at"] == "2025-12-30 00:00:00"
     assert assertion_rows[0]["snapshot_quantity"] == "1"
     assert assertion_rows[0]["status"] == "matched"
@@ -667,6 +923,7 @@ def test_balance_check_workflow_respects_explicit_date_only_as_of_values(
     check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
 
     assert len(assertion_rows) == 1
+    assert check_summary_rows[0]["resolution_mode"] == "offline"
     assert assertion_rows[0]["target_at"] == "2025-12-30"
     assert assertion_rows[0]["target_precision"] == "date"
     assert check_summary_rows[0]["max_assertion_date"] == "2025-12-30"

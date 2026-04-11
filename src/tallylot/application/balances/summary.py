@@ -73,51 +73,119 @@ def _build_blockers(
     inspect_records: tuple[BalanceInspectRecord, ...],
     check_records: tuple[BalanceCheckSummaryRecord, ...],
 ) -> tuple[BalanceReconciliationBlockerRecord, ...]:
-    blockers: list[BalanceReconciliationBlockerRecord] = []
-    check_by_source = {record.source: record for record in check_records}
+    blockers_by_key: dict[tuple[str, str], BalanceReconciliationBlockerRecord] = {}
     for inspect_record in inspect_records:
-        if inspect_record.inspect_status in {
-            "missing_reference",
-            "missing_snapshots",
-            "empty_source",
-        }:
-            blockers.append(
-                BalanceReconciliationBlockerRecord(
-                    source=inspect_record.source,
-                    blocker_kind=inspect_record.inspect_status,
-                    blocker_count=1,
-                )
-            )
-        check_record = check_by_source.get(inspect_record.source)
-        if check_record is None:
+        blocker_kind = _inspect_blocker_kind(inspect_record)
+        if blocker_kind is None:
             continue
-        if check_record.check_status == "failed":
-            blockers.append(
-                BalanceReconciliationBlockerRecord(
-                    source=check_record.source,
-                    blocker_kind="failed",
-                    blocker_count=1,
-                    notes=check_record.error_message,
-                )
-            )
-        if check_record.check_status == "no_assertions":
-            blockers.append(
-                BalanceReconciliationBlockerRecord(
-                    source=check_record.source,
-                    blocker_kind="no_assertions",
-                    blocker_count=1,
-                )
-            )
-        if check_record.check_status == "issues":
-            blockers.extend(
-                BalanceReconciliationBlockerRecord(
-                    source=check_record.source,
-                    blocker_kind=kind,
-                    blocker_count=count,
-                )
-                for kind, count in check_record.issue_kind_counts
-            )
-    return tuple(blockers)
+        _merge_blocker(
+            blockers_by_key,
+            source=inspect_record.source,
+            blocker_kind=blocker_kind,
+            notes=_inspect_blocker_notes(inspect_record, blocker_kind),
+        )
+
+    for check_record in check_records:
+        blocker_kind = _check_blocker_kind(check_record)
+        if blocker_kind is None:
+            continue
+        _merge_blocker(
+            blockers_by_key,
+            source=check_record.source,
+            blocker_kind=blocker_kind,
+            notes=_check_blocker_notes(check_record, blocker_kind),
+        )
+
+    return tuple(
+        blockers_by_key[key]
+        for key in sorted(
+            blockers_by_key,
+            key=lambda item: (item[0], item[1]),
+        )
+    )
+
+
+def _merge_blocker(
+    blockers_by_key: dict[tuple[str, str], BalanceReconciliationBlockerRecord],
+    *,
+    source: str,
+    blocker_kind: str,
+    notes: str = "",
+) -> None:
+    key = (source, blocker_kind)
+    existing = blockers_by_key.get(key)
+    if existing is None:
+        blockers_by_key[key] = BalanceReconciliationBlockerRecord(
+            source=source,
+            blocker_kind=blocker_kind,
+            blocker_count=1,
+            notes=notes,
+        )
+        return
+    if notes and not existing.notes:
+        blockers_by_key[key] = BalanceReconciliationBlockerRecord(
+            source=existing.source,
+            blocker_kind=existing.blocker_kind,
+            blocker_count=existing.blocker_count,
+            notes=notes,
+        )
+
+
+def _inspect_blocker_kind(
+    inspect_record: BalanceInspectRecord,
+) -> str | None:
+    if inspect_record.offline_ready == "missing_references":
+        return "missing_references"
+    if inspect_record.offline_ready == "no_balance_targets":
+        return "no_balance_targets"
+    if inspect_record.offline_ready == "no_balance_inputs":
+        return "no_balance_inputs"
+    return None
+
+
+def _inspect_blocker_notes(
+    inspect_record: BalanceInspectRecord,
+    blocker_kind: str,
+) -> str:
+    del blocker_kind
+    if (
+        inspect_record.offline_ready == "no_balance_inputs"
+        and inspect_record.unexpected_superseded_output_count > 0
+    ):
+        return (
+            "unexpected superseded outputs present: "
+            f"{inspect_record.unexpected_superseded_output_count}"
+        )
+    return ""
+
+
+def _check_blocker_kind(
+    check_record: BalanceCheckSummaryRecord,
+) -> str | None:
+    if check_record.check_status == "failed":
+        return "failed"
+    if check_record.check_status == "not_runnable":
+        return "no_balance_inputs"
+    if check_record.check_status == "no_balance_targets":
+        return "no_balance_targets"
+    if (
+        check_record.check_status == "issues"
+        and check_record.resolution_mode == "hydrated"
+        and _count_issue_kind(
+            check_record.issue_kind_counts, "unsupported_balance_provider"
+        )
+    ):
+        return "unsupported_hydration"
+    return None
+
+
+def _check_blocker_notes(
+    check_record: BalanceCheckSummaryRecord,
+    blocker_kind: str,
+) -> str:
+    if blocker_kind == "failed":
+        return check_record.error_message
+    return ""
 
 
 def _summary_payload(
@@ -126,17 +194,20 @@ def _summary_payload(
     blockers: tuple[BalanceReconciliationBlockerRecord, ...],
 ) -> dict[str, JsonValue]:
     check_by_source = {record.source: record for record in check_records}
-    inspect_status_counts = Counter(record.inspect_status for record in inspect_records)
+    inspect_status_counts = Counter(record.offline_ready for record in inspect_records)
     check_status_counts = Counter(record.check_status for record in check_records)
     blocker_kind_counts = Counter(blocker.blocker_kind for blocker in blockers)
+    clean_check_records = tuple(
+        record for record in check_records if record.check_status == "clean"
+    )
     clean_dates = tuple(
         record.latest_clean_checked_date
-        for record in check_records
-        if record.check_status == "clean" and record.latest_clean_checked_date
+        for record in clean_check_records
+        if record.latest_clean_checked_date
     )
     resolved_reference_dates = tuple(
         record.latest_resolved_reference_checked_date
-        for record in check_records
+        for record in clean_check_records
         if record.latest_resolved_reference_checked_date
     )
     observed_dates = tuple(
@@ -145,9 +216,7 @@ def _summary_payload(
         if record.max_assertion_date
     )
     operational_sources = tuple(
-        record.source
-        for record in inspect_records
-        if record.inspect_status in {"resolved_reference", "mixed_reference"}
+        record.source for record in inspect_records if record.offline_ready == "ready"
     )
     all_sources_clean = (
         bool(inspect_records)
@@ -167,6 +236,7 @@ def _summary_payload(
         and all(
             (
                 source in check_by_source
+                and check_by_source[source].check_status == "clean"
                 and bool(check_by_source[source].latest_resolved_reference_checked_date)
             )
             for source in operational_sources
@@ -190,18 +260,9 @@ def _summary_payload(
     )
     return {
         "source_count": len(inspect_records),
-        "comparable_source_count": sum(
-            inspect_status_counts.get(status, 0)
-            for status in ("resolved_reference", "mixed_reference")
-        ),
-        "resolved_reference_source_count": inspect_status_counts.get(
-            "resolved_reference", 0
-        ),
-        "mixed_reference_source_count": inspect_status_counts.get("mixed_reference", 0),
         "clean_source_count": check_status_counts.get("clean", 0),
         "issue_source_count": check_status_counts.get("issues", 0),
         "failed_source_count": check_status_counts.get("failed", 0),
-        "no_assertion_source_count": check_status_counts.get("no_assertions", 0),
         "latest_portfolio_clean_date": latest_portfolio_clean_date,
         "latest_portfolio_resolved_reference_date": latest_portfolio_resolved_reference_date,
         "latest_clean_source_date": max(clean_dates) if clean_dates else "",
@@ -213,6 +274,16 @@ def _summary_payload(
         "check_status_counts": dict(sorted(check_status_counts.items())),
         "blocker_kind_counts": dict(sorted(blocker_kind_counts.items())),
     }
+
+
+def _count_issue_kind(
+    issue_kind_counts: tuple[tuple[str, int], ...],
+    kind: str,
+) -> int:
+    for issue_kind, count in issue_kind_counts:
+        if issue_kind == kind:
+            return count
+    return 0
 
 
 def _clear_generated_balance_summary_outputs(summary_output_path: Path) -> None:
