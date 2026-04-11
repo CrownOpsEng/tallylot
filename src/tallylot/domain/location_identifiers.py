@@ -46,7 +46,7 @@ _ONCHAIN_LOCATION_PREFIXES = (
     "solana:",
     "tron:",
 )
-_LOCATION_ID_GENERIC_PATTERN = re.compile(r"^[a-z0-9_]+(?::[a-z0-9_]+)*$")
+_LOCATION_ID_GENERIC_PATTERN = re.compile(r"^[a-z0-9_.]+(?::[a-z0-9_.]+)*$")
 _LOCATION_ID_NEAR_PATTERN = re.compile(r"^near:[a-z0-9_.-]{6,64}(?::[a-z0-9_]+)*$")
 _LOCATION_ID_EVM_PATTERN = re.compile(
     r"^evm:[a-z0-9_]+:0x[a-fA-F0-9]{40}(?::[a-z0-9_]+)*$"

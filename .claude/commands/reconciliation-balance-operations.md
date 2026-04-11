@@ -7,10 +7,10 @@ checks, or summarize reconciliation status across one source or many.
    - `docs/concepts/reconciliation-tax-architecture.md`
    - `docs/concepts/oracle-boundaries.md`
    - `docs/standards/implementation.md`
-2. Assume canonical `balances.csv` already exists with either source-backed
-   `balance_evidence.csv` or operator-confirmed
-   `balance_confirmations.csv`. If a source still needs the manual submission
-   path, start with `.claude/commands/balance-submission-operations.md`.
+2. Assume assembled source datasets already include `facts.csv` and, when
+   available, `balance_snapshots.csv` and `balance_references.csv`. If a
+   source still needs the manual submission path, start with
+   `.claude/commands/balance-submission-operations.md`.
 3. For direct operator-style execution, use the runtime CLI:
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances inspect`
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances check`
@@ -29,11 +29,11 @@ checks, or summarize reconciliation status across one source or many.
    - `cross_source_summary.json`
 7. Answer the latest-date question from the summary artifact:
    - `latest_portfolio_clean_date` is the portfolio-wide clean answer
-   - `latest_portfolio_source_backed_date` is the portfolio-wide clean date
-     supported only by source-backed evidence
+   - `latest_portfolio_resolved_reference_date` is the portfolio-wide clean
+     date supported by resolved references
    - `latest_clean_source_date` is the latest clean date among checked sources
-   - `latest_source_backed_date` is the latest clean source date supported
-     only by source-backed evidence
+   - `latest_resolved_reference_date` is the latest clean source date
+     supported by resolved references
    - `latest_observed_assertion_date` is the latest date seen in any check output
 8. Use oracle commands only after the summary shows they are needed for
    explanation or trust validation.

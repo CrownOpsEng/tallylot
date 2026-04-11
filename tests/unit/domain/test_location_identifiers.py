@@ -9,6 +9,7 @@ from tallylot.domain.location_identifiers import require_location_id
     ("raw_value", "expected"),
     (
         ("coinbase:primary", "coinbase:primary"),
+        ("crypto.com", "crypto.com"),
         ("near:example.near", "near:example.near"),
         (
             "evm:ethereum:0x1111111111111111111111111111111111111111",

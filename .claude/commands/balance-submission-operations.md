@@ -1,7 +1,7 @@
 # Balance Submission Operations
 
 Use this route when the task is to scaffold a manual balance package, inspect
-missing required values, or submit validated balances into canonical
+missing required values, or submit validated balances into shared
 reconciliation inputs.
 
 1. Read:
@@ -23,6 +23,6 @@ reconciliation inputs.
    identity values. Surface missing values explicitly instead.
 6. After a successful submit, use `reconciliation balances inspect`,
    `reconciliation balances check`, and `reconciliation balances summarize` to
-   evaluate the canonical artifacts.
+   evaluate the resulting assembled source artifacts.
 7. Treat successful manual submission as `operator_confirmed` runtime input,
    not as source-backed checkpoint evidence.
