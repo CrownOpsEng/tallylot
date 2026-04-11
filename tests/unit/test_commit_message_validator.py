@@ -109,6 +109,31 @@ Follow-ups:
     assert not errors
 
 
+def test_generated_mainline_commit_message_allows_issue_linkage_section() -> None:
+    message = """\
+feat(intake): complete capture intake rebuild (#62)
+
+Why:
+- complete the capture intake rebuild as one coherent delivery slice so the branch can land with its reviewed history intact
+
+What:
+- consolidate the intake, evidence, normalization, replay, and supporting automation into one capture-focused branch
+
+Checks:
+- `tools.validate_pr_metadata` against the live branch history
+
+Issue linkage:
+- Refs #56: preserve source-backed balance evidence after intake replay
+
+Included checkpoints:
+- `feat(intake): complete capture intake rebuild`
+"""
+
+    errors = _validate_commit_message_text(message)
+
+    assert not errors
+
+
 def test_squash_merge_commit_message_allows_wrapped_bullet_lines() -> None:
     message = """\
 feat(docs): reshape repo docs and harden maintenance workflow (#14)
