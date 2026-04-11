@@ -152,7 +152,7 @@ standards, and status model
 Checks:
 - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest
 tests/unit/test_docs_maintenance.py
-tests/unit/test_docs_runtime_parity.py -q --no-cov`
+tests/unit/docs_runtime_parity -q --no-cov`
 
 Included checkpoints:
 - `docs(roadmap): clarify planning and state docs`
