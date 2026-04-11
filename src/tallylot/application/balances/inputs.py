@@ -132,7 +132,11 @@ def build_balance_source_inputs(
     has_snapshot_rows = source_dir.snapshot_path.is_file()
     has_reference_rows = bool(reference_rows)
     if has_facts:
-        targets = latest_balance_targets(fact_rows)
+        targets = (
+            _reference_targets(reference_rows)
+            if reference_rows
+            else latest_balance_targets(fact_rows)
+        )
         snapshots, _ = derive_balance_snapshots(fact_rows, targets)
         input_mode: BalanceInputMode = "fact_backed"
         snapshot_origin: BalanceSnapshotOrigin = "derived_from_facts"
@@ -167,6 +171,27 @@ def build_balance_source_inputs(
         has_facts=has_facts,
         has_snapshot_rows=has_snapshot_rows,
         has_reference_rows=has_reference_rows,
+    )
+
+
+def _reference_targets(
+    references: tuple[BalanceReference, ...],
+) -> tuple[BalanceTarget, ...]:
+    return tuple(
+        target
+        for _sort_key, target in sorted(
+            {
+                (
+                    str(reference.target.source),
+                    str(reference.target.location_id),
+                    str(reference.target.instrument_id),
+                    reference.target.balance_kind,
+                    reference.target.target_at,
+                    reference.target.target_precision.value,
+                ): reference.target
+                for reference in references
+            }.items()
+        )
     )
 
 

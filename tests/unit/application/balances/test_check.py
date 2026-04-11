@@ -193,6 +193,67 @@ def test_balance_check_workflow_writes_single_source_outputs(
     assert check_summary_rows[0]["max_assertion_date"] == "2025-12-31"
 
 
+def test_balance_check_workflow_uses_reference_targets_for_fact_backed_sources(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase"
+    output_root = tmp_path / "analysis"
+    input_root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    fact_time = datetime(2021, 5, 10, 18, 59, 7, tzinfo=UTC)
+    statement_time = datetime(2026, 3, 22, 23, 59, 59, tzinfo=UTC)
+
+    facts.write_facts(
+        input_root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=fact_time,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        input_root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=statement_time,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    response = BalanceCheckWorkflow(
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    ).execute(
+        BalanceCheckRequest(
+            input_root_ref=to_resource_ref(input_root),
+            output_root_ref=to_resource_ref(output_root),
+        )
+    )
+
+    assertion_rows = artifacts.read_rows(output_root / "balance_assertions.csv")
+    check_summary_rows = artifacts.read_rows(output_root / "balance_check_summary.csv")
+
+    assert response.clean_source_count == 1
+    assert assertion_rows[0]["target_at"] == "2026-03-22 23:59:59"
+    assert assertion_rows[0]["status"] == "matched"
+    assert assertion_rows[0]["selected_reference_kind"] == "source_document"
+    assert not (output_root / "reconciliation_issues.csv").exists()
+    assert check_summary_rows[0]["check_status"] == "clean"
+    assert check_summary_rows[0]["latest_clean_checked_date"] == "2026-03-22"
+
+
 def test_balance_check_workflow_clears_stale_outputs_when_source_stops_runnable(
     tmp_path: Path,
 ) -> None:
@@ -392,7 +453,10 @@ def test_balance_check_workflow_clears_stale_reference_issue_cache_when_source_s
             output_root_ref=to_resource_ref(output_root),
         )
     )
-    assert (input_root / "balance_reference_issues.csv").exists()
+    (input_root / "balance_reference_issues.csv").write_text(
+        "issue_id,source,adapter_id,severity,kind,message,context_timestamp,raw_file,raw_row_ref,raw_capture_uid,raw_relative_path,raw_archive_member_path,raw_locator_kind,raw_anchor,status\n",
+        encoding="utf-8",
+    )
     (input_root / "facts.csv").unlink()
 
     second_response = workflow.execute(

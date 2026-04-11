@@ -263,6 +263,56 @@ def test_build_balance_source_inputs_prefers_derived_snapshots_over_persisted_ro
     assert inputs.location_inventory[0].location_label == "coinbase"
 
 
+def test_build_balance_source_inputs_uses_reference_targets_for_fact_backed_sources(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "coinbase"
+    root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    fact_time = datetime(2021, 5, 10, 18, 59, 7, tzinfo=UTC)
+    statement_time = datetime(2026, 3, 22, 0, 0, 0, tzinfo=UTC)
+
+    facts.write_facts(
+        root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=fact_time,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    evidence.write_balance_references(
+        root / "balance_references.csv",
+        (
+            _reference(
+                source="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+                target_at=statement_time,
+                reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            ),
+        ),
+    )
+
+    inputs = build_balance_source_inputs(
+        BalanceSourceDir(name="coinbase", root=root),
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    )
+
+    assert inputs.input_mode == "fact_backed"
+    assert inputs.targets[0].target_at == statement_time
+    assert inputs.snapshots[0].target.target_at == statement_time
+    assert inputs.snapshots[0].quantity == Decimal("1.0")
+
+
 def test_build_balance_source_inputs_records_superseded_outputs_without_reading_them(
     tmp_path: Path,
 ) -> None:
