@@ -14,6 +14,7 @@ from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
+from tallylot.application.capture_paths import default_capture_normalized_root
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.infrastructure.storage import FilesystemEvidenceRepository
 from tallylot.interfaces.cli import app
@@ -120,6 +121,34 @@ def test_source_profile_cli_rejects_non_capture_root(tmp_path: Path) -> None:
 
     assert result.exit_code == 2
     assert "capture.json" in result.stdout
+
+
+def test_source_profile_cli_defaults_output_dir_to_capture_root_neighbor(
+    structured_source_dir: Path, tmp_path: Path
+) -> None:
+    raw_capture_root = materialize_capture_root(
+        tmp_path, source="fixture_source", source_dir=structured_source_dir
+    )
+    expected_output_dir = default_capture_normalized_root(raw_capture_root)
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "profile",
+            "--source",
+            "fixture_source",
+            "--raw-dir",
+            str(raw_capture_root),
+        ],
+    )
+
+    payload = json.loads(result.stdout)
+
+    assert result.exit_code == 0
+    assert payload["profile_output_ref"] == str(expected_output_dir)
+    assert (expected_output_dir / "profile.json").exists()
+    assert (expected_output_dir / "profile_inventory.csv").exists()
 
 
 def test_source_normalize_cli_rejects_mismatched_capture_root(tmp_path: Path) -> None:

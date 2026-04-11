@@ -58,17 +58,20 @@ def _source_manifest(
 def _source_profile(
     source: Annotated[str, typer.Option()],
     raw_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
-    output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
+    output_dir: Annotated[
+        Path | None, typer.Option(dir_okay=True, file_okay=False)
+    ] = None,
     inspect_archives: Annotated[
         bool, typer.Option("--inspect-archives/--no-inspect-archives")
     ] = True,
 ) -> None:
     try:
+        resolved_output_dir = output_dir or default_capture_normalized_root(raw_dir)
         response = build_profile_use_case().execute(
             ProfileRequest(
                 source=source,
                 raw_capture_ref=to_resource_ref(raw_dir),
-                profile_output_ref=to_resource_ref(output_dir),
+                profile_output_ref=to_resource_ref(resolved_output_dir),
                 inspect_archives=inspect_archives,
             ),
         )
