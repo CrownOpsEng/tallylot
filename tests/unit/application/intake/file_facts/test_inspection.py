@@ -55,6 +55,42 @@ def test_detect_source_folder_uses_header_hints_without_filename_tokens(
     )
 
 
+def test_inspect_intake_file_skips_title_rows_before_coinbase_headers(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "retail-export.csv"
+    path.write_text(
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,"
+        "Price at Transaction,Subtotal,Total (inclusive of fees and/or spread),"
+        "Fees and/or Spread,Notes\n"
+        "tx-1,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,"
+        "$610.00,$10.00,Bought 0.01 BTC for 610 CAD\n",
+        encoding="utf-8",
+    )
+
+    facts = inspect_intake_file(
+        path, relative_path="incoming/neutral/retail-export.csv"
+    )
+
+    assert facts.header == (
+        "ID",
+        "Timestamp",
+        "Transaction Type",
+        "Asset",
+        "Quantity Transacted",
+        "Price Currency",
+        "Price at Transaction",
+        "Subtotal",
+        "Total (inclusive of fees and/or spread)",
+        "Fees and/or Spread",
+        "Notes",
+    )
+    assert facts.min_timestamp == "2024-02-08 16:31:22"
+    assert facts.max_timestamp == "2024-02-08 16:31:22"
+
+
 def test_inspect_intake_file_supports_semicolon_delimited_headers(
     tmp_path: Path,
 ) -> None:

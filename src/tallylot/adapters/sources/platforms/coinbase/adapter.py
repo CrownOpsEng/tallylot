@@ -31,7 +31,7 @@ from tallylot.ports.source_profiles import (
 )
 from tallylot.ports.source_translation import SourceTranslationBatch
 
-from .matching import match_coinbase_inventory
+from .matching import RETAIL_HEADER, match_coinbase_inventory
 from .normalization import translate_coinbase_exports
 from .pdf_balances import match_statement_document as _match_statement_document
 from .pdf_balances import parse_statement_document as _parse_statement_document
@@ -82,7 +82,10 @@ class _CoinbaseAdapter:
             relative_path,
             facts,
             path_hints=("coinbase",),
-            header_hints=("portfolio,type,time,amount,balance,amount/balance unit",),
+            header_hints=(
+                "portfolio,type,time,amount,balance,amount/balance unit",
+                ",".join(RETAIL_HEADER).lower(),
+            ),
         )
 
     def route_intake(self, request: IntakeRoutingRequest) -> IntakeRoute | None:

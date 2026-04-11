@@ -17,6 +17,31 @@ def test_binance_adapter_matches_intake_from_header_hints() -> None:
     assert score == 100
 
 
+def test_coinbase_adapter_matches_intake_from_retail_header_without_path_hint() -> None:
+    adapter = build_registry().source_adapter("coinbase")
+
+    score = adapter.match_intake(
+        "incoming/neutral/retail-export.csv",
+        IntakeFileFacts(
+            header=(
+                "ID",
+                "Timestamp",
+                "Transaction Type",
+                "Asset",
+                "Quantity Transacted",
+                "Price Currency",
+                "Price at Transaction",
+                "Subtotal",
+                "Total (inclusive of fees and/or spread)",
+                "Fees and/or Spread",
+                "Notes",
+            )
+        ),
+    )
+
+    assert score == 100
+
+
 def test_cointracking_portfolio_adapter_routes_html_export(tmp_path: Path) -> None:
     incoming_dir = tmp_path / "incoming"
     incoming_dir.mkdir()

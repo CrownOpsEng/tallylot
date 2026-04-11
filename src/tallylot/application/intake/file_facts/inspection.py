@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import re
 from datetime import UTC, datetime
+from itertools import zip_longest
 from pathlib import Path
 
 from tallylot.domain.location_identifiers import (
@@ -17,7 +18,40 @@ from tallylot.domain.location_identifiers import (
 
 from .models import IntakeFileFacts
 
-type CsvCell = str | list[str]
+_HEADER_SCAN_LIMIT = 25
+_HEADER_KEYWORDS = (
+    "account",
+    "amount",
+    "asset",
+    "balance",
+    "chain",
+    "coin",
+    "currency",
+    "date",
+    "fee",
+    "hash",
+    "id",
+    "name",
+    "network",
+    "note",
+    "order",
+    "pair",
+    "portfolio",
+    "price",
+    "quantity",
+    "settlement",
+    "side",
+    "status",
+    "subtotal",
+    "time",
+    "timestamp",
+    "token",
+    "total",
+    "transaction",
+    "type",
+    "value",
+    "wallet",
+)
 
 TIMESTAMP_FORMATS = (
     "%Y-%m-%d %H:%M:%S",
@@ -88,7 +122,8 @@ def parse_timestamp(value: str) -> datetime | None:
 
 
 def _timestamp_values(
-    rows: list[dict[str, CsvCell]], header: tuple[str, ...]
+    rows: list[dict[str, str]],
+    header: tuple[str, ...],
 ) -> list[str]:
     field_name = next((name for name in TIMESTAMP_FIELD_NAMES if name in header), "")
     if not field_name:
@@ -131,7 +166,7 @@ def _observed_period_label(timestamp_values: list[str]) -> str:
     return start if start == end else f"{start}..{end}"
 
 
-def _read_csv_rows(path: Path) -> tuple[tuple[str, ...], list[dict[str, CsvCell]]]:
+def _read_csv_rows(path: Path) -> tuple[tuple[str, ...], list[dict[str, str]]]:
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         sample = handle.read(4096)
         handle.seek(0)
@@ -139,11 +174,20 @@ def _read_csv_rows(path: Path) -> tuple[tuple[str, ...], list[dict[str, CsvCell]
             dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
         except csv.Error:
             dialect = csv.excel
-        reader = csv.DictReader(handle, dialect=dialect)
-        return tuple(reader.fieldnames or ()), list(reader)
+        rows = list(csv.reader(handle, dialect=dialect))
+    header_index = _header_row_index(rows)
+    if header_index is None:
+        return (), []
+    header = tuple(cell.strip() for cell in rows[header_index])
+    content_rows = [
+        _row_dict(header, row)
+        for row in rows[header_index + 1 :]
+        if any(cell.strip() for cell in row)
+    ]
+    return header, content_rows
 
 
-def _scope_tokens(relative_path: str, rows: list[dict[str, CsvCell]]) -> set[str]:
+def _scope_tokens(relative_path: str, rows: list[dict[str, str]]) -> set[str]:
     tokens: set[str] = set()
     lower_path = relative_path.lower()
     for token in _identifier_scope_tokens(relative_path):
@@ -154,17 +198,15 @@ def _scope_tokens(relative_path: str, rows: list[dict[str, CsvCell]]) -> set[str
         )
     for row in rows[:50]:
         for value in row.values():
-            candidates = value if isinstance(value, list) else (value or "",)
-            for candidate in candidates:
-                for token in _identifier_scope_tokens(candidate):
-                    tokens.add(token)
+            for token in _identifier_scope_tokens(value):
+                tokens.add(token)
     return tokens
 
 
 def _network_hints(
     relative_path: str,
     header: tuple[str, ...],
-    rows: list[dict[str, CsvCell]],
+    rows: list[dict[str, str]],
 ) -> set[str]:
     row_text = " ".join(
         _cell_text(value) for row in rows[:50] for value in row.values()
@@ -177,11 +219,79 @@ def _network_hints(
     return hints
 
 
-def _cell_text(value: CsvCell | None) -> str:
+def _row_dict(header: tuple[str, ...], row: list[str]) -> dict[str, str]:
+    return {
+        key: value.strip()
+        for key, value in zip_longest(header, row, fillvalue="")
+        if key
+    }
+
+
+def _header_row_index(rows: list[list[str]]) -> int | None:
+    for index, row in enumerate(rows[:_HEADER_SCAN_LIMIT]):
+        if _is_plausible_header_row(row):
+            return index
+    candidates = [
+        (len([cell for cell in row if cell.strip()]), index)
+        for index, row in enumerate(rows)
+        if len([cell for cell in row if cell.strip()]) >= 2
+    ]
+    if not candidates:
+        return None
+    widest = max(width for width, _ in candidates)
+    return next(index for width, index in candidates if width == widest)
+
+
+def _is_plausible_header_row(row: list[str]) -> bool:
+    non_empty = [cell.strip() for cell in row if cell.strip()]
+    if len(non_empty) < 2:
+        return False
+    keyword_hits = sum(1 for cell in non_empty if _has_header_keyword(cell))
+    if len(non_empty) <= 3 and keyword_hits < 2:
+        return False
+    payload_like_count = sum(1 for cell in non_empty if _is_payload_like_cell(cell))
+    if payload_like_count * 2 > len(non_empty):
+        return False
+    header_like_count = sum(1 for cell in non_empty if _is_header_like_cell(cell))
+    return header_like_count * 2 >= len(non_empty) or keyword_hits >= 2
+
+
+def _has_header_keyword(value: str) -> bool:
+    normalized = _normalized_header_text(value)
+    return any(keyword in normalized.split() for keyword in _HEADER_KEYWORDS)
+
+
+def _is_header_like_cell(value: str) -> bool:
+    text = value.strip()
+    if not text or _is_payload_like_cell(text):
+        return False
+    normalized = _normalized_header_text(text)
+    return bool(normalized and re.search(r"[a-z]", normalized))
+
+
+def _normalized_header_text(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def _is_payload_like_cell(value: str) -> bool:
+    text = value.strip()
+    if not text:
+        return False
+    if parse_timestamp(text) is not None:
+        return True
+    return bool(
+        re.fullmatch(
+            r"[$€£]?\d[\d,]*(?:\.\d+)?%?"
+            r"|[$€£]?\d[\d,]*(?:\.\d+)?/[A-Za-z]+"
+            r"|[+-]?\d+(?:\.\d+)?",
+            text,
+        )
+    )
+
+
+def _cell_text(value: str | None) -> str:
     if value is None:
         return ""
-    if isinstance(value, list):
-        return " ".join(value).strip()
     return value.strip()
 
 
