@@ -312,26 +312,42 @@ def _planned_capture_label(
             if isinstance(payload_obj, dict)
             else {}
         )
-        planned = payload.get("planned_capture_label", "")
-        planned_manifest_fingerprint = payload.get("manifest_fingerprint", "")
-        planned_source = payload.get("source", "")
-        if (
-            isinstance(planned, str)
-            and planned.strip()
-            and isinstance(planned_manifest_fingerprint, str)
-            and planned_manifest_fingerprint == manifest_fingerprint
-            and isinstance(planned_source, str)
-            and planned_source == source_folder
-            and not _capture_label_exists(
-                workspace_root=workspace_root,
-                source_folder=source_folder,
-                capture_label=planned,
-            )
-        ):
-            return planned
+        reusable_label = _reusable_planned_capture_label(
+            payload=payload,
+            workspace_root=workspace_root,
+            source_folder=source_folder,
+            manifest_fingerprint=manifest_fingerprint,
+        )
+        if reusable_label is not None:
+            return reusable_label
     return _next_capture_label(
         workspace_root=workspace_root, source_folder=source_folder
     )
+
+
+def _reusable_planned_capture_label(
+    *,
+    payload: dict[str, JsonValue],
+    workspace_root: Path,
+    source_folder: str,
+    manifest_fingerprint: str,
+) -> str | None:
+    planned = payload.get("planned_capture_label", "")
+    if not isinstance(planned, str) or not planned.strip():
+        return None
+    planned_manifest_fingerprint = payload.get("manifest_fingerprint", "")
+    planned_source = payload.get("source", "")
+    if planned_manifest_fingerprint != manifest_fingerprint:
+        return None
+    if planned_source != source_folder:
+        return None
+    if _capture_label_exists(
+        workspace_root=workspace_root,
+        source_folder=source_folder,
+        capture_label=planned,
+    ):
+        return None
+    return planned
 
 
 def _capture_label_exists(
