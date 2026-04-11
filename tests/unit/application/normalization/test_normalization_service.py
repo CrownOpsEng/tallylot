@@ -214,7 +214,7 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
     (
         ("Future Exchange", fixture_raw_dir("coinbase", "retail_buy_renamed"), 1, 0),
         ("Future Broker", fixture_raw_dir("wealthsimple", "broker_trade"), 1, 0),
-        ("Binance", fixture_raw_dir("binance", "mixed_history"), 5, 2),
+        ("Binance", fixture_raw_dir("binance", "mixed_history"), 5, 1),
     ),
 )
 def test_normalization_service_supports_explicit_windows_for_fixture_adapters(

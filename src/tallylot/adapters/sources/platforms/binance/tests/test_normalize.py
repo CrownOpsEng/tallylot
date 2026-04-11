@@ -67,7 +67,7 @@ def test_binance_adapter_handles_supported_and_review_required_rows(
     facts = compile_activity_drafts(result.drafts)
 
     assert len(facts) == 5
-    assert len(result.issues) == 3
+    assert len(result.issues) == 2
     projection_hints = {row.projection_hint for row in facts}
     assert ProjectionHint.TRADE in projection_hints
     assert ProjectionHint.DEPOSIT in projection_hints

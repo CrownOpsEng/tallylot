@@ -18,7 +18,12 @@ from tallylot.adapters.support.drafts import (
     symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal, parse_timestamp
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -45,7 +50,9 @@ HISTORICAL_ONLY_IGNORED_OPERATIONS = frozenset(
         "BNB Fee Deduction",
     }
 )
-SUPPORTED_GROUP_OPERATIONS = frozenset({"ETH 2.0 Staking Rewards", "Small Assets Exchange BNB"})
+SUPPORTED_GROUP_OPERATIONS = frozenset(
+    {"ETH 2.0 Staking Rewards", "Small Assets Exchange BNB"}
+)
 REVIEW_GROUP_OPERATIONS = frozenset({"Binance Convert"})
 PASSTHROUGH_MATCHED_OPERATIONS = frozenset({"P2P Trading"})
 
@@ -59,9 +66,12 @@ def normalize_transaction_rows(
 ) -> tuple[list[EconomicActivityDraft], list[IssueRecord]]:
     drafts: list[EconomicActivityDraft] = []
     issues: list[IssueRecord] = []
+    unsupported_groups: dict[str, list[tuple[str, str]]] = defaultdict(list)
     resolved_convert_match_times = convert_match_times or frozenset()
     resolved_p2p_match_times = p2p_match_times or frozenset()
-    grouped_rows: dict[tuple[str, str, str], list[tuple[int, dict[str, str]]]] = defaultdict(list)
+    grouped_rows: dict[tuple[str, str, str], list[tuple[int, dict[str, str]]]] = (
+        defaultdict(list)
+    )
     for index, row in enumerate(read_rows(path), start=2):
         if is_no_data_row(row):
             continue
@@ -111,8 +121,12 @@ def normalize_transaction_rows(
             )
             continue
         if operation == "Small Assets Exchange BNB" and len(group) >= 2:
-            negative_row = next((item for item in group if row_change(item[1]) < Decimal("0")), None)
-            positive_row = next((item for item in group if row_change(item[1]) > Decimal("0")), None)
+            negative_row = next(
+                (item for item in group if row_change(item[1]) < Decimal("0")), None
+            )
+            positive_row = next(
+                (item for item in group if row_change(item[1]) > Decimal("0")), None
+            )
             if negative_row is None or positive_row is None:
                 continue
             neg_index, neg = negative_row
@@ -142,28 +156,40 @@ def normalize_transaction_rows(
                             leg_id="primary_in",
                             kind=LegKind.PRIMARY,
                             quantity=pos_change,
-                            instrument=symbol_claim((pos.get("Coin") or "").strip().upper(), venue="binance"),
+                            instrument=symbol_claim(
+                                (pos.get("Coin") or "").strip().upper(), venue="binance"
+                            ),
                         ),
                         economic_leg(
                             leg_id="primary_out",
                             kind=LegKind.PRIMARY,
                             quantity=-abs(neg_change),
-                            instrument=symbol_claim((neg.get("Coin") or "").strip().upper(), venue="binance"),
+                            instrument=symbol_claim(
+                                (neg.get("Coin") or "").strip().upper(), venue="binance"
+                            ),
                         ),
                     ),
                 )
             )
             continue
-        if operation == "Binance Convert" and parsed_time in resolved_convert_match_times:
+        if (
+            operation == "Binance Convert"
+            and parsed_time in resolved_convert_match_times
+        ):
             continue
         if operation == "P2P Trading" and parsed_time in resolved_p2p_match_times:
             continue
-        issue_kind = "ambiguous_group" if operation == "Binance Convert" else "unsupported_group"
+        issue_kind = (
+            "ambiguous_group" if operation == "Binance Convert" else "unsupported_group"
+        )
         message_prefix = (
             "Unable to safely collapse Binance grouped rows with operations"
             if issue_kind == "ambiguous_group"
             else "Unsupported Binance transaction-history operations"
         )
+        if issue_kind == "unsupported_group":
+            unsupported_groups[operation].append((time_value, account))
+            continue
         issues.append(
             issue_record(
                 IssueSpec(
@@ -177,6 +203,13 @@ def normalize_transaction_rows(
                 )
             )
         )
+    issues.extend(
+        _unsupported_group_issues(
+            source=str(profile.source),
+            path=path,
+            unsupported_groups=unsupported_groups,
+        )
+    )
     return drafts, issues
 
 
@@ -186,6 +219,40 @@ def _should_ignore_historical_operation(
     operation: str,
 ) -> bool:
     cutoff_value = profile.normalization_hints.get("project_baseline_cutoff_timestamp")
-    if not isinstance(cutoff_value, str) or operation not in HISTORICAL_ONLY_IGNORED_OPERATIONS:
+    if (
+        not isinstance(cutoff_value, str)
+        or operation not in HISTORICAL_ONLY_IGNORED_OPERATIONS
+    ):
         return False
     return parsed_time <= parse_timestamp(cutoff_value)
+
+
+def _unsupported_group_issues(
+    *,
+    source: str,
+    path: Path,
+    unsupported_groups: dict[str, list[tuple[str, str]]],
+) -> tuple[IssueRecord, ...]:
+    issues: list[IssueRecord] = []
+    for operation, groups in sorted(unsupported_groups.items()):
+        first_time_value, first_account = groups[0]
+        issues.append(
+            issue_record(
+                IssueSpec(
+                    source=source,
+                    adapter_id="binance",
+                    issue_id=(
+                        "binance:"
+                        f"{path.name}:unsupported_group:{operation.replace(' ', '_')}"
+                    ),
+                    kind="unsupported_group",
+                    message=(
+                        "Unsupported Binance transaction-history operations: "
+                        f"{operation} ({len(groups)} grouped rows)"
+                    ),
+                    raw_file=path.name,
+                    raw_row_ref=f"group:{first_time_value}:{first_account}",
+                )
+            )
+        )
+    return tuple(issues)
