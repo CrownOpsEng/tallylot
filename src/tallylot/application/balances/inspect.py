@@ -167,10 +167,10 @@ def _cross_source_ready_status(
 ) -> BalanceCrossSourceReadyStatus:
     if source_input.input_mode == "empty":
         return "not_applicable"
-    if not source_input.location_inventory:
-        return "missing_location_inventory"
     if target_count == 0 or snapshot_count == 0:
         return "not_comparable"
+    if not source_input.location_inventory:
+        return "missing_location_inventory"
     return "ready"
 
 

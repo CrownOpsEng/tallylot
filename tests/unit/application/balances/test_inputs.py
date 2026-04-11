@@ -10,6 +10,9 @@ import pytest
 from tallylot.application.balances import (
     BalanceSourceDir,
     build_balance_source_inputs,
+    discover_balance_source_dirs,
+    select_balance_source_dirs,
+    source_dir_input,
 )
 from tallylot.application.evidence.location_inventory import (
     LocationInventoryBuildSpec,
@@ -148,6 +151,20 @@ def test_build_balance_source_inputs_classifies_input_modes(
     assert len(inputs.unexpected_superseded_outputs) == 0
 
 
+def test_balance_source_dir_output_root_respects_single_source_mode(
+    tmp_path: Path,
+) -> None:
+    source_dir = BalanceSourceDir(name="coinbase", root=tmp_path / "coinbase")
+    base_output_root = tmp_path / "normalized"
+
+    assert (
+        source_dir.output_root(base_output_root, single_source=True) == base_output_root
+    )
+    assert source_dir.output_root(base_output_root, single_source=False) == (
+        base_output_root / "coinbase"
+    )
+
+
 def test_build_balance_source_inputs_prefers_derived_snapshots_over_persisted_rows(
     tmp_path: Path,
 ) -> None:
@@ -273,6 +290,143 @@ def test_build_balance_source_inputs_records_superseded_outputs_without_reading_
         "balances.csv",
         "balance_evidence.csv",
     )
+
+
+def test_build_balance_source_inputs_ignores_malformed_snapshot_files_for_fact_backed_sources(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "coinbase"
+    root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+    as_of = datetime(2026, 3, 23, tzinfo=UTC)
+
+    facts.write_facts(
+        root / "facts.csv",
+        (
+            _fact(
+                fact_id="fact-1",
+                source="coinbase",
+                timestamp=as_of,
+                location_id="coinbase",
+                instrument_id="BTC",
+                quantity="1.0",
+            ),
+        ),
+    )
+    (root / "balance_snapshots.csv").write_text(
+        "not,a,valid,balance,snapshot,file\n",
+        encoding="utf-8",
+    )
+
+    inputs = build_balance_source_inputs(
+        BalanceSourceDir(name="coinbase", root=root),
+        facts=facts,
+        evidence=evidence,
+        artifacts=artifacts,
+    )
+
+    assert inputs.input_mode == "fact_backed"
+    assert inputs.snapshot_origin == "derived_from_facts"
+    assert inputs.has_snapshot_rows is True
+    assert inputs.snapshots[0].quantity == Decimal("1.0")
+
+
+def test_source_discovery_ignores_superseded_outputs_only(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "normalized"
+    stale_source = root / "coinbase"
+    stale_source.mkdir(parents=True)
+    (stale_source / "balances.csv").write_text("legacy\n", encoding="utf-8")
+    (stale_source / "balance_evidence.csv").write_text("legacy\n", encoding="utf-8")
+
+    assert source_dir_input(stale_source) is False
+    assert discover_balance_source_dirs(root) == ()
+
+
+def test_discover_balance_source_dirs_returns_single_input_root(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "coinbase"
+    root.mkdir()
+    facts = FilesystemFactRepository()
+    evidence = FilesystemEvidenceRepository()
+    artifacts = FilesystemArtifactStore()
+
+    _write_fact_rows(root, facts=facts, evidence=evidence, artifacts=artifacts)
+
+    assert discover_balance_source_dirs(root) == (
+        BalanceSourceDir(name="coinbase", root=root),
+    )
+
+
+def test_discover_balance_source_dirs_rejects_non_directory_root(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "coinbase.csv"
+    input_root.write_text("not a directory\n", encoding="utf-8")
+
+    with pytest.raises(
+        ValueError,
+        match=r"balance input root must be a directory: .*coinbase\.csv",
+    ):
+        discover_balance_source_dirs(input_root)
+
+
+def test_discover_balance_source_dirs_rejects_capture_outputs(
+    tmp_path: Path,
+) -> None:
+    input_root = tmp_path / "captures"
+    input_root.mkdir()
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "balance input root must reference assembled source datasets, "
+            "not capture-normalized outputs"
+        ),
+    ):
+        discover_balance_source_dirs(input_root)
+
+
+def test_select_balance_source_dirs_validates_requested_sources(
+    tmp_path: Path,
+) -> None:
+    coinbase_dir = BalanceSourceDir(name="coinbase", root=tmp_path / "coinbase")
+    kraken_dir = BalanceSourceDir(name="kraken", root=tmp_path / "kraken")
+    source_dirs = (coinbase_dir, kraken_dir)
+
+    assert select_balance_source_dirs(source_dirs, ()) == source_dirs
+    assert select_balance_source_dirs(source_dirs, ("coinbase",)) == (coinbase_dir,)
+
+    with pytest.raises(
+        ValueError,
+        match="unknown balance source selection: kraken",
+    ):
+        select_balance_source_dirs((coinbase_dir,), ("kraken",))
+
+
+def test_location_inventory_record_requires_evidence_provenance() -> None:
+    with pytest.raises(
+        ValueError,
+        match="location inventory rows must include evidence provenance",
+    ):
+        from tallylot.application.balances.inputs import (
+            _location_inventory_record_from_row,
+        )
+
+        _location_inventory_record_from_row(
+            {
+                "source": "coinbase",
+                "location_id": "coinbase",
+                "location_kind": "account",
+                "location_label": "coinbase",
+                "identifier_kind": "account",
+                "display_identifier": "coinbase",
+            }
+        )
 
 
 def _fact(

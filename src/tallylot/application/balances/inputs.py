@@ -106,11 +106,6 @@ def build_balance_source_inputs(
         if source_dir.facts_path.is_file()
         else ()
     )
-    snapshot_rows = (
-        evidence.read_balance_snapshots(source_dir.snapshot_path)
-        if source_dir.snapshot_path.is_file()
-        else ()
-    )
     reference_rows = (
         evidence.read_balance_references(source_dir.reference_path)
         if source_dir.reference_path.is_file()
@@ -129,7 +124,7 @@ def build_balance_source_inputs(
         if path.is_file()
     )
     has_facts = bool(fact_rows)
-    has_snapshot_rows = bool(snapshot_rows)
+    has_snapshot_rows = source_dir.snapshot_path.is_file()
     has_reference_rows = bool(reference_rows)
     if has_facts:
         targets = latest_balance_targets(fact_rows)
@@ -137,6 +132,12 @@ def build_balance_source_inputs(
         input_mode: BalanceInputMode = "fact_backed"
         snapshot_origin: BalanceSnapshotOrigin = "derived_from_facts"
     elif has_snapshot_rows:
+        snapshot_rows = (
+            evidence.read_balance_snapshots(source_dir.snapshot_path)
+            if source_dir.snapshot_path.is_file()
+            else ()
+        )
+        has_snapshot_rows = bool(snapshot_rows)
         targets = tuple(snapshot.target for snapshot in snapshot_rows)
         snapshots = snapshot_rows
         input_mode = "manual_only"
@@ -210,8 +211,6 @@ def _has_balance_inputs(path: Path) -> bool:
             BALANCE_REFERENCE_FILENAME,
             BALANCE_REFERENCE_ISSUE_FILENAME,
             LOCATION_INVENTORY_FILENAME,
-            SUPERSEDED_BALANCES_FILENAME,
-            SUPERSEDED_BALANCE_EVIDENCE_FILENAME,
         )
     )
 

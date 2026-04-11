@@ -301,6 +301,23 @@ def test_balance_inspect_ready_status_helpers_cover_exact_states() -> None:
                 input_mode="manual_only",
                 snapshot_origin="explicit_rows",
                 targets=(),
+                snapshots=(),
+                references=(),
+                location_inventory=(),
+                has_facts=False,
+                has_snapshot_rows=True,
+                has_reference_rows=False,
+            ),
+            0,
+            0,
+            "not_comparable",
+        ),
+        (
+            _source_input(
+                source="coinbase",
+                input_mode="manual_only",
+                snapshot_origin="explicit_rows",
+                targets=(),
                 snapshots=(
                     _snapshot("coinbase", "BTC", datetime(2026, 3, 23, tzinfo=UTC)),
                 ),
