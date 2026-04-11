@@ -20,8 +20,9 @@ nav_order: 10
   Crypto.com, Shakepay, Ledger Live, Near, Ronin, GTrade, EVM explorer, EVM
   wallet-state, plus the generic structured CSV adapter
 - Universal ZIP inspection enabled by default for source scanning workflows
-- Separate balance-provider discovery is wired at runtime, but concrete live
-  network provider adapters remain deferred
+- Separate balance-provider discovery is wired at runtime with discoverable
+  `evm_json_rpc` and `near_rpc` family stubs, while concrete live network
+  provider adapters remain deferred
 - Platform API expansion, SQLite, and provider-backed AI remain stubbed behind
   typed boundaries
 
@@ -36,8 +37,8 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - capture-scoped source profiling with timezone provenance and a
   capture-scoped `profile_inventory.csv` discovery contract
 - capture-scoped source normalization with explicit fact artifacts, derived
-  balance snapshots, unified balance references, and archive member provenance under
-  `working/normalized/captures/<capture_uid>/`
+  balance snapshots, unified balance references, and archive member provenance
+  under `working/normalized/captures/<capture_uid>/`
 - source assembly via `source assemble`, producing reconciliation-ready source
   datasets under `working/normalized/sources/<source>/` and rewrites its owned
   generated artifact set on rerun
@@ -46,12 +47,12 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - normalization-owned statement-backed `source_document` balance references for
   supported provider statements and constrained same-source-chain MetaMask
   portfolio evidence
-- canonical native public-ledger asset ids for in-scope EVM, NEAR, and Ronin
-  translations, with symbol-only public-ledger token identity surfaced as
-  explicit unsupported issues until immutable asset ids are proven
+- native and contract-backed EVM asset ids, native NEAR asset ids, and
+  explicit unsupported issues for symbol-only public-ledger tokens when
+  immutable asset ids cannot be proven
 - checkpoint-owned manual balance submission scaffolding and validation that
-  materializes canonical balance snapshots, operator assertion references, and
-  optional location inventory outputs
+  materializes balance snapshots, operator assertion references, and optional
+  location inventory outputs
 - checkpoint location inventory rebuild with evidence, issues, and summary
   artifacts
 - checkpoint PDF balance extraction for supported statement families through
@@ -97,14 +98,17 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - Dev-only oracle batch screening and staging are blocking gates. A blocked run
   still writes artifacts for review.
 - Manual balance submission packages under
-  `working/supporting_artifacts/balance_submissions/` are pre-canonical support
-  artifacts. Canonical balance outputs still live under the chosen assembled
-  source root, normally `working/normalized/sources/<source>/`.
+  `working/supporting_artifacts/balance_submissions/` are preliminary support
+  artifacts. Balance outputs still live under the chosen assembled source root,
+  normally `working/normalized/sources/<source>/`.
 - Manual submission can unblock runtime reconciliation through
   `operator_assertion` references, but filing-ready checkpoint state still
   requires `source_document` evidence.
 - Separate balance-provider adapters may hydrate missing references only for
-  targets whose canonical location and asset identity are already known.
+  targets whose location and asset identity are already known.
+- On-chain asset ids with immutable chain identity are the prerequisite for
+  historical public-ledger provider hydration. Symbol-only token rows remain
+  explicit unsupported surfaces until immutable identity is proven.
 - `tools.validate_workspace_replay` compares semantic capture-registry parity,
   raw capture completeness, assembled source metrics, and reconciliation status
   counts. Optional expected-difference fixtures may declare only

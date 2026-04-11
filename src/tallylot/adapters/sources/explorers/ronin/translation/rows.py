@@ -9,7 +9,6 @@ from decimal import Decimal
 from tallylot.adapters.support import (
     DecimalPrecisionExpectation,
     ReviewSpec,
-    canonical_location_id_from_identifier,
     check_decimal_precision,
     review_record,
 )
@@ -357,6 +356,4 @@ def _parse_summary_local_timestamp(value: str) -> datetime | None:
 
 
 def ronin_location_id(address: str) -> LocationId:
-    return canonical_location_id_from_identifier(
-        "evm_address", address, network_scope="ronin"
-    )
+    return LocationId(f"evm:ronin:{address.strip().lower()}")

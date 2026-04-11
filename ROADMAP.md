@@ -17,17 +17,18 @@ tracks remaining phases, sequencing, and delivery gates. It does not restate
 the detailed architecture contract.
 
 The current runtime now uses one shared balance capability across
-normalization, reconciliation, and checkpoint submission. Canonical balance
-state is expressed as derived `balance_snapshots.csv` plus unified
+normalization, reconciliation, and checkpoint submission. Balance state is
+expressed as derived `balance_snapshots.csv` plus unified
 `balance_references.csv`, where each reference row declares its
 `reference_kind`.
 
 Historical provider hydration is now a first-class balance concern, but the
-current implementation target remains public-ledger balance lookup only.
-The current codebase also ships the separate balance-provider discovery seam
-and canonical native public-ledger asset ids for the in-scope EVM, NEAR, and
-Ronin adapters. Contract-backed public-ledger assets remain blocked from
-historical provider hydration until immutable on-chain ids are available.
+current implementation target remains public-ledger balance lookup only. The
+current codebase also ships the separate balance-provider discovery seam with
+discoverable `evm_json_rpc` and `near_rpc` family stubs, plus native and
+contract-backed public-ledger asset ids for the in-scope EVM, NEAR, and Ronin
+adapters. Live network hydration remains deferred behind provider
+implementations.
 
 ## Planning Anchors
 
@@ -75,7 +76,7 @@ reconciliation, accounting, and tax work expands.
 
 Scope:
 
-- keep direct fact artifacts as the only canonical runtime model
+- keep direct fact artifacts as the only runtime model
 - center intake on explicit capture identity, capture registries, and
   raw-evidence preservation instead of inferred capture buckets
 - keep inferred period and capture heuristics as report metadata only; they do
@@ -105,14 +106,14 @@ Scope:
 
 Exit criteria:
 
-- supported adapters emit canonical facts without normalized-transaction-era
-  wrapper lanes
+- supported adapters emit facts without normalized-transaction-era wrapper
+  lanes
 - CoinTracking CSV projection remains correct from facts alone
 - remaining normalization ambiguity paths emit explicit reviews or blocking
   issues instead of silent coercion
-- canonical balance references, issue rows, review rows, and location
-  inventory evidence rows share one flattened provenance locator family at
-  artifact boundaries while runtime models keep typed provenance
+- balance references, issue rows, review rows, and location inventory evidence
+  rows share one flattened provenance locator family at artifact boundaries
+  while runtime models keep typed provenance
 - unchanged raw inputs preserve file completeness, fact counts, snapshot
   counts, reference counts, and issue or review counts unless an
   expected-difference fixture documents the exception
@@ -133,14 +134,14 @@ Scope:
 - extend the first exact balance assertion workflow into broader checkpoint and
   transfer checks
 - keep statement-backed quantity evidence on the normalization path and treat
-  valuation totals as non-canonical
-- accept canonical `balance_snapshots.csv` plus unified
+  valuation totals as out of scope
+- accept `balance_snapshots.csv` plus unified
   `balance_references.csv` from normalization, manual submission, or later
   provider hydration without splitting the downstream reconciliation contracts
 - keep historical API lookup behind separate balance-provider adapters instead
   of extending source adapters
-- require canonical on-chain asset ids before public-ledger provider hydration
-  is considered supported
+- require on-chain asset ids with immutable chain identity before public-ledger
+  provider hydration is considered supported
 - keep symbol-only public-ledger asset ids as explicit unsupported surfaces
   rather than soft-mapping them into provider hydration
 - add additive cross-source corroboration as a sidecar evidence surface before
@@ -175,8 +176,8 @@ Scope:
 - checkpoint artifact contracts
 - checkpoint provenance and evidence requirements
 - keep manual/operator-authored balance submission packages as a supported
-  checkpoint-owned input path for canonical balance snapshots and operator
-  assertion references
+  checkpoint-owned input path for balance snapshots and operator assertion
+  references
 - source-backed checkpoint builder centered on the best-supported balance date
   near `2026-03-23`
 - intentional opening-state adoption flow with provenance

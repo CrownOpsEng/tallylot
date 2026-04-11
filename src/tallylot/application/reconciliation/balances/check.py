@@ -149,6 +149,7 @@ class BalanceCheckWorkflow:
         try:
             facts = self._facts.read_facts(source_dir.facts_path)
             parsed_times = parse_target_time_values(request.as_of_values)
+            _normalize_reference_policy(request.reference_policy)
             targets = (
                 targets_for_as_of_values(facts, parsed_times)
                 if parsed_times
@@ -283,6 +284,13 @@ def _assertion_row_dates(row: dict[str, str]) -> tuple[str, ...]:
         )
         if value
     )
+
+
+def _normalize_reference_policy(reference_policy: str) -> str:
+    normalized = reference_policy.strip().lower()
+    if normalized != "default":
+        raise ValueError(f"unsupported balance reference_policy: {reference_policy}")
+    return normalized
 
 
 def _persist_reference_cache(

@@ -13,7 +13,8 @@ from tallylot.adapters.sources.explorers.evm_explorer.families import (
 )
 from tallylot.adapters.support import (
     IssueSpec,
-    canonical_location_id_from_identifier,
+    EVM_ADDRESS_PATTERN,
+    evm_erc20_asset_claim,
     evm_native_asset_claim,
     issue_record,
     read_csv_header,
@@ -57,6 +58,19 @@ class EvmDraftContext:
     location_id: LocationId
     quantity: Decimal
     instrument: InstrumentIdentityClaim
+
+
+def _location_id_from_identifier(
+    identifier_kind: str,
+    identifier_value: str,
+    *,
+    network_scope: str = "",
+) -> LocationId:
+    if identifier_kind != "evm_address" or not network_scope.strip():
+        raise ValueError("unsupported EVM location identifier")
+    return LocationId(
+        f"evm:{network_scope.strip().lower()}:{identifier_value.strip().lower()}"
+    )
 
 
 def translate_transactions(
@@ -162,7 +176,7 @@ def _translate_native_transfers(
                         row_index=index,
                         tx_hash=tx_hash,
                         timestamp=timestamp,
-                        location_id=canonical_location_id_from_identifier(
+                        location_id=_location_id_from_identifier(
                             "evm_address",
                             to_address,
                             network_scope=context.network_scope,
@@ -195,7 +209,7 @@ def _translate_native_transfers(
                         row_index=index,
                         tx_hash=tx_hash,
                         timestamp=timestamp,
-                        location_id=canonical_location_id_from_identifier(
+                        location_id=_location_id_from_identifier(
                             "evm_address",
                             from_address,
                             network_scope=context.network_scope,
@@ -280,23 +294,33 @@ def _translate_token_transfers(
             IssueSpec(
                 source=str(profile.source),
                 adapter_id="evm_explorer",
-                issue_id=f"evm_explorer:{path.name}:row:{index}:noncanonical_token_identity",
+                issue_id=f"evm_explorer:{path.name}:row:{index}:instrument_identity_blocked",
                 severity="high",
-                kind="noncanonical_token_identity",
+                kind="instrument_identity_blocked",
                 message=(
-                    "EVM explorer token transfer rows do not expose immutable contract identity; "
-                    "the normalized fact keeps a symbol-only instrument id and cannot participate "
-                    "in historical API-backed balance lookup."
+                    "EVM explorer token transfer rows without a valid contract address do not "
+                    "expose immutable contract identity; the normalized fact keeps a symbol-only "
+                    "instrument id and cannot participate in historical API-backed balance lookup."
                 ),
                 raw_file=path.name,
                 raw_row_ref=f"row:{index}",
             )
         )
+        contract_address = (row.get("ContractAddress") or "").strip().lower()
+        if EVM_ADDRESS_PATTERN.fullmatch(contract_address):
+            token_claim = evm_erc20_asset_claim(
+                context.network_scope,
+                contract_address,
+                display_name=symbol,
+            )
+        else:
+            token_claim = symbol_claim(symbol, venue="evm_explorer")
         if (
             to_address in context.owned_addresses
             and from_address not in context.owned_addresses
         ):
-            issues.append(token_identity_issue)
+            if not EVM_ADDRESS_PATTERN.fullmatch(contract_address):
+                issues.append(token_identity_issue)
             drafts.append(
                 _draft(
                     profile,
@@ -305,13 +329,13 @@ def _translate_token_transfers(
                         row_index=index,
                         tx_hash=tx_hash,
                         timestamp=timestamp,
-                        location_id=canonical_location_id_from_identifier(
+                        location_id=_location_id_from_identifier(
                             "evm_address",
                             to_address,
                             network_scope=context.network_scope,
                         ),
                         quantity=amount,
-                        instrument=symbol_claim(symbol, venue="evm_explorer"),
+                        instrument=token_claim,
                     ),
                     ActivitySemantics(
                         economic_kind=EconomicKind.CHAIN_TRANSFER_IN,
@@ -326,7 +350,8 @@ def _translate_token_transfers(
             from_address in context.owned_addresses
             and to_address not in context.owned_addresses
         ):
-            issues.append(token_identity_issue)
+            if not EVM_ADDRESS_PATTERN.fullmatch(contract_address):
+                issues.append(token_identity_issue)
             drafts.append(
                 _draft(
                     profile,
@@ -335,13 +360,13 @@ def _translate_token_transfers(
                         row_index=index,
                         tx_hash=tx_hash,
                         timestamp=timestamp,
-                        location_id=canonical_location_id_from_identifier(
+                        location_id=_location_id_from_identifier(
                             "evm_address",
                             from_address,
                             network_scope=context.network_scope,
                         ),
                         quantity=-amount,
-                        instrument=symbol_claim(symbol, venue="evm_explorer"),
+                        instrument=token_claim,
                     ),
                     ActivitySemantics(
                         economic_kind=EconomicKind.ASSET_WITHDRAWAL,

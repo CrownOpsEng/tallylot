@@ -8,7 +8,10 @@ from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, LegKind, ProjectionHint
 from tests.support.services import build_source_profile
 
-RAW_HEADER = "Txhash,Blockno,UnixTimestamp,DateTime,From,To,Method,Token / Collectibles,Value in,Value out,TxnFee(RON),Status\n"
+RAW_HEADER = (
+    "Txhash,Blockno,UnixTimestamp,DateTime,From,To,Method,Token / Collectibles,"
+    "Value in,Value out,TxnFee(RON),Status\n"
+)
 
 
 def test_ronin_adapter_extracts_owned_wallet_and_normalizes_supported_rows(
@@ -85,7 +88,8 @@ def test_ronin_adapter_extracts_owned_wallet_and_normalizes_supported_rows(
     assert facts_by_hash[("0xrestake", "-0.0277578354")].legs[0].quantity == Decimal(
         "-0.0277578354"
     )
-    assert not result.issues
+    assert result.issues
+    assert {issue.kind for issue in result.issues} == {"instrument_identity_blocked"}
     assert len(result.reviews) == 1
     assert result.reviews[0].kind == "insufficient_decimal_precision"
 

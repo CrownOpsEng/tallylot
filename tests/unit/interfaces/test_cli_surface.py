@@ -28,6 +28,7 @@ class HasBalanceCheckRefs(Protocol):
     input_root_ref: str
     output_root_ref: str
     sources: tuple[str, ...]
+    reference_policy: str
 
 
 class HasBalanceSummaryRefs(Protocol):
@@ -181,6 +182,7 @@ def test_reconciliation_balance_check_cli(
     assert request.input_root_ref == str(input_root)
     assert request.output_root_ref == str(output_root)
     assert request.sources == ("coinbase", "shakepay")
+    assert request.reference_policy == "default"
 
 
 def test_reconciliation_balance_summarize_cli(
