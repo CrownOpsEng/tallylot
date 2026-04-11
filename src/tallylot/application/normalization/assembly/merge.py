@@ -77,17 +77,6 @@ def merge_json_array_artifact(
     )
 
 
-def balance_semantic_key(row: Mapping[str, str]) -> tuple[str, ...]:
-    return (
-        row.get("source", ""),
-        row.get("location_id", ""),
-        row.get("instrument_id", ""),
-        row.get("target_at", ""),
-        row.get("target_precision", ""),
-        row.get("balance_kind", "") or "available",
-    )
-
-
 def row_key(row: Mapping[str, str]) -> tuple[tuple[str, str], ...]:
     return tuple(sorted(row.items()))
 

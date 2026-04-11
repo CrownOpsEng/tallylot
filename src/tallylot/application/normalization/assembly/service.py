@@ -23,6 +23,10 @@ from tallylot.application.normalization.contracts import (
     AssembleSourceRequest,
     AssembleSourceResponse,
 )
+from tallylot.application.balances.merge import (
+    merge_balance_reference_rows,
+    merge_balance_snapshot_rows,
+)
 from tallylot.application.resource_refs import path_from_ref, to_resource_ref
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import JsonValue
@@ -37,7 +41,6 @@ from tallylot.ports.evidence import (
 from tallylot.ports.facts import FACT_HEADER
 
 from .merge import (
-    balance_semantic_key,
     ConflictPolicy,
     CsvArtifactMergeSpec,
     merge_csv_artifact,
@@ -113,38 +116,14 @@ class AssembleSourceUseCase:
             included_capture_roots,
             filename="fact_annotations.json",
         )
-        balances, balance_issues = merge_csv_artifact(
+        balances, balance_issues = merge_balance_snapshot_rows(
             self._artifacts,
             included_capture_roots,
-            CsvArtifactMergeSpec(
-                filename=BALANCE_SNAPSHOT_FILENAME,
-                header=BALANCE_SNAPSHOT_HEADER,
-                conflict_policy=ConflictPolicy(
-                    semantic_key=balance_semantic_key,
-                    conflict_key=lambda row: row.get("quantity", ""),
-                    message=(
-                        "Source assembly found conflicting balances for the same "
-                        "semantic key."
-                    ),
-                ),
-            ),
             source=request.source,
         )
-        balance_references, balance_reference_issues = merge_csv_artifact(
+        balance_references, balance_reference_issues = merge_balance_reference_rows(
             self._artifacts,
             included_capture_roots,
-            CsvArtifactMergeSpec(
-                filename=BALANCE_REFERENCE_FILENAME,
-                header=BALANCE_REFERENCE_HEADER,
-                conflict_policy=ConflictPolicy(
-                    semantic_key=balance_semantic_key,
-                    conflict_key=lambda row: row.get("quantity", ""),
-                    message=(
-                        "Source assembly found conflicting balance references "
-                        "for the same semantic key."
-                    ),
-                ),
-            ),
             source=request.source,
         )
         reference_issues, _ = merge_csv_artifact(

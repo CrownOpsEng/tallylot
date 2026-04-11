@@ -9,6 +9,10 @@ from tallylot.application.checkpoints.contracts import (
     SubmitBalancesRequest,
     SubmitBalancesResponse,
 )
+from tallylot.application.balances.merge import (
+    merge_balance_references,
+    merge_balance_snapshots,
+)
 from tallylot.application.resource_refs import path_from_ref
 from tallylot.application.workspace.filesystem import (
     ensure_directory,
@@ -126,7 +130,7 @@ class SubmitBalancesUseCase:
             )
             self._evidence.write_balance_snapshots(
                 output_root / BALANCE_SNAPSHOTS_FILENAME,
-                _merge_balance_snapshots(
+                merge_balance_snapshots(
                     existing_snapshots=self._read_existing_snapshots(output_root),
                     submitted_snapshots=materialized.balance_snapshots,
                 ),
@@ -134,7 +138,7 @@ class SubmitBalancesUseCase:
             wrote_balance_snapshots = True
             self._evidence.write_balance_references(
                 output_root / BALANCE_REFERENCES_FILENAME,
-                _merge_balance_references(
+                merge_balance_references(
                     existing_references=self._read_existing_references(output_root),
                     submitted_references=materialized.balance_references,
                 ),
@@ -245,52 +249,6 @@ class SubmitBalancesUseCase:
         if not path.is_file():
             return ()
         return self._evidence.read_balance_references(path)
-
-
-def _merge_balance_snapshots(
-    *,
-    existing_snapshots: tuple[BalanceSnapshot, ...],
-    submitted_snapshots: tuple[BalanceSnapshot, ...],
-) -> tuple[BalanceSnapshot, ...]:
-    merged = {
-        snapshot.target: snapshot
-        for snapshot in (*existing_snapshots, *submitted_snapshots)
-    }
-    return tuple(merged[target] for target in sorted(merged))
-
-
-def _merge_balance_references(
-    *,
-    existing_references: tuple[BalanceReference, ...],
-    submitted_references: tuple[BalanceReference, ...],
-) -> tuple[BalanceReference, ...]:
-    merged = {
-        (
-            reference.target,
-            reference.reference_kind.value,
-            reference.observed_at,
-            reference.observed_precision.value,
-            reference.support_ref,
-            reference.reviewed_by,
-        ): reference
-        for reference in (*existing_references, *submitted_references)
-    }
-    return tuple(
-        merged[key]
-        for key in sorted(
-            merged,
-            key=lambda item: (
-                str(item[0].source),
-                str(item[0].location_id),
-                str(item[0].instrument_id),
-                item[0].balance_kind,
-                item[0].target_at,
-                item[1],
-                item[2],
-                item[5],
-            ),
-        )
-    )
 
 
 _GENERATED_OUTPUT_FILENAMES = (
