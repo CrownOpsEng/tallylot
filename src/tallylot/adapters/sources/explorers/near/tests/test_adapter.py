@@ -6,12 +6,20 @@ from pathlib import Path
 
 from tallylot.adapters.sources.explorers.near.adapter import _NearAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    LegKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
 
-def test_near_adapter_extracts_location_inventory_and_staking_split_events(tmp_path: Path) -> None:
+def test_near_adapter_extracts_location_inventory_and_staking_split_events(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     path = raw_dir / "example.near_transactions.csv"
@@ -22,9 +30,13 @@ def test_near_adapter_extracts_location_inventory_and_staking_split_events(tmp_p
         encoding="utf-8",
     )
 
-    profile = build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir))
+    profile = build_source_profile(
+        adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)
+    )
 
-    location_inventory, location_issues = _NearAdapter().extract_location_inventory("wallet-a", raw_dir, profile)
+    location_inventory, location_issues = _NearAdapter().extract_location_inventory(
+        "wallet-a", raw_dir, profile
+    )
     result = _NearAdapter().translate(profile, raw_dir)
     facts = compile_activity_drafts(result.drafts)
 
@@ -36,7 +48,9 @@ def test_near_adapter_extracts_location_inventory_and_staking_split_events(tmp_p
     assert any(str(event.location_id) == "near:example.near:staking" for event in facts)
 
 
-def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path) -> None:
+def test_near_adapter_uses_block_time_when_time_column_is_missing(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     path = raw_dir / "example.near_transactions.csv"
@@ -46,7 +60,9 @@ def test_near_adapter_uses_block_time_when_time_column_is_missing(tmp_path: Path
     )
 
     result = _NearAdapter().translate(
-        build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)),
+        build_source_profile(
+            adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)
+        ),
         raw_dir,
     )
     facts = compile_activity_drafts(result.drafts)
@@ -87,10 +103,12 @@ def test_near_adapter_normalizes_transfer_and_stake_rows() -> None:
         TaxTreatmentHint.NON_TAXABLE_TRANSFER_OUT,
         TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN,
     ]
-    transfer_charge_legs = tuple(leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE)
+    transfer_charge_legs = tuple(
+        leg for leg in facts[0].legs if leg.kind is LegKind.CHARGE
+    )
     assert facts[0].legs[0].leg_id == "primary_in"
     assert facts[0].legs[0].quantity == Decimal("1")
-    assert str(facts[0].legs[0].instrument_id) == "symbol:NEAR@near"
+    assert str(facts[0].legs[0].instrument_id) == "asset:near:native"
     assert transfer_charge_legs[0].leg_id == "charge"
     assert transfer_charge_legs[0].quantity == Decimal("-0.01")
     assert any(str(event.location_id).endswith(":staking") for event in facts)
@@ -101,7 +119,9 @@ def test_near_wallet_capture_extracts_near_account_identifiers() -> None:
     raw_dir = fixture_raw_dir("near", "wallet_capture")
 
     profile, adapter = profile_and_adapter("capture-near", raw_dir)
-    evidence, issues = adapter.extract_location_inventory("capture-near", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory(
+        "capture-near", raw_dir, profile
+    )
 
     assert str(profile.adapter_id) == "near"
     assert issues == ()
@@ -109,7 +129,9 @@ def test_near_wallet_capture_extracts_near_account_identifiers() -> None:
     assert {str(row.location_id) for row in evidence} == {"near:example.near"}
 
 
-def test_near_adapter_surfaces_unsupported_methods_without_crashing(tmp_path: Path) -> None:
+def test_near_adapter_surfaces_unsupported_methods_without_crashing(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     path = raw_dir / "example.near_transactions.csv"
@@ -119,7 +141,9 @@ def test_near_adapter_surfaces_unsupported_methods_without_crashing(tmp_path: Pa
     )
 
     result = _NearAdapter().translate(
-        build_source_profile(adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)),
+        build_source_profile(
+            adapter_id="near", source="wallet-a", raw_dir=str(raw_dir)
+        ),
         raw_dir,
     )
 

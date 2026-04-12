@@ -7,15 +7,15 @@ from typing import Annotated
 
 import typer
 
-from tallylot.application.reconciliation import (
+from tallylot.application.balances import (
     BalanceCheckRequest,
-    BalanceCoverageRequest,
+    BalanceInspectRequest,
     BalanceSummaryRequest,
 )
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.composition.runtime import (
     balance_check_workflow,
-    balance_coverage_workflow,
+    balance_inspect_workflow,
     balance_summary_workflow,
 )
 
@@ -29,10 +29,10 @@ def _inspect_balances(
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
     try:
-        response = balance_coverage_workflow().execute(
-            BalanceCoverageRequest(
+        response = balance_inspect_workflow().execute(
+            BalanceInspectRequest(
                 input_root_ref=to_resource_ref(input_root),
-                coverage_output_ref=to_resource_ref(output),
+                inspect_output_ref=to_resource_ref(output),
             )
         )
     except ValueError as exc:
@@ -41,10 +41,29 @@ def _inspect_balances(
 
 
 @reconciliation_balances_app.command("check")
-def _check_balances(
+def _check_balances(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     input_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     output_root: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     source: Annotated[list[str] | None, typer.Option()] = None,
+    as_of: Annotated[list[str] | None, typer.Option("--as-of")] = None,
+    timezone: Annotated[
+        str,
+        typer.Option(
+            "--timezone",
+            help=(
+                "Interpret date-only or naive as-of values in this timezone before "
+                "matching exact UTC cutoffs."
+            ),
+        ),
+    ] = "",
+    hydrate_missing_references: Annotated[
+        bool,
+        typer.Option(
+            "--hydrate-missing-references/--no-hydrate-missing-references",
+            help="Hydrate missing references from balance providers. Default: offline.",
+        ),
+    ] = False,
+    reference_policy: Annotated[str, typer.Option()] = "default",
 ) -> None:
     try:
         response = balance_check_workflow().execute(
@@ -52,6 +71,10 @@ def _check_balances(
                 input_root_ref=to_resource_ref(input_root),
                 output_root_ref=to_resource_ref(output_root),
                 sources=tuple(source or ()),
+                as_of_values=tuple(as_of or ()),
+                timezone=timezone,
+                hydrate_missing_references=hydrate_missing_references,
+                reference_policy=reference_policy,
             )
         )
     except ValueError as exc:
@@ -61,14 +84,14 @@ def _check_balances(
 
 @reconciliation_balances_app.command("summarize")
 def _summarize_balances(
-    coverage: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
+    inspect: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     check_summary: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
     output: Annotated[Path, typer.Option(dir_okay=False, file_okay=True)],
 ) -> None:
     try:
         response = balance_summary_workflow().execute(
             BalanceSummaryRequest(
-                coverage_input_ref=to_resource_ref(coverage),
+                inspect_input_ref=to_resource_ref(inspect),
                 check_summary_input_ref=to_resource_ref(check_summary),
                 summary_output_ref=to_resource_ref(output),
             )

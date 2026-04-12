@@ -9,10 +9,9 @@ from pathlib import Path
 from typing import Protocol
 
 from tallylot.domain.captures import ProvenanceLocator, provenance_locator_header
-from tallylot.domain.checkpoints import BalanceSnapshot
+from tallylot.domain.balances import BalanceReference, BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind
-from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId
 from tallylot.ports.annotations import AdapterMetadata
@@ -24,37 +23,30 @@ BALANCE_SNAPSHOT_HEADER = (
     "source",
     "location_id",
     "instrument_id",
-    "quantity",
-    "as_of_at",
-    "as_of_precision",
     "balance_kind",
+    "target_at",
+    "target_precision",
+    "quantity",
+    "snapshot_basis",
     "notes",
 )
-BALANCE_EVIDENCE_HEADER = (
+BALANCE_REFERENCE_HEADER = (
     "source",
     "location_id",
     "instrument_id",
-    "quantity",
-    "as_of_at",
-    "as_of_precision",
     "balance_kind",
-    *provenance_locator_header(),
-    "notes",
-)
-BALANCE_CONFIRMATION_HEADER = (
-    "source",
-    "location_id",
-    "instrument_id",
+    "target_at",
+    "target_precision",
     "quantity",
-    "as_of_at",
-    "as_of_precision",
-    "balance_kind",
-    "confirmation_kind",
+    "reference_kind",
+    "observed_at",
+    "observed_precision",
     "support_ref",
-    "asserted_meaning",
+    "provider_family",
+    "provider_locator",
+    "provider_block_ref",
     "reviewed_by",
     "reviewed_at",
-    "reason",
     "notes",
 )
 LOCATION_INVENTORY_HEADER = (
@@ -193,8 +185,9 @@ class StatementDocumentParseResult:
 
 
 @dataclass(frozen=True)
-class StatementBalanceEvidenceBatch:
-    balance_evidence: tuple[BalanceEvidence, ...]
+class StatementBalanceReferenceBatch:
+    balance_references: tuple[BalanceReference, ...]
+    reference_issues: tuple[IssueRecord, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
 
@@ -206,18 +199,10 @@ class EvidenceRepositoryPort(Protocol):
         self, path: Path, balances: tuple[BalanceSnapshot, ...]
     ) -> None: ...
 
-    def read_balance_evidence(self, path: Path) -> tuple[BalanceEvidence, ...]: ...
+    def read_balance_references(self, path: Path) -> tuple[BalanceReference, ...]: ...
 
-    def write_balance_evidence(
-        self, path: Path, evidence: tuple[BalanceEvidence, ...]
-    ) -> None: ...
-
-    def read_balance_confirmations(
-        self, path: Path
-    ) -> tuple[BalanceConfirmation, ...]: ...
-
-    def write_balance_confirmations(
-        self, path: Path, confirmations: tuple[BalanceConfirmation, ...]
+    def write_balance_references(
+        self, path: Path, references: tuple[BalanceReference, ...]
     ) -> None: ...
 
     def write_issue_records(

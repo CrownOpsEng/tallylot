@@ -13,11 +13,10 @@ This folder stores durable reconciliation and oracle comparison artifacts.
 
 Runtime balance reconciliation workflows write these artifacts here:
 
+- `balance_inspect.csv`
+- `balance_inspect_summary.json`
 - `balance_assertions.csv`
 - `reconciliation_issues.csv`
-- `balance_assertion_summary.json`
-- `balance_coverage.csv`
-- `balance_coverage_summary.json`
 - `balance_check_summary.csv`
 - `balance_reconciliation_summary.json`
 - `balance_reconciliation_blockers.csv`
@@ -25,17 +24,17 @@ Runtime balance reconciliation workflows write these artifacts here:
 - `cross_source_issues.csv`
 - `cross_source_summary.json`
 
-`balance_assertions.csv` records matched, drift, missing-side, and timestamp
-mismatch rows for one source's balances plus the selected reference basis.
-`reconciliation_issues.csv` stores the corresponding explicit issues,
-including duplicate input rows, and `balance_assertion_summary.json` records
-the artifact counts for that run. `balance_coverage.csv` and
-`balance_coverage_summary.json` describe whether each source is source-backed,
-operator-confirmed, mixed-reference, missing-reference, missing-snapshots, or
-empty. `balance_check_summary.csv` records per-source check status, date
-ranges, and reference-basis counts. `balance_reconciliation_summary.json`
-reports the latest clean, latest source-backed clean, and latest observed
-dates across the selected sources, and
+`balance_inspect.csv` records per-source input mode, snapshot origin, target
+and snapshot counts, reference counts, readiness, and date ranges.
+`balance_inspect_summary.json` reports counts by inspect status, cross-source
+readiness, input mode, and snapshot origin. `balance_assertions.csv` records
+matched, drift, missing-side, and observation gap rows for one source's
+balance targets plus the selected reference kind. `reconciliation_issues.csv`
+stores the corresponding explicit issues, including duplicate or conflicting
+reference rows. `balance_check_summary.csv` records per-source resolution
+mode, check status, date ranges, and selected-reference-kind counts.
+`balance_reconciliation_summary.json` reports the latest clean, latest
+resolved-reference, and latest observed dates across the selected sources, and
 `balance_reconciliation_blockers.csv` breaks blockers down by source and
 reason.
 

@@ -16,7 +16,11 @@ from tallylot.adapters.support import (
     passed_timezone_summary,
     skip_files_outside_profile_families,
 )
-from tallylot.adapters.support.drafts import symbol_claim, translation_batch_from_drafts
+from tallylot.adapters.support.drafts import (
+    TranslationBatchDrafts,
+    symbol_claim,
+    translation_batch_from_drafts,
+)
 from tallylot.domain.instruments import InstrumentIdentityClaim, InstrumentKind
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
@@ -141,8 +145,7 @@ class _ShakepayAdapter:
             ),
         )
         return translation_batch_from_drafts(
-            drafts,
-            issues=issues,
+            TranslationBatchDrafts(drafts=drafts, issues=issues)
         )
 
     def resolve_statement_instrument_claims(

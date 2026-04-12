@@ -80,7 +80,7 @@ def test_location_inventory_summary_flags_missing_evidence_path() -> None:
                 **_evidence_row(
                     source="fixture",
                     capture_uid="01HV4A5H7VJH7M3Y5A6B7C8D9E",
-                    location_id="fixture:wallet-1",
+                    location_id="fixture:wallet_1",
                     location_kind="address",
                     location_label="Primary",
                     identifier_kind="address",
@@ -106,7 +106,7 @@ def test_location_inventory_summary_flags_identifier_kind_conflicts() -> None:
             _evidence_row(
                 source="fixture",
                 capture_uid="01HV4A5H7VJH7M3Y5A6B7C8D9E",
-                location_id="fixture:wallet-1",
+                location_id="fixture:wallet_1",
                 location_kind="address",
                 location_label="Primary",
                 identifier_kind="address",
@@ -119,7 +119,7 @@ def test_location_inventory_summary_flags_identifier_kind_conflicts() -> None:
             _evidence_row(
                 source="fixture",
                 capture_uid="01HV4A5H7VJH7M3Y5A6B7C8D9F",
-                location_id="fixture:wallet-2",
+                location_id="fixture:wallet_2",
                 location_kind="other",
                 location_label="Primary Alias",
                 identifier_kind="address_alias",

@@ -42,7 +42,7 @@ def test_normalization_service_filters_events_outside_explicit_window(
         )
     )
 
-    canonical_rows = read_rows(output_dir / "facts.csv")
+    normalized_rows = read_rows(output_dir / "facts.csv")
     fact_annotations = json.loads(
         (output_dir / "fact_annotations.json").read_text(encoding="utf-8")
     )
@@ -52,12 +52,12 @@ def test_normalization_service_filters_events_outside_explicit_window(
     profile = json.loads((output_dir / "profile.json").read_text(encoding="utf-8"))
 
     assert response.fact_count == 1
-    assert len(canonical_rows) == 1
-    assert canonical_rows[0]["tx_hash"] == "tx-keep"
-    assert canonical_rows[0]["fact_id"] == "fixture_source:3"
+    assert len(normalized_rows) == 1
+    assert normalized_rows[0]["tx_hash"] == "tx-keep"
+    assert normalized_rows[0]["fact_id"] == "fixture_source:3"
     assert fact_annotations == [
         {
-            "fact_id": canonical_rows[0]["fact_id"],
+            "fact_id": normalized_rows[0]["fact_id"],
             "provenance_refs": [],
             "review_markers": [],
             "adapter_metadata": [],
@@ -214,7 +214,7 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
     (
         ("Future Exchange", fixture_raw_dir("coinbase", "retail_buy_renamed"), 1, 0),
         ("Future Broker", fixture_raw_dir("wealthsimple", "broker_trade"), 1, 0),
-        ("Binance", fixture_raw_dir("binance", "mixed_history"), 5, 2),
+        ("Binance", fixture_raw_dir("binance", "mixed_history"), 5, 1),
     ),
 )
 def test_normalization_service_supports_explicit_windows_for_fixture_adapters(

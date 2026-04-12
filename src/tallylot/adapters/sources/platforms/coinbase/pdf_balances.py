@@ -49,15 +49,20 @@ COINBASE_PORTFOLIO_AS_OF_PATTERN = re.compile(
 
 def match_statement_document(pdf_path: Path, text: str) -> int:
     normalized = normalize_whitespace(text).lower()
-    if not _looks_like_statement_candidate(pdf_path.name.lower(), normalized):
-        return 0
-    if "account statement" in normalized:
-        return 100
-    if "statement" in pdf_path.name.lower():
-        return 90
-    if "coinbase statement" in normalized:
-        return 80
-    return 0
+    score = 0
+    pdf_name = pdf_path.name.lower()
+    if _looks_like_statement_candidate(pdf_name, normalized):
+        if "account statement" in normalized:
+            score = 100
+        elif "statement" in pdf_name:
+            score = 90
+        elif "coinbase statement" in normalized:
+            score = 80
+        elif "transaction history report" in normalized:
+            score = 70
+        elif _looks_like_balance_statement(normalized):
+            score = 60
+    return score
 
 
 def extract_pdf_balances(text: str, pdf_file: str) -> list[dict[str, str]]:
@@ -206,7 +211,11 @@ def _looks_like_statement_candidate(
 ) -> bool:
     if not _looks_like_balance_statement(normalized_text):
         return False
-    return "account statement" in normalized_text or "statement" in pdf_name
+    return (
+        "account statement" in normalized_text
+        or "statement" in pdf_name
+        or "transaction history report" in normalized_text
+    )
 
 
 def _fallback_balance_rows(

@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from tallylot.domain.balances import BalanceReferenceKind, normalize_balance_kind
 from tallylot.domain.temporal import TemporalPrecision
 
 
@@ -27,54 +30,67 @@ class BalanceSubmissionIssue:
         }
 
 
-@dataclass(frozen=True)
-class BalanceSubmissionRow:
-    source: str
-    account: str
-    wallet: str
-    instrument_id: str
+class BalanceSnapshotSubmissionRow(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True)
+
+    source: str = Field(min_length=1)
+    account: str = Field(min_length=1)
+    wallet: str = Field(min_length=1)
+    instrument_id: str = Field(min_length=1)
     quantity: Decimal
-    as_of_at: datetime
-    as_of_precision: TemporalPrecision
-    balance_kind: str
-    notes: str
+    target_at: datetime
+    target_precision: TemporalPrecision
+    balance_kind: str = "available"
+    notes: str = ""
+
+    @field_validator("balance_kind", mode="before")
+    @classmethod
+    def _normalize_balance_kind(cls, value: object) -> str:
+        return normalize_balance_kind("" if value is None else str(value))
 
 
-@dataclass(frozen=True)
-class SubmittedBalanceConfirmationRow:
-    source: str
-    account: str
-    wallet: str
-    instrument_id: str
+class BalanceReferenceSubmissionRow(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True)
+
+    source: str = Field(min_length=1)
+    account: str = Field(min_length=1)
+    wallet: str = Field(min_length=1)
+    instrument_id: str = Field(min_length=1)
     quantity: Decimal
-    as_of_at: datetime
-    as_of_precision: TemporalPrecision
-    balance_kind: str
-    confirmation_kind: str
-    support_ref: str
-    asserted_meaning: str
-    reviewed_by: str
+    target_at: datetime
+    target_precision: TemporalPrecision
+    balance_kind: str = "available"
+    reference_kind: BalanceReferenceKind
+    observed_at: datetime
+    observed_precision: TemporalPrecision
+    support_ref: str = ""
+    reviewed_by: str = Field(min_length=1)
     reviewed_at: datetime
-    reason: str
-    notes: str
+    notes: str = ""
+
+    @field_validator("balance_kind", mode="before")
+    @classmethod
+    def _normalize_balance_kind(cls, value: object) -> str:
+        return normalize_balance_kind("" if value is None else str(value))
 
 
-@dataclass(frozen=True)
-class LocationInventorySubmissionRow:
-    source: str
-    account: str
-    wallet: str
-    identifier_kind: str
-    identifier_value: str
-    network_scope: str
-    controller: str
-    confidence: str
-    notes: str
+class LocationInventorySubmissionRow(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True)
+
+    source: str = Field(min_length=1)
+    account: str = Field(min_length=1)
+    wallet: str = Field(min_length=1)
+    identifier_kind: str = Field(min_length=1)
+    identifier_value: str = Field(min_length=1)
+    network_scope: str = ""
+    controller: str = ""
+    confidence: str = Field(min_length=1)
+    notes: str = ""
 
 
 @dataclass(frozen=True)
 class BalanceSubmissionValidationResult:
-    balance_rows: tuple[BalanceSubmissionRow, ...]
-    balance_confirmation_rows: tuple[SubmittedBalanceConfirmationRow, ...]
+    balance_snapshot_rows: tuple[BalanceSnapshotSubmissionRow, ...]
+    balance_reference_rows: tuple[BalanceReferenceSubmissionRow, ...]
     location_inventory_rows: tuple[LocationInventorySubmissionRow, ...]
     issues: tuple[BalanceSubmissionIssue, ...]

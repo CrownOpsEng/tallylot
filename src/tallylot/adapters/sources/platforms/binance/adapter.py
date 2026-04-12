@@ -108,6 +108,7 @@ class _BinanceAdapter:
                 adapter_id=str(self.manifest.adapter_id),
                 mode="naive",
                 message="Binance exports with dated rows must include a filename offset before normalization.",
+                accepted_modes=frozenset({"filename_offset"}),
             ),
         )
 

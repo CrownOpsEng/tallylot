@@ -1,0 +1,13 @@
+[
+  {
+    "balance_kind": "available",
+    "instrument_id": "asset:evm:bsc:native",
+    "location_id": "evm:bsc:0x1111111111111111111111111111111111111111",
+    "notes": "",
+    "quantity": "1.5",
+    "snapshot_basis": "fact_cutoff",
+    "source": "bsc-wallet",
+    "target_at": "2023-11-14 12:00:00",
+    "target_precision": "timestamp"
+  }
+]

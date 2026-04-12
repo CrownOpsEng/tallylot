@@ -7,8 +7,17 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.sources.explorers.near.families import classified_csv_paths, near_account_for_path
-from tallylot.adapters.support import IssueSpec, canonical_location_id_from_identifier, issue_record, read_csv_rows
+from tallylot.adapters.sources.explorers.near.families import (
+    classified_csv_paths,
+    near_account_for_path,
+)
+from tallylot.adapters.support import (
+    IssueSpec,
+    issue_record,
+    near_native_asset_claim,
+    location_id_from_identifier,
+    read_csv_rows,
+)
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     ActivitySemantics,
@@ -18,7 +27,6 @@ from tallylot.adapters.support.drafts import (
     LegShapeLimit,
     classification,
     economic_leg,
-    symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.transactions import (
@@ -84,7 +92,7 @@ def translate_transactions(
                         path.name,
                         raw_row_ref,
                         issue_id_suffix="missing_identifier",
-                        message="NEAR base transaction rows could not be tied to a canonical account identifier.",
+                        message="NEAR base transaction rows could not be tied to a NEAR account identifier.",
                     )
                 )
                 continue
@@ -154,7 +162,7 @@ def translate_transactions(
                                     leg_id="primary_out",
                                     kind=LegKind.PRIMARY,
                                     quantity=-amount,
-                                    instrument=symbol_claim("NEAR", venue="near"),
+                                    instrument=near_native_asset_claim(),
                                 ),
                                 *_charge_legs(fee, attributed_to_leg_id="primary_out"),
                             ),
@@ -163,7 +171,9 @@ def translate_transactions(
                             activity_id=f"near:{path.name}:{raw_row_ref}:staking",
                             source=str(profile.source),
                             adapter_id="near",
-                            location_id=_near_location_id(account_id, suffix=("staking",)),
+                            location_id=_near_location_id(
+                                account_id, suffix=("staking",)
+                            ),
                             timestamp=timestamp,
                             classification=classification(
                                 economic_kind=EconomicKind.STAKING_TRANSFER_IN,
@@ -182,7 +192,7 @@ def translate_transactions(
                                     leg_id="primary_in",
                                     kind=LegKind.PRIMARY,
                                     quantity=amount,
-                                    instrument=symbol_claim("NEAR", venue="near"),
+                                    instrument=near_native_asset_claim(),
                                 ),
                             ),
                         ),
@@ -255,7 +265,7 @@ def _transfer_draft(
                 leg_id=primary_leg_id,
                 kind=LegKind.PRIMARY,
                 quantity=quantity,
-                instrument=symbol_claim("NEAR", venue="near"),
+                instrument=near_native_asset_claim(),
             ),
             *_charge_legs(context.fee, attributed_to_leg_id=primary_leg_id),
         ),
@@ -267,13 +277,25 @@ def _single_primary_with_optional_charge_policy(fee: Decimal) -> FactLegPolicy:
         return SINGLE_PRIMARY_ACTIVITY_POLICY
     return FactLegPolicy(
         limits=(
-            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1, max_negative_count=1),
-            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+            LegShapeLimit(
+                kind=LegKind.PRIMARY,
+                max_count=1,
+                max_positive_count=1,
+                max_negative_count=1,
+            ),
+            LegShapeLimit(
+                kind=LegKind.CHARGE,
+                max_count=1,
+                max_positive_count=0,
+                max_negative_count=1,
+            ),
         )
     )
 
 
-def _charge_legs(fee: Decimal, *, attributed_to_leg_id: str) -> tuple[EconomicLegDraft, ...]:
+def _charge_legs(
+    fee: Decimal, *, attributed_to_leg_id: str
+) -> tuple[EconomicLegDraft, ...]:
     if fee <= Decimal("0"):
         return ()
     return (
@@ -281,14 +303,16 @@ def _charge_legs(fee: Decimal, *, attributed_to_leg_id: str) -> tuple[EconomicLe
             leg_id="charge",
             kind=LegKind.CHARGE,
             quantity=-fee,
-            instrument=symbol_claim("NEAR", venue="near"),
+            instrument=near_native_asset_claim(),
             subtype="network_fee",
             attributed_to_leg_id=attributed_to_leg_id,
         ),
     )
 
 
-def _row_value(row: dict[str, str], key: str, fallback: str = "", *, default: str = "") -> str:
+def _row_value(
+    row: dict[str, str], key: str, fallback: str = "", *, default: str = ""
+) -> str:
     value = row.get(key, "")
     if value:
         return value.strip()
@@ -320,7 +344,9 @@ def _row_issue(
     )
 
 
-def _unsupported_family_issue(profile: SourceProfile, raw_file: str, family_id: str) -> IssueRecord:
+def _unsupported_family_issue(
+    profile: SourceProfile, raw_file: str, family_id: str
+) -> IssueRecord:
     return issue_record(
         IssueSpec(
             issue_id=f"near:{raw_file}:unsupported_family:{family_id}",
@@ -346,4 +372,4 @@ def _parse_timestamp(value: str) -> datetime | None:
 
 
 def _near_location_id(account_id: str, *, suffix: tuple[str, ...] = ()) -> LocationId:
-    return canonical_location_id_from_identifier("near_account", account_id, suffix=suffix)
+    return location_id_from_identifier("near_account", account_id, suffix=suffix)

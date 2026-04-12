@@ -6,10 +6,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 
-from tallylot.domain.instruments import InstrumentId, InstrumentIdentityClaim, InstrumentKind
+from tallylot.domain.instruments import (
+    InstrumentId,
+    InstrumentIdentityClaim,
+    InstrumentKind,
+)
+from tallylot.domain.balances import BalanceReference
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.domain.locations import LocationKind, LocationRecord
-from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.transactions import (
     AccountingIntentHint,
@@ -23,7 +27,11 @@ from tallylot.domain.transactions import (
     TransactionFact,
 )
 from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
-from tallylot.domain.value_objects import require_temporal_datetime, require_utc_datetime
+from tallylot.domain.location_identifiers import require_location_id
+from tallylot.domain.value_objects import (
+    require_temporal_datetime,
+    require_utc_datetime,
+)
 from tallylot.ports.annotations import AdapterMetadata
 from tallylot.ports.evidence import LocationInventoryRecord
 
@@ -63,10 +71,14 @@ class ActivityDraftSeed:
         )
         if self.effective_at is None:
             if self.effective_precision is not None:
-                raise ValueError("activity draft seed effective_precision requires effective_at")
+                raise ValueError(
+                    "activity draft seed effective_precision requires effective_at"
+                )
         else:
             if self.effective_precision is None:
-                raise ValueError("activity draft seed effective_at requires effective_precision")
+                raise ValueError(
+                    "activity draft seed effective_at requires effective_precision"
+                )
             object.__setattr__(
                 self,
                 "effective_at",
@@ -90,7 +102,9 @@ class EconomicLegDraft:
 
     def __post_init__(self) -> None:
         if not self.instrument_identity_claims:
-            raise ValueError("draft leg must include at least one instrument identity claim")
+            raise ValueError(
+                "draft leg must include at least one instrument identity claim"
+            )
         EconomicLeg(
             leg_id=self.leg_id,
             kind=self.kind,
@@ -130,14 +144,27 @@ class EconomicActivityDraft:
         object.__setattr__(
             self,
             "timestamp",
-            require_utc_datetime(self.timestamp, label="economic activity draft timestamp"),
+            require_utc_datetime(
+                self.timestamp, label="economic activity draft timestamp"
+            ),
+        )
+        object.__setattr__(
+            self,
+            "location_id",
+            require_location_id(
+                str(self.location_id), label="economic activity draft location_id"
+            ),
         )
         if self.effective_at is None:
             if self.effective_precision is not None:
-                raise ValueError("economic activity draft effective_precision requires effective_at")
+                raise ValueError(
+                    "economic activity draft effective_precision requires effective_at"
+                )
         else:
             if self.effective_precision is None:
-                raise ValueError("economic activity draft effective_at requires effective_precision")
+                raise ValueError(
+                    "economic activity draft effective_at requires effective_precision"
+                )
             object.__setattr__(
                 self,
                 "effective_at",
@@ -155,7 +182,8 @@ class EconomicActivityDraft:
 @dataclass(frozen=True)
 class SourceTranslationBatch:
     drafts: tuple[EconomicActivityDraft, ...]
-    balance_evidence: tuple[BalanceEvidence, ...]
+    balance_references: tuple[BalanceReference, ...]
+    balance_reference_issues: tuple[IssueRecord, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
     location_inventory: tuple[LocationInventoryRecord, ...]
@@ -168,6 +196,24 @@ class LocationDraft:
     label: str
     parent_location_id: LocationId | None = None
     path: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "location_id",
+            require_location_id(
+                str(self.location_id), label="location draft location_id"
+            ),
+        )
+        if self.parent_location_id is not None:
+            object.__setattr__(
+                self,
+                "parent_location_id",
+                require_location_id(
+                    str(self.parent_location_id),
+                    label="location draft parent_location_id",
+                ),
+            )
 
     def to_record(self) -> LocationRecord:
         return LocationRecord(

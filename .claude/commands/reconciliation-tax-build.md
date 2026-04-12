@@ -36,7 +36,7 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - reconciliation behavior
    - journal validation
    - tax outputs
-9. For balance coverage, checking, or reconciliation-date questions, use
+9. For balance inspection, checking, or reconciliation-date questions, use
    `.claude/commands/reconciliation-balance-operations.md` and the runtime
    `reconciliation balances` commands instead of ad hoc shell loops or
    repo-only batch scripts.

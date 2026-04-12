@@ -5,15 +5,15 @@ import json
 from collections.abc import Iterable
 from pathlib import Path
 
-from tallylot.application.reconciliation import (
+from tallylot.application.balances import (
     BalanceCheckRequest,
-    BalanceCoverageRequest,
+    BalanceInspectRequest,
     BalanceSummaryRequest,
 )
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.composition.runtime import (
     balance_check_workflow,
-    balance_coverage_workflow,
+    balance_inspect_workflow,
     balance_summary_workflow,
 )
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
@@ -39,13 +39,13 @@ def _run_reconciliation(
 ) -> dict[str, dict[str, int]]:
     input_root = workspace_root / "working" / "normalized" / "sources"
     reconciliation_dir = report_dir / "reconciliation"
-    coverage_output = reconciliation_dir / "balance_coverage.csv"
+    inspect_output = reconciliation_dir / "balance_inspect.csv"
     check_output_root = reconciliation_dir / "checks"
     summary_output = reconciliation_dir / "balance_summary.json"
-    coverage_response = balance_coverage_workflow().execute(
-        BalanceCoverageRequest(
+    inspect_response = balance_inspect_workflow().execute(
+        BalanceInspectRequest(
             input_root_ref=to_resource_ref(input_root),
-            coverage_output_ref=to_resource_ref(coverage_output),
+            inspect_output_ref=to_resource_ref(inspect_output),
         )
     )
     check_response = balance_check_workflow().execute(
@@ -56,16 +56,16 @@ def _run_reconciliation(
     )
     balance_summary_workflow().execute(
         BalanceSummaryRequest(
-            coverage_input_ref=coverage_response.coverage_output_ref,
+            inspect_input_ref=inspect_response.inspect_output_ref,
             check_summary_input_ref=check_response.check_summary_output_ref,
             summary_output_ref=to_resource_ref(summary_output),
         )
     )
     payload = json.loads(summary_output.read_text(encoding="utf-8"))
     return {
-        "coverage_status_counts": {
+        "inspect_status_counts": {
             key: int(value)
-            for key, value in dict(payload.get("coverage_status_counts", {})).items()
+            for key, value in dict(payload.get("inspect_status_counts", {})).items()
         },
         "check_status_counts": {
             key: int(value)
@@ -152,9 +152,11 @@ def collect_workspace_metrics(request: MetricCollectionRequest) -> WorkspaceMetr
         source_metrics[source_root.name] = SourceMetrics(
             source=source_root.name,
             fact_count=len(artifacts.read_rows(source_root / "facts.csv")),
-            balance_count=len(artifacts.read_rows(source_root / "balances.csv")),
-            balance_evidence_count=len(
-                artifacts.read_rows(source_root / "balance_evidence.csv")
+            snapshot_count=len(
+                artifacts.read_rows(source_root / "balance_snapshots.csv")
+            ),
+            reference_count=len(
+                artifacts.read_rows(source_root / "balance_references.csv")
             ),
             issue_count=len(issue_rows) + len(assembly_issue_rows),
             review_count=len(

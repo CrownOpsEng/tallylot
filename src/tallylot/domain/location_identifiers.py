@@ -9,7 +9,9 @@ from tallylot.domain.types import LocationId
 EVM_ADDRESS_PATTERN = re.compile(r"0x[a-fA-F0-9]{40}")
 BTC_XPUB_PATTERN = re.compile(r"xpub[1-9A-HJ-NP-Za-km-z]+")
 TRON_ADDRESS_PATTERN = re.compile(r"T[1-9A-HJ-NP-Za-km-z]{33}")
-BTC_ADDRESS_PATTERN = re.compile(r"(bc1[ac-hj-np-z02-9]{11,71}|[13][1-9A-HJ-NP-Za-km-z]{25,34})")
+BTC_ADDRESS_PATTERN = re.compile(
+    r"(bc1[ac-hj-np-z02-9]{11,71}|[13][1-9A-HJ-NP-Za-km-z]{25,34})"
+)
 SOLANA_ADDRESS_PATTERN = re.compile(r"[1-9A-HJ-NP-Za-km-z]{32,44}")
 CARDANO_ACCOUNT_KEY_PATTERN = re.compile(r"[a-fA-F0-9]{64,}")
 
@@ -28,7 +30,7 @@ _SCOPE_NETWORKS = {
     "solana_address": "solana",
     "tron_address": "tron",
 }
-_CANONICAL_LOCATION_NAMESPACES = {
+_LOCATION_NAMESPACES = {
     "btc_xpub": "bitcoin",
     "btc_address": "bitcoin",
     "cardano_account_key": "cardano",
@@ -36,7 +38,40 @@ _CANONICAL_LOCATION_NAMESPACES = {
     "solana_address": "solana",
     "tron_address": "tron",
 }
-_ONCHAIN_LOCATION_PREFIXES = ("evm:", "near:", "bitcoin:", "cardano:", "solana:", "tron:")
+_ONCHAIN_LOCATION_PREFIXES = (
+    "evm:",
+    "near:",
+    "bitcoin:",
+    "cardano:",
+    "solana:",
+    "tron:",
+)
+_LOCATION_ID_GENERIC_PATTERN = re.compile(r"^[a-z0-9_.]+(?::[a-z0-9_.]+)*$")
+_LOCATION_ID_NEAR_PATTERN = re.compile(r"^near:[a-z0-9_.-]{6,64}(?::[a-z0-9_]+)*$")
+_LOCATION_ID_EVM_PATTERN = re.compile(
+    r"^evm:[a-z0-9_]+:0x[a-fA-F0-9]{40}(?::[a-z0-9_]+)*$"
+)
+_LOCATION_ID_BITCOIN_PATTERN = re.compile(
+    r"^bitcoin:(?:xpub[1-9A-HJ-NP-Za-km-z]+|"
+    r"bc1[ac-hj-np-z02-9]{11,71}|"
+    r"[13][1-9A-HJ-NP-Za-km-z]{25,34})(?::[a-z0-9_]+)*$"
+)
+_LOCATION_ID_CARDANO_PATTERN = re.compile(r"^cardano:[a-fA-F0-9]{64,}(?::[a-z0-9_]+)*$")
+_LOCATION_ID_SOLANA_PATTERN = re.compile(
+    r"^solana:[1-9A-HJ-NP-Za-km-z]{32,44}(?::[a-z0-9_]+)*$"
+)
+_LOCATION_ID_TRON_PATTERN = re.compile(
+    r"^tron:T[1-9A-HJ-NP-Za-km-z]{33}(?::[a-z0-9_]+)*$"
+)
+
+
+def location_id_from_parts(*parts: str) -> LocationId:
+    normalized_parts = tuple(_normalized_location_part(part) for part in parts)
+    if not normalized_parts:
+        raise ValueError("location_id parts must not be blank")
+    if any(not part for part in normalized_parts):
+        raise ValueError("location_id parts must not be blank")
+    return LocationId(":".join(normalized_parts))
 
 
 def normalized_identifier(identifier_kind: str, identifier_value: str) -> str:
@@ -66,7 +101,7 @@ def scope_token_for_identifier(identifier_value: str) -> str:
     return f"{network}:{normalized_identifier(identifier_kind, identifier_value)}"
 
 
-def canonical_location_id_from_identifier(
+def location_id_from_identifier(
     identifier_kind: str,
     identifier_value: str,
     *,
@@ -78,19 +113,50 @@ def canonical_location_id_from_identifier(
     if identifier_kind == "evm_address":
         normalized_scope = network_scope.strip().lower()
         if not normalized_scope:
-            raise ValueError("canonical EVM location ids require a network scope")
+            raise ValueError("EVM location ids require a network scope")
         parts = ("evm", normalized_scope, normalized_value)
     else:
-        namespace = _CANONICAL_LOCATION_NAMESPACES.get(identifier_kind)
+        namespace = _LOCATION_NAMESPACES.get(identifier_kind)
         if namespace is None:
-            raise ValueError(f"unsupported canonical location identifier kind: {identifier_kind}")
+            raise ValueError(f"unsupported location identifier kind: {identifier_kind}")
         parts = (namespace, normalized_value)
-    normalized_suffix = tuple(_normalized_location_segment(item) for item in suffix if item.strip())
+    normalized_suffix = tuple(
+        _normalized_location_segment(item) for item in suffix if item.strip()
+    )
     return LocationId(":".join((*parts, *normalized_suffix)))
 
 
-def is_onchain_canonical_location_id(location_id: str) -> bool:
+def is_onchain_location_id(location_id: str) -> bool:
     return location_id.startswith(_ONCHAIN_LOCATION_PREFIXES)
+
+
+def require_location_id(value: str, *, label: str) -> LocationId:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{label} must not be blank")
+    if _is_supported_location_id(normalized):
+        return LocationId(normalized)
+    raise ValueError(f"{label} {normalized!r} is not a supported location id")
+
+
+def _is_supported_location_id(value: str) -> bool:
+    return any(
+        pattern.fullmatch(value) is not None
+        for pattern in (
+            _LOCATION_ID_GENERIC_PATTERN,
+            _LOCATION_ID_NEAR_PATTERN,
+            _LOCATION_ID_EVM_PATTERN,
+            _LOCATION_ID_BITCOIN_PATTERN,
+            _LOCATION_ID_CARDANO_PATTERN,
+            _LOCATION_ID_SOLANA_PATTERN,
+            _LOCATION_ID_TRON_PATTERN,
+        )
+    )
+
+
+def _normalized_location_part(value: str) -> str:
+    normalized = re.sub(r"[^a-z0-9_.]+", "_", value.strip().lower()).strip("_")
+    return normalized
 
 
 def _normalized_location_segment(value: str) -> str:

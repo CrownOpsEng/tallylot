@@ -40,10 +40,10 @@ SOURCE_METRIC_COMPARISON_HEADER = (
     "review_count_status",
     "reference_fact_count",
     "candidate_fact_count",
-    "reference_balance_count",
-    "candidate_balance_count",
-    "reference_balance_evidence_count",
-    "candidate_balance_evidence_count",
+    "reference_snapshot_count",
+    "candidate_snapshot_count",
+    "reference_reference_count",
+    "candidate_reference_count",
     "reference_issue_count",
     "candidate_issue_count",
     "reference_review_count",
@@ -87,8 +87,8 @@ class WorkspaceReplayValidationRequest:
 class SourceMetrics:
     source: str
     fact_count: int
-    balance_count: int
-    balance_evidence_count: int
+    snapshot_count: int
+    reference_count: int
     issue_count: int
     review_count: int
 

@@ -15,6 +15,7 @@ from tallylot.application.resource_refs import to_resource_ref, to_workspace_pat
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.captures import SOURCE_INVENTORY_HEADER
+from tests.support.adapter_packs import fixture_raw_dir
 
 
 def test_source_intake_service_applies_loose_files_into_workspace(
@@ -107,14 +108,14 @@ def test_source_intake_service_applies_archive_members_into_workspace(
     assert member_target.exists()
 
 
-def test_source_intake_service_applies_binance_statement_bundle_into_workspace(
+def test_source_intake_service_materializes_binance_statement_pdfs(
     tmp_path: Path,
 ) -> None:
-    source_dir = Path(
-        "tests/fixtures/adapter_packs/binance/latest_statement_workbooks/raw"
-    )
     incoming_dir = tmp_path / "incoming"
-    shutil.copytree(source_dir, incoming_dir)
+    incoming_dir.mkdir()
+    for path in fixture_raw_dir("binance", "latest_statement_workbooks").iterdir():
+        if path.is_file():
+            shutil.copy2(path, incoming_dir / path.name)
 
     workspace_root = tmp_path / "workspace"
     report_dir = tmp_path / "reports"
@@ -134,7 +135,25 @@ def test_source_intake_service_applies_binance_statement_bundle_into_workspace(
     source_rows = artifacts.read_rows(
         workspace_root / "analysis" / "issues" / "source_inventory.csv"
     )
+    capture_root = (
+        workspace_root
+        / "evidence"
+        / "raw"
+        / "source"
+        / "binance"
+        / summary["planned_capture_label"]
+    )
 
+    assert response.copied_count == 5
+    assert response.issue_count == 0
+    assert summary["capture_status"] == "captured"
+    assert capture_root.is_dir()
+    assert (
+        capture_root / "AccountStatementPeriod_fixtureacct_20240101-20241231_old.pdf"
+    ).exists()
+    assert (
+        capture_root / "AccountStatementPeriod_fixtureacct_20250101-20251231_latest.pdf"
+    ).exists()
     assert response.source == "binance"
     assert response.capture_status == "captured"
     assert response.copied_count == 5
@@ -309,6 +328,40 @@ def test_source_intake_service_applies_explicit_source_label_map(
     assert target.exists()
     assert plan_rows[0]["source_resolution_status"] == "explicit_map"
     assert summary["explicit_map_count"] == 1
+
+
+def test_source_intake_service_skips_blank_source_inventory_for_support_only_inputs(
+    tmp_path: Path,
+) -> None:
+    incoming_dir = tmp_path / "incoming"
+    incoming_dir.mkdir()
+    support_path = incoming_dir / "2021" / "Binance" / "note.png"
+    support_path.parent.mkdir(parents=True, exist_ok=True)
+    support_path.write_bytes(b"support")
+
+    workspace_root = tmp_path / "workspace"
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    response = ApplyIntakeUseCase(build_registry(), artifacts).execute(
+        IntakeApplyRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    plan_rows = artifacts.read_rows(report_dir / "intake_plan.csv")
+    support_target = Path(plan_rows[0]["target_path"])
+
+    assert response.copied_count == 1
+    assert support_target.read_bytes() == b"support"
+    assert not (
+        workspace_root / "analysis" / "inventory" / "source_captures.csv"
+    ).exists()
+    assert not (
+        workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    ).exists()
 
 
 def test_source_intake_service_skips_rows_blocked_by_invalid_source_label_map(
@@ -775,15 +828,22 @@ def test_capture_blocked_apply_avoids_materialized_writes_and_source_mutation(
     support_row = next(
         row for row in plan_rows if row["relative_path"] == "binance/notes.png"
     )
+    source_row = next(
+        row for row in plan_rows if row["relative_path"] == "binance/transactions.csv"
+    )
+    support_target = Path(support_row["target_path"])
 
     assert response.source == ""
     assert summary["capture_status"] == "capture_blocked"
-    assert summary["copied_count"] == 0
-    assert summary["planned_copy_count"] == 0
+    assert response.copied_count == 1
+    assert summary["copied_count"] == 1
+    assert summary["planned_copy_count"] == 1
     assert summary["file_count"] == 2
-    assert support_row["action"] == "skip"
+    assert support_row["action"] == "copy"
     assert support_row["capture_status"] == "capture_blocked"
     assert support_row["review_codes"] == "mixed_source_capture"
+    assert source_row["capture_label"] == ""
+    assert support_target.read_bytes() == b"support"
     assert not (
         workspace_root
         / "working"
@@ -825,12 +885,15 @@ def test_support_only_apply_reports_missing_source_raw_issue(tmp_path: Path) -> 
 
     assert response.capture_status == "capture_blocked"
     assert response.issue_count == 1
+    assert response.copied_count == 1
     assert summary["issue_count"] == 1
-    assert summary["planned_copy_count"] == 0
+    assert summary["copied_count"] == 1
+    assert summary["planned_copy_count"] == 1
     assert issue_rows[0]["kind"] == "capture_missing_source_raw"
-    assert plan_rows[0]["action"] == "skip"
+    assert plan_rows[0]["action"] == "copy"
     assert plan_rows[0]["review_required"] == "yes"
     assert plan_rows[0]["review_codes"] == "missing_source_raw_capture"
+    assert Path(plan_rows[0]["target_path"]).exists()
     assert not (
         workspace_root / "analysis" / "inventory" / "source_captures.csv"
     ).exists()

@@ -16,15 +16,22 @@ This roadmap assumes the repo stays on the current fact-based architecture. It
 tracks remaining phases, sequencing, and delivery gates. It does not restate
 the detailed architecture contract.
 
-The current runtime already supports manual balance submission as a
-checkpoint-owned pre-canonical path. Canonical balance artifacts may therefore
-enter later reconciliation work through normalization or through validated
-manual submission packages, but only normalization and explicit source-backed
-checkpoint builders write canonical `balance_evidence.csv`.
+The current runtime now uses `application/balances` as the shared balance
+capability across normalization, reconciliation, and checkpoint submission.
+Inspect, check, and summarize are the operator-facing balance commands.
+Balance state is expressed as derived `balance_snapshots.csv` plus unified
+`balance_references.csv`, where each reference row declares its
+`reference_kind`. Fact-backed checks derive snapshots from facts;
+manual-only checks consume explicit snapshot rows; check runs offline by
+default and hydrates only when requested.
 
-The later generic operator confirmation framework is tracked separately in
-GitHub issue `#45` so the current balance-specific confirmation slice can stay
-narrow and complete.
+Historical provider hydration is now a first-class balance concern, but the
+current implementation target remains public-ledger balance lookup only. The
+current codebase also ships the separate balance-provider discovery seam with
+discoverable `evm_json_rpc` and `near_rpc` family stubs, plus native and
+contract-backed public-ledger asset ids for the in-scope EVM, NEAR, and Ronin
+adapters. Live network hydration remains deferred behind provider
+implementations.
 
 ## Planning Anchors
 
@@ -72,7 +79,7 @@ reconciliation, accounting, and tax work expands.
 
 Scope:
 
-- keep direct fact artifacts as the only canonical runtime model
+- keep direct fact artifacts as the only runtime model
 - center intake on explicit capture identity, capture registries, and
   raw-evidence preservation instead of inferred capture buckets
 - keep inferred period and capture heuristics as report metadata only; they do
@@ -102,37 +109,45 @@ Scope:
 
 Exit criteria:
 
-- supported adapters emit canonical facts without normalized-transaction-era
-  wrapper lanes
+- supported adapters emit facts without normalized-transaction-era wrapper
+  lanes
 - CoinTracking CSV projection remains correct from facts alone
 - remaining normalization ambiguity paths emit explicit reviews or blocking
   issues instead of silent coercion
-- canonical balance evidence, issue rows, review rows, and location inventory
-  evidence rows share one flattened provenance locator family at artifact
-  boundaries while runtime models keep typed provenance
-- unchanged raw inputs preserve file completeness, fact counts, balance counts,
-  balance-evidence counts, and issue or review counts unless an
+- balance references, issue rows, review rows, and location inventory evidence
+  rows share one flattened provenance locator family at artifact boundaries
+  while runtime models keep typed provenance
+- unchanged raw inputs preserve file completeness, fact counts, snapshot
+  counts, reference counts, and issue or review counts unless an
   expected-difference fixture documents the exception
 - expected-difference fixtures may relax only issue-count or review-count
-  parity and must never excuse raw completeness, fact, balance, evidence, or
+  parity and must never excuse raw completeness, fact, snapshot, reference, or
   reconciliation drift
 
 ### 3. Reconciliation
 
-Build deterministic reconciliation on top of transaction facts, source-backed
-balance evidence, and operator-confirmed balance references.
+Build deterministic reconciliation on top of transaction facts, derived
+balance snapshots, and unified balance references.
 
 Scope:
 
 - read only assembled source datasets produced from accepted captures
+- keep target planning, snapshot derivation, reference resolution, inspect and
+  check workflows, hydration, and assertion assembly behind the shared balance
+  capability
 - extend the first exact balance assertion workflow into broader checkpoint and
   transfer checks
 - keep statement-backed quantity evidence on the normalization path and treat
-  valuation totals as non-canonical
-- accept canonical `balances.csv` plus source-backed `balance_evidence.csv`
-  from normalization and operator-confirmed `balance_confirmations.csv` from
-  validated manual submission without splitting the downstream reconciliation
-  contracts
+  valuation totals as out of scope
+- accept `balance_snapshots.csv` plus unified
+  `balance_references.csv` from normalization, manual submission, or later
+  provider hydration without splitting the downstream reconciliation contracts
+- keep historical API lookup behind separate balance-provider adapters instead
+  of extending source adapters
+- require on-chain asset ids with immutable chain identity before public-ledger
+  provider hydration is considered supported
+- keep symbol-only public-ledger asset ids as explicit unsupported surfaces
+  rather than soft-mapping them into provider hydration
 - add additive cross-source corroboration as a sidecar evidence surface before
   promoting it into a harder reconciliation gate
 - transfer linking across owned wallets and exchanges
@@ -165,7 +180,11 @@ Scope:
 - checkpoint artifact contracts
 - checkpoint provenance and evidence requirements
 - keep manual/operator-authored balance submission packages as a supported
-  checkpoint-owned input path for canonical balances and balance confirmations
+  checkpoint-owned input path for balance snapshots and operator assertion
+  references
+- keep manual submission row contracts boundary-validated and derive
+  `location_id` values through shared helpers instead of handwritten generic
+  ids
 - source-backed checkpoint builder centered on the best-supported balance date
   near `2026-03-23`
 - intentional opening-state adoption flow with provenance
@@ -173,7 +192,7 @@ Scope:
 
 Exit criteria:
 
-- an operator-confirmed runtime balance package can be created and reused as a
+- an operator-authored runtime balance package can be created and reused as a
   typed input without weakening the later source-backed checkpoint requirement
 - opening-state adoption is explicit, auditable, and not dependent on operator
   memory

@@ -67,7 +67,7 @@ def test_binance_adapter_handles_supported_and_review_required_rows(
     facts = compile_activity_drafts(result.drafts)
 
     assert len(facts) == 5
-    assert len(result.issues) == 3
+    assert len(result.issues) == 2
     projection_hints = {row.projection_hint for row in facts}
     assert ProjectionHint.TRADE in projection_hints
     assert ProjectionHint.DEPOSIT in projection_hints
@@ -245,7 +245,7 @@ def test_binance_statement_document_uses_period_end_as_effective_date() -> None:
     assert result.document_effective_at == datetime(2026, 3, 20, tzinfo=UTC)
 
 
-def test_binance_statement_service_emits_latest_balance_evidence(
+def test_binance_statement_service_emits_latest_balance_references(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -354,7 +354,7 @@ def test_binance_statement_service_emits_latest_balance_evidence(
 
     result = StatementExtractionService(
         FakeSourceRegistry((_BinanceAdapter(),))
-    ).extract_source_balance_evidence(
+    ).extract_source_balance_references(
         build_source_profile(
             adapter_id="binance",
             raw_dir=str(raw_dir),
@@ -387,38 +387,21 @@ def test_binance_statement_service_emits_latest_balance_evidence(
         raw_dir,
     )
 
-    evidence_rows = [row.to_row() for row in result.balance_evidence]
-
     assert not result.issues
-    assert evidence_rows == [
-        {
-            "source": "Binance",
-            "location_id": "binance",
-            "instrument_id": "symbol:SOLO@binance",
-            "quantity": "0.920099",
-            "as_of_at": "2026-03-23",
-            "as_of_precision": "date",
-            "balance_kind": "available",
-            "capture_uid": "capture-1",
-            "relative_path": "latest.pdf",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "Spot Top 10 Holdings",
-            "notes": "Statement-backed quantity aggregated from Binance holdings sections.",
-        },
-        {
-            "source": "Binance",
-            "location_id": "binance",
-            "instrument_id": "symbol:USDT@binance",
-            "quantity": "0.009866",
-            "as_of_at": "2026-03-23",
-            "as_of_precision": "date",
-            "balance_kind": "available",
-            "capture_uid": "capture-1",
-            "relative_path": "latest.pdf",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "Funding Top 10 Holdings + Spot Top 10 Holdings",
-            "notes": "Statement-backed quantity aggregated from Binance holdings sections.",
-        },
+    assert [
+        (str(reference.location_id), reference.instrument_id, reference.quantity)
+        for reference in result.balance_references
+    ] == [
+        ("binance:funding", "symbol:USDT@binance", Decimal("0.009526")),
+        ("binance:spot", "symbol:SOLO@binance", Decimal("0.920099")),
+        ("binance:spot", "symbol:USDT@binance", Decimal("0.000340")),
     ]
+    assert all(
+        reference.reference_kind.value == "source_document"
+        and reference.target_at == shared_report_as_of
+        and reference.observed_at == shared_report_as_of
+        and reference.target_precision is TemporalPrecision.DATE
+        and reference.observed_precision is TemporalPrecision.DATE
+        and reference.support_ref
+        for reference in result.balance_references
+    )

@@ -25,7 +25,8 @@ PR_BODY_REQUIRED_SECTIONS = (
     "Included checkpoints",
 )
 PR_BODY_OPTIONAL_SECTIONS = ("Follow-ups",)
-GENERATED_SQUASH_COMMIT_OPTIONAL_SECTIONS = (
+GENERATED_MAINLINE_COMMIT_OPTIONAL_SECTIONS = (
+    "Issue linkage",
     "Included checkpoints",
     *PR_BODY_OPTIONAL_SECTIONS,
 )

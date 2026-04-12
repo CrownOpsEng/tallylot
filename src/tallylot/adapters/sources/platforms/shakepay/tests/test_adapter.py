@@ -77,7 +77,7 @@ def test_shakepay_adapter_normalizes_fixture_rows() -> None:
     assert primary_legs[0].quantity > 0
     assert primary_legs[1].quantity < 0
     assert any(event.description.lower() == "shakingsats" for event in facts)
-    assert result.balance_evidence == ()
+    assert result.balance_references == ()
     assert result.issues == ()
 
 
@@ -161,7 +161,7 @@ def test_shakepay_statement_matching_accepts_monthly_statement_pdf() -> None:
     assert score == 100
 
 
-def test_shakepay_statement_service_emits_latest_balance_evidence(
+def test_shakepay_statement_service_emits_latest_balance_references(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -255,7 +255,7 @@ def test_shakepay_statement_service_emits_latest_balance_evidence(
 
     result = StatementExtractionService(
         FakeSourceRegistry((_ShakepayAdapter(),))
-    ).extract_source_balance_evidence(
+    ).extract_source_balance_references(
         build_source_profile(
             adapter_id="shakepay",
             raw_dir=str(raw_dir),
@@ -288,14 +288,14 @@ def test_shakepay_statement_service_emits_latest_balance_evidence(
         raw_dir,
     )
 
-    assert [
-        row["instrument_id"]
-        for row in map(lambda item: item.to_row(), result.balance_evidence)
-    ] == [
+    assert [reference.instrument_id for reference in result.balance_references] == [
         "symbol:BTC@shakepay",
         "symbol:CAD@shakepay",
     ]
     assert all(
-        row["as_of_at"] == "2026-04-01 04:00:00"
-        for row in map(lambda item: item.to_row(), result.balance_evidence)
+        reference.target_at == latest_as_of
+        and reference.observed_at == latest_as_of
+        and reference.target_precision is TemporalPrecision.TIMESTAMP
+        and reference.observed_precision is TemporalPrecision.TIMESTAMP
+        for reference in result.balance_references
     )

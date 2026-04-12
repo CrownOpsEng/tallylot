@@ -120,7 +120,7 @@ def test_evm_explorer_adapter_normalizes_positive_native_inflows_only(
     assert facts[0].tax_treatment_hint == TaxTreatmentHint.NON_TAXABLE_TRANSFER_IN
     assert facts[0].legs[0].leg_id == "primary"
     assert facts[0].legs[0].quantity == Decimal("1.50000000")
-    assert str(facts[0].legs[0].instrument_id) == "symbol:BNB@evm_explorer"
+    assert str(facts[0].legs[0].instrument_id) == "asset:evm:ethereum:native"
     assert not result.issues
 
 
@@ -209,7 +209,7 @@ def test_evm_explorer_chain_scoped_capture_accepts_neutral_filenames() -> None:
     assert facts[0].projection_hint == ProjectionHint.DEPOSIT
     assert facts[0].legs[0].leg_id == "primary"
     assert facts[0].legs[0].quantity == Decimal("1.50000000")
-    assert str(facts[0].legs[0].instrument_id) == "symbol:BNB@evm_explorer"
+    assert str(facts[0].legs[0].instrument_id) == "asset:evm:bsc:native"
 
 
 def test_evm_explorer_chain_scoped_capture_works_from_nested_bundle_paths(
@@ -270,20 +270,24 @@ def test_evm_explorer_adapter_admits_same_chain_portfolio_evidence_only(
     result = adapter.translate(profile, raw_dir)
 
     assert str(profile.adapter_id) == "evm_explorer"
-    assert [row.to_row() for row in result.balance_evidence] == [
+    assert [row.to_row() for row in result.balance_references] == [
         {
             "source": "bsc-wallet-fixture",
             "location_id": "evm:bsc:0x1111111111111111111111111111111111111111",
-            "instrument_id": "symbol:BNB@evm_explorer",
-            "quantity": "1.25",
-            "as_of_at": "2024-03-09",
-            "as_of_precision": "date",
+            "instrument_id": "asset:evm:bsc:native",
             "balance_kind": "available",
-            "capture_uid": "",
-            "relative_path": "Account1-bsc Portfolio.csv",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "row:2",
+            "target_at": "2024-03-09",
+            "target_precision": "date",
+            "quantity": "1.25",
+            "reference_kind": "source_document",
+            "observed_at": "2024-03-09",
+            "observed_precision": "date",
+            "support_ref": "Account1-bsc Portfolio.csv#row:2",
+            "provider_family": "",
+            "provider_locator": "",
+            "provider_block_ref": "",
+            "reviewed_by": "",
+            "reviewed_at": "",
             "notes": (
                 "MetaMask portfolio quantity admitted for the source folder "
                 "chain only; wallet identity remains source-folder-scoped evidence."
@@ -294,6 +298,7 @@ def test_evm_explorer_adapter_admits_same_chain_portfolio_evidence_only(
     assert {review.kind for review in result.reviews} == {
         "portfolio_row_not_admitted",
     }
+    assert not result.issues
     assert any(
         "probable destination chain is ethereum" in review.message.lower()
         for review in result.reviews
@@ -321,8 +326,14 @@ def test_evm_explorer_adapter_uses_profile_inventory_timestamps_for_portfolio_as
         raw_dir
         / "Wallet-eth export-address-token-0x2222222222222222222222222222222222222222.csv"
     ).write_text(
-        "Transaction Hash,DateTime (UTC),From,To,TokenValue,TokenSymbol\n"
-        f"0xdef,2025-03-24 22:55:59,0x0000000000000000000000000000000000000000,{address},1000,GALA\n",
+        (
+            "Transaction Hash,DateTime (UTC),From,To,TokenValue,ContractAddress,"
+            "TokenName,TokenSymbol\n"
+            f"0xdef,2025-03-24 22:55:59,"
+            "0x0000000000000000000000000000000000000000,"
+            f"{address},1000,"
+            "0x4444444444444444444444444444444444444444,Gala,GALA\n"
+        ),
         encoding="utf-8",
     )
     (raw_dir / "Wallet-eth portfolio.csv").write_text(
@@ -333,29 +344,44 @@ def test_evm_explorer_adapter_uses_profile_inventory_timestamps_for_portfolio_as
 
     profile, adapter = profile_and_adapter("eth-wallet-fixture", raw_dir)
     result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
 
     assert str(profile.adapter_id) == "evm_explorer"
-    assert [row.to_row() for row in result.balance_evidence] == [
-        {
-            "source": "eth-wallet-fixture",
-            "location_id": "evm:ethereum:0x2222222222222222222222222222222222222222",
-            "instrument_id": "symbol:GALA@evm_explorer",
-            "quantity": "1000",
-            "as_of_at": "2025-03-24",
-            "as_of_precision": "date",
-            "balance_kind": "available",
-            "capture_uid": "",
-            "relative_path": "Wallet-eth portfolio.csv",
-            "archive_member_path": "",
-            "locator_kind": "raw_file",
-            "anchor": "row:2",
-            "notes": (
-                "MetaMask portfolio quantity admitted for the source folder "
-                "chain only; wallet identity remains source-folder-scoped evidence."
-            ),
-        }
+    assert len(facts) == 2
+    assert {str(fact.legs[0].instrument_id) for fact in facts} == {
+        "asset:evm:ethereum:native",
+        "asset:evm:ethereum:erc20:0x4444444444444444444444444444444444444444",
+    }
+    assert not result.issues
+    assert [issue.kind for issue in result.balance_reference_issues] == [
+        "instrument_identity_blocked"
     ]
-    assert result.reviews == ()
+    assert any(review.kind == "instrument_identity_review" for review in result.reviews)
+
+
+def test_evm_explorer_adapter_flags_symbol_only_token_identity_for_history_lookup(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    address = "0x2222222222222222222222222222222222222222"
+    (
+        raw_dir
+        / "Wallet-eth export-address-token-0x2222222222222222222222222222222222222222.csv"
+    ).write_text(
+        "Transaction Hash,DateTime (UTC),From,To,TokenValue,TokenSymbol\n"
+        f"0xdef,2025-03-24 22:55:59,0x0000000000000000000000000000000000000000,{address},1000,GALA\n",
+        encoding="utf-8",
+    )
+
+    profile, adapter = profile_and_adapter("eth-wallet-fixture", raw_dir)
+    result = adapter.translate(profile, raw_dir)
+    facts = compile_activity_drafts(result.drafts)
+
+    assert str(profile.adapter_id) == "evm_explorer"
+    assert len(facts) == 1
+    assert str(facts[0].legs[0].instrument_id) == "symbol:GALA@evm_explorer"
+    assert [issue.kind for issue in result.issues] == ["instrument_identity_blocked"]
 
 
 def test_evm_explorer_adapter_requires_single_location_for_portfolio_evidence(
@@ -372,7 +398,7 @@ def test_evm_explorer_adapter_requires_single_location_for_portfolio_evidence(
     profile, adapter = profile_and_adapter("bsc-wallet-fixture", raw_dir)
     result = adapter.translate(profile, raw_dir)
 
-    assert not result.balance_evidence
+    assert not result.balance_references
     assert any(issue.kind == "missing_identifier" for issue in result.issues)
     assert any(
         review.kind == "portfolio_location_unresolved" for review in result.reviews

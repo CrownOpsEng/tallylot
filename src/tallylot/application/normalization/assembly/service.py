@@ -6,6 +6,11 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import cast
 
+from tallylot.application.balances import (
+    BALANCE_REFERENCE_FILENAME,
+    BALANCE_REFERENCE_ISSUE_FILENAME,
+    BALANCE_SNAPSHOT_FILENAME,
+)
 from tallylot.application.intake.captures.persistence import (
     append_capture_status_record,
     update_source_inventory_summary,
@@ -18,13 +23,16 @@ from tallylot.application.normalization.contracts import (
     AssembleSourceRequest,
     AssembleSourceResponse,
 )
+from tallylot.application.balances.merge import (
+    merge_balance_reference_rows,
+    merge_balance_snapshot_rows,
+)
 from tallylot.application.resource_refs import path_from_ref, to_resource_ref
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import JsonValue
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.evidence import (
-    BALANCE_CONFIRMATION_HEADER,
-    BALANCE_EVIDENCE_HEADER,
+    BALANCE_REFERENCE_HEADER,
     BALANCE_SNAPSHOT_HEADER,
     ISSUE_HEADER,
     LOCATION_INVENTORY_HEADER,
@@ -33,7 +41,6 @@ from tallylot.ports.evidence import (
 from tallylot.ports.facts import FACT_HEADER
 
 from .merge import (
-    balance_semantic_key,
     ConflictPolicy,
     CsvArtifactMergeSpec,
     merge_csv_artifact,
@@ -48,9 +55,9 @@ _ASSEMBLY_EXCLUDED_STATUSES = frozenset(
 _GENERATED_ARTIFACT_FILENAMES = (
     "facts.csv",
     "fact_annotations.json",
-    "balances.csv",
-    "balance_evidence.csv",
-    "balance_confirmations.csv",
+    BALANCE_SNAPSHOT_FILENAME,
+    BALANCE_REFERENCE_FILENAME,
+    BALANCE_REFERENCE_ISSUE_FILENAME,
     "exceptions.csv",
     "normalization_reviews.csv",
     "location_inventory.csv",
@@ -109,54 +116,22 @@ class AssembleSourceUseCase:
             included_capture_roots,
             filename="fact_annotations.json",
         )
-        balances, balance_issues = merge_csv_artifact(
+        balances, balance_issues = merge_balance_snapshot_rows(
             self._artifacts,
             included_capture_roots,
-            CsvArtifactMergeSpec(
-                filename="balances.csv",
-                header=BALANCE_SNAPSHOT_HEADER,
-                conflict_policy=ConflictPolicy(
-                    semantic_key=balance_semantic_key,
-                    conflict_key=lambda row: row.get("quantity", ""),
-                    message=(
-                        "Source assembly found conflicting balances for the same "
-                        "semantic key."
-                    ),
-                ),
-            ),
             source=request.source,
         )
-        balance_evidence, balance_evidence_issues = merge_csv_artifact(
+        balance_references, balance_reference_issues = merge_balance_reference_rows(
             self._artifacts,
             included_capture_roots,
-            CsvArtifactMergeSpec(
-                filename="balance_evidence.csv",
-                header=BALANCE_EVIDENCE_HEADER,
-                conflict_policy=ConflictPolicy(
-                    semantic_key=balance_semantic_key,
-                    conflict_key=lambda row: row.get("quantity", ""),
-                    message=(
-                        "Source assembly found conflicting balance evidence "
-                        "quantities for the same semantic key."
-                    ),
-                ),
-            ),
             source=request.source,
         )
-        balance_confirmations, confirmation_issues = merge_csv_artifact(
+        reference_issues, _ = merge_csv_artifact(
             self._artifacts,
             included_capture_roots,
             CsvArtifactMergeSpec(
-                filename="balance_confirmations.csv",
-                header=BALANCE_CONFIRMATION_HEADER,
-                conflict_policy=ConflictPolicy(
-                    semantic_key=balance_semantic_key,
-                    conflict_key=lambda row: row.get("quantity", ""),
-                    message=(
-                        "Source assembly found conflicting balance confirmations "
-                        "for the same semantic key."
-                    ),
-                ),
+                filename=BALANCE_REFERENCE_ISSUE_FILENAME,
+                header=ISSUE_HEADER,
             ),
             source=request.source,
         )
@@ -190,8 +165,7 @@ class AssembleSourceUseCase:
         assembly_issues = (
             *fact_issues,
             *balance_issues,
-            *balance_evidence_issues,
-            *confirmation_issues,
+            *balance_reference_issues,
             *(
                 _missing_capture_issue(request.source, row)
                 for row in missing_capture_rows
@@ -205,18 +179,20 @@ class AssembleSourceUseCase:
             cast(JsonValue, fact_annotations),
         )
         self._artifacts.write_rows(
-            output_root / "balances.csv", BALANCE_SNAPSHOT_HEADER, balances
+            output_root / BALANCE_SNAPSHOT_FILENAME,
+            BALANCE_SNAPSHOT_HEADER,
+            balances,
         )
         self._artifacts.write_rows(
-            output_root / "balance_evidence.csv",
-            BALANCE_EVIDENCE_HEADER,
-            balance_evidence,
+            output_root / BALANCE_REFERENCE_FILENAME,
+            BALANCE_REFERENCE_HEADER,
+            balance_references,
         )
-        if balance_confirmations:
+        if reference_issues:
             self._artifacts.write_rows(
-                output_root / "balance_confirmations.csv",
-                BALANCE_CONFIRMATION_HEADER,
-                balance_confirmations,
+                output_root / BALANCE_REFERENCE_ISSUE_FILENAME,
+                ISSUE_HEADER,
+                reference_issues,
             )
         self._artifacts.write_rows(
             output_root / "exceptions.csv", ISSUE_HEADER, exceptions
@@ -247,9 +223,12 @@ class AssembleSourceUseCase:
                     + len(missing_capture_rows),
                     "pending_capture_count": len(pending_rows),
                     "fact_count": len(facts),
-                    "balance_count": len(balances),
-                    "balance_evidence_count": len(balance_evidence),
-                    "issue_count": len(exceptions) + len(assembly_issues),
+                    "snapshot_count": len(balances),
+                    "reference_count": len(balance_references),
+                    "reference_issue_count": len(reference_issues),
+                    "issue_count": len(exceptions)
+                    + len(reference_issues)
+                    + len(assembly_issues),
                     "review_count": len(reviews),
                     "included_capture_uids": [
                         row["capture_uid"]
@@ -303,9 +282,9 @@ class AssembleSourceUseCase:
             included_capture_count=len(included_capture_roots),
             excluded_capture_count=len(excluded_rows) + len(missing_capture_rows),
             fact_count=len(facts),
-            balance_count=len(balances),
-            balance_evidence_count=len(balance_evidence),
-            issue_count=len(exceptions) + len(assembly_issues),
+            balance_snapshot_count=len(balances),
+            balance_reference_count=len(balance_references),
+            issue_count=len(exceptions) + len(reference_issues) + len(assembly_issues),
             review_count=len(reviews),
         )
 

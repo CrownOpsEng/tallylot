@@ -394,3 +394,34 @@ def test_source_intake_service_uses_explicit_source_label_map_for_stable_source_
     assert row["source_resolution_status"] == "explicit_map"
     assert row["inventory_match_status"] == "not_evaluated_explicit_map"
     assert "/working/supporting_artifacts/binance-main/" in row["target_path"]
+
+
+def test_source_intake_service_preserves_source_scoped_incoming_source_label(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    incoming_dir = tmp_path / "source" / "coinbase" / "2026-03"
+    incoming_dir.mkdir(parents=True, exist_ok=True)
+    (incoming_dir / "statement.pdf").write_bytes(b"%PDF-1.4")
+    report_dir = tmp_path / "reports"
+    artifacts = FilesystemArtifactStore()
+
+    PlanIntakeUseCase(build_registry(), artifacts).execute(
+        IntakePlanRequest(
+            incoming_capture_ref=to_resource_ref(incoming_dir),
+            workspace_root_ref=to_workspace_path(workspace_root),
+            report_output_ref=to_resource_ref(report_dir),
+        )
+    )
+
+    row = next(
+        item
+        for item in artifacts.read_rows(report_dir / "intake_plan.csv")
+        if item["relative_path"] == "statement.pdf"
+    )
+
+    assert row["source_folder"] == "coinbase"
+    assert row["source_resolution_status"] == "incoming_source_scope"
+    target_path = Path(row["target_path"])
+    assert target_path.parent.parent.name == "coinbase"
+    assert target_path.name == "statement.pdf"

@@ -10,7 +10,7 @@ from tallylot.adapters.support.drafts import EconomicActivityDraft
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.ports.source_profiles import SourceProfile
 
-from .issues import row_issue
+from .issues import row_issue, symbol_identity_issues
 from .raw import translate_raw_group
 from .rows import (
     RoninRawRow,
@@ -65,6 +65,7 @@ def translate_transactions(
         )
         drafts.extend(summary_drafts)
         issues.extend(summary_group_issues)
+    issues.extend(symbol_identity_issues(profile, drafts))
     return tuple(drafts), tuple(issues), tuple(reviews)
 
 

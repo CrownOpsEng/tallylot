@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from decimal import InvalidOperation
@@ -14,7 +15,14 @@ from tallylot.domain.value_objects import (
 )
 
 from .contracts import BalanceSubmissionIssue
-from .schema import BALANCE_CONFIRMATIONS_FILENAME
+
+
+@dataclass(frozen=True)
+class SubmissionFieldContext:
+    file_name: str
+    row_number: int
+    column_name: str
+    issues: list[BalanceSubmissionIssue]
 
 
 def parse_submission_quantity(
@@ -57,6 +65,7 @@ def parse_submission_precision(
     *,
     file_name: str,
     row_number: int,
+    column_name: str,
     raw_precision: str,
     issues: list[BalanceSubmissionIssue],
 ) -> TemporalPrecision | None:
@@ -69,32 +78,30 @@ def parse_submission_precision(
         BalanceSubmissionIssue(
             file_name=file_name,
             row_number=str(row_number),
-            column_name="as_of_precision",
+            column_name=column_name,
             issue_kind="invalid_precision",
-            message=f"Unsupported as_of_precision {raw_precision!r}.",
+            message=f"Unsupported {column_name} {raw_precision!r}.",
         )
     )
     return None
 
 
-def parse_submission_as_of_at(
+def parse_submission_temporal_value(
     *,
-    file_name: str,
-    row_number: int,
-    raw_as_of_at: str,
+    context: SubmissionFieldContext,
+    raw_value: str,
     precision: TemporalPrecision | None,
-    issues: list[BalanceSubmissionIssue],
 ) -> datetime | None:
-    if not raw_as_of_at or precision is None:
+    if not raw_value or precision is None:
         return None
     try:
-        return parse_temporal_value(raw_as_of_at, precision=precision)
+        return parse_temporal_value(raw_value, precision=precision)
     except ValueError as exc:
-        issues.append(
+        context.issues.append(
             BalanceSubmissionIssue(
-                file_name=file_name,
-                row_number=str(row_number),
-                column_name="as_of_at",
+                file_name=context.file_name,
+                row_number=str(context.row_number),
+                column_name=context.column_name,
                 issue_kind="invalid_timestamp",
                 message=str(exc),
             )
@@ -104,6 +111,7 @@ def parse_submission_as_of_at(
 
 def parse_submission_reviewed_at(
     *,
+    file_name: str,
     row_number: int,
     raw_reviewed_at: str,
     issues: list[BalanceSubmissionIssue],
@@ -115,7 +123,7 @@ def parse_submission_reviewed_at(
     except ValueError as exc:
         issues.append(
             BalanceSubmissionIssue(
-                file_name=BALANCE_CONFIRMATIONS_FILENAME,
+                file_name=file_name,
                 row_number=str(row_number),
                 column_name="reviewed_at",
                 issue_kind="invalid_timestamp",

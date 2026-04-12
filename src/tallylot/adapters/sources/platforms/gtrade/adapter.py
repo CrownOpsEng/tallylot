@@ -18,7 +18,10 @@ from tallylot.adapters.support import (
     read_csv_header,
     read_csv_rows,
 )
-from tallylot.adapters.support.drafts import translation_batch_from_drafts
+from tallylot.adapters.support.drafts import (
+    TranslationBatchDrafts,
+    translation_batch_from_drafts,
+)
 from tallylot.adapters.support.locations import LocationIssueSpec, LocationRecordSpec
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
@@ -174,9 +177,11 @@ class _GTradeAdapter:
         )
         drafts, issues = translate_transactions(profile, raw_dir)
         return translation_batch_from_drafts(
-            drafts,
-            issues=issues,
-            location_inventory=location_inventory,
+            TranslationBatchDrafts(
+                drafts=drafts,
+                issues=issues,
+                location_inventory=location_inventory,
+            )
         )
 
 

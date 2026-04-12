@@ -1,0 +1,40 @@
+[
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:BTC@binance",
+    "location_id": "binance:funding",
+    "notes": "Statement-backed quantity from Binance Funding Top 10 Holdings.",
+    "observed_at": "2026-03-23",
+    "observed_precision": "date",
+    "provider_block_ref": "",
+    "provider_family": "",
+    "provider_locator": "",
+    "quantity": "1",
+    "reference_kind": "source_document",
+    "reviewed_at": "",
+    "reviewed_by": "",
+    "source": "Binance",
+    "support_ref": "AccountStatementPeriod_fixtureacct_20240101-20241231_old.pdf#Funding Top 10 Holdings",
+    "target_at": "2026-03-23",
+    "target_precision": "date"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:ETH@binance",
+    "location_id": "binance:funding",
+    "notes": "Statement-backed quantity from Binance Funding Top 10 Holdings.",
+    "observed_at": "2026-03-23",
+    "observed_precision": "date",
+    "provider_block_ref": "",
+    "provider_family": "",
+    "provider_locator": "",
+    "quantity": "2.5",
+    "reference_kind": "source_document",
+    "reviewed_at": "",
+    "reviewed_by": "",
+    "source": "Binance",
+    "support_ref": "AccountStatementPeriod_fixtureacct_20250101-20251231_latest.pdf#Funding Top 10 Holdings",
+    "target_at": "2026-03-23",
+    "target_precision": "date"
+  }
+]

@@ -74,7 +74,7 @@ def test_structured_csv_validator_reports_missing_required_fields() -> None:
     assert issue.raw_row_ref == "2"
 
 
-def test_structured_csv_validator_canonicalizes_negative_outbound_amounts() -> None:
+def test_structured_csv_validator_normalizes_negative_outbound_amounts() -> None:
     feedback = StructuredCsvFeedbackFactory(
         profile=build_source_profile(adapter_id="structured_csv"),
         adapter_id="structured_csv",
@@ -109,7 +109,7 @@ def test_translate_structured_csv_rejects_invalid_schema(tmp_path: Path) -> None
     )
 
     assert not compile_activity_drafts(result.drafts)
-    assert not result.balance_evidence
+    assert not result.balance_references
     assert len(result.issues) == 1
     assert result.issues[0].kind == "invalid_schema"
 

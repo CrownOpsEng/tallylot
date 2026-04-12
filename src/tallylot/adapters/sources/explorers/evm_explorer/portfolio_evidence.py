@@ -13,16 +13,20 @@ from tallylot.adapters.sources.explorers.evm_explorer.families import (
 from tallylot.adapters.support import (
     IssueSpec,
     ReviewSpec,
+    evm_native_asset_claim,
     issue_record,
     read_csv_rows,
     resolve_instrument_identity,
     review_record,
 )
-from tallylot.adapters.support.drafts import symbol_claim
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceTarget,
+)
 from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.instruments import InstrumentKind
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.domain.reconciliation import BalanceEvidence
+from tallylot.domain.instruments import InstrumentIdentityClaim
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.value_objects import parse_decimal, parse_temporal_value
 from tallylot.ports.evidence import LocationInventoryRecord
@@ -38,17 +42,23 @@ CHAIN_SCOPE_BY_LABEL = {
     "ETH": "ethereum",
     "POL": "polygon",
 }
+CHAIN_NATIVE_SYMBOL_BY_SCOPE = {
+    "arbitrum": "ETH",
+    "bsc": "BNB",
+    "ethereum": "ETH",
+    "polygon": "POL",
+}
 TOKEN_SYMBOL_PATTERN = re.compile(r"\((?P<symbol>[^()]+)\)\s*$")
 
 
-def extract_portfolio_balance_evidence(
+def extract_portfolio_balance_references(
     profile: SourceProfile,
     raw_dir: Path,
     *,
     location_inventory: tuple[LocationInventoryRecord, ...],
     network_scope: str,
 ) -> tuple[
-    tuple[BalanceEvidence, ...],
+    tuple[BalanceReference, ...],
     tuple[IssueRecord, ...],
     tuple[NormalizationReviewRecord, ...],
 ]:
@@ -65,7 +75,7 @@ def extract_portfolio_balance_evidence(
                         review_id=f"{profile.source}:portfolio_location_unresolved",
                         source=str(profile.source),
                         adapter_id="evm_explorer",
-                        scope="balance_evidence",
+                        scope="balance_reference",
                         kind="portfolio_location_unresolved",
                         message=(
                             "MetaMask portfolio rows were not admitted because the source folder "
@@ -89,7 +99,7 @@ def extract_portfolio_balance_evidence(
                         review_id=f"{profile.source}:portfolio_as_of_unresolved",
                         source=str(profile.source),
                         adapter_id="evm_explorer",
-                        scope="balance_evidence",
+                        scope="balance_reference",
                         kind="portfolio_as_of_unresolved",
                         message=(
                             "MetaMask portfolio rows were not admitted because no deterministic "
@@ -102,7 +112,7 @@ def extract_portfolio_balance_evidence(
                 ),
             ),
         )
-    evidence: list[BalanceEvidence] = []
+    references: list[BalanceReference] = []
     issues: list[IssueRecord] = []
     reviews: list[NormalizationReviewRecord] = []
     location = location_inventory[0]
@@ -121,7 +131,7 @@ def extract_portfolio_balance_evidence(
                             ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
-                            scope="balance_evidence",
+                            scope="balance_reference",
                             kind="portfolio_row_not_admitted",
                             message=(
                                 "MetaMask portfolio row was not admitted automatically because its chain "
@@ -158,28 +168,32 @@ def extract_portfolio_balance_evidence(
                     )
                 )
                 continue
-            resolved = resolve_instrument_identity(
-                (
-                    symbol_claim(
-                        symbol,
-                        venue="evm_explorer",
-                        kind_hint=InstrumentKind.CRYPTO,
-                    ),
-                )
+            try:
+                asset_claim = _portfolio_asset_claim(row_scope, symbol)
+            except ValueError:
+                asset_claim = None
+            resolved = (
+                None
+                if asset_claim is None
+                else resolve_instrument_identity((asset_claim,))
             )
             if resolved is None:
                 issues.append(
                     issue_record(
                         IssueSpec(
                             issue_id=(
-                                f"{profile.source}:{entry.relative_path}:row:{row_index}:"
-                                "instrument_identity_blocked"
+                                f"{profile.source}:{entry.relative_path}:row:"
+                                f"{row_index}:instrument_identity_blocked"
                             ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
                             severity="high",
                             kind="instrument_identity_blocked",
-                            message=f"MetaMask portfolio row could not resolve token symbol {symbol}.",
+                            message=(
+                                "MetaMask portfolio row could not resolve an "
+                                "immutable on-chain asset id "
+                                f"for token symbol {symbol}."
+                            ),
                             raw_file=entry.relative_path,
                             raw_row_ref=f"row:{row_index}",
                         )
@@ -194,9 +208,12 @@ def extract_portfolio_balance_evidence(
                             ),
                             source=str(profile.source),
                             adapter_id="evm_explorer",
-                            scope="balance_evidence",
+                            scope="balance_reference",
                             kind="instrument_identity_review",
-                            message=f"Review required for MetaMask portfolio token symbol {symbol}.",
+                            message=(
+                                "Review required because the portfolio export did not prove an immutable "
+                                f"on-chain asset id for token symbol {symbol}."
+                            ),
                             raw_file=entry.relative_path,
                             raw_row_ref=f"row:{row_index}",
                             field_name="Token",
@@ -205,24 +222,42 @@ def extract_portfolio_balance_evidence(
                     )
                 )
                 continue
-            evidence.append(
-                BalanceEvidence(
-                    source=profile.source,
-                    location_id=location.location_id,
-                    instrument_id=resolved.instrument.instrument_id,
-                    quantity=amount,
-                    as_of_at=as_of_at,
-                    as_of_precision=TemporalPrecision.DATE,
-                    provenance=ProvenanceLocator.from_reference_ref(
-                        f"{entry.relative_path}#row:{row_index}"
+            references.append(
+                BalanceReference(
+                    target=BalanceTarget(
+                        source=profile.source,
+                        location_id=location.location_id,
+                        instrument_id=resolved.instrument.instrument_id,
+                        balance_kind="available",
+                        target_at=as_of_at,
+                        target_precision=TemporalPrecision.DATE,
                     ),
+                    quantity=amount,
+                    reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+                    observed_at=as_of_at,
+                    observed_precision=TemporalPrecision.DATE,
+                    support_ref=ProvenanceLocator.from_reference_ref(
+                        f"{entry.relative_path}#row:{row_index}"
+                    ).to_reference_ref(),
                     notes=(
                         "MetaMask portfolio quantity admitted for the source folder chain only; "
                         "wallet identity remains source-folder-scoped evidence."
                     ),
                 )
             )
-    return tuple(evidence), tuple(issues), tuple(reviews)
+    return tuple(references), tuple(issues), tuple(reviews)
+
+
+def _portfolio_asset_claim(
+    row_scope: str,
+    symbol: str,
+) -> InstrumentIdentityClaim:
+    native_symbol = CHAIN_NATIVE_SYMBOL_BY_SCOPE.get(row_scope, "")
+    if native_symbol and symbol == native_symbol:
+        return evm_native_asset_claim(row_scope, display_name=symbol)
+    raise ValueError(
+        "portfolio token rows without immutable contract identity cannot be normalized"
+    )
 
 
 def _portfolio_entries(

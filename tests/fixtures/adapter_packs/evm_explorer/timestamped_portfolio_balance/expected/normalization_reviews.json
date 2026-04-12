@@ -1,1 +1,22 @@
-[]
+[
+  {
+    "adapter_id": "evm_explorer",
+    "context_timestamp": "",
+    "field_name": "Token",
+    "kind": "instrument_identity_review",
+    "message": "Review required because the portfolio export did not prove an immutable on-chain asset id for token symbol GALA.",
+    "normalized_value": "",
+    "original_value": "Gala (GALA)",
+    "raw_anchor": "",
+    "raw_archive_member_path": "",
+    "raw_capture_uid": "",
+    "raw_file": "Wallet-eth portfolio.csv",
+    "raw_locator_kind": "",
+    "raw_relative_path": "",
+    "raw_row_ref": "row:2",
+    "review_id": "eth-wallet-fixture:Wallet-eth portfolio.csv:row:2:instrument_identity_review",
+    "scope": "balance_reference",
+    "source": "eth-wallet-fixture",
+    "status": "needs_review"
+  }
+]

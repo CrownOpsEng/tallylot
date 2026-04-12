@@ -1,0 +1,79 @@
+[
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:HNT@binance",
+    "location_id": "binance:binance:funding",
+    "notes": "",
+    "quantity": "-12.123",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Binance",
+    "target_at": "2023-09-21 04:25:57",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:USDT@binance",
+    "location_id": "binance:binance:funding",
+    "notes": "",
+    "quantity": "125.564991",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Binance",
+    "target_at": "2023-05-07 05:05:55",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:ALGO@binance",
+    "location_id": "binance:spot",
+    "notes": "",
+    "quantity": "-103",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Binance",
+    "target_at": "2023-09-21 00:20:55",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:BETH@binance",
+    "location_id": "binance:spot",
+    "notes": "",
+    "quantity": "0.00000599",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Binance",
+    "target_at": "2023-08-06 02:34:03",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:BNB@binance",
+    "location_id": "binance:spot",
+    "notes": "",
+    "quantity": "0.00038174",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Binance",
+    "target_at": "2023-09-21 00:20:55",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:ETH@binance",
+    "location_id": "binance:spot",
+    "notes": "",
+    "quantity": "-0.00005643",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Binance",
+    "target_at": "2023-09-20 18:46:46",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:USDT@binance",
+    "location_id": "binance:spot",
+    "notes": "",
+    "quantity": "10.2691",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Binance",
+    "target_at": "2023-09-21 00:20:55",
+    "target_precision": "timestamp"
+  }
+]

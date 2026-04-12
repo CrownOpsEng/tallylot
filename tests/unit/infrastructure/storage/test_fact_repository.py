@@ -98,6 +98,17 @@ def test_fact_repository_reads_machine_projection_values(tmp_path: Path) -> None
     assert facts[0].leg_policy.limit_for(LegKind.CHARGE) is not None
 
 
+def test_fact_repository_accepts_dotted_generic_location_ids(tmp_path: Path) -> None:
+    path = tmp_path / "facts.csv"
+    row = _fact_row(projection_hint="trade")
+    row["location_id"] = "crypto.com"
+    write_rows(path, FACT_HEADER, (row,))
+
+    facts = FilesystemFactRepository().read_facts(path)
+
+    assert str(facts[0].location_id) == "crypto.com"
+
+
 def test_fact_repository_rejects_missing_schema_version(tmp_path: Path) -> None:
     path = tmp_path / "facts.csv"
     row = _fact_row(projection_hint="trade")
@@ -112,7 +123,9 @@ def test_fact_repository_rejects_missing_schema_version(tmp_path: Path) -> None:
         raise AssertionError("expected missing schema version to be rejected")
 
 
-def test_fact_repository_rejects_effective_precision_without_effective_at(tmp_path: Path) -> None:
+def test_fact_repository_rejects_effective_precision_without_effective_at(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "facts.csv"
     row = _fact_row(projection_hint="trade")
     row["effective_precision"] = "date"
@@ -121,12 +134,17 @@ def test_fact_repository_rejects_effective_precision_without_effective_at(tmp_pa
     try:
         FilesystemFactRepository().read_facts(path)
     except ValueError as error:
-        assert str(error) == "fact row effective_at and effective_precision must both be present or both be blank"
+        assert (
+            str(error)
+            == "fact row effective_at and effective_precision must both be present or both be blank"
+        )
     else:
         raise AssertionError("expected orphaned effective_precision to be rejected")
 
 
-def test_fact_repository_rejects_effective_at_without_effective_precision(tmp_path: Path) -> None:
+def test_fact_repository_rejects_effective_at_without_effective_precision(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "facts.csv"
     row = _fact_row(projection_hint="trade")
     row["effective_at"] = "2025-01-02"
@@ -135,7 +153,10 @@ def test_fact_repository_rejects_effective_at_without_effective_precision(tmp_pa
     try:
         FilesystemFactRepository().read_facts(path)
     except ValueError as error:
-        assert str(error) == "fact row effective_at and effective_precision must both be present or both be blank"
+        assert (
+            str(error)
+            == "fact row effective_at and effective_precision must both be present or both be blank"
+        )
     else:
         raise AssertionError("expected orphaned effective_at to be rejected")
 
@@ -159,7 +180,9 @@ def test_fact_repository_rejects_boolean_policy_counts(tmp_path: Path) -> None:
         raise AssertionError("expected invalid boolean policy count to be rejected")
 
 
-def test_fact_repository_round_trips_deterministic_legs_and_leg_policy(tmp_path: Path) -> None:
+def test_fact_repository_round_trips_deterministic_legs_and_leg_policy(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "facts.csv"
     fact = TransactionFact(
         fact_id=TransactionId("fact-1"),
@@ -208,7 +231,12 @@ def test_fact_repository_round_trips_deterministic_legs_and_leg_policy(tmp_path:
                     min_negative_count=1,
                     max_negative_count=1,
                 ),
-                LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+                LegShapeLimit(
+                    kind=LegKind.CHARGE,
+                    max_count=1,
+                    max_positive_count=0,
+                    max_negative_count=1,
+                ),
             )
         ),
         description="fixture trade",

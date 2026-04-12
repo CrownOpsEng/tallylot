@@ -6,7 +6,7 @@ import csv
 from pathlib import Path
 
 from .consistency import (
-    collect_balance_confirmation_mismatches,
+    collect_balance_reference_mismatches,
     collect_duplicate_rows,
     collect_location_inventory_conflicts,
 )
@@ -15,15 +15,15 @@ from .contracts import (
     BalanceSubmissionValidationResult,
 )
 from .row_validation import (
-    validate_balance_confirmation_rows,
+    validate_balance_reference_rows,
     validate_balance_rows,
     validate_location_inventory_rows,
 )
 from .schema import (
-    BALANCE_CONFIRMATIONS_FILENAME,
-    BALANCE_CONFIRMATIONS_HEADER,
-    BALANCES_FILENAME,
-    BALANCES_HEADER,
+    BALANCE_REFERENCES_FILENAME,
+    BALANCE_REFERENCES_HEADER,
+    BALANCE_SNAPSHOTS_FILENAME,
+    BALANCE_SNAPSHOTS_HEADER,
     LOCATION_INVENTORY_FILENAME,
     LOCATION_INVENTORY_HEADER,
 )
@@ -36,13 +36,13 @@ def validate_balance_submission(
 ) -> BalanceSubmissionValidationResult:
     issues: list[BalanceSubmissionIssue] = []
     balance_rows = _read_required_rows(
-        submission_root / BALANCES_FILENAME,
-        header=BALANCES_HEADER,
+        submission_root / BALANCE_SNAPSHOTS_FILENAME,
+        header=BALANCE_SNAPSHOTS_HEADER,
         issues=issues,
     )
-    balance_confirmation_rows = _read_required_rows(
-        submission_root / BALANCE_CONFIRMATIONS_FILENAME,
-        header=BALANCE_CONFIRMATIONS_HEADER,
+    balance_reference_rows = _read_required_rows(
+        submission_root / BALANCE_REFERENCES_FILENAME,
+        header=BALANCE_REFERENCES_HEADER,
         issues=issues,
     )
     location_inventory_rows = _read_optional_rows(
@@ -55,8 +55,8 @@ def validate_balance_submission(
         expected_source=expected_source,
         issues=issues,
     )
-    parsed_confirmations = validate_balance_confirmation_rows(
-        balance_confirmation_rows,
+    parsed_references = validate_balance_reference_rows(
+        balance_reference_rows,
         expected_source=expected_source,
         issues=issues,
     )
@@ -66,31 +66,29 @@ def validate_balance_submission(
         issues=issues,
     )
     collect_duplicate_rows(
-        file_name=BALANCES_FILENAME,
+        file_name=BALANCE_SNAPSHOTS_FILENAME,
         rows=balance_rows,
         fields=(
             "source",
             "account",
             "wallet",
             "instrument_id",
-            "quantity",
-            "as_of_at",
-            "as_of_precision",
+            "target_at",
+            "target_precision",
             "balance_kind",
         ),
         issues=issues,
     )
     collect_duplicate_rows(
-        file_name=BALANCE_CONFIRMATIONS_FILENAME,
-        rows=balance_confirmation_rows,
+        file_name=BALANCE_REFERENCES_FILENAME,
+        rows=balance_reference_rows,
         fields=(
             "source",
             "account",
             "wallet",
             "instrument_id",
-            "quantity",
-            "as_of_at",
-            "as_of_precision",
+            "target_at",
+            "target_precision",
             "balance_kind",
         ),
         issues=issues,
@@ -110,17 +108,17 @@ def validate_balance_submission(
     )
     collect_location_inventory_conflicts(parsed_location_inventory, issues=issues)
     if not (
-        _has_required_file_issue(issues, BALANCES_FILENAME)
-        or _has_required_file_issue(issues, BALANCE_CONFIRMATIONS_FILENAME)
+        _has_required_file_issue(issues, BALANCE_SNAPSHOTS_FILENAME)
+        or _has_required_file_issue(issues, BALANCE_REFERENCES_FILENAME)
     ):
-        collect_balance_confirmation_mismatches(
+        collect_balance_reference_mismatches(
             tuple(parsed_balances),
-            tuple(parsed_confirmations),
+            tuple(parsed_references),
             issues=issues,
         )
     return BalanceSubmissionValidationResult(
-        balance_rows=tuple(parsed_balances),
-        balance_confirmation_rows=tuple(parsed_confirmations),
+        balance_snapshot_rows=tuple(parsed_balances),
+        balance_reference_rows=tuple(parsed_references),
         location_inventory_rows=tuple(parsed_location_inventory),
         issues=tuple(issues),
     )
@@ -180,12 +178,37 @@ def _read_rows(
             )
         )
         return []
+    rows: list[tuple[int, dict[str, str]]] = []
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
-        dict_reader = csv.DictReader(handle)
-        return [
-            (index, {key: value for key, value in row.items() if key is not None})
-            for index, row in enumerate(dict_reader, start=2)
-        ]
+        reader = csv.reader(handle)
+        next(reader, None)
+        for index, raw_row in enumerate(reader, start=2):
+            extra_values = raw_row[len(header) :]
+            if extra_values:
+                issues.append(
+                    BalanceSubmissionIssue(
+                        file_name=path.name,
+                        row_number=str(index),
+                        column_name="",
+                        issue_kind="unexpected_extra_value",
+                        message=(
+                            f"{path.name} row has unexpected extra values beyond "
+                            "the declared header."
+                        ),
+                    )
+                )
+            rows.append(
+                (
+                    index,
+                    {
+                        field_name: (
+                            raw_row[position] if position < len(raw_row) else ""
+                        )
+                        for position, field_name in enumerate(header)
+                    },
+                )
+            )
+    return rows
 
 
 def _has_required_file_issue(

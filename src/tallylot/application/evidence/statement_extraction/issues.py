@@ -64,7 +64,7 @@ def statement_review(
         review_id=f"{profile.source}:{entry.relative_path}:{details.raw_row_ref}:{details.kind}",
         source=str(profile.source),
         adapter_id=str(adapter.manifest.adapter_id),
-        scope="balance_evidence",
+        scope="balance_reference",
         kind=details.kind,
         message=details.message,
         context_timestamp=details.context_timestamp,

@@ -8,14 +8,20 @@ from tallylot.adapters.sources.platforms.binance.field_parsing import (
     row_change,
     split_pair,
 )
-from tallylot.adapters.sources.platforms.binance.timestamps import parse_export_timestamp
-from tallylot.adapters.sources.platforms.binance.transaction_history import normalize_transaction_rows
+from tallylot.adapters.sources.platforms.binance.timestamps import (
+    parse_export_timestamp,
+)
+from tallylot.adapters.sources.platforms.binance.transaction_history import (
+    normalize_transaction_rows,
+)
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.transactions import EconomicKind, ProjectionHint
 from tests.support.services import build_source_profile
 
 
-def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambiguous_groups(tmp_path: Path) -> None:
+def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambiguous_groups(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv"
     path.write_text(
         "User ID,Time,Account,Operation,Coin,Change,Remark\n"
@@ -44,7 +50,9 @@ def test_binance_transaction_history_normalizes_small_assets_and_surfaces_ambigu
     assert issues[0].kind == "ambiguous_group"
 
 
-def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewards(tmp_path: Path) -> None:
+def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewards(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv"
     path.write_text(
         "User ID,Time,Account,Operation,Coin,Change,Remark\n"
@@ -68,7 +76,9 @@ def test_binance_transaction_history_ignores_no_data_rows_and_maps_staking_rewar
     assert not issues
 
 
-def test_binance_historical_ignore_list_only_applies_when_profile_supplies_cutoff_hint(tmp_path: Path) -> None:
+def test_binance_historical_ignore_list_only_applies_when_profile_supplies_cutoff_hint(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv"
     path.write_text(
         "User ID,Time,Account,Operation,Coin,Change,Remark\n"
@@ -79,16 +89,27 @@ def test_binance_historical_ignore_list_only_applies_when_profile_supplies_cutof
     profile_without_cutoff = build_source_profile(adapter_id="binance")
     profile_with_cutoff = build_source_profile(
         adapter_id="binance",
-        normalization_hints={"project_baseline_cutoff_timestamp": "2023-08-05 08:34:04"},
+        normalization_hints={
+            "project_baseline_cutoff_timestamp": "2023-08-05 08:34:04"
+        },
     )
 
-    without_cutoff_drafts, without_cutoff_issues = normalize_transaction_rows(profile_without_cutoff, path)
-    with_cutoff_drafts, with_cutoff_issues = normalize_transaction_rows(profile_with_cutoff, path)
+    without_cutoff_drafts, without_cutoff_issues = normalize_transaction_rows(
+        profile_without_cutoff, path
+    )
+    with_cutoff_drafts, with_cutoff_issues = normalize_transaction_rows(
+        profile_with_cutoff, path
+    )
     without_cutoff_events = compile_activity_drafts(tuple(without_cutoff_drafts))
     with_cutoff_events = compile_activity_drafts(tuple(with_cutoff_drafts))
 
     assert not without_cutoff_events
-    assert len(without_cutoff_issues) == 2
+    assert len(without_cutoff_issues) == 1
+    assert without_cutoff_issues[0].kind == "unsupported_group"
+    assert without_cutoff_issues[0].message == (
+        "Unsupported Binance transaction-history operations: "
+        "Transfer Between Main and Funding Wallet (2 grouped rows)"
+    )
     assert not with_cutoff_events
     assert not with_cutoff_issues
 
@@ -115,12 +136,43 @@ def test_binance_transaction_history_skips_non_positive_staking_and_incomplete_d
     assert issues[0].kind == "unsupported_group"
 
 
+def test_binance_transaction_history_summarizes_repeated_unsupported_operations(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "Binance-Transaction-History-202603230400(UTC--6)_abcd.csv"
+    path.write_text(
+        "User ID,Time,Account,Operation,Coin,Change,Remark\n"
+        "1,23-03-23 04:00:00,Spot,Deposit,ADA,10,\n"
+        "1,23-03-23 05:00:00,Spot,Deposit,ADA,5,\n"
+        "1,23-03-23 06:00:00,Spot,Sell,ADA,-3,\n",
+        encoding="utf-8",
+    )
+
+    drafts, issues = normalize_transaction_rows(
+        build_source_profile(adapter_id="binance"),
+        path,
+    )
+    events = compile_activity_drafts(tuple(drafts))
+
+    assert not events
+    assert len(issues) == 2
+    by_kind_message = {(issue.kind, issue.message) for issue in issues}
+    assert (
+        "unsupported_group",
+        "Unsupported Binance transaction-history operations: Deposit (2 grouped rows)",
+    ) in by_kind_message
+    assert (
+        "unsupported_group",
+        "Unsupported Binance transaction-history operations: Sell (1 grouped rows)",
+    ) in by_kind_message
+
+
 def test_binance_field_parsing_helpers_cover_fallback_paths() -> None:
     assert split_pair("DOGEUSDT") == ("DOGE", "USDT")
     assert split_pair("UNKNOWN") == ("", "")
     assert amount_with_asset("0.5eth") == (Decimal("0.5"), "ETH")
     assert amount_with_asset("0.5") == (Decimal("0.5"), "")
-    assert parse_export_timestamp("23-03-23 04:06:00", "Binance.csv").strftime("%Y-%m-%d %H:%M:%S") == (
-        "2023-03-23 04:06:00"
-    )
+    assert parse_export_timestamp("23-03-23 04:06:00", "Binance.csv").strftime(
+        "%Y-%m-%d %H:%M:%S"
+    ) == ("2023-03-23 04:06:00")
     assert row_change({"Change": ""}) == Decimal("0")

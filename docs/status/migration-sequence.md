@@ -64,12 +64,12 @@ Implementation rule:
   constructing the temporary normalized artifact directly
 - normalization writes transaction facts first
 - introduce instrument identity, signed legs, stable leg ids, and the repo-wide
-  `*_at` plus `*_precision` temporal convention as part of the canonical fact
+  `*_at` plus `*_precision` temporal convention as part of the shared fact
   contract
 - replace the normalized transaction artifact set directly once the fact path is
   ready
 - replace the current fact artifact schema directly for this branch rather than
-  preserving a second active canonical model
+  preserving a second active runtime model
 - CoinTracking output remains an adapter projection, not a second core model
 - until fact services land, keep CoinTracking candidate rendering as an
   explicit projection step rather than a normalization side effect
@@ -85,9 +85,9 @@ Bridge rule for the current branch:
   activity unless the source provides real balance evidence
 - unresolved or ambiguous identifier resolution blocks fact emission for the
   affected activity and must surface both review output and a blocking issue
-- no parallel canonical runtime, wrapper lane, or runtime artifact translators
+- no parallel runtime, wrapper lane, or runtime artifact translators
 - a clean fact artifact schema break is allowed in this branch when the
-  canonical replacement is ready
+  replacement is ready
 - fact artifact readers must reject unknown `schema_version` values and the
   operational recovery path is full regeneration from raw evidence
 
@@ -112,19 +112,35 @@ Move these capabilities off normalized transactions:
 Rules:
 
 - reconciliation consumes facts plus checkpoint evidence only
+- keep balance orchestration behind one shared balance capability for target
+  planning, snapshot derivation, reference resolution, inspect and check
+  workflows, hydration, corroboration, and assertion assembly
+- replace split balance evidence or confirmation artifacts directly with
+  unified `balance_references.csv`
+- fact-backed balance checks derive snapshots from facts; manual-only balance
+  checks consume explicit snapshot rows
+- check defaults to offline resolution; provider hydration is opt-in
+- keep historical API lookup in separate balance-provider adapters rather than
+  in source adapters
+- require immutable on-chain asset ids before public-ledger provider hydration
+  is treated as supported runtime behavior
+- keep symbol-only public-ledger asset ids as explicit unsupported outputs
+  until immutable on-chain identity is available
 - CoinTracking tax outputs stay in oracle comparison services
 - deterministic corrections such as redistributions must live in typed rules or
   fact metadata, not operator notes
 - row-level candidate-versus-reference CSV comparison is a `source diff`
   utility, not the reconciliation service surface
 - reconciliation advances in parallel with the accounting slice once the
-  canonical fact shape is stable
+  shared fact shape is stable
 - reconciliation remains the gate before tax and before treating rebuilt fact
   history as trusted
 
 Exit criteria:
 
 - checkpoint assembly works from facts and source-backed evidence
+- reconciliation resolves explicit balance targets from facts and unified
+  references rather than from a latest-only balance artifact assumption
 - reconciliation artifacts no longer depend on normalized-transaction-specific
   stopgaps
 
@@ -142,7 +158,7 @@ Rules:
 - accounting consumes facts plus journal intents
 - CoinTracking double-entry is comparison-only
 - unsupported activity must surface as explicit journal coverage gaps
-- accounting advances in parallel with reconciliation once the canonical fact
+- accounting advances in parallel with reconciliation once the shared fact
   shape is stable
 - accounting is the journal structure and coverage validator, not the evidence
   truth gate

@@ -1,6 +1,6 @@
 ---
 title: "Manual Balance Submission Artifacts"
-summary: "Reference contract for scaffolded manual balance submission packages and their canonical outputs."
+summary: "Reference contract for scaffolded manual balance submission packages and their balance outputs."
 doc_type: reference
 audience: human
 owner: repo
@@ -12,23 +12,23 @@ related:
   - docs/workspace/analysis/reconciliation/README.md
 ---
 
-Use this reference when a source's canonical balance artifacts need to come
-from a validated manual submission package instead of directly from
-normalization.
+Use this reference when a source needs a validated manual submission package to
+materialize balance outputs.
 
-Manual submission confirms balances for runtime use. It does not create
-source-backed evidence.
+Manual submission is a checkpoint-owned input path. It produces
+`balance_snapshots.csv` and `balance_references.csv` rows for runtime balance
+checks, but it does not create source-backed document evidence on its own.
 
 ## Workflow
 
 1. Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission --source <source>`.
-2. Fill `balances.csv` and `balance_confirmations.csv`, and optionally
+2. Fill `balance_snapshots.csv` and `balance_references.csv`, and optionally
    `location_inventory.csv`, under
    `working/supporting_artifacts/balance_submissions/<source>/`.
 3. Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances --source <source>`.
-4. Review `balance_submission_summary.json` and
-   `balance_submission_issues.csv`.
-5. If the submit run is not blocked, continue with:
+4. Review `balance_submission_summary.json`. When the submit run has issues,
+   review `balance_submission_issues.csv` as well.
+5. If the submit run is not blocked, continue with
    `reconciliation balances inspect`, `reconciliation balances check`, and
    `reconciliation balances summarize`.
 
@@ -43,14 +43,14 @@ Packages live under
 Scaffolded files:
 
 - `README.md`
-- `balances.csv.example`
-- `balance_confirmations.csv.example`
+- `balance_snapshots.csv.example`
+- `balance_references.csv.example`
 - `location_inventory.csv.example`
 
 Operator-filled files:
 
-- `balances.csv`
-- `balance_confirmations.csv`
+- `balance_snapshots.csv`
+- `balance_references.csv`
 - `location_inventory.csv`
 
 `.example` files are templates only. The submit workflow ignores them.
@@ -59,25 +59,26 @@ Operator-filled files:
 
 Required files:
 
-- `balances.csv`
-- `balance_confirmations.csv`
+- `balance_snapshots.csv`
+- `balance_references.csv`
 
 Optional file:
 
 - `location_inventory.csv`
 
 The user-facing schema does not require `location_id`. The submit workflow
-derives canonical location identifiers from `source`, `account`, and `wallet`.
+derives location identifiers from `source`, `account`, and `wallet`.
 
 The user-facing schema does require `instrument_id`. The workflow preserves the
-entered `instrument_id` exactly and does not infer it from symbols or labels.
+entered `instrument_id` exactly and does not infer it from symbols, labels, or
+prior runs.
 
 ## Exact Headers
 
-### `balances.csv`
+### `balance_snapshots.csv`
 
 ```text
-source,account,wallet,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,notes
+source,account,wallet,instrument_id,quantity,target_at,target_precision,balance_kind,notes
 ```
 
 Required fields:
@@ -87,45 +88,41 @@ Required fields:
 - `wallet`
 - `instrument_id`
 - `quantity`
-- `as_of_at`
-- `as_of_precision`
+- `target_at`
+- `target_precision`
 - `balance_kind`
 
 `notes` may be blank.
 
-### `balance_confirmations.csv`
+### `balance_references.csv`
 
 ```text
-source,account,wallet,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,confirmation_kind,support_ref,asserted_meaning,reviewed_by,reviewed_at,reason,notes
+source,account,wallet,instrument_id,quantity,target_at,target_precision,balance_kind,reference_kind,observed_at,observed_precision,support_ref,reviewed_by,reviewed_at,notes
 ```
 
-Required fields are:
+Required fields:
 
 - `source`
 - `account`
 - `wallet`
 - `instrument_id`
 - `quantity`
-- `as_of_at`
-- `as_of_precision`
+- `target_at`
+- `target_precision`
 - `balance_kind`
-- `confirmation_kind`
-- `asserted_meaning`
+- `reference_kind`
+- `observed_at`
+- `observed_precision`
 - `reviewed_by`
 - `reviewed_at`
-- `reason`
 
-Allowed `confirmation_kind` values:
+Manual submission accepts only:
 
-- `external_support`
-- `manual_assertion`
+- `reference_kind=operator_assertion`
 
-Conditional `support_ref` rules:
-
-- `external_support` rows require a non-blank `support_ref`
-- `manual_assertion` rows must leave `support_ref` blank
-
-`notes` may be blank.
+`support_ref` is optional. When present, it cites supporting material for the
+operator assertion; it does not change the row into a source-document
+reference.
 
 ### `location_inventory.csv`
 
@@ -148,85 +145,74 @@ If `location_inventory.csv` is present, these fields are required:
 
 The submit workflow is strict and deterministic.
 
-- `balances.csv` and `balance_confirmations.csv` must exist as filled files.
+- `balance_snapshots.csv` and `balance_references.csv` must exist as filled
+  files.
 - Headers must match exactly.
+- Rows must not include extra values beyond the declared header.
 - Required fields must be non-blank.
 - `quantity` must parse as `Decimal`.
-- `as_of_at` and `as_of_precision` must form a valid persisted timestamp.
+- `target_at` and `target_precision` must form a valid persisted temporal
+  value.
 - `balance_kind` must normalize successfully.
-- Duplicate logical balance rows block the run.
-- Duplicate logical confirmation rows block the run.
-- Every balance row must have exactly one matching confirmation row on
-  `source`, `account`, `wallet`, `instrument_id`, `quantity`, `as_of_at`,
-  `as_of_precision`, and `balance_kind`.
-- Every confirmation row must match exactly one balance row on the same keys.
-- `confirmation_kind` must be valid.
-- `reviewed_at` must be a persisted timezone-aware timestamp.
-- `support_ref` must follow the conditional rule above.
+- Duplicate logical snapshot rows block the run. The logical key is
+  `source`, `account`, `wallet`, `instrument_id`, `target_at`,
+  `target_precision`, and `balance_kind`.
+- Duplicate logical reference rows block the run. The logical key is
+  `source`, `account`, `wallet`, `instrument_id`, `target_at`,
+  `target_precision`, and `balance_kind`.
+- Every snapshot row must have exactly one matching reference row on
+  `source`, `account`, `wallet`, `instrument_id`, `quantity`, `target_at`,
+  `target_precision`, and `balance_kind`.
+- Every reference row must match exactly one snapshot row on the same keys.
+- `reference_kind` must be valid and must be `operator_assertion`.
+- `observed_at` and `observed_precision` must form a valid persisted temporal
+  value.
+- `reviewed_at` must be a valid persisted timestamp.
 - If `location_inventory.csv` is present, conflicting high-confidence identity
   rows for the same logical location block the run.
 - A blocked run still writes `balance_submission_summary.json` and
   `balance_submission_issues.csv`.
 
-Fill the real CSVs only from explicit operator-reviewed source facts. Do not
-infer missing identifiers, timestamps, quantities, support references, or
-identity values.
+Fill the real CSVs only from explicit operator-reviewed facts. Do not infer
+missing identifiers, timestamps, quantities, support references, or identity
+values.
 
-## Instrument ID Examples
+## Materialized Outputs
 
-Acceptable `instrument_id` values include canonical identifiers such as:
-
-- `symbol:BTC@coinbase`
-- `symbol:ETH`
-- `symbol:USDT`
-
-The workflow validates only that `instrument_id` is present. It preserves the
-entered value exactly in the canonical outputs.
-
-## Canonical Outputs
-
-By default, a successful submit run materializes canonical outputs under
+By default, a successful submit run materializes balance outputs under
 `working/normalized/sources/<source>/`. The CLI also accepts an explicit output
 directory as long as it is not inside the submission package tree.
 
 Written files:
 
-- `balances.csv`
-- `balance_confirmations.csv`
+- `balance_snapshots.csv`
+- `balance_references.csv`
 - `location_inventory.csv` when the optional submission file is present
 - `balance_submission_summary.json`
-- `balance_submission_issues.csv`
+- `balance_submission_issues.csv` when validation finds issues
 
-These canonical files are the same runtime-facing artifacts that
-`reconciliation balances inspect`, `reconciliation balances check`, and
-`reconciliation balances summarize` consume.
+Successful submission reports:
 
-Successful manual submission reports:
+- `ready_for_balance_check=true`
+- `wrote_balance_snapshots=true`
+- `wrote_balance_references=true`
 
-- `trust_tier` as `operator_confirmed`
-- `ready_for_balance_check` as `true`
-- `ready_for_source_backed_checkpoint` as `false`
-
-Manual submission does not write canonical `balance_evidence.csv`.
-`balance_evidence.csv` remains source-backed only.
-
-Canonical `balance_confirmations.csv` uses the normalized header:
-
-```text
-source,location_id,instrument_id,quantity,as_of_at,as_of_precision,balance_kind,confirmation_kind,support_ref,asserted_meaning,reviewed_by,reviewed_at,reason,notes
-```
+Manual submission writes `operator_assertion` rows into the shared unified
+reference artifact. It does not create `source_document` evidence or satisfy a
+filing-ready source-backed checkpoint on its own.
 
 ## Corroboration Limits
 
-Source-local balance checks work with `balances.csv` plus either
-`balance_evidence.csv` or `balance_confirmations.csv`.
+Source-local balance checks work from derived balance targets and the selected
+rows in `balance_references.csv`.
 
-When both artifacts exist for the same balance key, source-backed
-`balance_evidence.csv` wins and confirmations only fill uncovered keys.
+When stronger references exist for the same balance target, the shared
+selection policy prefers:
+
+1. `source_document`
+2. `network_api`
+3. `operator_assertion`
 
 Omitting `location_inventory.csv` limits cross-source corroboration because the
 reconciliation workflow has less explicit location identity to compare across
-sources. It does not prevent basic source-local balance assertion checks.
-
-Cross-source corroboration still ignores `balance_confirmations.csv`.
-Filing-ready checkpoint status still requires source-backed evidence.
+sources. It does not prevent source-local balance checks.

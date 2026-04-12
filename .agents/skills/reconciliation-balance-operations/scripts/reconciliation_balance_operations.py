@@ -49,13 +49,14 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 _reconciliation = import_module("tallylot.application.reconciliation")
-BalanceCheckRequest = _reconciliation.BalanceCheckRequest
-BalanceCoverageRequest = _reconciliation.BalanceCoverageRequest
-BalanceSummaryRequest = _reconciliation.BalanceSummaryRequest
+_balances = import_module("tallylot.application.balances")
+BalanceCheckRequest = _balances.BalanceCheckRequest
+BalanceInspectRequest = _balances.BalanceInspectRequest
+BalanceSummaryRequest = _balances.BalanceSummaryRequest
 to_resource_ref = import_module("tallylot.application.resource_refs").to_resource_ref
 _runtime = import_module("tallylot.infrastructure.composition.runtime")
 balance_check_workflow = _runtime.balance_check_workflow
-balance_coverage_workflow = _runtime.balance_coverage_workflow
+balance_inspect_workflow = _runtime.balance_inspect_workflow
 balance_summary_workflow = _runtime.balance_summary_workflow
 
 
@@ -75,7 +76,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     check_parser.add_argument("--source", action="append", default=[])
 
     summarize_parser = subparsers.add_parser("summarize")
-    summarize_parser.add_argument("--coverage", type=Path, required=True)
+    summarize_parser.add_argument("--inspect", type=Path, required=True)
     summarize_parser.add_argument("--check-summary", type=Path, required=True)
     summarize_parser.add_argument("--output", type=Path, required=True)
 
@@ -86,10 +87,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "inspect":
-        payload = balance_coverage_workflow().execute(
-            BalanceCoverageRequest(
+        payload = balance_inspect_workflow().execute(
+            BalanceInspectRequest(
                 input_root_ref=to_resource_ref(args.input_root),
-                coverage_output_ref=to_resource_ref(args.output),
+                inspect_output_ref=to_resource_ref(args.output),
             )
         )
         print(json.dumps(payload.__dict__, default=str))
@@ -107,20 +108,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "summarize":
         payload = balance_summary_workflow().execute(
             BalanceSummaryRequest(
-                coverage_input_ref=to_resource_ref(args.coverage),
+                inspect_input_ref=to_resource_ref(args.inspect),
                 check_summary_input_ref=to_resource_ref(args.check_summary),
                 summary_output_ref=to_resource_ref(args.output),
             )
         )
         print(json.dumps(payload.__dict__, default=str))
         return 0
-    coverage_output = args.analysis_root / "balance_coverage.csv"
+    inspect_output = args.analysis_root / "balance_inspect.csv"
     check_output_root = args.analysis_root / "checks"
     summary_output = args.analysis_root / "balance_reconciliation_summary.json"
-    coverage_response = balance_coverage_workflow().execute(
-        BalanceCoverageRequest(
+    inspect_response = balance_inspect_workflow().execute(
+        BalanceInspectRequest(
             input_root_ref=to_resource_ref(args.input_root),
-            coverage_output_ref=to_resource_ref(coverage_output),
+            inspect_output_ref=to_resource_ref(inspect_output),
         )
     )
     check_response = balance_check_workflow().execute(
@@ -132,7 +133,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     summary_response = balance_summary_workflow().execute(
         BalanceSummaryRequest(
-            coverage_input_ref=coverage_response.coverage_output_ref,
+            inspect_input_ref=inspect_response.inspect_output_ref,
             check_summary_input_ref=check_response.check_summary_output_ref,
             summary_output_ref=to_resource_ref(summary_output),
         )
@@ -140,14 +141,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(
         json.dumps(
             {
-                "coverage_output_ref": coverage_response.coverage_output_ref,
+                "inspect_output_ref": inspect_response.inspect_output_ref,
                 "check_summary_output_ref": check_response.check_summary_output_ref,
                 "summary_output_ref": summary_response.summary_output_ref,
                 "blocker_output_ref": summary_response.blocker_output_ref,
                 "latest_portfolio_clean_date": summary_response.latest_portfolio_clean_date,
-                "latest_portfolio_source_backed_date": summary_response.latest_portfolio_source_backed_date,
+                "latest_portfolio_resolved_reference_date": summary_response.latest_portfolio_resolved_reference_date,
                 "latest_clean_source_date": summary_response.latest_clean_source_date,
-                "latest_source_backed_date": summary_response.latest_source_backed_date,
+                "latest_resolved_reference_date": summary_response.latest_resolved_reference_date,
                 "latest_observed_assertion_date": summary_response.latest_observed_assertion_date,
             },
             default=str,

@@ -33,8 +33,8 @@ Review:
 
 - `facts.csv`
 - `fact_annotations.json`
-- `balances.csv`
-- `balance_evidence.csv`
+- `balance_snapshots.csv`
+- `balance_references.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
 - `location_inventory.csv`
@@ -44,11 +44,11 @@ Review:
 normalization. Use it when you need the standalone statement parser output for
 the same supported PDF families.
 
-`balance_evidence.csv` flattens source-backed provenance into the shared locator
-columns `capture_uid`, `relative_path`, `archive_member_path`,
-`locator_kind`, and `anchor`. `exceptions.csv` and
-`normalization_reviews.csv` keep `raw_row_ref` plus the same locator family
-with `raw_` prefixes when they reference raw evidence.
+`balance_references.csv` is the unified reference artifact. Normalization
+contributes `source_document` rows when the capture actually contains usable
+balance evidence. `exceptions.csv` and `normalization_reviews.csv` keep
+`raw_row_ref` plus the same locator family with `raw_` prefixes when they
+reference raw evidence.
 
 ## Assemble The Source Dataset
 
@@ -64,8 +64,9 @@ Review the assembled source dataset under
 `<workspace>/working/normalized/sources/<source>/`.
 
 `source assemble` is rerun-safe. It rewrites only its known generated files
-such as `facts.csv`, `balance_evidence.csv`, `assembly_summary.json`, and
-`assembly_issues.csv`, and leaves unrelated operator-owned files in place.
+such as `facts.csv`, `balance_snapshots.csv`, `balance_references.csv`,
+`assembly_summary.json`, and `assembly_issues.csv`, and leaves unrelated
+operator-owned files in place.
 
 ## Submit Manual Balances When Needed
 
@@ -88,13 +89,12 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint 
 Review:
 
 - `balance_submission_summary.json`
-- `balance_submission_issues.csv`
+- `balance_submission_issues.csv` when the submit run reports issues
 
-Use this path when normalization did not already emit canonical balance
-artifacts or when the source's balance facts need to be entered through a
-validated manual package. By default, the submit workflow materializes
-canonical `balances.csv`, `balance_confirmations.csv`, and optional
-`location_inventory.csv` under
+Use this path when normalization did not already emit balance outputs or when
+the source's balance facts need to be entered through a validated manual
+package. By default, the submit workflow materializes `balance_snapshots.csv`,
+`balance_references.csv`, and optional `location_inventory.csv` under
 `<workspace>/working/normalized/sources/<source>/`.
 
 Optional `location_inventory.csv` improves later cross-source corroboration,
@@ -120,7 +120,7 @@ Review:
 - `balance_check_summary.csv`
 - `balance_assertions.csv`
 - `reconciliation_issues.csv`
-- `balance_assertion_summary.json`
+- `balance_reconciliation_summary.json`
 - `cross_source_assertions.csv`
 - `cross_source_issues.csv`
 - `cross_source_summary.json`

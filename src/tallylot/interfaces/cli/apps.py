@@ -10,7 +10,9 @@ source_app = typer.Typer(help="Source operations.")
 source_intake_app = typer.Typer(help="Source intake commands.")
 checkpoint_app = typer.Typer(help="Checkpoint and evidence operations.")
 reconciliation_app = typer.Typer(help="Reconciliation operations.")
-reconciliation_balances_app = typer.Typer(help="Balance reconciliation operations.")
+reconciliation_balances_app = typer.Typer(
+    help="Balance inspection, checking, and summarization."
+)
 output_app = typer.Typer(help="Output operations.")
 output_render_app = typer.Typer(help="Output rendering commands.")
 

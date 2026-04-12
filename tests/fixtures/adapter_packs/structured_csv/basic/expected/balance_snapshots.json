@@ -1,0 +1,35 @@
+[
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:BTC",
+    "location_id": "structured_example:fixture_exchange:primary",
+    "notes": "",
+    "quantity": "1",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Structured Example",
+    "target_at": "2023-08-06 10:00:00",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:CAD",
+    "location_id": "structured_example:fixture_exchange:primary",
+    "notes": "",
+    "quantity": "-10.1",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Structured Example",
+    "target_at": "2023-08-06 10:00:00",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:ETH",
+    "location_id": "structured_example:fixture_exchange:primary",
+    "notes": "",
+    "quantity": "0.5",
+    "snapshot_basis": "fact_cutoff",
+    "source": "Structured Example",
+    "target_at": "2023-08-07 15:00:00",
+    "target_precision": "timestamp"
+  }
+]

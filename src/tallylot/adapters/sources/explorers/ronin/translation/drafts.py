@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from tallylot.adapters.support import evm_native_asset_claim
 from tallylot.adapters.support.drafts import (
     SINGLE_PRIMARY_ACTIVITY_POLICY,
     EconomicActivityDraft,
@@ -14,6 +15,7 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
     symbol_claim,
 )
+from tallylot.domain.instruments import InstrumentIdentityClaim
 from tallylot.domain.types import LocationId
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -97,7 +99,7 @@ def _transfer_draft(
                 leg_id=primary_leg_id,
                 kind=LegKind.PRIMARY,
                 quantity=quantity,
-                instrument=symbol_claim(row.asset_symbol, venue="ronin"),
+                instrument=_ronin_instrument_claim(row.asset_symbol),
             ),
             *_fee_legs(context.fee, attributed_to_leg_id=primary_leg_id),
         ),
@@ -185,7 +187,7 @@ def summary_transfer_draft(
                 leg_id=primary_leg_id,
                 kind=LegKind.PRIMARY,
                 quantity=context.quantity,
-                instrument=symbol_claim(row.asset_symbol, venue="ronin"),
+                instrument=_ronin_instrument_claim(row.asset_symbol),
             ),
         ),
     )
@@ -272,8 +274,14 @@ def _fee_legs(
             leg_id="charge",
             kind=LegKind.CHARGE,
             quantity=-fee,
-            instrument=symbol_claim("RON", venue="ronin"),
+            instrument=evm_native_asset_claim("ronin", display_name="RON"),
             subtype="network_fee",
             attributed_to_leg_id=attributed_to_leg_id,
         ),
     )
+
+
+def _ronin_instrument_claim(asset_symbol: str) -> InstrumentIdentityClaim:
+    if asset_symbol == "RON":
+        return evm_native_asset_claim("ronin", display_name=asset_symbol)
+    return symbol_claim(asset_symbol, venue="ronin")

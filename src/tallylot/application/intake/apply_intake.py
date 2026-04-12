@@ -82,7 +82,7 @@ class ApplyIntakeUseCase:
             for item in planned_items:
                 if item.action not in {"copy", "extract_copy"}:
                     continue
-                if not materializes_capture:
+                if item.category == "source_raw" and not materializes_capture:
                     continue
                 item.target_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(item.source_path, item.target_path)

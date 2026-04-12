@@ -46,8 +46,8 @@ class ScaffoldBalanceSubmissionResponse:
     source: str
     submission_root_ref: ResourceRef
     readme_ref: ResourceRef
-    balances_example_ref: ResourceRef
-    balance_confirmations_example_ref: ResourceRef
+    balance_snapshots_example_ref: ResourceRef
+    balance_references_example_ref: ResourceRef
     location_inventory_example_ref: ResourceRef
 
 
@@ -62,13 +62,12 @@ class SubmitBalancesRequest:
 class SubmitBalancesResponse:
     submission_root_ref: ResourceRef
     output_root_ref: ResourceRef
-    balance_row_count: int
-    balance_confirmation_row_count: int
+    balance_snapshot_row_count: int
+    balance_reference_row_count: int
     location_inventory_row_count: int
     issue_count: int
     blocked: bool
-    wrote_balance_confirmations: bool
+    wrote_balance_snapshots: bool
+    wrote_balance_references: bool
     wrote_location_inventory: bool
     ready_for_balance_check: bool
-    ready_for_source_backed_checkpoint: bool
-    trust_tier: str

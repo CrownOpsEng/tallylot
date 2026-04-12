@@ -1,23 +1,30 @@
 """Domain concepts."""
 
-from .checkpoints import BalanceSnapshot
+from .balances import (
+    BalanceAssertion,
+    BalanceAssertionResult,
+    BalanceAssertionStatus,
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceSnapshot,
+    BalanceTarget,
+    assert_balance_targets,
+)
 from .instruments import (
     InstrumentId,
     InstrumentIdentifierRecord,
     InstrumentIdentityClaim,
     InstrumentKind,
     InstrumentRecord,
+    ResolvedInstrument,
+    asset_claim,
+    evm_erc20_asset_claim,
+    evm_native_asset_claim,
+    near_native_asset_claim,
+    resolve_instrument_identity,
 )
 from .issues import IssueRecord, NormalizationReviewRecord
 from .locations import LocationKind, LocationRecord
-from .reconciliation import (
-    BalanceAssertion,
-    BalanceAssertionResult,
-    BalanceAssertionStatus,
-    BalanceConfirmation,
-    BalanceEvidence,
-    assert_balance_snapshots,
-)
 from .temporal import TemporalPrecision
 from .transactions import (
     FACT_SCHEMA_VERSION,
@@ -40,12 +47,13 @@ __all__ = [
     "TWO_SIDED_PRIMARY_EXCHANGE_POLICY",
     "TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY",
     "AccountingIntentHint",
-    "BalanceEvidence",
     "BalanceAssertion",
     "BalanceAssertionResult",
     "BalanceAssertionStatus",
-    "BalanceConfirmation",
+    "BalanceReference",
+    "BalanceReferenceKind",
     "BalanceSnapshot",
+    "BalanceTarget",
     "EconomicKind",
     "FactLegPolicy",
     "InstrumentId",
@@ -53,6 +61,7 @@ __all__ = [
     "InstrumentIdentityClaim",
     "InstrumentKind",
     "InstrumentRecord",
+    "ResolvedInstrument",
     "IssueRecord",
     "LegKind",
     "LegShapeLimit",
@@ -63,5 +72,10 @@ __all__ = [
     "TaxTreatmentHint",
     "TemporalPrecision",
     "TransactionFact",
-    "assert_balance_snapshots",
+    "asset_claim",
+    "assert_balance_targets",
+    "evm_erc20_asset_claim",
+    "evm_native_asset_claim",
+    "near_native_asset_claim",
+    "resolve_instrument_identity",
 ]

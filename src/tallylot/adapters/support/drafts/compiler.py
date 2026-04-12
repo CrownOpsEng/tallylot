@@ -2,22 +2,17 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from dataclasses import dataclass
 
-from tallylot.adapters.support.instruments import resolve_instrument_identity
-from tallylot.adapters.support.issues import (
-    IssueSpec,
-    ReviewSpec,
-    issue_record,
-    review_record,
-)
-from tallylot.domain.instruments import (
-    InstrumentIdentityClaim,
-)
+from tallylot.domain.balances import BalanceReference
+from tallylot.domain.instruments import InstrumentIdentityClaim
+from tallylot.domain.instruments.identity import resolve_instrument_identity
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.domain.reconciliation import BalanceEvidence
-from tallylot.domain.transactions import EconomicLeg, FactSemantics, TransactionFact
+from tallylot.domain.transactions import (
+    EconomicLeg,
+    FactSemantics,
+    TransactionFact,
+)
 from tallylot.domain.types import AdapterId, SourceId, TransactionId
 from tallylot.domain.value_objects import format_timestamp
 from tallylot.ports.evidence import LocationInventoryRecord
@@ -32,6 +27,16 @@ class DraftCompilationResult:
     facts: tuple[TransactionFact, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
+
+
+@dataclass(frozen=True)
+class TranslationBatchDrafts:
+    drafts: tuple[EconomicActivityDraft, ...] = ()
+    balance_references: tuple[BalanceReference, ...] = ()
+    balance_reference_issues: tuple[IssueRecord, ...] = ()
+    issues: tuple[IssueRecord, ...] = ()
+    reviews: tuple[NormalizationReviewRecord, ...] = ()
+    location_inventory: tuple[LocationInventoryRecord, ...] = ()
 
 
 def compile_activity_drafts(
@@ -57,23 +62,6 @@ def compile_activity_drafts_with_feedback(
     )
 
 
-def translation_batch_from_drafts(
-    drafts: Iterable[EconomicActivityDraft] = (),
-    *,
-    balance_evidence: Iterable[BalanceEvidence] = (),
-    issues: Iterable[IssueRecord] = (),
-    reviews: Iterable[NormalizationReviewRecord] = (),
-    location_inventory: Iterable[LocationInventoryRecord] = (),
-) -> SourceTranslationBatch:
-    return SourceTranslationBatch(
-        drafts=tuple(drafts),
-        balance_evidence=tuple(balance_evidence),
-        issues=tuple(issues),
-        reviews=tuple(reviews),
-        location_inventory=tuple(location_inventory),
-    )
-
-
 def compile_activity_draft(draft: EconomicActivityDraft) -> TransactionFact:
     return transaction_fact_from_draft(draft)
 
@@ -81,10 +69,29 @@ def compile_activity_draft(draft: EconomicActivityDraft) -> TransactionFact:
 def transaction_fact_from_draft(draft: EconomicActivityDraft) -> TransactionFact:
     fact, issues, reviews = _compile_activity_draft(draft)
     if issues or reviews or fact is None:
-        raise ValueError(
-            f"draft {draft.activity_id} did not resolve to a canonical fact"
-        )
+        raise ValueError(f"draft {draft.activity_id} did not resolve to a fact")
     return fact
+
+
+def transaction_facts_from_drafts(
+    drafts: tuple[EconomicActivityDraft, ...],
+) -> tuple[TransactionFact, ...]:
+    return tuple(transaction_fact_from_draft(draft) for draft in drafts)
+
+
+def translation_batch_from_drafts(
+    spec: TranslationBatchDrafts | None = None,
+) -> SourceTranslationBatch:
+    if spec is None:
+        spec = TranslationBatchDrafts()
+    return SourceTranslationBatch(
+        drafts=tuple(spec.drafts),
+        balance_references=tuple(spec.balance_references),
+        balance_reference_issues=tuple(spec.balance_reference_issues),
+        issues=tuple(spec.issues),
+        reviews=tuple(spec.reviews),
+        location_inventory=tuple(spec.location_inventory),
+    )
 
 
 def _compile_activity_draft(
@@ -149,25 +156,19 @@ def _compile_activity_draft(
     )
 
 
-def transaction_facts_from_drafts(
-    drafts: tuple[EconomicActivityDraft, ...],
-) -> tuple[TransactionFact, ...]:
-    return tuple(transaction_fact_from_draft(draft) for draft in drafts)
-
-
 def _blocking_identity_issue(draft: EconomicActivityDraft, leg_id: str) -> IssueRecord:
-    return issue_record(
-        IssueSpec(
-            issue_id=f"{draft.activity_id}:{leg_id}:instrument_identity_blocked",
-            source=draft.source,
-            adapter_id=draft.adapter_id,
-            severity="high",
-            kind="instrument_identity_blocked",
-            message=f"Activity {draft.activity_id} could not resolve leg {leg_id} to exactly one instrument.",
-            context_timestamp=format_timestamp(draft.timestamp),
-            raw_file=draft.raw_file,
-            raw_row_ref=draft.raw_row_ref,
-        )
+    return IssueRecord(
+        issue_id=f"{draft.activity_id}:{leg_id}:instrument_identity_blocked",
+        source=draft.source,
+        adapter_id=draft.adapter_id,
+        severity="high",
+        kind="instrument_identity_blocked",
+        message=(
+            f"Activity {draft.activity_id} could not resolve leg {leg_id} to exactly one instrument."
+        ),
+        context_timestamp=format_timestamp(draft.timestamp),
+        raw_file=draft.raw_file,
+        raw_row_ref=draft.raw_row_ref,
     )
 
 
@@ -182,19 +183,17 @@ def _identity_review(
         else f"{claim.scheme}={claim.value}@{claim.venue}"
         for claim in claims
     )
-    return review_record(
-        ReviewSpec(
-            review_id=f"{draft.activity_id}:{leg_id}:instrument_identity_review",
-            source=draft.source,
-            adapter_id=draft.adapter_id,
-            scope="activity",
-            kind="instrument_identity_review",
-            message=f"Review required for leg {leg_id} instrument identity claims.",
-            context_timestamp=format_timestamp(draft.timestamp),
-            raw_file=draft.raw_file,
-            raw_row_ref=draft.raw_row_ref,
-            field_name="instrument_identity_claims",
-            original_value=claims_text,
-            normalized_value="",
-        )
+    return NormalizationReviewRecord(
+        review_id=f"{draft.activity_id}:{leg_id}:instrument_identity_review",
+        source=draft.source,
+        adapter_id=draft.adapter_id,
+        scope="activity",
+        kind="instrument_identity_review",
+        message=f"Review required for leg {leg_id} instrument identity claims.",
+        context_timestamp=format_timestamp(draft.timestamp),
+        raw_file=draft.raw_file,
+        raw_row_ref=draft.raw_row_ref,
+        field_name="instrument_identity_claims",
+        original_value=claims_text,
+        normalized_value="",
     )

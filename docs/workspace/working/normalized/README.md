@@ -25,9 +25,9 @@ These folders hold the typed pipeline artifact set for one capture:
 - `timezone_issues.csv`
 - `facts.csv`
 - `fact_annotations.json`
-- `balances.csv`
-- `balance_evidence.csv`
-- `balance_confirmations.csv`
+- `balance_snapshots.csv`
+- `balance_references.csv`
+- `balance_reference_issues.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
 - `location_inventory.csv`
@@ -44,9 +44,9 @@ artifacts:
 
 - `facts.csv`
 - `fact_annotations.json`
-- `balances.csv`
-- `balance_evidence.csv`
-- `balance_confirmations.csv`
+- `balance_snapshots.csv`
+- `balance_references.csv`
+- `balance_reference_issues.csv`
 - `exceptions.csv`
 - `normalization_reviews.csv`
 - `location_inventory.csv`
@@ -59,28 +59,19 @@ Reconciliation reads only assembled source datasets from
 `fact_annotations.json` preserves fact-keyed provenance references and
 review markers that originate on drafts.
 
-`facts.csv` is schema-versioned and stores canonical signed legs keyed by
+`facts.csv` is schema-versioned and stores signed transaction legs keyed by
 `instrument_id`.
 
-`balances.csv` contains application-derived balances from transaction facts and
-persists `instrument_id`, `as_of_at`, and `as_of_precision`.
+`balance_snapshots.csv` contains application-derived balances from transaction
+facts and persists `instrument_id`, `target_at`, and `target_precision`.
 
-`balance_evidence.csv` contains source-backed checkpoint evidence when the
-adapter actually provides it, using the same `instrument_id` and temporal
-precision fields as `balances.csv`.
+`balance_references.csv` contains the unified balance reference surface.
+Normalization contributes `source_document` rows when the adapter actually
+provides document-backed balance evidence. Later workflows may add
+`network_api` or `operator_assertion` rows for the same target model.
 
-Each `balance_evidence.csv` row flattens the shared provenance locator columns:
-
-- `capture_uid`
-- `relative_path`
-- `archive_member_path`
-- `locator_kind`
-- `anchor`
-
-`balance_confirmations.csv` contains accepted operator confirmations written by
-checkpoint-owned manual balance submission. It is a lower-trust runtime
-reference surface than `balance_evidence.csv` and does not satisfy filing-ready
-checkpoint evidence requirements on its own.
+`balance_reference_issues.csv` stores explicit unresolved or unsupported
+reference issues emitted during normalization, assembly, or later hydration.
 
 `cointracking_candidate.csv` is optional. Create it with `output render file`
 when the round needs it, and keep it beside the
@@ -94,6 +85,15 @@ normalization. In addition to timezone provenance, it records fields such as
 `observed_period_end`, `observed_period_label`, `statement_kind`, and
 `originality_class` so statement extraction and issue-context resolution do not
 need to rediscover raw files by crawling the tree.
+
+`balance_references.csv` preserves the flattened source-document provenance
+locator columns directly:
+
+- `capture_uid`
+- `relative_path`
+- `archive_member_path`
+- `locator_kind`
+- `anchor`
 
 `exceptions.csv` and `normalization_reviews.csv` preserve `raw_row_ref` and the
 same flattened locator family with `raw_` prefixes:

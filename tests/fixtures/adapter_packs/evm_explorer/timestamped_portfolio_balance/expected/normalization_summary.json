@@ -1,7 +1,5 @@
 {
   "adapter_id": "evm_explorer",
-  "balance_count": 2,
-  "balance_evidence_count": 1,
   "fact_count": 2,
   "facts_outside_normalization_window": 0,
   "issue_count": 0,
@@ -9,8 +7,23 @@
   "location_count": 1,
   "normalization_window_end": "",
   "normalization_window_start": "",
-  "review_count": 0,
-  "review_summary": [],
+  "reference_count": 0,
+  "reference_issue_count": 1,
+  "review_count": 1,
+  "review_summary": [
+    {
+      "count": 1,
+      "field_names": [
+        "Token"
+      ],
+      "kind": "instrument_identity_review",
+      "messages": [
+        "Review required because the portfolio export did not prove an immutable on-chain asset id for token symbol GALA."
+      ],
+      "scope": "balance_reference"
+    }
+  ],
   "reviews_outside_normalization_window": 0,
+  "snapshot_count": 2,
   "source": "eth-wallet-fixture"
 }

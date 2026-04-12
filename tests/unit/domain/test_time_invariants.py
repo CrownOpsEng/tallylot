@@ -5,221 +5,266 @@ from decimal import Decimal
 
 import pytest
 
-from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.checkpoints import BalanceSnapshot
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceReferenceKind,
+    BalanceSnapshot,
+    BalanceTarget,
+)
 from tallylot.domain.instruments import InstrumentId
-from tallylot.domain.reconciliation import BalanceConfirmation, BalanceEvidence
 from tallylot.domain.temporal import TemporalPrecision
 from tallylot.domain.types import LocationId, SourceId
 
 
-def test_balance_snapshot_requires_temporal_value() -> None:
+def test_balance_target_requires_temporal_value() -> None:
     with pytest.raises(
-        ValueError, match="balance snapshot as_of_at must be timezone-aware UTC"
+        ValueError, match="balance target target_at must be timezone-aware UTC"
     ):
-        BalanceSnapshot(
+        BalanceTarget(
             source=SourceId("fixture"),
             location_id=LocationId("taxable:spot"),
             instrument_id=InstrumentId("symbol:BTC"),
+            balance_kind="available",
+            target_at=datetime.fromisoformat("2025-01-01T00:00:00"),
+            target_precision=TemporalPrecision.TIMESTAMP,
+        )
+
+    target = BalanceTarget(
+        source=SourceId("fixture"),
+        location_id=LocationId("taxable:spot"),
+        instrument_id=InstrumentId("symbol:BTC"),
+        balance_kind="available",
+        target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+        target_precision=TemporalPrecision.TIMESTAMP,
+    )
+
+    assert target.target_at.tzinfo is UTC
+
+
+def test_balance_target_requires_midnight_for_date_precision() -> None:
+    target = BalanceTarget(
+        source=SourceId("fixture"),
+        location_id=LocationId("taxable:spot"),
+        instrument_id=InstrumentId("symbol:BTC"),
+        balance_kind="available",
+        target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+        target_precision=TemporalPrecision.DATE,
+    )
+
+    assert target.target_at == datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC)
+
+    with pytest.raises(
+        ValueError,
+        match="balance target target_at with date precision must be midnight UTC",
+    ):
+        BalanceTarget(
+            source=SourceId("fixture"),
+            location_id=LocationId("taxable:spot"),
+            instrument_id=InstrumentId("symbol:BTC"),
+            balance_kind="available",
+            target_at=datetime(2025, 1, 1, 1, 0, 0, tzinfo=UTC),
+            target_precision=TemporalPrecision.DATE,
+        )
+
+
+def test_balance_target_requires_non_blank_instrument_id() -> None:
+    with pytest.raises(
+        ValueError, match="balance target instrument_id must not be blank"
+    ):
+        BalanceTarget(
+            source=SourceId("fixture"),
+            location_id=LocationId("taxable:spot"),
+            instrument_id=InstrumentId(""),
+            balance_kind="available",
+            target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            target_precision=TemporalPrecision.TIMESTAMP,
+        )
+
+
+def test_balance_snapshot_requires_non_blank_basis() -> None:
+    with pytest.raises(
+        ValueError, match="balance snapshot snapshot_basis must not be blank"
+    ):
+        BalanceSnapshot(
+            target=BalanceTarget(
+                source=SourceId("fixture"),
+                location_id=LocationId("taxable:spot"),
+                instrument_id=InstrumentId("symbol:BTC"),
+                balance_kind="available",
+                target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                target_precision=TemporalPrecision.TIMESTAMP,
+            ),
             quantity=Decimal("1"),
-            as_of_at=datetime.fromisoformat("2025-01-01T00:00:00"),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
+            snapshot_basis=" ",
         )
 
     snapshot = BalanceSnapshot(
-        source=SourceId("fixture"),
-        location_id=LocationId("taxable:spot"),
-        instrument_id=InstrumentId("symbol:BTC"),
+        target=BalanceTarget(
+            source=SourceId("fixture"),
+            location_id=LocationId("taxable:spot"),
+            instrument_id=InstrumentId("symbol:BTC"),
+            balance_kind="available",
+            target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            target_precision=TemporalPrecision.TIMESTAMP,
+        ),
         quantity=Decimal("1"),
-        as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-        as_of_precision=TemporalPrecision.TIMESTAMP,
+        snapshot_basis="fact_cutoff",
     )
 
-    assert snapshot.as_of_at.tzinfo is UTC
+    assert snapshot.target_at.tzinfo is UTC
 
 
-def test_balance_snapshot_requires_non_blank_instrument_id() -> None:
+def test_balance_reference_requires_temporal_values_and_kind_rules() -> None:
     with pytest.raises(
-        ValueError, match="balance snapshot instrument_id must not be blank"
+        ValueError, match="balance reference observed_at must be timezone-aware UTC"
     ):
-        BalanceSnapshot(
-            source=SourceId("fixture"),
-            location_id=LocationId("taxable:spot"),
-            instrument_id=InstrumentId(""),
+        BalanceReference(
+            target=BalanceTarget(
+                source=SourceId("fixture"),
+                location_id=LocationId("taxable:spot"),
+                instrument_id=InstrumentId("symbol:BTC"),
+                balance_kind="available",
+                target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                target_precision=TemporalPrecision.TIMESTAMP,
+            ),
             quantity=Decimal("1"),
-            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
+            reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            observed_at=datetime.fromisoformat("2025-01-01T00:00:00-06:00"),
+            observed_precision=TemporalPrecision.TIMESTAMP,
         )
 
-
-def test_balance_evidence_requires_temporal_value() -> None:
     with pytest.raises(
-        ValueError, match="balance evidence as_of_at must be timezone-aware UTC"
+        ValueError, match="operator assertion balance references require reviewed_by"
     ):
-        BalanceEvidence(
+        BalanceReference(
+            target=BalanceTarget(
+                source=SourceId("fixture"),
+                location_id=LocationId("taxable:spot"),
+                instrument_id=InstrumentId("symbol:BTC"),
+                balance_kind="available",
+                target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                target_precision=TemporalPrecision.TIMESTAMP,
+            ),
+            quantity=Decimal("1"),
+            reference_kind=BalanceReferenceKind.OPERATOR_ASSERTION,
+            observed_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            observed_precision=TemporalPrecision.TIMESTAMP,
+        )
+
+    with pytest.raises(
+        ValueError, match="network api balance references require provider_family"
+    ):
+        BalanceReference(
+            target=BalanceTarget(
+                source=SourceId("fixture"),
+                location_id=LocationId("taxable:spot"),
+                instrument_id=InstrumentId("symbol:BTC"),
+                balance_kind="available",
+                target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                target_precision=TemporalPrecision.TIMESTAMP,
+            ),
+            quantity=Decimal("1"),
+            reference_kind=BalanceReferenceKind.NETWORK_API,
+            observed_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            observed_precision=TemporalPrecision.TIMESTAMP,
+        )
+
+    reference = BalanceReference(
+        target=BalanceTarget(
             source=SourceId("fixture"),
             location_id=LocationId("taxable:spot"),
             instrument_id=InstrumentId("symbol:BTC"),
-            quantity=Decimal("1"),
-            as_of_at=datetime.fromisoformat("2025-01-01T00:00:00-06:00"),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
-            provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
-        )
-
-    evidence = BalanceEvidence(
-        source=SourceId("fixture"),
-        location_id=LocationId("taxable:spot"),
-        instrument_id=InstrumentId("symbol:BTC"),
+            balance_kind="available",
+            target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            target_precision=TemporalPrecision.TIMESTAMP,
+        ),
         quantity=Decimal("1"),
-        as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-        as_of_precision=TemporalPrecision.TIMESTAMP,
-        provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
-    )
-
-    assert evidence.as_of_at.tzinfo is UTC
-
-
-def test_balance_evidence_requires_non_blank_instrument_id() -> None:
-    with pytest.raises(
-        ValueError, match="balance evidence instrument_id must not be blank"
-    ):
-        BalanceEvidence(
-            source=SourceId("fixture"),
-            location_id=LocationId("taxable:spot"),
-            instrument_id=InstrumentId(""),
-            quantity=Decimal("1"),
-            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
-            provenance=ProvenanceLocator.from_reference_ref("statement.pdf#page=1"),
-        )
-
-
-def test_balance_confirmation_requires_temporal_values_and_support_rules() -> None:
-    with pytest.raises(
-        ValueError, match="balance confirmation as_of_at must be timezone-aware UTC"
-    ):
-        BalanceConfirmation(
-            source=SourceId("fixture"),
-            location_id=LocationId("taxable:spot"),
-            instrument_id=InstrumentId("symbol:BTC"),
-            quantity=Decimal("1"),
-            as_of_at=datetime.fromisoformat("2025-01-01T00:00:00-06:00"),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
-            confirmation_kind="external_support",
-            support_ref="statement.pdf#page=1",
-            asserted_meaning="Closing balance from the cited statement.",
-            reviewed_by="operator",
-            reviewed_at=datetime(2025, 1, 2, 0, 0, 0, tzinfo=UTC),
-            reason="Needed for runtime reconciliation.",
-        )
-
-    with pytest.raises(
-        ValueError, match="balance confirmation reviewed_at must be timezone-aware UTC"
-    ):
-        BalanceConfirmation(
-            source=SourceId("fixture"),
-            location_id=LocationId("taxable:spot"),
-            instrument_id=InstrumentId("symbol:BTC"),
-            quantity=Decimal("1"),
-            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
-            confirmation_kind="external_support",
-            support_ref="statement.pdf#page=1",
-            asserted_meaning="Closing balance from the cited statement.",
-            reviewed_by="operator",
-            reviewed_at=datetime.fromisoformat("2025-01-02T00:00:00-06:00"),
-            reason="Needed for runtime reconciliation.",
-        )
-
-    with pytest.raises(
-        ValueError,
-        match="balance confirmation support_ref must be blank for manual_assertion",
-    ):
-        BalanceConfirmation(
-            source=SourceId("fixture"),
-            location_id=LocationId("taxable:spot"),
-            instrument_id=InstrumentId("symbol:BTC"),
-            quantity=Decimal("1"),
-            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
-            confirmation_kind="manual_assertion",
-            support_ref="note.txt",
-            asserted_meaning="Operator asserts the runtime balance directly.",
-            reviewed_by="operator",
-            reviewed_at=datetime(2025, 1, 2, 0, 0, 0, tzinfo=UTC),
-            reason="Needed for runtime reconciliation.",
-        )
-
-    confirmation = BalanceConfirmation(
-        source=SourceId("fixture"),
-        location_id=LocationId("taxable:spot"),
-        instrument_id=InstrumentId("symbol:BTC"),
-        quantity=Decimal("1"),
-        as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-        as_of_precision=TemporalPrecision.TIMESTAMP,
-        confirmation_kind="external_support",
+        reference_kind=BalanceReferenceKind.OPERATOR_ASSERTION,
+        observed_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+        observed_precision=TemporalPrecision.TIMESTAMP,
         support_ref="statement.pdf#page=1",
-        asserted_meaning="Closing balance from the cited statement.",
         reviewed_by="operator",
         reviewed_at=datetime(2025, 1, 2, 0, 0, 0, tzinfo=UTC),
-        reason="Needed for runtime reconciliation.",
     )
 
-    assert confirmation.as_of_at.tzinfo is UTC
-    assert confirmation.reviewed_at is not None
-    assert confirmation.reviewed_at.tzinfo is UTC
+    assert reference.observed_at.tzinfo is UTC
+    assert reference.reviewed_at is not None
+    assert reference.reviewed_at.tzinfo is UTC
 
 
-def test_balance_confirmation_rejects_blank_required_fields() -> None:
-    with pytest.raises(
-        ValueError, match="balance confirmation instrument_id must not be blank"
-    ):
-        BalanceConfirmation(
-            source=SourceId("fixture"),
-            location_id=LocationId("taxable:spot"),
-            instrument_id=InstrumentId(""),
-            quantity=Decimal("1"),
-            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
-            confirmation_kind="manual_assertion",
-            asserted_meaning="Operator asserts the runtime balance directly.",
-            reviewed_by="operator",
-            reviewed_at=datetime(2025, 1, 2, 0, 0, 0, tzinfo=UTC),
-            reason="Needed for runtime reconciliation.",
-        )
-
-    with pytest.raises(
-        ValueError,
-        match="balance confirmation confirmation_kind must be one of:",
-    ):
-        BalanceConfirmation(
+def test_balance_reference_requires_midnight_for_date_precision() -> None:
+    reference = BalanceReference(
+        target=BalanceTarget(
             source=SourceId("fixture"),
             location_id=LocationId("taxable:spot"),
             instrument_id=InstrumentId("symbol:BTC"),
-            quantity=Decimal("1"),
-            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
-            confirmation_kind="unsupported_kind",
-            asserted_meaning="Operator asserts the runtime balance directly.",
-            reviewed_by="operator",
-            reviewed_at=datetime(2025, 1, 2, 0, 0, 0, tzinfo=UTC),
-            reason="Needed for runtime reconciliation.",
-        )
+            balance_kind="available",
+            target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            target_precision=TemporalPrecision.DATE,
+        ),
+        quantity=Decimal("1"),
+        reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+        observed_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+        observed_precision=TemporalPrecision.DATE,
+    )
+
+    assert reference.observed_at == datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC)
 
     with pytest.raises(
         ValueError,
-        match="balance confirmation asserted_meaning must not be blank",
+        match="balance reference observed_at with date precision must be midnight UTC",
     ):
-        BalanceConfirmation(
-            source=SourceId("fixture"),
-            location_id=LocationId("taxable:spot"),
-            instrument_id=InstrumentId("symbol:BTC"),
+        BalanceReference(
+            target=BalanceTarget(
+                source=SourceId("fixture"),
+                location_id=LocationId("taxable:spot"),
+                instrument_id=InstrumentId("symbol:BTC"),
+                balance_kind="available",
+                target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                target_precision=TemporalPrecision.DATE,
+            ),
             quantity=Decimal("1"),
-            as_of_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
-            as_of_precision=TemporalPrecision.TIMESTAMP,
-            confirmation_kind="manual_assertion",
-            asserted_meaning=" ",
-            reviewed_by="operator",
+            reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            observed_at=datetime(2025, 1, 1, 1, 0, 0, tzinfo=UTC),
+            observed_precision=TemporalPrecision.DATE,
+        )
+
+
+def test_balance_reference_rejects_invalid_reviewed_fields() -> None:
+    with pytest.raises(
+        ValueError, match="balance reference reviewed_at requires reviewed_by"
+    ):
+        BalanceReference(
+            target=BalanceTarget(
+                source=SourceId("fixture"),
+                location_id=LocationId("taxable:spot"),
+                instrument_id=InstrumentId("symbol:BTC"),
+                balance_kind="available",
+                target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                target_precision=TemporalPrecision.TIMESTAMP,
+            ),
+            quantity=Decimal("1"),
+            reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            observed_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            observed_precision=TemporalPrecision.TIMESTAMP,
             reviewed_at=datetime(2025, 1, 2, 0, 0, 0, tzinfo=UTC),
-            reason="Needed for runtime reconciliation.",
+        )
+
+    with pytest.raises(
+        ValueError, match="only network api balance references may set provider fields"
+    ):
+        BalanceReference(
+            target=BalanceTarget(
+                source=SourceId("fixture"),
+                location_id=LocationId("taxable:spot"),
+                instrument_id=InstrumentId("symbol:BTC"),
+                balance_kind="available",
+                target_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+                target_precision=TemporalPrecision.TIMESTAMP,
+            ),
+            quantity=Decimal("1"),
+            reference_kind=BalanceReferenceKind.SOURCE_DOCUMENT,
+            observed_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
+            observed_precision=TemporalPrecision.TIMESTAMP,
+            provider_family="evm_json_rpc",
         )

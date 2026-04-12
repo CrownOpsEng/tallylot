@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from tallylot.domain.checkpoints import BalanceSnapshot
+from tallylot.domain.balances import BalanceReference, BalanceSnapshot
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
-from tallylot.domain.reconciliation import BalanceEvidence
 from tallylot.domain.transactions import TransactionFact
 from tallylot.ports.evidence import LocationInventoryRecord
 
@@ -18,8 +17,9 @@ class NormalizationOutputs:
     facts: tuple[TransactionFact, ...]
     fact_annotations: tuple[FactAnnotationRecord, ...]
     location_annotations: tuple[LocationAnnotationRecord, ...]
-    derived_balances: tuple[BalanceSnapshot, ...]
-    balance_evidence: tuple[BalanceEvidence, ...]
+    balance_snapshots: tuple[BalanceSnapshot, ...]
+    balance_references: tuple[BalanceReference, ...]
+    balance_reference_issues: tuple[IssueRecord, ...]
     issues: tuple[IssueRecord, ...]
     reviews: tuple[NormalizationReviewRecord, ...]
     location_inventory: tuple[LocationInventoryRecord, ...]

@@ -1,40 +1,40 @@
 from __future__ import annotations
 
 from tallylot.application.checkpoints.balance_submission import (
-    BALANCE_CONFIRMATIONS_HEADER,
-    BALANCES_HEADER,
+    BALANCE_REFERENCES_HEADER,
+    BALANCE_SNAPSHOTS_HEADER,
     ISSUE_HEADER,
     LOCATION_INVENTORY_HEADER,
 )
 
 
 def test_manual_balance_submission_headers_match_contract() -> None:
-    assert BALANCES_HEADER == (
+    assert BALANCE_SNAPSHOTS_HEADER == (
         "source",
         "account",
         "wallet",
         "instrument_id",
         "quantity",
-        "as_of_at",
-        "as_of_precision",
+        "target_at",
+        "target_precision",
         "balance_kind",
         "notes",
     )
-    assert BALANCE_CONFIRMATIONS_HEADER == (
+    assert BALANCE_REFERENCES_HEADER == (
         "source",
         "account",
         "wallet",
         "instrument_id",
         "quantity",
-        "as_of_at",
-        "as_of_precision",
+        "target_at",
+        "target_precision",
         "balance_kind",
-        "confirmation_kind",
+        "reference_kind",
+        "observed_at",
+        "observed_precision",
         "support_ref",
-        "asserted_meaning",
         "reviewed_by",
         "reviewed_at",
-        "reason",
         "notes",
     )
     assert LOCATION_INVENTORY_HEADER == (

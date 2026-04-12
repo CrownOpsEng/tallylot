@@ -7,8 +7,10 @@ from typing import Protocol, cast
 import pytest
 from typer.testing import CliRunner
 
+from tallylot.application.capture_paths import source_assembled_root
 from tallylot.domain.types import WorkspacePath
 from tallylot.interfaces.cli import app
+from tallylot.interfaces.cli import checkpoint as cli_checkpoint
 from tallylot.interfaces.cli import reconciliation as cli_reconciliation
 from tallylot.interfaces.cli import workspace as cli_workspace
 
@@ -19,21 +21,29 @@ class HasWorkspaceRoot(Protocol):
     workspace_root_ref: WorkspacePath
 
 
-class HasBalanceCoverageRefs(Protocol):
+class HasBalanceInspectRefs(Protocol):
     input_root_ref: str
-    coverage_output_ref: str
+    inspect_output_ref: str
 
 
 class HasBalanceCheckRefs(Protocol):
     input_root_ref: str
     output_root_ref: str
     sources: tuple[str, ...]
+    hydrate_missing_references: bool
+    reference_policy: str
 
 
 class HasBalanceSummaryRefs(Protocol):
-    coverage_input_ref: str
+    inspect_input_ref: str
     check_summary_input_ref: str
     summary_output_ref: str
+
+
+class HasSubmitBalancesRefs(Protocol):
+    source: str
+    submission_root_ref: str
+    output_root_ref: str
 
 
 def test_cli_registers_current_command_groups() -> None:
@@ -87,20 +97,81 @@ def test_workspace_init_uses_configured_root_when_option_is_omitted(
     assert seen["workspace_root"] == str(configured_root)
 
 
+def test_checkpoint_submit_balances_uses_source_assembled_root_when_output_omitted(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    configured_root = tmp_path / "configured-workspace"
+    submission_root = (
+        configured_root
+        / "working"
+        / "supporting_artifacts"
+        / "balance_submissions"
+        / "coinbase"
+    )
+    expected_output_root = source_assembled_root(configured_root, "coinbase")
+    seen: dict[str, object] = {}
+
+    class StubSubmitBalancesUseCase:
+        def execute(self, request: object) -> object:
+            seen["request"] = request
+            return SimpleNamespace(
+                submission_root_ref=cast(
+                    HasSubmitBalancesRefs, request
+                ).submission_root_ref,
+                output_root_ref=cast(HasSubmitBalancesRefs, request).output_root_ref,
+                balance_snapshot_row_count=1,
+                balance_reference_row_count=1,
+                location_inventory_row_count=0,
+                issue_count=0,
+                blocked=False,
+                wrote_balance_snapshots=True,
+                wrote_balance_references=True,
+                wrote_location_inventory=False,
+                ready_for_balance_check=True,
+            )
+
+    monkeypatch.setattr(
+        cli_checkpoint, "configured_workspace_root", lambda: configured_root
+    )
+    monkeypatch.setattr(
+        cli_checkpoint,
+        "submit_balances_use_case",
+        lambda: StubSubmitBalancesUseCase(),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "checkpoint",
+            "submit-balances",
+            "--source",
+            "coinbase",
+        ],
+    )
+
+    request = cast(HasSubmitBalancesRefs, seen["request"])
+
+    assert result.exit_code == 0
+    assert request.source == "coinbase"
+    assert request.submission_root_ref == str(submission_root)
+    assert request.output_root_ref == str(expected_output_root)
+
+
 def test_reconciliation_balance_inspect_cli(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     input_root = tmp_path / "normalized"
-    output_path = tmp_path / "balance_coverage.csv"
+    output_path = tmp_path / "balance_inspect.csv"
     seen: dict[str, object] = {}
 
-    class StubBalanceCoverageWorkflow:
+    class StubBalanceInspectWorkflow:
         def execute(self, request: object) -> object:
             seen["request"] = request
             return SimpleNamespace(
-                coverage_output_ref=str(output_path),
-                coverage_summary_output_ref=str(
-                    tmp_path / "balance_coverage_summary.json"
+                inspect_output_ref=str(output_path),
+                inspect_summary_output_ref=str(
+                    tmp_path / "balance_inspect_summary.json"
                 ),
                 source_count=1,
                 comparable_source_count=1,
@@ -108,8 +179,8 @@ def test_reconciliation_balance_inspect_cli(
 
     monkeypatch.setattr(
         cli_reconciliation,
-        "balance_coverage_workflow",
-        lambda: StubBalanceCoverageWorkflow(),
+        "balance_inspect_workflow",
+        lambda: StubBalanceInspectWorkflow(),
     )
 
     result = runner.invoke(
@@ -125,11 +196,11 @@ def test_reconciliation_balance_inspect_cli(
         ],
     )
 
-    request = cast(HasBalanceCoverageRefs, seen["request"])
+    request = cast(HasBalanceInspectRefs, seen["request"])
 
     assert result.exit_code == 0
     assert request.input_root_ref == str(input_root)
-    assert request.coverage_output_ref == str(output_path)
+    assert request.inspect_output_ref == str(output_path)
 
 
 def test_reconciliation_balance_check_cli(
@@ -149,7 +220,9 @@ def test_reconciliation_balance_check_cli(
                 clean_source_count=1,
                 issue_source_count=0,
                 failed_source_count=0,
-                no_assertion_source_count=0,
+                no_balance_target_source_count=0,
+                not_runnable_source_count=0,
+                resolution_mode="offline",
             )
 
     monkeypatch.setattr(
@@ -181,12 +254,14 @@ def test_reconciliation_balance_check_cli(
     assert request.input_root_ref == str(input_root)
     assert request.output_root_ref == str(output_root)
     assert request.sources == ("coinbase", "shakepay")
+    assert request.hydrate_missing_references is False
+    assert request.reference_policy == "default"
 
 
 def test_reconciliation_balance_summarize_cli(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    coverage_path = tmp_path / "balance_coverage.csv"
+    inspect_path = tmp_path / "balance_inspect.csv"
     check_summary_path = tmp_path / "balance_check_summary.csv"
     output_path = tmp_path / "balance_reconciliation_summary.json"
     seen: dict[str, object] = {}
@@ -217,8 +292,8 @@ def test_reconciliation_balance_summarize_cli(
             "reconciliation",
             "balances",
             "summarize",
-            "--coverage",
-            str(coverage_path),
+            "--inspect",
+            str(inspect_path),
             "--check-summary",
             str(check_summary_path),
             "--output",
@@ -229,6 +304,6 @@ def test_reconciliation_balance_summarize_cli(
     request = cast(HasBalanceSummaryRefs, seen["request"])
 
     assert result.exit_code == 0
-    assert request.coverage_input_ref == str(coverage_path)
+    assert request.inspect_input_ref == str(inspect_path)
     assert request.check_summary_input_ref == str(check_summary_path)
     assert request.summary_output_ref == str(output_path)

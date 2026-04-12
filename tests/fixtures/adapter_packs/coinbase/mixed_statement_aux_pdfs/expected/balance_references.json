@@ -1,0 +1,40 @@
+[
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:ETH@coinbase",
+    "location_id": "coinbase",
+    "notes": "Portfolio summary asset balance from Coinbase statement PDF",
+    "observed_at": "2026-03-22 23:59:59",
+    "observed_precision": "timestamp",
+    "provider_block_ref": "",
+    "provider_family": "",
+    "provider_locator": "",
+    "quantity": "0.001181807820874",
+    "reference_kind": "source_document",
+    "reviewed_at": "",
+    "reviewed_by": "",
+    "source": "coinbase",
+    "support_ref": "2026-03-23 - fixture.pdf",
+    "target_at": "2026-03-22 23:59:59",
+    "target_precision": "timestamp"
+  },
+  {
+    "balance_kind": "available",
+    "instrument_id": "symbol:CAD@coinbase",
+    "location_id": "coinbase:coinbase_cash",
+    "notes": "Closing fiat balance from Coinbase statement PDF",
+    "observed_at": "2026-03-22 23:59:59",
+    "observed_precision": "timestamp",
+    "provider_block_ref": "",
+    "provider_family": "",
+    "provider_locator": "",
+    "quantity": "0",
+    "reference_kind": "source_document",
+    "reviewed_at": "",
+    "reviewed_by": "",
+    "source": "coinbase",
+    "support_ref": "2026-03-23 - fixture.pdf",
+    "target_at": "2026-03-22 23:59:59",
+    "target_precision": "timestamp"
+  }
+]

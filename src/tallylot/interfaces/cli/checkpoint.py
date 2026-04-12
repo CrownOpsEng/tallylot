@@ -14,6 +14,7 @@ from tallylot.application.checkpoints.contracts import (
     SubmitBalancesRequest,
 )
 from tallylot.application.resource_refs import to_resource_ref
+from tallylot.application.capture_paths import source_assembled_root
 from tallylot.infrastructure.composition.runtime import (
     configured_workspace_root,
     extract_pdf_balances_use_case,
@@ -37,7 +38,7 @@ def _default_balance_submission_root(source: str) -> Path:
 
 
 def _default_balance_output_root(source: str) -> Path:
-    return configured_workspace_root() / "working" / "normalized" / source
+    return source_assembled_root(configured_workspace_root(), source)
 
 
 @checkpoint_app.command("rebuild-location-inventory")

@@ -57,10 +57,8 @@ if str(SRC_ROOT) not in sys.path:
 _balance_submission_schema = import_module(
     "tallylot.application.checkpoints.balance_submission.schema"
 )
-BALANCE_CONFIRMATIONS_FILENAME = (
-    _balance_submission_schema.BALANCE_CONFIRMATIONS_FILENAME
-)
-BALANCES_FILENAME = _balance_submission_schema.BALANCES_FILENAME
+BALANCE_REFERENCES_FILENAME = _balance_submission_schema.BALANCE_REFERENCES_FILENAME
+BALANCE_SNAPSHOTS_FILENAME = _balance_submission_schema.BALANCE_SNAPSHOTS_FILENAME
 ISSUES_FILENAME = _balance_submission_schema.ISSUES_FILENAME
 LOCATION_INVENTORY_FILENAME = _balance_submission_schema.LOCATION_INVENTORY_FILENAME
 SUMMARY_FILENAME = _balance_submission_schema.SUMMARY_FILENAME
@@ -138,8 +136,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 expected_source=args.source,
             ),
             submission_root=submission_root,
-            balances_path=submission_root / BALANCES_FILENAME,
-            balance_confirmations_path=submission_root / BALANCE_CONFIRMATIONS_FILENAME,
+            balance_snapshots_path=submission_root / BALANCE_SNAPSHOTS_FILENAME,
+            balance_references_path=submission_root / BALANCE_REFERENCES_FILENAME,
             location_inventory_path=submission_root / LOCATION_INVENTORY_FILENAME,
         )
         print(json.dumps(inspection_payload, default=str))
@@ -178,8 +176,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             expected_source=args.source,
         ),
         submission_root=submission_root,
-        balances_path=submission_root / BALANCES_FILENAME,
-        balance_confirmations_path=submission_root / BALANCE_CONFIRMATIONS_FILENAME,
+        balance_snapshots_path=submission_root / BALANCE_SNAPSHOTS_FILENAME,
+        balance_references_path=submission_root / BALANCE_REFERENCES_FILENAME,
         location_inventory_path=submission_root / LOCATION_INVENTORY_FILENAME,
     )
     if inspection_payload["ready_for_submit"] is False:
@@ -218,22 +216,22 @@ def _inspection_payload(
     validation: "BalanceSubmissionValidationResult",
     *,
     submission_root: Path,
-    balances_path: Path,
-    balance_confirmations_path: Path,
+    balance_snapshots_path: Path,
+    balance_references_path: Path,
     location_inventory_path: Path,
 ) -> dict[str, object]:
     issues = [issue.to_row() for issue in validation.issues]
     return {
         "submission_root": str(submission_root),
         "required_files_present": {
-            BALANCES_FILENAME: balances_path.is_file(),
-            BALANCE_CONFIRMATIONS_FILENAME: balance_confirmations_path.is_file(),
+            BALANCE_SNAPSHOTS_FILENAME: balance_snapshots_path.is_file(),
+            BALANCE_REFERENCES_FILENAME: balance_references_path.is_file(),
         },
         "optional_files_present": {
             LOCATION_INVENTORY_FILENAME: location_inventory_path.is_file(),
         },
-        "balance_row_count": len(validation.balance_rows),
-        "balance_confirmation_row_count": len(validation.balance_confirmation_rows),
+        "balance_snapshot_row_count": len(validation.balance_snapshot_rows),
+        "balance_reference_row_count": len(validation.balance_reference_rows),
         "location_inventory_row_count": len(validation.location_inventory_rows),
         "issue_count": len(validation.issues),
         "ready_for_submit": len(validation.issues) == 0,

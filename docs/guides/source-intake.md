@@ -29,6 +29,11 @@ Before running intake for a known legacy or manually named source, update
 `analysis/issues/source_label_map.csv` when the automatic content-based route
 should yield to a stable operator-managed source label. The map applies to
 source-scoped destinations under both `evidence/raw/source/` and `working/`.
+Make sure the target source already exists in
+`analysis/issues/source_inventory.csv`; the planner treats the incoming
+directory name as the capture scope, so a scoped `source_label_map.csv` row
+can match the exact staging directory when you need to override the
+content-based route.
 
 Use `incoming_capture_scope` when one workspace is staging more than one
 incoming source tree at the same time. Set that scope to the operator-managed
@@ -153,6 +158,20 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source asse
 `working/normalized/sources/<source>/` and is safe to rerun. It rewrites its
 known generated files without deleting unrelated operator-owned files beside
 them.
+
+## Validate A Rebuilt Workspace
+
+When you need to confirm that a rebuilt workspace reproduces a reference
+workspace cleanly, run the replay validator:
+
+```bash
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_workspace_replay \
+  --reference-workspace <reference-workspace> \
+  --report-dir <workspace>/working/supporting_artifacts/workspace_replay/<run_label>
+```
+
+Add `--candidate-workspace` and `--source` when you need to constrain the
+comparison. Review the parity report before treating the rebuild as clean.
 
 Use [Normalize, Screen, And Stage](normalize-screen-stage.md) for the next
 step after the settled capture has been profiled and normalized.

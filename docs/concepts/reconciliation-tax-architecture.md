@@ -50,7 +50,7 @@ Normal runtime operation must stay platform-agnostic:
 
 The first major milestone after fact-path alignment is deterministic
 reconciliation, not ACB math. Minimal accounting projection should advance in
-parallel on the same canonical facts.
+parallel on the same shared facts.
 
 Reason:
 
@@ -133,6 +133,7 @@ Use `pydantic` for:
 
 - config
 - external artifact parsing
+- manual balance submission row models
 - CoinTracking report row models
 - CLI or API request validation
 - adapter manifest validation
@@ -140,7 +141,7 @@ Use `pydantic` for:
 Keep domain models as frozen dataclasses, enums, and value objects so business
 rules remain explicit and tool-friendly.
 
-### 9. Keep On-Chain Identity Canonical And Output Labels Separate
+### 9. Keep On-Chain Identity Identifier-Rooted And Output Labels Separate
 
 On-chain runtime location identity must be identifier-rooted and chain- or
 network-scoped rather than source-label-derived.
@@ -148,6 +149,11 @@ network-scoped rather than source-label-derived.
 Rules:
 
 - EVM-family owned locations use `evm:<network>:<address>`.
+- Native EVM-family assets use `asset:evm:<network>:native`.
+- Native NEAR assets use `asset:near:native`.
+- In-scope public-ledger adapters must emit native asset ids with immutable
+  chain identity directly; symbol-only public-ledger asset ids remain
+  unsupported for provider hydration until immutable asset identity is proven.
 - Non-EVM on-chain locations use their chain namespace such as
   `near:<account>`, `bitcoin:<address>`, `tron:<address>`, or
   `solana:<address>`.
@@ -156,7 +162,7 @@ Rules:
 - Friendly source labels, wallet names, and renderer-facing labels stay in
   `source`, `location_label`, annotations, and output-adapter display logic.
 - Output adapters such as CoinTracking may render the source label for
-  on-chain facts, but they must not rewrite or own the canonical `location_id`.
+  on-chain facts, but they must not rewrite or own the runtime `location_id`.
 
 ### 10. Route Source Families By Content And Block Mixed Captures
 
@@ -182,7 +188,7 @@ export periods it contains.
 
 Rules:
 
-- use an immutable `capture_uid` as the canonical capture identity
+- use a stable `capture_uid` as the capture identity
 - use a human-readable `capture_label` only for the raw folder name
 - treat inferred periods and any inferred `capture_id` heuristics as metadata,
   not as the routing key, grouping identity, or capture ownership model
@@ -274,32 +280,40 @@ Rules:
 - do not add one-off migration utilities or compatibility wrappers just to
   preserve a superseded capture layout
 
-### 17. Keep Manual Balance Submission Checkpoint-Owned And Pre-Canonical
+### 17. Keep Manual Balance Submission Checkpoint-Owned And Boundary-Validated
 
 Manual balance submission is a supported operational path for producing
-canonical `balances.csv` and `balance_confirmations.csv`, but it is not an
+`balance_snapshots.csv` and `balance_references.csv`, but it is not an
 adapter-owned schema.
 
 Rules:
 
 - the user-facing package under
   `working/supporting_artifacts/balance_submissions/<source>/` is a
-  pre-canonical checkpoint input surface
+  checkpoint-owned pre-reconciliation input surface
 - `checkpoint scaffold-balance-submission` and `checkpoint submit-balances`
   own that validation and materialization path inside
   `application/checkpoints/`
-- the canonical reconciliation schema still lives under the chosen output
-  root, normally `working/normalized/sources/<source>/`
-- manual submission records operator-confirmed runtime references and must not
-  fabricate or widen source-backed `balance_evidence.csv`
-- runtime reconciliation may use source-backed evidence first and operator
-  confirmations second for uncovered balance keys
-- filing-ready checkpoint status still requires source-backed evidence
+- the shared reconciliation schema still lives under the chosen output root,
+  normally `working/normalized/sources/<source>/`
+- `balance_snapshots.csv` and `balance_references.csv` are the only runtime
+  balance inputs; `balances.csv` and `balance_evidence.csv` are superseded
+  generated outputs and are not read at runtime, and no compatibility wrappers
+  or dual-read logic should keep them alive
+- manual submission records `operator_assertion` runtime references and must
+  not fabricate or widen source-backed `source_document` references
+- runtime reconciliation resolves references through one unified
+  `balance_references.csv` artifact with precedence
+  `source_document`, `network_api`, then `operator_assertion`
+- filing-ready checkpoint status still requires source-backed or otherwise
+  acceptable first-party references under the shared model
 - optional submitted `location_inventory.csv` improves cross-source
   corroboration, but omitting it does not block source-local balance checks
 - manual submission must preserve explicit user-provided `instrument_id`
-  values and derive canonical `location_id` values through shared runtime
-  helpers rather than hand-authored location identifiers
+  values and derive `location_id` values through shared runtime helpers rather
+  than hand-authored location identifiers
+- checkpoint submission row models stay validated at the boundary with
+  `pydantic` so malformed or unsupported rows fail with explicit issues
 
 ## Target Architecture
 
@@ -312,8 +326,8 @@ is inherently specific.
 
 - `domain/transactions/`
   - transaction facts, legs, valuations, ids, corrections, projection enums
-- `domain/reconciliation/`
-  - balance assertions, transfer links, checkpoint continuity, materiality rules
+- `domain/balances/`
+  - balance targets, snapshots, references, assertions, and selection rules
 - `domain/accounting/`
   - journal entries, postings, balance checks, journal intents
 - `domain/tax/`
@@ -330,17 +344,22 @@ is inherently specific.
 - `application/profiling/`
   - capture profile construction, inventory inspection, and timezone review
 - `application/normalization/`
-  - orchestrate one capture's translation into fact artifacts and source-backed
-    evidence
+  - orchestrate one capture's translation into fact artifacts, source-backed
+    evidence, and fact-backed balance packages through `application/balances`
+- `application/balances/`
+  - target planning, snapshot derivation, reference resolution, exact-balance
+    inspection and check workflows, cross-source corroboration, summary and
+    blocker assembly, and deterministic merge policy
 - `application/normalization/assembly/`
   - deterministic merge of accepted capture outputs into assembled
     source-scoped normalization datasets
 - `application/reconciliation/`
-  - reserve for transfer linking, checkpoint continuity, and fact-level drift
-    detection over assembled source datasets
+  - reserve for transfer linking, checkpoint continuity, correction and
+    supersession chains, and higher-order reconciliation beyond exact balance
+    assertions over assembled source datasets
 - `application/checkpoints/`
   - build source-backed checkpoint evidence, validate manual balance
-    confirmations, and assemble checkpoint-supporting wallet aggregates
+    submission packages, and assemble checkpoint-supporting wallet aggregates
 - `application/accounting/`
   - journal assembly, ledger validation, and accounting summaries
 - `application/tax/`
@@ -394,12 +413,12 @@ Rules:
   manipulation, verification, and workflow policy belong in application and
   domain code.
 - application services own derived-balance assembly. Adapters return balance
-  evidence only when the source actually provides it.
-- normalization owns production statement-backed balance evidence for supported
-  providers through the shared statement extraction seam. Adapters may publish
-  canonical quantity evidence through `SourceTranslationBatch.balance_evidence`,
-  but market-value totals and other valuation-only rows are not canonical
-  balance assertions.
+  references only when the source actually provides them.
+- normalization owns production statement-backed `source_document` references
+  for supported providers through the shared statement extraction seam.
+  Adapters may publish quantity evidence through
+  `SourceTranslationBatch.balance_references`, but market-value totals and
+  other valuation-only rows are not balance assertions.
 - adapters may declare numeric precision expectations for source fields when
   decimal scale is part of the source contract. Shared adapter support should
   validate displayed raw-text fractional digits and support exact or minimum
@@ -480,7 +499,7 @@ The only lost capability should be comparison against the external oracle.
 
 ### Current Fact-Shape Contract
 
-- `TransactionFact` and `EconomicActivityDraft` use one canonical `legs` tuple.
+- `TransactionFact` and `EconomicActivityDraft` use one shared `legs` tuple.
 - Fact construction requires successful identifier resolution to exactly one
   `InstrumentId`. Unresolved or ambiguous identity must emit review output and a
   blocking issue rather than guessing.
@@ -517,8 +536,8 @@ The only lost capability should be comparison against the external oracle.
 
 ### Current Normalization Window Contract
 
-- Runtime timestamps are timezone-aware UTC in drafts, facts, balances, and
-  balance evidence. Persisted artifact timestamp text remains
+- Runtime timestamps are timezone-aware UTC in drafts, facts, balance
+  snapshots, and balance references. Persisted artifact timestamp text remains
   `YYYY-MM-DD HH:MM:SS` and is interpreted as UTC on read.
 - Fields that may be date-only or exact-time persist both `*_at` and
   `*_precision` so exact midnight timestamps remain distinguishable from
@@ -526,22 +545,21 @@ The only lost capability should be comparison against the external oracle.
 - `facts.csv` is schema-versioned and readers fail fast on unexpected
   `schema_version` values; re-deriving artifacts from raw evidence is the
   supported recovery path after fact-shape breaks.
-- `balances.csv`, `balance_evidence.csv`, and `balance_confirmations.csv`
-  persist canonical `instrument_id` values and use `as_of_at` plus
-  `as_of_precision` rather than bare symbol or timestamp columns.
+- `balance_snapshots.csv` and `balance_references.csv` persist `instrument_id`
+  values and use `target_at` plus `target_precision`; balance references also
+  persist `observed_at` plus `observed_precision`.
 - cross-source balance corroboration is additive in the first release. It
-  consumes normalized `balances.csv` plus `location_inventory.csv`, writes
+  consumes normalized balance snapshots plus `location_inventory.csv`, writes
   sidecar corroboration artifacts, and does not redefine the primary
   source-local clean-date gate yet.
 - Windowed normalization applies to:
   - `facts.csv`
   - `fact_annotations.json`
-  - `balances.csv`
+  - `balance_snapshots.csv`
   - `exceptions.csv`
   - `normalization_reviews.csv`
 - Windowed normalization does not apply to:
-  - `balance_evidence.csv`
-  - `balance_confirmations.csv`
+  - `balance_references.csv`
   - `location_inventory.csv`
 - source-scope portfolio evidence that does not itself prove wallet ownership,
   such as MetaMask portfolio CSV rows, may contribute balance evidence only for
@@ -554,7 +572,7 @@ The only lost capability should be comparison against the external oracle.
 ### Capture And Assembly Contract
 
 - raw capture roots use `evidence/raw/source/<source>/<capture_label>/`
-- capture metadata stores the canonical `capture_uid`, intake timestamps,
+- capture metadata stores the stable `capture_uid`, intake timestamps,
   manifest fingerprint, and workspace-relative refs
 - untouched upstream originals stay under the raw capture root even when they
   are statements, HTML exports, ZIP archives, or required sidecars
@@ -582,7 +600,7 @@ Required draft responsibilities:
 - optional `effective_at`
 - optional `effective_precision`
 - account and wallet scope
-- one canonical `legs` tuple only; no separate fee lane
+- one shared `legs` tuple only; no separate fee lane
 - explicit leg semantics per leg:
   - stable `leg_id`
   - `LegKind`
@@ -644,7 +662,7 @@ Required fields:
   - ownership scope
 - economics
   - `tuple[EconomicLeg, ...]`
-  - legs use canonical `InstrumentId`
+  - legs use `InstrumentId`
   - legs carry stable `leg_id`
   - legs use signed `quantity: Decimal`
   - explicit per-kind leg-shape policy
@@ -937,9 +955,9 @@ Do not:
 ### Reconciliation
 
 - transfer pairing across owned wallets and exchanges
-- exact balance assertion workflow over `balances.csv` with
-  source-backed `balance_evidence.csv` precedence and
-  `balance_confirmations.csv` fallback
+- exact balance assertion workflow over unified balance targets with
+  `source_document` precedence, optional `network_api` hydration, and
+  `operator_assertion` fallback
 - redistribution corrections
 - checkpoint balance assertions
 - forward continuity from oracle boundary to checkpoint

@@ -11,13 +11,16 @@ from tallylot.adapters.sources.explorers.near.families import (
 )
 from tallylot.adapters.sources.explorers.near.translation import translate_transactions
 from tallylot.adapters.support import (
-    canonical_location_id_from_identifier,
     location_record,
     match_intake_by_path_or_header,
     no_intake_route,
     passed_timezone_summary,
+    location_id_from_identifier,
 )
-from tallylot.adapters.support.drafts import translation_batch_from_drafts
+from tallylot.adapters.support.drafts import (
+    TranslationBatchDrafts,
+    translation_batch_from_drafts,
+)
 from tallylot.adapters.support.locations import LocationRecordSpec
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.issues import IssueRecord
@@ -109,7 +112,7 @@ class _NearAdapter:
                 location_record(
                     LocationRecordSpec(
                         source=source,
-                        location_id=canonical_location_id_from_identifier(
+                        location_id=location_id_from_identifier(
                             "near_account", identifier
                         ),
                         location_kind=LocationKind.ACCOUNT,
@@ -147,9 +150,11 @@ class _NearAdapter:
             str(profile.source), raw_dir, profile
         )
         return translation_batch_from_drafts(
-            drafts,
-            issues=issues,
-            location_inventory=location_inventory,
+            TranslationBatchDrafts(
+                drafts=drafts,
+                issues=issues,
+                location_inventory=location_inventory,
+            )
         )
 
 

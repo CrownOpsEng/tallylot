@@ -118,7 +118,7 @@ TARGETED_CHECKS_BY_NAME = {
             "pytest",
             "--no-cov",
             "-q",
-            "tests/unit/test_docs_runtime_parity.py",
+            "tests/unit/docs_runtime_parity",
         ),
     ),
     "delivery-guardrails-audit": TargetedCheck(

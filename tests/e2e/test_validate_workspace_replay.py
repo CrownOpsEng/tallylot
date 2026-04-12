@@ -192,17 +192,17 @@ def test_validate_workspace_replay_matches_expected_source_metrics(
     assert source_metrics["candidate_fact_count"] == str(
         _expected_row_count(pack.expected_dir / "facts.json")
     )
-    assert source_metrics["reference_balance_count"] == str(
-        _expected_row_count(pack.expected_dir / "balances.json")
+    assert source_metrics["reference_snapshot_count"] == str(
+        _expected_row_count(pack.expected_dir / "balance_snapshots.json")
     )
-    assert source_metrics["candidate_balance_count"] == str(
-        _expected_row_count(pack.expected_dir / "balances.json")
+    assert source_metrics["candidate_snapshot_count"] == str(
+        _expected_row_count(pack.expected_dir / "balance_snapshots.json")
     )
-    assert source_metrics["reference_balance_evidence_count"] == str(
-        _expected_row_count(pack.expected_dir / "balance_evidence.json")
+    assert source_metrics["reference_reference_count"] == str(
+        _expected_row_count(pack.expected_dir / "balance_references.json")
     )
-    assert source_metrics["candidate_balance_evidence_count"] == str(
-        _expected_row_count(pack.expected_dir / "balance_evidence.json")
+    assert source_metrics["candidate_reference_count"] == str(
+        _expected_row_count(pack.expected_dir / "balance_references.json")
     )
     assert (report_dir / "raw_capture_parity.csv").exists()
     assert (report_dir / "capture_registry_parity.csv").exists()

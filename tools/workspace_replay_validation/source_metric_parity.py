@@ -7,8 +7,8 @@ from .models import ExpectedMetricDifference, SourceMetrics
 
 SourceMetricField = Literal[
     "fact_count",
-    "balance_count",
-    "balance_evidence_count",
+    "snapshot_count",
+    "reference_count",
     "issue_count",
     "review_count",
 ]
@@ -67,17 +67,17 @@ def build_source_metric_row(
             "candidate_fact_count": _source_metric_value(
                 candidate_metric, "fact_count"
             ),
-            "reference_balance_count": _source_metric_value(
-                reference_metric, "balance_count"
+            "reference_snapshot_count": _source_metric_value(
+                reference_metric, "snapshot_count"
             ),
-            "candidate_balance_count": _source_metric_value(
-                candidate_metric, "balance_count"
+            "candidate_snapshot_count": _source_metric_value(
+                candidate_metric, "snapshot_count"
             ),
-            "reference_balance_evidence_count": _source_metric_value(
-                reference_metric, "balance_evidence_count"
+            "reference_reference_count": _source_metric_value(
+                reference_metric, "reference_count"
             ),
-            "candidate_balance_evidence_count": _source_metric_value(
-                candidate_metric, "balance_evidence_count"
+            "candidate_reference_count": _source_metric_value(
+                candidate_metric, "reference_count"
             ),
             "reference_issue_count": _source_metric_value(
                 reference_metric, "issue_count"
@@ -113,10 +113,10 @@ def _source_metric_value(
         return ""
     if field_name == "fact_count":
         return str(metric.fact_count)
-    if field_name == "balance_count":
-        return str(metric.balance_count)
-    if field_name == "balance_evidence_count":
-        return str(metric.balance_evidence_count)
+    if field_name == "snapshot_count":
+        return str(metric.snapshot_count)
+    if field_name == "reference_count":
+        return str(metric.reference_count)
     if field_name == "issue_count":
         return str(metric.issue_count)
     return str(metric.review_count)
@@ -130,9 +130,8 @@ def _hard_source_metrics_match(
         reference_metric is not None
         and candidate_metric is not None
         and reference_metric.fact_count == candidate_metric.fact_count
-        and reference_metric.balance_count == candidate_metric.balance_count
-        and reference_metric.balance_evidence_count
-        == candidate_metric.balance_evidence_count
+        and reference_metric.snapshot_count == candidate_metric.snapshot_count
+        and reference_metric.reference_count == candidate_metric.reference_count
     )
 
 

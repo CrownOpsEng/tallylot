@@ -1,48 +1,53 @@
-"""Canonical materialization for validated manual balance submissions."""
+"""Materialization for validated manual balance submissions."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from tallylot.adapters.support import (
-    LocationRecordSpec,
-    location_id_from_parts,
-    location_record,
+from tallylot.application.evidence.location_inventory import (
+    LocationInventoryBuildSpec,
+    build_location_inventory_record,
 )
 from tallylot.domain.captures import ProvenanceLocator
-from tallylot.domain.checkpoints import BalanceSnapshot
+from tallylot.domain.balances import (
+    BalanceReference,
+    BalanceSnapshot,
+    BalanceTarget,
+)
 from tallylot.domain.instruments import InstrumentId
 from tallylot.domain.locations import LocationKind
-from tallylot.domain.reconciliation import BalanceConfirmation
-from tallylot.domain.types import SourceId
+from tallylot.domain.location_identifiers import location_id_from_parts
+from tallylot.domain.types import LocationId, SourceId
 from tallylot.ports.evidence import LocationInventoryRecord
 
 from .contracts import (
-    BalanceSubmissionRow,
+    BalanceReferenceSubmissionRow,
+    BalanceSnapshotSubmissionRow,
     LocationInventorySubmissionRow,
-    SubmittedBalanceConfirmationRow,
 )
 from .schema import LOCATION_INVENTORY_FILENAME, MANUAL_SUBMISSION_EVIDENCE_KIND
 
 
 @dataclass(frozen=True)
 class MaterializedBalanceSubmission:
-    balances: tuple[BalanceSnapshot, ...]
-    balance_confirmations: tuple[BalanceConfirmation, ...]
+    balance_snapshots: tuple[BalanceSnapshot, ...]
+    balance_references: tuple[BalanceReference, ...]
     location_inventory: tuple[LocationInventoryRecord, ...]
 
 
 def materialize_balance_submission(
     *,
     submission_root: str,
-    balance_rows: tuple[BalanceSubmissionRow, ...],
-    balance_confirmation_rows: tuple[SubmittedBalanceConfirmationRow, ...],
+    balance_snapshot_rows: tuple[BalanceSnapshotSubmissionRow, ...],
+    balance_reference_rows: tuple[BalanceReferenceSubmissionRow, ...],
     location_inventory_rows: tuple[LocationInventorySubmissionRow, ...],
 ) -> MaterializedBalanceSubmission:
     return MaterializedBalanceSubmission(
-        balances=tuple(_balance_snapshot_from_row(row) for row in balance_rows),
-        balance_confirmations=tuple(
-            _balance_confirmation_from_row(row) for row in balance_confirmation_rows
+        balance_snapshots=tuple(
+            _balance_snapshot_from_row(row) for row in balance_snapshot_rows
+        ),
+        balance_references=tuple(
+            _balance_reference_from_row(row) for row in balance_reference_rows
         ),
         location_inventory=tuple(
             _location_inventory_record_from_row(row, submission_root=submission_root)
@@ -51,36 +56,49 @@ def materialize_balance_submission(
     )
 
 
-def _balance_snapshot_from_row(row: BalanceSubmissionRow) -> BalanceSnapshot:
+def _balance_snapshot_from_row(row: BalanceSnapshotSubmissionRow) -> BalanceSnapshot:
     return BalanceSnapshot(
-        source=SourceId(row.source),
-        location_id=location_id_from_parts(row.source, row.account, row.wallet),
-        instrument_id=InstrumentId(row.instrument_id),
+        target=BalanceTarget(
+            source=SourceId(row.source),
+            location_id=_location_id_for_submission_row(
+                row.source,
+                row.account,
+                row.wallet,
+            ),
+            instrument_id=InstrumentId(row.instrument_id),
+            balance_kind=row.balance_kind,
+            target_at=row.target_at,
+            target_precision=row.target_precision,
+        ),
         quantity=row.quantity,
-        as_of_at=row.as_of_at,
-        as_of_precision=row.as_of_precision,
-        balance_kind=row.balance_kind,
+        snapshot_basis=MANUAL_SUBMISSION_EVIDENCE_KIND,
         notes=row.notes,
     )
 
 
-def _balance_confirmation_from_row(
-    row: SubmittedBalanceConfirmationRow,
-) -> BalanceConfirmation:
-    return BalanceConfirmation(
-        source=SourceId(row.source),
-        location_id=location_id_from_parts(row.source, row.account, row.wallet),
-        instrument_id=InstrumentId(row.instrument_id),
+def _balance_reference_from_row(
+    row: BalanceReferenceSubmissionRow,
+) -> BalanceReference:
+    return BalanceReference(
+        target=BalanceTarget(
+            source=SourceId(row.source),
+            location_id=_location_id_for_submission_row(
+                row.source,
+                row.account,
+                row.wallet,
+            ),
+            instrument_id=InstrumentId(row.instrument_id),
+            balance_kind=row.balance_kind,
+            target_at=row.target_at,
+            target_precision=row.target_precision,
+        ),
         quantity=row.quantity,
-        as_of_at=row.as_of_at,
-        as_of_precision=row.as_of_precision,
-        balance_kind=row.balance_kind,
-        confirmation_kind=row.confirmation_kind,
+        reference_kind=row.reference_kind,
+        observed_at=row.observed_at,
+        observed_precision=row.observed_precision,
         support_ref=row.support_ref,
-        asserted_meaning=row.asserted_meaning,
         reviewed_by=row.reviewed_by,
         reviewed_at=row.reviewed_at,
-        reason=row.reason,
         notes=row.notes,
     )
 
@@ -90,13 +108,17 @@ def _location_inventory_record_from_row(
     *,
     submission_root: str,
 ) -> LocationInventoryRecord:
-    location_id = location_id_from_parts(row.source, row.account, row.wallet)
+    location_id = _location_id_for_submission_row(
+        row.source,
+        row.account,
+        row.wallet,
+    )
     account_level = row.account == row.wallet
     parent_location_id = (
         None if account_level else location_id_from_parts(row.source, row.account)
     )
-    return location_record(
-        LocationRecordSpec(
+    return build_location_inventory_record(
+        LocationInventoryBuildSpec(
             source=row.source,
             location_id=location_id,
             location_kind=(
@@ -116,8 +138,18 @@ def _location_inventory_record_from_row(
                 LOCATION_INVENTORY_FILENAME
             ),
             confidence=row.confidence,
-            note=row.notes,
+            notes=row.notes,
             capture_root_ref=str(submission_root),
             parent_location_label="" if account_level else row.account,
         )
     )
+
+
+def _location_id_for_submission_row(
+    source: str,
+    account: str,
+    wallet: str,
+) -> LocationId:
+    if account == wallet:
+        return location_id_from_parts(source, account)
+    return location_id_from_parts(source, account, wallet)

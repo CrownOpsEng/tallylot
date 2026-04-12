@@ -1,7 +1,7 @@
 interface:
   display_name: "Reconciliation Balances"
-  short_description: "Run balance coverage, checks, and summaries."
-  default_prompt: "Use $reconciliation-balance-operations to inspect balance coverage, run checks, and summarize reconciliation dates."
+  short_description: "Run balance inspection, checks, and summaries."
+  default_prompt: "Use $reconciliation-balance-operations to inspect balances, run checks offline by default, and summarize reconciliation dates."
 
 policy:
   allow_implicit_invocation: true
