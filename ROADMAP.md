@@ -80,14 +80,22 @@ reconciliation, accounting, and tax work expands.
 Scope:
 
 - keep direct fact artifacts as the only runtime model
+- add capture-scoped translation input planning as a required fact-path
+  stabilization step so adapters describe valid input candidates and the core
+  planner selects deterministic selected, superseded, or blocked plans from
+  event-time coverage and freshness metadata
 - center intake on explicit capture identity, capture registries, and
   raw-evidence preservation instead of inferred capture buckets
 - keep inferred period and capture heuristics as report metadata only; they do
   not control runtime identity, routing, or normalization ownership
 - finish adapter parity and projection parity coverage on the current fact
   model
+- keep file-selection policy in `application/normalization/` rather than in
+  adapter-local filename or path-order heuristics
 - keep review and issue outputs explicit for ambiguous direction, precision, or
   classification decisions
+- persist translation planner artifacts showing candidate descriptions, plan
+  decisions, and blocking issues before translation begins
 - continue tightening overlap heuristics, duplicate detection, file-family
   signatures, and capture acceptance rules where capture ownership is still
   ambiguous
@@ -105,12 +113,18 @@ Scope:
   metadata
 - make source assembly rerun-safe by rewriting its owned generated artifact
   surface deterministically on each run
+- migrate adapters to the planner path in stages, starting with Coinbase and
+  then other adapters that still pick one export by filename or path heuristic
 - add a repo-native semantic parity validator for unchanged raw inputs
 
 Exit criteria:
 
 - supported adapters emit facts without normalized-transaction-era wrapper
   lanes
+- planner-enabled adapters no longer choose winning translation inputs by path
+  order or lexical filename order
+- selected, superseded, and blocked translation inputs are explicit
+  normalization artifacts before fact translation runs
 - CoinTracking CSV projection remains correct from facts alone
 - remaining normalization ambiguity paths emit explicit reviews or blocking
   issues instead of silent coercion
