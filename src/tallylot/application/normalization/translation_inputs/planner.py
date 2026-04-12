@@ -72,6 +72,7 @@ def plan_translation_inputs(
                 invalid_group_issues(
                     profile=profile,
                     group_contexts_value=group_contexts_value,
+                    status=failure.status,
                     reason=failure.reason,
                 )
             )
@@ -106,6 +107,7 @@ def plan_translation_inputs(
                 invalid_group_issues(
                     profile=profile,
                     group_contexts_value=group_contexts_value,
+                    status="blocked_invalid_candidate",
                     reason=reason,
                 )
             )

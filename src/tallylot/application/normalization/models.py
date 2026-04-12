@@ -30,3 +30,12 @@ class NormalizationWindowStats:
     facts_outside_window: int
     issues_outside_window: int
     reviews_outside_window: int
+
+
+@dataclass(frozen=True)
+class NormalizationTranslationMetrics:
+    translation_candidate_count: int
+    translation_selected_count: int
+    translation_superseded_count: int
+    translation_blocked_count: int
+    translation_planner_used: bool

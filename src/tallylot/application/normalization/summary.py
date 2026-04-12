@@ -6,6 +6,9 @@ from collections import Counter
 from typing import cast
 
 from tallylot.application.normalization.contracts import NormalizeRequest
+from tallylot.application.normalization.models import (
+    NormalizationTranslationMetrics,
+)
 from tallylot.domain.issues import NormalizationReviewRecord
 from tallylot.domain.types import JsonValue
 from tallylot.ports.source_profiles import SourceProfile
@@ -19,6 +22,7 @@ def build_normalization_summary(
     profile: SourceProfile,
     outputs: NormalizationOutputs,
     window_stats: NormalizationWindowStats,
+    translation_metrics: NormalizationTranslationMetrics,
 ) -> JsonValue:
     return cast(
         JsonValue,
@@ -38,6 +42,11 @@ def build_normalization_summary(
             "reviews_outside_normalization_window": window_stats.reviews_outside_window,
             "normalization_window_start": request.window_start or "",
             "normalization_window_end": request.window_end or "",
+            "translation_candidate_count": translation_metrics.translation_candidate_count,
+            "translation_selected_count": translation_metrics.translation_selected_count,
+            "translation_superseded_count": translation_metrics.translation_superseded_count,
+            "translation_blocked_count": translation_metrics.translation_blocked_count,
+            "translation_planner_used": translation_metrics.translation_planner_used,
         },
     )
 

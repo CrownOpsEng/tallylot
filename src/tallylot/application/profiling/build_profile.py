@@ -17,7 +17,9 @@ from tallylot.application.workspace.filesystem import (
 )
 from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue, SourceId
+from tallylot.domain.value_objects import format_timestamp
 from tallylot.ports.artifacts import ArtifactStorePort
+from tallylot.ports.captures import CaptureMetadata
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 
@@ -47,6 +49,7 @@ class BuildProfileUseCase:
         profile = self.create_profile(
             request.source,
             raw_dir,
+            capture_metadata=capture_context.metadata,
             inspect_archives=request.inspect_archives,
         )
         self.write_profile_artifacts(profile, output_dir)
@@ -75,6 +78,7 @@ class BuildProfileUseCase:
         source: str,
         raw_dir: Path,
         *,
+        capture_metadata: CaptureMetadata | None = None,
         inspect_archives: bool = True,
     ) -> SourceProfile:
         inventory, scan_issues = build_inventory(
@@ -106,6 +110,20 @@ class BuildProfileUseCase:
                     family_analysis.recognized_adapter_ids
                 ),
                 "scan_issue_count": str(len(scan_issues) + len(family_analysis.issues)),
+                **(
+                    {
+                        "capture_uid": str(capture_metadata.capture_uid),
+                        "capture_label": capture_metadata.capture_label,
+                        "capture_completed_at": format_timestamp(
+                            capture_metadata.intake_completed_at
+                        ),
+                        "capture_started_at": format_timestamp(
+                            capture_metadata.intake_started_at
+                        ),
+                    }
+                    if capture_metadata is not None
+                    else {}
+                ),
             },
             scan_issues=(*scan_issues, *family_analysis.issues),
         )

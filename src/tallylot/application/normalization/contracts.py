@@ -25,6 +25,11 @@ class NormalizeResponse:
     balance_count: int
     issue_count: int
     review_count: int
+    translation_candidate_count: int = 0
+    translation_selected_count: int = 0
+    translation_superseded_count: int = 0
+    translation_blocked_count: int = 0
+    translation_planner_used: bool = False
 
 
 @dataclass(frozen=True)

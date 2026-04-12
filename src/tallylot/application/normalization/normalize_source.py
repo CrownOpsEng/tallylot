@@ -44,8 +44,12 @@ from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .annotations import annotation_records_from_drafts, location_annotation_records
 from .artifacts import write_normalization_artifacts
-from .models import NormalizationOutputs, NormalizationWindowStats
+from .models import (
+    NormalizationOutputs,
+    NormalizationWindowStats,
+)
 from .summary import build_normalization_summary
+from .translation import execute_translation
 from .window import (
     filter_drafts_by_window,
     filter_issues_by_window,
@@ -91,6 +95,7 @@ class NormalizeSourceUseCase:
         profile = self._profile_use_case.create_profile(
             request.source,
             raw_dir,
+            capture_metadata=capture_metadata,
             inspect_archives=request.inspect_archives,
         )
         profile = _profile_with_window_hints(profile, request)
@@ -108,7 +113,16 @@ class NormalizeSourceUseCase:
             raise ValueError(
                 f"source adapter {profile.adapter_id} is not supported for normalization in this phase"
             )
-        result = adapter.translate(profile, raw_dir)
+        translation_result = execute_translation(
+            adapter=adapter,
+            profile=profile,
+            raw_dir=raw_dir,
+            output_dir=output_dir,
+            capture_metadata=capture_metadata,
+            artifacts=self._artifacts,
+            evidence=self._evidence,
+        )
+        result = translation_result.batch
         statement_result = self._statement_extraction.extract_source_balance_references(
             profile, raw_dir
         )
@@ -197,6 +211,7 @@ class NormalizeSourceUseCase:
                     issues_outside_window=issues_outside_window,
                     reviews_outside_window=reviews_outside_window,
                 ),
+                translation_metrics=translation_result.metrics,
             ),
         )
         append_capture_status_record(
@@ -218,6 +233,11 @@ class NormalizeSourceUseCase:
             balance_count=len(balance_snapshots),
             issue_count=len(outputs.issues),
             review_count=len(review_records),
+            translation_candidate_count=translation_result.metrics.translation_candidate_count,
+            translation_selected_count=translation_result.metrics.translation_selected_count,
+            translation_superseded_count=translation_result.metrics.translation_superseded_count,
+            translation_blocked_count=translation_result.metrics.translation_blocked_count,
+            translation_planner_used=translation_result.metrics.translation_planner_used,
         )
 
 

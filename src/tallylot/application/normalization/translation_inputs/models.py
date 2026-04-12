@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from tallylot.application.normalization.models import (
+    NormalizationTranslationMetrics,
+)
 from tallylot.domain.issues import IssueRecord
 from tallylot.ports.source_profiles import FileInventoryEntry
 from tallylot.ports.translation_inputs import (
@@ -31,6 +34,28 @@ class CandidateContext:
     @property
     def valid(self) -> bool:
         return not self.validation_errors
+
+
+def translation_metrics_from_result(
+    result: TranslationInputPlanningResult,
+    *,
+    planner_used: bool,
+) -> NormalizationTranslationMetrics:
+    return NormalizationTranslationMetrics(
+        translation_candidate_count=len(result.candidates),
+        translation_selected_count=len(result.plan.selected_candidate_ids),
+        translation_superseded_count=sum(
+            1
+            for decision in result.plan.decisions
+            if decision.status in {"superseded_identical", "superseded_replaced"}
+        ),
+        translation_blocked_count=sum(
+            1
+            for decision in result.plan.decisions
+            if decision.status.startswith("blocked")
+        ),
+        translation_planner_used=planner_used,
+    )
 
 
 def build_translation_plan(

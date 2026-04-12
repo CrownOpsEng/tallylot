@@ -167,6 +167,7 @@ def invalid_group_issues(
     *,
     profile: SourceProfile,
     group_contexts_value: tuple[CandidateContext, ...],
+    status: TranslationPlanDecisionStatus,
     reason: str,
 ) -> tuple[IssueRecord, ...]:
     candidate_ids = tuple(
@@ -176,7 +177,7 @@ def invalid_group_issues(
         issue_for_candidate(
             profile=profile,
             candidate=context.candidate,
-            status="blocked_invalid_candidate",
+            status=status,
             reason=reason,
             conflicts_with_candidate_ids=tuple(
                 candidate_id
