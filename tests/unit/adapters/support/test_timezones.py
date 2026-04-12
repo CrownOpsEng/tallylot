@@ -178,3 +178,27 @@ def test_passed_timezone_summary_accepts_shakepay_local_wall_clock_exports() -> 
     assert summary["issue_count"] == 0
     assert summary["mode_counts"] == {"naive": 1}
     assert not issues
+
+
+def test_passed_timezone_summary_ignores_empty_header_only_files() -> None:
+    profile = build_source_profile(
+        adapter_id="coinbase",
+        source="coinbase",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path="empty-retail-export.csv",
+                suffix=".csv",
+                size_bytes=1,
+                sha256="fixture",
+                row_count=0,
+                date_field="Timestamp",
+            ),
+        ),
+    )
+
+    summary, issues = passed_timezone_summary(profile, mode="value_utc")
+
+    assert summary["status"] == "passed"
+    assert summary["issue_count"] == 0
+    assert summary["rows_with_dates"] == 0
+    assert not issues

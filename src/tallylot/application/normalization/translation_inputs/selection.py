@@ -78,11 +78,7 @@ def plan_exclusive_group(
             reason="exclusive snapshot candidates do not have a unique freshest winner",
         )
     winner = deterministic_duplicate_winner(freshest or candidates)
-    return build_supersession_plan(
-        profile=profile,
-        candidates=candidates,
-        winner=winner,
-    )
+    return build_supersession_plan(candidates=candidates, winner=winner)
 
 
 def plan_overlap_component(
@@ -103,64 +99,17 @@ def plan_overlap_component(
             ),
             issues=(),
         )
-    if any(not candidate.comparable for candidate in candidates):
+    incomparability_reason = _incomparability_reason(candidates)
+    if incomparability_reason is not None:
         return blocked_group(
             profile=profile,
             candidates=candidates,
             status="blocked_incomparable_candidates",
-            reason="overlapping candidates are marked incomparable by the adapter",
-        )
-    if len({candidate.comparison_key for candidate in candidates}) != 1:
-        return blocked_group(
-            profile=profile,
-            candidates=candidates,
-            status="blocked_incomparable_candidates",
-            reason="overlapping candidates do not share a comparison key",
+            reason=incomparability_reason,
         )
     if selection_mode is TranslationSelectionMode.APPENDABLE_RANGE:
-        if not all_identical_candidates(candidates):
-            return blocked_group(
-                profile=profile,
-                candidates=candidates,
-                status="blocked_partial_overlap",
-                reason=(
-                    "appendable range candidates overlap and cannot be merged without "
-                    "an exact identical replacement"
-                ),
-            )
-        winner = deterministic_duplicate_winner(
-            freshest_candidates(candidates) or candidates
-        )
-        return build_supersession_plan(
-            profile=profile,
-            candidates=candidates,
-            winner=winner,
-        )
-
-    freshest = freshest_candidates(candidates)
-    if len(freshest) != 1 and not all_identical_candidates(candidates):
-        return blocked_group(
-            profile=profile,
-            candidates=candidates,
-            status="blocked_ambiguous_freshness",
-            reason="replaceable range candidates do not have a unique freshest winner",
-        )
-    winner = deterministic_duplicate_winner(freshest or candidates)
-    if not winner_contains_all_candidates(winner=winner, candidates=candidates):
-        return blocked_group(
-            profile=profile,
-            candidates=candidates,
-            status="blocked_partial_overlap",
-            reason=(
-                "replaceable range candidates overlap, but the freshest winner does "
-                "not fully supersede the overlapping set"
-            ),
-        )
-    return build_supersession_plan(
-        profile=profile,
-        candidates=candidates,
-        winner=winner,
-    )
+        return _plan_appendable_component(profile=profile, candidates=candidates)
+    return _plan_replaceable_component(profile=profile, candidates=candidates)
 
 
 def invalid_group_issues(
@@ -238,7 +187,6 @@ def issue_for_candidate(
     status: TranslationPlanDecisionStatus,
     reason: str,
     conflicts_with_candidate_ids: tuple[str, ...] = (),
-    replaces_candidate_ids: tuple[str, ...] = (),
 ) -> IssueRecord:
     candidate_path = (
         candidate.member_relative_paths[0] if candidate.member_relative_paths else ""
@@ -246,16 +194,13 @@ def issue_for_candidate(
     conflict_text = ""
     if conflicts_with_candidate_ids:
         conflict_text = f" Conflicts: {', '.join(conflicts_with_candidate_ids)}."
-    replace_text = ""
-    if replaces_candidate_ids:
-        replace_text = f" Replaces: {', '.join(replaces_candidate_ids)}."
     return IssueRecord(
         issue_id=f"{profile.adapter_id}:{candidate.candidate_id}:{status}",
         source=str(profile.source),
         adapter_id=str(profile.adapter_id),
         severity="high",
         kind=status,
-        message=f"{reason}{replace_text}{conflict_text}",
+        message=f"{reason}{conflict_text}",
         raw_file=candidate_path,
         status="needs_review",
     )
@@ -263,7 +208,6 @@ def issue_for_candidate(
 
 def build_supersession_plan(
     *,
-    profile: SourceProfile,
     candidates: tuple[TranslationInputCandidate, ...],
     winner: TranslationInputCandidate,
 ) -> PlannedGroup:
@@ -294,6 +238,64 @@ def build_supersession_plan(
             )
         )
     return PlannedGroup(decisions=tuple(decisions), issues=())
+
+
+def _incomparability_reason(
+    candidates: tuple[TranslationInputCandidate, ...],
+) -> str | None:
+    if any(not candidate.comparable for candidate in candidates):
+        return "overlapping candidates are marked incomparable by the adapter"
+    if len({candidate.comparison_key for candidate in candidates}) != 1:
+        return "overlapping candidates do not share a comparison key"
+    return None
+
+
+def _plan_appendable_component(
+    *,
+    profile: SourceProfile,
+    candidates: tuple[TranslationInputCandidate, ...],
+) -> PlannedGroup:
+    if not all_identical_candidates(candidates):
+        return blocked_group(
+            profile=profile,
+            candidates=candidates,
+            status="blocked_partial_overlap",
+            reason=(
+                "appendable range candidates overlap and cannot be merged without "
+                "an exact identical replacement"
+            ),
+        )
+    winner = deterministic_duplicate_winner(
+        freshest_candidates(candidates) or candidates
+    )
+    return build_supersession_plan(candidates=candidates, winner=winner)
+
+
+def _plan_replaceable_component(
+    *,
+    profile: SourceProfile,
+    candidates: tuple[TranslationInputCandidate, ...],
+) -> PlannedGroup:
+    freshest = freshest_candidates(candidates)
+    if len(freshest) != 1 and not all_identical_candidates(candidates):
+        return blocked_group(
+            profile=profile,
+            candidates=candidates,
+            status="blocked_ambiguous_freshness",
+            reason="replaceable range candidates do not have a unique freshest winner",
+        )
+    winner = deterministic_duplicate_winner(freshest or candidates)
+    if not winner_contains_all_candidates(winner=winner, candidates=candidates):
+        return blocked_group(
+            profile=profile,
+            candidates=candidates,
+            status="blocked_partial_overlap",
+            reason=(
+                "replaceable range candidates overlap, but the freshest winner does "
+                "not fully supersede the overlapping set"
+            ),
+        )
+    return build_supersession_plan(candidates=candidates, winner=winner)
 
 
 def superseded_status(

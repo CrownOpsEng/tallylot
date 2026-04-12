@@ -177,32 +177,9 @@ def validate_candidate(
 def validate_coverage(coverage: TranslationCoverageWindow) -> tuple[str, ...]:
     errors: list[str] = []
     if coverage.mode is TranslationCoverageMode.UNKNOWN:
-        if any(
-            value is not None
-            for value in (
-                coverage.start_at,
-                coverage.start_precision,
-                coverage.end_at,
-                coverage.end_precision,
-            )
-        ):
-            errors.append("unknown coverage cannot carry bounds or precisions")
+        errors.extend(_validate_unknown_coverage(coverage))
         return tuple(errors)
-    if coverage.mode is TranslationCoverageMode.BOUNDED:
-        if coverage.start_at is None or coverage.end_at is None:
-            errors.append("bounded coverage requires start_at and end_at")
-        if coverage.start_precision is None or coverage.end_precision is None:
-            errors.append("bounded coverage requires start_precision and end_precision")
-    elif coverage.mode is TranslationCoverageMode.UNBOUNDED_START:
-        if coverage.start_at is not None or coverage.start_precision is not None:
-            errors.append("unbounded_start coverage cannot carry a start bound")
-        if coverage.end_at is None or coverage.end_precision is None:
-            errors.append("unbounded_start coverage requires an end bound")
-    elif coverage.mode is TranslationCoverageMode.UNBOUNDED_END:
-        if coverage.end_at is not None or coverage.end_precision is not None:
-            errors.append("unbounded_end coverage cannot carry an end bound")
-        if coverage.start_at is None or coverage.start_precision is None:
-            errors.append("unbounded_end coverage requires a start bound")
+    errors.extend(_validate_known_coverage_mode(coverage))
     if coverage.start_at is not None:
         validate_utc_datetime(coverage.start_at, errors, label="coverage start_at")
     if coverage.end_at is not None:
@@ -213,6 +190,67 @@ def validate_coverage(coverage: TranslationCoverageWindow) -> tuple[str, ...]:
         and coverage.start_at > coverage.end_at
     ):
         errors.append("coverage start_at must not be after end_at")
+    return tuple(errors)
+
+
+def _validate_unknown_coverage(
+    coverage: TranslationCoverageWindow,
+) -> tuple[str, ...]:
+    if any(
+        value is not None
+        for value in (
+            coverage.start_at,
+            coverage.start_precision,
+            coverage.end_at,
+            coverage.end_precision,
+        )
+    ):
+        return ("unknown coverage cannot carry bounds or precisions",)
+    return ()
+
+
+def _validate_known_coverage_mode(
+    coverage: TranslationCoverageWindow,
+) -> tuple[str, ...]:
+    if coverage.mode is TranslationCoverageMode.BOUNDED:
+        return _validate_bounded_coverage(coverage)
+    if coverage.mode is TranslationCoverageMode.UNBOUNDED_START:
+        return _validate_unbounded_start_coverage(coverage)
+    if coverage.mode is TranslationCoverageMode.UNBOUNDED_END:
+        return _validate_unbounded_end_coverage(coverage)
+    return ()
+
+
+def _validate_bounded_coverage(
+    coverage: TranslationCoverageWindow,
+) -> tuple[str, ...]:
+    errors: list[str] = []
+    if coverage.start_at is None or coverage.end_at is None:
+        errors.append("bounded coverage requires start_at and end_at")
+    if coverage.start_precision is None or coverage.end_precision is None:
+        errors.append("bounded coverage requires start_precision and end_precision")
+    return tuple(errors)
+
+
+def _validate_unbounded_start_coverage(
+    coverage: TranslationCoverageWindow,
+) -> tuple[str, ...]:
+    errors: list[str] = []
+    if coverage.start_at is not None or coverage.start_precision is not None:
+        errors.append("unbounded_start coverage cannot carry a start bound")
+    if coverage.end_at is None or coverage.end_precision is None:
+        errors.append("unbounded_start coverage requires an end bound")
+    return tuple(errors)
+
+
+def _validate_unbounded_end_coverage(
+    coverage: TranslationCoverageWindow,
+) -> tuple[str, ...]:
+    errors: list[str] = []
+    if coverage.end_at is not None or coverage.end_precision is not None:
+        errors.append("unbounded_end coverage cannot carry an end bound")
+    if coverage.start_at is None or coverage.start_precision is None:
+        errors.append("unbounded_end coverage requires a start bound")
     return tuple(errors)
 
 

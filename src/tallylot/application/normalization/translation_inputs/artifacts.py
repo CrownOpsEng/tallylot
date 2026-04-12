@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import cast
@@ -22,23 +23,31 @@ from tallylot.ports.translation_inputs import (
 )
 
 
+@dataclass(frozen=True)
+class TranslationArtifactContext:
+    output_dir: Path
+    profile: SourceProfile
+    capture_metadata: CaptureMetadata | None
+
+
 def write_translation_input_artifacts(
+    *,
     artifacts: ArtifactStorePort,
     evidence: EvidenceRepositoryPort,
-    output_dir: Path,
-    *,
-    profile: SourceProfile,
-    capture_metadata: CaptureMetadata | None,
+    context: TranslationArtifactContext,
     result: TranslationInputPlanningResult,
 ) -> None:
     artifacts.write_json(
-        output_dir / "translation_input_candidates.json",
+        context.output_dir / "translation_input_candidates.json",
         cast(
             JsonValue,
             {
                 "planner_version": PLANNER_VERSION,
-                "adapter_id": str(profile.adapter_id),
-                "capture_uid": _capture_uid(profile, capture_metadata),
+                "adapter_id": str(context.profile.adapter_id),
+                "capture_uid": _capture_uid(
+                    context.profile,
+                    context.capture_metadata,
+                ),
                 "candidates": [
                     _candidate_to_json(candidate) for candidate in result.candidates
                 ],
@@ -46,13 +55,16 @@ def write_translation_input_artifacts(
         ),
     )
     artifacts.write_json(
-        output_dir / "translation_input_plan.json",
+        context.output_dir / "translation_input_plan.json",
         cast(
             JsonValue,
             {
                 "planner_version": PLANNER_VERSION,
-                "adapter_id": str(profile.adapter_id),
-                "capture_uid": _capture_uid(profile, capture_metadata),
+                "adapter_id": str(context.profile.adapter_id),
+                "capture_uid": _capture_uid(
+                    context.profile,
+                    context.capture_metadata,
+                ),
                 "selected_candidate_ids": list(result.plan.selected_candidate_ids),
                 "decisions": [
                     _decision_to_json(decision) for decision in result.plan.decisions
@@ -62,7 +74,7 @@ def write_translation_input_artifacts(
         ),
     )
     evidence.write_issue_records(
-        output_dir / "translation_input_issues.csv",
+        context.output_dir / "translation_input_issues.csv",
         result.issues,
     )
 

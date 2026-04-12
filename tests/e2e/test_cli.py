@@ -206,6 +206,88 @@ def test_source_normalize_cli_rejects_mismatched_capture_root(tmp_path: Path) ->
     assert "does not match requested source" in result.stdout
 
 
+def test_source_normalize_cli_writes_translation_planner_artifacts_for_coinbase(
+    tmp_path: Path,
+) -> None:
+    raw_capture_root = materialize_capture_root(tmp_path, source="coinbase")
+    older_name = "2021 Statement.csv"
+    newer_name = "2026-03-23 Statement - All Time.csv"
+    (raw_capture_root / older_name).write_text(
+        _coinbase_older_retail_csv(),
+        encoding="utf-8",
+    )
+    (raw_capture_root / newer_name).write_text(
+        _coinbase_newer_all_time_retail_csv(),
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "normalized"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "normalize",
+            "--source",
+            "coinbase",
+            "--raw-dir",
+            str(raw_capture_root),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    candidates = json.loads(
+        (output_dir / "translation_input_candidates.json").read_text(encoding="utf-8")
+    )
+    plan = json.loads(
+        (output_dir / "translation_input_plan.json").read_text(encoding="utf-8")
+    )
+
+    assert result.exit_code == 0
+    assert {candidate["candidate_id"] for candidate in candidates["candidates"]} == {
+        f"coinbase:retail_export:{older_name}",
+        f"coinbase:retail_export:{newer_name}",
+    }
+    assert plan["selected_candidate_ids"] == [f"coinbase:retail_export:{newer_name}"]
+    assert (output_dir / "facts.csv").exists()
+
+
+def test_source_normalize_cli_returns_nonzero_for_blocked_coinbase_plan(
+    tmp_path: Path,
+) -> None:
+    raw_capture_root = materialize_capture_root(tmp_path, source="coinbase")
+    (raw_capture_root / "2021 statement a.csv").write_text(
+        _coinbase_retail_csv_with_amount("tx-a", "1.00000000"),
+        encoding="utf-8",
+    )
+    (raw_capture_root / "2021 statement b.csv").write_text(
+        _coinbase_retail_csv_with_amount("tx-b", "2.00000000"),
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "normalized"
+
+    result = runner.invoke(
+        app,
+        [
+            "source",
+            "normalize",
+            "--source",
+            "coinbase",
+            "--raw-dir",
+            str(raw_capture_root),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+    plan = json.loads(
+        (output_dir / "translation_input_plan.json").read_text(encoding="utf-8")
+    )
+
+    assert result.exit_code == 2
+    assert "translation input planning blocked normalization" in result.stdout
+    assert plan["blocked"] is True
+    assert not (output_dir / "facts.csv").exists()
+
+
 def test_source_manifest_cli(tmp_path: Path) -> None:
     source_dir = tmp_path / "capture"
     source_dir.mkdir()
@@ -1360,6 +1442,43 @@ def _write_submission_rows(submission_root: Path, *, source: str) -> None:
                 "notes": "confirmation",
             },
         ),
+    )
+
+
+def _coinbase_older_retail_csv() -> str:
+    return (
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "legacy-1,2021-12-30 08:56:53 UTC,Receive,FET,1.9859001,CAD,$0.64,$1.27098,$1.27098,$0.00,"
+        "Received 1.9859001 FET\n"
+    )
+
+
+def _coinbase_newer_all_time_retail_csv() -> str:
+    return (
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "legacy-1,2021-12-30 08:56:53 UTC,Receive,FET,1.9859001,CAD,$0.64,$1.27098,$1.27098,$0.00,"
+        "Received 1.9859001 FET\n"
+        "reward-1,2023-03-18 01:28:49 UTC,Reward Income,ADA,0.000021,CAD,$0.48,$0.00,$0.00,$0.00,"
+        "Received 0.000021 ADA from Coinbase Rewards\n"
+        "migration-neg,2025-10-17 13:38:17 UTC,Asset Migration,MATIC,-1.65526374,CAD,$0.25,-$0.42,-$0.42,$0.00,\n"
+        "migration-pos,2025-10-17 13:38:17 UTC,Asset Migration,POL,1.65526374,CAD,$0.25,$0.42,$0.42,$0.00,\n"
+    )
+
+
+def _coinbase_retail_csv_with_amount(transaction_id: str, amount: str) -> str:
+    return (
+        "Transactions\n"
+        "User,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        f"{transaction_id},2021-12-30 08:56:53 UTC,Receive,FET,{amount},CAD,$0.64,$1.27098,$1.27098,$0.00,"
+        "Received FET\n"
     )
 
 

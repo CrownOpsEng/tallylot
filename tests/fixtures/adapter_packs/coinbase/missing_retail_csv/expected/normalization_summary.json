@@ -13,5 +13,10 @@
   "review_summary": [],
   "reviews_outside_normalization_window": 0,
   "snapshot_count": 0,
-  "source": "Coinbase"
+  "source": "Coinbase",
+  "translation_blocked_count": 0,
+  "translation_candidate_count": 0,
+  "translation_planner_used": true,
+  "translation_selected_count": 0,
+  "translation_superseded_count": 0
 }

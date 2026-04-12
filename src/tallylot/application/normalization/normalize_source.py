@@ -50,6 +50,7 @@ from .models import (
 )
 from .summary import build_normalization_summary
 from .translation import execute_translation
+from .translation import TranslationExecutionContext
 from .window import (
     filter_drafts_by_window,
     filter_issues_by_window,
@@ -117,10 +118,12 @@ class NormalizeSourceUseCase:
             adapter=adapter,
             profile=profile,
             raw_dir=raw_dir,
-            output_dir=output_dir,
-            capture_metadata=capture_metadata,
-            artifacts=self._artifacts,
-            evidence=self._evidence,
+            context=TranslationExecutionContext(
+                output_dir=output_dir,
+                capture_metadata=capture_metadata,
+                artifacts=self._artifacts,
+                evidence=self._evidence,
+            ),
         )
         result = translation_result.batch
         statement_result = self._statement_extraction.extract_source_balance_references(

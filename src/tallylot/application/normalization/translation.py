@@ -9,6 +9,9 @@ from tallylot.application.normalization.models import NormalizationTranslationMe
 from tallylot.application.normalization.translation_inputs import (
     plan_translation_inputs,
     translation_metrics_from_result,
+)
+from tallylot.application.normalization.translation_inputs.artifacts import (
+    TranslationArtifactContext,
     write_translation_input_artifacts,
 )
 from tallylot.ports.artifacts import ArtifactStorePort
@@ -26,15 +29,20 @@ class TranslationExecutionResult:
     metrics: NormalizationTranslationMetrics
 
 
+@dataclass(frozen=True)
+class TranslationExecutionContext:
+    output_dir: Path
+    capture_metadata: CaptureMetadata | None
+    artifacts: ArtifactStorePort
+    evidence: EvidenceRepositoryPort
+
+
 def execute_translation(
     *,
     adapter: SourceAdapter,
     profile: SourceProfile,
     raw_dir: Path,
-    output_dir: Path,
-    capture_metadata: CaptureMetadata | None,
-    artifacts: ArtifactStorePort,
-    evidence: EvidenceRepositoryPort,
+    context: TranslationExecutionContext,
 ) -> TranslationExecutionResult:
     if not isinstance(adapter, TranslationInputPlanningAdapter):
         return TranslationExecutionResult(
@@ -51,22 +59,24 @@ def execute_translation(
     planning_result = plan_translation_inputs(
         profile=profile,
         candidates=adapter.describe_translation_inputs(profile, raw_dir),
-        capture_metadata=capture_metadata,
+        capture_metadata=context.capture_metadata,
     )
     write_translation_input_artifacts(
-        artifacts,
-        evidence,
-        output_dir,
-        profile=profile,
-        capture_metadata=capture_metadata,
+        artifacts=context.artifacts,
+        evidence=context.evidence,
+        context=TranslationArtifactContext(
+            output_dir=context.output_dir,
+            profile=profile,
+            capture_metadata=context.capture_metadata,
+        ),
         result=planning_result,
     )
     metrics = translation_metrics_from_result(planning_result, planner_used=True)
     if planning_result.plan.blocked:
         raise ValueError(
             "translation input planning blocked normalization; inspect "
-            f"{output_dir / 'translation_input_plan.json'} and "
-            f"{output_dir / 'translation_input_issues.csv'}"
+            f"{context.output_dir / 'translation_input_plan.json'} and "
+            f"{context.output_dir / 'translation_input_issues.csv'}"
         )
     return TranslationExecutionResult(
         batch=adapter.translate_selected_inputs(

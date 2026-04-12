@@ -15,6 +15,9 @@ from tallylot.ports.translation_inputs import (
     TranslationPlanDecision,
 )
 
+from .freshness import freshness_precedence, freshness_sort_numeric_value
+from .overlap import MAX_COVERAGE_BOUND, MIN_COVERAGE_BOUND
+
 PLANNER_VERSION = "translation-input-planner-v1"
 
 
@@ -84,9 +87,6 @@ def build_translation_plan(
 def selected_candidate_sort_key(
     candidate: TranslationInputCandidate,
 ) -> tuple[object, ...]:
-    from .freshness import freshness_precedence, freshness_sort_numeric_value
-    from .overlap import MAX_COVERAGE_BOUND, MIN_COVERAGE_BOUND
-
     return (
         candidate.coverage.start_at or MIN_COVERAGE_BOUND,
         candidate.coverage.end_at or MAX_COVERAGE_BOUND,

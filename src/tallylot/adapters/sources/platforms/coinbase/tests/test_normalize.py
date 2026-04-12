@@ -11,6 +11,7 @@ from tallylot.application.evidence.statement_extraction import (
     StatementExtractionService,
 )
 from tallylot.application.profiling import BuildProfileUseCase
+from tallylot.ports.source_profiles import SourceProfile
 from tallylot.domain.transactions import (
     AccountingIntentHint,
     EconomicKind,
@@ -19,7 +20,6 @@ from tallylot.domain.transactions import (
 )
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from tests.support.services import build_source_profile
 
 
 def _make_pdf(path: Path, *lines: str) -> None:
@@ -31,11 +31,20 @@ def _make_pdf(path: Path, *lines: str) -> None:
     pdf.save()
 
 
+def _coinbase_profile(raw_dir: Path) -> SourceProfile:
+    return BuildProfileUseCase(
+        build_registry(), FilesystemArtifactStore()
+    ).create_profile(
+        "coinbase",
+        raw_dir,
+    )
+
+
 def test_coinbase_adapter_reports_missing_retail_csv_as_explicit_issue(
     tmp_path: Path,
 ) -> None:
     result = _CoinbaseAdapter().translate(
-        build_source_profile(adapter_id="coinbase", raw_dir=str(tmp_path)),
+        _coinbase_profile(tmp_path),
         tmp_path,
     )
 
@@ -60,7 +69,7 @@ def test_coinbase_adapter_normalizes_buy_row_from_header_detected_csv(
     )
 
     result = _CoinbaseAdapter().translate(
-        build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
+        _coinbase_profile(raw_dir),
         raw_dir,
     )
     facts = compile_activity_drafts(result.drafts)
@@ -101,7 +110,7 @@ def test_coinbase_adapter_normalizes_sell_send_and_receive_rows(tmp_path: Path) 
     )
 
     result = _CoinbaseAdapter().translate(
-        build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
+        _coinbase_profile(raw_dir),
         raw_dir,
     )
     facts = compile_activity_drafts(result.drafts)
@@ -150,7 +159,7 @@ def test_coinbase_adapter_surfaces_unsupported_rows_without_dropping_supported_r
     )
 
     result = _CoinbaseAdapter().translate(
-        build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
+        _coinbase_profile(raw_dir),
         raw_dir,
     )
     facts = compile_activity_drafts(result.drafts)
@@ -177,7 +186,7 @@ def test_coinbase_adapter_preserves_title_row_issue_line_numbers(
     )
 
     result = _CoinbaseAdapter().translate(
-        build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
+        _coinbase_profile(raw_dir),
         raw_dir,
     )
 
@@ -203,7 +212,7 @@ def test_coinbase_adapter_normalizes_reward_income_and_asset_migration_pair(
     )
 
     result = _CoinbaseAdapter().translate(
-        build_source_profile(adapter_id="coinbase", raw_dir=str(raw_dir)),
+        _coinbase_profile(raw_dir),
         raw_dir,
     )
     facts = compile_activity_drafts(result.drafts)

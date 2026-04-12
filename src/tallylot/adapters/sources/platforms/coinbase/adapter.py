@@ -30,9 +30,17 @@ from tallylot.ports.source_profiles import (
     SourceProfile,
 )
 from tallylot.ports.source_translation import SourceTranslationBatch
+from tallylot.ports.translation_inputs import (
+    TranslationInputCandidate,
+    TranslationInputPlan,
+)
 
 from .matching import RETAIL_HEADER, match_coinbase_inventory
-from .normalization import translate_coinbase_exports
+from .normalization import (
+    describe_translation_inputs,
+    translate_coinbase_exports,
+    translate_selected_inputs,
+)
 from .pdf_balances import match_statement_document as _match_statement_document
 from .pdf_balances import parse_statement_document as _parse_statement_document
 
@@ -128,6 +136,19 @@ class _CoinbaseAdapter:
         self, profile: SourceProfile, raw_dir: Path
     ) -> SourceTranslationBatch:
         return translate_coinbase_exports(profile, raw_dir)
+
+    def describe_translation_inputs(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> tuple[TranslationInputCandidate, ...]:
+        return describe_translation_inputs(profile, raw_dir)
+
+    def translate_selected_inputs(
+        self,
+        profile: SourceProfile,
+        raw_dir: Path,
+        plan: TranslationInputPlan,
+    ) -> SourceTranslationBatch:
+        return translate_selected_inputs(profile, raw_dir, plan)
 
 
 ADAPTER = _CoinbaseAdapter()
