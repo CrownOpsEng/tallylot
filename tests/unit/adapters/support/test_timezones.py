@@ -78,6 +78,45 @@ def test_passed_timezone_summary_detects_overlapping_timezone_shift_risk() -> No
     ]
 
 
+def test_passed_timezone_summary_ignores_local_overlap_without_utc_overlap() -> None:
+    profile = build_source_profile(
+        adapter_id="binance",
+        source="Binance",
+        file_inventory=(
+            FileInventoryEntry(
+                relative_path="spot-west.csv",
+                suffix=".csv",
+                size_bytes=1,
+                sha256="a",
+                family="binance:spot_trade_history",
+                date_field="Time",
+                min_timestamp="2026-03-23 10:00:00",
+                max_timestamp="2026-03-23 11:00:00",
+                timezone_mode="filename_offset",
+                timezone_value="UTC-12:00",
+            ),
+            FileInventoryEntry(
+                relative_path="spot-east.csv",
+                suffix=".csv",
+                size_bytes=1,
+                sha256="b",
+                family="binance:spot_trade_history",
+                date_field="Time",
+                min_timestamp="2026-03-23 10:30:00",
+                max_timestamp="2026-03-23 11:30:00",
+                timezone_mode="filename_offset",
+                timezone_value="UTC+12:00",
+            ),
+        ),
+    )
+
+    summary, issues = passed_timezone_summary(profile, mode="filename_offset")
+
+    assert summary["status"] == "passed"
+    assert summary["issue_count"] == 0
+    assert not issues
+
+
 def test_reviewed_timezone_summary_accepts_explicit_filename_offsets() -> None:
     profile = build_source_profile(
         adapter_id="binance",

@@ -43,7 +43,7 @@ def resolve_source_label(
         return _blocked_resolution(request.source_folder, explicit_issue)
     if explicit_rule is not None:
         return _explicit_rule_resolution(explicit_rule)
-    if request.incoming_source_folder:
+    if _should_preserve_incoming_source_scope(request):
         return _incoming_source_scope_resolution(request.incoming_source_folder)
     inventory_route = resolve_inventory_route(
         artifacts=artifacts,
@@ -109,6 +109,16 @@ def _incoming_source_scope_resolution(source_folder: str) -> SourceLabelResoluti
             f"Incoming capture path preserved the stable source label {source_folder}."
         ),
         inventory_match_status="not_evaluated_incoming_source_scope",
+    )
+
+
+def _should_preserve_incoming_source_scope(
+    request: SourceLabelResolutionRequest,
+) -> bool:
+    return bool(
+        request.incoming_source_folder
+        and request.source_folder == "unclassified"
+        and request.incoming_source_folder != "unclassified"
     )
 
 

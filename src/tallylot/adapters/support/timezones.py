@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from typing import cast
 
 from tallylot.domain.issues import IssueRecord
@@ -237,10 +237,18 @@ def _timezone_shift_overlap(
         return False
     if left_entry.timezone_value == right_entry.timezone_value:
         return False
-    left_start = _parse_profile_timestamp(left_entry.min_timestamp)
-    left_end = _parse_profile_timestamp(left_entry.max_timestamp)
-    right_start = _parse_profile_timestamp(right_entry.min_timestamp)
-    right_end = _parse_profile_timestamp(right_entry.max_timestamp)
+    left_start = _parse_profile_timestamp(
+        left_entry.min_timestamp, left_entry.timezone_value
+    )
+    left_end = _parse_profile_timestamp(
+        left_entry.max_timestamp, left_entry.timezone_value
+    )
+    right_start = _parse_profile_timestamp(
+        right_entry.min_timestamp, right_entry.timezone_value
+    )
+    right_end = _parse_profile_timestamp(
+        right_entry.max_timestamp, right_entry.timezone_value
+    )
     if (
         left_start is None
         or left_end is None
@@ -258,11 +266,33 @@ def _accepted_inventory_modes(mode: str) -> frozenset[str]:
     return frozenset({mode})
 
 
-def _parse_profile_timestamp(value: str) -> datetime | None:
+def _parse_profile_timestamp(value: str, timezone_value: str) -> datetime | None:
+    text = value.strip()
+    resolved_timezone = _parse_timezone_value(timezone_value)
+    if not text or resolved_timezone is None:
+        return None
+    try:
+        parsed = datetime.strptime(text, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None
+    return parsed.replace(tzinfo=resolved_timezone).astimezone(UTC)
+
+
+def _parse_timezone_value(value: str) -> tzinfo | None:
     text = value.strip()
     if not text:
         return None
+    if text == "UTC":
+        return UTC
+    if not text.startswith(("UTC+", "UTC-")):
+        return None
+    sign = -1 if text[3] == "-" else 1
+    hours_text, separator, minutes_text = text[4:].partition(":")
+    if not hours_text or (separator and not minutes_text):
+        return None
     try:
-        return datetime.strptime(text, "%Y-%m-%d %H:%M:%S")
+        hours = int(hours_text)
+        minutes = int(minutes_text or "0")
     except ValueError:
         return None
+    return timezone(sign * timedelta(hours=hours, minutes=minutes))

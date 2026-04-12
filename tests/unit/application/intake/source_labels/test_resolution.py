@@ -328,3 +328,34 @@ def test_resolve_source_label_preserves_incoming_source_scope_before_inventory_f
     assert decision.source_folder == "coinbase"
     assert decision.source_resolution_status == "incoming_source_scope"
     assert decision.inventory_match_status == "not_evaluated_incoming_source_scope"
+
+
+def test_resolve_source_label_keeps_routed_source_when_it_is_already_confident(
+    tmp_path: Path,
+) -> None:
+    workspace_root = tmp_path / "workspace"
+    artifacts = FilesystemArtifactStore()
+
+    decision = resolve_source_label(
+        artifacts=artifacts,
+        context=SourceLabelContext(rules=(), issues=()),
+        request=SourceLabelResolutionRequest(
+            workspace_root=workspace_root,
+            incoming_capture_scope="2026-03",
+            incoming_source_folder="coinbase",
+            route_key="statement.pdf",
+            facts=IntakeFileFacts(),
+            source_folder="binance",
+            target_path=workspace_root
+            / "evidence"
+            / "raw"
+            / "source"
+            / "binance"
+            / "2026-03"
+            / "statement.pdf",
+        ),
+    )
+
+    assert decision.source_folder == "binance"
+    assert decision.source_resolution_status == "routed_source"
+    assert decision.inventory_match_status == "unmatched"
