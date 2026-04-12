@@ -33,6 +33,9 @@ def test_inventory_file_details_applies_binance_filename_offset_to_min_and_max(
     assert row_count == 2
     assert details.min_timestamp == "2023-09-21 00:20:55"
     assert details.max_timestamp == "2023-09-21 01:20:55"
+    assert details.observed_period_start == "2023-09-21"
+    assert details.observed_period_end == "2023-09-21"
+    assert details.observed_period_label == "2023-09"
     assert details.timezone_mode == "filename_offset"
     assert details.timezone_value == "UTC-06:00"
 
@@ -57,9 +60,13 @@ def test_inventory_file_details_detects_header_utc_and_date_only_modes(
     assert utc_details.timezone_mode == "header_utc"
     assert utc_details.timezone_value == "UTC"
     assert utc_details.min_timestamp == "2021-07-06 17:37:09"
+    assert utc_details.observed_period_start == "2021-07-06"
+    assert utc_details.observed_period_end == "2021-07-06"
     assert date_only_details.timezone_mode == "date_only"
     assert date_only_details.timestamp_resolution == "date_only"
     assert date_only_details.min_timestamp == "2021-05-09 00:00:00"
+    assert date_only_details.observed_period_start == "2021-05-09"
+    assert date_only_details.observed_period_end == "2021-05-09"
 
 
 def test_inventory_file_details_ignores_placeholder_no_data_rows(
@@ -214,6 +221,9 @@ def test_build_inventory_enriches_rows_from_capture_metadata(tmp_path: Path) -> 
     assert issues == []
     assert inventory[0].capture_uid == "01HV4A5H7VJH7M3Y5A6B7C8D9E"
     assert inventory[0].source == "eth-wallet-fixture"
+    assert inventory[0].observed_period_start == "2026-03-23"
+    assert inventory[0].observed_period_end == "2026-03-23"
+    assert inventory[0].observed_period_label == "2026-03"
 
 
 def test_build_inventory_excludes_capture_control_artifacts(tmp_path: Path) -> None:
