@@ -33,10 +33,10 @@ Do not pre-load every repo doc by default.
 | Issue templates, issue-writing policy, or proactive follow-up issue creation | `AGENTS.md`, `docs/standards/issues.md`, `docs/standards/implementation.md`, `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/issue-workflow.md` |
 | Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/audit_delivery_guardrails.py` |
 | PR review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `.claude/commands/pr-review.md` |
-| Planning sequence, delivery slices, or rollout checkpoints | `ROADMAP.md` |
-| Reconciliation, checkpoint, journal, or tax-engine implementation | `docs/concepts/reconciliation-tax-architecture.md` |
+| Planning sequence, delivery slices, MVP scope, or rollout checkpoints | `ROADMAP.md`, `docs/status/migration-sequence.md` |
+| Reconciliation, checkpoint, journal, tax-engine implementation, or canonical pipeline products | `docs/concepts/reconciliation-tax-architecture.md`, `ROADMAP.md`, `docs/status/migration-sequence.md`, `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
-| Source or output adapter work | `docs/guides/write-an-adapter.md` |
+| Source or output adapter work | `docs/status/adapter-delivery-plan.md`, `docs/concepts/unified-adapter-architecture.md`, `docs/guides/write-an-adapter.md` |
 | Docs structure, generated index sections, doc placement, or doc authoring rules | `AGENTS.md`, `docs/README.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
 | External workspace layout and seeded files | `docs/concepts/workspace-model.md`, `docs/workspace/README.md` |
 | Operational state or manual workflow | `docs/status/current-state.md`, `docs/guides/operator-quickstart.md`, `docs/guides/source-intake.md`, `docs/guides/normalize-screen-stage.md`, `docs/guides/verify-a-round.md`, `docs/guides/full-operator-workflow.md` |
@@ -200,9 +200,12 @@ Workspace resolution order:
   inputs. They are development-only oracle support artifacts unless an
   explicit one-time checkpoint import workflow adopts them with provenance.
 - Do not expand the current canonical event model into the long-term center of
-  the system. New structural work should target the provider-neutral
-  transaction fact model described in
-  `docs/concepts/reconciliation-tax-architecture.md`.
+  the system. Current `EconomicActivityDraft`, `TransactionFact`, and shared
+  balance artifacts are the active bridge into the target pipeline, not the
+  final architecture center. New structural work should target the canonical
+  pipeline products and stage contracts described in
+  `docs/concepts/reconciliation-tax-architecture.md` and sequenced in
+  `ROADMAP.md`.
 - Keep `pydantic` at boundaries:
   - config
   - external artifact parsing

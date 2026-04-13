@@ -11,8 +11,24 @@ nav_order: 60
 Adapters are first-class modules inside the repo and are discovered
 automatically.
 
+Read [`../status/adapter-delivery-plan.md`](../status/adapter-delivery-plan.md)
+first when deciding whether adapter work belongs in the filing-critical `now`
+track or the later contract rewrite.
+
+Read [`../concepts/unified-adapter-architecture.md`](../concepts/unified-adapter-architecture.md)
+before shaping adapter changes. That concept document is the forward design
+anchor for adapter work. This guide describes the current contract and the
+current repo-facing implementation rules.
+
 ## Rules
 
+- Keep the future unified adapter architecture in view when changing current
+  adapters. Prefer shared seams and deterministic contracts that move toward
+  the target design instead of adding new adapter-local workflow logic.
+- Keep the core runtime pipeline in
+  [`../concepts/reconciliation-tax-architecture.md`](../concepts/reconciliation-tax-architecture.md)
+  as the system architecture center. Adapter docs define adapter responsibilities
+  and migration shape, not a second core runtime center.
 - Keep adapter metadata, code, and tests together.
 - Implement the `SourceAdapter` or `OutputAdapter` port only.
 - Keep the concrete adapter implementation class private inside `adapter.py` or

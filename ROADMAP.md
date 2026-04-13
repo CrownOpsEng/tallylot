@@ -50,6 +50,459 @@ These planning anchors drive phase order and acceptance criteria:
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - raw-evidence derivation is the supported semantic parity path
 
+## Detailed Pipeline Delivery Plan
+
+The numbered phases below remain the coarse rollout gates. The detailed plan in
+this section is the implementation reference for the target pipeline products
+and the bounded slices needed to land them without ad hoc design during coding.
+
+Use the exact canonical product names from
+`docs/concepts/reconciliation-tax-architecture.md` when shaping the next
+contracts:
+
+1. `EvidenceBundle`
+2. `ClaimBundle`
+3. `EconomicDataset`
+4. `ReconciliationDataset`
+5. `CheckpointPackage`
+6. `JournalDataset`
+7. `TaxDeterminantDataset`
+8. `TaxOutputDataset`
+
+### Cross-Cutting Contracts To Land Before Broad Pipeline Expansion
+
+These contracts should be treated as blocking shared foundations rather than as
+optional cleanup.
+
+Scope:
+
+- one typed provenance family across evidence, claims, balances, issues,
+  reviews, checkpoints, accounting, and tax artifacts
+- one controlled gap taxonomy with stage ownership, blocking scope, subject
+  references, candidate interpretations, required evidence, and allowed
+  resolution methods
+- one readiness vocabulary reused across all datasets
+- one subject-slice model for readiness and materiality by source, location,
+  instrument, contract or position, continuity segment, and checkpoint date
+- one checkpoint assertion vocabulary reused by reconciliation, checkpoint
+  adoption, accounting, and tax
+
+Rules:
+
+- do not let each new stage invent its own status field or bespoke blocker row
+- do not store whole-dataset readiness as the only truth; derive it from
+  subject-level readiness reducers
+- keep gap ownership explicit so accounting gaps, reconciliation gaps, and
+  tax-owned gaps are not conflated operationally
+
+Exit criteria:
+
+- shared gap and readiness models exist with typed reducers and artifact
+  contracts
+- every new stage can emit stage-owned gaps without inventing one-off issue
+  formats
+- dataset summaries derive from subject-level readiness instead of hand-built
+  status prose
+
+### MVP Scope Guardrails
+
+The MVP should remain filing-capable, provider-neutral where it matters, and
+small enough to implement without a speculative framework buildout.
+
+Rules:
+
+- use the current fact-plus-balances bridge until the next concrete slice needs
+  a richer stage contract
+- do not wait for every target product to exist before improving the active
+  filing path
+- add new stage models, reducers, or ports only when one bounded slice needs
+  them for correctness, determinism, or later-stage reuse
+- avoid plugin systems, manifest families, or broad orchestration abstractions
+  before a second concrete implementation requires them
+- keep unsupported or deferred behavior explicit through gaps instead of
+  low-confidence partial support
+- prefer one end-to-end vertical slice that proves a new stage over several
+  horizontal framework layers with no proven consumer
+- keep crypto filing-critical coverage primary for the MVP while using generic
+  runtime names and boundaries that can later absorb other instrument classes
+
+Exit criteria:
+
+- the active filing path keeps moving while the architecture becomes more
+  explicit
+- new reusable seams exist because one real slice needed them, not because the
+  repo was trying to pre-build every future variation
+
+### Slice A. Harden `EvidenceBundle`
+
+Goal:
+
+- make deterministic evidence selection and source-local observation capture the
+  formal first pipeline product
+
+Scope:
+
+- carry selected, superseded, and blocked raw inputs as explicit evidence-bundle
+  artifacts
+- keep document, statement, and inventory observations source-local
+- preserve capture, assembly, and document provenance without forcing economic
+  meaning
+- keep deterministic evidence selection in core planning services rather than in
+  adapter-local heuristics
+
+Primary owners:
+
+- `application/intake/`
+- `application/profiling/`
+- `application/evidence/`
+- `application/normalization/translation_inputs/`
+
+Required contracts:
+
+- deterministic evidence selection report
+- source-local parsed observation contracts
+- explicit superseded and blocked evidence outputs
+- evidence-bundle summary and issue surfaces
+
+Must not do:
+
+- invent economic meaning at the evidence layer
+- hide raw-selection decisions inside adapter code
+- collapse source-local observations into final facts when the source remains
+  ambiguous
+
+Exit criteria:
+
+- the runtime can explain why every selected source artifact won and why every
+  superseded artifact lost
+- source-local observations and their provenance survive beyond file-selection
+  time
+- evidence selection becomes the only supported path into later claim and
+  economic compilation work
+
+### Slice B. Introduce `ClaimBundle` Without Breaking The Current Fact Path
+
+Goal:
+
+- interpose a source-local claim layer between evidence selection and canonical
+  economic facts
+
+Scope:
+
+- define activity, balance, ownership, location, instrument, contract-term, and
+  valuation claim contracts
+- allow materially unclassified claims when a provider row cannot safely commit
+  to one `EconomicKind`
+- capture candidate interpretations and blocking ambiguity explicitly
+- keep current `EconomicActivityDraft` as a transitional bridge while claim
+  contracts land incrementally
+
+Primary owners:
+
+- `ports/source_translation.py`
+- `application/facts/`
+- source adapters under `adapters/sources/`
+
+Required contracts:
+
+- claim bundle aggregate
+- claim-to-economic compilation seam
+- claim-owned issue and review contracts
+- explicit mapping from transitional draft fields into claim semantics during
+  migration
+
+Must not do:
+
+- require every claim to carry final economic, tax, and accounting semantics
+- bind ambiguous transfers, ownership changes, restructurings, or mixed rows to
+  one interpretation just to stay on the current draft shape
+- let adapters widen policy responsibility beyond source-local meaning
+
+Exit criteria:
+
+- at least one adapter family emits claim-native outputs before economic
+  compilation
+- ambiguous source rows can remain claim-complete but economically unresolved
+- the compiler can reject unsafe claims without losing claim provenance
+
+### Slice C. Expand `EconomicDataset` Beyond Today’s Minimal Fact Shape
+
+Goal:
+
+- make the canonical economic layer broad enough for obligation-bearing and
+  lifecycle-heavy instruments
+
+Scope:
+
+- keep `TransactionFact` as the current row-level bridge while expanding the
+  economic dataset contract around it
+- add first-class seams for contract instance identity, ownership change
+  semantics, settlement state, supersession, collateral, financing, and
+  lifecycle events
+- add valuation attachments with purpose, time, source, precision, and
+  provenance instead of free-form downstream valuation assumptions
+- keep signed-leg structure, precision, and provenance strict
+
+Primary owners:
+
+- `domain/transactions/`
+- `domain/instruments/`
+- `application/facts/`
+
+Required contracts:
+
+- economic dataset aggregate contract
+- contract instance or position identity surface
+- valuation attachment contract
+- correction and supersession chain contract
+
+Must not do:
+
+- assume all activity is spot movement between wallets and exchanges
+- encode loans, margin, shorts, options, futures, repos, or corporate actions
+  as awkward spot-only special cases
+- treat output-adapter projection hints as the long-term driver of core
+  behavior
+
+Exit criteria:
+
+- economic facts preserve the determinants needed for later reconciliation,
+  accounting, and tax work without revisiting raw rows
+- at least one non-trivial obligation or lifecycle-heavy activity family is
+  representable without a local special-case rewrite
+- valuation requirements are explicit rather than inferred ad hoc downstream
+
+### Slice D. Build `ReconciliationDataset` As Its Own Product
+
+Goal:
+
+- make reconciliation more than exact balance assertions by defining the
+  canonical completeness and continuity product
+
+Scope:
+
+- transfer linking across owned venues and wallets
+- funding and settlement completeness checks
+- continuity windows and unresolved ownership transitions
+- cross-source corroboration sidecars
+- reconciliation-owned gaps, readiness, and clean-window summaries
+- checkpoint candidate assembly inputs
+
+Primary owners:
+
+- `application/reconciliation/`
+- `application/balances/`
+
+Required contracts:
+
+- reconciliation dataset aggregate
+- explicit link records and link-decision artifacts
+- continuity-window and clean-window artifacts
+- missing-leg and unresolved-transition artifacts
+
+Must not do:
+
+- rewrite upstream economic facts just to satisfy a check
+- erase valid partial balances because the full source window is not yet clean
+- collapse transfer-link uncertainty into tax or accounting-owned logic
+
+Exit criteria:
+
+- exact balance assertion output becomes one reconciliation surface, not the
+  entire reconciliation product
+- transfer links, continuity gaps, and checkpoint candidates are explicit
+  runtime artifacts
+- reconciliation readiness is sliceable by source and time window
+
+### Slice E. Formalize `CheckpointPackage`
+
+Goal:
+
+- make accepted checkpoint truth a first-class package boundary and not only a
+  derived summary
+
+Scope:
+
+- checkpoint assertion contracts
+- acceptance basis and trust-level contracts
+- intentional opening-state adoption flow with provenance
+- continuity into the adopted checkpoint
+- checkpoint summaries reusable by accounting and tax
+
+Primary owners:
+
+- `application/checkpoints/`
+- `domain/checkpoints/`
+- `application/reconciliation/`
+
+Required contracts:
+
+- accepted checkpoint package
+- opening-state adoption package
+- checkpoint evidence index
+- checkpoint continuity report
+
+Must not do:
+
+- treat operator assertions as equivalent to filing-ready source-backed
+  checkpoint evidence
+- leave accepted checkpoint state implicit in reconciliation notes or balances
+  summaries
+
+Exit criteria:
+
+- one checkpoint package can be referenced directly by later accounting and tax
+  workflows
+- checkpoint acceptance basis is explicit and auditable
+- opening-state adoption is intentional, reviewable, and provenance-backed
+
+### Slice F. Build `JournalDataset` As A Validator, Not A Truth Repair Layer
+
+Goal:
+
+- expand accepted upstream truth into double-entry structure and expose
+  accounting coverage gaps explicitly
+
+Scope:
+
+- posting assembly from reconciled economics and accepted checkpoint state
+- journal validation artifacts
+- unsupported accounting coverage gap reporting
+- checkpoint-aligned accounting summaries
+
+Primary owners:
+
+- `domain/accounting/`
+- `application/accounting/`
+- output renderers under `application/outputs/` and adapter layers
+
+Required contracts:
+
+- journal dataset aggregate
+- posting contract
+- validation result contract
+- accounting coverage gap contract
+
+Must not do:
+
+- patch upstream truth locally to make the ledger balance
+- treat renderer-specific chart choices as the domain model
+- make tax depend on renderer success when the underlying determinants are
+  already known
+
+Exit criteria:
+
+- balanced supported activity renders deterministically
+- unsupported accounting coverage is visible as stage-owned gaps
+- accounting outputs can be reconciled back to accepted checkpoint state
+
+### Slice G. Introduce `TaxDeterminantDataset`
+
+Goal:
+
+- separate policy-ready tax determinants from both raw economics and final
+  jurisdiction outputs
+
+Scope:
+
+- acquisition and disposition determinants
+- income-event determinants
+- internal transfer determinants
+- financing-cost determinants
+- basis or pool state transitions
+- valuation requirements for tax computation
+- tax-owned unresolved gaps
+
+Primary owners:
+
+- `domain/tax/`
+- `application/tax/`
+
+Required contracts:
+
+- tax determinant aggregate
+- determinant-to-policy application seam
+- tax-owned gap contract
+- year-state and carry-forward intermediate contracts
+
+Must not do:
+
+- branch tax logic directly on CoinTracking or other oracle artifact rows
+- use journal output as a hidden prerequisite when the journal only restates
+  already-known truth
+- fill missing valuations or ownership decisions silently
+
+Exit criteria:
+
+- the runtime can explain what was acquired, disposed, earned, transferred
+  internally, or still unresolved before jurisdiction rules render final output
+- tax-owned gaps are distinguishable from reconciliation and accounting gaps
+- determinant coverage is reproducible from reconciled economics plus accepted
+  checkpoint truth
+
+### Slice H. Build `TaxOutputDataset`
+
+Goal:
+
+- render jurisdiction-specific outputs from determinants without contaminating
+  earlier stages with jurisdiction rules
+
+Scope:
+
+- Canada MVP outputs first
+- year summaries
+- carry-forward outputs
+- explicit unsupported and deferred outputs
+
+Primary owners:
+
+- `application/tax/`
+- output renderers under `application/outputs/`
+
+Required contracts:
+
+- tax output aggregate
+- jurisdiction renderer contracts
+- unsupported-output reporting
+
+Exit criteria:
+
+- `2023`, `2024`, and `2025` outputs emit from tax determinants
+- carry-forward state is deterministic and reproducible
+- unresolved unsupported items remain visible instead of disappearing into
+  notes
+
+### Slice I. Cross-Stage Verification And Retirement
+
+Goal:
+
+- replace transition-era behavior only after the new pipeline products prove
+  themselves end to end
+
+Scope:
+
+- raw-evidence semantic parity validation
+- reconciliation artifact parity where meaningful
+- checkpoint continuity regression coverage
+- journal validation coverage
+- tax determinant and output coverage
+- retirement of normalized-transaction-era assumptions after the fact-native
+  path is stable
+
+Rules:
+
+- do not remove an older path until the replacement has stage-appropriate
+  parity, contract, and smoke coverage
+- prefer replacing one active runtime path with a new typed product over adding
+  long-lived wrapper lanes
+
+Exit criteria:
+
+- the supported workflow runs from source evidence through tax output without
+  transition-only assumptions
+- remaining compatibility surfaces are deliberate edges, not hidden core
+  dependencies
+
 ## Roadmap Sequence
 
 ### 1. Oracle Boundary Completion
@@ -80,10 +533,13 @@ reconciliation, accounting, and tax work expands.
 Scope:
 
 - keep direct fact artifacts as the only runtime model
-- add capture-scoped translation input planning as a required fact-path
-  stabilization step so adapters describe valid input candidates and the core
-  planner selects deterministic selected, superseded, or blocked plans from
-  event-time coverage and freshness metadata
+- treat filing-critical adapter work as a stabilization track on the current
+  seams: during the filing window, prioritize deterministic planner, evidence,
+  translation, and output hardening for the adapters actually used by the
+  active filing workflow, and defer the broader unified adapter contract
+  rewrite until after that path is stable; treat
+  `docs/concepts/unified-adapter-architecture.md` as the explicit design
+  target for later adapter-contract replacement
 - center intake on explicit capture identity, capture registries, and
   raw-evidence preservation instead of inferred capture buckets
 - keep inferred period and capture heuristics as report metadata only; they do
@@ -116,6 +572,16 @@ Scope:
 - migrate adapters to the planner path in stages, starting with Coinbase and
   then other adapters that still pick one export by filename or path heuristic
 - add a repo-native semantic parity validator for unchanged raw inputs
+- keep the broad adapter-interface redesign documented and deferred while
+  filing-critical adapters remain on the current contract; use that later
+  redesign to replace the bundled source contract only after the active filing
+  path is deterministic enough to trust
+- define the target `EvidenceBundle` and `ClaimBundle` contracts and land them
+  incrementally without reintroducing normalized-transaction-era wrappers
+- allow source-local ambiguity to survive into claim outputs when forcing one
+  final economic meaning would guess
+- keep `EconomicActivityDraft` and `TransactionFact` as transition seams rather
+  than freezing them as the final architecture center
 
 Exit criteria:
 
@@ -131,6 +597,8 @@ Exit criteria:
 - balance references, issue rows, review rows, and location inventory evidence
   rows share one flattened provenance locator family at artifact boundaries
   while runtime models keep typed provenance
+- at least one adapter family proves the claim-to-economic compilation path
+  without requiring every claim to bind final tax and accounting intent early
 - unchanged raw inputs preserve file completeness, fact counts, snapshot
   counts, reference counts, and issue or review counts unless an
   expected-difference fixture documents the exception
@@ -168,6 +636,9 @@ Scope:
 - checkpoint continuity checks
 - correction and supersession chains
 - reconciliation issue assembly
+- define `ReconciliationDataset` as an explicit product with link decisions,
+  continuity windows, checkpoint candidates, and reconciliation-owned readiness
+  slices rather than treating exact balance assertions as the whole product
 - deterministic correction handling for known historical events such as the
   GALA redistribution
 
@@ -183,6 +654,8 @@ Exit criteria:
 - reconciliation artifacts no longer depend on normalized-transaction-era
   stopgaps
 - material reconciliation issues surface explicitly and reproducibly
+- reconciliation readiness is reducible by source, location, instrument, and
+  continuity window instead of only by coarse source summaries
 
 ### 4. Checkpoint Packages And Opening State
 
@@ -203,6 +676,8 @@ Scope:
   near `2026-03-23`
 - intentional opening-state adoption flow with provenance
 - continuity checks between reconstructed balances and adopted checkpoints
+- keep checkpoint trust level and acceptance basis explicit so later accounting
+  and tax work can reference accepted checkpoint truth directly
 
 Exit criteria:
 
@@ -224,6 +699,8 @@ Scope:
 - Ledger CLI renderer
 - journal validation result artifacts
 - accounting summaries tied to reconciliation and checkpoint outputs
+- keep accounting coverage gaps stage-owned and explicit instead of repairing
+  upstream truth locally
 
 Exit criteria:
 
@@ -240,17 +717,22 @@ Scope:
 
 - tax policy port
 - Canada MVP policy
+- tax determinant contracts between reconciled facts and rendered tax outputs
 - pooled ACB state
 - disposition outputs
 - income outputs
 - unsupported tax item outputs
 - carry-forward and year summary outputs for `2023`, `2024`, and `2025`
+- keep tax-owned unresolved determinants explicit rather than encoding them as
+  generalized reconciliation or accounting failures
 
 Exit criteria:
 
 - `2023` to `2025` tax artifacts emit from reconciled facts
 - year-end and carry-forward state is reproducible without tracker tax reports
 - unresolved unsupported tax items are visible rather than hidden in notes
+- tax determinants are reproducible from reconciled economics plus accepted
+  checkpoint truth without depending on CoinTracking or other oracle rows
 
 ### 7. Filing Workflow
 

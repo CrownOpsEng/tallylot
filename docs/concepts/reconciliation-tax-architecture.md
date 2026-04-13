@@ -100,6 +100,12 @@ Every transaction fact should support distinct classification layers:
 - `TaxTreatmentHint`: jurisdiction-neutral tax intent
 - `AccountingIntentHint`: accounting intent
 
+These layered fields are the current fact-bridge contract, not a rule that
+every earlier stage must guess final policy meaning. When a provider row
+cannot safely support one final economic, accounting, or tax reading, the
+target `ClaimBundle` should preserve that ambiguity until one safe canonical
+economic fact or later stage-owned policy decision is available.
+
 ### 5. Keep The Core Runtime Asset-Class Agnostic
 
 The internal runtime should generalize across financial asset classes even when
@@ -348,6 +354,386 @@ Core abstractions added from this point forward must stay neutral enough to
 support multiple asset classes. If a term is only correct for one provider,
 chain, or asset class, keep it adapter-local unless the domain concept itself
 is inherently specific.
+
+### Canonical Pipeline Products
+
+The target runtime should converge on one canonical flow:
+
+`general intake -> surface reconciliation -> checkpoint adoption ->
+journal expansion -> tax expansion`
+
+Each stage narrows truth and then expands the next decision surface. Upstream
+stages preserve optionality. Downstream stages force specificity. No stage may
+guess a later-stage answer or suppress uncertainty that a later stage must
+still see.
+
+The canonical runtime products are:
+
+1. `EvidenceBundle`
+2. `ClaimBundle`
+3. `EconomicDataset`
+4. `ReconciliationDataset`
+5. `CheckpointPackage`
+6. `JournalDataset`
+7. `TaxDeterminantDataset`
+8. `TaxOutputDataset`
+
+Current runtime note:
+
+- today's `EconomicActivityDraft`, `TransactionFact`,
+  `balance_snapshots.csv`, and `balance_references.csv` remain the active
+  runtime center until the richer products land
+- treat those contracts as the current bridge into the target pipeline, not as
+  proof that the final architecture should stop at facts plus balances
+
+### Stage Contracts
+
+#### `EvidenceBundle`
+
+`EvidenceBundle` is the deterministic intake product.
+
+It should contain:
+
+- selected raw source artifacts
+- parsed boundary observations that remain source-local
+- capture and source assembly provenance
+- document, statement, and inventory observations
+- deterministic selection decisions and superseded or blocked alternatives
+
+It must promise:
+
+- deterministic evidence selection
+- stable provenance and locator references
+- no forced economic meaning
+- no forced tax, accounting, or reconciliation policy
+
+It may block only when:
+
+- source selection is nondeterministic
+- parsing cannot produce stable source-local observations
+- provenance is too unresolved to support later review
+
+#### `ClaimBundle`
+
+`ClaimBundle` is the source-local meaning layer.
+
+It should contain claims such as:
+
+- activity claims
+- balance observation claims
+- ownership and control claims
+- location claims
+- instrument identity claims
+- contract term claims
+- valuation claims
+- explicit issues and reviews
+
+It must promise:
+
+- source-local semantics only
+- preserved ambiguity when the source does not support one final reading
+- provenance for every emitted claim
+- candidate interpretations when one safe final meaning is not yet available
+
+Rules:
+
+- adapters may continue populating layered classifications on the current
+  runtime path when they are safe and deterministic
+- the target claim layer must allow unresolved economic, accounting, or tax
+  classification when forcing those fields would guess
+- `ClaimBundle` must be able to express materially unclassified rows instead of
+  coercing everything into one `EconomicKind`
+
+#### `EconomicDataset`
+
+`EconomicDataset` is the first canonical narrowing.
+
+It should contain only what the system can safely say happened economically.
+
+It must preserve enough determinants for later reconciliation, accounting, and
+tax work:
+
+- signed legs
+- instrument identity
+- contract instance identity when applicable
+- location identity
+- legal owner, beneficial owner, and counterparty identity when known
+- effective time and temporal precision
+- settlement and supersession links
+- optional valuation attachments with purpose and provenance
+- provenance, confidence, and ambiguity markers
+
+It must be able to express economically important surfaces beyond simple spot
+flows:
+
+- holdings movements
+- cash movements
+- obligations and rights
+- settlements
+- collateral state changes
+- financing flows
+- fees, rebates, and withholding
+- corrections and supersession chains
+- corporate actions and similar non-trade lifecycle events
+
+It may block only when:
+
+- a canonical fact would be false
+- identity is too unresolved to emit a stable canonical fact
+- the source collapses multiple materially different interpretations and the
+  ambiguity is not representable safely
+
+#### `ReconciliationDataset`
+
+`ReconciliationDataset` is the surface-reconciliation product.
+
+It should contain:
+
+- transfer and linkage decisions
+- balance targets, assertions, and continuity windows
+- missing funding or settlement legs
+- unresolved ownership transitions
+- cross-source corroboration sidecars
+- checkpoint candidates
+- reconciliation-owned issues, gaps, and readiness state
+
+It must promise:
+
+- explicit completeness and continuity decisions
+- explicit missing-leg and missing-evidence surfaces
+- partial truth preservation when full clean-state is not yet available
+- no rewriting of upstream economic truth to make a check pass
+
+Rules:
+
+- transfer linking belongs here, not in adapter translation
+- checkpoint continuity belongs here before checkpoint adoption is accepted
+- reconciliation may declare a subject or window unresolved, but it must not
+  erase a valid partial balance or partial economic fact
+
+#### `CheckpointPackage`
+
+`CheckpointPackage` is the formal handoff between reconstruction and later
+stateful work.
+
+It should contain:
+
+- accepted checkpoint assertions
+- adopted opening state when intentionally imported
+- supporting evidence and provenance
+- continuity decisions into the accepted checkpoint
+- explicit trust level and acceptance basis
+
+Rules:
+
+- keep checkpoint state as a first-class package boundary, not just a flag on
+  reconciliation output
+- source-backed evidence remains the preferred basis
+- operator assertions may support runtime reconciliation but do not satisfy the
+  filing-ready checkpoint requirement by themselves
+
+#### `JournalDataset`
+
+`JournalDataset` is the accounting expansion product.
+
+It should contain:
+
+- journal entries and postings
+- posting provenance back to reconciled economics
+- validation results
+- unsupported accounting coverage gaps
+
+It must promise:
+
+- deterministic posting expansion from accepted upstream truth
+- explicit balanced-versus-unbalanced validation
+- explicit unsupported accounting gaps
+
+Rules:
+
+- accounting is a validator and renderer, not a truth-repair stage
+- journal failures should surface upstream fact or reconciliation gaps instead
+  of inventing local repairs
+
+#### `TaxDeterminantDataset`
+
+`TaxDeterminantDataset` is the policy-ready tax input surface.
+
+It should contain:
+
+- acquisitions
+- dispositions
+- income events
+- financing costs
+- internal transfers
+- corporate actions
+- valuations required for tax computation
+- unresolved tax-owned gaps
+
+It must promise:
+
+- jurisdiction-neutral tax determinants, not final jurisdiction output
+- explicit basis-affecting state changes
+- explicit unresolved tax-specific blockers when reconciliation truth is
+  sufficient operationally but not yet sufficient for tax
+
+Rules:
+
+- tax operates on reconciled economics plus accepted checkpoint truth
+- journal output may corroborate tax readiness, but tax must not depend on a
+  journal renderer succeeding unless the missing accounting information exposes
+  a real upstream determinant gap
+- tax must never invent missing economics
+
+#### `TaxOutputDataset`
+
+`TaxOutputDataset` is the jurisdiction-specific result surface.
+
+It should contain:
+
+- jurisdiction summaries
+- schedules and forms
+- carry-forward state
+- explicit unsupported or deferred outputs
+
+### Shared Sidecars
+
+Every canonical product should reuse the same sidecar families.
+
+#### Provenance
+
+- one typed runtime provenance model
+- flatten only at storage or export boundaries
+- keep evidence locators and row or page anchors distinct
+
+#### Gaps
+
+Use one cross-stage gap contract rather than stage-local ad hoc issue shapes.
+
+Every gap record should declare at least:
+
+- `gap_id`
+- `owner_stage`
+- `blocking_for_stage`
+- `subject_ref`
+- `gap_kind`
+- `known_facts`
+- `missing_determinants`
+- `candidate_interpretations`
+- `required_evidence`
+- `allowed_resolution_methods`
+- `recommended_next_action`
+- `confidence`
+- `materiality`
+- `provenance_refs`
+
+`gap_kind` should stay explicit and closed over a controlled taxonomy such as:
+
+- missing_evidence
+- unresolved_identity
+- unresolved_linkage
+- contradiction
+- policy_required_determination
+- operator_override_required
+
+#### Readiness
+
+Use one readiness vocabulary across the pipeline:
+
+- `semantic_ready`
+- `reconciliation_ready`
+- `checkpoint_ready`
+- `accounting_ready`
+- `tax_ready`
+
+Rules:
+
+- readiness must be sliceable by subject and time window, not just summarized
+  once per whole dataset
+- support at least source, location, instrument, position or contract,
+  continuity segment, and checkpoint date slices
+- dataset-level readiness is a reducer output over subject-level readiness, not
+  the primary stored truth
+
+#### Checkpoints
+
+- one checkpoint assertion vocabulary
+- one accepted checkpoint package surface
+- one trust-level model that distinguishes source-backed, network-backed, and
+  operator-backed support
+
+### MVP Delivery Guardrails
+
+The MVP should be intentionally narrow without painting the system into a
+corner.
+
+Rules:
+
+- keep the current fact-plus-balances bridge as the active delivery path until a
+  richer stage contract is needed by the next concrete slice
+- land new stage products only when they unlock a real filing-critical or
+  architecture-blocking behavior
+- prefer one bounded reducer, compiler, or dataset contract per stage over
+  building a general framework for every future variation up front
+- do not build a full contract-lifecycle or multi-asset engine before an
+  in-scope workflow needs that capability
+- keep unsupported surfaces explicit through gaps instead of speculative partial
+  implementations
+- prioritize the filing-critical `2023` to `2025` reconstruction path even when
+  choosing generic names and seams that can later generalize beyond crypto
+- treat replaceable seams as typed ports and contracts, not as plugin systems
+  that exist before a second concrete implementation needs them
+
+### Generic Core Requirements
+
+The shared core must stay broad enough for crypto, FX, securities, debt,
+options, futures, staking derivatives, loans, funds, and later non-crypto
+instruments without reshaping the engine.
+
+The core should standardize concepts such as:
+
+- `Instrument`
+- `InstrumentTraits`
+- `ContractInstance`
+- `ContractTerms`
+- `PositionState`
+- `OwnershipScope`
+- `Counterparty`
+- `EconomicEvent`
+- `EconomicLeg`
+- `Observation`
+- `Link`
+- `CheckpointAssertion`
+- `Valuation`
+- `Posting`
+- `TaxDeterminant`
+
+The core must not assume the world is only:
+
+- exchanges
+- wallets
+- chain transfers
+- coin categories
+- tracker-specific row types
+
+### Identity Requirements
+
+Cross-stage logic should keep identity layers explicit instead of overloading
+one id field for several concerns.
+
+The target pipeline should keep separate runtime seams for:
+
+- instrument identity
+- contract instance identity
+- location identity
+- legal owner identity
+- beneficial owner identity
+- counterparty identity
+
+Location and instrument identity remain foundational runtime contracts. Later
+reconciliation, checkpoint, accounting, and tax work should add the remaining
+identity layers as first-class seams instead of collapsing them into
+descriptions or adapter-local metadata.
 
 ### Domain Packages
 
@@ -836,17 +1222,21 @@ Estimated effort: `8` to `12` hours
 
 Deliverables:
 
-- final schema and package decisions
+- final schema, package, and stage-boundary decisions
 - roadmap updates
-- migration plan from normalized transactions to transaction facts
+- migration plan from the current fact bridge into the canonical pipeline
+- shared provenance, gap, readiness, and checkpoint-vocabulary decisions
 - provenance policy for external ideas and direct code reuse
 
-### Phase 1. Boundary Models And Dev-Only Oracle Readers
+### Phase 1. Evidence And Claim Foundations Plus Oracle Readers
 
 Estimated effort: `14` to `22` hours
 
 Deliverables:
 
+- deterministic `EvidenceBundle` and `ClaimBundle` contracts for the next
+  pipeline slice
+- claim ambiguity rules and shared gap or readiness foundations
 - Pydantic row models for CoinTracking report families
 - parser services for all oracle exports under `tools/oracles/`
 - projection-type enum and alias normalization for current output adapters
@@ -859,11 +1249,12 @@ Estimated effort: `18` to `28` hours
 Deliverables:
 
 - transaction fact domain package
+- claim-to-economic compilation seam
 - normalization result evolution to emit fact artifacts directly
 - downstream service updates to consume fact artifacts without wrappers
 - parity tests for current adapters
 
-### Phase 3. Deterministic Reconciliation And Checkpointing
+### Phase 3. Reconciliation Dataset And Checkpoint Packages
 
 Estimated effort: `18` to `28` hours
 
@@ -873,11 +1264,13 @@ Deliverables:
   evidence
 - transfer linking
 - balance assertions
+- reconciliation dataset with explicit readiness, link, and continuity outputs
 - checkpoint builder around `2026-03-23`
+- accepted checkpoint package and trust-basis contracts
 - continuity reports
 - deterministic correction handling for events such as the GALA redistribution
 
-### Phase 4. Accounting Layer And Ledger CLI Hard Gate
+### Phase 4. Journal Dataset And Ledger CLI Hard Gate
 
 Estimated effort: `14` to `22` hours
 
@@ -886,14 +1279,16 @@ Deliverables:
 - internal journal model
 - Ledger CLI renderer
 - journal validation results
+- accounting coverage gaps
 - accounting summaries tied to checkpoint and reconciliation outputs
 
-### Phase 5. Canadian Tax MVP
+### Phase 5. Tax Determinants And Canadian Tax MVP
 
 Estimated effort: `24` to `36` hours
 
 Deliverables:
 
+- tax determinant dataset contracts
 - Canadian pooled ACB engine
 - disposition and income outputs
 - unsupported-item and ambiguity reporting

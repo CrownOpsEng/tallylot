@@ -1,6 +1,6 @@
 ---
 title: "Migration Sequence"
-summary: "Incremental migration order from the legacy normalized flow to the provider-neutral fact model."
+summary: "Incremental migration order from the current fact-path bridge to the full canonical pipeline."
 doc_type: status
 audience: human
 owner: repo
@@ -9,8 +9,8 @@ nav_order: 20
 ---
 
 Use this document to implement the next phase without a big-bang refactor. The
-goal is to move from the current normalized-transaction flow to a
-provider-neutral fact model with explicit parity gates.
+goal is to move from the current normalized-transaction flow and current
+fact-path bridge into the full canonical pipeline with explicit parity gates.
 
 ## Migration Objectives
 
@@ -18,6 +18,27 @@ provider-neutral fact model with explicit parity gates.
 - avoid pushing more semantics into the current normalized transaction model
 - keep adapters and services shippable at every checkpoint
 - keep CoinTracking as one edge projection, not a migration anchor
+
+## Target Pipeline Landings
+
+The target architecture should land as these canonical products:
+
+1. `EvidenceBundle`
+2. `ClaimBundle`
+3. `EconomicDataset`
+4. `ReconciliationDataset`
+5. `CheckpointPackage`
+6. `JournalDataset`
+7. `TaxDeterminantDataset`
+8. `TaxOutputDataset`
+
+Migration rule:
+
+- current `EconomicActivityDraft`, `TransactionFact`, and shared balance
+  artifacts remain the active bridge into this pipeline
+- do not freeze that bridge as the final architecture center
+- land the richer pipeline products incrementally without restoring
+  normalized-transaction-era wrapper lanes
 
 ## Phase 0. Schema Lock
 
@@ -77,6 +98,9 @@ Implementation rule:
 Bridge rule for the current branch:
 
 - source adapters translate provider exports into `EconomicActivityDraft`
+- introduce `ClaimBundle` incrementally between evidence selection and
+  canonical fact compilation when a source row cannot safely commit to one
+  final economic meaning
 - adapter resolution remains registry-driven; shared support must not depend on
   concrete adapter ids or hand-maintained provider lists
 - shared compiler code produces transaction facts
@@ -85,6 +109,9 @@ Bridge rule for the current branch:
   activity unless the source provides real balance evidence
 - unresolved or ambiguous identifier resolution blocks fact emission for the
   affected activity and must surface both review output and a blocking issue
+- ambiguous transfer, ownership, lifecycle, or mixed-purpose rows must be able
+  to survive as source-local claims until one safe canonical economic meaning
+  is available
 - no parallel runtime, wrapper lane, or runtime artifact translators
 - a clean fact artifact schema break is allowed in this branch when the
   replacement is ready
@@ -108,6 +135,7 @@ Move these capabilities off normalized transactions:
 - checkpoint continuity
 - correction chains
 - reconciliation issue assembly
+- reconciliation dataset and readiness reducers
 
 Rules:
 
@@ -115,6 +143,8 @@ Rules:
 - keep balance orchestration behind one shared balance capability for target
   planning, snapshot derivation, reference resolution, inspect and check
   workflows, hydration, corroboration, and assertion assembly
+- treat exact balance assertions as one reconciliation input surface, not as the
+  whole reconciliation product
 - replace split balance evidence or confirmation artifacts directly with
   unified `balance_references.csv`
 - fact-backed balance checks derive snapshots from facts; manual-only balance
@@ -135,6 +165,8 @@ Rules:
   shared fact shape is stable
 - reconciliation remains the gate before tax and before treating rebuilt fact
   history as trusted
+- readiness must be reducible by source, location, instrument, and continuity
+  segment rather than only by whole-source summaries
 
 Exit criteria:
 
@@ -155,13 +187,15 @@ Implement:
 
 Rules:
 
-- accounting consumes facts plus journal intents
+- accounting consumes reconciled economics plus accepted checkpoint state
 - CoinTracking double-entry is comparison-only
 - unsupported activity must surface as explicit journal coverage gaps
 - accounting advances in parallel with reconciliation once the shared fact
   shape is stable
 - accounting is the journal structure and coverage validator, not the evidence
   truth gate
+- accounting must not become a local repair layer for upstream fact or
+  reconciliation gaps
 
 Exit criteria:
 
@@ -173,6 +207,7 @@ Exit criteria:
 Implement:
 
 - tax policy port
+- tax determinant dataset contracts
 - Canada MVP policy
 - pooled ACB state
 - disposition and income outputs
@@ -180,9 +215,15 @@ Implement:
 
 Rules:
 
-- tax computation consumes reconciled facts and intentional opening state only
+- tax computation consumes reconciled economics plus accepted checkpoint truth,
+  including intentional opening-state adoption when that checkpoint path is
+  used
 - CoinTracking tax outputs are oracle-only
 - no tax logic branches directly on CoinTracking report rows
+- journal validation may corroborate tax readiness, but tax must not depend on
+  renderer success when the required determinants are already known
+- tax-owned unresolved determinants must remain explicit instead of being pushed
+  back into reconciliation or adapter logic
 
 Exit criteria:
 
