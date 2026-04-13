@@ -315,6 +315,33 @@ Rules:
 - checkpoint submission row models stay validated at the boundary with
   `pydantic` so malformed or unsupported rows fail with explicit issues
 
+### 18. Plan Translation Inputs In Core Before Adapter Translation
+
+Capture-scoped normalization must decide which raw source files are translated
+before adapter row translation runs.
+
+Rules:
+
+- adapters describe every valid translation input candidate for the capture,
+  including coverage, freshness, grouping, replaceability, and comparability
+  metadata
+- the core planner in `application/normalization/` selects the deterministic
+  candidate plan and records selected, superseded, and blocked outcomes before
+  translation begins
+- event-time coverage outranks path order, filename order, and discovery order
+- ambiguous overlap, incomparable candidates, unknown coverage, or unresolved
+  freshness ties are blocking normalization concerns, not adapter-local
+  heuristics
+- planner artifacts must preserve raw-input provenance explicitly through
+  candidate and decision outputs rather than hiding file selection inside
+  adapter code
+- migrated adapters translate only the selected plan; legacy adapters may stay
+  on the fallback `translate(...)` path until their candidate semantics are
+  modeled accurately
+- Coinbase is the first migrated adapter and future migrations should proceed
+  in stages from path-order or filename-order adapters toward richer grouped
+  multi-file inputs
+
 ## Target Architecture
 
 Core abstractions added from this point forward must stay neutral enough to
@@ -344,8 +371,9 @@ is inherently specific.
 - `application/profiling/`
   - capture profile construction, inventory inspection, and timezone review
 - `application/normalization/`
-  - orchestrate one capture's translation into fact artifacts, source-backed
-    evidence, and fact-backed balance packages through `application/balances`
+  - orchestrate one capture's translation-input planning, translation into fact
+    artifacts, source-backed evidence, and fact-backed balance packages through
+    `application/balances`
 - `application/balances/`
   - target planning, snapshot derivation, reference resolution, exact-balance
     inspection and check workflows, cross-source corroboration, summary and
@@ -403,6 +431,9 @@ Rules:
   artifacts
 - source adapters return `SourceTranslationBatch`; they do not emit output
   rows, checkpoint decisions, or tax policy decisions directly
+- planner-enabled source adapters describe translation input candidates and
+  translate only the selected plan; they do not choose winning files
+  independently once they opt into the planner contract
 - CoinTracking-specific column defaults, `Tx-ID` behavior, and row-shape
   metadata stay inside the CoinTracking output adapter package rather than in
   provider-local source code

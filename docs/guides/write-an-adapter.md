@@ -21,12 +21,16 @@ automatically.
 - Keep adapters pure with respect to filesystem layout except for reading their
   assigned input paths.
 - Treat source adapters as translation adapters, not orchestration centers.
+- When an adapter opts into translation input planning, describe every valid
+  translation candidate and let the core planner choose the selected plan.
 - Prefer existing adapter support seams for stable cross-provider work such as
   file-family dispatch, CSV traversal, draft compilation, issue construction,
   wallet-record construction, and output projection so new adapters stay thin.
 - Publish stable file-family ids from schema or content signatures before using
   filename or path hints. Translation code should consume those adapter-declared
   family ids rather than rediscovering provider filenames in each workflow.
+- Do not keep file-winner selection inside adapter-local path-order or
+  filename-order heuristics once the planner contract is available.
 - Keep shared support adapter-agnostic. It should work from registry-resolved
   manifests and adapter-published translation contracts, not from concrete
   provider ids hard-coded into support modules.
@@ -94,8 +98,9 @@ automatically.
 
 Working source adapters should follow four steps:
 
-1. parse provider exports into provider-local typed records
-2. select a provider-local translation rule or grouped-operation rule
+1. describe valid translation input candidates when the adapter can opt into
+   core planning
+2. parse provider exports into provider-local typed records
 3. emit shared adapter drafts plus explicit issues or reviews
 4. let shared compiler or projection support build runtime artifacts
 
@@ -113,8 +118,23 @@ leg shape through explicit `LegShapeLimit` entries.
 
 The core service should resolve the adapter through the registry and supply
 only the minimal context the adapter needs to translate correctly. Export
-families, translation registries, and provider-local coverage declarations come
-from the adapter package itself, not from a support-layer provider table.
+families, translation registries, candidate descriptions, and provider-local
+coverage declarations come from the adapter package itself, not from a
+support-layer provider table.
+
+Planner-enabled adapters should expose these responsibilities:
+
+- `describe_translation_inputs(...)` returns every valid candidate for the
+  capture with coverage, freshness, grouping, comparability, and member-path
+  metadata
+- the core planner selects the deterministic plan and writes
+  `translation_input_candidates.json`, `translation_input_plan.json`, and
+  `translation_input_issues.csv` before translation starts
+- `translate_selected_inputs(...)` consumes only the selected candidate ids in
+  plan order and must not redo winner-selection logic internally
+- adapters that cannot yet describe meaningful overlap or replacement semantics
+  should stay on the legacy `translate(...)` fallback path until they can be
+  migrated safely
 
 Mixed captures must fail explicitly. If profiling detects incompatible adapter
 families in one raw source directory, the adapter should rely on the shared

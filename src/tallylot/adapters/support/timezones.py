@@ -91,8 +91,10 @@ def _validate_timezone_inventory(
     profile: SourceProfile,
     spec: _TimezoneValidationSpec,
 ) -> tuple[dict[str, JsonValue], tuple[IssueRecord, ...]]:
-    dated_items = tuple(item for item in profile.file_inventory if item.date_field)
-    rows_with_dates = sum(1 for item in profile.file_inventory if item.date_field)
+    dated_items = tuple(
+        item for item in profile.file_inventory if _has_dated_rows(item)
+    )
+    rows_with_dates = sum(1 for item in profile.file_inventory if _has_dated_rows(item))
     mode_counts: dict[str, int] = {}
     timezone_values: dict[str, int] = {}
     issues: list[IssueRecord] = []
@@ -116,6 +118,10 @@ def _validate_timezone_inventory(
         "accepted_modes": list(sorted(spec.accepted_modes)),
         "timezone_values": cast(dict[str, JsonValue], dict(timezone_values)),
     }, tuple(issues)
+
+
+def _has_dated_rows(entry: FileInventoryEntry) -> bool:
+    return bool(entry.date_field) and entry.row_count != 0
 
 
 def _inventory_timezone_issue(

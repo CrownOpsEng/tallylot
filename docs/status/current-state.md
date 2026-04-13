@@ -39,6 +39,11 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - capture-scoped source normalization with explicit fact artifacts, derived
   balance snapshots, unified balance references, and archive member provenance
   under `working/normalized/captures/<capture_uid>/`
+- planner-enabled capture normalization that writes
+  `translation_input_candidates.json`, `translation_input_plan.json`, and
+  `translation_input_issues.csv` before translation, blocks ambiguous file
+  selection, and records translation planner metrics in
+  `normalization_summary.json`
 - source assembly via `source assemble`, producing reconciliation-ready source
   datasets under `working/normalized/sources/<source>/` and rewrites its owned
   generated artifact set on rerun
@@ -81,6 +86,11 @@ The repo currently ships typed replacements for the core workflow capabilities:
   capture root under `evidence/raw/source/<source>/<capture_label>/` with
   matching `capture.json` metadata. They reject source roots, arbitrary
   directories, and mismatched capture metadata.
+- Planner-enabled adapters describe translation input candidates and the core
+  normalization flow chooses the selected plan. If overlap, coverage, or
+  freshness ambiguity would change the factual dataset, normalization stops
+  before writing `facts.csv`, `balance_snapshots.csv`, or
+  `balance_references.csv`.
 - Capture-scoped normalized outputs live under `working/normalized/captures/`.
 - Reconciliation reads assembled source datasets under
   `working/normalized/sources/`.
@@ -119,6 +129,14 @@ The repo currently ships typed replacements for the core workflow capabilities:
   `issue_count_delta`, `review_count_delta`, and `reason`.
 - Repo docs and repo-local agent entrypoints must describe only implemented
   commands and artifacts.
+
+## Current Migration Notes
+
+- Translation input planning is opt-in per adapter during the first slice.
+- Coinbase is the first planner-enabled adapter and now describes retail CSV
+  candidates instead of choosing one file by path order.
+- Legacy adapters still use the fallback `translate(...)` path until their
+  candidate semantics are modeled well enough to migrate safely.
 
 ## Deferred Surface
 

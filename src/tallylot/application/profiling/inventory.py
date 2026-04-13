@@ -12,6 +12,7 @@ from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.profiling.csv_inventory import (
     filename_timezone,
     format_timezone_value,
+    infer_date_only_format,
     inventory_csv_content,
     is_timestamp_field,
     parse_inventory_timestamp,
@@ -58,6 +59,9 @@ def build_inventory(
                     date_field=timezone_details.date_field,
                     min_timestamp=timezone_details.min_timestamp,
                     max_timestamp=timezone_details.max_timestamp,
+                    observed_period_start=timezone_details.observed_period_start,
+                    observed_period_end=timezone_details.observed_period_end,
+                    observed_period_label=timezone_details.observed_period_label,
                     timestamp_resolution=timezone_details.timestamp_resolution,
                     timezone_mode=timezone_details.timezone_mode,
                     timezone_value=timezone_details.timezone_value,
@@ -120,6 +124,9 @@ class TimezoneDetails:
     date_field: str = ""
     min_timestamp: str = ""
     max_timestamp: str = ""
+    observed_period_start: str = ""
+    observed_period_end: str = ""
+    observed_period_label: str = ""
     timestamp_resolution: str = ""
     timezone_mode: str = ""
     timezone_value: str = ""
@@ -154,7 +161,12 @@ def csv_timezone_details(
     ]
     sample_value = values[0] if values else ""
     header_utc = "utc" in timestamp_field.lower()
-    resolution = timestamp_resolution(sample_value)
+    date_only_format = infer_date_only_format(values, filename=filename)
+    resolution = (
+        "date_only"
+        if date_only_format is not None
+        else timestamp_resolution(sample_value)
+    )
     source_timezone = filename_timezone(filename)
     timezone_mode = ""
     timezone_value = ""
@@ -175,7 +187,7 @@ def csv_timezone_details(
     elif source_timezone is not None and sample_value:
         timezone_mode = "filename_offset"
         timezone_value = format_timezone_value(source_timezone)
-    elif resolution == "date_only":
+    elif date_only_format is not None:
         timezone_mode = "date_only"
     elif sample_value:
         timezone_mode = "naive"
@@ -183,7 +195,14 @@ def csv_timezone_details(
     parsed_values = [
         parsed
         for value in values
-        if (parsed := parse_inventory_timestamp(value, source_timezone=source_timezone))
+        if (
+            parsed := parse_inventory_timestamp(
+                value,
+                source_timezone=source_timezone,
+                filename=filename,
+                date_only_format=date_only_format,
+            )
+        )
         is not None
     ]
     parsed_values.sort()
@@ -193,13 +212,41 @@ def csv_timezone_details(
     max_timestamp = (
         parsed_values[-1].strftime("%Y-%m-%d %H:%M:%S") if parsed_values else ""
     )
+    observed_period_start = _observed_period_start(min_timestamp)
+    observed_period_end = _observed_period_end(max_timestamp)
+    observed_period_label = _observed_period_label(
+        observed_period_start, observed_period_end
+    )
 
     return TimezoneDetails(
         date_field=timestamp_field,
         min_timestamp=min_timestamp,
         max_timestamp=max_timestamp,
+        observed_period_start=observed_period_start,
+        observed_period_end=observed_period_end,
+        observed_period_label=observed_period_label,
         timestamp_resolution=resolution,
         timezone_mode=timezone_mode,
         timezone_value=timezone_value,
         timezone_conflict=timezone_conflict,
     )
+
+
+def _observed_period_start(min_timestamp: str) -> str:
+    if not min_timestamp:
+        return ""
+    return min_timestamp[:10]
+
+
+def _observed_period_end(max_timestamp: str) -> str:
+    if not max_timestamp:
+        return ""
+    return max_timestamp[:10]
+
+
+def _observed_period_label(start: str, end: str) -> str:
+    if not start or not end:
+        return ""
+    start_month = start[:7]
+    end_month = end[:7]
+    return start_month if start_month == end_month else f"{start_month}..{end_month}"
