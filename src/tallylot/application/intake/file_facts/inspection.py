@@ -89,8 +89,10 @@ ACCOUNT_SEGMENT_PATTERN = re.compile(r"account[-_ ]?[a-z0-9]+", re.IGNORECASE)
 
 def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
     if path.suffix.lower() != ".csv":
+        scope_tokens = _scope_tokens(relative_path, [], [])
         return IntakeFileFacts(
-            scope_tokens=tuple(sorted(_scope_tokens(relative_path, [], []))),
+            scope_tokens=tuple(sorted(scope_tokens)),
+            routing_scope_tokens=_routing_scope_tokens(relative_path, [], []),
             network_hints=_network_hints(relative_path, (), [], []),
         )
 
@@ -106,6 +108,7 @@ def inspect_intake_file(path: Path, *, relative_path: str) -> IntakeFileFacts:
         observed_period_end=_observed_period_end(timestamp_values),
         observed_period_label=_observed_period_label(timestamp_values),
         scope_tokens=tuple(sorted(scope_tokens)),
+        routing_scope_tokens=_routing_scope_tokens(relative_path, rows, title_rows),
         network_hints=network_hints,
     )
 
@@ -244,6 +247,80 @@ def _network_hints(
         seen.add(network)
         hints.append(network)
     return tuple(hints)
+
+
+def _routing_scope_tokens(
+    relative_path: str,
+    rows: list[dict[str, str]],
+    title_rows: list[list[str]],
+) -> tuple[str, ...]:
+    path_tokens = _identifier_scope_tokens(relative_path)
+    title_tokens = _title_identifier_scope_tokens(title_rows)
+    row_token_sets = _row_identifier_scope_token_sets(rows)
+    selected_tokens: set[str] = set()
+    if not row_token_sets:
+        selected_tokens = _single_identifier(path_tokens) or _single_identifier(
+            title_tokens
+        )
+    else:
+        row_identifiers: set[str] = set()
+        for row_tokens in row_token_sets:
+            row_identifiers.update(row_tokens)
+        common_tokens = set(row_token_sets[0])
+        for row_tokens in row_token_sets[1:]:
+            common_tokens.intersection_update(row_tokens)
+        selected_tokens = _select_routing_tokens(
+            common_tokens, path_tokens=path_tokens, title_tokens=title_tokens
+        )
+        if not selected_tokens:
+            selected_tokens = _single_identifier(path_tokens & row_identifiers)
+        if not selected_tokens:
+            selected_tokens = _single_identifier(title_tokens & row_identifiers)
+    return tuple(sorted(selected_tokens))
+
+
+def _single_identifier(tokens: set[str]) -> set[str]:
+    if len(tokens) == 1:
+        return set(tokens)
+    return set()
+
+
+def _select_routing_tokens(
+    common_tokens: set[str],
+    *,
+    path_tokens: set[str],
+    title_tokens: set[str],
+) -> set[str]:
+    if not common_tokens:
+        return set()
+    if len(common_tokens) == 1:
+        return common_tokens
+    path_common = path_tokens & common_tokens
+    if len(path_common) == 1:
+        return path_common
+    title_common = title_tokens & common_tokens
+    if len(title_common) == 1:
+        return title_common
+    return set()
+
+
+def _title_identifier_scope_tokens(title_rows: list[list[str]]) -> set[str]:
+    tokens: set[str] = set()
+    for title_row in title_rows[:50]:
+        title_text = " ".join(cell.strip() for cell in title_row)
+        tokens.update(_identifier_scope_tokens(title_text))
+    return tokens
+
+
+def _row_identifier_scope_token_sets(rows: list[dict[str, str]]) -> list[set[str]]:
+    token_sets: list[set[str]] = []
+    for row in rows[:50]:
+        row_tokens = {
+            token for value in row.values() for token in _identifier_scope_tokens(value)
+        }
+        if row_tokens:
+            token_sets.append(row_tokens)
+    return token_sets
 
 
 def _row_dict(header: tuple[str, ...], row: list[str]) -> dict[str, str]:

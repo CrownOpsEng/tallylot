@@ -26,15 +26,22 @@ def resolve_inventory_route(
     source_folder: str,
     facts: IntakeFileFacts,
 ) -> InventoryRouteDecision:
-    identifiers = _inventory_identifiers(facts.scope_tokens)
+    identifiers = _inventory_identifiers(
+        facts.routing_scope_tokens or facts.scope_tokens
+    )
     if not identifiers:
         return InventoryRouteDecision(
             source_folder=source_folder,
             inventory_match_status="unmatched",
         )
 
-    evidence_rows = _read_rows(artifacts, workspace_root / "analysis" / "inventory" / "location_inventory_evidence.csv")
-    source_rows = _read_rows(artifacts, workspace_root / "analysis" / "issues" / "source_inventory.csv")
+    evidence_rows = _read_rows(
+        artifacts,
+        workspace_root / "analysis" / "inventory" / "location_inventory_evidence.csv",
+    )
+    source_rows = _read_rows(
+        artifacts, workspace_root / "analysis" / "issues" / "source_inventory.csv"
+    )
     inventory_match = _inventory_match_decision(
         identifiers=identifiers,
         evidence_rows=evidence_rows,
@@ -43,7 +50,9 @@ def resolve_inventory_route(
     if inventory_match is not None:
         return inventory_match
 
-    generic_source_folder = _generic_wallet_source_folder(identifiers, facts.network_hints)
+    generic_source_folder = _generic_wallet_source_folder(
+        identifiers, facts.network_hints
+    )
     if generic_source_folder:
         return InventoryRouteDecision(
             source_folder=generic_source_folder,
@@ -65,10 +74,16 @@ def _inventory_match_decision(
         return None
 
     candidate_rows = [
-        row for row in evidence_rows if (row.get("normalized_identifier") or "").strip().lower() in identifiers
+        row
+        for row in evidence_rows
+        if (row.get("normalized_identifier") or "").strip().lower() in identifiers
     ]
     distinct_sources = sorted(
-        {(row.get("source") or "").strip() for row in candidate_rows if (row.get("source") or "").strip()}
+        {
+            (row.get("source") or "").strip()
+            for row in candidate_rows
+            if (row.get("source") or "").strip()
+        }
     )
     if len(distinct_sources) == 1 and any(
         (row.get("source") or "").strip() == distinct_sources[0] for row in source_rows
@@ -104,10 +119,12 @@ def _inventory_identifiers(scope_tokens: tuple[str, ...]) -> set[str]:
     }
 
 
-def _generic_wallet_source_folder(identifiers: set[str], network_hints: tuple[str, ...]) -> str:
-    if not identifiers or not network_hints:
+def _generic_wallet_source_folder(
+    identifiers: set[str], network_hints: tuple[str, ...]
+) -> str:
+    if len(identifiers) != 1 or not network_hints:
         return ""
-    identifier = sorted(identifiers)[0]
+    identifier = next(iter(identifiers))
     network = network_hints[0].strip().lower()
     if not network:
         return ""

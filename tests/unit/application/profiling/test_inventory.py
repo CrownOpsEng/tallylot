@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from tallylot.application.profiling.artifacts import write_profile_artifacts
+from tallylot.application.profiling.csv_inventory import infer_date_only_format
 from tallylot.application.profiling.inventory import (
     _inventory_file_details,
     build_inventory,
@@ -67,6 +68,156 @@ def test_inventory_file_details_detects_header_utc_and_date_only_modes(
     assert date_only_details.min_timestamp == "2021-05-09 00:00:00"
     assert date_only_details.observed_period_start == "2021-05-09"
     assert date_only_details.observed_period_end == "2021-05-09"
+
+
+def test_inventory_file_details_anchors_day_first_dates_to_matching_filename_date(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "2023-05-06 My_Trading_History_Report.csv"
+    path.write_text(
+        "DATE,PAIR,ADDR,DESCRIPTION,PNL\n06/05/2023,BTCUSD,bb4d,profit,10\n",
+        encoding="utf-8",
+    )
+
+    _, row_count, details = _inventory_file_details(path)
+
+    assert row_count == 1
+    assert details.date_field == "DATE"
+    assert details.timestamp_resolution == "date_only"
+    assert details.timezone_mode == "date_only"
+    assert details.min_timestamp == "2023-05-06 00:00:00"
+    assert details.max_timestamp == "2023-05-06 00:00:00"
+
+
+def test_inventory_file_details_detects_day_first_slash_dates_from_component_bounds(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "trading-history.csv"
+    path.write_text(
+        "DATE,PAIR,ADDR,DESCRIPTION,PNL\n13/05/2023,BTCUSD,bb4d,profit,10\n",
+        encoding="utf-8",
+    )
+
+    _, row_count, details = _inventory_file_details(path)
+
+    assert row_count == 1
+    assert details.timestamp_resolution == "date_only"
+    assert details.timezone_mode == "date_only"
+    assert details.min_timestamp == "2023-05-13 00:00:00"
+
+
+def test_inventory_file_details_detects_month_first_slash_dates_from_component_bounds(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "trading-history.csv"
+    path.write_text(
+        "DATE,PAIR,ADDR,DESCRIPTION,PNL\n05/13/2023,BTCUSD,bb4d,profit,10\n",
+        encoding="utf-8",
+    )
+
+    _, row_count, details = _inventory_file_details(path)
+
+    assert row_count == 1
+    assert details.timestamp_resolution == "date_only"
+    assert details.timezone_mode == "date_only"
+    assert details.min_timestamp == "2023-05-13 00:00:00"
+
+
+def test_inventory_file_details_uses_chronology_when_only_one_slash_format_preserves_order(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "trading-history.csv"
+    path.write_text(
+        "DATE,PAIR,ADDR,DESCRIPTION,PNL\n"
+        "02/03/2023,BTCUSD,bb4d,profit,10\n"
+        "03/02/2023,BTCUSD,bb4d,profit,11\n"
+        "03/03/2023,BTCUSD,bb4d,profit,12\n",
+        encoding="utf-8",
+    )
+
+    _, row_count, details = _inventory_file_details(path)
+
+    assert row_count == 3
+    assert details.timestamp_resolution == "date_only"
+    assert details.timezone_mode == "date_only"
+    assert details.min_timestamp == "2023-02-03 00:00:00"
+    assert details.max_timestamp == "2023-03-03 00:00:00"
+
+
+def test_inventory_file_details_anchors_month_first_dates_to_matching_filename_date(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "2023-12-05 trading-history.csv"
+    path.write_text(
+        "DATE,PAIR,ADDR,DESCRIPTION,PNL\n12/05/2023,BTCUSD,bb4d,profit,10\n",
+        encoding="utf-8",
+    )
+
+    _, row_count, details = _inventory_file_details(path)
+
+    assert row_count == 1
+    assert details.timestamp_resolution == "date_only"
+    assert details.timezone_mode == "date_only"
+    assert details.min_timestamp == "2023-12-05 00:00:00"
+
+
+def test_infer_date_only_format_rejects_monthly_first_of_month_sequence() -> None:
+    assert infer_date_only_format(["01/02/2023", "01/03/2023", "01/04/2023"]) is None
+
+
+def test_infer_date_only_format_rejects_sparse_chronology_with_large_gaps() -> None:
+    assert infer_date_only_format(["02/03/2023", "03/02/2023", "04/02/2023"]) is None
+
+
+def test_infer_date_only_format_rejects_chronology_with_near_year_gap() -> None:
+    assert infer_date_only_format(["02/03/2023", "03/02/2023", "03/02/2024"]) is None
+
+
+def test_infer_date_only_format_rejects_chronology_with_just_over_year_gap() -> None:
+    assert infer_date_only_format(["02/03/2024", "03/02/2024", "03/02/2025"]) is None
+
+
+def test_infer_date_only_format_rejects_ambiguous_slash_sequence_without_decisive_signal() -> (
+    None
+):
+    assert infer_date_only_format(["06/05/2023", "07/05/2023", "08/05/2023"]) is None
+
+
+def test_infer_date_only_format_uses_one_day_witness_to_distinguish_day_and_month() -> (
+    None
+):
+    assert (
+        infer_date_only_format(["01/02/2023", "02/02/2023", "01/03/2023"]) == "%d/%m/%Y"
+    )
+
+
+def test_infer_date_only_format_uses_filename_anchor_for_month_first_dates() -> None:
+    assert (
+        infer_date_only_format(
+            ["12/05/2023"],
+            filename="2023-12-05 trading-history.csv",
+        )
+        == "%m/%d/%Y"
+    )
+
+
+def test_inventory_file_details_leaves_ambiguous_slash_dates_unclassified_without_filename_anchor(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "trading-history.csv"
+    path.write_text(
+        "DATE,PAIR,ADDR,DESCRIPTION,PNL\n06/05/2023,BTCUSD,bb4d,profit,10\n",
+        encoding="utf-8",
+    )
+
+    _, row_count, details = _inventory_file_details(path)
+
+    assert row_count == 1
+    assert details.date_field == "DATE"
+    assert details.timestamp_resolution == "unknown"
+    assert details.timezone_mode == "naive"
+    assert details.min_timestamp == ""
+    assert details.max_timestamp == ""
 
 
 def test_inventory_file_details_ignores_placeholder_no_data_rows(

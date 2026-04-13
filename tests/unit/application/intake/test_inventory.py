@@ -7,7 +7,9 @@ from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.ports.intake_routing import IntakeFileFacts
 
 
-def test_resolve_inventory_route_returns_unmatched_without_identifiers(tmp_path: Path) -> None:
+def test_resolve_inventory_route_returns_unmatched_without_identifiers(
+    tmp_path: Path,
+) -> None:
     decision = resolve_inventory_route(
         artifacts=FilesystemArtifactStore(),
         workspace_root=tmp_path,
@@ -19,7 +21,9 @@ def test_resolve_inventory_route_returns_unmatched_without_identifiers(tmp_path:
     assert decision.inventory_match_status == "unmatched"
 
 
-def test_resolve_inventory_route_uses_unique_inventory_source_match(tmp_path: Path) -> None:
+def test_resolve_inventory_route_uses_unique_inventory_source_match(
+    tmp_path: Path,
+) -> None:
     artifacts = FilesystemArtifactStore()
     workspace_root = tmp_path
     _write_inventory_rows(
@@ -41,7 +45,9 @@ def test_resolve_inventory_route_uses_unique_inventory_source_match(tmp_path: Pa
     assert decision.review_required == "no"
 
 
-def test_resolve_inventory_route_flags_ambiguous_inventory_matches(tmp_path: Path) -> None:
+def test_resolve_inventory_route_flags_ambiguous_inventory_matches(
+    tmp_path: Path,
+) -> None:
     artifacts = FilesystemArtifactStore()
     workspace_root = tmp_path
     _write_inventory_rows(
@@ -71,7 +77,9 @@ def test_resolve_inventory_route_flags_ambiguous_inventory_matches(tmp_path: Pat
     assert "eth-wallet-ledger" in decision.review_reason
 
 
-def test_resolve_inventory_route_falls_back_to_generic_network_scope(tmp_path: Path) -> None:
+def test_resolve_inventory_route_falls_back_to_generic_network_scope(
+    tmp_path: Path,
+) -> None:
     decision = resolve_inventory_route(
         artifacts=FilesystemArtifactStore(),
         workspace_root=tmp_path,
@@ -84,6 +92,48 @@ def test_resolve_inventory_route_falls_back_to_generic_network_scope(tmp_path: P
 
     assert decision.source_folder == "ethereum-wallet-0xabcdef12"
     assert decision.inventory_match_status == "generic_scope_routing"
+
+
+def test_resolve_inventory_route_prefers_routing_scope_tokens_over_broad_identifiers(
+    tmp_path: Path,
+) -> None:
+    artifacts = FilesystemArtifactStore()
+    workspace_root = tmp_path
+    _write_inventory_rows(
+        artifacts,
+        workspace_root,
+        evidence_rows=[
+            {
+                "normalized_identifier": "0xbb4d728717a8ea00b316366daa695d41f6fdc722",
+                "source": "bsc-wallet-main",
+            },
+            {
+                "normalized_identifier": "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+                "source": "pancakeswap-router",
+            },
+        ],
+        source_rows=[
+            {"source": "bsc-wallet-main"},
+            {"source": "pancakeswap-router"},
+        ],
+    )
+
+    decision = resolve_inventory_route(
+        artifacts=artifacts,
+        workspace_root=workspace_root,
+        source_folder="wallet-candidate",
+        facts=IntakeFileFacts(
+            scope_tokens=(
+                "evm:0xbb4d728717a8ea00b316366daa695d41f6fdc722",
+                "evm:0x10ed43c718714eb63d5aa57b78b54704e256024e",
+            ),
+            routing_scope_tokens=("evm:0xbb4d728717a8ea00b316366daa695d41f6fdc722",),
+            network_hints=("bsc",),
+        ),
+    )
+
+    assert decision.source_folder == "bsc-wallet-main"
+    assert decision.inventory_match_status == "inventory_source_match"
 
 
 def _write_inventory_rows(

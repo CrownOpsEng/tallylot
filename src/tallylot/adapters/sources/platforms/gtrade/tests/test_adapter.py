@@ -5,7 +5,12 @@ from pathlib import Path
 
 from tallylot.adapters.sources.platforms.gtrade.adapter import _GTradeAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
@@ -44,7 +49,9 @@ def test_gtrade_location_inventory_includes_alias_issue() -> None:
     raw_dir = fixture_raw_dir("gtrade", "realized_pnl_alias")
 
     profile, adapter = profile_and_adapter("GTrade 1CT", raw_dir)
-    evidence, issues = adapter.extract_location_inventory("GTrade 1CT", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory(
+        "GTrade 1CT", raw_dir, profile
+    )
 
     assert str(profile.adapter_id) == "gtrade"
     assert any(str(row.location_id) == "gtrade_1ct:alias:bb4d" for row in evidence)
@@ -59,10 +66,28 @@ def test_gtrade_adapter_surfaces_invalid_rows_without_crashing(tmp_path: Path) -
     )
 
     result = _GTradeAdapter().translate(
-        build_source_profile(adapter_id="gtrade", raw_dir=str(raw_dir), source="GTrade"),
+        build_source_profile(
+            adapter_id="gtrade", raw_dir=str(raw_dir), source="GTrade"
+        ),
         raw_dir,
     )
 
     assert not compile_activity_drafts(result.drafts)
     assert len(result.issues) == 1
     assert result.issues[0].kind == "unsupported_row"
+
+
+def test_gtrade_adapter_accepts_filename_anchored_day_first_profile_dates(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path
+    (raw_dir / "2023-05-06 My_Trading_History_Report.csv").write_text(
+        "DATE,PAIR,ADDR,DESCRIPTION,PNL\n06/05/2023,BTCUSD,bb4d,profit,10\n",
+        encoding="utf-8",
+    )
+
+    profile, adapter = profile_and_adapter("GTrade", raw_dir)
+    summary, issues = adapter.validate_profile_timezones(profile)
+
+    assert summary["status"] == "passed"
+    assert issues == ()

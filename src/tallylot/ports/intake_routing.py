@@ -15,6 +15,7 @@ class IntakeFileFacts:
     observed_period_end: str = ""
     observed_period_label: str = ""
     scope_tokens: tuple[str, ...] = ()
+    routing_scope_tokens: tuple[str, ...] = ()
     network_hints: tuple[str, ...] = ()
 
 

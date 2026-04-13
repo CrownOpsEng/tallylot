@@ -11,6 +11,12 @@ from io import TextIOBase
 from itertools import zip_longest
 from pathlib import Path
 
+from .date_inference import (
+    filename_anchored_date_only_format,
+    infer_date_only_format as infer_profile_date_only_format,
+    is_iso_date_only,
+)
+
 _HEADER_SCAN_LIMIT = 25
 _HEADER_KEYWORDS = (
     "account",
@@ -78,11 +84,20 @@ def is_timestamp_field(name: str) -> bool:
 def timestamp_resolution(value: str) -> str:
     if not value:
         return ""
-    if len(value.strip()) == 10 and value.count("-") == 2:
+    text = value.strip()
+    if len(text) == 10 and text.count("-") == 2:
         return "date_only"
-    if ":" in value:
+    if ":" in text:
         return "second"
     return "unknown"
+
+
+def infer_date_only_format(
+    values: list[str],
+    *,
+    filename: str = "",
+) -> str | None:
+    return infer_profile_date_only_format(values, filename=filename)
 
 
 def value_has_non_utc_offset(value: str) -> bool:
@@ -114,12 +129,18 @@ def format_timezone_value(value: timezone) -> str:
 
 
 def parse_inventory_timestamp(
-    value: str, *, source_timezone: timezone | None
+    value: str,
+    *,
+    source_timezone: timezone | None,
+    filename: str = "",
+    date_only_format: str | None = None,
 ) -> datetime | None:
     text = value.strip()
     if not text:
         return None
-    exact_match = _exact_inventory_timestamp(text)
+    exact_match = _exact_inventory_timestamp(
+        text, filename=filename, date_only_format=date_only_format
+    )
     if exact_match is not None:
         return exact_match
     for fmt in ("%Y-%m-%d %H:%M:%S", "%y-%m-%d %H:%M:%S"):
@@ -176,22 +197,34 @@ def _row_values(row: Mapping[str, str | list[str]]) -> list[str]:
     return values
 
 
-def _exact_inventory_timestamp(text: str) -> datetime | None:
+def _exact_inventory_timestamp(
+    text: str,
+    *,
+    filename: str = "",
+    date_only_format: str | None = None,
+) -> datetime | None:
+    parsed: datetime | None = None
     if text.endswith(" UTC"):
-        return _try_datetime(text, "%Y-%m-%d %H:%M:%S UTC", tzinfo=UTC)
-    if text.endswith("Z"):
+        parsed = _try_datetime(text, "%Y-%m-%d %H:%M:%S UTC", tzinfo=UTC)
+    elif text.endswith("Z"):
         for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
             parsed = _try_datetime(text, fmt, tzinfo=UTC)
             if parsed is not None:
-                return parsed
-    if value_has_non_utc_offset(text):
+                break
+    elif value_has_non_utc_offset(text):
         try:
-            return datetime.strptime(text, "%Y-%m-%d %H:%M:%S%z").astimezone(UTC)
+            parsed = datetime.strptime(text, "%Y-%m-%d %H:%M:%S%z").astimezone(UTC)
         except ValueError:
-            return None
-    if len(text) == 10 and text.count("-") == 2:
-        return _try_datetime(text, "%Y-%m-%d", tzinfo=UTC)
-    return None
+            parsed = None
+    elif is_iso_date_only(text):
+        parsed = _try_datetime(text, "%Y-%m-%d", tzinfo=UTC)
+    elif date_only_format is not None:
+        parsed = _try_datetime(text, date_only_format, tzinfo=UTC)
+    else:
+        anchored_format = filename_anchored_date_only_format(text, filename=filename)
+        if anchored_format is not None:
+            parsed = _try_datetime(text, anchored_format, tzinfo=UTC)
+    return parsed
 
 
 def _try_datetime(

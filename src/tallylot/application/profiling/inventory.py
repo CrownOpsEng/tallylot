@@ -12,6 +12,7 @@ from tallylot.application.intake.archive import scanned_tree_files
 from tallylot.application.profiling.csv_inventory import (
     filename_timezone,
     format_timezone_value,
+    infer_date_only_format,
     inventory_csv_content,
     is_timestamp_field,
     parse_inventory_timestamp,
@@ -160,7 +161,12 @@ def csv_timezone_details(
     ]
     sample_value = values[0] if values else ""
     header_utc = "utc" in timestamp_field.lower()
-    resolution = timestamp_resolution(sample_value)
+    date_only_format = infer_date_only_format(values, filename=filename)
+    resolution = (
+        "date_only"
+        if date_only_format is not None
+        else timestamp_resolution(sample_value)
+    )
     source_timezone = filename_timezone(filename)
     timezone_mode = ""
     timezone_value = ""
@@ -181,7 +187,7 @@ def csv_timezone_details(
     elif source_timezone is not None and sample_value:
         timezone_mode = "filename_offset"
         timezone_value = format_timezone_value(source_timezone)
-    elif resolution == "date_only":
+    elif date_only_format is not None:
         timezone_mode = "date_only"
     elif sample_value:
         timezone_mode = "naive"
@@ -189,7 +195,14 @@ def csv_timezone_details(
     parsed_values = [
         parsed
         for value in values
-        if (parsed := parse_inventory_timestamp(value, source_timezone=source_timezone))
+        if (
+            parsed := parse_inventory_timestamp(
+                value,
+                source_timezone=source_timezone,
+                filename=filename,
+                date_only_format=date_only_format,
+            )
+        )
         is not None
     ]
     parsed_values.sort()

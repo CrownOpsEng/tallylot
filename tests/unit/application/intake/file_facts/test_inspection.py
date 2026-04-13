@@ -199,6 +199,29 @@ def test_inspect_intake_file_preserves_title_row_wallet_scope_tokens(
     assert route.source_folder.startswith("ethereum-wallet-bc1")
 
 
+def test_inspect_intake_file_prefers_identifier_common_across_rows_for_routing(
+    tmp_path: Path,
+) -> None:
+    wallet = "0xbb4d728717a8ea00b316366daa695d41f6fdc722"
+    path = tmp_path / f"Account1-bsc export-{wallet}.csv"
+    path.write_text(
+        "DateTime (UTC),From,To,ContractAddress\n"
+        "2022-01-02 02:23:57,0x01c952174c24e1210d26961d456a77a39e1f0bb0,"
+        f"{wallet},\n"
+        f"2022-01-02 13:07:19,{wallet},0x10ed43c718714eb63d5aa57b78b54704e256024e,\n",
+        encoding="utf-8",
+    )
+
+    facts = inspect_intake_file(path, relative_path=f"incoming/{path.name}")
+
+    assert set(facts.scope_tokens) >= {
+        "evm:0x01c952174c24e1210d26961d456a77a39e1f0bb0",
+        "evm:0x10ed43c718714eb63d5aa57b78b54704e256024e",
+        f"evm:{wallet}",
+    }
+    assert facts.routing_scope_tokens == (f"evm:{wallet}",)
+
+
 def test_inspect_intake_file_keeps_network_hint_order_from_title_rows(
     tmp_path: Path,
 ) -> None:
