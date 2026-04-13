@@ -23,7 +23,9 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - tax policy
    - CoinTracking oracle parsing
 5. If the task changes architecture or sequencing decisions, update
-   `ROADMAP.md` in the same checkpoint.
+   `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md` in the
+   same checkpoint, and update `docs/status/migration-sequence.md` when phase
+   order, bridge rules, or checkpoint criteria changed.
 6. Keep these boundaries:
    - build reconciliation before tax
    - keep facts provider-neutral before rendering compatibility outputs

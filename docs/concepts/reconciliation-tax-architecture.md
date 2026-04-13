@@ -100,6 +100,12 @@ Every transaction fact should support distinct classification layers:
 - `TaxTreatmentHint`: jurisdiction-neutral tax intent
 - `AccountingIntentHint`: accounting intent
 
+These layered fields are the current fact-bridge contract, not a rule that
+every earlier stage must guess final policy meaning. When a provider row
+cannot safely support one final economic, accounting, or tax reading, the
+target `ClaimBundle` should preserve that ambiguity until one safe canonical
+economic fact or later stage-owned policy decision is available.
+
 ### 5. Keep The Core Runtime Asset-Class Agnostic
 
 The internal runtime should generalize across financial asset classes even when
@@ -1216,17 +1222,21 @@ Estimated effort: `8` to `12` hours
 
 Deliverables:
 
-- final schema and package decisions
+- final schema, package, and stage-boundary decisions
 - roadmap updates
-- migration plan from normalized transactions to transaction facts
+- migration plan from the current fact bridge into the canonical pipeline
+- shared provenance, gap, readiness, and checkpoint-vocabulary decisions
 - provenance policy for external ideas and direct code reuse
 
-### Phase 1. Boundary Models And Dev-Only Oracle Readers
+### Phase 1. Evidence And Claim Foundations Plus Oracle Readers
 
 Estimated effort: `14` to `22` hours
 
 Deliverables:
 
+- deterministic `EvidenceBundle` and `ClaimBundle` contracts for the next
+  pipeline slice
+- claim ambiguity rules and shared gap or readiness foundations
 - Pydantic row models for CoinTracking report families
 - parser services for all oracle exports under `tools/oracles/`
 - projection-type enum and alias normalization for current output adapters
@@ -1239,11 +1249,12 @@ Estimated effort: `18` to `28` hours
 Deliverables:
 
 - transaction fact domain package
+- claim-to-economic compilation seam
 - normalization result evolution to emit fact artifacts directly
 - downstream service updates to consume fact artifacts without wrappers
 - parity tests for current adapters
 
-### Phase 3. Deterministic Reconciliation And Checkpointing
+### Phase 3. Reconciliation Dataset And Checkpoint Packages
 
 Estimated effort: `18` to `28` hours
 
@@ -1253,11 +1264,13 @@ Deliverables:
   evidence
 - transfer linking
 - balance assertions
+- reconciliation dataset with explicit readiness, link, and continuity outputs
 - checkpoint builder around `2026-03-23`
+- accepted checkpoint package and trust-basis contracts
 - continuity reports
 - deterministic correction handling for events such as the GALA redistribution
 
-### Phase 4. Accounting Layer And Ledger CLI Hard Gate
+### Phase 4. Journal Dataset And Ledger CLI Hard Gate
 
 Estimated effort: `14` to `22` hours
 
@@ -1266,14 +1279,16 @@ Deliverables:
 - internal journal model
 - Ledger CLI renderer
 - journal validation results
+- accounting coverage gaps
 - accounting summaries tied to checkpoint and reconciliation outputs
 
-### Phase 5. Canadian Tax MVP
+### Phase 5. Tax Determinants And Canadian Tax MVP
 
 Estimated effort: `24` to `36` hours
 
 Deliverables:
 
+- tax determinant dataset contracts
 - Canadian pooled ACB engine
 - disposition and income outputs
 - unsupported-item and ambiguity reporting

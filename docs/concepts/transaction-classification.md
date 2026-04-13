@@ -1,6 +1,6 @@
 ---
 title: "Transaction Classification"
-summary: "Canonical layered classification vocabulary for facts, projections, accounting, and tax."
+summary: "Canonical layered classification vocabulary for the current fact-path bridge and later policy stages."
 doc_type: concept
 audience: human
 owner: repo
@@ -8,8 +8,9 @@ status: active
 nav_order: 40
 ---
 
-Use this document to lock the current canonical classification vocabulary
-before deeper fact, checkpoint, accounting, and tax work lands.
+Use this document to lock the current layered classification vocabulary on the
+fact-path bridge before deeper claim, checkpoint, accounting, and tax work
+lands.
 
 The current runtime now writes `TransactionFact` artifacts, and the canonical
 layered terms live in `domain/transactions/classification.py`. Adapters should
@@ -37,8 +38,10 @@ Naming convention:
 ## Classification Layers
 
 - `EconomicKind`: provider-neutral semantic meaning
-- `TaxTreatmentHint`: default tax intent used by later policy layers
-- `AccountingIntentHint`: default accounting intent used by later journal renderers
+- `TaxTreatmentHint`: default tax intent used by later policy layers when it is
+  already safe to say on the current fact bridge
+- `AccountingIntentHint`: default accounting intent used by later journal
+  expansion when it is already safe to say on the current fact bridge
 - `ProjectionHint`: output projection metadata for concrete renderers
 
 Core behavior should not key primarily on the legacy normalized `category`
@@ -82,9 +85,12 @@ aligned on these values exactly.
 ## Runtime Rules
 
 - Adapters populate layered classifications first on the current bridge path
-  when the classification is safe.
+  only when the classification is safe and deterministic.
 - The target claim layer may preserve unresolved meaning instead of forcing a
   final fact classification too early.
+- Missing tax or accounting intent must not force lower layers to guess.
+  Preserve unresolved meaning in claims and let later accounting- or tax-owned
+  gaps carry the remaining policy blockers.
 - Runtime consumers operate on canonical `legs` only; there is no split
   `fee_legs` lane and no first-leg compatibility view on `TransactionFact`.
 - Leg-level semantics live on the leg through `LegKind`; fact classification
@@ -95,8 +101,12 @@ aligned on these values exactly.
   business behavior.
 - Machine-oriented runtime values should stay lowercase snake_case even when an
   output adapter renders them as title-style labels.
-- If an adapter cannot determine a safe layered classification, it must emit an
-  explicit issue instead of guessing.
+- If an adapter cannot determine a safe layered classification on the current
+  fact bridge, it must emit an explicit blocking issue or review instead of
+  guessing.
+- When the target claim layer lands, that same unresolved meaning should remain
+  explicit in `ClaimBundle` until one safe canonical economic fact or later
+  stage-owned policy decision is available.
 
 ## Review Triggers
 
@@ -104,6 +114,8 @@ Require explicit review when:
 
 - the fact could be either a transfer or a taxable disposition
 - the fact changes beneficial ownership but not obvious tax treatment
+- the economic meaning is safe enough for reconciliation, but tax treatment
+  still depends on later policy-owned determinants
 - a provider row collapses financing, trading, and fee semantics into one record
 - a future activity type would require a new classification value rather than a
   safe mapping into the current canonical set

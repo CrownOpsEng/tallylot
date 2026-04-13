@@ -1,6 +1,6 @@
 ---
 title: "Migration Sequence"
-summary: "Incremental migration order from the legacy normalized flow to the provider-neutral fact model."
+summary: "Incremental migration order from the current fact-path bridge to the full canonical pipeline."
 doc_type: status
 audience: human
 owner: repo
@@ -9,8 +9,8 @@ nav_order: 20
 ---
 
 Use this document to implement the next phase without a big-bang refactor. The
-goal is to move from the current normalized-transaction flow to a
-provider-neutral fact model with explicit parity gates.
+goal is to move from the current normalized-transaction flow and current
+fact-path bridge into the full canonical pipeline with explicit parity gates.
 
 ## Migration Objectives
 
@@ -187,7 +187,7 @@ Implement:
 
 Rules:
 
-- accounting consumes facts plus journal intents
+- accounting consumes reconciled economics plus accepted checkpoint state
 - CoinTracking double-entry is comparison-only
 - unsupported activity must surface as explicit journal coverage gaps
 - accounting advances in parallel with reconciliation once the shared fact
@@ -215,11 +215,15 @@ Implement:
 
 Rules:
 
-- tax computation consumes reconciled facts and intentional opening state only
+- tax computation consumes reconciled economics plus accepted checkpoint truth,
+  including intentional opening-state adoption when that checkpoint path is
+  used
 - CoinTracking tax outputs are oracle-only
 - no tax logic branches directly on CoinTracking report rows
 - journal validation may corroborate tax readiness, but tax must not depend on
   renderer success when the required determinants are already known
+- tax-owned unresolved determinants must remain explicit instead of being pushed
+  back into reconciliation or adapter logic
 
 Exit criteria:
 

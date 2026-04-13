@@ -281,8 +281,11 @@ Claim types may include:
 - `ActivityClaim`
 - `BalanceObservationClaim`
 - `OwnershipClaim`
+- `LocationClaim`
 - `StatementClaim`
 - `InstrumentIdentityClaim`
+- `ContractTermClaim`
+- `ValuationClaim`
 - `ProjectionAnnotation`
 - `EvidenceIssue`
 - `EvidenceReview`
@@ -683,8 +686,11 @@ Recommended claim families:
 | `ActivityClaim` | A provider-local economic activity candidate with raw semantic details. |
 | `BalanceObservationClaim` | A quantity-backed balance or position observation tied to evidence. |
 | `OwnershipClaim` | A claim that a location identifier is controlled or owned. |
+| `LocationClaim` | A provider-local claim about where activity, balances, or positions are held. |
 | `StatementClaim` | A parsed statement row or document-level claim. |
 | `InstrumentIdentityClaim` | One provider-local identity assertion for an asset or instrument. |
+| `ContractTermClaim` | A provider-local claim about instrument or position terms that later economic compilation may need. |
+| `ValuationClaim` | A provider-local valuation observation with purpose, time, and provenance. |
 | `ProjectionAnnotation` | Output-oriented metadata that is not itself a canonical fact. |
 | `IssueCandidate` | A blocking or informational problem requiring canonical issue assembly. |
 | `ReviewCandidate` | A review-needed case requiring canonical review assembly. |

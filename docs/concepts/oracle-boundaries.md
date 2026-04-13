@@ -18,7 +18,8 @@ depending on any one portfolio tracker.
 
 ## Design Rules
 
-- The core system of record is the provider-neutral transaction fact model.
+- The current bridge system of record is the provider-neutral transaction fact
+  model, but the target canonical pipeline extends beyond facts alone.
 - The internal core should remain asset-class-agnostic even when current
   adapters or policies are crypto-first.
 - Source evidence and source-backed checkpoints are first-class.
@@ -136,8 +137,10 @@ Those artifacts may support comparison, but not checkpoint existence.
 - Keep domain services unaware of CoinTracking report schemas.
 - Keep crypto-, FX-, and security-specific terms out of shared core abstractions
   unless the concept is inherently specific to that surface.
-- Keep tax policy operating on reconciled facts and checkpoint state only.
-- Keep journal rendering operating on facts and accounting intents only.
+- Keep tax policy operating on reconciled economics and accepted checkpoint
+  truth only.
+- Keep journal rendering operating on reconciled economics, accepted checkpoint
+  truth, and accounting coverage rules only.
 
 ## Failure Test
 
