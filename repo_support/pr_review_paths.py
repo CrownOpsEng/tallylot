@@ -48,9 +48,14 @@ PACKAGING_SENSITIVE_PREFIXES = (
 
 
 def is_human_docs(path: str) -> bool:
-    return path in {"README.md", "CHANGELOG.md"} or (
-        path.startswith("docs/") and not path.startswith("docs/standards/")
-    )
+    return path in {
+        "README.md",
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "CLA.md",
+        "LICENSE",
+        "LICENSE.docs",
+    } or (path.startswith("docs/") and not path.startswith("docs/standards/"))
 
 
 def is_control_plane_text(path: str) -> bool:

@@ -97,16 +97,29 @@ checkpoint rules.
 
 ## Contributing
 
-Use the standards docs for repo rules and [ROADMAP.md](ROADMAP.md) for active
-sequencing:
+Use [CONTRIBUTING.md](CONTRIBUTING.md) for contributor licensing terms and
+submission rules. Use the standards docs and [ROADMAP.md](ROADMAP.md) for repo
+execution and active sequencing:
 
 - [docs/standards/engineering.md](docs/standards/engineering.md)
 - [docs/standards/implementation.md](docs/standards/implementation.md)
 - [docs/standards/commits.md](docs/standards/commits.md)
 
+External contributions are accepted only under
+[CLA.md](CLA.md), which gives the maintainer broad relicensing and commercial
+licensing rights while contributors retain ownership of their work.
+
 ## License
 
-[MIT](LICENSE)
+Source code in this repository is source-available under the
+[PolyForm Noncommercial License 1.0.0](LICENSE).
+
+Unless otherwise noted, prose documentation in `README.md` and `docs/` is
+available under [CC BY-NC-SA 4.0](LICENSE.docs). Code samples and other
+source-like material remain under the PolyForm Noncommercial License 1.0.0.
+
+The maintainer may also offer separate commercial or proprietary licenses for
+some or all of the project outside these public repository terms.
 
 ## Security
 
