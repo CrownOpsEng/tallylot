@@ -10,7 +10,11 @@ from repo_support.pytest_commands import build_fast_pytest_command
 import tools.install_git_hooks
 import tools.pre_commit_hook
 import tools.run_fast_pytest
-from tools.install_git_hooks import _COMMIT_MSG_HOOK_TEMPLATE, _HOOK_TEMPLATE
+from tools.install_git_hooks import (
+    _COMMIT_MSG_HOOK_TEMPLATE,
+    _HOOK_TEMPLATE,
+    _PRE_PUSH_HOOK_TEMPLATE,
+)
 from tools.pre_commit_hook import _format_candidates
 
 
@@ -211,6 +215,8 @@ def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:
     assert 'export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"' in _HOOK_TEMPLATE
     assert "--hook-type=commit-msg" in _COMMIT_MSG_HOOK_TEMPLATE
     assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in _COMMIT_MSG_HOOK_TEMPLATE
+    assert "-m tools.pre_push_hook" in _PRE_PUSH_HOOK_TEMPLATE
+    assert 'REPO_ROOT="$(git rev-parse --show-toplevel)"' in _PRE_PUSH_HOOK_TEMPLATE
 
 
 def test_install_hooks_syncs_environment_before_writing_repo_hooks(
@@ -249,6 +255,8 @@ def test_install_hooks_syncs_environment_before_writing_repo_hooks(
     hook_path.write_text("", encoding="utf-8")
     commit_msg_hook_path = tmp_path / ".git" / "hooks" / "commit-msg"
     commit_msg_hook_path.write_text("", encoding="utf-8")
+    pre_push_hook_path = tmp_path / ".git" / "hooks" / "pre-push"
+    pre_push_hook_path.write_text("", encoding="utf-8")
 
     environment_root = tmp_path / "external-env"
     (environment_root / "bin").mkdir(parents=True)
@@ -279,6 +287,9 @@ def test_install_hooks_syncs_environment_before_writing_repo_hooks(
     commit_msg_hook_text = commit_msg_hook_path.read_text(encoding="utf-8")
     assert f"PROJECT_ENVIRONMENT={environment_root}" in commit_msg_hook_text
     assert "--hook-type=commit-msg" in commit_msg_hook_text
+    pre_push_hook_text = pre_push_hook_path.read_text(encoding="utf-8")
+    assert f"PROJECT_ENVIRONMENT={environment_root}" in pre_push_hook_text
+    assert "-m tools.pre_push_hook" in pre_push_hook_text
 
 
 def test_install_hooks_falls_back_to_default_external_environment(
@@ -290,6 +301,8 @@ def test_install_hooks_falls_back_to_default_external_environment(
     hook_path.write_text("", encoding="utf-8")
     commit_msg_hook_path = tmp_path / ".git" / "hooks" / "commit-msg"
     commit_msg_hook_path.write_text("", encoding="utf-8")
+    pre_push_hook_path = tmp_path / ".git" / "hooks" / "pre-push"
+    pre_push_hook_path.write_text("", encoding="utf-8")
 
     def fake_run(
         command: list[str],
@@ -323,6 +336,10 @@ def test_install_hooks_falls_back_to_default_external_environment(
     assert (
         f"PROJECT_ENVIRONMENT={expected_environment}"
         in commit_msg_hook_path.read_text(encoding="utf-8")
+    )
+    assert (
+        f"PROJECT_ENVIRONMENT={expected_environment}"
+        in pre_push_hook_path.read_text(encoding="utf-8")
     )
 
 
@@ -359,8 +376,10 @@ def test_install_hooks_writes_to_git_resolved_hook_paths(
 
     assert (common_hooks / "pre-commit").is_file()
     assert (common_hooks / "commit-msg").is_file()
+    assert (common_hooks / "pre-push").is_file()
     assert not (tmp_path / ".git" / "hooks" / "pre-commit").exists()
     assert not (tmp_path / ".git" / "hooks" / "commit-msg").exists()
+    assert not (tmp_path / ".git" / "hooks" / "pre-push").exists()
 
 
 def test_pre_commit_config_uses_repo_owned_fast_pytest_entrypoint() -> None:

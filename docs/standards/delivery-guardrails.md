@@ -93,6 +93,7 @@ Control-plane files include:
 - `.claude/commands/**`
 - `tools/install_git_hooks.py`
 - `tools/pre_commit_hook.py`
+- `tools/pre_push_hook.py`
 - `tools/audit_delivery_guardrails.py`
 - `tools/audit_pr_review.py`
 - `tools/benchmark_quality_gates.py`
@@ -230,6 +231,9 @@ push-to-mainline CI.
 
 - the `commit-messages` PR status validates the branch commit-message range and
   PR metadata on pull requests only
+- the repo-installed `pre-push` hook mirrors `tools.validate_pr_metadata`
+  against the current open pull request before push when `gh pr view` can
+  resolve PR metadata for the branch
 - the `pr-review` PR status runs `tools.run_pr_review_checks` against the PR
   diff and applies the repo's change-sensitive review verification matrix
 - required PR-only statuses must stay pinned to the GitHub Actions app through

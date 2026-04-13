@@ -67,6 +67,31 @@ else
 fi
 """
 
+_PRE_PUSH_HOOK_TEMPLATE = """#!/usr/bin/env bash
+set -euo pipefail
+
+HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+PROJECT_ENVIRONMENT={project_environment}
+if [ -n "$PROJECT_ENVIRONMENT" ]; then
+    export UV_PROJECT_ENVIRONMENT="$PROJECT_ENVIRONMENT"
+fi
+
+PYTHON={python}
+if [ -x "$PYTHON" ]; then
+    exec "$PYTHON" -m tools.pre_push_hook "$@"
+elif command -v uv > /dev/null; then
+    exec uv run python -m tools.pre_push_hook "$@"
+elif command -v python3 > /dev/null; then
+    exec python3 -m tools.pre_push_hook "$@"
+else
+    echo 'python3 not found for repo pre-push hook' 1>&2
+    exit 1
+fi
+"""
+
 
 def _installed_project_environment() -> str | None:
     if sys.prefix == sys.base_prefix:
@@ -123,6 +148,15 @@ def _install_hooks(repo_root: Path) -> None:
     )
     commit_msg_hook_path.chmod(
         commit_msg_hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+    )
+    pre_push_hook_path = _git_path(repo_root, "hooks/pre-push")
+    pre_push_hook_path.parent.mkdir(parents=True, exist_ok=True)
+    pre_push_hook_path.write_text(
+        _PRE_PUSH_HOOK_TEMPLATE.format(**hook_format_args),
+        encoding="utf-8",
+    )
+    pre_push_hook_path.chmod(
+        pre_push_hook_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
     )
 
 
