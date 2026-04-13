@@ -31,10 +31,16 @@ intake, checkpointing, verification, output rendering, and tax-oriented work.
 
 ## Current Direction
 
-- Provider-neutral transaction facts are the canonical runtime model.
+- Provider-neutral transaction facts are the current canonical runtime bridge
+  model.
 - CoinTracking remains an edge output adapter and an oracle family for
   comparison tooling, not the core ledger model.
 - Reconciliation and checkpoint trust gates come before tax policy.
+- The target pipeline now converges on
+  `EvidenceBundle -> ClaimBundle -> EconomicDataset -> ReconciliationDataset -> CheckpointPackage -> JournalDataset -> TaxDeterminantDataset -> TaxOutputDataset`.
+- Current `EconomicActivityDraft`, `TransactionFact`, and shared balance
+  artifacts remain the bridge into that pipeline until the richer products land
+  incrementally.
 
 ## Read Next
 

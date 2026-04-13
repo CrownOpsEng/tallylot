@@ -13,8 +13,20 @@ before deeper fact, checkpoint, accounting, and tax work lands.
 
 The current runtime now writes `TransactionFact` artifacts, and the canonical
 layered terms live in `domain/transactions/classification.py`. Adapters should
-populate layered classifications first. Output adapters own any mapping from
-fact metadata into external row types such as the CoinTracking `Type` column.
+populate layered classifications first on the current fact-path bridge when
+those classifications are safe and deterministic. Output adapters own any
+mapping from fact metadata into external row types such as the CoinTracking
+`Type` column.
+
+Target-pipeline note:
+
+- layered classifications belong to canonical economic facts, not to raw
+  evidence selection
+- the target `ClaimBundle` layer may remain materially unclassified when
+  forcing one final `EconomicKind`, `TaxTreatmentHint`, or
+  `AccountingIntentHint` would guess
+- when that target claim layer lands, keep the unresolved meaning explicit in
+  claims until one safe canonical economic fact can be emitted
 
 Naming convention:
 
@@ -69,7 +81,10 @@ aligned on these values exactly.
 
 ## Runtime Rules
 
-- Adapters populate layered classifications first.
+- Adapters populate layered classifications first on the current bridge path
+  when the classification is safe.
+- The target claim layer may preserve unresolved meaning instead of forcing a
+  final fact classification too early.
 - Runtime consumers operate on canonical `legs` only; there is no split
   `fee_legs` lane and no first-leg compatibility view on `TransactionFact`.
 - Leg-level semantics live on the leg through `LegKind`; fact classification

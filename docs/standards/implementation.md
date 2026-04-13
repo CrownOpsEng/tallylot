@@ -112,6 +112,9 @@ otherwise:
 
 - keep the architecture aligned with
   `docs/concepts/reconciliation-tax-architecture.md`
+- for reconciliation, checkpoint, accounting, tax, or canonical pipeline work,
+  reload the owning roadmap and migration docs before shaping the slice:
+  `ROADMAP.md` and `docs/status/migration-sequence.md`
 - read the narrow forward-looking roadmap, architecture, migration, or owning
   boundary guidance before shaping a non-trivial change
 - refactor when a clearer shared seam is already visible
@@ -139,6 +142,17 @@ the right structure.
 Before shaping a non-trivial fix, reload the narrow forward-looking guidance
 that owns the change surface. Prefer the intended end-state seam over a local
 temporary patch when the repo already documents the target ownership model.
+
+For reconciliation, checkpoint, accounting, tax, and canonical pipeline work,
+the normal minimum routing set is:
+
+- `docs/concepts/reconciliation-tax-architecture.md`
+- `ROADMAP.md`
+- `docs/status/migration-sequence.md`
+
+Add `docs/concepts/oracle-boundaries.md` and
+`docs/concepts/transaction-classification.md` when the slice changes
+boundaries or semantic classification.
 
 ## Refactor Expectations
 

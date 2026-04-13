@@ -26,6 +26,19 @@ nav_order: 10
 - Platform API expansion, SQLite, and provider-backed AI remain stubbed behind
   typed boundaries
 
+## Current Bridge To The Target Pipeline
+
+- The implemented bridge currently centers on `EconomicActivityDraft`,
+  `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`.
+- Treat that bridge as the current delivery seam, not as the final architecture
+  center.
+- The target pipeline products and stage contracts live in
+  `docs/concepts/reconciliation-tax-architecture.md` and are sequenced in
+  `ROADMAP.md`.
+- MVP work should extend the current bridge incrementally where it protects the
+  filing path, while landing richer pipeline products only when a concrete next
+  stage needs them.
+
 ## Current Operational Surface
 
 The repo currently ships typed replacements for the core workflow capabilities:

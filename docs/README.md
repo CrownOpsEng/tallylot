@@ -39,6 +39,7 @@ Agent-specific routing and repo execution rules live in
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts.
 - [Transaction Classification](concepts/transaction-classification.md): Canonical layered classification vocabulary for facts, projections, accounting, and tax.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
+- [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): First-principles design anchor for the future unified adapter manifest, facets, canonical products, and deterministic verification model.
 <!-- docs-maintenance:end concepts -->
 
 ## Common Tasks
@@ -79,6 +80,7 @@ that follows the external workspace layout.
 <!-- docs-maintenance:start status -->
 - [Current State](status/current-state.md): Implemented runtime capabilities, current operational surface, and deferred areas.
 - [Migration Sequence](status/migration-sequence.md): Incremental migration order from the legacy normalized flow to the provider-neutral fact model.
+- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the unified adapter contract rewrite until after filing-critical work.
 <!-- docs-maintenance:end status -->
 
 ## Standards

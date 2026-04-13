@@ -13,6 +13,7 @@ Use this skill for adapter-focused work.
 ## Workflow
 
 1. Read the adapter contract first:
+   - `docs/concepts/unified-adapter-architecture.md`
    - `docs/guides/write-an-adapter.md`
    - `.claude/commands/adapter-authoring.md`
    - `docs/standards/engineering.md`

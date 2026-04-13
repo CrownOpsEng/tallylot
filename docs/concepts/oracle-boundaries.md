@@ -54,6 +54,17 @@ The normal filing-capable workflow is:
 This workflow must remain valid even when no CoinTracking tax outputs are
 available.
 
+The detailed target product flow behind that workflow is:
+
+`EvidenceBundle -> ClaimBundle -> EconomicDataset -> ReconciliationDataset -> CheckpointPackage -> JournalDataset -> TaxDeterminantDataset -> TaxOutputDataset`
+
+Current runtime note:
+
+- today's bridge path still centers on `TransactionFact` plus shared balance
+  artifacts
+- treat that bridge as an incremental delivery seam, not as the long-term
+  endpoint of the architecture
+
 ## CoinTracking-Specific Rules
 
 CoinTracking support is intentionally narrow:
