@@ -3,8 +3,8 @@ name = "TallyLot"
 version = "0.1.0"
 description = "Typed source-backed transaction tooling with an external workspace architecture."
 readme = "README.md"
-license = "MIT"
-license-files = ["LICENSE"]
+license = { file = "LICENSE" }
+license-files = ["LICENSE", "LICENSE.docs"]
 requires-python = ">=3.12"
 authors = [
     { name = "Chris Wright" },
