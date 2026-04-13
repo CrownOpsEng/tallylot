@@ -523,6 +523,7 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
         ".claude/commands/**",
         "tools/install_git_hooks.py",
         "tools/pre_commit_hook.py",
+        "tools/pre_push_hook.py",
         "tools/audit_delivery_guardrails.py",
         "tools/audit_pr_review.py",
         "tools/benchmark_quality_gates.py",
