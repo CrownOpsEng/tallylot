@@ -56,18 +56,18 @@ The numbered phases below remain the coarse rollout gates. The detailed plan in
 this section is the implementation reference for the target pipeline products
 and the bounded slices needed to land them without ad hoc design during coding.
 
-Use the exact canonical product names from
+Use the exact target product names from
 `docs/concepts/reconciliation-tax-architecture.md` when shaping the next
 contracts:
 
-1. `EvidenceBundle`
-2. `ClaimBundle`
-3. `EconomicDataset`
-4. `ReconciliationDataset`
-5. `CheckpointPackage`
-6. `JournalDataset`
-7. `TaxDeterminantDataset`
-8. `TaxOutputDataset`
+1. `EvidenceSet`
+2. `ClaimSet`
+3. `EconomicFacts`
+4. `ReconciliationState`
+5. `Checkpoint`
+6. `Journal`
+7. `TaxInputs`
+8. `TaxOutputs`
 
 ### Cross-Cutting Contracts To Land Before Broad Pipeline Expansion
 
@@ -82,8 +82,13 @@ Scope:
   references, candidate interpretations, required evidence, and allowed
   resolution methods
 - one readiness vocabulary reused across all datasets
-- one subject-slice model for readiness and materiality by source, location,
-  instrument, contract or position, continuity segment, and checkpoint date
+- one shared slice model for readiness and materiality
+- one explicit identity seam for instrument, contract, position, location,
+  legal owner, beneficial owner, and counterparty identity
+- `SubjectRef` for shared infrastructure that needs a generic reference without
+  flattening `Contract` and `Position`
+- one typed tax-policy selection seam reused by later `TaxInputs` and
+  `TaxOutputs` work
 - one checkpoint assertion vocabulary reused by reconciliation, checkpoint
   adoption, accounting, and tax
 
@@ -94,6 +99,16 @@ Rules:
   subject-level readiness reducers
 - keep gap ownership explicit so accounting gaps, reconciliation gaps, and
   tax-owned gaps are not conflated operationally
+
+Shared readiness uses this exact slice definition:
+
+- source
+- location
+- instrument
+- subject ref
+- continuity segment
+- checkpoint date
+- tax year where relevant
 
 Exit criteria:
 
@@ -125,6 +140,8 @@ Rules:
   horizontal framework layers with no proven consumer
 - keep crypto filing-critical coverage primary for the MVP while using generic
   runtime names and boundaries that can later absorb other instrument classes
+- keep current-contract adapter stabilization distinct from the later adapter
+  redesign
 
 Exit criteria:
 
@@ -133,7 +150,23 @@ Exit criteria:
 - new reusable seams exist because one real slice needed them, not because the
   repo was trying to pre-build every future variation
 
-### Slice A. Harden `EvidenceBundle`
+### Performance Expectations
+
+Rollout choices must preserve bounded recalculation cost.
+
+Rules:
+
+- expensive reducers must be partitionable by source, location, instrument,
+  subject ref, continuity segment, checkpoint date, and tax year where
+  relevant
+- hot-path calculations should operate on compact typed records instead of
+  repeatedly joining provenance, review, or renderer payloads
+- derived snapshots and reusable state should be introduced where replay cost
+  becomes material
+- tax work should support tax-year partitioning and carry-forward reuse instead
+  of recomputing full acquisition history for every output row
+
+### Slice A. Harden `EvidenceSet`
 
 Goal:
 
@@ -180,11 +213,11 @@ Exit criteria:
 - evidence selection becomes the only supported path into later claim and
   economic compilation work
 
-### Slice B. Introduce `ClaimBundle` Without Breaking The Current Fact Path
+### Slice B. Introduce `ClaimSet` Without Breaking The Current Fact Path
 
 Goal:
 
-- interpose a source-local claim layer between evidence selection and canonical
+- interpose a source-local claim layer between evidence selection and final
   economic facts
 
 Scope:
@@ -225,11 +258,11 @@ Exit criteria:
 - ambiguous source rows can remain claim-complete but economically unresolved
 - the compiler can reject unsafe claims without losing claim provenance
 
-### Slice C. Expand `EconomicDataset` Beyond Today’s Minimal Fact Shape
+### Slice C. Expand `EconomicFacts` Beyond Today’s Minimal Fact Shape
 
 Goal:
 
-- make the canonical economic layer broad enough for obligation-bearing and
+- make the economic-truth layer broad enough for obligation-bearing and
   lifecycle-heavy instruments
 
 Scope:
@@ -272,12 +305,12 @@ Exit criteria:
   representable without a local special-case rewrite
 - valuation requirements are explicit rather than inferred ad hoc downstream
 
-### Slice D. Build `ReconciliationDataset` As Its Own Product
+### Slice D. Build `ReconciliationState` As Its Own Product
 
 Goal:
 
 - make reconciliation more than exact balance assertions by defining the
-  canonical completeness and continuity product
+  completeness and continuity product
 
 Scope:
 
@@ -314,7 +347,7 @@ Exit criteria:
   runtime artifacts
 - reconciliation readiness is sliceable by source and time window
 
-### Slice E. Formalize `CheckpointPackage`
+### Slice E. Formalize `Checkpoint`
 
 Goal:
 
@@ -356,7 +389,7 @@ Exit criteria:
 - checkpoint acceptance basis is explicit and auditable
 - opening-state adoption is intentional, reviewable, and provenance-backed
 
-### Slice F. Build `JournalDataset` As A Validator, Not A Truth Repair Layer
+### Slice F. Build `Journal` As A Validator, Not A Truth Repair Layer
 
 Goal:
 
@@ -396,11 +429,11 @@ Exit criteria:
 - unsupported accounting coverage is visible as stage-owned gaps
 - accounting outputs can be reconciled back to accepted checkpoint state
 
-### Slice G. Introduce `TaxDeterminantDataset`
+### Slice G. Introduce `TaxInputs`
 
 Goal:
 
-- separate policy-ready tax determinants from both raw economics and final
+- separate policy-ready tax inputs from both raw economics and final
   jurisdiction outputs
 
 Scope:
@@ -420,7 +453,7 @@ Primary owners:
 
 Required contracts:
 
-- tax determinant aggregate
+- tax-input aggregate
 - determinant-to-policy application seam
 - tax-owned gap contract
 - year-state and carry-forward intermediate contracts
@@ -440,7 +473,7 @@ Exit criteria:
 - determinant coverage is reproducible from reconciled economics plus accepted
   checkpoint truth
 
-### Slice H. Build `TaxOutputDataset`
+### Slice H. Build `TaxOutputs`
 
 Goal:
 
@@ -467,7 +500,8 @@ Required contracts:
 
 Exit criteria:
 
-- `2023`, `2024`, and `2025` outputs emit from tax determinants
+- `2023`, `2024`, and `2025` outputs emit from `TaxInputs` through selected
+  policy
 - carry-forward state is deterministic and reproducible
 - unresolved unsupported items remain visible instead of disappearing into
   notes
@@ -576,7 +610,7 @@ Scope:
   filing-critical adapters remain on the current contract; use that later
   redesign to replace the bundled source contract only after the active filing
   path is deterministic enough to trust
-- define the target `EvidenceBundle` and `ClaimBundle` contracts and land them
+- define the target `EvidenceSet` and `ClaimSet` contracts and land them
   incrementally without reintroducing normalized-transaction-era wrappers
 - allow source-local ambiguity to survive into claim outputs when forcing one
   final economic meaning would guess
@@ -636,7 +670,7 @@ Scope:
 - checkpoint continuity checks
 - correction and supersession chains
 - reconciliation issue assembly
-- define `ReconciliationDataset` as an explicit product with link decisions,
+- define `ReconciliationState` as an explicit product with link decisions,
   continuity windows, checkpoint candidates, and reconciliation-owned readiness
   slices rather than treating exact balance assertions as the whole product
 - deterministic correction handling for known historical events such as the
@@ -657,9 +691,9 @@ Exit criteria:
 - reconciliation readiness is reducible by source, location, instrument, and
   continuity window instead of only by coarse source summaries
 
-### 4. Checkpoint Packages And Opening State
+### 4. Checkpoint And Opening State
 
-Formalize typed checkpoint packages as the handoff between reconstruction,
+Formalize typed checkpoints as the handoff between reconstruction,
 reconciliation, accounting, and tax.
 
 Scope:
@@ -717,7 +751,7 @@ Scope:
 
 - tax policy port
 - Canada MVP policy
-- tax determinant contracts between reconciled facts and rendered tax outputs
+- tax-input contracts between reconciled economics and rendered tax outputs
 - pooled ACB state
 - disposition outputs
 - income outputs
@@ -728,10 +762,11 @@ Scope:
 
 Exit criteria:
 
-- `2023` to `2025` tax artifacts emit from reconciled facts
+- `2023` to `2025` tax outputs emit from `TaxInputs` built from reconciled
+  economics plus accepted checkpoint truth
 - year-end and carry-forward state is reproducible without tracker tax reports
 - unresolved unsupported tax items are visible rather than hidden in notes
-- tax determinants are reproducible from reconciled economics plus accepted
+- tax inputs are reproducible from reconciled economics plus accepted
   checkpoint truth without depending on CoinTracking or other oracle rows
 
 ### 7. Filing Workflow
@@ -853,6 +888,24 @@ These workstreams continue across the major phases above.
   unsupported-item reporting
 - keep end-to-end smoke workflows for each major slice before removing older
   transition paths
+
+### Test Preservation
+
+- no test deletions without explicit human approval
+- no silent assertion removal
+- no fixture simplification that hides previous edge-case coverage
+- test relocation or renaming is acceptable only when behavior coverage is
+  preserved or improved
+- "updating tests to the new structure" is not acceptable if coverage is
+  weakened
+- every refactor slice that changes tests must state:
+  - what old behavior the tests covered
+  - where that same behavior is covered now
+  - whether the assertion got stronger, weaker, or simply moved
+  - whether any expectation changed because of an intentional product decision
+- require a `test parity note` in checkpoint summaries
+- require manual review of deleted test files, deleted assertions, reduced
+  scenario coverage, and fixture simplifications that remove edge cases
 
 ### Repo And Package Shaping
 

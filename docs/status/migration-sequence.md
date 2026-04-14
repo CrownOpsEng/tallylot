@@ -1,6 +1,6 @@
 ---
 title: "Migration Sequence"
-summary: "Incremental migration order from the current fact-path bridge to the full canonical pipeline."
+summary: "Incremental migration order from the current fact-path bridge to the final pipeline."
 doc_type: status
 audience: human
 owner: repo
@@ -10,7 +10,8 @@ nav_order: 20
 
 Use this document to implement the next phase without a big-bang refactor. The
 goal is to move from the current normalized-transaction flow and current
-fact-path bridge into the full canonical pipeline with explicit parity gates.
+fact-path bridge into the final pipeline with explicit parity gates and clean
+retirement rules.
 
 ## Migration Objectives
 
@@ -18,19 +19,21 @@ fact-path bridge into the full canonical pipeline with explicit parity gates.
 - avoid pushing more semantics into the current normalized transaction model
 - keep adapters and services shippable at every checkpoint
 - keep CoinTracking as one edge projection, not a migration anchor
+- preserve current bridge truth while establishing the final vocabulary for the
+  future architecture
 
 ## Target Pipeline Landings
 
-The target architecture should land as these canonical products:
+The target architecture should land as these final products:
 
-1. `EvidenceBundle`
-2. `ClaimBundle`
-3. `EconomicDataset`
-4. `ReconciliationDataset`
-5. `CheckpointPackage`
-6. `JournalDataset`
-7. `TaxDeterminantDataset`
-8. `TaxOutputDataset`
+1. `EvidenceSet`
+2. `ClaimSet`
+3. `EconomicFacts`
+4. `ReconciliationState`
+5. `Checkpoint`
+6. `Journal`
+7. `TaxInputs`
+8. `TaxOutputs`
 
 Migration rule:
 
@@ -40,7 +43,72 @@ Migration rule:
 - land the richer pipeline products incrementally without restoring
   normalized-transaction-era wrapper lanes
 
-## Phase 0. Schema Lock
+## Current Bridge And Old-To-New Mapping
+
+Current bridge truth:
+
+- `EconomicActivityDraft`, `TransactionFact`, and shared balance artifacts are
+  the live implementation seam
+- that seam is the migration input and current parity baseline
+- that seam is not the final architecture center
+
+Final target-doc vocabulary:
+
+| Current target-doc term | Final term |
+| --- | --- |
+| `EvidenceBundle` | `EvidenceSet` |
+| `ClaimBundle` | `ClaimSet` |
+| `EconomicDataset` | `EconomicFacts` |
+| `ReconciliationDataset` | `ReconciliationState` |
+| `CheckpointPackage` | `Checkpoint` |
+| `JournalDataset` | `Journal` |
+| `TaxDeterminantDataset` | `TaxInputs` |
+| `TaxOutputDataset` | `TaxOutputs` |
+
+Rules:
+
+- current-state sections keep live implementation names where accuracy
+  requires them
+- target-state sections use the final names after this mapping is established
+- do not keep dual active vocabularies once the mapping is clear
+
+## Shared Foundations First
+
+These foundations are prerequisites, not later cleanup:
+
+- shared provenance family
+- shared gap model and taxonomy
+- shared readiness model and reducers
+- shared checkpoint-assertion vocabulary
+- explicit identity seams
+- `SubjectRef`
+- tax-policy selection contracts
+
+Shared readiness uses this exact vocabulary:
+
+- `semantic_ready`
+- `reconciliation_ready`
+- `checkpoint_ready`
+- `accounting_ready`
+- `tax_ready`
+
+Readiness is sliceable by:
+
+- source
+- location
+- instrument
+- subject ref
+- continuity segment
+- checkpoint date
+- tax year where relevant
+
+Rules:
+
+- this exact slice definition must stay identical everywhere it appears
+- dataset readiness is derived from subject-level reducers
+- no stage should invent an incompatible blocker or readiness surface
+
+## Phase 0. Shared Foundations And Schema Lock
 
 Deliver before broad code changes:
 
@@ -48,6 +116,8 @@ Deliver before broad code changes:
 - layered classification enums
 - runtime input and oracle boundaries
 - migration acceptance criteria
+- shared provenance, gaps, readiness, checkpoint assertions, identity seams,
+  `SubjectRef`, and tax-policy selection contracts
 
 Do not start tax-engine work before these contracts are written down.
 
@@ -98,8 +168,8 @@ Implementation rule:
 Bridge rule for the current branch:
 
 - source adapters translate provider exports into `EconomicActivityDraft`
-- introduce `ClaimBundle` incrementally between evidence selection and
-  canonical fact compilation when a source row cannot safely commit to one
+- introduce `ClaimSet` incrementally between evidence selection and final
+  fact compilation when a source row cannot safely commit to one
   final economic meaning
 - adapter resolution remains registry-driven; shared support must not depend on
   concrete adapter ids or hand-maintained provider lists
@@ -110,7 +180,7 @@ Bridge rule for the current branch:
 - unresolved or ambiguous identifier resolution blocks fact emission for the
   affected activity and must surface both review output and a blocking issue
 - ambiguous transfer, ownership, lifecycle, or mixed-purpose rows must be able
-  to survive as source-local claims until one safe canonical economic meaning
+  to survive as source-local claims until one safe economic meaning
   is available
 - no parallel runtime, wrapper lane, or runtime artifact translators
 - a clean fact artifact schema break is allowed in this branch when the
@@ -167,6 +237,14 @@ Rules:
   history as trusted
 - readiness must be reducible by source, location, instrument, and continuity
   segment rather than only by whole-source summaries
+- readiness must use the shared slice definition exactly:
+  - source
+  - location
+  - instrument
+  - subject ref
+  - continuity segment
+  - checkpoint date
+  - tax year where relevant
 
 Exit criteria:
 
@@ -207,7 +285,7 @@ Exit criteria:
 Implement:
 
 - tax policy port
-- tax determinant dataset contracts
+- `TaxInputs` contracts
 - Canada MVP policy
 - pooled ACB state
 - disposition and income outputs
@@ -227,7 +305,8 @@ Rules:
 
 Exit criteria:
 
-- `2023` to `2025` tax artifacts emit from reconciled facts
+- `2023` to `2025` tax outputs emit from `TaxInputs` built from reconciled
+  economics plus accepted checkpoint truth
 - internal year-end and carry-forward logic is reproducible without CoinTracking
   tax reports
 
@@ -254,6 +333,36 @@ Do not remove an older path until all relevant gates pass:
 - reconciliation artifact parity where applicable
 - end-to-end smoke workflow for the affected slice
 
+## Test Preservation
+
+- no test deletions without explicit human approval
+- no silent assertion removal
+- no fixture simplification that hides previous edge-case coverage
+- test relocation or renaming is acceptable only when behavior coverage is
+  preserved or improved
+- "updating tests to the new structure" is not acceptable if coverage is
+  weakened
+
+Every refactor slice that changes tests must state:
+
+- what old behavior the tests covered
+- where that same behavior is covered now
+- whether the assertion got stronger, weaker, or simply moved
+- whether any expectation changed because of an intentional product decision
+
+## Retirement Rules
+
+- retire bridge-era seams only after the replacement path passes the relevant
+  parity gates
+- remove obsolete structures cleanly instead of leaving wrapper lanes,
+  compatibility shims, or parallel runtime models behind
+- keep schema-version failures fast and explicit; recover by regeneration from
+  evidence rather than compatibility backfills
+- retire the current normalized workflow only after facts, reconciliation,
+  checkpointing, accounting, and tax inputs or outputs cover the filing path
+- when a replacement is ready, update the owning architecture, roadmap, and
+  migration docs in the same checkpoint so the repo keeps one active direction
+
 ## What Must Not Happen
 
 - no big-bang rewrite
@@ -263,6 +372,11 @@ Do not remove an older path until all relevant gates pass:
 - no new tax logic in adapters
 - no new checkpoint logic in CoinTracking-specific code
 - no direct use of CoinTracking tax reports as production state
+- no weakening of the shared readiness slice definition
+- no collapse of `Contract` and `Position`
+- no use of `SubjectRef` as a substitute for real domain modeling
+- no wording that says tax outputs come directly from reconciled facts
+- no silent test weakening or deletion
 
 ## Required Follow-Through
 

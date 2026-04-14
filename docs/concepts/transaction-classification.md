@@ -1,6 +1,6 @@
 ---
 title: "Transaction Classification"
-summary: "Canonical layered classification vocabulary for the current fact-path bridge and later policy stages."
+summary: "Layered classification vocabulary for the current fact-path bridge and later policy stages."
 doc_type: concept
 audience: human
 owner: repo
@@ -12,8 +12,8 @@ Use this document to lock the current layered classification vocabulary on the
 fact-path bridge before deeper claim, checkpoint, accounting, and tax work
 lands.
 
-The current runtime now writes `TransactionFact` artifacts, and the canonical
-layered terms live in `domain/transactions/classification.py`. Adapters should
+The current runtime now writes `TransactionFact` artifacts, and the layered
+bridge terms live in `domain/transactions/classification.py`. Adapters should
 populate layered classifications first on the current fact-path bridge when
 those classifications are safe and deterministic. Output adapters own any
 mapping from fact metadata into external row types such as the CoinTracking
@@ -21,13 +21,15 @@ mapping from fact metadata into external row types such as the CoinTracking
 
 Target-pipeline note:
 
-- layered classifications belong to canonical economic facts, not to raw
-  evidence selection
-- the target `ClaimBundle` layer may remain materially unclassified when
-  forcing one final `EconomicKind`, `TaxTreatmentHint`, or
-  `AccountingIntentHint` would guess
-- when that target claim layer lands, keep the unresolved meaning explicit in
-  claims until one safe canonical economic fact can be emitted
+- layered classifications belong to bridge facts today, not to raw evidence
+  selection
+- the future `ClaimSet` layer may remain materially unclassified when forcing
+  one final `EconomicKind`, `TaxTreatmentHint`, or `AccountingIntentHint`
+  would guess
+- bridge classifications remain important now, but they are not the whole
+  future ontology
+- when the future claim layer lands, keep unresolved meaning explicit until one
+  safe final economic fact can be emitted or a later stage owns the decision
 
 Naming convention:
 
@@ -50,12 +52,12 @@ string.
 ## Support Tiers
 
 - `T1`: implemented and supported in the current runtime
-- `T2`: explicitly planned, but not yet part of the canonical runtime enum set
+- `T2`: explicitly planned, but not yet part of the current runtime enum set
 - `T3`: output-specific or future-policy work
 
-## Current Canonical Mapping
+## Current Runtime Mapping
 
-These are the currently implemented canonical mappings. Code and docs must stay
+These are the currently implemented bridge mappings. Code and docs must stay
 aligned on these values exactly.
 
 | Normalized Category | ProjectionHint | EconomicKind | TaxTreatmentHint | AccountingIntentHint | Tier | Notes |
@@ -91,7 +93,7 @@ aligned on these values exactly.
 - Missing tax or accounting intent must not force lower layers to guess.
   Preserve unresolved meaning in claims and let later accounting- or tax-owned
   gaps carry the remaining policy blockers.
-- Runtime consumers operate on canonical `legs` only; there is no split
+- Runtime consumers operate on bridge `legs` only; there is no split
   `fee_legs` lane and no first-leg compatibility view on `TransactionFact`.
 - Leg-level semantics live on the leg through `LegKind`; fact classification
   remains a separate fact-level layer.
@@ -105,7 +107,7 @@ aligned on these values exactly.
   fact bridge, it must emit an explicit blocking issue or review instead of
   guessing.
 - When the target claim layer lands, that same unresolved meaning should remain
-  explicit in `ClaimBundle` until one safe canonical economic fact or later
+  explicit in `ClaimSet` until one safe economic fact or later
   stage-owned policy decision is available.
 
 ## Review Triggers
@@ -118,4 +120,4 @@ Require explicit review when:
   still depends on later policy-owned determinants
 - a provider row collapses financing, trading, and fee semantics into one record
 - a future activity type would require a new classification value rather than a
-  safe mapping into the current canonical set
+  safe mapping into the current bridge set
