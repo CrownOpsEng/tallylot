@@ -90,7 +90,7 @@ What:
 
 Checks:
 - UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files
-- UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
+- UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
 ```
 
 Standard footers are allowed, including `BREAKING CHANGE:`.
@@ -292,10 +292,10 @@ In practice that means:
   suite when the planner marks that surface as relevant
 - commit-message validation stays in the separate `commit-msg` hook
 
-Full verification still means running:
+Standard final verification still means running:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
 ```
 
 Do not also run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the
@@ -311,18 +311,21 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full
 ```
 
-Use `tools.run_quality_gates --full-tests` as the default final local
+Use `tools.run_quality_gates` as the default final local
 verification command. Use `tools.run_pr_review_checks --mode full` when
 changing CI, packaging, release, or other workflow surfaces where the local
 verification pass should mirror the final non-draft PR suite before handoff.
 Add `--pr-title`
 plus `--pr-body-file` when you also want the full review run to validate the
 current branch PR title, body, and `Included checkpoints:` list against the
-branch history. Do not run `tools.run_quality_gates --full-tests`
+branch history. Treat `tools.run_quality_gates --full-tests` as an explicit
+full-suite escape hatch rather than the normal agent close-out path, and avoid
+it unless there is a specific reason to use the override. Do not run
+`tools.run_quality_gates --full-tests`
 immediately before `tools.run_pr_review_checks --mode full`; the full
 PR-review runner already includes the full quality gate pass plus the extra
 workflow-sensitive lanes. Both local runners may apply safe autofixes to
-changed Python and Markdown files before validation; CI remains read-only.
+staged Python and Markdown files before validation; CI remains read-only.
 
 Example:
 

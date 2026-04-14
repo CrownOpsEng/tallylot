@@ -30,7 +30,9 @@ work that should be captured as a follow-up issue.
 5. Use fresh editor diagnostics first when available, then targeted tests while
    iterating.
 6. Before closing substantial work, run:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
+   - reserve `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+     for the explicit full-suite override when a specific task needs it
 7. After compaction or context loss, reload the same narrow standards before
    more edits or commits.
 8. Create the verified checkpoint commit before considering the task done.

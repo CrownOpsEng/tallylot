@@ -98,8 +98,10 @@ Do not pre-load every repo doc by default.
   hooks, which clears stale editable package paths after repo relocation or
   history rebuilds:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
-- Do not consider work ready until `markdownlint`, `ruff`, `mypy`, `pyright`,
-  `pylint`, and `pytest` pass.
+- Do not consider work ready until the repo's selected verification for the
+  changed surfaces passes. For agent-default local verification, use the
+  standard `tools.run_quality_gates` path rather than forcing the explicit
+  full-suite override.
 - Do not consider non-trivial work ready until the verified checkpoint commit
   already exists.
 - Prefer fresh VS Code workspace diagnostics for instant static-analysis
@@ -107,18 +109,21 @@ Do not pre-load every repo doc by default.
   current. Treat that signal as advisory only.
 - For explicit local verification, prefer:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full`
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
 - Benchmark quality-gate scheduling or test-slice changes before changing the
   default verification path:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_quality_gates`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests`
 - Do not run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the parallel quality-gate runner unless you are debugging hook behavior itself.
-- Use `tools.run_quality_gates --full-tests` as the normal final local
-  verification command.
+- Use `tools.run_quality_gates` as the normal final local verification
+  command.
 - Use `tools.run_pr_review_checks --mode full` when changes touch CI,
   packaging, release, or other workflow surfaces where the local verification
   pass should mirror the final non-draft PR suite before handoff.
+- `tools.run_quality_gates --full-tests` is not the standard agent close-out
+  path. Avoid it unless there is a specific reason to reach for the explicit
+  full-suite override.
 - Do not run `tools.run_quality_gates --full-tests` immediately before
   `tools.run_pr_review_checks --mode full`; the full PR-review runner already
   includes the full quality gate pass plus the additional CI-sensitive lanes.

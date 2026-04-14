@@ -29,7 +29,9 @@ Use this skill for architecture-sensitive core workflow work.
 5. Update `ROADMAP.md` in the same checkpoint when architecture or sequencing
    decisions move.
 6. Finish with:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
+   - reserve `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+     for the explicit full-suite override when a specific task needs it
 
 ## Focus
 

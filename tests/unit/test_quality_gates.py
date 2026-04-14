@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import threading
 from pathlib import Path
 
 import pytest
@@ -25,15 +26,7 @@ def test_quality_gates_default_to_repo_benchmarked_fast_schedule() -> None:
     run_request = _run_request(parse_args(()))
 
     assert _phase_plan(run_request) == (
-        QualityPhase(
-            name="quick-static",
-            gate_names=("markdownlint", "actionlint", "ruff", "mypy"),
-        ),
-        QualityPhase(
-            name="heavy-static",
-            gate_names=("pyright", "pylint"),
-        ),
-        QualityPhase(name="tests", gate_names=("pytest",)),
+        QualityPhase(name="all-at-once", gate_names=QUALITY_GATE_ORDER),
     )
 
 
@@ -53,8 +46,7 @@ def test_quality_gates_can_select_named_gates() -> None:
     )
 
     assert _phase_plan(run_request) == (
-        QualityPhase(name="quick-static", gate_names=("markdownlint",)),
-        QualityPhase(name="tests", gate_names=("pytest",)),
+        QualityPhase(name="all-at-once", gate_names=("markdownlint", "pytest")),
     )
 
 
@@ -181,6 +173,34 @@ def test_run_gate_sets_absolute_coverage_config_for_pytest(
     assert "COVERAGE_FILE" not in captured_environment
 
 
+def test_run_phase_executes_gates_concurrently(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    barrier = threading.Barrier(2)
+
+    def fake_run_gate(gate: QualityGate) -> tools.run_quality_gates.GateResult:
+        barrier.wait(timeout=1.0)
+        return tools.run_quality_gates.GateResult(
+            gate=gate,
+            returncode=0,
+            stdout="",
+            stderr="",
+            elapsed=0.0,
+        )
+
+    monkeypatch.setattr(tools.run_quality_gates, "_run_gate", fake_run_gate)
+    available_gates = available_quality_gates(full_tests=False)
+
+    phase_result = tools.run_quality_gates._run_phase(
+        QualityPhase(name="parallel-check", gate_names=("markdownlint", "ruff")),
+        available_gates=available_gates,
+    )
+
+    assert tuple(
+        gate_result.gate.name for gate_result in phase_result.gate_results
+    ) == ("markdownlint", "ruff")
+
+
 def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> None:
     config_text = (repo_root() / ".pre-commit-config.yaml").read_text(encoding="utf-8")
 
@@ -268,7 +288,7 @@ def test_quality_gates_aggregate_failures_by_default(
             gate_results=(
                 tools.run_quality_gates.GateResult(
                     gate=available_gates[gate_name],
-                    returncode=1 if phase.name == "quick-static" else 0,
+                    returncode=1 if phase.name == "all-at-once" else 0,
                     stdout="",
                     stderr="",
                     elapsed=0.0,
@@ -281,7 +301,7 @@ def test_quality_gates_aggregate_failures_by_default(
     monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
 
     assert tools.run_quality_gates.main(()) == 1
-    assert calls == ["quick-static", "heavy-static", "tests"]
+    assert calls == ["all-at-once"]
 
 
 def test_quality_gates_fail_fast_stops_after_first_failing_phase(
@@ -314,7 +334,7 @@ def test_quality_gates_fail_fast_stops_after_first_failing_phase(
     monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
 
     assert tools.run_quality_gates.main(("--fail-fast",)) == 1
-    assert calls == ["quick-static"]
+    assert calls == ["all-at-once"]
 
 
 def test_quality_gates_fail_when_generated_pyright_config_was_stale(
