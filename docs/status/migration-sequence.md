@@ -350,6 +350,14 @@ Every refactor slice that changes tests must state:
 - whether the assertion got stronger, weaker, or simply moved
 - whether any expectation changed because of an intentional product decision
 
+Manual anti-drift review is required for:
+
+- deleted test files
+- deleted assertions
+- reduced scenario coverage
+- fixture simplifications that remove edge cases
+- behavior assertions weakened into smoke checks
+
 ## Retirement Rules
 
 - retire bridge-era seams only after the replacement path passes the relevant

@@ -31,6 +31,15 @@ Target-pipeline note:
 - when the future claim layer lands, keep unresolved meaning explicit until one
   safe final economic fact can be emitted or a later stage owns the decision
 
+Target-direction naming note:
+
+- current code still uses `EconomicKind`, `ProjectionHint`,
+  `AccountingIntentHint`, and `TaxTreatmentHint`
+- forward-looking docs point toward the future names `EventKind`,
+  `OutputHint`, `AccountingHint`, and `TaxHint`
+- use the current names when describing the live bridge contract and the future
+  names only when describing the target architecture beyond the bridge
+
 Naming convention:
 
 - enum members such as `ProjectionHint.TRADE` stay Python-style uppercase names
