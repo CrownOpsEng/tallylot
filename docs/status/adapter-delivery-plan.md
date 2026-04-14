@@ -9,6 +9,8 @@ nav_order: 30
 related:
   - ROADMAP.md
   - docs/guides/write-an-adapter.md
+  - docs/concepts/pipeline-stage-contracts.md
+  - docs/concepts/domain-ontology.md
   - docs/concepts/reconciliation-tax-architecture.md
   - docs/status/current-state.md
 ---
@@ -36,9 +38,11 @@ This plan treats adapter work as two tracks:
 - `roadmap`: the post-filing unified adapter interface and migration
 
 Forward-looking adapter work must map into the main runtime pipeline in
+`docs/concepts/pipeline-stage-contracts.md` and the trust-gate rules in
 `docs/concepts/reconciliation-tax-architecture.md`. Adapter docs do not define
-their own competing meaning for `EconomicFacts`, `ReconciliationState`,
-`Checkpoint`, `Journal`, `TaxInputs`, or `TaxOutputs`.
+their own competing meaning for `EvidenceSet`, `ClaimSet`, `EconomicFacts`,
+`ReconciliationState`, `Checkpoint`, `Journal`, `TaxInputs`, or
+`TaxOutputs`.
 
 ## Why This Plan Exists
 

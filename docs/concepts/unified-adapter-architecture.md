@@ -10,6 +10,8 @@ related:
   - ROADMAP.md
   - docs/status/adapter-delivery-plan.md
   - docs/guides/write-an-adapter.md
+  - docs/concepts/pipeline-stage-contracts.md
+  - docs/concepts/domain-ontology.md
   - docs/concepts/reconciliation-tax-architecture.md
   - docs/concepts/oracle-boundaries.md
   - docs/concepts/transaction-classification.md
@@ -21,6 +23,13 @@ repo still runs on the older bundled adapter contracts.
 
 This document is intentionally explicit. It is meant to be scrutinized,
 challenged, and used as a design reference during later migration work.
+
+Detailed target stage contracts are owned by
+[`docs/concepts/pipeline-stage-contracts.md`](pipeline-stage-contracts.md), and
+target ontology rules are owned by
+[`docs/concepts/domain-ontology.md`](domain-ontology.md). This page focuses on
+adapter responsibilities, adapter handoffs, and adapter-local implications of
+those target contracts.
 
 ## Objective
 

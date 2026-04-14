@@ -1,6 +1,6 @@
 ---
 title: "Transaction Classification"
-summary: "Layered classification vocabulary for the current fact-path bridge and later policy stages."
+summary: "Bridge-only classification vocabulary for the current fact-path bridge."
 doc_type: concept
 audience: human
 owner: repo
@@ -12,47 +12,39 @@ Use this document to lock the current layered classification vocabulary on the
 fact-path bridge before deeper claim, checkpoint, accounting, and tax work
 lands.
 
-The current runtime now writes `TransactionFact` artifacts, and the layered
-bridge terms live in `domain/transactions/classification.py`. Adapters should
-populate layered classifications first on the current fact-path bridge when
-those classifications are safe and deterministic. Output adapters own any
-mapping from fact metadata into external row types such as the CoinTracking
-`Type` column.
+This page owns the current bridge classification vocabulary only.
 
-Target-pipeline note:
+Current runtime note:
 
-- layered classifications belong to bridge facts today, not to raw evidence
-  selection
-- the future `ClaimSet` layer may remain materially unclassified when forcing
-  one final `EconomicKind`, `TaxTreatmentHint`, or `AccountingIntentHint`
-  would guess
-- bridge classifications remain important now, but they are not the whole
-  future ontology
-- when the future claim layer lands, keep unresolved meaning explicit until one
-  safe final economic fact can be emitted or a later stage owns the decision
+- the current runtime writes `TransactionFact` artifacts
+- the layered bridge terms live in `domain/transactions/classification.py`
+- adapters should populate bridge classifications only when those
+  classifications are safe and deterministic
+- output adapters own the mapping from bridge metadata into external row types
+  such as the CoinTracking `Type` column
 
-Target-direction naming note:
+Target-direction note:
 
-- current code still uses `EconomicKind`, `ProjectionHint`,
-  `AccountingIntentHint`, and `TaxTreatmentHint`
-- forward-looking docs point toward the future names `EventKind`,
-  `OutputHint`, `AccountingHint`, and `TaxHint`
-- use the current names when describing the live bridge contract and the future
-  names only when describing the target architecture beyond the bridge
+- bridge classifications remain important now, but they are not the full
+  long-term ontology
+- future target-layer naming and ontology rules belong in
+  [Domain Ontology](domain-ontology.md), not here
+- this docs-only slice does not rename the live bridge symbols
 
 Naming convention:
 
 - enum members such as `ProjectionHint.TRADE` stay Python-style uppercase names
-- stored/runtime values such as `trade` stay lowercase snake_case machine identifiers
+- stored/runtime values such as `trade` stay lowercase snake_case machine
+  identifiers
 - renderer labels such as `Trade` stay adapter-local presentation strings
 
 ## Classification Layers
 
-- `EconomicKind`: provider-neutral semantic meaning
-- `TaxTreatmentHint`: default tax intent used by later policy layers when it is
-  already safe to say on the current fact bridge
-- `AccountingIntentHint`: default accounting intent used by later journal
-  expansion when it is already safe to say on the current fact bridge
+- `EconomicKind`: provider-neutral bridge semantic meaning
+- `TaxTreatmentHint`: bridge tax intent used only when it is already safe to
+  say on the current fact path
+- `AccountingIntentHint`: bridge accounting intent used only when it is already
+  safe to say on the current fact path
 - `ProjectionHint`: output projection metadata for concrete renderers
 
 Core behavior should not key primarily on the legacy normalized `category`
@@ -70,7 +62,7 @@ These are the currently implemented bridge mappings. Code and docs must stay
 aligned on these values exactly.
 
 | Normalized Category | ProjectionHint | EconomicKind | TaxTreatmentHint | AccountingIntentHint | Tier | Notes |
-| ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| --- | --- | --- | --- | --- | --- | --- |
 | `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` | `T1` | Main spot trade path |
 | `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` | `T1` | Compatibility deposit before later transfer-linking |
 | `withdrawal` | `withdrawal` | `asset_withdrawal` | `non_taxable_transfer_out` | `funding_outflow` | `T1` | Compatibility withdrawal before later transfer-linking |
@@ -82,42 +74,21 @@ aligned on these values exactly.
 | `derivatives_profit` | `derivatives_futures_profit` | `derivative_realized_profit` | `derivative_realized_gain` | `income_recognition` | `T1` | Current realized profit bridge path |
 | `derivatives_loss` | `derivatives_futures_loss` | `derivative_realized_loss` | `derivative_realized_loss` | `expense_recognition` | `T1` | Current realized loss bridge path |
 
-## Future Expansion Rules
-
-- Do not add near-duplicate names for the same concept.
-- Add new enum values only when the behavior, tests, and adapter mappings land
-  together.
-- Keep future unsupported or planned semantics explicit in docs or roadmap
-  notes rather than preloading duplicate enum names into the runtime.
-- When later fact, accounting, or tax work needs a richer classification set,
-  update this document and `domain/transactions/classification.py` in the same
-  checkpoint.
-
 ## Runtime Rules
 
-- Adapters populate layered classifications first on the current bridge path
-  only when the classification is safe and deterministic.
-- The target claim layer may preserve unresolved meaning instead of forcing a
-  final fact classification too early.
-- Missing tax or accounting intent must not force lower layers to guess.
-  Preserve unresolved meaning in claims and let later accounting- or tax-owned
-  gaps carry the remaining policy blockers.
-- Runtime consumers operate on bridge `legs` only; there is no split
-  `fee_legs` lane and no first-leg compatibility view on `TransactionFact`.
-- Leg-level semantics live on the leg through `LegKind`; fact classification
-  remains a separate fact-level layer.
-- Output adapters map layered classifications into concrete external row
-  families when they need them.
+- adapters populate layered classifications on the current bridge path only
+  when the classification is safe and deterministic
+- if an adapter cannot determine a safe bridge classification, it must emit an
+  explicit blocking issue or review instead of guessing
+- missing tax or accounting intent must not force lower layers to guess
+- runtime consumers operate on bridge `legs` only; there is no split
+  `fee_legs` lane and no first-leg compatibility view on `TransactionFact`
+- leg-level semantics live on the leg through `LegKind`; fact classification
+  remains a separate fact-level layer
 - `ProjectionHint` is output metadata, not the long-term core driver of
-  business behavior.
-- Machine-oriented runtime values should stay lowercase snake_case even when an
-  output adapter renders them as title-style labels.
-- If an adapter cannot determine a safe layered classification on the current
-  fact bridge, it must emit an explicit blocking issue or review instead of
-  guessing.
-- When the target claim layer lands, that same unresolved meaning should remain
-  explicit in `ClaimSet` until one safe economic fact or later
-  stage-owned policy decision is available.
+  business behavior
+- output adapters map bridge classifications into concrete external row
+  families when they need them
 
 ## Review Triggers
 
@@ -127,6 +98,17 @@ Require explicit review when:
 - the fact changes beneficial ownership but not obvious tax treatment
 - the economic meaning is safe enough for reconciliation, but tax treatment
   still depends on later policy-owned determinants
-- a provider row collapses financing, trading, and fee semantics into one record
-- a future activity type would require a new classification value rather than a
-  safe mapping into the current bridge set
+- a provider row collapses financing, trading, and fee semantics into one
+  record
+- a future activity type would require a new bridge classification value
+  instead of a safe mapping into the current bridge set
+
+## Future Expansion Rules
+
+- do not add near-duplicate names for the same concept
+- add new bridge enum values only when the behavior, tests, and adapter
+  mappings land together
+- keep future unsupported or planned semantics explicit in docs or roadmap
+  notes rather than preloading duplicate bridge enum names into the runtime
+- when later bridge work needs a richer bridge classification set, update this
+  document and `domain/transactions/classification.py` in the same checkpoint

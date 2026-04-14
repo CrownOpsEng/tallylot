@@ -24,6 +24,9 @@ model, artifact contracts, and repo standards.
 - [Current state](status/current-state.md)
 - [Operator quickstart](guides/operator-quickstart.md)
 - [Architecture overview](concepts/architecture-overview.md)
+- [Current bridge contracts](concepts/current-bridge-contracts.md)
+- [Pipeline stage contracts](concepts/pipeline-stage-contracts.md)
+- [Domain ontology](concepts/domain-ontology.md)
 - [Reconciliation and tax architecture](concepts/reconciliation-tax-architecture.md)
 - [Engineering standards](standards/engineering.md)
 - [Workspace model](concepts/workspace-model.md)
@@ -34,10 +37,14 @@ Agent-specific routing and repo execution rules live in
 ## Core Concepts
 
 <!-- docs-maintenance:start concepts -->
-- [Architecture Overview](concepts/architecture-overview.md): High-level map of the current bridge, final pipeline, and the documents that own each boundary.
-- [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for the current bridge, final pipeline products, performance rules, and filing-critical rollout.
+- [Architecture Overview](concepts/architecture-overview.md): High-level map of the current bridge, the target pipeline, and the focused pages that own each major contract.
+- [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for trust gates, performance rules, tax-policy architecture, and filing-critical rollout from the current bridge toward the target pipeline.
+- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Owning concept page for the live bridge contracts, bridge artifacts, and current schema rules.
+- [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries.
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts.
-- [Transaction Classification](concepts/transaction-classification.md): Layered classification vocabulary for the current fact-path bridge and later policy stages.
+- [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, identity seams, package direction, and bridge-versus-target modeling rules.
+- [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
+- [Gaps And Readiness](concepts/gaps-and-readiness.md): Owning concept page for the target gap model, readiness model, sidecar rules, and shared `SubjectRef` contracts.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
 - [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): First-principles design anchor for the future unified adapter manifest, facets, adapter products, and deterministic verification model.
 <!-- docs-maintenance:end concepts -->
@@ -79,7 +86,7 @@ that follows the external workspace layout.
 
 <!-- docs-maintenance:start status -->
 - [Current State](status/current-state.md): Implemented runtime capabilities, current operational surface, and deferred areas.
-- [Migration Sequence](status/migration-sequence.md): Incremental migration order from the current fact-path bridge to the final pipeline.
+- [Migration Sequence](status/migration-sequence.md): Incremental migration order from the current bridge toward the target stage-first pipeline with parity gates and retirement rules.
 - [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the unified adapter contract rewrite until after filing-critical work.
 <!-- docs-maintenance:end status -->
 
