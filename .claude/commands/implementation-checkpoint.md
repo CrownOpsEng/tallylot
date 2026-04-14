@@ -35,7 +35,7 @@ Use this route before closing any non-trivial coding task.
    - targeted tests while iterating
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests` before closing
      substantial work
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks` when the change touches CI,
+   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full` when the change touches CI,
      packaging, release, or other workflow surfaces
 8. If architecture, schema, or sequencing changed, update:
    - `ROADMAP.md`

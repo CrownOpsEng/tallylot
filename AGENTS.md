@@ -97,7 +97,7 @@ Do not pre-load every repo doc by default.
 - For explicit local verification, prefer:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
+  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full`
 - Benchmark quality-gate scheduling or test-slice changes before changing the
   default verification path:
   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_quality_gates`
@@ -105,12 +105,12 @@ Do not pre-load every repo doc by default.
 - Do not run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the parallel quality-gate runner unless you are debugging hook behavior itself.
 - Use `tools.run_quality_gates --full-tests` as the normal final local
   verification command.
-- Use `tools.run_ci_parity_checks` only when changes touch CI, packaging,
-  release, or other workflow surfaces where local parity with GitHub Actions is
-  worth the extra time.
+- Use `tools.run_pr_review_checks --mode full` when changes touch CI,
+  packaging, release, or other workflow surfaces where the local verification
+  pass should mirror the full pre-merge PR suite.
 - Do not run `tools.run_quality_gates --full-tests` immediately before
-  `tools.run_ci_parity_checks`; the parity runner already includes the full
-  quality gate pass.
+  `tools.run_pr_review_checks --mode full`; the full PR-review runner already
+  includes the full quality gate pass plus the additional CI-sensitive lanes.
 - Keep commit-time hooks narrow:
   - safe staged Ruff autofixes
   - commit-message validation

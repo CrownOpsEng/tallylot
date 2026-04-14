@@ -389,6 +389,9 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "docs/status/current-state.md" in guardrails_text
     assert "tools/docs_maintenance/cli.py" in guardrails_text
     assert "tools/benchmark_quality_gates.py" in guardrails_text
+    assert "repo_support/local_autofix.py" in guardrails_text
+    assert "repo_support/review_verification/**" in guardrails_text
+    assert "tools/evaluate_review_results.py" in guardrails_text
     assert "`markdown` skill" in guardrails_text
     assert "human docs, agent" in guardrails_text
     assert "standards/delivery-guardrails.md" in docs_index_text
@@ -434,8 +437,9 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "`control_plane_text`" in guardrails_text
     assert "`repo_code_or_tooling`" in guardrails_text
     assert "`ci_or_release`" in guardrails_text
-    assert "surface-specific targeted checks still apply" in guardrails_text
-    assert "duplicate `quality-gates-full` pass" in guardrails_text
+    assert "selected verification mode" in guardrails_text
+    assert "full non-duplicated blocking suite" in guardrails_text
+    assert "suppresses the narrower targeted pytest subset checks" in guardrails_text
     assert (
         "every applicable changed surface group has been revisited" in guardrails_text
     )
@@ -521,18 +525,23 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
         "AGENTS.md",
         "docs/standards/**",
         ".claude/commands/**",
+        "repo_support/local_autofix.py",
+        "repo_support/quality_gates.py",
+        "repo_support/review_verification/**",
         "tools/install_git_hooks.py",
         "tools/pre_commit_hook.py",
         "tools/pre_push_hook.py",
         "tools/audit_delivery_guardrails.py",
         "tools/audit_pr_review.py",
         "tools/benchmark_quality_gates.py",
+        "tools/evaluate_review_results.py",
         "tools/message_standards.py",
+        "tools/run_review_check.py",
         "tools/run_pr_review_checks.py",
         "tools/validate_commit_message.py",
         "tools/validate_pr_metadata.py",
         "tools/run_quality_gates.py",
-        "tools/run_ci_parity_checks.py",
+        "tools/verify_built_wheel.py",
     )
 
     for entry in required_entries:

@@ -14,7 +14,7 @@ Use this route for repeatable review passes on an active branch or draft PR.
 2. Use
    `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_pr_review`
    to identify the current diff's applicable surface groups, review domains,
-   required verification family, any supplemental blocking lanes, and any
+   selected verification mode, selected and suppressed checks, and any
    unmapped paths before deciding the current pass found no new meaningful
    findings.
 3. Re-check every prior fix surface first, then inspect the next applicable
@@ -30,9 +30,9 @@ Use this route for repeatable review passes on an active branch or draft PR.
      existing issue first and open or link the follow-up issue immediately
 5. Rerun the required review checks for the repaired slice with
    `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks`
-   or the narrower required slice, including any blocking stress or packaging
-   lane required for the current diff, then create a bounded checkpoint commit
-   before starting the next pass. Do not start another red-team pass with
+   or, for CI, packaging, release, or workflow-sensitive repairs, with
+   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full`,
+   then create a bounded checkpoint commit before starting the next pass. Do not start another red-team pass with
    uncommitted repaired findings unless the pass is still in a very small
    in-progress slice.
    Do not describe an upcoming pass as clean, final, or publish-ready; every

@@ -99,6 +99,10 @@ def _stress_steps() -> tuple[StressStep, ...]:
     )
 
 
+def _parse_args(argv: Sequence[str] | None = None) -> tuple[bool]:
+    return ("--fail-fast" in tuple(argv or ()),)
+
+
 def _print_reproduction(step: StressStep) -> None:
     print("[repro] rerun the failing stress step:", flush=True)
     print(f"[repro] {' '.join(step.command)}", flush=True)
@@ -132,11 +136,16 @@ def _run_step(step: StressStep) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    del argv
+    (fail_fast,) = _parse_args(argv)
+    failed = False
     for step in _stress_steps():
-        if _run_step(step) != 0:
+        returncode = _run_step(step)
+        if returncode == 0:
+            continue
+        failed = True
+        if fail_fast:
             return 1
-    return 0
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

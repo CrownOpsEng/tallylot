@@ -10,7 +10,7 @@ from typing import Any, cast
 
 from repo_support.paths import repo_root
 
-REQUIRED_STATUS_CHECKS = ("commit-messages", "pr-review")
+REQUIRED_STATUS_CHECKS = ("commit-messages", "pr-metadata", "pr-review")
 CONTROL_PLANE_CODEOWNER_PATTERNS = (
     ".agents/skills/**",
     ".github/actions/**",
@@ -21,18 +21,23 @@ CONTROL_PLANE_CODEOWNER_PATTERNS = (
     "AGENTS.md",
     "docs/standards/**",
     ".claude/commands/**",
+    "repo_support/local_autofix.py",
+    "repo_support/quality_gates.py",
+    "repo_support/review_verification/**",
     "tools/install_git_hooks.py",
     "tools/pre_commit_hook.py",
     "tools/pre_push_hook.py",
     "tools/audit_delivery_guardrails.py",
     "tools/audit_pr_review.py",
     "tools/benchmark_quality_gates.py",
+    "tools/evaluate_review_results.py",
     "tools/message_standards.py",
+    "tools/run_review_check.py",
     "tools/validate_commit_message.py",
     "tools/validate_pr_metadata.py",
     "tools/run_quality_gates.py",
-    "tools/run_ci_parity_checks.py",
     "tools/run_pr_review_checks.py",
+    "tools/verify_built_wheel.py",
 )
 
 

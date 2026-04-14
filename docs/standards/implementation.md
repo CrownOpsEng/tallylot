@@ -46,9 +46,12 @@ Prefer the repo's built-in tooling before inventing local workflows:
   on 4 workers by default, and the full gate on serial full-suite coverage.
   Override the fast worker count only through
   `TALLYLOT_FAST_PYTEST_WORKERS`; use `0` to force serial.
-- mirror GitHub Actions locally when changing workflow, packaging, or release
-  behavior with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
+- local verification runners may apply safe autofixes to changed Python and
+  Markdown files before validation so style-only drift is repaired locally,
+  while CI stays read-only and reports any remaining issues directly
+- mirror the full pre-merge PR suite locally when changing workflow,
+  packaging, or release behavior with
+  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full`
 - audit local CODEOWNERS coverage and live GitHub branch-protection settings
   together when changing delivery policy, branch protection, or CI guardrails
   with
@@ -358,42 +361,38 @@ is:
 - do not call work done with only local reasoning
 - verify the changed behavior at the smallest useful level first
 - then run `tools.run_quality_gates --full-tests` before closing the task
-- escalate to `tools.run_ci_parity_checks` only when the change touches CI,
-  packaging, release, or other workflow surfaces where exact GitHub Actions
-  parity matters
+- escalate to `tools.run_pr_review_checks --mode full` when the change touches
+  CI, packaging, release, or other workflow surfaces where the local pass
+  should mirror the full pre-merge PR suite
 - do not run `tools.run_quality_gates --full-tests` again immediately before
-  `tools.run_ci_parity_checks`; the parity runner already includes it
+  `tools.run_pr_review_checks --mode full`; the full PR-review runner already
+  includes it
 - use `tools.run_fast_pytest` or the hook-owned pre-commit path for the fast
   checkpoint loop; do not duplicate the fast pytest CLI contract in new
   wrappers or config entries
 
-For PR review and repair loops, choose verification by changed surface:
+For PR review and repair loops, use `tools.audit_pr_review` to classify the
+changed surface groups and use `tools.run_pr_review_checks` as the shared
+verification entrypoint:
 
-- `human_docs`: run `tools.docs_maintenance sync --check`
-- `control_plane_text`: run docs maintenance plus the targeted policy tests
-  declared by `tools.run_pr_review_checks`
-- `repo_code_or_tooling`: run `tools.run_quality_gates --full-tests`, then the
-  blocking stress lane, and let PR routing add pre-merge packaging validation
-  for packaging-sensitive repo-code diffs
-- `ci_or_release`: run `tools.run_ci_parity_checks`; the PR route also keeps
-  the blocking stress lane on for these diffs
-- mixed `repo_code_or_tooling` plus `ci_or_release`: let `ci-parity` win as
-  the broad runner because it already includes the full quality, build, and
-  wheel parity path; keep the surface-specific targeted checks and the stress
-  lane, but do not duplicate `tools.run_quality_gates --full-tests`
+- pre-merge pull-request CI always runs the full non-duplicated blocking suite
+  plus the non-blocking coverage hotspot report lane
+- post-merge and manual CI stay change-sensitive and select only the atomic
+  checks needed for the landed diff
+- local planned runs follow the same change-sensitive selection policy as
+  post-merge CI
+- local `tools.run_pr_review_checks --mode full` is the pre-merge simulator
+  for CI, packaging, release, or other workflow-sensitive changes
+- `tools.run_quality_gates` remains a quality-only convenience runner and does
+  not decide PR or CI verification selection
 
 Coverage hotspot reports are informative review output only. Use them to pick
 the next hardening target after a full-suite run; do not treat them as a
 replacement for correctness tests or the existing repo-wide coverage gate.
 
-When more than one surface group is present, the strongest broad verification
-family wins, but any declared surface-specific targeted checks still apply for
-touched control-plane paths. Coverage hotspots stay informative even when the
-rest of the PR review route is blocking.
-
 If you are changing commit-time or suite-selection policy, keep the hook path
-limited to bounded checkpoint checks and use the shared quality or parity
-runners as the single broad verification source. Benchmark with
+limited to bounded checkpoint checks and use the shared quality runner or the
+full PR-review runner as the single broad verification source. Benchmark with
 `tools.benchmark_tests` and `tools.benchmark_quality_gates` when you are
 proposing a different test slice or quality-gate schedule, and do not expand
 the hook path into a second full-suite verification pass.

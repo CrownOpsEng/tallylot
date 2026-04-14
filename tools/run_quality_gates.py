@@ -4,9 +4,9 @@ import argparse
 import subprocess
 import time
 from collections.abc import Sequence
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
+from repo_support.local_autofix import run_local_autofix
 from repo_support.quality_gates import (
     QUALITY_GATE_ORDER,
     QUALITY_SCHEDULES,
@@ -47,6 +47,8 @@ class _RunRequest:
     full_tests: bool
     schedule: str
     selected_gate_names: tuple[str, ...]
+    fail_fast: bool
+    auto_fix: bool
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -71,6 +73,16 @@ def _build_argument_parser() -> argparse.ArgumentParser:
             "default for the selected test mode."
         ),
     )
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop after the first failing phase and skip the remaining phases.",
+    )
+    parser.add_argument(
+        "--no-auto-fix",
+        action="store_true",
+        help="Skip the local safe autofix step before running validation gates.",
+    )
     return parser
 
 
@@ -85,6 +97,8 @@ def _run_request(args: argparse.Namespace) -> _RunRequest:
         full_tests=args.full_tests,
         schedule=args.schedule,
         selected_gate_names=selected_gate_names,
+        fail_fast=args.fail_fast,
+        auto_fix=not args.no_auto_fix,
     )
 
 
@@ -142,12 +156,10 @@ def _run_phase(
     print(f"[phase:{phase.name}] gates={', '.join(phase.gate_names)}", flush=True)
     gate_results: list[GateResult] = []
     gates = tuple(available_gates[gate_name] for gate_name in phase.gate_names)
-    with ThreadPoolExecutor(max_workers=len(gates)) as executor:
-        futures = {executor.submit(_run_gate, gate): gate.name for gate in gates}
-        for future in as_completed(futures):
-            gate_result = future.result()
-            gate_results.append(gate_result)
-            _print_gate_result(gate_result)
+    for gate in gates:
+        gate_result = _run_gate(gate)
+        gate_results.append(gate_result)
+        _print_gate_result(gate_result)
     ordered_results = tuple(
         sorted(
             gate_results,
@@ -189,29 +201,40 @@ def main(argv: Sequence[str] | None = None) -> int:
             flush=True,
         )
         return 1
+    if run_request.auto_fix:
+        autofix_status = run_local_autofix()
+        if autofix_status != 0:
+            return autofix_status
 
     available_gates = available_quality_gates(full_tests=run_request.full_tests)
     phase_results: list[PhaseResult] = []
     started = time.perf_counter()
+    stop_after_failure = False
     for phase in _phase_plan(run_request):
+        if stop_after_failure:
+            break
         phase_result = _run_phase(phase, available_gates=available_gates)
         phase_results.append(phase_result)
-        if any(
+        phase_failed = any(
             gate_result.returncode != 0 for gate_result in phase_result.gate_results
-        ):
-            summary = RunSummary(
-                phase_results=tuple(phase_results),
-                total_elapsed=time.perf_counter() - started,
-            )
-            _print_summary(summary)
-            return 1
+        )
+        if phase_failed and run_request.fail_fast:
+            stop_after_failure = True
 
     summary = RunSummary(
         phase_results=tuple(phase_results),
         total_elapsed=time.perf_counter() - started,
     )
     _print_summary(summary)
-    return 0
+    return (
+        1
+        if any(
+            gate_result.returncode != 0
+            for phase_result in summary.phase_results
+            for gate_result in phase_result.gate_results
+        )
+        else 0
+    )
 
 
 if __name__ == "__main__":

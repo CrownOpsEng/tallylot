@@ -6,6 +6,7 @@ from pathlib import Path
 
 from repo_support.paths import repo_root
 from repo_support.pytest_commands import build_fast_pytest_command
+from repo_support.review_verification import check_spec
 
 QUALITY_GATE_ORDER = (
     "markdownlint",
@@ -39,18 +40,18 @@ def available_quality_gates(*, full_tests: bool) -> dict[str, QualityGate]:
     return {
         "markdownlint": QualityGate(
             name="markdownlint",
-            command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files"),
+            command=check_spec("markdownlint").command,
         ),
         "actionlint": QualityGate(
             name="actionlint",
-            command=("uv", "run", "actionlint", "-color"),
+            command=check_spec("actionlint").command,
         ),
-        "ruff": QualityGate(name="ruff", command=("uv", "run", "ruff", "check", ".")),
-        "mypy": QualityGate(name="mypy", command=("uv", "run", "mypy")),
-        "pyright": QualityGate(name="pyright", command=("uv", "run", "pyright")),
+        "ruff": QualityGate(name="ruff", command=check_spec("ruff").command),
+        "mypy": QualityGate(name="mypy", command=check_spec("mypy").command),
+        "pyright": QualityGate(name="pyright", command=check_spec("pyright").command),
         "pylint": QualityGate(
             name="pylint",
-            command=("uv", "run", "python", "-m", "tools.run_pylint"),
+            command=check_spec("pylint").command,
         ),
         "pytest": QualityGate(
             name="pytest",
