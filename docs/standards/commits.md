@@ -89,8 +89,8 @@ What:
 - keep ADAPTER discovery entry point unchanged
 
 Checks:
-- UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files
-- UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
+- make precommit ARGS='run markdownlint --all-files'
+- make quality
 ```
 
 Standard footers are allowed, including `BREAKING CHANGE:`.
@@ -254,7 +254,7 @@ Install the repo hooks and commit template in each clone before doing stable
 work:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
+make install-hooks
 ```
 
 The installed `pre-commit` hook is intentionally narrow. It formats safe
@@ -268,8 +268,8 @@ hook drift cannot silently bypass commit-message validation.
 Validate messages directly when needed:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
+make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
+make validate-commit-message ARGS='--rev-range HEAD~3..HEAD'
 ```
 
 When structured commit messages or PR bodies include backticks, quotes, or
@@ -295,10 +295,10 @@ In practice that means:
 Standard final verification still means running:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
+make quality
 ```
 
-Do not also run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the
+Do not also run `make precommit ARGS='run --all-files'` in addition to the
 shared quality-gate or PR-review runners unless you are validating hook
 behavior itself.
 
@@ -306,9 +306,9 @@ For explicit local verification outside the hook path, the repo also ships a
 parallel quality-gate runner:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full
+make quality
+make quality-full
+make pr-review-full
 ```
 
 Use `tools.run_quality_gates` as the default final local
@@ -332,10 +332,7 @@ Example:
 ```bash
 gh pr view <pr-number> --json title,body --jq '.title' > /tmp/pr-title.txt
 gh pr view <pr-number> --json title,body --jq '.body' > /tmp/pr-body.md
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks \
-  --mode full \
-  --pr-title "$(cat /tmp/pr-title.txt)" \
-  --pr-body-file /tmp/pr-body.md
+make tool TOOL=run_pr_review_checks ARGS='--mode full --pr-title "$$(cat /tmp/pr-title.txt)" --pr-body-file /tmp/pr-body.md'
 ```
 
 `pylint`, full-repo `ruff`, and the full `pytest` suite still belong primarily
@@ -352,8 +349,8 @@ After a lint-driven amend on a touched file, rerun the narrow checks against
 that exact file before treating the checkpoint as closed:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>
+make pylint ARGS='<touched-file>'
+make pytest ARGS='-q --no-cov <touched-test-file>'
 git show HEAD:<path>
 ```
 

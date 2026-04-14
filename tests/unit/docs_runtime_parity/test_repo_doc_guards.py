@@ -153,14 +153,8 @@ def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
     text = (docs_root() / "standards" / "commits.md").read_text(encoding="utf-8")
 
     assert "Do not describe `mypy` or `pyright` as covering `pylint` findings." in text
-    assert (
-        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>'
-        in text
-    )
-    assert (
-        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>'
-        in text
-    )
+    assert "make pylint ARGS='<touched-file>'" in text
+    assert "make pytest ARGS='-q --no-cov <touched-test-file>'" in text
     assert "git show HEAD:<path>" in text
 
 

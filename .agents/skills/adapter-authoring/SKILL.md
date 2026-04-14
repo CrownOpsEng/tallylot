@@ -21,11 +21,11 @@ Use this skill for adapter-focused work.
 2. Keep adapter metadata, implementation, and tests aligned in one slice.
 3. Keep normalization, rendering, and oracle-only behavior separated.
 4. Prefer the scaffold path for new adapters:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
+   - `make scaffold-adapter ARGS='...'`
 5. Add or update adapter tests beside the adapter package while implementing.
 6. Run the standard quality gate before closing the adapter slice:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
-   - reserve `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+   - `make quality`
+   - reserve `make quality-full`
      for the explicit full-suite override when a specific task needs it
 
 ## Focus

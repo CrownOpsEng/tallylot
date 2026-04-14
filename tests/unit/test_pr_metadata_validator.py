@@ -22,7 +22,7 @@ def _body(
         "What:\n"
         "- document and validate pull request metadata\n\n"
         "Checks:\n"
-        "- uv run python -m tools.run_quality_gates\n\n"
+        "- make quality\n\n"
         "Issue linkage:\n"
         f"{issue_linkage}\n\n"
         "Included checkpoints:\n"
@@ -82,7 +82,7 @@ What:
 - document and validate pull request metadata
 
 Checks:
-- uv run python -m tools.run_quality_gates
+- make quality
 
 Issue linkage:
 - Closes #34: preserve multi-checkpoint history on main
@@ -102,7 +102,7 @@ What:
 - document and validate pull request metadata
 
 Checks:
-- uv run python -m tools.run_quality_gates
+- make quality
 
 Included checkpoints:
 - `docs: codify pull request standards`
@@ -122,7 +122,7 @@ What:
 - document and validate pull request metadata
 
 Checks:
-- uv run python -m tools.run_quality_gates
+- make quality
 
 Issue linkage:
 - Closes #34: preserve multi-checkpoint history on main

@@ -32,7 +32,7 @@ proactive follow-up issue handling.
 5. Keep tracked docs and control-plane text neutral, durable, and free of
    scratch workflow bookkeeping.
 6. Validate docs changes with:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.docs_maintenance sync --check`
+   - `make docs-check`
 7. If the change also affects repo control-plane behavior, finish with the
    repo's broader quality gates before checkpointing.
 

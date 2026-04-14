@@ -13,9 +13,9 @@ nav_order: 20
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli baseline validate \
+make oracle ARGS='baseline validate \
   --export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
-  --output-dir <workspace>/analysis/reconciliation
+  --output-dir <workspace>/analysis/reconciliation'
 ```
 
 ## Source Intake
@@ -31,10 +31,10 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.orac
 
 ## Batch Gate
 
-- run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen`
+- run `make oracle ARGS='batch screen'`
 - review `stage_summary.json`
 - stop if `passed` is `false`
-- run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch stage` only after the screen passes
+- run `make oracle ARGS='batch stage'` only after the screen passes
 
 ## Verification Exports After Any Repair Or Import
 
@@ -55,7 +55,7 @@ Only export if needed:
 
 Then:
 
-- run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli verification compare`
+- run `make oracle ARGS='verification compare'`
 - update `analysis/issues/issue_log.csv`
 - update `analysis/issues/source_inventory.csv` when the round touches a source
 - update `outputs/logs/round_log.csv`

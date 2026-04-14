@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import cast
 
@@ -8,6 +9,7 @@ from repo_support.paths import repo_root
 
 _ADAPTER_TEST_GLOB = "**/tests"
 PYRIGHT_GENERATED_TEST_CONFIG_NAME = "pyrightconfig.tests.json"
+PYRIGHT_LOCAL_CONFIG_NAME = ".pyrightconfig.local.json"
 
 
 def adapter_test_roots(*, root: Path | None = None) -> tuple[str, ...]:
@@ -39,7 +41,9 @@ def _load_pyright_config(config_path: Path) -> dict[str, object]:
     return cast(dict[str, object], payload)
 
 
-def expected_execution_environments(*, root: Path | None = None) -> list[dict[str, object]]:
+def expected_execution_environments(
+    *, root: Path | None = None
+) -> list[dict[str, object]]:
     return [
         _private_usage_environment(path)
         for path in ("tests", *adapter_test_roots(root=root))
@@ -55,4 +59,40 @@ def sync_pyright_config(*, root: Path | None = None) -> bool:
         return False
     config["executionEnvironments"] = expected_environments
     config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    return True
+
+
+def _project_environment_root() -> Path:
+    configured = os.environ.get("VIRTUAL_ENV") or os.environ.get(
+        "UV_PROJECT_ENVIRONMENT"
+    )
+    if configured:
+        return Path(configured).expanduser().resolve()
+    return (Path.home() / ".venvs" / "tallylot-py312").resolve()
+
+
+def ensure_pyright_local_config(*, root: Path | None = None) -> bool:
+    active_root = repo_root() if root is None else root.expanduser().resolve()
+    local_config_path = active_root / PYRIGHT_LOCAL_CONFIG_NAME
+    root_config = _load_pyright_config(active_root / "pyrightconfig.json")
+    generated_test_config = _load_pyright_config(
+        active_root / PYRIGHT_GENERATED_TEST_CONFIG_NAME
+    )
+    root_config.pop("extends", None)
+    project_environment = _project_environment_root()
+    merged_config = {
+        **generated_test_config,
+        **root_config,
+        "venvPath": str(project_environment.parent),
+        "venv": project_environment.name,
+    }
+    new_payload = json.dumps(merged_config, indent=2) + "\n"
+    existing_payload = (
+        local_config_path.read_text(encoding="utf-8")
+        if local_config_path.exists()
+        else None
+    )
+    if existing_payload == new_payload:
+        return False
+    local_config_path.write_text(new_payload, encoding="utf-8")
     return True

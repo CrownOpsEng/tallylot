@@ -98,9 +98,7 @@ def _require_commit_message_hook() -> int:
     hook_path = _commit_msg_hook_path()
     if not hook_path.is_file():
         print(
-            "repo commit-msg hook is not installed; run "
-            '`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
-            "uv run python -m tools.install_git_hooks`",
+            "repo commit-msg hook is not installed; run `make install-hooks`",
             file=sys.stderr,
         )
         return 1
@@ -110,9 +108,7 @@ def _require_commit_message_hook() -> int:
         return 0
 
     print(
-        "repo commit-msg hook is stale or invalid; run "
-        '`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
-        "uv run python -m tools.install_git_hooks`",
+        "repo commit-msg hook is stale or invalid; run `make install-hooks`",
         file=sys.stderr,
     )
     return 1

@@ -21,11 +21,11 @@ checks, but it does not create source-backed document evidence on its own.
 
 ## Workflow
 
-1. Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission --source <source>`.
+1. Run `make cli ARGS='checkpoint scaffold-balance-submission --source <source>'`.
 2. Fill `balance_snapshots.csv` and `balance_references.csv`, and optionally
    `location_inventory.csv`, under
    `working/supporting_artifacts/balance_submissions/<source>/`.
-3. Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances --source <source>`.
+3. Run `make cli ARGS='checkpoint submit-balances --source <source>'`.
 4. Review `balance_submission_summary.json`. When the submit run has issues,
    review `balance_submission_issues.csv` as well.
 5. If the submit run is not blocked, continue with

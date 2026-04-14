@@ -21,11 +21,10 @@ This document complements:
 
 ## Repo-Native Tooling To Use
 
-This repo uses the external uv environment at
-`$HOME/.venvs/tallylot-py312`. The repo-root `.venv` file is a sentinel,
-not a virtualenv directory. Use
-`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv ...` for repo
-commands so `uv` does not create a workspace-local environment.
+This repo uses the external environment at `$(HOME)/.venvs/tallylot-py312`.
+Use the root `Makefile` as the standard local command surface. It prepends the
+external environment's `bin/` directory to `PATH`, which keeps repo commands
+machine-neutral and sandbox-safe without inline environment prefixes.
 
 Prefer the repo's built-in tooling before inventing local workflows:
 
@@ -33,15 +32,14 @@ Prefer the repo's built-in tooling before inventing local workflows:
   skill or MCP server is available, then fall back to CLI checks when the
   snapshot is stale, missing, or incomplete
 - bootstrap each clone with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
+  `make install-hooks`
   so the shared external environment is synced to the current checkout before
-  hook installation; rerun that command if
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot ...`
+  hook installation; rerun that command if `make cli ARGS='...'`
   resolves a stale editable checkout after repo relocation or history rebuilds
 - run broad verification with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
+  `make quality`
 - run the explicit full-suite override only when it is intentionally needed with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+  `make quality-full`
   The repo starts the standard quality gates together by default, keeps the
   fast pytest slice on 4 workers by default, and reserves phased scheduling as
   an explicit alternate mode for comparison or debugging.
@@ -52,33 +50,32 @@ Prefer the repo's built-in tooling before inventing local workflows:
   while CI stays read-only and reports any remaining issues directly
 - run the broad review suite locally when changing workflow, packaging, or
   release behavior with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full`
+  `make pr-review-full`
 - audit local CODEOWNERS coverage and live GitHub branch-protection settings
   together when changing delivery policy, branch protection, or CI guardrails
   with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_delivery_guardrails`
+  `make audit-delivery-guardrails`
 - audit PR review surface coverage with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_pr_review`
-  and run the required review checks for the current diff with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks`
+  `make audit-pr-review` and run the required review checks for the current
+  diff with `make pr-review`
 - run the blocking flake and order-sensitivity lane with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_test_stress_checks`
+  `make test-stress`
 - report coverage hotspots from a recent full-suite run with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.report_coverage_hotspots`
+  `make coverage-hotspots`
 - scaffold new adapters with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
+  `make scaffold-adapter ARGS='...'`
 - refresh generated pyright test-private execution environments with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.sync_pyright_config`
+  `make sync-pyright-config`
   when adapter-local `tests/` packages are added or removed outside the
   scaffold tool; `tools.run_quality_gates` also refreshes that generated config
   and fails immediately when it had to update the file, so review and commit
   `pyrightconfig.tests.json` before rerunning
 - refresh adapter golden fixtures with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.refresh_adapter_goldens ...`
+  `make refresh-adapter-goldens ARGS='...'`
 - benchmark test-slice changes with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests`
+  `make benchmark-tests`
 - benchmark quality-gate scheduling changes with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_quality_gates`
+  `make benchmark-quality`
 
 Do not replace these with ad hoc shell habits when the repo already has a
 supported path.

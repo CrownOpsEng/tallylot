@@ -34,9 +34,7 @@ class QualityPhase:
 
 
 def available_quality_gates(*, full_tests: bool) -> dict[str, QualityGate]:
-    pytest_command = (
-        ("uv", "run", "pytest") if full_tests else build_fast_pytest_command()
-    )
+    pytest_command = ("pytest",) if full_tests else build_fast_pytest_command()
     return {
         "markdownlint": QualityGate(
             name="markdownlint",

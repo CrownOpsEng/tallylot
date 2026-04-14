@@ -13,7 +13,7 @@ from statistics import median
 from tempfile import TemporaryDirectory
 
 from repo_support.quality_gates import apply_gate_environment
-from tools.uv_environment import repo_uv_environment
+from repo_support.uv_environment import repo_uv_environment
 
 
 @dataclass(frozen=True)

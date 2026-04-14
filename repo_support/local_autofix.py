@@ -3,10 +3,9 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from collections.abc import Iterable
 from pathlib import Path
-
-from tools.uv_environment import repo_uv_environment
 
 PYTHON_SUFFIXES = {".py", ".pyi"}
 MARKDOWN_SUFFIXES = {".md", ".mdx"}
@@ -53,12 +52,11 @@ def run_local_autofix() -> int:
     markdown_paths = _paths_with_suffixes(staged_paths, MARKDOWN_SUFFIXES)
 
     if python_paths:
-        python_env = repo_uv_environment()
         for command in (
-            ("uv", "run", "ruff", "check", "--fix", *python_paths),
-            ("uv", "run", "ruff", "format", *python_paths),
+            (sys.executable, "-m", "ruff", "check", "--fix", *python_paths),
+            (sys.executable, "-m", "ruff", "format", *python_paths),
         ):
-            status = _run_command(command, env=python_env)
+            status = _run_command(command)
             if status != 0:
                 return status
 

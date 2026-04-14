@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 from pytest import CaptureFixture, MonkeyPatch
 
 import repo_support.local_autofix as local_autofix
@@ -47,7 +49,6 @@ def test_run_local_autofix_targets_only_staged_python_and_markdown(
             "notes/todo.txt",
         ),
     )
-    monkeypatch.setattr(local_autofix, "repo_uv_environment", lambda: {"UV": "1"})
     monkeypatch.setattr(local_autofix, "_markdownlint_available", lambda: True)
 
     calls: list[tuple[tuple[str, ...], dict[str, str] | None]] = []
@@ -70,24 +71,24 @@ def test_run_local_autofix_targets_only_staged_python_and_markdown(
     assert calls == [
         (
             (
-                "uv",
-                "run",
+                sys.executable,
+                "-m",
                 "ruff",
                 "check",
                 "--fix",
                 "repo_support/local_autofix.py",
             ),
-            {"UV": "1"},
+            None,
         ),
         (
             (
-                "uv",
-                "run",
+                sys.executable,
+                "-m",
                 "ruff",
                 "format",
                 "repo_support/local_autofix.py",
             ),
-            {"UV": "1"},
+            None,
         ),
         (
             (

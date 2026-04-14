@@ -17,8 +17,8 @@ Use this skill for round verification workflow execution.
    - `docs/guides/full-operator-workflow.md`
    - `.claude/commands/round-verification.md`
 2. Use the documented oracle CLI commands:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli round scaffold`
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli verification compare`
+   - `make oracle ARGS='round scaffold'`
+   - `make oracle ARGS='verification compare'`
 3. Review the round artifacts and comparison outputs before answering closeout
    questions.
 4. Use `source diff` only when the verification path needs source-level repair

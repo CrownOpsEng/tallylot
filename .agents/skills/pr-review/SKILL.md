@@ -19,7 +19,7 @@ Use this skill for repeatable review passes on an active branch or draft PR.
    - `.claude/commands/pr-review.md`
 2. Start from deterministic branch and PR facts rather than scratch notes.
 3. Use
-   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_pr_review`
+   `make audit-pr-review`
    to identify the applicable surface groups, review domains, and required
    verification before choosing the next issue-finding pass.
 4. Repair findings in bounded slices, rerun the required checks for the

@@ -33,7 +33,7 @@ part of the current round-close process.
 
 ### 1. Lock The Baseline
 
-- Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli baseline validate`
+- Run `make oracle ARGS='baseline validate'`
   against the oracle baseline export folder.
 - Review the generated reconciliation package before starting a new source.
 
@@ -67,10 +67,10 @@ part of the current round-close process.
   `balance_references.csv` directly when the source adapter already produced
   balance outputs.
 - When balances need to be authored manually, run
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission --source <source>`,
+  `make cli ARGS='checkpoint scaffold-balance-submission --source <source>'`,
   fill the submission package under
   `working/supporting_artifacts/balance_submissions/<source>/`, then run
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances --source <source>`
+  `make cli ARGS='checkpoint submit-balances --source <source>'`
   and review `balance_submission_summary.json`; review
   `balance_submission_issues.csv` when the submit run reports issues.
 - Run `reconciliation balances check` once `balance_snapshots.csv` and

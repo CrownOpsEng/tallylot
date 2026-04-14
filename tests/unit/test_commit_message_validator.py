@@ -22,7 +22,7 @@ What:
 - point agents to the narrowest applicable standards doc
 
 Checks:
-- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+- make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
 """
 
     errors = _validate_commit_message_text(message)
@@ -41,7 +41,7 @@ What:
 - move structured CSV parsing into bounded helpers
 
 Checks:
-- uv run pytest tests/unit/test_commit_message_validator.py
+- make pytest ARGS='tests/unit/test_commit_message_validator.py'
 """
 
     errors = _validate_commit_message_text(message)
@@ -61,7 +61,7 @@ What:
 - update docs
 
 Checks:
-- uv run pytest
+- make pytest
 
 BREAKING CHANGE: verification compare is now verification diff
 """
@@ -150,9 +150,9 @@ supporting standards around the new concepts, guides, reference,
 standards, and status model
 
 Checks:
-- `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest
+- `make pytest ARGS='
 tests/unit/test_docs_maintenance.py
-tests/unit/docs_runtime_parity -q --no-cov`
+tests/unit/docs_runtime_parity -q --no-cov'`
 
 Included checkpoints:
 - `docs(roadmap): clarify planning and state docs`
@@ -175,7 +175,7 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -198,7 +198,7 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -221,7 +221,7 @@ What:
 - split the parser
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -240,7 +240,7 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -259,7 +259,7 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -282,7 +282,7 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -313,7 +313,7 @@ What:
 - point agents to the narrowest applicable standards doc
 
 Checks:
-- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+- make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
 
 Included checkpoints:
 - `docs: route agents to narrow standards`
@@ -338,7 +338,7 @@ What:
 - point agents to the narrowest applicable standards doc
 
 Checks:
-- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+- make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
 """
     )
 
@@ -386,7 +386,7 @@ def test_load_commit_messages_from_range_falls_back_for_rewritten_history(
                     "docs: codify pull request merge policy (#35)\n\n"
                     "Why:\n- keep history clean\n\n"
                     "What:\n- rewrite the commit record\n\n"
-                    "Checks:\n- uv run pytest\n\n"
+                    "Checks:\n- make pytest\n\n"
                     "Included checkpoints:\n"
                     "- `docs: codify pull request merge policy`\n"
                 ),

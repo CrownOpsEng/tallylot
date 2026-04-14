@@ -99,14 +99,8 @@ def test_round_verification_route_mentions_oracle_cli_commands() -> None:
         encoding="utf-8"
     )
 
-    scaffold_command = (
-        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
-        "uv run python -m tools.oracles.cli round scaffold"
-    )
-    compare_command = (
-        'UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
-        "uv run python -m tools.oracles.cli verification compare"
-    )
+    scaffold_command = "make oracle ARGS='round scaffold'"
+    compare_command = "make oracle ARGS='verification compare'"
 
     assert scaffold_command in text
     assert compare_command in text

@@ -100,8 +100,6 @@ CHECK_SPECS = {
             "commit-messages",
             job_name="Validate commit messages",
             command=(
-                "uv",
-                "run",
                 "python",
                 "-m",
                 "tools.validate_commit_message",
@@ -115,8 +113,6 @@ CHECK_SPECS = {
             "pr-metadata",
             job_name="Validate PR metadata",
             command=(
-                "uv",
-                "run",
                 "python",
                 "-m",
                 "tools.validate_pr_metadata",
@@ -136,8 +132,6 @@ CHECK_SPECS = {
             "docs-maintenance",
             job_name="Docs maintenance",
             command=(
-                "uv",
-                "run",
                 "python",
                 "-m",
                 "tools.docs_maintenance",
@@ -149,45 +143,43 @@ CHECK_SPECS = {
         _spec(
             "markdownlint",
             job_name="Markdown lint",
-            command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files"),
+            command=("pre-commit", "run", "markdownlint", "--all-files"),
             tags=("quality", "docs"),
         ),
         _spec(
             "actionlint",
             job_name="Workflow lint",
-            command=("uv", "run", "actionlint", "-color"),
+            command=("actionlint", "-color"),
             tags=("quality", "ci"),
         ),
         _spec(
             "ruff",
             job_name="Ruff",
-            command=("uv", "run", "ruff", "check", "."),
+            command=("ruff", "check", "."),
             tags=("quality", "python"),
         ),
         _spec(
             "mypy",
             job_name="Mypy",
-            command=("uv", "run", "mypy"),
+            command=("mypy",),
             tags=("quality", "python"),
         ),
         _spec(
             "pyright",
             job_name="Pyright",
-            command=("uv", "run", "pyright"),
+            command=("pyright", "--project", ".pyrightconfig.local.json"),
             tags=("quality", "python"),
         ),
         _spec(
             "pylint",
             job_name="Pylint",
-            command=("uv", "run", "python", "-m", "tools.run_pylint"),
+            command=("python", "-m", "tools.run_pylint"),
             tags=("quality", "python"),
         ),
         _spec(
             "repo-agent-skills",
             job_name="Repo agent skills tooling",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -200,8 +192,6 @@ CHECK_SPECS = {
             "standards-guards",
             job_name="Standards guards",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -214,8 +204,6 @@ CHECK_SPECS = {
             "docs-runtime-parity",
             job_name="Docs runtime parity",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -228,8 +216,6 @@ CHECK_SPECS = {
             "delivery-guardrails-audit",
             job_name="Delivery guardrails audit",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -242,8 +228,6 @@ CHECK_SPECS = {
             "pr-metadata-validator",
             job_name="PR metadata validator tooling",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -256,8 +240,6 @@ CHECK_SPECS = {
             "commit-message-validator",
             job_name="Commit message validator tooling",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -270,8 +252,6 @@ CHECK_SPECS = {
             "pre-commit-hook-tooling",
             job_name="Pre-commit hook tooling",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -284,8 +264,6 @@ CHECK_SPECS = {
             "quality-gates-tooling",
             job_name="Quality gates tooling",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -298,8 +276,6 @@ CHECK_SPECS = {
             "audit-pr-review",
             job_name="PR review audit tooling",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -312,8 +288,6 @@ CHECK_SPECS = {
             "run-pr-review-checks",
             job_name="PR review check runner tooling",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -326,8 +300,6 @@ CHECK_SPECS = {
             "ci-tooling",
             job_name="Workflow contract tooling",
             command=(
-                "uv",
-                "run",
                 "pytest",
                 "--no-cov",
                 "-q",
@@ -339,14 +311,14 @@ CHECK_SPECS = {
         _spec(
             "pytest-full",
             job_name="Pytest full suite",
-            command=("uv", "run", "pytest"),
+            command=("pytest",),
             tags=("quality", "tests"),
             dominance_ids=TARGETED_SUBSET_TEST_IDS,
         ),
         _spec(
             "test-stress-checks",
             job_name="Stress checks",
-            command=("uv", "run", "python", "-m", "tools.run_test_stress_checks"),
+            command=("python", "-m", "tools.run_test_stress_checks"),
             tags=("tests",),
         ),
         _spec(
@@ -358,14 +330,14 @@ CHECK_SPECS = {
         _spec(
             "verify-wheel",
             job_name="Verify built wheel",
-            command=("uv", "run", "python", "-m", "tools.verify_built_wheel"),
+            command=("python", "-m", "tools.verify_built_wheel"),
             tags=("packaging",),
             dependency_ids=("build",),
         ),
         _spec(
             "coverage-hotspots",
             job_name="Coverage hotspots",
-            command=("uv", "run", "python", "-m", "tools.report_coverage_hotspots"),
+            command=("python", "-m", "tools.report_coverage_hotspots"),
             tags=("report",),
             dependency_ids=("pytest-full",),
             blocking=False,

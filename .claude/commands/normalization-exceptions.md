@@ -7,5 +7,5 @@ Review these artifacts after `source normalize`:
 - `facts.csv` for the internal fact artifact set
 
 If the issue is a candidate-shape or overlap problem, render a candidate with
-`output render file` and continue with `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen`
+`output render file` and continue with `make oracle ARGS='batch screen'`
 rather than editing the candidate blindly.

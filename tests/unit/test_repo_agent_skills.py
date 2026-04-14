@@ -20,7 +20,7 @@ EXPECTED_SKILLS = {
         required_fragments=(
             "docs/guides/write-an-adapter.md",
             ".claude/commands/adapter-authoring.md",
-            "tools.scaffold_adapter",
+            "make scaffold-adapter",
         ),
     ),
     "docs-authoring": ExpectedSkill(
@@ -33,7 +33,7 @@ EXPECTED_SKILLS = {
             "docs/standards/commits.md",
             "tools/docs_maintenance/cli.py",
             "tools/docs_maintenance/metadata.py",
-            "uv run python -m tools.docs_maintenance sync --check",
+            "make docs-check",
         ),
     ),
     "implementation-workflow": ExpectedSkill(
@@ -67,7 +67,7 @@ EXPECTED_SKILLS = {
             "docs/standards/implementation.md",
             "docs/standards/commits.md",
             ".claude/commands/pr-review.md",
-            "tools.audit_pr_review",
+            "make audit-pr-review",
             "applicable surface groups",
             "issue-finding with open outcome",
         ),
@@ -104,8 +104,8 @@ EXPECTED_SKILLS = {
         required_fragments=(
             "docs/guides/verify-a-round.md",
             ".claude/commands/round-verification.md",
-            "tools.oracles.cli round scaffold",
-            "tools.oracles.cli verification compare",
+            "make oracle ARGS='round scaffold'",
+            "make oracle ARGS='verification compare'",
         ),
     ),
     "source-intake-operations": ExpectedSkill(
