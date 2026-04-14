@@ -13,6 +13,12 @@ When repairing or extending an adapter:
    work into a second architecture center
 3. prefer current-contract hardening for filing-critical adapters over
    speculative future-contract scaffolding
-4. keep ambiguous data explicit as issues or review records
-5. keep output rendering and source normalization concerns separated
-6. rerun the full quality gate before considering the adapter ready
+4. keep current implementation terms accurate when describing the current
+   bridge, and use final target names only for the forward state
+5. keep ambiguous data explicit as issues or review records
+6. keep output rendering and source normalization concerns separated
+7. do not imply that adapters own reconciliation, checkpoint, accounting, or
+   tax decisions
+8. do not delete adapter tests or silently weaken fixture coverage without
+   explicit human approval
+9. rerun the full quality gate before considering the adapter ready

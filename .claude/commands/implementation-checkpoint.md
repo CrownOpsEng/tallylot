@@ -24,6 +24,9 @@ Use this route before closing any non-trivial coding task.
    - new parser or renderer contracts
    - fixed edge cases
    - meaningful regression prevention rather than trivial coverage
+   - preserved parity when tests moved or consolidated
+   - no silent assertion removal or fixture simplification that weakens
+     coverage
 5. Confirm tracked docs, templates, and control-plane text stayed neutral and
    did not pick up scratch workflow bookkeeping.
 6. Confirm meaningful out-of-scope repo work is not stranded in notes:
@@ -41,7 +44,7 @@ Use this route before closing any non-trivial coding task.
    - `ROADMAP.md`
    - `docs/concepts/reconciliation-tax-architecture.md`
    - any boundary, matrix, or migration docs affected
-   - if reconciliation, checkpoint, accounting, tax, or canonical pipeline
+   - if reconciliation, checkpoint, accounting, tax, or core pipeline
      products changed, confirm the narrow routing docs still point to the right
      architecture and sequencing material:
      - `AGENTS.md`
@@ -69,7 +72,12 @@ Use this route before closing any non-trivial coding task.
    multiple bounded checkpoint commits before closeout. Do not close the task
    first and plan to commit afterward.
 
-11. Confirm branch handling stayed PR-only for protected branches: do not push
+11. Include a short parity note in the checkpoint summary when tests changed:
+    - what old behavior was covered
+    - where that behavior is covered now
+    - whether the assertion became stronger, weaker, or simply moved
+
+12. Confirm branch handling stayed PR-only for protected branches: do not push
     directly to `main`; do not use branch-protection bypass for ordinary
     delivery; do not rewrite a merged `main` commit if the original pull
     request must remain attached to the landing commit and use a new repair
