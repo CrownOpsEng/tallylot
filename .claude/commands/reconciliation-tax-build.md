@@ -13,14 +13,13 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - `docs/concepts/transaction-classification.md`
    - `docs/standards/implementation.md`
 4. Confirm whether the task changes:
-   - evidence or claim products
-   - economic facts
+   - `EvidenceSet` or `ClaimSet`
+   - `EconomicFacts`
    - gap or readiness models
-   - reconciliation rules
-   - checkpoint packages
-   - checkpoint assembly
-   - journal rendering
-   - tax policy
+   - `ReconciliationState`
+   - `Checkpoint`
+   - `Journal`
+   - `TaxInputs` or `TaxOutputs`
    - CoinTracking oracle parsing
 5. If the task changes architecture or sequencing decisions, update
    `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md` in the
@@ -35,6 +34,11 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - keep tax policy behind a policy port
    - keep current facts plus balances as the MVP bridge while landing richer
      pipeline products incrementally
+   - keep tax outputs described as `TaxInputs` plus selected policy, never as
+     direct emissions from reconciled facts
+   - keep the shared readiness slice definition exact: source, location,
+     instrument, subject ref, continuity segment, checkpoint date, and tax
+     year where relevant
    - prefer one bounded stage slice over building a speculative end-state
      framework before the next concrete filing-critical need exists
 7. Keep `pydantic` at boundaries only:
@@ -48,11 +52,14 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - reconciliation behavior
    - journal validation
    - tax outputs
-10. For balance inspection, checking, or reconciliation-date questions, use
+10. Preserve test parity honestly. Do not delete tests without explicit human
+    approval, do not silently remove assertions, and if tests move or
+    consolidate, note what behavior remains covered and where.
+11. For balance inspection, checking, or reconciliation-date questions, use
    `.claude/commands/reconciliation-balance-operations.md` and the runtime
    `reconciliation balances` commands instead of ad hoc shell loops or
    repo-only batch scripts.
-11. Emit explicit issues when the task uncovers unsupported behavior or deferred
+12. Emit explicit issues when the task uncovers unsupported behavior or deferred
    cases.
-12. Refactor obvious shared seams, add tests for new behavior, and commit a
+13. Refactor obvious shared seams, add tests for new behavior, and commit a
     verified checkpoint before closing the task.

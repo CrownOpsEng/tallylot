@@ -39,7 +39,7 @@ Agent-specific routing and repo execution rules live in
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts.
 - [Transaction Classification](concepts/transaction-classification.md): Layered classification vocabulary for the current fact-path bridge and later policy stages.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
-- [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): First-principles design anchor for the future unified adapter manifest, facets, canonical products, and deterministic verification model.
+- [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): First-principles design anchor for the future unified adapter manifest, facets, adapter products, and deterministic verification model.
 <!-- docs-maintenance:end concepts -->
 
 ## Common Tasks

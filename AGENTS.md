@@ -18,6 +18,10 @@ workspace as external to the repo.
 - Keep financial values in `Decimal`, never `float`.
 - Surface unsupported or ambiguous data as explicit issues.
 - Keep adapter metadata, implementation, and tests aligned.
+- Preserve current runtime truth in docs while using the final target-doc
+  vocabulary for the future architecture.
+- Preserve or strengthen parity through refactors; do not silently weaken
+  tests.
 - Update `ROADMAP.md` when making decisions that affect later rollout phases.
 
 ## Read Only What You Need
@@ -34,9 +38,10 @@ Do not pre-load every repo doc by default.
 | Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/audit_delivery_guardrails.py` |
 | PR review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `.claude/commands/pr-review.md` |
 | Planning sequence, delivery slices, MVP scope, or rollout checkpoints | `ROADMAP.md`, `docs/status/migration-sequence.md` |
-| Reconciliation, checkpoint, journal, tax-engine implementation, or canonical pipeline products | `docs/concepts/reconciliation-tax-architecture.md`, `ROADMAP.md`, `docs/status/migration-sequence.md`, `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md` |
+| Reconciliation, checkpoint, journal, tax-engine implementation, or core pipeline products | `docs/concepts/reconciliation-tax-architecture.md`, `ROADMAP.md`, `docs/status/migration-sequence.md`, `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md` |
 | Platform-agnostic boundaries, classification mapping, or migration order | `docs/concepts/oracle-boundaries.md`, `docs/concepts/transaction-classification.md`, `docs/status/migration-sequence.md` |
 | Source or output adapter work | `docs/status/adapter-delivery-plan.md`, `docs/concepts/unified-adapter-architecture.md`, `docs/guides/write-an-adapter.md` |
+| High-level architecture orientation | `docs/concepts/architecture-overview.md`, `docs/status/current-state.md`, `docs/concepts/reconciliation-tax-architecture.md` |
 | Docs structure, generated index sections, doc placement, or doc authoring rules | `AGENTS.md`, `docs/README.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
 | External workspace layout and seeded files | `docs/concepts/workspace-model.md`, `docs/workspace/README.md` |
 | Operational state or manual workflow | `docs/status/current-state.md`, `docs/guides/operator-quickstart.md`, `docs/guides/source-intake.md`, `docs/guides/normalize-screen-stage.md`, `docs/guides/verify-a-round.md`, `docs/guides/full-operator-workflow.md` |
@@ -58,6 +63,12 @@ Do not pre-load every repo doc by default.
   the repo-local workflow for the active surface and reload the narrow repo
   guidance listed in this file before editing.
 - Keep tracked docs, templates, and control-plane text neutral and durable.
+- Keep current-state docs accurate to the implemented runtime, and keep
+  forward-looking docs detailed enough to implement from without inventing
+  missing stage structure later.
+- Use final target product names in forward-looking docs after the mapping is
+  established, and keep bridge-era names only where current implementation
+  accuracy requires them.
 - Do not store scratch review notes, hardening ledgers, or temporary process
   bookkeeping in tracked files.
 - Keep repository issues repo-scoped and privacy-safe:
@@ -135,6 +146,13 @@ Do not pre-load every repo doc by default.
   - avoid rhetorical, promotional, or exaggerated wording in repo history
 - Add tests only when they protect meaningful behavior, contracts,
   non-trivial decision logic, or fixed regressions.
+- Do not delete tests, silently remove assertions, or simplify fixtures in a
+  way that weakens coverage without explicit human approval.
+- When tests move or consolidate, record the parity outcome in the checkpoint
+  summary:
+  - what old behavior was covered
+  - where that behavior is covered now
+  - whether the assertion became stronger, weaker, or simply moved
 - Before shaping a non-trivial change, reload the narrow roadmap,
   architecture, migration, or owning-boundary guidance for that surface.
 - Keep public-facing names simple and ergonomic. Prefer short neutral command
@@ -194,18 +212,27 @@ Workspace resolution order:
 - Treat `docs/concepts/reconciliation-tax-architecture.md` as the
   implementation anchor for reconciliation, checkpointing, journaling, and tax
   computation.
+- Treat `docs/concepts/architecture-overview.md` as the concise orientation
+  page and `docs/concepts/reconciliation-tax-architecture.md` as the detailed
+  implementation anchor.
 - Do not treat CoinTracking as the live ledger for new architecture work.
   CoinTracking is now a compatibility and oracle layer.
 - Do not treat CoinTracking tax or accounting reports as normal runtime
   inputs. They are development-only oracle support artifacts unless an
   explicit one-time checkpoint import workflow adopts them with provenance.
-- Do not expand the current canonical event model into the long-term center of
-  the system. Current `EconomicActivityDraft`, `TransactionFact`, and shared
+- Do not expand the current fact-path bridge into the long-term center of the
+  system. Current `EconomicActivityDraft`, `TransactionFact`, and shared
   balance artifacts are the active bridge into the target pipeline, not the
-  final architecture center. New structural work should target the canonical
+  final architecture center. New structural work should target the runtime
   pipeline products and stage contracts described in
   `docs/concepts/reconciliation-tax-architecture.md` and sequenced in
   `ROADMAP.md`.
+- Forward-looking docs use the final target product names:
+  `EvidenceSet`, `ClaimSet`, `EconomicFacts`, `ReconciliationState`,
+  `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
+- Do not push unresolved tax ambiguity downward into earlier stages just to
+  keep facts or reconciliation outputs looking complete. Preserve uncertainty
+  until the owning later stage decides it.
 - Keep `pydantic` at boundaries:
   - config
   - external artifact parsing
