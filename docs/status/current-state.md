@@ -39,8 +39,9 @@ product names `EvidenceSet`, `ClaimSet`, `EconomicFacts`,
 - Treat that bridge as the current delivery seam, not as the final architecture
   center.
 - The target pipeline products and stage contracts live in
-  `docs/concepts/reconciliation-tax-architecture.md` and are sequenced in
-  `ROADMAP.md`.
+  `docs/concepts/pipeline-stage-contracts.md`; system-level trust gates and
+  rollout alignment live in
+  `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md`.
 - MVP work should extend the current bridge incrementally where it protects the
   filing path, while landing richer pipeline products only when a concrete next
   stage needs them.

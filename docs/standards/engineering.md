@@ -26,9 +26,9 @@ Place code by responsibility, not by convenience:
 - `adapters/`: source and output adapters plus their adapter-local helpers.
 - `interfaces/`: thin entry points such as the CLI. Interfaces orchestrate
   services; they do not own business rules.
-- `repo_support/`: shared support seams for repo-native tooling and repo-side
-  tests. Keep this outside `src/tallylot/` because it is not production/runtime
-  code.
+- `repo_support/`: the current live shared support seam for repo-native tooling
+  and repo-side tests. Keep this outside `src/tallylot/` because it is not
+  production/runtime code.
 
 If a change crosses layer boundaries, refactor the boundary instead of
 importing through it.
@@ -38,10 +38,14 @@ Repo-native support boundaries:
 - `src/tallylot/` remains production/runtime code only.
 - `tools/` remains the home for repo-native entry points and task-specific
   dev-only modules.
-- `repo_support/` is the shared support seam for repo-native tooling and
+- `repo_support/` is the current live shared seam for repo-native tooling and
   repo-side tests.
-- `repo_support/` must stay narrow, typed, stdlib-first, and named by concept.
-- `repo_support/` must not become a generic catch-all.
+- later implementation should rename that dev-only surface to `dev_support/`
+  so the boundary is explicit.
+- until that rename lands, `repo_support/` must stay narrow, typed,
+  stdlib-first, and named by concept.
+- do not let `repo_support/` become a generic catch-all while the repo is
+  still on the current live name.
 
 ## Typing Rules
 
@@ -85,8 +89,9 @@ Default to one responsibility per module.
   `misc.py`, or another catch-all `common.py`.
 - Existing generic modules should shrink over time, not absorb more unrelated
   behavior.
-- Apply the same rule to `repo_support/`. Shared repo-only support must be
-  split by named seam, not collected under generic support modules.
+- Apply the same rule to the current live `repo_support/` surface and the later
+  target `dev_support/` surface. Shared repo-only support must be split by
+  named seam, not collected under generic support modules.
 
 When a capability grows, split by stable seams:
 
@@ -107,7 +112,8 @@ When a capability grows, split by stable seams:
   persistence, or composition-root wiring. Do not push application policy down
   here just to share code.
 - `repo_support/`: host reusable repo-only support only when it is shared by
-  multiple repo-native surfaces such as `tools/` and `tests/`. Do not move
+  multiple repo-native surfaces such as `tools/` and `tests/`. This is the
+  current live name for a later `dev_support/` target. Do not move
   production/runtime concerns here.
 
 Mirror that structure in tests:
