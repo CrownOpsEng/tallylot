@@ -1,6 +1,6 @@
 ---
 title: "Unified Adapter Architecture"
-summary: "First-principles design anchor for the future unified adapter manifest, facets, canonical products, and deterministic verification model."
+summary: "First-principles design anchor for the future unified adapter manifest, facets, adapter products, and deterministic verification model."
 doc_type: concept
 audience: human
 owner: repo
@@ -81,7 +81,7 @@ The future system should unify adapters around four things:
 
 - one universal manifest model
 - a small set of purpose-defined facets
-- one shared canonical product pipeline
+- one shared adapter product pipeline
 - one deterministic verifier model
 
 It should not unify adapters around one monolithic method surface.
@@ -92,7 +92,7 @@ This means:
 - portfolio is a reader surface that emits balance, position, or statement
   claims instead of only activity claims
 - output is not a source adapter with inverted arrows
-- output is a writer surface that consumes canonical semantic data and emits
+- output is a writer surface that consumes runtime or projection data and emits
   target-specific artifacts
 
 ## First-Principles Basis
@@ -117,7 +117,7 @@ translate directly from raw input to final output in one jump.
 
 Implication:
 
-- the system needs a canonical sequence of intermediate products with explicit
+- the system needs a stable sequence of intermediate products with explicit
   invariants and verification points
 
 ### 3. Determinism Must Be A Contract, Not A Hope
@@ -127,7 +127,7 @@ Any surface that depends on unordered iteration, filename order, path order, or
 
 Implication:
 
-- canonical ordering, fingerprints, replacement rules, and blocking ambiguity
+- stable ordering, fingerprints, replacement rules, and blocking ambiguity
   must be explicit
 
 ### 4. Provenance Is A First-Class Runtime Concern
@@ -150,14 +150,14 @@ Implication:
 - hard assertions, soft annotations, blocking issues, and review records need
   distinct types and distinct rules
 
-### 6. Schema Evolution Needs Canonical Identity
+### 6. Schema Evolution Needs Stable Identity
 
-Schema compatibility is simpler when every canonical product has versioned
-identity and canonical fingerprints.
+Schema compatibility is simpler when every adapter product has versioned
+identity and stable fingerprints.
 
 Implication:
 
-- manifests and canonical product schemas need explicit versioning and
+- manifests and adapter product schemas need explicit versioning and
   fingerprint rules
 
 ## Non-Goals
@@ -193,7 +193,7 @@ tabs, PDFs, HTML reports, explorer exports, or future API payloads.
 ### Claim
 
 A provider-local semantic assertion derived from evidence but not yet accepted
-as canonical runtime data.
+as bridge or downstream runtime data.
 
 Examples:
 
@@ -201,10 +201,11 @@ Examples:
 - "this statement row reports a quantity balance as of a date"
 - "this wallet export proves ownership of this chain-scoped identifier"
 
-### Semantic Data
+### Runtime Data
 
-Canonical provider-neutral runtime objects such as transaction facts, balance
-references, location inventory, issues, and reviews.
+Downstream-owned runtime products such as `EconomicFacts`,
+`ReconciliationState`, `Checkpoint`, `Journal`, `TaxInputs`, and
+`TaxOutputs`.
 
 ### Projection
 
@@ -216,21 +217,22 @@ data, such as a CoinTracking row model or a future journal posting set.
 A serialized file, directory, or byte-oriented output written for operators,
 tools, or external systems.
 
-## Canonical Product Pipeline
+## Adapter Product Pipeline
 
-The future adapter system should revolve around five canonical products.
+The future adapter system should revolve around evidence, claims, explicit
+bridge outputs while the migration remains active, and target-local rendering.
 
 Boundary note:
 
 - this document defines the adapter-scoped handoff products only
 - `docs/concepts/reconciliation-tax-architecture.md` remains the core runtime
-  architecture anchor for `EconomicDataset`, `ReconciliationDataset`,
-  `CheckpointPackage`, `JournalDataset`, `TaxDeterminantDataset`, and
-  `TaxOutputDataset`
+  architecture anchor for `EconomicFacts`, `ReconciliationState`,
+  `Checkpoint`, `Journal`, `TaxInputs`, and
+  `TaxOutputs`
 - adapter work should map into that runtime pipeline rather than creating a
   second competing core architecture
 
-### 1. EvidenceBundle
+### 1. EvidenceSet
 
 Purpose:
 
@@ -251,11 +253,11 @@ Must include:
 - evidence family ids
 - parse diagnostics
 - deterministic member ordering
-- bundle fingerprint
+- evidence fingerprint
 
 Must not include:
 
-- canonical transaction facts
+- current bridge facts or downstream runtime products
 - target-specific output rows
 
 Typical contents:
@@ -266,11 +268,11 @@ Typical contents:
 - discovered document metadata
 - recognized evidence families
 
-### 2. ClaimBundle
+### 2. ClaimSet
 
 Purpose:
 
-- hold provider-local semantic claims before canonical compilation
+- hold provider-local semantic claims before shared compilation
 
 Owned by:
 
@@ -293,50 +295,43 @@ Claim types may include:
 Must include:
 
 - deterministic claim ids
-- typed provenance references back to the evidence bundle
+- typed provenance references back to the evidence set
 - structural status for each claim
 - blocking versus advisory distinction
-- bundle fingerprint
+- claim-set fingerprint
 
 Must not include:
 
-- inferred canonical identities that have not been resolved
+- inferred final identities that have not been resolved
 - writer-specific rows
 
-### 3. EconomicDataset
+### 3. Bridge Result While The Current Path Remains Active
 
 Purpose:
 
-- hold canonical provider-neutral economic outputs accepted by the core system
-  at the adapter-to-core boundary
+- describe the current bridge bundle honestly while adapter migration is still
+  landing
 
-Owned by:
+Current truth:
 
-- shared compiler, identity resolver, and verifier
+- source adapters still return `SourceTranslationBatch`
+- that bridge bundle currently carries drafts, balance references, balance
+  reference issues, issues, reviews, and location inventory
 
-May include:
+Rules:
 
-- `TransactionFact`
-- `BalanceReference`
-- `BalanceSnapshot` when derived by shared services
-- `LocationInventoryRecord`
-- `IssueRecord`
-- `NormalizationReviewRecord`
+- this is a migration seam, not the future adapter architecture center
+- do not describe this bundle as if it owns `EconomicFacts`
+- adapter-side bundles must not overload "economic output" with
+  balance snapshots, balance references, issues, reviews, and location
+  inventory as if they shared one semantic meaning
+- the main runtime architecture doc owns the meaning of downstream products
 
-Must include:
+Target-direction naming note:
 
-- canonical ordering
-- schema version
-- dataset fingerprint
-- deterministic derivation metadata
-
-Boundary mapping:
-
-- this adapter-scoped `EconomicDataset` maps onto the core runtime
-  `EconomicDataset`
-- later downstream runtime products such as reconciliation datasets,
-  checkpoint packages, journals, tax determinants, and tax outputs are defined
-  in the reconciliation and tax architecture doc rather than here
+- future code may move toward the name `TranslationResult`
+- current-state docs must continue using `SourceTranslationBatch` until code
+  changes land
 
 ### 4. ProjectionBundle
 
@@ -358,7 +353,7 @@ Must include:
 
 - target id
 - target version
-- source economic dataset fingerprint
+- source fingerprint
 - projection fingerprint
 - target constraint validation results
 
@@ -392,8 +387,8 @@ Must include:
 This pipeline gives the architecture explicit checkpoints:
 
 - evidence can be verified independently of semantics
-- claims can be verified independently of canonical compilation
-- canonical data can be verified independently of target projections
+- claims can be verified independently of shared compilation
+- bridge or runtime data can be verified independently of target projections
 - target projections can be validated independently of final serialization
 
 That separation is the main mechanism for reducing adapter drift.
@@ -415,7 +410,7 @@ to that contract.
 The manifest should answer:
 
 - what evidence kinds this adapter can read or write
-- what canonical products it can emit or consume
+- what adapter or runtime products it can emit or consume
 - what facets it implements
 - which determinism guarantees it provides
 - which schema versions it supports
@@ -431,7 +426,7 @@ least the following areas.
 | Identity | `adapter_id`, `display_name`, `version`, `family`, `status` | Stable adapter identity and support posture. |
 | Direction | `implemented_facets`, `reads`, `writes` | Declares whether the adapter probes, reads, translates, writes, or combines those jobs. |
 | Evidence | `accepted_evidence_kinds`, `recognized_family_ids`, `statement_kinds` | Declares what raw or parsed evidence the adapter understands. |
-| Canonical products | `emits_claim_types`, `emits_semantic_types`, `consumes_semantic_types`, `emits_projection_types` | Defines product flow explicitly. |
+| Product flow | `emits_claim_types`, `emits_bridge_types`, `consumes_runtime_types`, `emits_projection_types` | Defines product flow explicitly. |
 | Determinism | `ordering_contract`, `fingerprint_contract`, `planner_support`, `selection_modes` | Makes determinism a contract surface. |
 | Identity | `supported_identifier_schemes`, `location_identity_rules`, `instrument_claim_rules` | Declares identity expectations. |
 | Temporal and numeric policy | `timezone_policy`, `effective_time_policy`, `precision_policy` | Makes interpretation rules explicit. |
@@ -450,8 +445,8 @@ Recommended facets:
 | `ProbeFacet` | Recognize evidence and describe confidence, families, and route hints. | Source, portfolio, and statement-capable adapters. |
 | `ReadFacet` | Read selected evidence and emit evidence bundles or claim bundles. | Source, portfolio, wallet, and explorer adapters. |
 | `StatementFacet` | Recognize and parse statement documents plus statement-specific identity claims. | Statement-capable platform and wallet adapters. |
-| `TranslateFacet` | Convert provider-local claims into canonical semantic datasets when provider-local semantic mapping is required. | Source adapters with activity semantics. |
-| `WriteFacet` | Convert canonical semantic or projection data into target artifacts. | Output adapters. |
+| `TranslateFacet` | Convert provider-local claims into bridge-ready outputs or compiler-ready claims when provider-local semantic mapping is required. | Source adapters with activity semantics. |
+| `WriteFacet` | Convert runtime or projection data into target artifacts. | Output adapters. |
 
 Additional rule:
 
@@ -477,7 +472,7 @@ Reader-side examples:
 
 Writer-side examples:
 
-- mapping canonical semantics into target-specific row models
+- mapping runtime semantics into target-specific row models
 - handling target-specific formatting or required field population
 
 ### Shared Core Responsibilities
@@ -489,7 +484,7 @@ Examples:
 
 - evidence selection and planning
 - deterministic candidate comparison and replacement rules
-- canonical ordering and fingerprint creation
+- stable ordering and fingerprint creation
 - provenance flattening at artifact boundaries
 - instrument identity resolution
 - issue and review severity conventions
@@ -552,14 +547,14 @@ Its job is to:
 It should not:
 
 - own cross-provider selection policy
-- infer canonical instrument identity beyond provider-local claims
+- infer resolved runtime instrument identity beyond provider-local claims
 - write final runtime artifacts directly
 
 Reader outputs should be deterministic for unchanged inputs.
 
 Reader ordering rules:
 
-- evidence members sorted by canonical evidence ordering
+- evidence members sorted by stable evidence ordering
 - claims sorted by stable claim key
 - diagnostics sorted by provenance plus claim or evidence id
 
@@ -592,14 +587,14 @@ after parsing.
 
 Its job is to:
 
-- convert provider-local claims into canonical semantic data or
+- convert provider-local claims into bridge-ready data or
   semantic-compiler-ready claims
 - express provider-local semantic ambiguity explicitly
 
 It should not:
 
 - choose evidence members by itself
-- resolve canonical identities through provider-local lookup tables when shared
+- resolve final runtime identities through provider-local lookup tables when shared
   resolution should own the final choice
 - write output artifacts directly
 
@@ -618,7 +613,7 @@ Its job is to:
 
 It should not:
 
-- reinterpret canonical facts semantically
+- reinterpret runtime facts semantically
 - invent missing projection metadata silently
 - coerce unsupported fact shapes into target rows
 
@@ -691,9 +686,9 @@ Recommended claim families:
 | `InstrumentIdentityClaim` | One provider-local identity assertion for an asset or instrument. |
 | `ContractTermClaim` | A provider-local claim about instrument or position terms that later economic compilation may need. |
 | `ValuationClaim` | A provider-local valuation observation with purpose, time, and provenance. |
-| `ProjectionAnnotation` | Output-oriented metadata that is not itself a canonical fact. |
-| `IssueCandidate` | A blocking or informational problem requiring canonical issue assembly. |
-| `ReviewCandidate` | A review-needed case requiring canonical review assembly. |
+| `ProjectionAnnotation` | Output-oriented metadata that is not itself a bridge or downstream runtime fact. |
+| `IssueCandidate` | A blocking or informational problem requiring shared issue assembly. |
+| `ReviewCandidate` | A review-needed case requiring shared review assembly. |
 
 These claim families let the core compiler distinguish:
 
@@ -703,9 +698,9 @@ These claim families let the core compiler distinguish:
 - output hints
 - workflow diagnostics
 
-## Canonical Compilation Rules
+## Shared Compilation Rules
 
-The compiler from claims to canonical semantic data should be shared.
+The compiler from claims to bridge or downstream runtime data should be shared.
 
 ### Compiler Responsibilities
 
@@ -714,20 +709,20 @@ The compiler from claims to canonical semantic data should be shared.
 - validate leg shape rules
 - validate required location identity
 - separate blocking issues from advisory reviews
-- create canonical facts, balance references, and location inventory
+- create current bridge facts, balance references, and location inventory
 
 ### Compiler Rules
 
-- no canonical fact may be created when identity remains unresolved
+- no bridge fact may be created when identity remains unresolved
 - no quantity-backed balance reference may be created from valuation-only
   evidence
 - no location inventory record may be created without identifier-rooted
-  canonical location identity
+  runtime location identity
 - no output hint may become a semantic fact just because a writer can use it
 
 ### Why This Must Be Shared
 
-If each adapter compiles canonical facts differently:
+If each adapter compiles bridge facts differently:
 
 - semantic correctness becomes adapter-dependent
 - output parity becomes unstable
@@ -735,7 +730,7 @@ If each adapter compiles canonical facts differently:
 
 ## Determinism Contract
 
-Determinism must be explicit across all canonical products.
+Determinism must be explicit across all adapter products.
 
 ### Deterministic Inputs
 
@@ -745,33 +740,33 @@ versions:
 - selected evidence members must be identical
 - candidate and plan fingerprints must be identical
 - claim bundle fingerprints must be identical
-- semantic dataset fingerprints must be identical
+- bridge or runtime dataset fingerprints must be identical
 - projection bundle fingerprints must be identical
 - artifact fingerprints must be identical unless the target format includes a
   documented nondeterministic field that is intentionally excluded
 
-### Canonical Ordering Rules
+### Deterministic Ordering Rules
 
-Every canonical product must declare a sort key.
+Every adapter product must declare a sort key.
 
 Examples:
 
-- evidence members sorted by canonical provenance key
+- evidence members sorted by stable provenance key
 - candidates sorted by selection group, coverage, freshness, and candidate id
 - claims sorted by claim family, timestamp, stable claim id, and provenance
 - facts sorted by timestamp, effective time, source, fact id
 - issues and reviews sorted by severity, kind, timestamp, provenance, id
-- projection rows sorted by target-defined canonical row order
+- projection rows sorted by target-defined stable row order
 
 ### Fingerprint Rules
 
-Every canonical product should have:
+Every adapter product should have:
 
 - a schema version
-- a canonical serialization form
+- a stable serialization form
 - a stable fingerprint
 
-Canonical serialization rules should:
+Serialization rules should:
 
 - sort object keys
 - avoid implicit ordering from language runtime containers
@@ -784,7 +779,7 @@ The future design should treat diagnostic surfaces as first-class contracts.
 
 ### Hard Assertions
 
-Hard assertions are required for canonical semantic acceptance.
+Hard assertions are required for bridge or runtime acceptance.
 
 Examples:
 
@@ -795,7 +790,7 @@ Examples:
 
 ### Blocking Issues
 
-Blocking issues stop canonical acceptance or later workflow progress.
+Blocking issues stop bridge acceptance or later workflow progress.
 
 Examples:
 
@@ -835,7 +830,7 @@ The future model should distinguish:
 - evidence member provenance
 - parsed row or page provenance
 - claim provenance
-- canonical semantic derivation provenance
+- bridge or runtime derivation provenance
 - artifact derivation provenance
 
 ### Why Product Boundaries Matter
@@ -855,21 +850,22 @@ Identity rules should remain shared and identifier-rooted.
 
 ### Instrument Identity
 
-Adapters should emit identity claims, not final canonical instrument choices.
+Adapters should emit identity claims, not final resolved runtime instrument
+choices.
 
 The shared identity resolver should:
 
 - accept multiple claims
-- resolve exactly one canonical instrument or fail explicitly
+- resolve exactly one runtime instrument or fail explicitly
 - preserve review context when ambiguity remains
 
 ### Location Identity
 
-Adapters should emit identifier-rooted canonical locations.
+Adapters should emit identifier-rooted runtime locations.
 
 Rules:
 
-- friendly labels stay out of canonical ids
+- friendly labels stay out of runtime ids
 - chain or network identity must be explicit
 - sublocations must be stable derivations of parent identity
 
@@ -885,7 +881,8 @@ policy model should be shared.
 
 ### Temporal Rules
 
-- timestamps must be timezone-aware before entering canonical semantic data
+- timestamps must be timezone-aware before entering bridge or downstream
+  runtime data
 - date-only and timestamp precision must remain distinct
 - exact midnight timestamps are still timestamps if the source contract says so
 - unknown or conflicting timezone interpretation must block or review
@@ -907,8 +904,8 @@ fundamentally different architecture categories.
 
 ### Input
 
-An input adapter is an adapter whose facets read evidence and emit claims or
-semantic data.
+An input adapter is an adapter whose facets read evidence and emit claims,
+bridge-ready outputs, or downstream runtime data.
 
 ### Portfolio
 
@@ -918,7 +915,7 @@ position, statement, or ownership claims instead of activity-heavy claims.
 ### Output
 
 An output adapter is an adapter whose primary facet writes projection or
-artifact bundles from semantic data.
+artifact bundles from runtime or projection data.
 
 ### Why One Adapter Model Matters
 
@@ -926,7 +923,7 @@ The architecture stays smaller if:
 
 - one manifest model describes all adapters
 - one verifier model checks their products
-- one canonical vocabulary describes the flow
+- one shared adapter vocabulary describes the flow
 
 ## Migration Of Current Jobs Into Future Facets
 
@@ -938,11 +935,11 @@ The current repo jobs should map into the future architecture as follows.
 | file-family classification | `ProbeFacet` plus manifest-declared evidence families |
 | intake matching and route hints | `ProbeFacet` plus shared intake router |
 | timezone summary | shared temporal policy service with manifest-declared expectations |
-| location inventory extraction | `ReadFacet` or `TranslateFacet` producing `OwnershipClaim` and canonical inventory through shared compilation |
+| location inventory extraction | `ReadFacet` or `TranslateFacet` producing `OwnershipClaim` and runtime inventory through shared compilation |
 | statement matching and parsing | `StatementFacet` plus shared statement orchestration |
 | translation-input planning | shared planner using manifest and candidate descriptions |
 | activity translation | `ReadFacet` and `TranslateFacet` producing `ActivityClaim` |
-| draft compilation | shared compiler to `EconomicDataset` |
+| draft compilation | shared compiler to current bridge outputs first, then `EconomicFacts` once the bridge is retired |
 | output policy validation | shared projection validator |
 | rendering | `WriteFacet` |
 
@@ -960,14 +957,14 @@ than the current contract-by-contract mixture.
 | Unit tests | Provider-local parsing, semantic mapping, and edge-case decisions. |
 | Contract tests | Manifest validity, facet declarations, and product schema conformance. |
 | Golden tests | Stable evidence, claim, economic, and projection outputs on known packs. |
-| Replay tests | Re-run unchanged inputs and verify identical canonical fingerprints. |
+| Replay tests | Re-run unchanged inputs and verify identical stable fingerprints. |
 | Negative tests | Assert blocking behavior for unsupported or ambiguous evidence. |
 
 ### Mandatory Determinism Checks
 
 - shuffled file order must not change selected candidates
 - equivalent archive extraction order must not change claim order
-- repeated runs must preserve canonical fingerprints
+- repeated runs must preserve stable fingerprints
 - rendered writer outputs must remain stable for unchanged economic datasets
 
 ### Compatibility Checks
@@ -975,7 +972,7 @@ than the current contract-by-contract mixture.
 The future verifier should check:
 
 - manifest schema compatibility
-- canonical product schema compatibility
+- adapter product schema compatibility
 - adapter support-window declarations
 - intentional breaking changes via explicit version increments
 
@@ -1027,7 +1024,7 @@ These questions are intentionally left open for later design review:
 
 - Should `ReadFacet` emit evidence bundles and claim bundles separately, or may
   some adapters emit claims directly when parsing is trivial?
-- Should writer adapters consume `EconomicDataset` directly, or should all
+- Should writer adapters consume `EconomicFacts` directly, or should all
   writers consume a target-neutral `ProjectionBundle` first?
 - Which manifest fields should be purely declarative versus code-generated?
 - How much of current timezone and precision policy belongs in manifest data

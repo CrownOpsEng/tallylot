@@ -35,6 +35,11 @@ This plan treats adapter work as two tracks:
 - `now`: filing-critical hardening on the current seams
 - `roadmap`: the post-filing unified adapter interface and migration
 
+Forward-looking adapter work must map into the main runtime pipeline in
+`docs/concepts/reconciliation-tax-architecture.md`. Adapter docs do not define
+their own competing meaning for `EconomicFacts`, `ReconciliationState`,
+`Checkpoint`, `Journal`, `TaxInputs`, or `TaxOutputs`.
+
 ## Why This Plan Exists
 
 The current adapter layer already carries much more responsibility than a
@@ -77,7 +82,7 @@ current behavior sooner than they depend on a perfect future contract.
 | Timezone policy | `validate_profile_timezones(...)` | Prevents silent timestamp drift. |
 | Location evidence | `extract_location_inventory(...)` | Supplies owned location identity and evidence. |
 | Statement parsing | `match_statement_document(...)`, `parse_statement_document(...)` | Converts statements into quantity-backed balance evidence. |
-| Statement identity claims | `resolve_statement_instrument_claims(...)` | Resolves statement rows to canonical instruments. |
+| Statement identity claims | `resolve_statement_instrument_claims(...)` | Resolves statement rows to shared instrument identities. |
 | Translation planning | `describe_translation_inputs(...)`, `translate_selected_inputs(...)` | Prevents adapter-local file winner heuristics. |
 | Translation | `translate(...)` | Produces activity drafts and evidence artifacts. |
 
@@ -349,26 +354,28 @@ after filing-critical work no longer depends on current seam stability.
 ### Roadmap Objective
 
 Replace the current bundled source contract and separate output contract with a
-smaller, purpose-defined adapter architecture built around shared canonical
-products, deterministic verification, and provider-local semantics only.
+smaller, purpose-defined adapter architecture built around evidence, claims,
+explicit bridge seams during migration, deterministic verification, and
+provider-local semantics only.
 
 ### Roadmap Principles
 
-- unify around canonical products, not around one giant method surface
+- unify around explicit adapter products, not around one giant method surface
 - keep manifests declarative and authoritative
 - separate hard assertions from soft annotations
 - treat provenance as a first-class runtime concept
-- require canonical ordering and fingerprints at artifact boundaries
+- require explicit ordering and fingerprints at artifact boundaries
 - keep the compiler and verifier shared
 - keep provider-local code focused on parsing, semantic mapping, and rendering
 
-### Roadmap Phase R1. Define Canonical Products
+### Roadmap Phase R1. Define Adapter Products
 
-Design and write the future canonical products:
+Design and write the future adapter-scoped products:
 
-- `EvidenceBundle`
-- `ClaimBundle`
-- `EconomicDataset`
+- `EvidenceSet`
+- `ClaimSet`
+- `SourceTranslationBatch` as the current bridge seam, with a target-direction
+  move toward `TranslationResult` only when code changes land
 - `ProjectionBundle`
 - `ArtifactBundle`
 
@@ -426,7 +433,7 @@ Candidate manifest-owned data:
 - accepted artifact kinds
 - planner support and selection modes
 - statement kinds
-- canonicalization rules
+- ordering and serialization rules
 - determinism guarantees
 - schema version and compatibility rules
 - supported claim and artifact types
@@ -436,22 +443,22 @@ Exit criteria:
 - a reader can understand what an adapter can do from its manifest and small
   provider-local modules, not from a large composite entry point
 
-### Roadmap Phase R4. Unify Verification Around Canonical Products
+### Roadmap Phase R4. Unify Verification Around Adapter Products
 
-Build one verifier that checks the canonical products instead of relying on a
+Build one verifier that checks the adapter products instead of relying on a
 mix of adapter-local conventions.
 
 Verifier goals:
 
 - replay stability on unchanged inputs
-- canonical fingerprint stability
+- product fingerprint stability
 - no unordered output surfaces
 - explicit unsupported or ambiguous cases
 - artifact parity where projections exist
 
 Exit criteria:
 
-- adapter verification is centered on canonical products and deterministic
+- adapter verification is centered on adapter products and deterministic
   compiler behavior
 
 ### Roadmap Phase R5. Migrate Adapter Families In Priority Order
@@ -481,7 +488,7 @@ bundled contract shape.
 Retirement conditions:
 
 - no filing-critical adapter depends on the old contract
-- verification has moved to canonical products
+- verification has moved to adapter products
 - docs, scaffolds, and tests all describe the new model
 
 ## Decision Rules While Filing Work Is Active

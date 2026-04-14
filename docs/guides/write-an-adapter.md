@@ -67,24 +67,24 @@ current repo-facing implementation rules.
   export provides actual balance evidence.
 - Statement-backed balance evidence must stay quantity-based. Normalize only
   rows that prove per-instrument quantities; do not promote market-value totals,
-  net-worth summaries, or other valuation-only rows into canonical balance
+  net-worth summaries, or other valuation-only rows into runtime balance
   evidence.
 - Normalize source-specific sign conventions at the adapter edge into signed
-  canonical quantities. If the provider sign or direction signal is ambiguous,
+  shared quantities. If the provider sign or direction signal is ambiguous,
   surface an issue or review instead of guessing.
 - Treat symbols, venue codes, and chain contracts as identifier inputs.
-  Adapters should target canonical instrument references through the shared
+  Adapters should target shared instrument references through the shared
   identifier-resolution seam rather than treating raw symbols as stable
   identity.
 - Emit identifier claims that are sufficient for shared resolution to one
-  canonical instrument. If resolution is unresolved or ambiguous, emit a review
+  runtime instrument. If resolution is unresolved or ambiguous, emit a review
   record plus a blocking issue and do not produce a fact for that activity.
-- Use identifier-rooted canonical on-chain location ids:
+- Use identifier-rooted on-chain location ids:
   - EVM-family locations use `evm:<network>:<address>`
   - non-EVM chains use their own namespace such as `near:<account>` or
     `bitcoin:<address>`
   - derived sublocations append a stable suffix such as `:staking`
-- Keep source labels, wallet names, and other friendly labels out of canonical
+- Keep source labels, wallet names, and other friendly labels out of
   runtime `location_id` values. Those labels belong in `source`,
   `location_label`, annotations, and output-adapter display logic.
 - Normalize runtime timestamps at the adapter edge. Draft, fact, balance, and
@@ -157,7 +157,7 @@ families in one raw source directory, the adapter should rely on the shared
 blocking scan issue instead of attempting a best-effort normalization pass.
 
 Wallet-state adapters must treat UI identity maps and friendly labels as labels
-only. Emit canonical wallet inventory only when the export proves authoritative
+only. Emit runtime wallet inventory only when the export proves authoritative
 chain-scoped or chain-specific ownership.
 
 When a wallet or explorer source also includes portfolio-style balance views
@@ -215,6 +215,9 @@ Known current adapter workaround:
   assert transaction facts, balances, issues, and rendered outputs.
 - Adapters must continue to pass both strict type checkers. Do not rely on
   runtime tests as a substitute for `mypy` and `pyright`.
+- Do not delete adapter tests, silently remove assertions, or simplify
+  fixtures in a way that weakens coverage without explicit human approval.
+- If tests move or consolidate, state what behavior is still covered and where.
 
 ## Tooling
 
