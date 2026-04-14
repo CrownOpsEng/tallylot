@@ -50,6 +50,23 @@ def test_control_plane_diff_selects_docs_and_skill_checks() -> None:
     )
 
 
+def test_control_plane_doc_diff_selects_targeted_control_plane_checks() -> None:
+    plan = build_verification_plan(
+        paths=("docs/standards/commits.md",),
+        trigger="local",
+        mode="planned",
+    )
+
+    assert plan.surface_report.surface_groups == ("control_plane_text",)
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "markdownlint",
+        "standards-guards",
+        "pr-metadata-validator",
+        "commit-message-validator",
+    )
+
+
 def test_repo_code_diff_selects_full_quality_suite() -> None:
     plan = build_verification_plan(
         paths=("src/tallylot/application/normalization/normalize_source.py",),
@@ -99,7 +116,23 @@ def test_ci_workflow_diff_selects_targeted_ci_checks() -> None:
     )
 
 
-def test_pull_request_mode_forces_full_suite() -> None:
+def test_pull_request_docs_only_diff_stays_change_sensitive() -> None:
+    plan = build_verification_plan(
+        paths=("docs/guides/source-intake.md",),
+        trigger="pull_request",
+        mode="planned",
+    )
+
+    assert plan.mode == "planned"
+    assert plan.selected_check_ids == (
+        "commit-messages",
+        "pr-metadata",
+        "docs-maintenance",
+        "markdownlint",
+    )
+
+
+def test_pull_request_mode_can_still_force_full_suite() -> None:
     plan = build_verification_plan(
         paths=("docs/guides/source-intake.md",),
         trigger="pull_request",

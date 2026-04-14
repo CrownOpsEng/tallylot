@@ -12,21 +12,3 @@ repos:
         entry: uv run python -m tools.validate_commit_message
         language: system
         stages: [commit-msg]
-      - id: mypy
-        name: mypy
-        entry: uv run mypy
-        language: system
-        pass_filenames: false
-        stages: [pre-commit]
-      - id: pyright
-        name: pyright
-        entry: uv run pyright
-        language: system
-        pass_filenames: false
-        stages: [pre-commit]
-      - id: pytest
-        name: pytest-fast
-        entry: uv run python -m tools.run_fast_pytest
-        language: system
-        pass_filenames: false
-        stages: [pre-commit]

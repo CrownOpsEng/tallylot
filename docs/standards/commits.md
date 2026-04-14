@@ -258,11 +258,12 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.inst
 ```
 
 The installed `pre-commit` hook is intentionally narrow. It formats safe
-staged Python files with Ruff before commit creation and skips auto-restaging
+staged Python files with Ruff before commit creation, skips auto-restaging
 for partially staged Python files so unrelated unstaged hunks are not
-accidentally committed. It also refuses to run when the sibling `commit-msg`
-validator hook is missing or stale, so clone-local hook drift cannot silently
-bypass commit-message validation.
+accidentally committed, and then runs the repo's change-sensitive planned
+verification selection against the staged paths. It also refuses to run when
+the sibling `commit-msg` validator hook is missing or stale, so clone-local
+hook drift cannot silently bypass commit-message validation.
 
 Validate messages directly when needed:
 
@@ -277,16 +278,19 @@ other shell-sensitive text, use file/stdin authoring forms rather than inline
 
 ## Commit-Time Verification Policy
 
-Commit-time hooks should enforce the bounded local safety checks we expect on
-every checkpoint commit without rerunning the full repo-wide verification
-matrix. Keep the hook path limited to safe staged Ruff autofixes plus the
-commit-time checks that protect every commit:
+Commit-time hooks should enforce bounded local safety checks without rerunning
+the full repo-wide verification matrix. Keep the hook path limited to safe
+staged Ruff autofixes plus the staged-path checks selected by the repo's
+planned verification policy, along with commit-message validation.
 
-- `markdownlint`
-- `mypy`
-- `pyright`
-- `pytest -m "unit and not slow" --no-cov -q`
-- commit-message validation
+In practice that means:
+
+- docs-only staged changes run docs-maintenance and markdownlint
+- control-plane or workflow changes run the targeted guard tests selected by
+  the planner
+- production-code changes may still escalate to the broader Python quality
+  suite when the planner marks that surface as relevant
+- commit-message validation stays in the separate `commit-msg` hook
 
 Full verification still means running:
 
@@ -310,7 +314,8 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_
 Use `tools.run_quality_gates --full-tests` as the default final local
 verification command. Use `tools.run_pr_review_checks --mode full` when
 changing CI, packaging, release, or other workflow surfaces where the local
-verification pass should mirror the full pre-merge PR suite. Add `--pr-title`
+verification pass should mirror the final non-draft PR suite before handoff.
+Add `--pr-title`
 plus `--pr-body-file` when you also want the full review run to validate the
 current branch PR title, body, and `Included checkpoints:` list against the
 branch history. Do not run `tools.run_quality_gates --full-tests`
@@ -330,10 +335,11 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_
   --pr-body-file /tmp/pr-body.md
 ```
 
-`pylint`, full-repo `ruff`, and the full `pytest` suite belong to the shared
-quality and PR-review runners rather than the commit-time hook path. The fast
-hook checks should stay narrower than the full pre-merge suite so the same
-broad matrix is not rerun twice inside one explicit verification pass.
+`pylint`, full-repo `ruff`, and the full `pytest` suite still belong primarily
+to the shared quality and PR-review runners. The commit-time hook should stay
+change-sensitive so docs-only and similarly narrow slices do not rerun
+irrelevant Python scanners, even though some staged code or workflow surfaces
+may still escalate to broader checks.
 
 Do not describe `mypy` or `pyright` as covering `pylint` findings. Type checks
 and lint checks catch different failure classes and must be reported

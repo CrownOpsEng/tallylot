@@ -174,15 +174,17 @@ Verification selection is deterministic and atomic:
 - `tools.audit_pr_review` reports changed paths, grouped surfaces, review
   domains, the selected verification mode, selected checks, suppressed checks,
   and any unmapped paths
-- pre-merge pull-request CI is the only forced-full exception:
-  - it always runs the full non-duplicated blocking suite
-  - it always runs `commit-messages`, `pr-metadata`, `docs-maintenance`,
-    `markdownlint`, `actionlint`, `ruff`, `mypy`, `pyright`, `pylint`,
-    `pytest-full`, `test-stress-checks`, `build`, and `verify-wheel`
-  - it also runs `coverage-hotspots` as a non-blocking informative report when
-    the full pytest lane succeeds
-- post-merge `main` CI, manual CI, and local planned runs stay
+- pull-request CI is draft-aware:
+  - draft and in-progress pull requests always run the always-visible PR metadata checks `commit-messages` and `pr-metadata`, then select the remaining atomic checks from the changed diff
+  - once the pull request is no longer draft, `pr-review` switches to the full
+    non-duplicated blocking suite before merge
+  - it still runs `coverage-hotspots` as a non-blocking informative report
+    whenever the selected plan includes `pytest-full` and that lane succeeds
+- post-merge `main` CI, manual CI, and local planned runs also stay
   change-sensitive and select only the atomic checks needed for the diff
+- the repo-installed `pre-commit` hook follows the same local planned
+  selection model for staged paths instead of hard-running a fixed Python
+  scanner bundle on every commit
 - when `pytest-full` is selected, it suppresses the narrower targeted pytest
   subset checks so the same test evidence is not rerun under multiple wrappers;
   the planner suppresses the narrower targeted pytest subset checks
@@ -250,11 +252,12 @@ push-to-mainline CI.
   resolve PR metadata for the branch
 - the `plan-pr-review` workflow job audits the diff with
   `tools.audit_pr_review`, publishes the selected checks for transparency, and
-  keeps the human review surface routing visible even though pre-merge CI is
-  forced full
-- the `pr-review` PR status aggregates the full non-duplicated blocking suite;
-  it uses explicit per-check jobs instead of one opaque umbrella runner so
-  every blocking check stays visible in GitHub Actions
+  keeps the human review surface routing visible while choosing planned mode
+  for draft PRs and full mode for non-draft PRs
+- the `pr-review` PR status aggregates the selected blocking checks for draft
+  PR plans and the full non-duplicated blocking suite for non-draft PRs; it
+  uses explicit per-check jobs instead of one opaque umbrella runner so every
+  required check stays visible in GitHub Actions
 - required PR-only statuses must stay pinned to the GitHub Actions app through
   branch-protection check app IDs, not only by status context name
 - push/mainline CI reuses the same atomic check catalog and deterministic
