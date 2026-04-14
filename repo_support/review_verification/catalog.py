@@ -194,7 +194,7 @@ CHECK_SPECS = {
                 "tests/unit/test_repo_agent_skills.py",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "standards-guards",
@@ -208,7 +208,7 @@ CHECK_SPECS = {
                 "tests/contract/test_standards_guards.py",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "docs-runtime-parity",
@@ -222,7 +222,7 @@ CHECK_SPECS = {
                 "tests/unit/docs_runtime_parity",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "delivery-guardrails-audit",
@@ -236,7 +236,7 @@ CHECK_SPECS = {
                 "tests/unit/test_delivery_guardrails_audit.py",
             ),
             tags=("review-tooling", "ci"),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "pr-metadata-validator",
@@ -250,7 +250,7 @@ CHECK_SPECS = {
                 "tests/unit/test_pr_metadata_validator.py",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "commit-message-validator",
@@ -264,7 +264,7 @@ CHECK_SPECS = {
                 "tests/unit/test_commit_message_validator.py",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "pre-commit-hook-tooling",
@@ -278,7 +278,7 @@ CHECK_SPECS = {
                 "tests/unit/test_pre_commit_hook.py",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "quality-gates-tooling",
@@ -292,7 +292,7 @@ CHECK_SPECS = {
                 "tests/unit/test_quality_gates.py",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "audit-pr-review",
@@ -306,7 +306,7 @@ CHECK_SPECS = {
                 "tests/unit/test_audit_pr_review.py",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "run-pr-review-checks",
@@ -320,7 +320,7 @@ CHECK_SPECS = {
                 "tests/unit/test_run_pr_review_checks.py",
             ),
             tags=("review-tooling",),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "ci-tooling",
@@ -334,7 +334,7 @@ CHECK_SPECS = {
                 "tests/unit/test_review_verification_workflows.py",
             ),
             tags=("review-tooling", "ci"),
-            triggers=("push_main", "local"),
+            triggers=("pull_request", "push_main", "local"),
         ),
         _spec(
             "pytest-full",

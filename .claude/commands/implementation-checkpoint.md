@@ -36,7 +36,7 @@ Use this route before closing any non-trivial coding task.
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests` before closing
      substantial work
    - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full` when the change touches CI,
-     packaging, release, or other workflow surfaces
+     packaging, release, or other workflow surfaces and you want the final non-draft PR suite locally
 8. If architecture, schema, or sequencing changed, update:
    - `ROADMAP.md`
    - `docs/concepts/reconciliation-tax-architecture.md`

@@ -3,7 +3,7 @@ from __future__ import annotations
 from repo_support.paths import repo_root
 
 
-def test_pr_review_workflow_runs_full_suite_without_path_filters() -> None:
+def test_pr_review_workflow_uses_draft_aware_planner_gated_atomic_jobs() -> None:
     workflow_text = (repo_root() / ".github/workflows/pr-review.yml").read_text(
         encoding="utf-8"
     )
@@ -11,6 +11,10 @@ def test_pr_review_workflow_runs_full_suite_without_path_filters() -> None:
     assert "pull_request:" in workflow_text
     assert "paths:" not in workflow_text
     assert "paths-ignore:" not in workflow_text
+    assert "PR_DRAFT: ${{ github.event.pull_request.draft }}" in workflow_text
+    assert "MODE=planned" in workflow_text
+    assert 'if [ "$PR_DRAFT" != "true" ]; then' in workflow_text
+    assert '--mode "$MODE" \\' in workflow_text
     for job_name in (
         "plan-pr-review:",
         "commit-messages:",
@@ -22,6 +26,17 @@ def test_pr_review_workflow_runs_full_suite_without_path_filters() -> None:
         "mypy:",
         "pyright:",
         "pylint:",
+        "repo-agent-skills:",
+        "standards-guards:",
+        "docs-runtime-parity:",
+        "delivery-guardrails-audit:",
+        "pr-metadata-validator:",
+        "commit-message-validator:",
+        "pre-commit-hook-tooling:",
+        "quality-gates-tooling:",
+        "audit-pr-review:",
+        "run-pr-review-checks:",
+        "ci-tooling:",
         "pytest-full:",
         "test-stress-checks:",
         "build:",
@@ -39,6 +54,7 @@ def test_pr_review_workflow_runs_full_suite_without_path_filters() -> None:
     pr_review_needs = workflow_text.split("  pr-review:\n", maxsplit=1)[1].split(
         "    runs-on:", maxsplit=1
     )[0]
+    assert "- ci-tooling" in pr_review_needs
     assert "- verify-wheel" in pr_review_needs
     assert "- coverage-hotspots" not in pr_review_needs
 

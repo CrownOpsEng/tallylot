@@ -438,6 +438,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "`repo_code_or_tooling`" in guardrails_text
     assert "`ci_or_release`" in guardrails_text
     assert "selected verification mode" in guardrails_text
+    assert "always-visible PR metadata checks" in guardrails_text
     assert "full non-duplicated blocking suite" in guardrails_text
     assert "suppresses the narrower targeted pytest subset checks" in guardrails_text
     assert (

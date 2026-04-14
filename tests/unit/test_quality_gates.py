@@ -186,9 +186,9 @@ def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> 
 
     assert "id: markdownlint" in config_text
     assert "id: commit-message" in config_text
-    assert "id: mypy" in config_text
-    assert "id: pyright" in config_text
-    assert "name: pytest-fast" in config_text
+    assert "id: mypy" not in config_text
+    assert "id: pyright" not in config_text
+    assert "name: pytest-fast" not in config_text
     assert "id: ruff" not in config_text
 
 
@@ -197,9 +197,9 @@ def test_pre_commit_config_keeps_single_pass_checkpoint_validations() -> None:
 
     assert config_text.count("id: markdownlint") == 1
     assert config_text.count("id: commit-message") == 1
-    assert config_text.count("id: mypy") == 1
-    assert config_text.count("id: pyright") == 1
-    assert config_text.count("name: pytest-fast") == 1
+    assert "id: mypy" not in config_text
+    assert "id: pyright" not in config_text
+    assert "name: pytest-fast" not in config_text
     assert "tools.run_quality_gates" not in config_text
     assert "tools.run_ci_parity_checks" not in config_text
 

@@ -107,14 +107,14 @@ Do not pre-load every repo doc by default.
   verification command.
 - Use `tools.run_pr_review_checks --mode full` when changes touch CI,
   packaging, release, or other workflow surfaces where the local verification
-  pass should mirror the full pre-merge PR suite.
+  pass should mirror the final non-draft PR suite before handoff.
 - Do not run `tools.run_quality_gates --full-tests` immediately before
   `tools.run_pr_review_checks --mode full`; the full PR-review runner already
   includes the full quality gate pass plus the additional CI-sensitive lanes.
 - Keep commit-time hooks narrow:
   - safe staged Ruff autofixes
   - commit-message validation
-  - markdownlint, mypy, pyright, and the fast pytest slice
+  - the staged-path checks selected by the planned verifier
   - do not turn the hook path into a second full-suite verification pass
 - Treat commits as stable checkpoints by default:
   - prefer small cohesive commits

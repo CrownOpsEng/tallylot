@@ -49,8 +49,8 @@ Prefer the repo's built-in tooling before inventing local workflows:
 - local verification runners may apply safe autofixes to changed Python and
   Markdown files before validation so style-only drift is repaired locally,
   while CI stays read-only and reports any remaining issues directly
-- mirror the full pre-merge PR suite locally when changing workflow,
-  packaging, or release behavior with
+- run the broad review suite locally when changing workflow, packaging, or
+  release behavior with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full`
 - audit local CODEOWNERS coverage and live GitHub branch-protection settings
   together when changing delivery policy, branch protection, or CI guardrails
@@ -349,26 +349,29 @@ is:
 - then run `tools.run_quality_gates --full-tests` before closing the task
 - escalate to `tools.run_pr_review_checks --mode full` when the change touches
   CI, packaging, release, or other workflow surfaces where the local pass
-  should mirror the full pre-merge PR suite
+  should mirror the final non-draft PR suite before handoff
 - do not run `tools.run_quality_gates --full-tests` again immediately before
   `tools.run_pr_review_checks --mode full`; the full PR-review runner already
   includes it
-- use `tools.run_fast_pytest` or the hook-owned pre-commit path for the fast
-  checkpoint loop; do not duplicate the fast pytest CLI contract in new
-  wrappers or config entries
+- use `tools.run_fast_pytest` for an explicit fast pytest loop when you need
+  one; the hook-owned pre-commit path now follows the staged-path planned
+  verifier selection instead of a fixed pytest bundle
 
 For PR review and repair loops, use `tools.audit_pr_review` to classify the
 changed surface groups and use `tools.run_pr_review_checks` as the shared
 verification entrypoint:
 
-- pre-merge pull-request CI always runs the full non-duplicated blocking suite
+- draft pull-request CI always runs `commit-messages` and `pr-metadata`, then
+  selects the remaining checks from the changed diff
+- non-draft pull-request CI switches to the full non-duplicated blocking suite
   plus the non-blocking coverage hotspot report lane
 - post-merge and manual CI stay change-sensitive and select only the atomic
   checks needed for the landed diff
 - local planned runs follow the same change-sensitive selection policy as
-  post-merge CI
-- local `tools.run_pr_review_checks --mode full` is the pre-merge simulator
-  for CI, packaging, release, or other workflow-sensitive changes
+  post-merge and draft pull-request CI
+- local `tools.run_pr_review_checks --mode full` is the explicit broad-review
+  override that mirrors the final non-draft PR suite for CI, packaging,
+  release, or other workflow-sensitive changes
 - `tools.run_quality_gates` remains a quality-only convenience runner and does
   not decide PR or CI verification selection
 

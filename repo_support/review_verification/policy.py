@@ -46,6 +46,10 @@ FULL_LOCAL_CHECK_IDS = tuple(
     for check_id in FULL_PR_CHECK_IDS
     if check_id not in {"commit-messages", "pr-metadata"}
 )
+PLANNED_PR_CHECK_IDS = (
+    "commit-messages",
+    "pr-metadata",
+)
 SHARED_VERIFICATION_SUBSTRATE_EXACT_PATHS = {
     "pyproject.toml",
     "uv.lock",
@@ -244,10 +248,12 @@ def build_verification_plan(
 ) -> VerificationPlan:
     surface_report = classify_changed_paths(paths)
 
-    if trigger == "pull_request":
+    if trigger == "pull_request" and mode == "full":
         selected: set[str] = set(FULL_PR_CHECK_IDS)
     else:
         selected, _has_production_code = _planned_check_ids(surface_report)
+        if trigger == "pull_request":
+            selected.update(PLANNED_PR_CHECK_IDS)
         if mode == "full":
             selected = set(FULL_LOCAL_CHECK_IDS)
 
