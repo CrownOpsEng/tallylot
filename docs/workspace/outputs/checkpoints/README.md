@@ -1,15 +1,15 @@
 ---
 title: "Checkpoints"
-summary: "Rules for frozen source-backed checkpoint packages and related sidecar artifacts."
+summary: "Rules for frozen source-backed checkpoints and related sidecar artifacts."
 doc_type: reference
 audience: both
 owner: repo
 status: active
 ---
 
-Store frozen checkpoint packages here.
+Store frozen checkpoints here.
 
-Checkpoint packages should be system-native and source-backed. Sidecar oracle
+Checkpoint artifacts should be system-native and source-backed. Sidecar oracle
 or comparison exports may live beside them when useful, but those support
 artifacts do not define the checkpoint.
 
