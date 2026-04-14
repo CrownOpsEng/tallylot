@@ -22,7 +22,7 @@ def resolve_fast_pytest_workers(workers: int | None = None) -> int:
 
 def build_fast_pytest_command(*, workers: int | None = None) -> tuple[str, ...]:
     resolved_workers = resolve_fast_pytest_workers(workers)
-    command = ["uv", "run", "pytest"]
+    command = ["pytest"]
     if resolved_workers > 0:
         command.extend(("-n", str(resolved_workers)))
     command.extend(("-m", FAST_PYTEST_MARKER_EXPRESSION, "--no-cov", "-q"))

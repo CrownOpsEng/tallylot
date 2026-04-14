@@ -13,8 +13,8 @@ def test_workspace_vscode_settings_pin_external_python_environment() -> None:
         == "${env:HOME}/.venvs/tallylot-py312/bin/python"
     )
     assert (
-        settings["terminal.integrated.env.linux"]["UV_PROJECT_ENVIRONMENT"]
-        == "${env:HOME}/.venvs/tallylot-py312"
+        settings["terminal.integrated.env.linux"]["PATH"]
+        == "${env:HOME}/.venvs/tallylot-py312/bin:${env:PATH}"
     )
     assert settings["pylint.path"] == [
         "${interpreter}",

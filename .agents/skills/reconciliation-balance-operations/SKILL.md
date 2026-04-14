@@ -31,9 +31,9 @@ Use this skill for balance reconciliation workflow execution and diagnosis.
 ## Preferred Execution
 
 - For direct operator parity, the public CLI is:
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances inspect`
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances check`
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances summarize`
+  - `make cli ARGS='reconciliation balances inspect'`
+  - `make cli ARGS='reconciliation balances check'`
+  - `make cli ARGS='reconciliation balances summarize'`
 - For agent execution, prefer:
   - `python3 .agents/skills/reconciliation-balance-operations/scripts/reconciliation_balance_operations.py run ...`
 

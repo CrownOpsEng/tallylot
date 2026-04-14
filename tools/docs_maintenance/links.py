@@ -13,8 +13,11 @@ REFERENCE_LINK_PATTERN = re.compile(r"(?<!!)\[([^\]]+)\]\[([^\]]*)\]")
 SHORTCUT_REFERENCE_LINK_PATTERN = re.compile(r"(?<!!)\[([^\]]+)\](?![\[(])")
 REFERENCE_DEFINITION_PATTERN = re.compile(r"^\s{0,3}\[([^\]]+)\]:\s*(\S.*?)\s*$")
 HEADING_PATTERN = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
-BARE_UV_LINE_PATTERN = re.compile(r"^uv (run|sync)\b")
-BARE_UV_INLINE_PATTERN = re.compile(r"`(uv (?:run|sync)\b[^`]*)`")
+_ENV_ASSIGNMENT_PATTERN = r"""(?:[A-Z_][A-Z0-9_]*=(?:"[^"]*"|'[^']*'|\S+)\s+)*"""
+LOCAL_UV_LINE_PATTERN = re.compile(rf"^{_ENV_ASSIGNMENT_PATTERN}uv (run|sync)\b")
+LOCAL_UV_INLINE_PATTERN = re.compile(
+    rf"`({_ENV_ASSIGNMENT_PATTERN}uv (?:run|sync)\b[^`]*)`"
+)
 FENCE_PATTERN = re.compile(r"^\s{0,3}([`~]{3,})(.*)$")
 BLOCKQUOTE_PREFIX_PATTERN = re.compile(r"^(?:\s{0,3}>\s?)+")
 HTML_COMMENT_PATTERN = re.compile(r"<!--.*?-->", re.DOTALL)
@@ -69,7 +72,11 @@ def normalize_anchor(heading: str) -> str:
     text = re.sub(r"\[([^\]]+)]\([^)]+\)", r"\1", heading)
     text = text.replace("`", "")
     text = text.strip().lower()
-    text = "".join(character for character in text if character.isalnum() or character in {" ", "-", "_"})
+    text = "".join(
+        character
+        for character in text
+        if character.isalnum() or character in {" ", "-", "_"}
+    )
     text = re.sub(r"\s+", "-", text)
     text = re.sub(r"-{2,}", "-", text)
     return text.strip("-")
@@ -87,7 +94,9 @@ def heading_anchors(path: Path) -> set[str]:
         if not base_anchor:
             continue
         duplicate_count = counts[base_anchor]
-        anchor = base_anchor if duplicate_count == 0 else f"{base_anchor}-{duplicate_count}"
+        anchor = (
+            base_anchor if duplicate_count == 0 else f"{base_anchor}-{duplicate_count}"
+        )
         counts[base_anchor] += 1
         anchors.add(anchor)
     return anchors
@@ -114,7 +123,9 @@ def reference_definitions(text: str) -> dict[str, str]:
 
 
 def inline_targets(text: str) -> list[str]:
-    return [markdown_target(match.group(2)) for match in INLINE_LINK_PATTERN.finditer(text)]
+    return [
+        markdown_target(match.group(2)) for match in INLINE_LINK_PATTERN.finditer(text)
+    ]
 
 
 def reference_targets(text: str) -> list[str]:
@@ -177,12 +188,20 @@ def validate_markdown_links(paths: Iterable[Path]) -> None:
                 continue
 
             if target_path.suffix != ".md":
-                raise ValueError(f"{path} uses a Markdown anchor on non-Markdown target {target}")
+                raise ValueError(
+                    f"{path} uses a Markdown anchor on non-Markdown target {target}"
+                )
 
             anchors = anchor_cache.setdefault(target_path, heading_anchors(target_path))
             if anchor not in anchors:
-                target_label = display_path(target_path) if target_path != path else display_path(path)
-                raise ValueError(f"{path} links to missing anchor #{anchor} in {target_label}")
+                target_label = (
+                    display_path(target_path)
+                    if target_path != path
+                    else display_path(path)
+                )
+                raise ValueError(
+                    f"{path} links to missing anchor #{anchor} in {target_label}"
+                )
 
 
 def bare_uv_examples(path: Path) -> tuple[str, ...]:
@@ -190,12 +209,12 @@ def bare_uv_examples(path: Path) -> tuple[str, ...]:
     text = text_without_fenced_code(path.read_text(encoding="utf-8"))
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped.startswith('UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"'):
-            continue
-        if BARE_UV_LINE_PATTERN.match(stripped):
+        if LOCAL_UV_LINE_PATTERN.match(stripped):
             offenders.append(stripped)
             continue
-        offenders.extend(match.group(1) for match in BARE_UV_INLINE_PATTERN.finditer(line))
+        offenders.extend(
+            match.group(1) for match in LOCAL_UV_INLINE_PATTERN.finditer(line)
+        )
     return tuple(offenders)
 
 
@@ -206,4 +225,7 @@ def validate_uv_examples(paths: Iterable[Path]) -> None:
         if examples:
             offenders[display_path(path)] = examples
     if offenders:
-        raise ValueError(f"markdown surfaces contain bare uv examples: {offenders}")
+        raise ValueError(
+            "markdown surfaces contain local uv command examples; use `make ...` "
+            f"instead: {offenders}"
+        )

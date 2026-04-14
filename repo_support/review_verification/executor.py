@@ -8,7 +8,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
-from tools.uv_environment import repo_uv_environment
+from repo_support.pyright_config import ensure_pyright_local_config
+from repo_support.uv_environment import repo_uv_environment
 
 from .catalog import CHECK_SPECS, CheckSpec
 from .policy import VerificationPlan
@@ -195,6 +196,8 @@ def run_check(spec: CheckSpec, *, context: CheckExecutionContext) -> CheckResult
     command = resolve_check_command(spec, context=context)
     started = time.perf_counter()
     try:
+        if spec.id == "pyright":
+            ensure_pyright_local_config()
         result = subprocess.run(
             command,
             capture_output=True,

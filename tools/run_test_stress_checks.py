@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from repo_support.pytest_commands import build_fast_pytest_command
-from tools.uv_environment import repo_uv_environment
 
 FAST_STRESS_WORKERS = 4
 PRIMARY_RANDOM_SEED = 1729
@@ -32,7 +32,7 @@ def _marker_pytest_command(
     if marker_expression == "unit and not slow":
         command = list(build_fast_pytest_command(workers=workers))
     else:
-        command = ["uv", "run", "pytest"]
+        command = ["pytest"]
         if workers > 0:
             command.extend(("-n", str(workers)))
         command.extend(("-m", marker_expression, "--no-cov", "-q"))
@@ -122,7 +122,7 @@ def _run_step(step: StressStep) -> int:
         capture_output=True,
         text=True,
         check=False,
-        env=repo_uv_environment(),
+        env=os.environ.copy(),
     )
     elapsed = time.perf_counter() - started
     print(f"[{step.name}] exit={result.returncode} elapsed={elapsed:.2f}s", flush=True)

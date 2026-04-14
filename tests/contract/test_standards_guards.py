@@ -382,7 +382,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "ready for review" in guardrails_text
     assert "evidence-backed findings" in guardrails_text
     assert "duplicate or superseded label" in guardrails_text
-    assert "tools.audit_delivery_guardrails" in guardrails_text
+    assert "make audit-delivery-guardrails" in guardrails_text
     assert "single review-capable collaborator" in guardrails_text
     assert ".github/actions/**" in guardrails_text
     assert ".github/ISSUE_TEMPLATE/**" in guardrails_text
@@ -445,7 +445,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         "every applicable changed surface group has been revisited" in guardrails_text
     )
     assert "issue-finding with open outcome" in guardrails_text
-    assert "tools.audit_pr_review" in hardening_route_text
+    assert "make audit-pr-review" in hardening_route_text
     assert "tools.run_pr_review_checks" in hardening_route_text
     assert (
         "green runner never replaces the mandatory red-team repair" in guardrails_text
@@ -507,8 +507,8 @@ def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() ->
     assert "create a bounded checkpoint commit" in hardening_route_text
     assert "relevant delivery guidance or skills" in hardening_route_text
     assert "updating the PR state" in hardening_route_text
-    assert "tools.audit_pr_review" in hardening_route_text
-    assert "tools.run_pr_review_checks" in hardening_route_text
+    assert "make audit-pr-review" in hardening_route_text
+    assert "make pr-review" in hardening_route_text
 
 
 def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> None:
@@ -864,3 +864,32 @@ def test_transaction_classification_matrix_describes_runtime_projection_values()
     assert "enum members such as `ProjectionHint.TRADE`" in matrix_text
     assert "stored/runtime values such as `trade`" in matrix_text
     assert "renderer labels such as `Trade`" in matrix_text
+
+
+def test_makefile_uses_home_relative_external_env_path() -> None:
+    makefile_text = (repo_root() / "Makefile").read_text(encoding="utf-8")
+
+    assert "PROJECT_ENV ?= $(HOME)/.venvs/tallylot-py312" in makefile_text
+    assert "export PATH := $(PROJECT_BIN):$(PATH)" in makefile_text
+    for target in (
+        "install-hooks:",
+        "docs-check:",
+        "quality:",
+        "quality-full:",
+        "pr-review-full:",
+        "cli:",
+        "oracle:",
+        "tool:",
+    ):
+        assert target in makefile_text
+
+
+def test_workspace_vscode_terminal_path_uses_home_relative_external_env_bin() -> None:
+    settings = json.loads(
+        (repo_root() / ".vscode" / "settings.json").read_text(encoding="utf-8")
+    )
+
+    assert (
+        settings["terminal.integrated.env.linux"]["PATH"]
+        == "${env:HOME}/.venvs/tallylot-py312/bin:${env:PATH}"
+    )

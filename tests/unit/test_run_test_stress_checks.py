@@ -17,8 +17,6 @@ def test_stress_steps_match_repo_policy() -> None:
         "e2e-seed-a",
     ]
     assert steps[0].command == (
-        "uv",
-        "run",
         "pytest",
         "-n",
         "4",
@@ -30,8 +28,6 @@ def test_stress_steps_match_repo_policy() -> None:
         "1729",
     )
     assert steps[0].serial_fallback_command == (
-        "uv",
-        "run",
         "pytest",
         "-m",
         "unit and not slow",
@@ -41,8 +37,6 @@ def test_stress_steps_match_repo_policy() -> None:
         "1729",
     )
     assert steps[2].command == (
-        "uv",
-        "run",
         "pytest",
         "-m",
         "contract",

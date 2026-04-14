@@ -44,10 +44,10 @@ workspace as long as each mapping is scoped to a different incoming capture.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake plan \
+make cli ARGS='source intake plan \
   --incoming-dir <incoming_dump> \
   --workspace-root <workspace> \
-  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_label>
+  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_label>'
 ```
 
 Review:
@@ -64,10 +64,10 @@ final `target_path` align with the intended stable source label before apply.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake apply \
+make cli ARGS='source intake apply \
   --incoming-dir <incoming_dump> \
   --workspace-root <workspace> \
-  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_label>
+  --report-dir <workspace>/working/supporting_artifacts/intake/<capture_label>'
 ```
 
 Apply only after the plan artifacts look correct.
@@ -94,9 +94,9 @@ If the capture is already settled under
 `evidence/raw/source/<source>/<capture_label>/`, run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source manifest \
+make cli ARGS='source manifest \
   --source-dir <workspace>/evidence/raw/source/<source>/<capture_label> \
-  --output <workspace>/evidence/raw/source/<source>/<capture_label>/manifest.csv
+  --output <workspace>/evidence/raw/source/<source>/<capture_label>/manifest.csv'
 ```
 
 Keep `manifest.csv` inside the settled capture folder.
@@ -106,9 +106,9 @@ Keep `manifest.csv` inside the settled capture folder.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source profile \
+make cli ARGS='source profile \
   --source <source> \
-  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
+  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>'
 ```
 
 `source profile` requires the exact materialized capture root under
@@ -137,9 +137,9 @@ hand.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize \
+make cli ARGS='source normalize \
   --source <source> \
-  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
+  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>'
 ```
 
 `source normalize` has the same strict input contract as `source profile`: one
@@ -149,9 +149,9 @@ Then assemble the accepted capture outputs into the source dataset used by
 reconciliation:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source assemble \
+make cli ARGS='source assemble \
   --source <source> \
-  --workspace-root <workspace>
+  --workspace-root <workspace>'
 ```
 
 `source assemble` owns the generated artifact surface under
@@ -165,9 +165,9 @@ When you need to confirm that a rebuilt workspace reproduces a reference
 workspace cleanly, run the replay validator:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_workspace_replay \
+make validate-workspace-replay ARGS='\
   --reference-workspace <reference-workspace> \
-  --report-dir <workspace>/working/supporting_artifacts/workspace_replay/<run_label>
+  --report-dir <workspace>/working/supporting_artifacts/workspace_replay/<run_label>'
 ```
 
 Add `--candidate-workspace` and `--source` when you need to constrain the

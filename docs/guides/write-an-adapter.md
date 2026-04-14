@@ -203,8 +203,8 @@ Known current adapter workaround:
 ## Tooling
 
 - Scaffold package-style adapters with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter source platforms/<module_name> "<Display Name>"`
-  or `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter output <module_name> "<Display Name>"`.
+  `make scaffold-adapter ARGS='source platforms/<module_name> "<Display Name>"'`
+  or `make scaffold-adapter ARGS='output <module_name> "<Display Name>"'`.
 - Source scaffolds must include the category path so new adapters land in the
   correct namespace from the start.
 - Scaffolds generate a private adapter implementation class, a module-level
@@ -216,7 +216,7 @@ Known current adapter workaround:
 - Source scaffolds now generate `translation.py` with a provider-local
   `FILE_TRANSLATION_RULES` registry and a shared draft compiler call.
 - Refresh JSON golden fixtures with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.refresh_adapter_goldens --pack <adapter>/<pack>`.
+  `make refresh-adapter-goldens ARGS='--pack <adapter>/<pack>'`.
 - Keep pack manifests under `tests/fixtures/adapter_packs/<adapter>/<pack>/`.
 - Treat the golden refresh tool as a typed-service workflow. Do not route new
   adapter goldens through removed legacy scripts.

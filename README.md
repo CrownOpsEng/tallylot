@@ -37,9 +37,8 @@ implemented surface.
 ## Quick Start
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv sync --python 3.12
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot workspace init
+make install-hooks
+make workspace-init
 ```
 
 See:
@@ -74,21 +73,22 @@ CHANGELOG.md
 ## Development
 
 This repo intentionally uses the external environment at
-`$HOME/.venvs/tallylot-py312`. The repo-root `.venv` file is a sentinel, not a
-virtualenv directory.
+`$(HOME)/.venvs/tallylot-py312`. The root `Makefile` prepends that
+environment's `bin/` directory to `PATH`, so local repo commands stay
+machine-neutral and do not need inline environment prefixes.
 
 Bootstrap the clone with:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
+make install-hooks
 ```
 
 Use the lighter gate during development and the full gate before closing
 substantial work:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
+make quality
+make quality-full
 ```
 
 Use [docs/standards/implementation.md](docs/standards/implementation.md) and

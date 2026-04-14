@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import subprocess
 import threading
-from pathlib import Path
 
 import pytest
 
@@ -58,8 +57,6 @@ def test_fast_quality_gate_uses_shared_pytest_command_builder() -> None:
 
 def test_fast_pytest_defaults_to_four_workers() -> None:
     assert build_fast_pytest_command() == (
-        "uv",
-        "run",
         "pytest",
         "-n",
         str(DEFAULT_FAST_PYTEST_WORKERS),
@@ -76,8 +73,6 @@ def test_fast_pytest_defaults_to_four_workers() -> None:
         (
             "4",
             (
-                "uv",
-                "run",
                 "pytest",
                 "-n",
                 "4",
@@ -90,8 +85,6 @@ def test_fast_pytest_defaults_to_four_workers() -> None:
         (
             "1",
             (
-                "uv",
-                "run",
                 "pytest",
                 "-n",
                 "1",
@@ -103,7 +96,7 @@ def test_fast_pytest_defaults_to_four_workers() -> None:
         ),
         (
             "0",
-            ("uv", "run", "pytest", "-m", "unit and not slow", "--no-cov", "-q"),
+            ("pytest", "-m", "unit and not slow", "--no-cov", "-q"),
         ),
     ],
 )
@@ -117,7 +110,7 @@ def test_fast_pytest_honors_worker_override(
     assert build_fast_pytest_command() == expected_command
 
 
-def test_run_gate_exports_external_uv_project_environment(
+def test_run_gate_ignores_repo_local_dot_venv_for_subprocesses(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured_environment: dict[str, str] = {}
@@ -137,12 +130,23 @@ def test_run_gate_exports_external_uv_project_environment(
         return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.delenv("UV_PROJECT_ENVIRONMENT", raising=False)
+    monkeypatch.delenv("UV_CACHE_DIR", raising=False)
+    monkeypatch.setenv("VIRTUAL_ENV", str(repo_root() / ".venv"))
+    monkeypatch.setenv("PATH", "/tmp/test-bin")
 
     gate = available_quality_gates(full_tests=False)["markdownlint"]
     tools.run_quality_gates._run_gate(gate)
 
-    assert captured_environment["UV_PROJECT_ENVIRONMENT"] == str(
-        Path.home() / ".venvs" / "tallylot-py312"
+    assert captured_environment["PATH"] == (
+        f"{captured_environment['UV_PROJECT_ENVIRONMENT']}/bin:/tmp/test-bin"
+    )
+    assert (
+        captured_environment["VIRTUAL_ENV"]
+        == captured_environment["UV_PROJECT_ENVIRONMENT"]
+    )
+    assert captured_environment["UV_PROJECT_ENVIRONMENT"].endswith(
+        ".venvs/tallylot-py312"
     )
 
 
@@ -262,13 +266,23 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
         "sync_pyright_config",
         fake_sync_pyright_config,
     )
+
+    def fake_ensure_pyright_local_config() -> bool:
+        calls.append("local")
+        return False
+
+    monkeypatch.setattr(
+        tools.run_quality_gates,
+        "ensure_pyright_local_config",
+        fake_ensure_pyright_local_config,
+    )
     monkeypatch.setattr(tools.run_quality_gates, "run_local_autofix", lambda: 0)
     monkeypatch.setattr(tools.run_quality_gates, "_phase_plan", fake_phase_plan)
     monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
 
     assert tools.run_quality_gates.main(()) == 0
 
-    assert calls == ["sync"]
+    assert calls == ["sync", "local"]
 
 
 def test_quality_gates_aggregate_failures_by_default(
@@ -297,6 +311,9 @@ def test_quality_gates_aggregate_failures_by_default(
         )
 
     monkeypatch.setattr(tools.run_quality_gates, "sync_pyright_config", lambda: False)
+    monkeypatch.setattr(
+        tools.run_quality_gates, "ensure_pyright_local_config", lambda: False
+    )
     monkeypatch.setattr(tools.run_quality_gates, "run_local_autofix", lambda: 0)
     monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
 
@@ -330,6 +347,9 @@ def test_quality_gates_fail_fast_stops_after_first_failing_phase(
         )
 
     monkeypatch.setattr(tools.run_quality_gates, "sync_pyright_config", lambda: False)
+    monkeypatch.setattr(
+        tools.run_quality_gates, "ensure_pyright_local_config", lambda: False
+    )
     monkeypatch.setattr(tools.run_quality_gates, "run_local_autofix", lambda: 0)
     monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
 
@@ -354,6 +374,9 @@ def test_quality_gates_can_skip_local_autofix(
     calls: list[str] = []
 
     monkeypatch.setattr(tools.run_quality_gates, "sync_pyright_config", lambda: False)
+    monkeypatch.setattr(
+        tools.run_quality_gates, "ensure_pyright_local_config", lambda: False
+    )
 
     def fake_run_local_autofix() -> int:
         calls.append("autofix")

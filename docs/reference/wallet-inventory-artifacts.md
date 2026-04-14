@@ -23,9 +23,9 @@ artifacts.
 ## Rebuild
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint rebuild-location-inventory \
+make cli ARGS='checkpoint rebuild-location-inventory \
   --normalized-root <workspace>/working/normalized \
-  --output <workspace>/analysis/inventory/location_inventory.csv
+  --output <workspace>/analysis/inventory/location_inventory.csv'
 ```
 
 `--output` must point outside the normalized tree. The service rejects aggregate

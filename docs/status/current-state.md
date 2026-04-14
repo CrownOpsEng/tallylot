@@ -68,7 +68,7 @@ The repo currently ships typed replacements for the core workflow capabilities:
   `--as-of` target planning, offline-by-default checks, and optional provider
   hydration through separate balance-provider adapters
 - repo-native workspace replay validation via
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_workspace_replay`
+  `make validate-workspace-replay`
   with optional expected-difference fixtures limited to issue and review count
   drift
 - dev-only oracle baseline validation with the documented artifact package

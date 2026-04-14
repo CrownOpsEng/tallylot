@@ -6,7 +6,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from tools.uv_environment import default_project_environment, repo_uv_environment
+from repo_support.uv_environment import (
+    default_project_environment,
+    repo_uv_environment,
+)
 
 _HOOK_TEMPLATE = """#!/usr/bin/env bash
 set -euo pipefail

@@ -2,7 +2,7 @@
   "python.terminal.activateEnvironment": true,
   "python.defaultInterpreterPath": "${env:HOME}/.venvs/tallylot-py312/bin/python",
   "terminal.integrated.env.linux": {
-    "UV_PROJECT_ENVIRONMENT": "${env:HOME}/.venvs/tallylot-py312"
+    "PATH": "${env:HOME}/.venvs/tallylot-py312/bin:${env:PATH}"
   },
   "python.analysis.extraPaths": [
     "${workspaceFolder}/src"
@@ -56,5 +56,6 @@
     "-m",
     "tools.vscode_pylint"
   ],
-  "pylint.importStrategy": "fromEnvironment"
+  "pylint.importStrategy": "fromEnvironment",
+  "makefile.configureOnOpen": false
 }

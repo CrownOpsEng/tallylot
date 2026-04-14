@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+import os
 import subprocess
 import time
 from collections.abc import Sequence
@@ -17,8 +18,8 @@ from repo_support.quality_gates import (
     available_quality_gates,
     quality_phase_plan,
 )
-from repo_support.pyright_config import sync_pyright_config
-from tools.uv_environment import repo_uv_environment
+from repo_support.pyright_config import ensure_pyright_local_config, sync_pyright_config
+from repo_support.uv_environment import repo_uv_environment
 
 
 @dataclass(frozen=True)
@@ -132,9 +133,11 @@ def _run_gate(gate: QualityGate) -> GateResult:
 def _gate_environment(
     gate: QualityGate,
 ) -> dict[str, str]:
-    return apply_gate_environment(
-        repo_uv_environment(),
-        coverage_gate=gate.coverage_gate,
+    return repo_uv_environment(
+        apply_gate_environment(
+            os.environ,
+            coverage_gate=gate.coverage_gate,
+        )
     )
 
 
@@ -203,6 +206,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             flush=True,
         )
         return 1
+    ensure_pyright_local_config()
     if run_request.auto_fix:
         autofix_status = run_local_autofix()
         if autofix_status != 0:

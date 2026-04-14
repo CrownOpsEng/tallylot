@@ -64,6 +64,18 @@ SHARED_VERIFICATION_SUBSTRATE_EXACT_PATHS = {
 SHARED_VERIFICATION_SUBSTRATE_PREFIXES = {
     "repo_support/review_verification/",
 }
+STANDARDS_GUARD_EXACT_PATHS = {
+    "AGENTS.md",
+    "ROADMAP.md",
+    "Makefile",
+    ".gitignore",
+    ".vscode/settings.json",
+}
+STANDARDS_GUARD_PREFIXES = (
+    "docs/standards/",
+    ".claude/commands/",
+    "tools/docs_maintenance/",
+)
 
 
 @dataclass(frozen=True)
@@ -97,13 +109,7 @@ def _path_targeted_check_ids(path: str) -> tuple[str, ...]:
     targeted: list[str] = []
     if path.startswith(".agents/skills/"):
         targeted.append("repo-agent-skills")
-    if (
-        path == "AGENTS.md"
-        or path == "ROADMAP.md"
-        or path.startswith("docs/standards/")
-        or path.startswith(".claude/commands/")
-        or path.startswith("tools/docs_maintenance/")
-    ):
+    if path in STANDARDS_GUARD_EXACT_PATHS or path.startswith(STANDARDS_GUARD_PREFIXES):
         targeted.append("standards-guards")
     if path.startswith(".claude/commands/"):
         targeted.append("docs-runtime-parity")

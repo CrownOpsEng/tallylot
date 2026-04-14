@@ -17,13 +17,15 @@ from repo_support.paths import (
 )
 
 PRODUCTION_COMMAND_ROUTE_PATTERN = re.compile(
-    r'(?:UV_PROJECT_ENVIRONMENT="\$HOME/\.venvs/tallylot-py312" )?uv run tallylot '
+    r"make cli ARGS=['\"]"
     r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
+    r"(?:[^'\"]*)['\"]"
 )
 
 ORACLE_COMMAND_ROUTE_PATTERN = re.compile(
-    r'(?:UV_PROJECT_ENVIRONMENT="\$HOME/\.venvs/tallylot-py312" )?uv run python -m tools\.oracles\.cli '
+    r"make oracle ARGS=['\"]"
     r"(?P<route>[a-z0-9_][a-z0-9_-]*(?: [a-z0-9_][a-z0-9_-]*){0,4})"
+    r"(?:[^'\"]*)['\"]"
 )
 
 

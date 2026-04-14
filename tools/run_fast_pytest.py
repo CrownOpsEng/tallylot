@@ -4,7 +4,7 @@ import subprocess
 from collections.abc import Sequence
 
 from repo_support.pytest_commands import build_fast_pytest_command
-from tools.uv_environment import repo_uv_environment
+from repo_support.uv_environment import repo_uv_environment
 
 
 def _command() -> tuple[str, ...]:

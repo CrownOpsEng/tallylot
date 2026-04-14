@@ -108,7 +108,7 @@ def test_run_plan_fail_fast_skips_remaining_checks(monkeypatch: MonkeyPatch) -> 
     assert summary.results[0].check_id == "ruff"
     assert summary.results[0].status == "failed"
     assert summary.results[1].status == "skipped"
-    assert commands_seen == [("uv", "run", "ruff", "check", ".")]
+    assert commands_seen == [("ruff", "check", ".")]
 
 
 def test_execution_summary_detects_blocking_failures() -> None:

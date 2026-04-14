@@ -11,7 +11,7 @@ from typing import cast
 
 from repo_support.paths import repo_root
 from repo_support.review_verification import changed_paths
-from tools.uv_environment import repo_uv_environment
+from repo_support.uv_environment import repo_uv_environment
 
 
 @dataclass(frozen=True)

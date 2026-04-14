@@ -78,15 +78,14 @@ Do not pre-load every repo doc by default.
 
 - This repo intentionally uses the external uv environment at
   `$HOME/.venvs/tallylot-py312`.
-- The repo-root `.venv` file is a sentinel, not a virtualenv directory. Do not
-  override it with ad hoc repo-local envs.
-- For all `uv` commands in this repo, use:
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv ...`
+- Use the root `Makefile` as the standard local command surface. It prepends
+  `$(HOME)/.venvs/tallylot-py312/bin` to `PATH`, which keeps repo commands
+  machine-neutral and sandbox-safe without inline environment prefixes.
 - Bootstrap each clone before doing stable work. This refreshes the shared
   external project environment for the current checkout and installs repo git
   hooks, which clears stale editable package paths after repo relocation or
   history rebuilds:
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
+  - `make install-hooks`
 - Do not consider work ready until the repo's selected verification for the
   changed surfaces passes. For agent-default local verification, use the
   standard `tools.run_quality_gates` path rather than forcing the explicit
@@ -97,14 +96,15 @@ Do not pre-load every repo doc by default.
   feedback when the `vscode-problems` skill or MCP snapshot is available and
   current. Treat that signal as advisory only.
 - For explicit local verification, prefer:
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full`
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
+  - `make quality`
+  - `make pr-review-full`
+  - `make quality-full`
 - Benchmark quality-gate scheduling or test-slice changes before changing the
   default verification path:
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_quality_gates`
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests`
-- Do not run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the parallel quality-gate runner unless you are debugging hook behavior itself.
+  - `make benchmark-quality`
+  - `make benchmark-tests`
+- Do not run `make precommit ARGS='run --all-files'` in addition to the
+  parallel quality-gate runner unless you are debugging hook behavior itself.
 - Use `tools.run_quality_gates` as the normal final local verification
   command.
 - Use `tools.run_pr_review_checks --mode full` when changes touch CI,
