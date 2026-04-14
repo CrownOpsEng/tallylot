@@ -34,10 +34,10 @@ Agent-specific routing and repo execution rules live in
 ## Core Concepts
 
 <!-- docs-maintenance:start concepts -->
-- [Architecture Overview](concepts/architecture-overview.md): High-level map of the typed application layers, workflow capabilities, and external workspace model.
-- [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for the provider-neutral reconciliation, accounting, checkpoint, and tax system.
+- [Architecture Overview](concepts/architecture-overview.md): High-level map of the current bridge, final pipeline, and the documents that own each boundary.
+- [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for the current bridge, final pipeline products, performance rules, and filing-critical rollout.
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts.
-- [Transaction Classification](concepts/transaction-classification.md): Canonical layered classification vocabulary for the current fact-path bridge and later policy stages.
+- [Transaction Classification](concepts/transaction-classification.md): Layered classification vocabulary for the current fact-path bridge and later policy stages.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
 - [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): First-principles design anchor for the future unified adapter manifest, facets, canonical products, and deterministic verification model.
 <!-- docs-maintenance:end concepts -->
@@ -79,7 +79,7 @@ that follows the external workspace layout.
 
 <!-- docs-maintenance:start status -->
 - [Current State](status/current-state.md): Implemented runtime capabilities, current operational surface, and deferred areas.
-- [Migration Sequence](status/migration-sequence.md): Incremental migration order from the current fact-path bridge to the full canonical pipeline.
+- [Migration Sequence](status/migration-sequence.md): Incremental migration order from the current fact-path bridge to the final pipeline.
 - [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the unified adapter contract rewrite until after filing-critical work.
 <!-- docs-maintenance:end status -->
 

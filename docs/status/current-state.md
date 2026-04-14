@@ -8,6 +8,12 @@ status: active
 nav_order: 10
 ---
 
+This status page uses current implementation terms where accuracy requires
+them. Forward-looking architecture and roadmap docs use the final target
+product names `EvidenceSet`, `ClaimSet`, `EconomicFacts`,
+`ReconciliationState`, `Checkpoint`, `Journal`, `TaxInputs`, and
+`TaxOutputs`.
+
 ## Current Runtime
 
 - Typed single-package architecture under `src/tallylot/`
