@@ -67,12 +67,13 @@ def quality_phase_plan(
     schedule: str,
     selected_gate_names: Iterable[str] | None = None,
 ) -> tuple[QualityPhase, ...]:
+    _ = full_tests
     if schedule not in QUALITY_SCHEDULES:
         raise ValueError(f"unsupported quality schedule: {schedule}")
 
     resolved_schedule = schedule
     if schedule == "auto":
-        resolved_schedule = "all-at-once" if full_tests else "phased"
+        resolved_schedule = "all-at-once"
 
     phases: tuple[QualityPhase, ...]
     if resolved_schedule == "all-at-once":

@@ -40,13 +40,14 @@ Prefer the repo's built-in tooling before inventing local workflows:
   resolves a stale editable checkout after repo relocation or history rebuilds
 - run broad verification with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
-- run full verification before closing substantial work with
+- run the explicit full-suite override only when it is intentionally needed with
   `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
-  The repo keeps the fast gate on the phased schedule, the fast pytest slice
-  on 4 workers by default, and the full gate on serial full-suite coverage.
+  The repo starts the standard quality gates together by default, keeps the
+  fast pytest slice on 4 workers by default, and reserves phased scheduling as
+  an explicit alternate mode for comparison or debugging.
   Override the fast worker count only through
   `TALLYLOT_FAST_PYTEST_WORKERS`; use `0` to force serial.
-- local verification runners may apply safe autofixes to changed Python and
+- local verification runners may apply safe autofixes to staged Python and
   Markdown files before validation so style-only drift is repaired locally,
   while CI stays read-only and reports any remaining issues directly
 - run the broad review suite locally when changing workflow, packaging, or
@@ -103,10 +104,14 @@ generated file, commit that change and rerun the gates.
 
 When repo-native tooling and tests need shared support:
 
-- keep production/runtime concerns out of `tools/` and `repo_support/`
-- keep shared repo-only support in `repo_support/`, not in ad hoc duplicated
-  test helpers or tool-local path constants
+- keep production/runtime concerns out of `tools/` and the current live
+  `repo_support/` surface
+- keep shared repo-only support in the current live `repo_support/` package,
+  not in ad hoc duplicated test helpers or tool-local path constants
 - keep `tools/` focused on entry points and task-specific dev modules
+- shape forward-looking repo-only support work toward a later rename and split
+  under `dev_support/`; do not expand `repo_support/` as if it were the desired
+  long-term boundary
 
 ## Default Coding Posture
 
@@ -183,11 +188,13 @@ Avoid generic sinks:
 
 For repo-native tooling and test support:
 
-- use `repo_support/` only for narrow shared seams that are reused by multiple
-  repo-native surfaces
+- use the current live `repo_support/` package only for narrow shared seams
+  that are reused by multiple repo-native surfaces
 - do not create generic `repo_support/helpers.py` or `repo_support/utils.py`
 - if only one tool owns the logic, keep it local to that tool instead of
   promoting it into `repo_support/`
+- later implementation should rename and split this dev-only support surface
+  under `dev_support/` instead of treating `repo_support/` as the final name
 
 Shared components must stay owned by one layer and one concept.
 
@@ -346,10 +353,12 @@ is:
 
 - do not call work done with only local reasoning
 - verify the changed behavior at the smallest useful level first
-- then run `tools.run_quality_gates --full-tests` before closing the task
+- then run `tools.run_quality_gates` before closing the task
 - escalate to `tools.run_pr_review_checks --mode full` when the change touches
   CI, packaging, release, or other workflow surfaces where the local pass
   should mirror the final non-draft PR suite before handoff
+- avoid `tools.run_quality_gates --full-tests` unless you explicitly need the
+  full-suite override rather than the standard agent path
 - do not run `tools.run_quality_gates --full-tests` again immediately before
   `tools.run_pr_review_checks --mode full`; the full PR-review runner already
   includes it

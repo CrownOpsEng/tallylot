@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import subprocess
 import time
 from collections.abc import Sequence
@@ -154,18 +155,19 @@ def _run_phase(
     available_gates: dict[str, QualityGate],
 ) -> PhaseResult:
     print(f"[phase:{phase.name}] gates={', '.join(phase.gate_names)}", flush=True)
-    gate_results: list[GateResult] = []
     gates = tuple(available_gates[gate_name] for gate_name in phase.gate_names)
-    for gate in gates:
-        gate_result = _run_gate(gate)
-        gate_results.append(gate_result)
-        _print_gate_result(gate_result)
-    ordered_results = tuple(
-        sorted(
-            gate_results,
-            key=lambda gate_result: QUALITY_GATE_ORDER.index(gate_result.gate.name),
+    if not gates:
+        return PhaseResult(phase=phase, gate_results=())
+
+    with ThreadPoolExecutor(max_workers=len(gates)) as executor:
+        future_by_gate_name = {
+            gate.name: executor.submit(_run_gate, gate) for gate in gates
+        }
+        ordered_results = tuple(
+            future_by_gate_name[gate.name].result() for gate in gates
         )
-    )
+    for gate_result in ordered_results:
+        _print_gate_result(gate_result)
     return PhaseResult(phase=phase, gate_results=ordered_results)
 
 

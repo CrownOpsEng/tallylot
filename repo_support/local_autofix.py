@@ -22,13 +22,8 @@ def _git_paths(*args: str) -> tuple[str, ...]:
     return tuple(line.strip() for line in result.stdout.splitlines() if line.strip())
 
 
-def changed_repo_paths() -> tuple[str, ...]:
-    tracked = _git_paths("diff", "--name-only", "--diff-filter=ACMR", "HEAD")
-    untracked = _git_paths("ls-files", "--others", "--exclude-standard")
-    seen: dict[str, None] = {}
-    for path in (*tracked, *untracked):
-        seen[path] = None
-    return tuple(seen)
+def staged_repo_paths() -> tuple[str, ...]:
+    return _git_paths("diff", "--cached", "--name-only", "--diff-filter=ACMR")
 
 
 def _paths_with_suffixes(paths: Iterable[str], suffixes: set[str]) -> tuple[str, ...]:
@@ -40,14 +35,22 @@ def _run_command(command: tuple[str, ...], *, env: dict[str, str] | None = None)
     return subprocess.run(command, check=False, env=env).returncode
 
 
+def _markdownlint_available() -> bool:
+    return shutil.which("markdownlint") is not None
+
+
+def _markdownlint_environment() -> dict[str, str]:
+    return os.environ.copy()
+
+
 def run_local_autofix() -> int:
-    changed_paths = changed_repo_paths()
-    if not changed_paths:
-        print("[auto-fix] no changed paths detected", flush=True)
+    staged_paths = staged_repo_paths()
+    if not staged_paths:
+        print("[auto-fix] no staged paths detected", flush=True)
         return 0
 
-    python_paths = _paths_with_suffixes(changed_paths, PYTHON_SUFFIXES)
-    markdown_paths = _paths_with_suffixes(changed_paths, MARKDOWN_SUFFIXES)
+    python_paths = _paths_with_suffixes(staged_paths, PYTHON_SUFFIXES)
+    markdown_paths = _paths_with_suffixes(staged_paths, MARKDOWN_SUFFIXES)
 
     if python_paths:
         python_env = repo_uv_environment()
@@ -59,8 +62,8 @@ def run_local_autofix() -> int:
             if status != 0:
                 return status
 
-    if markdown_paths and shutil.which("markdownlint") is not None:
-        markdown_env = os.environ.copy()
+    if markdown_paths and _markdownlint_available():
+        markdown_env = _markdownlint_environment()
         status = _run_command(
             (
                 "markdownlint",
