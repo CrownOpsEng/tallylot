@@ -4,56 +4,468 @@ on:
   push:
     branches:
       - main
-
-permissions:
-  contents: read
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Verification mode
+        required: true
+        default: planned
+        type: choice
+        options:
+          - planned
+          - full
+      base_sha:
+        description: Optional base SHA for planned mode
+        required: false
+        type: string
+      head_sha:
+        description: Optional head SHA override
+        required: false
+        type: string
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint-format:
+  plan-main-ci:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      selected_checks: ${{ steps.plan.outputs.selected_checks }}
+      nonblocking_checks: ${{ steps.plan.outputs.nonblocking_checks }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/setup-python-uv
-      - name: Lint formatting and workflow surfaces
-        run: uv run python -m tools.run_ci_parity_checks --step lint-format
+      - id: plan
+        name: Plan mainline CI checks
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+          INPUT_MODE: ${{ inputs.mode }}
+          INPUT_BASE_SHA: ${{ inputs.base_sha }}
+          INPUT_HEAD_SHA: ${{ inputs.head_sha }}
+        run: |
+          python - <<'PY'
+          import os
+          mode = "planned"
+          base_sha = os.environ.get("PUSH_BASE_SHA", "")
+          head_sha = os.environ.get("PUSH_HEAD_SHA", "")
+          if os.environ["EVENT_NAME"] == "workflow_dispatch":
+              mode = os.environ.get("INPUT_MODE") or "planned"
+              if os.environ.get("INPUT_BASE_SHA"):
+                  base_sha = os.environ["INPUT_BASE_SHA"]
+              if os.environ.get("INPUT_HEAD_SHA"):
+                  head_sha = os.environ["INPUT_HEAD_SHA"]
+          with open("ci-plan.env", "w", encoding="utf-8") as handle:
+              handle.write(f"MODE={mode}\n")
+              handle.write(f"BASE_SHA={base_sha}\n")
+              handle.write(f"HEAD_SHA={head_sha}\n")
+          PY
+          source ci-plan.env
+          if [ -n "$BASE_SHA" ] && [ -n "$HEAD_SHA" ]; then
+            uv run python -m tools.audit_pr_review \
+              --trigger push_main \
+              --mode "$MODE" \
+              --base-sha "$BASE_SHA" \
+              --head-sha "$HEAD_SHA" \
+              --json > plan.json
+          else
+            uv run python -m tools.audit_pr_review \
+              --trigger push_main \
+              --mode "$MODE" \
+              --json > plan.json
+          fi
+          cat plan.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
 
-  types:
+          payload = json.loads(Path("plan.json").read_text(encoding="utf-8"))
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(
+                  f"selected_checks={json.dumps(payload['selected_checks'])}\n"
+              )
+              handle.write(
+                  f"nonblocking_checks={json.dumps(payload['nonblocking_checks'])}\n"
+              )
+          PY
+
+  docs-maintenance:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'docs-maintenance') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: ./.github/actions/setup-python-uv
-      - name: Run type checks
-        run: uv run python -m tools.run_ci_parity_checks --step types
+      - name: Run docs maintenance
+        run: uv run python -m tools.run_review_check --check-id docs-maintenance --trigger push_main
+
+  markdownlint:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'markdownlint') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run markdownlint
+        run: uv run python -m tools.run_review_check --check-id markdownlint --trigger push_main
+
+  actionlint:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'actionlint') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run actionlint
+        run: uv run python -m tools.run_review_check --check-id actionlint --trigger push_main
+
+  ruff:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'ruff') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run ruff
+        run: uv run python -m tools.run_review_check --check-id ruff --trigger push_main
+
+  mypy:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'mypy') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run mypy
+        run: uv run python -m tools.run_review_check --check-id mypy --trigger push_main
+
+  pyright:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'pyright') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run pyright
+        run: uv run python -m tools.run_review_check --check-id pyright --trigger push_main
 
   pylint:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'pylint') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: ./.github/actions/setup-python-uv
       - name: Run pylint
-        run: uv run python -m tools.run_ci_parity_checks --step pylint
+        run: uv run python -m tools.run_review_check --check-id pylint --trigger push_main
 
-  tests:
+  repo-agent-skills:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'repo-agent-skills') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run repo agent skills tooling tests
+        run: uv run python -m tools.run_review_check --check-id repo-agent-skills --trigger push_main
+
+  standards-guards:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'standards-guards') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run standards guards
+        run: uv run python -m tools.run_review_check --check-id standards-guards --trigger push_main
+
+  docs-runtime-parity:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'docs-runtime-parity') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run docs runtime parity tests
+        run: uv run python -m tools.run_review_check --check-id docs-runtime-parity --trigger push_main
+
+  delivery-guardrails-audit:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'delivery-guardrails-audit') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run delivery guardrails audit tests
+        run: uv run python -m tools.run_review_check --check-id delivery-guardrails-audit --trigger push_main
+
+  pr-metadata-validator:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'pr-metadata-validator') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run PR metadata validator tooling tests
+        run: uv run python -m tools.run_review_check --check-id pr-metadata-validator --trigger push_main
+
+  commit-message-validator:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'commit-message-validator') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run commit message validator tooling tests
+        run: uv run python -m tools.run_review_check --check-id commit-message-validator --trigger push_main
+
+  pre-commit-hook-tooling:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'pre-commit-hook-tooling') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run pre-commit hook tooling tests
+        run: uv run python -m tools.run_review_check --check-id pre-commit-hook-tooling --trigger push_main
+
+  quality-gates-tooling:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'quality-gates-tooling') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run quality gates tooling tests
+        run: uv run python -m tools.run_review_check --check-id quality-gates-tooling --trigger push_main
+
+  audit-pr-review:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'audit-pr-review') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run PR review audit tooling tests
+        run: uv run python -m tools.run_review_check --check-id audit-pr-review --trigger push_main
+
+  run-pr-review-checks:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'run-pr-review-checks') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run PR review check runner tooling tests
+        run: uv run python -m tools.run_review_check --check-id run-pr-review-checks --trigger push_main
+
+  ci-tooling:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'ci-tooling') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run workflow contract tooling tests
+        run: uv run python -m tools.run_review_check --check-id ci-tooling --trigger push_main
+
+  pytest-full:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'pytest-full') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run full pytest suite
+        run: uv run python -m tools.run_review_check --check-id pytest-full --trigger push_main
+      - if: ${{ success() }}
+        name: Upload coverage data
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: coverage-data
+          path: .coverage
+          include-hidden-files: true
+
+  test-stress-checks:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'test-stress-checks') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: ./.github/actions/setup-python-uv
-      - name: Run full tests
-        run: uv run python -m tools.run_ci_parity_checks --step tests
+      - name: Run stress checks
+        run: uv run python -m tools.run_review_check --check-id test-stress-checks --trigger push_main
 
   build:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'build') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: ./.github/actions/setup-python-uv
-      - name: Build and verify wheel
-        run: uv run python -m tools.run_ci_parity_checks --step build --step verify-wheel
+      - name: Build distribution
+        run: uv run python -m tools.run_review_check --check-id build --trigger push_main
+      - if: ${{ success() }}
+        name: Upload built wheel
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: dist-artifacts
+          path: dist
+
+  verify-wheel:
+    needs:
+      - plan-main-ci
+      - build
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'verify-wheel') && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Download built wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: dist-artifacts
+          path: dist
+      - name: Verify built wheel
+        run: uv run python -m tools.run_review_check --check-id verify-wheel --trigger push_main
+
+  coverage-hotspots:
+    needs:
+      - plan-main-ci
+      - pytest-full
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'coverage-hotspots') && needs.pytest-full.result == 'success' }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-python-uv
+      - name: Download coverage data
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: coverage-data
+          path: .
+      - name: Report coverage hotspots
+        run: uv run python -m tools.run_review_check --check-id coverage-hotspots --trigger push_main
+
+  main-ci-result:
+    if: ${{ always() }}
+    needs:
+      - plan-main-ci
+      - docs-maintenance
+      - markdownlint
+      - actionlint
+      - ruff
+      - mypy
+      - pyright
+      - pylint
+      - repo-agent-skills
+      - standards-guards
+      - docs-runtime-parity
+      - delivery-guardrails-audit
+      - pr-metadata-validator
+      - commit-message-validator
+      - pre-commit-hook-tooling
+      - quality-gates-tooling
+      - audit-pr-review
+      - run-pr-review-checks
+      - ci-tooling
+      - pytest-full
+      - test-stress-checks
+      - build
+      - verify-wheel
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Evaluate mainline CI results
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          SELECTED_CHECKS: ${{ needs.plan-main-ci.outputs.selected_checks }}
+          NONBLOCKING_CHECKS: ${{ needs.plan-main-ci.outputs.nonblocking_checks }}
+        run: |
+          uv run python -m tools.evaluate_review_results \
+            --selected-checks-json "$SELECTED_CHECKS" \
+            --nonblocking-checks-json "$NONBLOCKING_CHECKS" \
+            --needs-json "$NEEDS_JSON"

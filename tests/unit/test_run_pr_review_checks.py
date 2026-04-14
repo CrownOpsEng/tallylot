@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import cast
+
 from pytest import CaptureFixture, MonkeyPatch
 
-from repo_support.pr_review import classify_changed_paths
 import tools.run_pr_review_checks as run_pr_review_checks
+from repo_support.review_verification import (
+    CheckExecutionContext,
+    CheckResult,
+    ExecutionSummary,
+)
 
 
 def _docs_changed_paths(
@@ -20,99 +27,6 @@ def _unmapped_changed_paths(
     return ("notes/todo.md",)
 
 
-def _mixed_ci_and_repo_code_changed_paths(
-    base_sha: str | None = None, head_sha: str | None = None
-) -> tuple[str, ...]:
-    del base_sha, head_sha
-    return (
-        ".github/workflows/ci.yml",
-        "src/tallylot/application/normalization/normalize_source.py",
-    )
-
-
-def test_docs_only_diff_runs_docs_maintenance_only() -> None:
-    plan = classify_changed_paths(("docs/guides/source-intake.md",))
-
-    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
-        "docs-maintenance"
-    ]
-
-
-def test_control_plane_route_diff_runs_targeted_policy_checks() -> None:
-    plan = classify_changed_paths((".claude/commands/pr-review.md",))
-
-    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
-        "docs-maintenance",
-        "standards-guards",
-        "docs-runtime-parity",
-    ]
-
-
-def test_repo_code_diff_runs_full_quality_gates() -> None:
-    plan = classify_changed_paths(
-        ("src/tallylot/application/normalization/normalize_source.py",)
-    )
-
-    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
-        "quality-gates-full",
-        "test-stress-checks",
-        "coverage-hotspots",
-    ]
-
-
-def test_packaging_sensitive_repo_code_runs_packaging_verification() -> None:
-    plan = classify_changed_paths(("src/tallylot/interfaces/cli/source.py",))
-
-    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
-        "quality-gates-full",
-        "test-stress-checks",
-        "pre-merge-packaging",
-        "coverage-hotspots",
-    ]
-
-
-def test_ci_workflow_diff_runs_ci_parity_and_targeted_audits() -> None:
-    plan = classify_changed_paths((".github/workflows/ci.yml",))
-
-    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
-        "delivery-guardrails-audit",
-        "ci-parity-tooling",
-        "ci-parity",
-        "test-stress-checks",
-    ]
-
-
-def test_mixed_repo_code_and_ci_diff_uses_ci_parity_as_broad_runner() -> None:
-    plan = classify_changed_paths(
-        (
-            ".github/workflows/ci.yml",
-            "src/tallylot/application/normalization/normalize_source.py",
-        )
-    )
-
-    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
-        "delivery-guardrails-audit",
-        "ci-parity-tooling",
-        "ci-parity",
-        "test-stress-checks",
-        "coverage-hotspots",
-    ]
-
-
-def test_mixed_docs_and_code_diff_keeps_surface_specific_checks() -> None:
-    plan = classify_changed_paths(
-        ("docs/guides/source-intake.md", "src/tallylot/interfaces/cli/source.py")
-    )
-
-    assert [step.name for step in run_pr_review_checks._steps_for_plan(plan)] == [
-        "docs-maintenance",
-        "quality-gates-full",
-        "test-stress-checks",
-        "pre-merge-packaging",
-        "coverage-hotspots",
-    ]
-
-
 def test_run_pr_review_checks_fails_closed_for_unmapped_paths(
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -121,42 +35,112 @@ def test_run_pr_review_checks_fails_closed_for_unmapped_paths(
     assert run_pr_review_checks.main([]) == 1
 
 
-def test_run_pr_review_checks_runs_expected_steps(
+def test_run_pr_review_checks_runs_expected_plan(
     monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]
 ) -> None:
     monkeypatch.setattr(run_pr_review_checks, "changed_paths", _docs_changed_paths)
-    steps_seen: list[str] = []
+    monkeypatch.setattr(run_pr_review_checks, "run_local_autofix", lambda: 0)
+    contexts: list[CheckExecutionContext] = []
 
-    def fake_run_step(step: run_pr_review_checks.ReviewCheckStep) -> int:
-        steps_seen.append(step.name)
-        return 0
+    def fake_run_plan(*_args: object, **kwargs: object) -> ExecutionSummary:
+        contexts.append(cast(CheckExecutionContext, kwargs["context"]))
+        return ExecutionSummary(
+            results=(
+                CheckResult(
+                    check_id="docs-maintenance",
+                    status="passed",
+                    returncode=0,
+                    elapsed=0.0,
+                    stdout="",
+                    stderr="",
+                ),
+                CheckResult(
+                    check_id="markdownlint",
+                    status="passed",
+                    returncode=0,
+                    elapsed=0.0,
+                    stdout="",
+                    stderr="",
+                ),
+            )
+        )
 
-    monkeypatch.setattr(run_pr_review_checks, "_run_step", fake_run_step)
+    monkeypatch.setattr(run_pr_review_checks, "run_plan", fake_run_plan)
 
     assert run_pr_review_checks.main([]) == 0
-    assert steps_seen == ["docs-maintenance"]
+    assert len(contexts) == 1
     output = capsys.readouterr().out
-    assert "no changed paths detected" not in output
     assert run_pr_review_checks.REVIEW_LOOP_REMINDER in output
-    assert "next real issues" in output
+    assert "verification complete" in output
 
 
-def test_run_pr_review_checks_explains_ci_parity_subsumes_quality(
-    monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]
+def test_run_pr_review_checks_returns_failure_on_blocking_failures(
+    monkeypatch: MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(run_pr_review_checks, "changed_paths", _docs_changed_paths)
+    monkeypatch.setattr(run_pr_review_checks, "run_local_autofix", lambda: 0)
+
+    def fake_run_plan(*_args: object, **_kwargs: object) -> ExecutionSummary:
+        return ExecutionSummary(
+            results=(
+                CheckResult(
+                    check_id="docs-maintenance",
+                    status="failed",
+                    returncode=1,
+                    elapsed=0.0,
+                    stdout="",
+                    stderr="boom",
+                ),
+            )
+        )
+
+    monkeypatch.setattr(run_pr_review_checks, "run_plan", fake_run_plan)
+
+    assert run_pr_review_checks.main([]) == 1
+
+
+def test_run_pr_review_checks_reads_pr_body_file(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(run_pr_review_checks, "changed_paths", _docs_changed_paths)
+    monkeypatch.setattr(run_pr_review_checks, "run_local_autofix", lambda: 0)
+    pr_body_path = tmp_path / "pr.md"
+    pr_body_path.write_text("Why:\n- explain\n", encoding="utf-8")
+    seen_contexts: list[CheckExecutionContext] = []
+
+    def fake_run_plan(*_args: object, **kwargs: object) -> ExecutionSummary:
+        seen_contexts.append(cast(CheckExecutionContext, kwargs["context"]))
+        return ExecutionSummary(results=())
+
+    monkeypatch.setattr(run_pr_review_checks, "run_plan", fake_run_plan)
+
+    assert (
+        run_pr_review_checks.main(
+            ["--mode", "full", "--pr-body-file", str(pr_body_path)]
+        )
+        == 0
+    )
+    assert seen_contexts[0].pr_body == "Why:\n- explain\n"
+
+
+def test_run_pr_review_checks_can_skip_local_autofix(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(run_pr_review_checks, "changed_paths", _docs_changed_paths)
+    calls: list[str] = []
+
+    def fake_run_plan(*_args: object, **_kwargs: object) -> ExecutionSummary:
+        return ExecutionSummary(results=())
+
+    monkeypatch.setattr(run_pr_review_checks, "run_plan", fake_run_plan)
+
+    def fake_run_local_autofix() -> int:
+        calls.append("autofix")
+        return 0
+
     monkeypatch.setattr(
-        run_pr_review_checks,
-        "changed_paths",
-        _mixed_ci_and_repo_code_changed_paths,
+        run_pr_review_checks, "run_local_autofix", fake_run_local_autofix
     )
 
-    def fake_run_step(step: run_pr_review_checks.ReviewCheckStep) -> int:
-        del step
-        return 0
-
-    monkeypatch.setattr(run_pr_review_checks, "_run_step", fake_run_step)
-
-    assert run_pr_review_checks.main([]) == 0
-    output = capsys.readouterr().out
-    assert "ci-parity is the broad runner for this diff" in output
-    assert "duplicate quality-gates-full is intentionally skipped" in output
+    assert run_pr_review_checks.main(["--no-auto-fix"]) == 0
+    assert calls == []

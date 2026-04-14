@@ -242,12 +242,79 @@ def test_quality_gates_refresh_generated_pyright_config_before_running(
         "sync_pyright_config",
         fake_sync_pyright_config,
     )
+    monkeypatch.setattr(tools.run_quality_gates, "run_local_autofix", lambda: 0)
     monkeypatch.setattr(tools.run_quality_gates, "_phase_plan", fake_phase_plan)
     monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
 
     assert tools.run_quality_gates.main(()) == 0
 
     assert calls == ["sync"]
+
+
+def test_quality_gates_aggregate_failures_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    def fake_run_phase(
+        phase: QualityPhase,
+        *,
+        available_gates: dict[str, QualityGate],
+    ) -> tools.run_quality_gates.PhaseResult:
+        calls.append(phase.name)
+        gate_name = phase.gate_names[0]
+        return tools.run_quality_gates.PhaseResult(
+            phase=phase,
+            gate_results=(
+                tools.run_quality_gates.GateResult(
+                    gate=available_gates[gate_name],
+                    returncode=1 if phase.name == "quick-static" else 0,
+                    stdout="",
+                    stderr="",
+                    elapsed=0.0,
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(tools.run_quality_gates, "sync_pyright_config", lambda: False)
+    monkeypatch.setattr(tools.run_quality_gates, "run_local_autofix", lambda: 0)
+    monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
+
+    assert tools.run_quality_gates.main(()) == 1
+    assert calls == ["quick-static", "heavy-static", "tests"]
+
+
+def test_quality_gates_fail_fast_stops_after_first_failing_phase(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    def fake_run_phase(
+        phase: QualityPhase,
+        *,
+        available_gates: dict[str, QualityGate],
+    ) -> tools.run_quality_gates.PhaseResult:
+        calls.append(phase.name)
+        gate_name = phase.gate_names[0]
+        return tools.run_quality_gates.PhaseResult(
+            phase=phase,
+            gate_results=(
+                tools.run_quality_gates.GateResult(
+                    gate=available_gates[gate_name],
+                    returncode=1,
+                    stdout="",
+                    stderr="",
+                    elapsed=0.0,
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(tools.run_quality_gates, "sync_pyright_config", lambda: False)
+    monkeypatch.setattr(tools.run_quality_gates, "run_local_autofix", lambda: 0)
+    monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
+
+    assert tools.run_quality_gates.main(("--fail-fast",)) == 1
+    assert calls == ["quick-static"]
 
 
 def test_quality_gates_fail_when_generated_pyright_config_was_stale(
@@ -259,3 +326,49 @@ def test_quality_gates_fail_when_generated_pyright_config_was_stale(
     assert tools.run_quality_gates.main(()) == 1
 
     assert "pyrightconfig.tests.json was out of sync" in capsys.readouterr().out
+
+
+def test_quality_gates_can_skip_local_autofix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    monkeypatch.setattr(tools.run_quality_gates, "sync_pyright_config", lambda: False)
+
+    def fake_run_local_autofix() -> int:
+        calls.append("autofix")
+        return 0
+
+    def fake_phase_plan(
+        _run_request: tools.run_quality_gates._RunRequest,
+    ) -> tuple[QualityPhase, ...]:
+        return (QualityPhase(name="noop", gate_names=("ruff",)),)
+
+    def fake_run_phase(
+        phase: QualityPhase,
+        *,
+        available_gates: dict[str, QualityGate],
+    ) -> tools.run_quality_gates.PhaseResult:
+        return tools.run_quality_gates.PhaseResult(
+            phase=phase,
+            gate_results=(
+                tools.run_quality_gates.GateResult(
+                    gate=available_gates["ruff"],
+                    returncode=0,
+                    stdout="",
+                    stderr="",
+                    elapsed=0.0,
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(
+        tools.run_quality_gates,
+        "run_local_autofix",
+        fake_run_local_autofix,
+    )
+    monkeypatch.setattr(tools.run_quality_gates, "_phase_plan", fake_phase_plan)
+    monkeypatch.setattr(tools.run_quality_gates, "_run_phase", fake_run_phase)
+
+    assert tools.run_quality_gates.main(("--no-auto-fix",)) == 0
+    assert calls == []

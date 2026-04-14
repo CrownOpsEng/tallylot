@@ -295,7 +295,7 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_
 ```
 
 Do not also run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the
-shared quality-gate or CI-parity runners unless you are validating hook
+shared quality-gate or PR-review runners unless you are validating hook
 behavior itself.
 
 For explicit local verification outside the hook path, the repo also ships a
@@ -304,37 +304,36 @@ parallel quality-gate runner:
 ```bash
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
 UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks --mode full
 ```
 
 Use `tools.run_quality_gates --full-tests` as the default final local
-verification command. Use `tools.run_ci_parity_checks` only when changing CI,
-packaging, release, or other workflow surfaces where exact local parity with
-GitHub Actions is worth the extra time. Add `--include-commit-messages` when
-you also want the parity run to validate the current branch commit-message
-range before running the full quality and build path. Add `--pr-title` plus
-`--pr-body-file` when you also want the parity run to validate the current
-branch PR title, body, and `Included checkpoints:` list against the branch
-history.
-Do not run `tools.run_quality_gates --full-tests` immediately before
-`tools.run_ci_parity_checks`; the parity runner already includes the full
-quality gate pass.
+verification command. Use `tools.run_pr_review_checks --mode full` when
+changing CI, packaging, release, or other workflow surfaces where the local
+verification pass should mirror the full pre-merge PR suite. Add `--pr-title`
+plus `--pr-body-file` when you also want the full review run to validate the
+current branch PR title, body, and `Included checkpoints:` list against the
+branch history. Do not run `tools.run_quality_gates --full-tests`
+immediately before `tools.run_pr_review_checks --mode full`; the full
+PR-review runner already includes the full quality gate pass plus the extra
+workflow-sensitive lanes. Both local runners may apply safe autofixes to
+changed Python and Markdown files before validation; CI remains read-only.
 
 Example:
 
 ```bash
 gh pr view <pr-number> --json title,body --jq '.title' > /tmp/pr-title.txt
 gh pr view <pr-number> --json title,body --jq '.body' > /tmp/pr-body.md
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks \
-  --include-commit-messages \
+UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks \
+  --mode full \
   --pr-title "$(cat /tmp/pr-title.txt)" \
   --pr-body-file /tmp/pr-body.md
 ```
 
 `pylint`, full-repo `ruff`, and the full `pytest` suite belong to the shared
-quality and CI-parity runners rather than the commit-time hook path. The fast
-hook checks should stay narrower than the full parity matrix so the same broad
-suite is not rerun twice inside one explicit verification pass.
+quality and PR-review runners rather than the commit-time hook path. The fast
+hook checks should stay narrower than the full pre-merge suite so the same
+broad matrix is not rerun twice inside one explicit verification pass.
 
 Do not describe `mypy` or `pyright` as covering `pylint` findings. Type checks
 and lint checks catch different failure classes and must be reported

@@ -11,9 +11,10 @@ def _protected_branch_payload() -> dict[str, object]:
     return {
         "required_status_checks": {
             "strict": True,
-            "contexts": ["commit-messages", "pr-review"],
+            "contexts": ["commit-messages", "pr-metadata", "pr-review"],
             "checks": [
                 {"context": "commit-messages", "app_id": 15368},
+                {"context": "pr-metadata", "app_id": 15368},
                 {"context": "pr-review", "app_id": 15368},
             ],
         },
@@ -101,9 +102,10 @@ def test_evaluate_remote_guardrails_errors_for_unpinned_required_status_checks()
     payload = _protected_branch_payload()
     payload["required_status_checks"] = {
         "strict": True,
-        "contexts": ["commit-messages", "pr-review"],
+        "contexts": ["commit-messages", "pr-metadata", "pr-review"],
         "checks": [
             {"context": "commit-messages", "app_id": 15368},
+            {"context": "pr-metadata", "app_id": 15368},
             {"context": "pr-review", "app_id": None},
         ],
     }
@@ -128,10 +130,15 @@ def test_missing_codeowners_entries_reports_missing_patterns() -> None:
     assert ".github/actions/**" in missing
     assert ".github/ISSUE_TEMPLATE/**" in missing
     assert ".github/workflows/**" in missing
+    assert "repo_support/local_autofix.py" in missing
+    assert "repo_support/quality_gates.py" in missing
+    assert "repo_support/review_verification/**" in missing
     assert "tools/benchmark_quality_gates.py" in missing
+    assert "tools/evaluate_review_results.py" in missing
     assert "tools/message_standards.py" in missing
-    assert "tools/run_ci_parity_checks.py" in missing
+    assert "tools/run_review_check.py" in missing
     assert "tools/run_pr_review_checks.py" in missing
+    assert "tools/verify_built_wheel.py" in missing
 
 
 def test_rulesets_only_repo_does_not_fail_branch_protection_audit() -> None:
