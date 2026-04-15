@@ -1,17 +1,17 @@
 ---
-title: "Reconciliation Artifacts"
-summary: "Durable baseline and drift-analysis artifacts kept under the mirrored reconciliation subtree."
+title: "Reconciliation Outputs"
+summary: "Mirrored workspace reference for durable reconciliation outputs and oracle comparison files."
 doc_type: reference
 audience: both
 owner: repo
 status: active
 ---
 
-This folder stores durable reconciliation and oracle comparison artifacts.
+This folder stores durable reconciliation and oracle comparison outputs.
 
-## Balance Reconciliation Artifacts
+## Balance Reconciliation Outputs
 
-Runtime balance reconciliation workflows write these artifacts here:
+Runtime balance reconciliation workflows write these outputs here:
 
 - `balance_inspect.csv`
 - `balance_inspect_summary.json`
@@ -51,7 +51,7 @@ source-local balance assertion outputs.
 
 ## Oracle Baseline Package
 
-The dev-only CoinTracking baseline workflow writes these comparison artifacts:
+The dev-only CoinTracking baseline workflow writes these comparison files:
 
 - `baseline_asset_snapshot.csv`
 - `baseline_exchange_reconciliation.csv`

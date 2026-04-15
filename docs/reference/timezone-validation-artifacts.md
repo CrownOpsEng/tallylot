@@ -1,6 +1,6 @@
 ---
-title: "Timezone Validation Artifacts"
-summary: "Artifact contract for timezone provenance outputs and validation issues."
+title: "Timezone Validation Outputs"
+summary: "Reference for timezone provenance outputs and validation issues."
 doc_type: reference
 audience: human
 owner: repo

@@ -42,13 +42,16 @@ product names `EvidenceSet`, `ClaimSet`, `EconomicFacts`,
   `docs/concepts/pipeline-stage-contracts.md`; system-level trust gates and
   rollout alignment live in
   `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md`.
+- The live `src/tallylot/` package layout remains current-state truth.
+  Forward-looking package ownership lives in
+  `docs/concepts/domain-ontology.md` and `docs/standards/engineering.md`.
 - MVP work should extend the current bridge incrementally where it protects the
   filing path, while adding richer pipeline products only when a concrete next
   stage needs them.
 
 ## Current Operational Surface
 
-The repo currently ships typed replacements for the core workflow capabilities:
+The repo currently ships typed replacements for the current workflow capabilities:
 
 - workspace bootstrap
 - source intake planning and apply with archive-aware reports, capture
@@ -106,7 +109,7 @@ The repo currently ships typed replacements for the core workflow capabilities:
   capture root under `evidence/raw/source/<source>/<capture_label>/` with
   matching `capture.json` metadata. They reject source roots, arbitrary
   directories, and mismatched capture metadata.
-- Planner-enabled adapters describe translation input candidates and the core
+- Planner-enabled adapters describe translation input candidates and the
   normalization flow chooses the selected plan. If overlap, coverage, or
   freshness ambiguity would change the factual dataset, normalization stops
   before writing `facts.csv`, `balance_snapshots.csv`, or
@@ -115,10 +118,10 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - Reconciliation reads assembled source datasets under
   `working/normalized/sources/`.
 - `profile_inventory.csv` is the downstream discovery contract for statement
-  extraction and issue or review context. It records capture-scoped fields such
-  as `capture_uid`, `source`, `evidence_role`, `observed_period_start`,
-  `observed_period_end`, `observed_period_label`, `statement_kind`, and
-  `originality_class`.
+  extraction and issue and review routing. It records capture-scoped fields
+  such as `capture_uid`, `source`, `evidence_role`,
+  `observed_period_start`, `observed_period_end`, `observed_period_label`,
+  `statement_kind`, and `originality_class`.
 - Provenance stays typed in runtime models and is flattened only at artifact
   boundaries. `balance_references.csv` uses the shared locator-support fields
   available for the emitting reference kind; `exceptions.csv` and
@@ -143,7 +146,7 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - `balance_snapshots.csv` and `balance_references.csv` are the only runtime
   balance artifacts. `balances.csv` and `balance_evidence.csv` are superseded
   generated outputs and are not runtime inputs.
-- `tools.validate_workspace_replay` compares semantic capture-registry parity,
+- `tools.validate_workspace_replay` compares capture-registry meaning parity,
   raw capture completeness, assembled source metrics, and reconciliation status
   counts. Optional expected-difference fixtures may declare only
   `issue_count_delta`, `review_count_delta`, and `reason`.
@@ -156,7 +159,8 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - Coinbase is the first planner-enabled adapter and now describes retail CSV
   candidates instead of choosing one file by path order.
 - Legacy adapters still use the fallback `translate(...)` path until their
-  candidate semantics are modeled well enough to migrate safely.
+  candidate overlap and replacement rules are modeled well enough to migrate
+  safely.
 
 ## Deferred Surface
 

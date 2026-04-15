@@ -29,14 +29,14 @@ These anchors drive sequencing and acceptance criteria:
   and tax
 - checkpoint truth is accepted state with explicit acceptance basis
 - source-backed evidence and source-backed checkpoints remain first-class
-- raw-evidence derivation is the supported semantic parity path
+- raw-evidence derivation is the supported meaning-parity path
 - capture identity is metadata, not path
 - typed provenance stays a runtime model and is flattened only at artifact
   boundaries
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - current bridge names remain current-state truth until later implementation
   slices replace them
-- CoinTracking remains an edge projection and oracle family, not the core
+- CoinTracking remains an edge projection and oracle family, not the runtime
   ledger model
 
 ## Transition Rules
@@ -54,10 +54,10 @@ These anchors drive sequencing and acceptance criteria:
 
 Goal:
 
-- freeze the owner-page contracts that bounded implementation slices need
+- freeze the owner pages that bounded implementation slices need
 - remove architecture ambiguity before broad implementation begins
 
-Broad implementation must not begin until the owner docs freeze these
+Broad implementation must not begin until the owner pages freeze these
 contracts.
 
 Must freeze:
@@ -65,13 +65,13 @@ Must freeze:
 - `EvidenceSet` record families, ids, cardinality, and intentional
   `selection_fingerprint` identity churn
 - critical-path `EvidenceObservationRecord` field tables for
-  `document_identity` and `coinbase_statement_balance_row`
+  `statement_document` and `coinbase_statement_balance_row`
 - `ClaimSet` interpretation-scope, bundle, and bundle-decision model
 - critical-path `ClaimRecord` field tables, `evidence_observation_refs`, and
   the compatibility-sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
 - shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
-  `ReviewExplanation`, `ReadinessRecord`, `ReadinessProjection`,
+  `ReviewExplanation`, `ReadinessRecord`, `ReadinessSummary`,
   `SubjectRef`, truthful `interpretation_scope_id` and `balance_target_id`
   attachments, and the downstream shared-subject seams needed for accounting
   and tax records
@@ -89,12 +89,12 @@ Must freeze:
 
 Deliver:
 
-- aligned owner docs for target products, ontology, support records and sidecars, and
+- aligned owner pages for target products, ontology, support records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
 - one bounded first upstream slice and one bounded first downstream slice
-- explicit package direction for `domain/` and `application/`
-- explicit fast-path rule that reducers read kernels, not explanation payloads
+- explicit package ownership for `domain/` and `application/`
+- explicit fast-path rule that reducers read kernels, not explanation sidecars
 - frozen critical-path field tables and product-id rules that later writing
   work can merge without deciding new structure
 
@@ -102,7 +102,7 @@ Exit criteria:
 
 - no owner concept is defined in two competing places
 - no target product references an undefined record family or ref type
-- no cross-stage support artifact masquerades as a claim kind
+- no cross-stage support record or sidecar masquerades as a claim kind
 - claim-stage blockers can attach to `interpretation_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
   accounting or tax subjects without collapsing to dataset-only scope
@@ -131,7 +131,7 @@ Deliver:
 - capture-scoped `EvidenceSet` emission keyed by `evidence_set_id`
 - deterministic selected, superseded, and blocked evidence membership
 - typed evidence observations that survive beyond intake heuristics, including
-  frozen first-slice field tables for `document_identity` and
+  frozen first-slice field tables for `statement_document` and
   `coinbase_statement_balance_row`
 - bridge compatibility projection for `translation_input_plan.json`
 
@@ -146,12 +146,12 @@ Exit criteria:
 
 Goal:
 
-- interpose a real semantic layer between evidence capture and final economic
+- interpose a real claim stage between evidence capture and final economic
   truth
 
 Deliver:
 
-- semantic-only `ClaimSet` emission keyed by `claim_set_id`
+- source-local `ClaimSet` emission keyed by `claim_set_id`
 - explicit interpretation scopes, mutually exclusive bundles, and
   bundle-decision records
 - frozen first-slice claim fields plus `evidence_observation_refs`
@@ -165,7 +165,7 @@ Exit criteria:
 - ambiguous source meaning can remain explicit without being forced into final
   economic meaning
 - claim bundle decisions remain claim-owned and do not carry economic
-  payload
+  truth
 
 ## Phase 3. Land `EconomicFacts`
 
@@ -179,7 +179,7 @@ Deliver:
 - `EconomicFacts` kernels keyed by `economic_facts_id` over ordered
   `claim_set_refs`
 - `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
-- selected-bundle-based event identity
+- bundle-based event identity
 - bridge compatibility projection for `TransactionFact`
 - parity coverage for the first claim-to-economic slice
 
@@ -193,13 +193,13 @@ Exit criteria:
 
 Goal:
 
-- move continuity, linkage, completeness, and checkpoint candidacy onto an
+- move continuity, linkage, completeness, and checkpoint proposals onto an
   explicit reconciliation product
 
 Deliver:
 
-- `ContinuitySegmentRecord`, `LinkRecord`, `BalanceTargetRecord`, and
-  `CheckpointCandidateRecord`
+- `ContinuitySegmentRecord`, `EventLinkRecord`, `BalanceTargetRecord`, and
+  `CheckpointProposalRecord`
 - direct `AssertionValue` fields for expected and observed balance meaning
 - fixed subject and position identity seams for in-scope reconciliation
 - bridge compatibility projection for `balance_snapshots.csv`
@@ -237,7 +237,7 @@ Goal:
 
 Deliver:
 
-- `JournalEntryRecord`, `PostingRecord`, and `ValidationRecord`
+- `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
 - accounting-owned blockers and validation rules
 - renderer orchestration over accepted upstream truth
 
@@ -311,11 +311,11 @@ Exit criteria:
 - the default-branch delivery path is enforced strongly enough that one mistake
   does not silently bypass the intended PR-only workflow
 
-## Phase 10. Post-Core Runtime Expansion
+## Phase 10. Post-Filing Runtime Expansion
 
 Goal:
 
-- expand runtime surfaces only after the filing-critical core is stable
+- expand runtime surfaces only after the filing-critical runtime is stable
 
 Deliver:
 
@@ -328,7 +328,7 @@ Deliver:
 
 Exit criteria:
 
-- post-core expansion layers on top of the filing-capable runtime instead of
+- post-filing expansion layers on top of the filing-capable runtime instead of
   destabilizing it
 
 ## MVP Guardrails
@@ -355,7 +355,7 @@ Rules:
 - expensive reducers must be partitionable by the dimensions the owning stage
   actually uses
 - hot-path calculations should operate on compact kernel records instead of
-  repeatedly joining provenance, review, or renderer payloads
+  repeatedly joining provenance, review, or renderer detail
 - derived snapshots and reusable state should be introduced where replay cost
   becomes material
 - tax work should support tax-year partitioning and carry-forward reuse instead
@@ -387,7 +387,7 @@ Rules:
   on target-stage products as slices land
 - tighten overlap heuristics, duplicate detection, and file-family signatures
   where capture ownership remains ambiguous
-- extend shared adapter support only where it removes repeated provider-local
+- extend shared adapter support only where it removes repeated adapter-local
   workflow code
 
 ### Verification And Tests
@@ -397,7 +397,7 @@ Rules:
 - add replay coverage for target kernels and compatibility projections
 - add reconciliation parity and checkpoint continuity tests
 - add journal validation coverage
-- add tax policy coverage with explicit unsupported-item reporting
+- add tax policy coverage with explicit unsupported-determinant reporting
 - keep end-to-end smoke workflows for each major slice before removing older
   transition paths
 

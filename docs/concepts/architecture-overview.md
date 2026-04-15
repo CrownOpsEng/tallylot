@@ -28,7 +28,7 @@ The target runtime pipeline is:
 
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
-The owner docs freeze product ids, critical-path kernel field tables, and the
+The owner pages freeze product ids, critical-path kernel field tables, and the
 compatibility-sidecar boundary for retained legacy projections.
 
 ## Layer Shape
@@ -52,15 +52,15 @@ Use these pages as the primary owners:
 | [Current Bridge Contracts](current-bridge-contracts.md) | live bridge truth and bridge artifact rules |
 | [Bridge To Target Mapping](bridge-to-target-mapping.md) | authoritative writer rules, compatibility projections, and reader cutovers |
 | [Pipeline Stage Contracts](pipeline-stage-contracts.md) | target product kernels, ids, ordering, and handoff rules |
-| [Domain Ontology](domain-ontology.md) | entity seams, ref recipes, and package direction |
+| [Domain Ontology](domain-ontology.md) | entity seams, ref recipes, and package ownership |
 | [Gaps And Readiness](gaps-and-readiness.md) | blockers, reviews, readiness, and `SubjectRef` |
 | [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) | trust gates, persistence, partitioning, and fast-path rules |
 | [First Slice Contract](../reference/first-slice-contract.md) | bounded upstream `EvidenceSet -> ClaimSet` slice |
 | [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | bounded downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |
 | [ROADMAP.md](../../ROADMAP.md) | sequencing, gating, and rollout phases |
-| [Current State](../status/current-state.md) | implemented runtime truth |
+| [Current State](../status/current-state.md) | implemented runtime truth and live package layout |
 
-Helper references that do not override those owners remain under
+Non-owning helper references remain under
 `docs/reference/`.
 
 ## Read Next

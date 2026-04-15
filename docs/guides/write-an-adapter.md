@@ -25,10 +25,10 @@ current repo-facing implementation rules.
 - Keep the future unified adapter architecture in view when changing current
   adapters. Prefer shared seams and deterministic contracts that move toward
   the target design instead of adding new adapter-local workflow logic.
-- Keep the core runtime pipeline in
+- Keep the target runtime pipeline in
   [`../concepts/reconciliation-tax-architecture.md`](../concepts/reconciliation-tax-architecture.md)
   as the system architecture center. Adapter docs define adapter responsibilities
-  and migration shape, not a second core runtime center.
+  and migration shape, not a second target-runtime center.
 - Keep adapter metadata, code, and tests together.
 - Implement the `SourceAdapter` or `OutputAdapter` port only.
 - Keep the concrete adapter implementation class private inside `adapter.py` or
@@ -38,7 +38,7 @@ current repo-facing implementation rules.
   assigned input paths.
 - Treat source adapters as translation adapters, not orchestration centers.
 - When an adapter opts into translation input planning, describe every valid
-  translation candidate and let the core planner choose the selected plan.
+  translation candidate and let the shared planner choose the selected plan.
 - Prefer existing adapter support seams for stable cross-provider work such as
   file-family dispatch, CSV traversal, draft compilation, issue construction,
   wallet-record construction, and output projection so new adapters stay thin.
@@ -61,7 +61,7 @@ current repo-facing implementation rules.
 - Pass layered classifications as domain enums through the shared draft model.
 - Keep enum values machine-oriented and renderer-neutral; title-style labels
   belong only in output adapters or oracle-specific readers.
-- Do not construct CoinTracking rows or other output-adapter payloads directly
+- Do not construct CoinTracking rows or other output-adapter shapes directly
   in provider-local modules.
 - Do not synthesize runtime balance snapshots in adapters unless the source
   export provides actual balance evidence.
@@ -115,7 +115,7 @@ current repo-facing implementation rules.
 Working source adapters should follow four steps:
 
 1. describe valid translation input candidates when the adapter can opt into
-   core planning
+   shared planning
 2. parse provider exports into provider-local typed records
 3. emit shared adapter drafts plus explicit issues or reviews
 4. let shared compiler or projection support build runtime artifacts
@@ -132,7 +132,7 @@ Provider-local translation code should convert provider timestamps to UTC-aware
 runtime datetimes before draft construction and should publish any non-default
 leg shape through explicit `LegShapeLimit` entries.
 
-The core service should resolve the adapter through the registry and supply
+The shared runtime service should resolve the adapter through the registry and supply
 only the minimal context the adapter needs to translate correctly. Export
 families, translation registries, candidate descriptions, and provider-local
 coverage declarations come from the adapter package itself, not from a
@@ -143,12 +143,12 @@ Planner-enabled adapters should expose these responsibilities:
 - `describe_translation_inputs(...)` returns every valid candidate for the
   capture with coverage, freshness, grouping, comparability, and member-path
   metadata
-- the core planner selects the deterministic plan and writes
+- the shared planner selects the deterministic plan and writes
   `translation_input_candidates.json`, `translation_input_plan.json`, and
   `translation_input_issues.csv` before translation starts
 - `translate_selected_inputs(...)` consumes only the selected candidate ids in
   plan order and must not redo winner-selection logic internally
-- adapters that cannot yet describe meaningful overlap or replacement semantics
+- adapters that cannot yet describe meaningful overlap or replacement rules
   should stay on the legacy `translate(...)` fallback path until they can be
   migrated safely
 

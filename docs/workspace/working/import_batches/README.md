@@ -1,6 +1,6 @@
 ---
-title: "Import Batches"
-summary: "Contract for approved per-source import candidates and their required supporting artifacts."
+title: "Approved Import Batches"
+summary: "Reference for approved per-source import batches and their required support files."
 doc_type: reference
 audience: both
 owner: repo
@@ -9,7 +9,7 @@ status: active
 
 Place the next approved import batch for a single source here.
 
-In the current runtime, this is usually an approved external-import artifact.
+In the current runtime, this is usually an approved external-import package.
 Keep the folder semantics generic even when a round uses one concrete adapter.
 
 Every file here should have:

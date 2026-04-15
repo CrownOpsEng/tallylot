@@ -57,8 +57,8 @@ part of the current round-close process.
 - Normalize the settled capture and review the emitted issues and summaries
   under `working/normalized/captures/<capture_uid>/`.
 - Review `profile_inventory.csv` as the capture-scoped discovery contract for
-  statement-backed evidence, archive-member provenance, and issue-context
-  resolution.
+  statement-backed evidence, archive-member provenance, and issue and review
+  routing.
 - Run `source assemble` before reconciliation so the accepted capture outputs
   land under `working/normalized/sources/<source>/`.
 - `source assemble` owns that source dataset surface and rewrites its known

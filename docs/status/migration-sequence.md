@@ -88,7 +88,7 @@ Land the bounded
 Required posture:
 
 - `EvidenceSet` becomes authoritative for in-scope evidence selection
-- `ClaimSet` becomes authoritative for in-scope source-local semantics
+- `ClaimSet` becomes authoritative for in-scope source-local meaning
 - `translation_input_plan.json`, `EconomicActivityDraft`, and
   `SourceTranslationBatch` survive only as derived compatibility projections
 
@@ -160,8 +160,7 @@ When a compatibility projection remains active, parity must prove:
 
 - the projection is reproducible from the authoritative target kernels
 - the projection preserves unchanged bridge behavior for unmigrated readers
-- the projection does not introduce new semantic authority outside the target
-  kernels
+- the projection does not introduce new authority outside the target kernels
 
 ## Docs And Control-Plane Updates
 

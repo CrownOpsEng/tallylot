@@ -1,6 +1,6 @@
 ---
-title: "Target Product Artifacts"
-summary: "Helper reference that points to the owner pages for target persistence, partitions, and bounded slice artifact expectations."
+title: "Target Persistence Reference"
+summary: "Helper reference that points to the owner pages for target persistence, partition scopes, and bounded-slice compatibility expectations."
 doc_type: reference
 audience: human
 owner: repo
@@ -14,8 +14,8 @@ related:
   - ROADMAP.md
 ---
 
-Use this page as a routing reference when you need target artifact guidance.
-It does not define a second artifact contract.
+Use this page as a helper reference when you need target persistence
+guidance. It does not define a second persistence contract.
 
 ## Precedence
 
@@ -25,12 +25,12 @@ Use these pages as the authoritative sources:
   target product kernels, record families, ids, and fingerprints
 - [Reconciliation And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
   for persistence model, partition scopes, default filesystem placement,
-  sidecars, replace semantics, caches, and indexes
+  sidecars, replace rules, caches, and indexes
 - [First Slice Contract](first-slice-contract.md) and
   [First Downstream Slice Contract](first-downstream-slice-contract.md) for
-  bounded-slice artifact and compatibility expectations
+  bounded-slice persistence and compatibility expectations
 
-## Artifact Rules
+## Persistence Rules
 
 When persisting target products:
 

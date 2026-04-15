@@ -10,12 +10,12 @@ nav_order: 50
 
 The application operates against an external workspace rooted outside the repo.
 The repo owns the guidance and templates for that workspace, but not the live
-evidence or generated operational artifacts.
+evidence or generated operational files.
 
 ## Why The Workspace Is External
 
 - raw evidence should not live inside the git checkout
-- generated artifacts need deterministic paths across repeated runs
+- generated files need deterministic paths across repeated runs
 - operators need a stable place for captures, verification exports, and
   checkpoint outputs that is separate from source control
 
@@ -26,9 +26,9 @@ The workspace is seeded by `workspace init` with these major areas:
 - `analysis/` for issue tracking, inventory, and reconciliation packages
 - `config/` for workspace configuration state
 - `docs/` for live operator copies inside the external workspace
-- `evidence/` for raw source and portfolio artifacts
+- `evidence/` for raw source and portfolio files
 - `outputs/` for checkpoints, logs, and reports
-- `working/` for normalized, staged, verification, and supporting artifacts
+- `working/` for normalized, staged, verification, and support files
 
 ## Repo Relationship
 
@@ -76,10 +76,10 @@ Rules:
   `working/normalized/captures/<capture_uid>/`
 - source-scoped assembled datasets live under
   `working/normalized/sources/<source>/`
-- assembly rewrites its known generated artifact set under the source output
+- assembly rewrites its known generated file set under the source output
   root on rerun rather than appending stale files across runs
 - provenance is capture-scoped in runtime models and is flattened into shared
-  locator columns only when artifacts are written
+  locator columns only when files are written
 - reconciliation consumes assembled source datasets rather than crawling raw
   capture layouts directly
 

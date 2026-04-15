@@ -1,6 +1,6 @@
 ---
 title: "First Downstream Slice Contract"
-summary: "Bounded contract for the first Coinbase-first EconomicFacts, ReconciliationState, and Checkpoint slice, including selected-bundle event identity and bridge compatibility projections."
+summary: "Bounded contract for the first Coinbase-first EconomicFacts, ReconciliationState, and Checkpoint slice, including bundle-based event identity and bridge compatibility projections."
 doc_type: reference
 audience: human
 owner: repo
@@ -29,7 +29,7 @@ The first downstream slice is:
 - accepted `EconomicFacts` emission for supported Coinbase retail activity and
   recognized statement-backed balance observations
 - bounded `ReconciliationState` emission for continuity segments, exact balance
-  targets, and checkpoint candidates over those in-scope economic facts
+  targets, and checkpoint proposals over those in-scope economic facts
 - bounded `Checkpoint` emission for statement-backed position-quantity
   assertions
 - continued compatibility with current `TransactionFact`,
@@ -54,11 +54,11 @@ The slice may emit only these downstream kernel families:
 | `EconomicFacts` | `ValuationRecord` | zero rows by default; valuations land only when an unchanged parity slice proves they are required |
 | `ReconciliationState` | `ContinuitySegmentRecord` | one segment per in-scope Coinbase position subject and bounded time span |
 | `ReconciliationState` | `BalanceTargetRecord` | only `target_kind = exact_balance`, with direct `expected_value` and `observed_value` using `AssertionValue` |
-| `ReconciliationState` | `CheckpointCandidateRecord` | only candidates supported by in-scope exact-balance targets and statement evidence |
-| `Checkpoint` | `CheckpointRecord` | accepted container for in-scope checkpoint assertions only |
+| `ReconciliationState` | `CheckpointProposalRecord` | only proposals supported by in-scope exact-balance targets and statement evidence |
+| `Checkpoint` | `CheckpointRecord` | accepted root record for in-scope checkpoint assertions only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `assertion_kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
-`LinkRecord` remains out of scope for this bounded slice.
+`EventLinkRecord` remains out of scope for this bounded slice.
 
 ## Position And Subject Restrictions
 
@@ -85,16 +85,16 @@ In-scope product metadata fields:
   `claim_set_refs`
 - `ReconciliationState` carries `reconciliation_state_id`,
   `schema_version`, and `economic_facts_ref`
-- `Checkpoint` carries `checkpoint_run_id`, `schema_version`,
+- `Checkpoint` carries `checkpoint_set_id`, `schema_version`,
   `reconciliation_state_refs`, and `asserted_as_of_at`
 
 Compilation-input rules:
 
-- downstream compilation consumes canonical `ClaimBundleRecord`,
+- downstream compilation consumes authoritative `ClaimBundleRecord`,
   `ClaimRecord`, `BundleDecisionRecord`, and `evidence_observation_refs`
   from authoritative `ClaimSet` kernels
 - downstream compilation must not depend on `EconomicActivityDraft`,
-  `SourceTranslationBatch`, or undeclared bridge hints as peer semantic inputs
+  `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
 - upstream `*_ref` metadata fields store target product ids, never `dataset_id`
   and never raw kernel fingerprints
 
@@ -110,20 +110,20 @@ Slice cardinality rules:
   segment time span
 - one or more `BalanceTargetRecord` rows may exist under one
   `continuity_segment_id`
-- one or more `CheckpointCandidateRecord` rows may exist under one
+- one or more `CheckpointProposalRecord` rows may exist under one
   `continuity_segment_id`
 - one or more `CheckpointAssertionRecord` rows may exist under one
   `CheckpointRecord`
 
 Ownership rules:
 
-- `event_id` is derived from the selected semantic bundle, not from
+- `event_id` is derived from the selected claim bundle, not from
   adjudication bookkeeping
 - `bundle_decision_id` may be referenced for audit, but it does not define
   event identity
-- `BalanceTargetRecord` carries direct `AssertionValue` payloads and must not
+- `BalanceTargetRecord` carries direct `AssertionValue` fields and must not
   point to undefined value refs or sidecars for hot-path meaning
-- `CheckpointCandidateRecord` identity is based on supporting balance-target
+- `CheckpointProposalRecord` identity is based on supporting balance-target
   refs, not incidental evidence-ref churn
 - `CheckpointAssertionRecord` carries direct accepted truth and does not inherit
   authority from bridge balance references
@@ -141,10 +141,10 @@ Slice-specific rules:
 - `leg_id = [event_id, leg_role, subject_ref, leg_index]`
 - `valuation_id = [valuation_source_ref, valuation_purpose, amount, currency, valued_at, valued_precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
-- `continuity_segment_id = [source, subject_ref, segment_start_at, segment_end_at]`
+- `continuity_segment_id = [source_slug, subject_ref, segment_start_at, segment_end_at]`
 - `balance_target_id = [continuity_segment_id, subject_ref, target_kind, target_as_of_at, expected_value_fingerprint]`
-- `checkpoint_candidate_id = [continuity_segment_id, subject_ref, checkpoint_date, balance_target_refs]`
-- `checkpoint_run_id = [reconciliation_state_refs, asserted_as_of_at]`
+- `checkpoint_proposal_id = [continuity_segment_id, subject_ref, checkpoint_date, balance_target_refs]`
+- `checkpoint_set_id = [reconciliation_state_refs, asserted_as_of_at]`
 - `checkpoint_assertion_id = [assertion_kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
 
 Not allowed in this slice:
@@ -152,7 +152,7 @@ Not allowed in this slice:
 - event identity based on `bundle_decision_id` or rejected-bundle lists
 - `expected_value_ref`
 - `observed_value_ref`
-- candidate ids that include raw evidence-ref lists as identity components
+- proposal ids that include raw evidence-ref lists as identity components
 
 ## Bridge Compatibility Projections
 
@@ -181,7 +181,7 @@ Compatibility rule:
   checkpoint truth once the target products exist
 - retained legacy hint reproduction must come from declared compatibility
   sidecars, not from `EconomicActivityDraft`, `SourceTranslationBatch`, or
-  bridge facts as peer semantic authorities
+  bridge facts as peer economic authorities
 
 ## In-Scope Checkpoint Vocabulary
 
@@ -216,7 +216,7 @@ Unchanged first-slice inputs must preserve all of the following:
 - accepted leg ids, ordering, and quantities
 - `ContinuitySegmentRecord` ids and ordering
 - `BalanceTargetRecord` ids, ordering, and statuses
-- `CheckpointCandidateRecord` ids, ordering, and statuses
+- `CheckpointProposalRecord` ids, ordering, and statuses
 - `CheckpointAssertionRecord` ids, ordering, and accepted values
 - compiled `TransactionFact` ordering and semantics for in-scope evidence
 - `balance_snapshots.csv` content for in-scope evidence
@@ -239,14 +239,14 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 
 Replay checks must also prove that incidental input ordering changes do not
 change event ids, leg ids, continuity segment ids, balance target ids,
-checkpoint candidate ids, checkpoint assertion ids, or rendered output.
+checkpoint proposal ids, checkpoint assertion ids, or rendered output.
 
 ## Allowed Drift
 
 Not allowed:
 
 - drift in accepted economic kernel fields
-- drift in continuity-segment, balance-target, checkpoint-candidate, or
+- drift in continuity-segment, balance-target, checkpoint-proposal, or
   checkpoint-assertion ids
 - quantity, accepted-value, trust-level, or acceptance-basis drift
 - bridge-output drift on unchanged in-scope evidence
@@ -262,7 +262,7 @@ Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 
 This bounded downstream slice does not:
 
-- emit `LinkRecord` rows as a required success condition
+- emit `EventLinkRecord` rows as a required success condition
 - widen beyond the Coinbase-first slice already bounded by
   [First Slice Contract](first-slice-contract.md)
 - make operator-only checkpoint acceptance part of the filing path

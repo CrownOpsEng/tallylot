@@ -1,5 +1,5 @@
 ---
-title: "Portfolio Exports"
+title: "Portfolio Export Bundles"
 summary: "Rules for portfolio-system export bundles kept under the mirrored workspace portfolio tree."
 doc_type: reference
 audience: both

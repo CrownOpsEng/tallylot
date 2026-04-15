@@ -54,6 +54,7 @@ Use these pages as the detailed contract owners:
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gaps And Readiness](gaps-and-readiness.md)
+- [Engineering Standards](../standards/engineering.md)
 - [Transaction Classification](transaction-classification.md)
 - [Oracle Boundaries](oracle-boundaries.md)
 
@@ -65,7 +66,7 @@ The target runtime pipeline is:
 
 Trust and ownership rules:
 
-- evidence selection is deterministic before semantic commitment
+- evidence selection is deterministic before claim commitment
 - claims preserve source-local meaning and explicit ambiguity
 - economic facts assert only economic truth the system can prove safely
 - reconciliation is the trust gate before checkpoint adoption, accounting, and
@@ -108,7 +109,7 @@ Trust and ownership rules:
 
 - persistence implements the model
 - persistence does not define the model
-- no core runtime type relies on filesystem path, CSV row order, or export
+- no shared runtime type relies on filesystem path, CSV row order, or export
   shape as identity
 - raw evidence remains file-backed even after future database adoption
 - repository ports remain the persistence seam
@@ -121,9 +122,9 @@ The target runtime uses one authoritative persisted kernel per product scope.
 
 Rules:
 
-- target products persist as canonical JSON kernels with separate sidecars
+- target products persist as JSON kernels with separate sidecars
 - once a target product becomes authoritative for an in-scope family, bridge
-  CSV artifacts for that same scope become compatibility projections only
+  CSV files for that same scope become compatibility projections only
 - compatibility projections remain valid during migration, but they are never
   peer authorities beside the target kernel
 - consumers read one authority at a time:
@@ -136,13 +137,15 @@ Rules:
 
 Forward-looking persistence rules:
 
-- target product kernels persist as canonical JSON documents
+- target product kernels persist as JSON documents
 - every persisted kernel carries its declared product id in metadata
 - product ids are distinct from `dataset_id`
 - upstream `*_ref` metadata fields store product ids, never `dataset_id` and
   never raw kernel fingerprints
 - product sidecars persist separately from kernels and are keyed by
   `dataset_id` or narrower truthful record ids
+- canonical target basenames use the owning product or support role directly
+  rather than generic names or bridge-era qualifiers
 - writes are replace-whole-partition operations, not append-in-place mutation
   of accepted truth
 - persisted kernels are immutable snapshots for one declared partition scope
@@ -157,14 +160,14 @@ Forward-looking persistence rules:
 | `ClaimSet` | capture-scoped |
 | `EconomicFacts` | assembled-source-scoped |
 | `ReconciliationState` | continuity-segment-scoped under one source scope |
-| `Checkpoint` | checkpoint-run-scoped |
-| `Journal` | checkpoint-run-scoped |
-| `TaxInputs` | tax-run-scoped |
-| `TaxOutputs` | policy-and-tax-year-scoped inside one tax run |
+| `Checkpoint` | checkpoint-set-scoped |
+| `Journal` | journal-scoped under one checkpoint scope |
+| `TaxInputs` | tax-input-set-scoped |
+| `TaxOutputs` | policy-and-tax-year-scoped inside one tax-input scope |
 
 Rules:
 
-- one persisted partition owns one canonical kernel fingerprint
+- one persisted partition owns one stable kernel fingerprint
 - one persisted partition owns one product id aligned with that partition
 - partition boundaries are chosen by the dimensions the owning stage actually
   reduces over
@@ -174,7 +177,7 @@ Rules:
 - `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
   whole-product kernel per declared partition
 - one persisted `ReconciliationState` kernel owns one continuity-segment root
-- one persisted `Checkpoint` kernel owns one checkpoint root
+- one persisted `Checkpoint` kernel owns one checkpoint root record
 - one persisted `Journal` kernel owns one journal emission root
 - one persisted `TaxInputs` kernel owns one tax-input emission root
 - one persisted `TaxOutputs` kernel owns one policy-and-tax-year output root
@@ -194,18 +197,18 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/normalized/sources/<source>/bridge/facts.csv`
 - `working/normalized/sources/<source>/bridge/balance_snapshots.csv`
 - `working/normalized/sources/<source>/bridge/balance_references.csv`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/state.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/reconciliation_state.json`
 - `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gaps.json`
 - `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness.json`
 - `outputs/checkpoints/<checkpoint_label>/checkpoint.json`
 - `outputs/checkpoints/<checkpoint_label>/journal.json`
 - `outputs/checkpoints/<checkpoint_label>/tax_inputs.json`
-- `outputs/checkpoints/<checkpoint_label>/tax_outputs/<policy_id>/<tax_year>.json`
+- `outputs/checkpoints/<checkpoint_label>/tax_outputs/<tax_policy_id>/<tax_year>.json`
 
 Rules:
 
 - the external workspace remains the runtime location for evidence and emitted
-  artifacts
+  files
 - later implementation may add indexes or caches beside these kernels, but
   must not rename the authoritative kernel paths without updating the owner
   docs
@@ -222,7 +225,7 @@ Rules:
 
 ## Performance Rules
 
-The core pipeline must stay auditable, deterministic, replayable, and fast
+The target pipeline must stay auditable, deterministic, replayable, and fast
 enough for large-scale calculation.
 
 ### Hot Path
@@ -255,8 +258,8 @@ The hot path should not repeatedly join in:
 - full provenance detail
 - reviews
 - large explanation text
-- evidence metadata blobs
-- renderer metadata
+- evidence sidecar detail
+- renderer detail
 - adapter-local annotations that do not change computation
 
 Those belong in sidecars and explanation layers.
@@ -285,8 +288,8 @@ Required partition keys:
 | Stage family | Required partition keys |
 | --- | --- |
 | Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `interpretation_scope_id` |
-| Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_candidate_id` |
-| Checkpoint and accounting | `checkpoint_run_id`, `journal_run_id`, `checkpoint_assertion_id`, `entry_id` |
+| Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_proposal_id` |
+| Checkpoint and accounting | `checkpoint_set_id`, `journal_id`, `checkpoint_assertion_id`, `entry_id` |
 | Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `determinant_id`, `basis_transition_id` |
 
 Rules:
@@ -297,7 +300,7 @@ Rules:
 - reconciliation reducers may read one continuity segment plus its explicit
   upstream references; they must not rescan unrelated full-history partitions
   per balance target
-- checkpoint reducers may read the declared `checkpoint_run_id` inputs plus
+- checkpoint reducers may read the declared `checkpoint_set_id` inputs plus
   explicit upstream refs; they must not treat `dataset_id` as the product-join
   key
 - tax reducers may read one tax year plus explicitly referenced carry-forward
@@ -317,7 +320,7 @@ Typical sidecar or cache surfaces include:
 - evidence selection summaries
 - interpretation-scope decision summaries
 - reconciliation continuity summaries
-- checkpoint package summaries
+- checkpoint summaries
 - journal validation summaries
 - tax carry-forward state indexes
 

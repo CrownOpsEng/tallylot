@@ -1,6 +1,6 @@
 ---
-title: "Manual Balance Submission Artifacts"
-summary: "Reference contract for scaffolded manual balance submission packages and their balance outputs."
+title: "Manual Balance Submission Packages"
+summary: "Reference for scaffolded manual balance submission packages and their balance outputs."
 doc_type: reference
 audience: human
 owner: repo
