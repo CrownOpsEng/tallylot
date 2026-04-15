@@ -24,7 +24,7 @@ document freezes scope, ids, parity, replay, and allowed drift for the first
 
 The first downstream slice is:
 
-- the Coinbase-first family already bounded by
+- the Coinbase-first slice already bounded by
   [First Slice Contract](first-slice-contract.md)
 - accepted `EconomicFacts` emission for supported Coinbase retail activity and
   recognized statement-backed balance observations
@@ -38,7 +38,7 @@ The first downstream slice is:
 
 The slice is not:
 
-- a broad downstream migration for every source family
+- a broad downstream migration for every source
 - a replacement for `Journal`, `TaxInputs`, or `TaxOutputs`
 - a claim that cross-source transfer pairing is already solved
 - a claim that operator-only checkpoint inputs satisfy filing-ready truth
@@ -49,11 +49,11 @@ The slice may emit only these downstream kernel families:
 
 | Product | Record family | In-scope constraints |
 | --- | --- | --- |
-| `EconomicFacts` | `EconomicEventRecord` | only `asset_movement`, `cash_movement`, `fee_or_rebate`, and `correction` event families |
+| `EconomicFacts` | `EconomicEventRecord` | only `asset_movement`, `cash_movement`, `fee_or_rebate`, and `correction` event kinds |
 | `EconomicFacts` | `EconomicLegRecord` | only `holding_change`, `cash_change`, `fee`, and `rebate` leg roles |
 | `EconomicFacts` | `ValuationRecord` | zero rows by default; valuations land only when an unchanged parity slice proves they are required |
 | `ReconciliationState` | `ContinuitySegmentRecord` | one segment per in-scope Coinbase position subject and bounded time span |
-| `ReconciliationState` | `BalanceTargetRecord` | only `target_kind = exact_balance`, with direct `expected_value` and `observed_value_or_null` using `AssertionValue` |
+| `ReconciliationState` | `BalanceTargetRecord` | only `target_kind = exact_balance`, with direct `expected_value` and `observed_value` using `AssertionValue` |
 | `ReconciliationState` | `CheckpointCandidateRecord` | only candidates supported by in-scope exact-balance targets and statement evidence |
 | `Checkpoint` | `CheckpointRecord` | accepted container for in-scope checkpoint assertions only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `assertion_kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
@@ -71,7 +71,7 @@ Rules:
 - `beneficial_owner_ref` comes from in-scope `BeneficialOwnerClaim` output
 - `location_ref` comes from in-scope `LocationClaim` output
 - `instrument_ref` comes from in-scope `InstrumentIdentityClaim` output
-- `contract_ref_or_null` stays `null` for this slice
+- `contract_ref` stays `null` for this slice
 - one continuity segment covers one `PositionRef`; do not mix positions into one
   segment
 - when `SubjectRef` is needed for downstream attachment, the subject kind for
@@ -90,8 +90,8 @@ In-scope product metadata fields:
 
 Compilation-input rules:
 
-- downstream compilation consumes canonical `InterpretationBundleRecord`,
-  `ClaimRecord`, `CompilationDecisionRecord`, and `evidence_observation_refs`
+- downstream compilation consumes canonical `ClaimBundleRecord`,
+  `ClaimRecord`, `BundleDecisionRecord`, and `evidence_observation_refs`
   from authoritative `ClaimSet` kernels
 - downstream compilation must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer semantic inputs
@@ -119,7 +119,7 @@ Ownership rules:
 
 - `event_id` is derived from the selected semantic bundle, not from
   adjudication bookkeeping
-- `compilation_decision_id` may be referenced for audit, but it does not define
+- `bundle_decision_id` may be referenced for audit, but it does not define
   event identity
 - `BalanceTargetRecord` carries direct `AssertionValue` payloads and must not
   point to undefined value refs or sidecars for hot-path meaning
@@ -136,22 +136,22 @@ This slice freezes the in-scope bounds and the first position identity shape.
 
 Slice-specific rules:
 
-- `economic_facts_id = [ordered_claim_set_refs]`
+- `economic_facts_id = [claim_set_refs]`
 - `event_id = [bundle_id, event_index]`
 - `leg_id = [event_id, leg_role, subject_ref, leg_index]`
-- `valuation_id = [valuation_source_ref, valuation_purpose, amount, currency, valued_at_or_null, valued_precision_or_null]`
+- `valuation_id = [valuation_source_ref, valuation_purpose, amount, currency, valued_at, valued_precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
-- `continuity_segment_id = [source, subject_ref, segment_start_at_or_null, segment_end_at_or_null]`
+- `continuity_segment_id = [source, subject_ref, segment_start_at, segment_end_at]`
 - `balance_target_id = [continuity_segment_id, subject_ref, target_kind, target_as_of_at, expected_value_fingerprint]`
-- `checkpoint_candidate_id = [continuity_segment_id, subject_ref, checkpoint_date, supporting_balance_target_refs]`
-- `checkpoint_run_id = [ordered_reconciliation_state_refs, asserted_as_of_at]`
+- `checkpoint_candidate_id = [continuity_segment_id, subject_ref, checkpoint_date, balance_target_refs]`
+- `checkpoint_run_id = [reconciliation_state_refs, asserted_as_of_at]`
 - `checkpoint_assertion_id = [assertion_kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
 
 Not allowed in this slice:
 
-- event identity based on `compilation_decision_id` or rejected-bundle lists
+- event identity based on `bundle_decision_id` or rejected-bundle lists
 - `expected_value_ref`
-- `observed_value_ref_or_null`
+- `observed_value_ref`
 - candidate ids that include raw evidence-ref lists as identity components
 
 ## Bridge Compatibility Projections
@@ -263,10 +263,10 @@ Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 This bounded downstream slice does not:
 
 - emit `LinkRecord` rows as a required success condition
-- widen beyond the Coinbase-first family already bounded by
+- widen beyond the Coinbase-first slice already bounded by
   [First Slice Contract](first-slice-contract.md)
 - make operator-only checkpoint acceptance part of the filing path
 - use adopted opening state as an accepted checkpoint basis
 - define runtime `Journal`, `TaxInputs`, or `TaxOutputs`
 - require broad balance-provider hydration or cross-source transfer pairing
-- authorize a repo-wide adapter-family migration before the bounded slice lands
+- authorize a repo-wide adapter migration before the bounded slice lands

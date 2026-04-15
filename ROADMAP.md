@@ -63,29 +63,33 @@ contracts.
 Must freeze:
 
 - `EvidenceSet` record families, ids, cardinality, and intentional
-  `selection_plan_fingerprint` identity churn
+  `selection_fingerprint` identity churn
 - critical-path `EvidenceObservationRecord` field tables for
   `document_identity` and `coinbase_statement_balance_row`
-- `ClaimSet` interpretation-scope, bundle, and compilation-decision model
+- `ClaimSet` interpretation-scope, bundle, and bundle-decision model
 - critical-path `ClaimRecord` field tables, `evidence_observation_refs`, and
   the compatibility-sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
-- shared support artifacts: `GapCore`, `GapExplanation`, `ReviewRecord`,
-  `ReviewExplanation`, `SubjectReadinessRecord`, `ReadinessProjection`,
-  `SubjectRef`, truthful `interpretation_scope_id` attachments, and the
-  downstream shared-subject seams needed for accounting and tax records
+- shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
+  `ReviewExplanation`, `ReadinessRecord`, `ReadinessProjection`,
+  `SubjectRef`, truthful `interpretation_scope_id` and `balance_target_id`
+  attachments, and the downstream shared-subject seams needed for accounting
+  and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `dataset_id`
+- target naming rules that distinguish concepts, refs, ids, records,
+  projections, and sidecars without baking bridge-era qualifiers into
+  canonical target names
 - authoritative persistence model, partition scopes, sidecar rules, and
   default filesystem placement
 - migration authority rules, compatibility projections, reader cutovers, and
   retirement gates
 - package ownership and layer placement for shared functionality
-- explicit no-invention rules for non-critical observation and claim families
+- explicit no-invention rules for non-critical observation and claim kinds
 
 Deliver:
 
-- aligned owner docs for target products, ontology, support artifacts, and
+- aligned owner docs for target products, ontology, support records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
 - one bounded first upstream slice and one bounded first downstream slice
@@ -98,16 +102,18 @@ Exit criteria:
 
 - no owner concept is defined in two competing places
 - no target product references an undefined record family or ref type
-- no cross-stage support artifact masquerades as a claim family
+- no cross-stage support artifact masquerades as a claim kind
 - claim-stage blockers can attach to `interpretation_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
   accounting or tax subjects without collapsing to dataset-only scope
+- no target id or helper id bakes bridge-era naming into canonical target
+  identity
 - no bridge artifact is left without an authority and retirement rule
 - no hot-path field points to an undefined value ref or sidecar
-- every critical-path observation and claim family has one authoritative kernel
+- every critical-path observation and claim kind has one authoritative kernel
   field table
 - no target product metadata ref uses `dataset_id` where a product id exists
-- non-critical observation and claim families are explicitly deferred rather
+- non-critical observation and claim kinds are explicitly deferred rather
   than left implicit
 - implementation placement is mechanical rather than interpretive
 - the first upstream and downstream slices can be implemented without inventing
@@ -147,9 +153,9 @@ Deliver:
 
 - semantic-only `ClaimSet` emission keyed by `claim_set_id`
 - explicit interpretation scopes, mutually exclusive bundles, and
-  compilation-decision records
+  bundle-decision records
 - frozen first-slice claim fields plus `evidence_observation_refs`
-- shared support artifacts attached to claim scopes where needed
+- shared support records and sidecars attached to claim scopes where needed
 - declared compatibility projections for `EconomicActivityDraft` and
   `SourceTranslationBatch`, with legacy hint fields kept outside canonical
   claims
@@ -158,7 +164,7 @@ Exit criteria:
 
 - ambiguous source meaning can remain explicit without being forced into final
   economic meaning
-- claim compilation decisions remain claim-owned and do not carry economic
+- claim bundle decisions remain claim-owned and do not carry economic
   payload
 
 ## Phase 3. Land `EconomicFacts`

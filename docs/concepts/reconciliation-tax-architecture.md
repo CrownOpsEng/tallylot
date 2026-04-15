@@ -284,14 +284,14 @@ Required partition keys:
 
 | Stage family | Required partition keys |
 | --- | --- |
-| Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_group_id`, `claim_set_id`, `interpretation_scope_id` |
+| Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `interpretation_scope_id` |
 | Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_candidate_id` |
 | Checkpoint and accounting | `checkpoint_run_id`, `journal_run_id`, `checkpoint_assertion_id`, `entry_id` |
 | Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `determinant_id`, `basis_transition_id` |
 
 Rules:
 
-- evidence selection comparisons stay bounded to one `selection_group_id`
+- evidence selection comparisons stay bounded to one `selection_id`
 - claim adjudication stays bounded to one `interpretation_scope_id` at a time
 - economic reducers stay bounded to one `economic_facts_id` partition at a time
 - reconciliation reducers may read one continuity segment plus its explicit
@@ -314,7 +314,7 @@ high.
 
 Typical sidecar or cache surfaces include:
 
-- evidence selection-group summaries
+- evidence selection summaries
 - interpretation-scope decision summaries
 - reconciliation continuity summaries
 - checkpoint package summaries

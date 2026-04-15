@@ -60,7 +60,7 @@ Supported `subject_kind` values for shared infrastructure:
 - `evidence_member`
 - `evidence_observation`
 - `claim`
-- `interpretation_bundle`
+- `claim_bundle`
 - `instrument`
 - `location`
 - `legal_owner`
@@ -98,30 +98,35 @@ Non-subject scopes are allowed only when no narrower truthful subject exists.
 
 Required scope ids:
 
-- `selection_group_id`
+- `selection_id`
 - `interpretation_scope_id`
 - `continuity_segment_id`
+- `balance_target_id`
 - `checkpoint_candidate_id`
 - `dataset_id`
 
 Rules:
 
 - every non-subject gap or review attachment uses one stable scope id
-- `selection_group_id` identifies one deterministic evidence-selection
+- `selection_id` identifies one deterministic evidence-selection
   decision boundary
 - `interpretation_scope_id` identifies one claim-stage semantic decision
   boundary before bundle selection or subject resolution is final
 - `continuity_segment_id` identifies one bounded reconciliation window
+- `balance_target_id` identifies one reconciliation-owned balance assertion
+  target when one exact target is the truthful blocker or review scope
 - `checkpoint_candidate_id` identifies one reconciliation-owned checkpoint
   proposal before acceptance
 - `dataset_id` identifies one shared support attachment scope over one
   canonical product kernel and is not a substitute for a narrower scope
 - do not attach a gap or review to `dataset` scope when `subject`,
-  `selection_group`, or `checkpoint_candidate` would be truthful
+  `selection`, `interpretation_scope`, `continuity_segment`,
+  `balance_target`, or `checkpoint_candidate` would be truthful
 
 ### `dataset_id`
 
-`dataset_id` is defined once for all target support artifacts.
+`dataset_id` is defined once for all target support records, projections, and
+sidecars.
 
 Rules:
 
@@ -136,8 +141,8 @@ Rules:
   exists
 - `dataset_id` is used only for shared reporting and sidecar attachment when no
   narrower truthful subject or scope exists
-- `dataset_id` must not replace `selection_group_id`,
-  `interpretation_scope_id`, `continuity_segment_id`,
+- `dataset_id` must not replace `selection_id`,
+  `interpretation_scope_id`, `continuity_segment_id`, `balance_target_id`,
   `checkpoint_candidate_id`, or one record id when those are truthful
 
 ## Shared Stage Vocabulary
@@ -166,7 +171,7 @@ Rules:
 
 The target shared gap model splits compact blocking truth from explanation.
 
-### `GapCore`
+### `GapRecord`
 
 Purpose:
 
@@ -178,10 +183,10 @@ Kernel fields:
 - `owner_stage`
 - `blocking_stages`
 - `scope_kind`
-- `scope_id_or_null`
-- `subject_ref_or_null`
+- `scope_id`
+- `subject_ref`
 - `gap_kind`
-- `gap_anchor`
+- `gap_key`
 - `status`
 - `materiality`
 - `confidence`
@@ -190,9 +195,10 @@ Controlled vocabularies:
 
 - `scope_kind`:
   - `subject`
-  - `selection_group`
+  - `selection`
   - `interpretation_scope`
   - `continuity_segment`
+  - `balance_target`
   - `checkpoint_candidate`
   - `dataset`
 - `gap_kind`:
@@ -219,20 +225,19 @@ Stable ids:
 
 - `gap_id` identifies one shared blocker record
 - `gap_id` uses component array
-  `[owner_stage, scope_kind, scope_anchor, gap_kind, gap_anchor]`
-- `scope_anchor` uses the `SubjectRef` tuple when `scope_kind` is `subject`
-- `scope_anchor` uses `scope_id_or_null` when `scope_kind` is not `subject`
-- `scope_id_or_null` is required when `scope_kind` is not `subject`
-- `subject_ref_or_null` is required when `scope_kind` is `subject`
-- `gap_anchor` is the stage-owned stable discriminator for one blocking
+  `[owner_stage, scope_kind, scope_key, gap_kind, gap_key]`
+- `scope_key` uses the `SubjectRef` tuple when `scope_kind` is `subject`
+- `scope_key` uses `scope_id` when `scope_kind` is not `subject`
+- `scope_id` is required when `scope_kind` is not `subject`
+- `subject_ref` is required when `scope_kind` is `subject`
+- `gap_key` is the stage-owned stable discriminator for one blocking
   condition inside the declared scope
 
 Ordering:
 
 - sort by tuple
-  `[owner_stage, scope_kind, subject_ref_or_null, scope_id_or_null, gap_kind, gap_id]`
-- use JSON `null` ordering for `subject_ref_or_null` and `scope_id_or_null`
-  when one field is not applicable
+  `[owner_stage, scope_kind, subject_ref, scope_id, gap_kind, gap_id]`
+- use JSON `null` ordering for inactive `subject_ref` and `scope_id` fields
 
 Serialization:
 
@@ -249,7 +254,7 @@ Fingerprint inputs:
 
 Rules:
 
-- `GapCore` is the shared blocking truth
+- `GapRecord` is the shared blocking truth
 - it stays compact enough for reducers, indexing, and hot-path references
 - it must not absorb large explanatory text blobs
 - `owner_stage` identifies who owns the gap semantics
@@ -264,7 +269,7 @@ Rules:
 
 Purpose:
 
-- explanation sidecar keyed to one `GapCore`
+- explanation sidecar keyed to one `GapRecord`
 
 Fields:
 
@@ -299,7 +304,7 @@ Fingerprint inputs:
 
 Rules:
 
-- explanation belongs in `GapExplanation`, not in `GapCore`
+- explanation belongs in `GapExplanation`, not in `GapRecord`
 - explanation may grow richer over time without bloating the compact blocker
   record
 - stages may attach richer explanation or decision history later, but the
@@ -321,10 +326,10 @@ Kernel fields:
 - `review_id`
 - `owner_stage`
 - `scope_kind`
-- `scope_id_or_null`
-- `subject_ref_or_null`
+- `scope_id`
+- `subject_ref`
 - `review_kind`
-- `review_anchor`
+- `review_key`
 - `status`
 - `confidence`
 - `paired_gap_ids`
@@ -333,9 +338,10 @@ Controlled vocabularies:
 
 - `scope_kind`:
   - `subject`
-  - `selection_group`
+  - `selection`
   - `interpretation_scope`
   - `continuity_segment`
+  - `balance_target`
   - `checkpoint_candidate`
   - `dataset`
 - `status`:
@@ -352,19 +358,18 @@ Stable ids:
 
 - `review_id` identifies one advisory record
 - `review_id` uses component array
-  `[owner_stage, scope_kind, scope_anchor, review_kind, review_anchor]`
-- `scope_anchor` uses the `SubjectRef` tuple when `scope_kind` is `subject`
-- `scope_anchor` uses `scope_id_or_null` when `scope_kind` is not `subject`
+  `[owner_stage, scope_kind, scope_key, review_kind, review_key]`
+- `scope_key` uses the `SubjectRef` tuple when `scope_kind` is `subject`
+- `scope_key` uses `scope_id` when `scope_kind` is not `subject`
 - `review_kind` is the owner-stage stable advisory label for one review family
-- `review_anchor` is the owner-stage stable discriminator for one advisory
+- `review_key` is the owner-stage stable discriminator for one advisory
   observation inside the declared scope
 
 Ordering:
 
 - sort by tuple
-  `[owner_stage, scope_kind, subject_ref_or_null, scope_id_or_null, review_kind, review_id]`
-- use JSON `null` ordering for `subject_ref_or_null` and `scope_id_or_null`
-  when one field is not applicable
+  `[owner_stage, scope_kind, subject_ref, scope_id, review_kind, review_id]`
+- use JSON `null` ordering for inactive `subject_ref` and `scope_id` fields
 - sort `paired_gap_ids` lexicographically
 
 Serialization:
@@ -447,7 +452,7 @@ Shared status vocabulary:
 - at least one blocking gap still open
 - the remaining uncertainty is recorded through gap ids, not prose-only summary
 
-### `SubjectReadinessRecord`
+### `ReadinessRecord`
 
 Purpose:
 
@@ -455,7 +460,7 @@ Purpose:
 
 Kernel fields:
 
-- `subject_readiness_id`
+- `readiness_id`
 - `subject_ref`
 - `stage`
 - `status`
@@ -463,9 +468,9 @@ Kernel fields:
 
 Stable ids:
 
-- `subject_readiness_id` identifies one readiness record for one subject and
+- `readiness_id` identifies one readiness record for one subject and
   one stage
-- `subject_readiness_id` uses component array `[subject_ref, stage]`
+- `readiness_id` uses component array `[subject_ref, stage]`
 
 Ordering:
 
@@ -556,7 +561,7 @@ Fingerprint inputs:
 - projection records in canonical order
 - `schema_version`
 - sorted `blocking_gap_ids`
-- the ordered `SubjectReadinessRecord` ids that fed the projection
+- the ordered `ReadinessRecord` ids that fed the projection
 
 Rules:
 
@@ -576,14 +581,14 @@ The live bridge still emits `IssueRecord` and `NormalizationReviewRecord`.
 
 Mapping rules:
 
-- a blocking `IssueRecord` maps to one `GapCore` plus one `GapExplanation`
+- a blocking `IssueRecord` maps to one `GapRecord` plus one `GapExplanation`
   when owner stage, blocking stages, scope, and blocker semantics align
 - `IssueRecord.kind`, `severity`, `context_timestamp`, and typed provenance are
   gap inputs, not free text to reinterpret later
 - `NormalizationReviewRecord` maps to one `ReviewRecord` plus one
   `ReviewExplanation` when owner stage, scope, and advisory meaning align
 - when one factual cause produces both a blocker and an advisory review, the
-  blocker lands in `GapCore` and the review remains keyed sidecar context
+  blocker lands in `GapRecord` and the review remains keyed sidecar context
 - current bridge ids remain traceable when later stages adopt target-native gap
   or review ids
 

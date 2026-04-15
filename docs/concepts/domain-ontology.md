@@ -38,7 +38,7 @@ The target model should use these concepts explicitly:
 - `AssertionValue`
 - `CheckpointAssertion`
 - `Posting`
-- `BasisPoolRef`
+- `BasisPool`
 
 These are not interchangeable labels. They represent distinct business
 concepts, and the model should keep them distinct even when one adapter or one
@@ -78,9 +78,9 @@ The target model uses explicit ref seams rather than one generic identity pool.
 | `LegalOwnerRef` | one resolved legal-owner identity | `[legal_owner_id]` |
 | `BeneficialOwnerRef` | one resolved beneficial-owner identity | `[beneficial_owner_id]` |
 | `CounterpartyRef` | one resolved counterparty identity | `[counterparty_id]` |
-| `ContractRef` | one resolved contract identity | `[contract_kind, legal_owner_ref_or_null, beneficial_owner_ref_or_null, counterparty_ref_or_null, contract_anchor]` |
-| `PositionRef` | one resolved economic position identity | `[beneficial_owner_ref, location_ref_or_null, instrument_ref_or_null, contract_ref_or_null, position_scope]` |
-| `BasisPoolRef` | one pooled-basis or basis-tracking identity seam | `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_scope]` |
+| `ContractRef` | one resolved contract identity | `[contract_kind, legal_owner_ref, beneficial_owner_ref, counterparty_ref, contract_key]` |
+| `PositionRef` | one resolved economic position identity | `[beneficial_owner_ref, location_ref, instrument_ref, contract_ref, position_key]` |
+| `BasisPoolRef` | one pooled-basis or basis-tracking identity seam | `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_key]` |
 
 Rules:
 
@@ -88,11 +88,13 @@ Rules:
 - resolve only the identity that the current stage can prove safely
 - preserve unresolved identity as explicit blockers instead of guessing across
   seams
+- nullable tuple slots keep the base ref name; nullability is part of the
+  tuple contract, not the tuple-slot name
 - when a stable-id recipe or fingerprint input includes one of these refs, use
   the canonical tuple above rather than an object-name shorthand
-- `contract_anchor` is the stage-owned stable discriminator for one contract
+- `contract_key` is the stage-owned stable discriminator for one contract
   instance
-- `position_scope` is the stage-owned stable discriminator for one economic
+- `position_key` is the stage-owned stable discriminator for one economic
   exposure or holding surface
 
 ### `ContractRef` Versus `PositionRef`
@@ -151,7 +153,7 @@ Variant rules:
 - assertion ids and fingerprints must treat the value variant and its canonical
   content as semantically relevant
 - the canonical `AssertionValue` fingerprint uses one canonical UTF-8 JSON array
-  `[assertion_value_kind, canonical_value_payload]`
+  `[assertion_value_kind, value_content]`
 
 ## `CheckpointAssertion`
 
@@ -261,7 +263,7 @@ format calls the row.
 Minimum invariant seams:
 
 - one stable event identity
-- one event-family vocabulary that distinguishes asset movement, cash movement,
+- one event-kind vocabulary that distinguishes asset movement, cash movement,
   obligations or rights, settlement, collateral, financing, fees or rebates,
   withholding, lifecycle restructure, and correction or supersession behavior
 - one stable leg set with signed quantities and explicit leg roles
@@ -331,8 +333,8 @@ First-slice rule:
 - `location_ref` must resolve to the Coinbase-held custodial spot location or
   sub-location in scope
 - `instrument_ref` must resolve to the in-scope spot asset
-- `contract_ref_or_null` stays `null` in the first downstream slice
-- later slices may widen `position_scope` values and contract participation,
+- `contract_ref` stays `null` in the first downstream slice
+- later slices may widen `position_key` values and contract participation,
   but they must keep the canonical tuple shape unchanged
 
 ## Bridge Classifications Versus Target Ontology
@@ -358,6 +360,12 @@ Bridge-specific classification rules live in
 - keep bridge names in live bridge code until later implementation slices land
 - use target ontology names when defining new target-layer concepts in docs and
   later implementation work
+- distinguish concept, ref, and record names explicitly:
+  `BasisPool` is a concept, `BasisPoolRef` is an identity seam, and
+  `*Record` names belong to persisted kernels
+- do not bake bridge, legacy, current, or compatibility qualifiers into
+  target-layer concept names or helper ids unless the name is intentionally
+  current-state or adapter-local
 - do not force a docs-only bridge rename just to make the target vocabulary
   appear already implemented
 
