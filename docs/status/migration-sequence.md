@@ -72,6 +72,11 @@ These foundations are prerequisites, not later cleanup:
 - shared `SubjectRef` rules
 - shared checkpoint-assertion direction
 - typed tax-policy selection seam
+- target-product versioning, compatibility, serialization, and fingerprint
+  rules
+- kernel-and-envelope rules with stable rehydration joins
+- one bridge note for how current adapter seams land proto-`EvidenceSet` and
+  proto-`ClaimSet`
 
 Rules:
 
@@ -85,24 +90,46 @@ Rules:
 - `EvidenceSet` formalizes deterministic evidence selection and source-local
   observations now spread across intake, profiling, and translation-input
   planning
+- current planner artifacts may serve as the first bridge landing path into
+  proto-`EvidenceSet`; broad unified-adapter family migration is not a hidden
+  prerequisite
 - `ClaimSet` becomes the place where `EconomicActivityDraft` responsibilities
   can split into source-local meaning plus preserved ambiguity
+- claim-native output may first land through one bounded adapter family or
+  shared compiler seam before any repo-wide adapter facet migration
 - `EconomicFacts` becomes the accepted economic truth that the current
   `TransactionFact` bridge only approximates today
 - `ReconciliationState` and `Checkpoint` absorb the trust-gate work currently
   expressed through bridge-era balances, links, and checkpoint scaffolding
 - `Journal`, `TaxInputs`, and `TaxOutputs` replace the remaining bridge-era
   tendency to push accounting or tax meaning downward too early
+- unified adapter product and facet work may advance during shared foundations
+  when it removes first-slice drift, but broad family migration waits until the
+  contract lock and first slice are stable
+
+Default first-slice direction:
+
+- use the planner-enabled Coinbase retail export family plus statement-backed
+  balance observation flow unless the active filing workspace requires another
+  Tier A family to land first
 
 ## Phase Order
 
-### Phase 0. Shared Foundations And Schema Lock
+### Phase 0. Shared Foundations, Contract Lock, And First-Slice Prep
 
 Deliver before broad code changes:
 
 - aligned bridge, target, ontology, and support-model docs
 - shared provenance, gaps, readiness, checkpoint assertions, identity seams,
   `SubjectRef`, and tax-policy selection contracts
+- target-product versioning, serialization, and fingerprint rules
+- checkpoint acceptance vocabularies and minimum admissibility rules
+- kernel-and-envelope rules with stable rehydration joins
+- minimum `ClaimSet`, `EconomicFacts`, `Checkpoint`, and `TaxInputs`
+  vocabularies
+- one bridge note for how current planner and translation seams land proto-
+  `EvidenceSet` and proto-`ClaimSet`
+- one named first vertical slice with parity and replay gates
 - clear bridge-versus-target ownership so later code slices do not re-decide
   naming or stage boundaries
 
@@ -110,6 +137,8 @@ Rules:
 
 - do not start broad tax-engine work before these contracts are written down
 - do not let the bridge contract masquerade as the target ontology
+- do not make broad unified-adapter family migration a hidden prerequisite for
+  the first target-stage slice
 
 ### Phase 1. Formalize `EvidenceSet`
 
@@ -118,12 +147,15 @@ Deliver:
 - deterministic selection outputs
 - explicit selected, superseded, and blocked evidence outputs
 - source-local parsed observation contracts
+- a bounded landing path from current planner artifacts into proto-`EvidenceSet`
 
 Rules:
 
 - evidence selection remains deterministic
 - evidence does not force economic meaning
 - evidence selection reasoning must survive beyond intake-time heuristics
+- the first `EvidenceSet` slice may reuse current adapter seams as long as the
+  landing contract is explicit and no second architecture center is created
 
 ### Phase 2. Introduce `ClaimSet`
 
@@ -133,6 +165,8 @@ Deliver:
 - claim-owned issues and reviews
 - explicit materially unresolved meaning
 - claim-to-economic compilation seam boundaries
+- one bounded adapter-family path for claim-native output before any broad
+  facet migration
 
 Rules:
 
@@ -141,6 +175,7 @@ Rules:
 - adapters own source-local meaning only
 - the current bridge may remain as a bounded seam during migration, but it must
   stop forcing final semantics too early
+- the first `ClaimSet` slice must not require repo-wide dual-contract support
 
 ### Phase 3. Land `EconomicFacts`
 

@@ -238,6 +238,9 @@ Boundary note:
   architecture anchor for `EconomicFacts`, `ReconciliationState`,
   `Checkpoint`, `Journal`, `TaxInputs`, and
   `TaxOutputs`
+- `docs/concepts/pipeline-stage-contracts.md` owns the shared target-product
+  versioning, kernel-and-envelope, and downstream stage-contract rules that
+  adapter products must align with
 - adapter work should map into that runtime pipeline rather than creating a
   second competing core architecture
 
@@ -1049,6 +1052,8 @@ contract.
 When this architecture is implemented later, migration should follow these
 rules:
 
+- adapter product and bridge-mapping contracts may advance during shared
+  foundations when the first target-stage slice needs them
 - migrate by adapter family, not all at once
 - do not preserve permanent dual contracts
 - keep each checkpoint reviewable

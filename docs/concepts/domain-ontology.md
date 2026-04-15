@@ -102,6 +102,9 @@ Implication:
 - shared infrastructure may reference them generically only through the
   `SubjectRef` rules owned by
   [Gaps And Readiness](gaps-and-readiness.md)
+- the same shared-infrastructure rule applies when generic attachment is needed
+  for `Instrument`, `Location`, ownership identities, counterparties, or
+  `CheckpointAssertion`
 
 ## Valuation
 
@@ -122,6 +125,9 @@ Rules:
 
 - valuation belongs in the economic model when it changes checkpoint,
   accounting, or tax behavior
+- valuation purpose should be explicit enough to distinguish checkpoint,
+  accounting, tax, and general market-observation use instead of letting one
+  valuation silently stand in for another job
 - valuation should not be hidden only inside renderer metadata or one-off
   policy blobs
 - missing or uncertain valuation should remain explicit when downstream stages
@@ -157,6 +163,22 @@ The target economic layer must be able to express:
 
 Economic facts should describe what happened economically, not what one export
 format calls the row.
+
+Minimum invariant seams:
+
+- one stable event identity
+- one event-kind family that distinguishes asset movement, cash movement,
+  obligations or rights, settlement, collateral, financing, fees or rebates,
+  withholding, lifecycle restructure, and correction or supersession behavior
+- one stable leg set with signed quantities and explicit leg roles
+- explicit effective time and temporal precision when exact timing is not known
+- explicit settlement and lifecycle state where continuity or later treatment
+  depends on them
+- explicit supersession lineage for corrections instead of in-place mutation
+- ownership and counterparty references where they are known and later stages
+  rely on them
+- valuation records with explicit purpose where downstream behavior depends on
+  them
 
 ## Ownership And Counterparty Modeling
 
