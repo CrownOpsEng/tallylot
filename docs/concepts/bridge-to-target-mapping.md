@@ -69,8 +69,8 @@ The current bridge families that matter for target mapping are:
 
 | Current output | Target destination | Mapping rule | Bridge status during migration |
 | --- | --- | --- | --- |
-| `translation_input_candidates.json` | `EvidenceSet` envelope and selection sidecars | preserve planner candidate membership, coverage, and comparability as evidence-selection reasoning | remains bridge-owned until `EvidenceSet` lands |
-| `translation_input_plan.json` | `EvidenceSet` kernel | selected, superseded, and blocked planner decisions become `selection_status` records under one deterministic `selection_group_id` | dual-emitted during the first increment |
+| `translation_input_candidates.json` | `EvidenceSet` envelope and selection sidecars | preserve planner candidate membership, coverage, and comparability as evidence-selection reasoning; these candidates do not become `EvidenceSet` kernel records | remains bridge-owned until `EvidenceSet` lands |
+| `translation_input_plan.json` | `EvidenceSet` kernel | selected, superseded, and blocked planner decisions from this file supply the kernel `selection_status` records under one deterministic `selection_group_id` | dual-emitted during the first increment |
 | recognized statement balance rows | `EvidenceSet` observations and `BalanceObservationClaim` inputs | preserve statement document identity, row identity, as-of time, precision, quantity, and provenance without forcing final checkpoint acceptance | dual-emitted during the first increment |
 | `EconomicActivityDraft` | `ClaimSet` | split one draft into `ActivityClaim`, `InstrumentIdentityClaim`, `LocationClaim`, `BalanceObservationClaim`, `ValuationClaim`, `ProjectionAnnotation`, issue candidates, and review candidates | bridge boundary remains live until claim-native increments replace it |
 | `SourceTranslationBatch` | migration continuity between `EvidenceSet`, `ClaimSet`, and current bridge outputs | keep the bundled bridge boundary honest while bounded proto-products are emitted beside it | live runtime boundary |
@@ -132,8 +132,10 @@ The default first increment is intentionally narrow:
 
 First-increment rules:
 
-- planner-selected, superseded, and blocked candidate records become the first
-  bounded proto-`EvidenceSet` kernel for the increment
+- `translation_input_candidates.json` remains planner candidate reasoning in
+  the `EvidenceSet` envelope or selection sidecars, while
+  `translation_input_plan.json` supplies the kernel `selection_status` records
+  for the increment
 - recognized statement rows become evidence observations first and
   `BalanceObservationClaim` inputs second; they do not become accepted
   checkpoint truth inside the increment

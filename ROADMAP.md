@@ -85,33 +85,11 @@ Rules:
 
 Shared-foundation deliverables before broad pipeline expansion:
 
-- one typed provenance family across evidence, claims, balances, gaps,
-  readiness, checkpoints, accounting, and tax artifacts
-- one target-product versioning, compatibility, canonical-serialization, and
-  fingerprint rule
-- one controlled gap taxonomy with stage ownership, blocking scope,
-  `SubjectRef`, candidate interpretations, required evidence, and allowed
-  resolution methods
-- one gap-attachment rule that covers subject, group, and dataset scopes
-- one readiness vocabulary reused across all stages
-- one subject-first readiness model with derived projections rather than one
-  mandatory global readiness cube
-- one kernel-and-envelope rule with stable rehydration joins
-- one explicit identity seam for instrument, contract, position, location,
-  legal owner, beneficial owner, and counterparty identity
-- one minimum `ClaimSet` taxonomy shared across adapters and later compilation
-- one minimum `EconomicFacts` invariant grammar
-- one typed tax-policy selection seam reused by later `TaxInputs` and
-  `TaxOutputs` work
-- one minimum `TaxInputs` determinant grammar
-- one checkpoint assertion vocabulary reused by reconciliation, checkpoint
-  adoption, accounting, and tax
-- one checkpoint acceptance vocabulary for trust level, acceptance basis,
-  evidence class, continuity proof, and minimum admissibility rules
-- one bridge-to-target mapping for how current planner and
-  translation seams become the first proto-`EvidenceSet` and proto-`ClaimSet`
-  slices
-- one named first vertical slice with parity and replay gates
+- freeze the Phase 0 contract details on the owner pages listed above
+- keep roadmap text focused on readiness, sequencing, and exit criteria instead
+  of restating family lists, kernel makeup, or bridge landing rules
+- use the bounded first-slice owner page for Coinbase-first replay and parity
+  instead of redefining that contract here
 
 Exit criteria:
 
@@ -194,14 +172,9 @@ Deliver:
   remains truth in current-state text
 - explicit trust-gate ownership for reconciliation, checkpoints, accounting,
   and tax
-- target-product versioning, serialization, and fingerprint rules
-- kernel-and-envelope rules with stable rehydration joins
-- shared gap scope, `SubjectRef`, and evidence-readiness rules
-- minimum `ClaimSet`, `EconomicFacts`, `Checkpoint`, and `TaxInputs`
-  vocabularies
-- one bridge-to-target mapping for how current planner and
-  translation seams land the first proto-`EvidenceSet` and proto-`ClaimSet`
-  slices
+- freeze the detailed product, taxonomy, id, ordering, fingerprint, temporal,
+  and bridge-mapping contracts on the owner pages instead of restating them
+  here
 - unified adapter product and facet prep where it removes first-slice drift,
   without broad family migration or wrapper lanes
 - one named first vertical slice with parity and replay gates

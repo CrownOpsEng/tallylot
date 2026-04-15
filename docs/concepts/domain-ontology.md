@@ -169,6 +169,9 @@ Rules:
   than mutating prior accepted truth in place
 - later stages may compare `effective_at` and `recorded_at`, but they should
   not collapse them into one timeline just to make replay look simpler
+- earlier accepted records are never rewritten in place; later accepted records
+  preserve correction lineage through their own `recorded_at` plus explicit
+  supersession references
 
 ## Economic Model
 
@@ -250,6 +253,23 @@ Rules:
 - settlement state should not be inferred later from one output-specific row
   label when the economic model can carry it directly
 
+Allowed transitions:
+
+| Current state | Allowed next states | Terminal |
+| --- | --- | --- |
+| `unknown` | `pending`, `partial`, `settled`, `failed`, `reversed` | no |
+| `pending` | `partial`, `settled`, `failed`, `reversed` | no |
+| `partial` | `settled`, `failed`, `reversed` | no |
+| `settled` | `reversed` | no |
+| `failed` | none | yes |
+| `reversed` | none | yes |
+
+Rules:
+
+- accepted state must move only through the transitions above
+- `failed` and `reversed` are terminal settlement states for one accepted
+  event chain
+
 ## `LifecycleEvent`
 
 `LifecycleEvent` remains first-class whenever restructurings, migrations,
@@ -273,6 +293,24 @@ Rules:
 - lifecycle events belong in the target economic model, not only in adapter
   annotations or tax-policy notes
 
+Allowed transitions:
+
+| Current lifecycle state | Allowed next states | Terminal |
+| --- | --- | --- |
+| `created` | `amended`, `migrated`, `rolled`, `restructured`, `terminated`, `superseded` | no |
+| `amended` | `amended`, `migrated`, `rolled`, `restructured`, `terminated`, `superseded` | no |
+| `migrated` | `amended`, `rolled`, `restructured`, `terminated`, `superseded` | no |
+| `rolled` | `amended`, `rolled`, `restructured`, `terminated`, `superseded` | no |
+| `restructured` | `amended`, `migrated`, `rolled`, `restructured`, `terminated`, `superseded` | no |
+| `terminated` | none | yes |
+| `superseded` | none | yes |
+
+Rules:
+
+- accepted lifecycle state must move only through the transitions above
+- `terminated` and `superseded` are terminal lifecycle states for one accepted
+  chain
+
 ## Basis Pool
 
 `BasisPoolRef` is the shared identity seam for pooled-basis or basis-tracking
@@ -292,6 +330,8 @@ Rules:
   tax owns basis-pool transitions and treatment
 - pooled-basis jurisdictions must not force each stage to invent its own pool
   identity model
+- `BasisPoolRef` serializes and sorts as
+  `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_scope]`
 
 ## Bridge Classifications Versus Target Ontology
 
