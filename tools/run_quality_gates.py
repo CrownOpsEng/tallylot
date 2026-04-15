@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ThreadPoolExecutor
 import os
 import subprocess
 import time
@@ -9,6 +8,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from repo_support.local_autofix import run_local_autofix
+from repo_support.parallel_work import run_parallel_batch
 from repo_support.quality_gates import (
     QUALITY_GATE_ORDER,
     QUALITY_SCHEDULES,
@@ -162,13 +162,7 @@ def _run_phase(
     if not gates:
         return PhaseResult(phase=phase, gate_results=())
 
-    with ThreadPoolExecutor(max_workers=len(gates)) as executor:
-        future_by_gate_name = {
-            gate.name: executor.submit(_run_gate, gate) for gate in gates
-        }
-        ordered_results = tuple(
-            future_by_gate_name[gate.name].result() for gate in gates
-        )
+    ordered_results = run_parallel_batch(gates, runner=_run_gate)
     for gate_result in ordered_results:
         _print_gate_result(gate_result)
     return PhaseResult(phase=phase, gate_results=ordered_results)

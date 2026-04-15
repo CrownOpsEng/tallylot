@@ -158,6 +158,14 @@ def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
     assert "git show HEAD:<path>" in text
 
 
+def test_commit_standards_require_scoped_subjects() -> None:
+    text = (docs_root() / "standards" / "commits.md").read_text(encoding="utf-8")
+
+    assert "type(scope): imperative summary" in text
+    assert "The scope is optional" not in text
+    assert "required lowercase kebab-case scope" in text
+
+
 def test_commit_standards_document_hybrid_pr_merge_policy() -> None:
     text = (docs_root() / "standards" / "commits.md").read_text(encoding="utf-8")
     implementation_text = (docs_root() / "standards" / "implementation.md").read_text(

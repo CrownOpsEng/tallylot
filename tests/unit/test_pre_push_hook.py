@@ -45,7 +45,7 @@ def test_pre_push_hook_validates_current_head_against_open_pr_metadata(
     monkeypatch.setattr(
         tools.pre_push_hook,
         "_load_open_pr_metadata",
-        lambda: ("docs: update policy", "Why:\n- test\n", "base123"),
+        lambda: ("docs(commits): update policy", "Why:\n- test\n", "base123"),
     )
     monkeypatch.setattr(
         tools.pre_push_hook, "_ensure_commit_available", record_base_sha
@@ -64,7 +64,7 @@ def test_pre_push_hook_validates_current_head_against_open_pr_metadata(
     assert tools.pre_push_hook.main([]) == 0
     assert recorded == {
         "base": "base123",
-        "title": "docs: update policy",
+        "title": "docs(commits): update policy",
         "body": "Why:\n- test\n",
         "base_sha": "base123",
         "head_sha": "head456",

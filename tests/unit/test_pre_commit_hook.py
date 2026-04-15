@@ -193,8 +193,10 @@ def test_run_staged_verification_uses_planned_checks_for_docs_only(
         *,
         context: CheckExecutionContext,
         fail_fast: bool,
+        parallel: bool,
     ) -> ExecutionSummary:
         del fail_fast
+        assert parallel is True
         seen_contexts.append(context)
         seen_plans.append(plan.selected_check_ids)
         return ExecutionSummary(
