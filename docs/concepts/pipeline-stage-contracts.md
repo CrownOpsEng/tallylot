@@ -59,6 +59,10 @@ Shared rules:
 ### Versioning, Serialization, And Fingerprints
 
 - every target product carries a `schema_version`
+- `schema_version` is a product-level kernel field persisted once per emitted
+  product beside the ordered kernel records for that product
+- per-record kernel field lists below do not repeat `schema_version` unless one
+  product truly carries it on every record
 - readers accept only the declared supported versions for that product
 - unknown schema versions fail fast
 - compatibility is forward-only by default; do not promise long-lived in-place
@@ -378,6 +382,46 @@ The compiler owns adjudication between `ClaimSet` and `EconomicFacts`.
 - one resolution basis describing why the compiler accepted, deferred, or
   blocked the interpretation group
 
+### CompilationDecision Kernel
+
+Kernel fields:
+
+- `claim_set_id`
+- `adjudication_record_id`
+- `interpretation_group_id`
+- `compilation_outcome`
+- `accepted_claim_refs`
+- `rejected_claim_refs`
+- `deferred_claim_refs`
+- `resolution_basis`
+- `blocking_gap_refs`
+
+Stable ids:
+
+- `adjudication_record_id` uses component array
+  `[claim_set_id, interpretation_group_id, compilation_outcome, resolution_basis, accepted_claim_refs, rejected_claim_refs, deferred_claim_refs]`
+
+Controlled `resolution_basis` vocabulary:
+
+- `single_bundle_match`
+- `insufficient_identity`
+- `insufficient_temporal_precision`
+- `conflicting_claims`
+- `upstream_blocker`
+- `policy_deferred`
+- `superseded_by_later_claims`
+
+Ordering:
+
+- sort by `interpretation_group_id`
+- then `adjudication_record_id`
+
+Serialization:
+
+- serialize kernel decision records only
+- use stable object-key ordering
+- preserve sorted claim-ref and gap-ref arrays
+
 Adjudication rules:
 
 - interpretation groups are bundle-atomic
@@ -438,6 +482,10 @@ Envelope content may include:
 - `event_id` identifies one accepted economic event
 - `leg_id` identifies one stable leg under one accepted event
 - `adjudication_record_id` identifies one compiler decision record
+- `event_id` uses component array `[adjudication_record_id, event_index]`
+- `leg_id` uses component array `[event_id, leg_index]`
+- `event_index` and `leg_index` are zero-based canonical positions in declared
+  event and leg order
 
 ### EconomicFacts Ordering
 
@@ -540,6 +588,17 @@ Envelope content may include:
 - `link_id` identifies one owned transfer or settlement linkage
 - `checkpoint_candidate_id` identifies one reconciliation-owned checkpoint
   proposal
+- `continuity_segment_id` uses component array
+  `[source, subject_ref, segment_start_or_null, segment_end_or_null]`
+- `link_id` uses component array `[continuity_segment_id, link_index]`
+- `checkpoint_candidate_id` uses component array
+  `[checkpoint_date, subject_ref, continuity_segment_id, candidate_index]`
+- `reconciliation_state_id` uses component array
+  `[checkpoint_date, subject_ref, continuity_segment_id, checkpoint_candidate_id]`
+- `segment_start_or_null` and `segment_end_or_null` use canonical timestamp
+  scalars or JSON `null`
+- `link_index` and `candidate_index` are zero-based canonical positions in
+  declared order
 
 ### ReconciliationState Ordering
 
@@ -623,8 +682,12 @@ Envelope content may include:
 - `checkpoint_id` identifies one accepted checkpoint container
 - `checkpoint_assertion_id` identifies one accepted checkpoint truth record for
   one subject and one as-of point
+- `checkpoint_id` uses component array
+  `[asserted_as_of_at, ordered_checkpoint_assertion_ids]`
 - `checkpoint_assertion_id` uses component array
   `[assertion_kind, asserted_as_of_at, subject_ref.subject_kind, subject_ref.subject_id]`
+- `ordered_checkpoint_assertion_ids` is the canonical ordered list of
+  assertion ids persisted in that accepted checkpoint container
 
 ### Checkpoint Ordering
 
@@ -739,6 +802,14 @@ Envelope content may include:
 - `journal_id` identifies one accounting emission
 - `entry_id` identifies one journal entry
 - `posting_id` identifies one posting under one journal entry
+- `journal_id` uses component array
+  `[ordered_economic_event_refs, ordered_checkpoint_assertion_refs]`
+- `entry_id` uses component array `[journal_id, entry_index]`
+- `posting_id` uses component array `[entry_id, posting_index]`
+- `ordered_economic_event_refs` and `ordered_checkpoint_assertion_refs` use
+  the canonical reference ordering declared by the emitted journal product
+- `entry_index` and `posting_index` are zero-based canonical positions in
+  declared order
 
 ### Journal Ordering
 
@@ -920,6 +991,10 @@ Envelope content may include:
 ### TaxOutputs Stable Ids
 
 - `tax_output_id` identifies one policy-owned output emission
+- `tax_output_id` uses component array
+  `[policy_id, output_family, tax_year, ordered_basis_pool_refs]`
+- `ordered_basis_pool_refs` is the canonical ordered list of basis-pool tuple
+  references included in that emitted tax output
 
 ### TaxOutputs Ordering
 

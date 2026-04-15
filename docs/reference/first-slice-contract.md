@@ -140,6 +140,22 @@ Stable-id format:
 
 Slice-specific component arrays:
 
+- `coinbase_retail_export` uses `member_class = "coinbase_retail_export"` and
+  `member_locator_identity = [raw_file, raw_member_ref_or_null]`
+- retail planner-decision observations use
+  `observation_class = "selection_decision"` and
+  `observation_anchor = [selection_status]`
+- `coinbase_statement_document` uses
+  `member_class = "coinbase_statement_document"` and
+  `member_locator_identity = [raw_file, raw_member_ref_or_null]`
+- document-identity observations use
+  `observation_class = "document_identity"` and
+  `observation_anchor = ["document"]`
+- `coinbase_statement_balance_row` is an observation class under the owning
+  `coinbase_statement_document` member, not a second member family
+- statement balance observations use
+  `observation_class = "coinbase_statement_balance_row"` and
+  `observation_anchor = [row_anchor]`
 - retail activity `claim_id` uses
   `[claim_set_id, "ActivityClaim", raw_file, raw_row_ref, interpretation_group_id]`
 - statement-derived `claim_id` uses
@@ -167,6 +183,8 @@ Fingerprint rules:
   fingerprint references, not duplicated upstream payload blobs
 - manifest fingerprints are referenced as upstream inputs; they are not
   duplicated into the emitted product kernel
+- compiled bridge fact fingerprints use the bridge replay contract owned by
+  [Current Bridge Contracts](../concepts/current-bridge-contracts.md)
 - sidecars, explanations, and reviews use separate fingerprints when persisted
   independently
 
