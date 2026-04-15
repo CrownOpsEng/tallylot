@@ -58,7 +58,9 @@ The target architecture lands as these final products:
 Owning contract pages:
 
 - [`docs/concepts/current-bridge-contracts.md`](../concepts/current-bridge-contracts.md)
+- [`docs/concepts/bridge-to-target-mapping.md`](../concepts/bridge-to-target-mapping.md)
 - [`docs/concepts/pipeline-stage-contracts.md`](../concepts/pipeline-stage-contracts.md)
+- [`docs/reference/first-slice-contract.md`](../reference/first-slice-contract.md)
 - [`docs/concepts/domain-ontology.md`](../concepts/domain-ontology.md)
 - [`docs/concepts/gaps-and-readiness.md`](../concepts/gaps-and-readiness.md)
 
@@ -75,8 +77,8 @@ These foundations are prerequisites, not later cleanup:
 - target-product versioning, compatibility, serialization, and fingerprint
   rules
 - kernel-and-envelope rules with stable rehydration joins
-- one bridge note for how current adapter seams land proto-`EvidenceSet` and
-  proto-`ClaimSet`
+- one bridge-to-target mapping page that owns how current adapter seams land in
+  proto-`EvidenceSet` and proto-`ClaimSet`
 
 Rules:
 
@@ -112,6 +114,9 @@ Default first-slice direction:
 - use the planner-enabled Coinbase retail export family plus statement-backed
   balance observation flow unless the active filing workspace requires another
   Tier A family to land first
+- use [First Slice Contract](../reference/first-slice-contract.md) as the
+  bounded default-slice contract instead of inferring extra adapter inventory
+  from the repo
 
 ## Phase Order
 
@@ -127,8 +132,8 @@ Deliver before broad code changes:
 - kernel-and-envelope rules with stable rehydration joins
 - minimum `ClaimSet`, `EconomicFacts`, `Checkpoint`, and `TaxInputs`
   vocabularies
-- one bridge note for how current planner and translation seams land proto-
-  `EvidenceSet` and proto-`ClaimSet`
+- one canonical bridge-to-target mapping for how current planner and
+  translation seams land proto-`EvidenceSet` and proto-`ClaimSet`
 - one named first vertical slice with parity and replay gates
 - clear bridge-versus-target ownership so later code slices do not re-decide
   naming or stage boundaries
@@ -139,6 +144,8 @@ Rules:
 - do not let the bridge contract masquerade as the target ontology
 - do not make broad unified-adapter family migration a hidden prerequisite for
   the first target-stage slice
+- do not start broad target package scaffolding before these contracts are
+  frozen on their owner pages
 
 ### Phase 1. Formalize `EvidenceSet`
 

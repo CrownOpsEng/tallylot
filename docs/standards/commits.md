@@ -112,9 +112,10 @@ Standard footers are allowed, including `BREAKING CHANGE:`.
 requests with merge commits so the reviewed checkpoint history remains visible
 in Git. Use squash merges only for the narrow single-checkpoint exception.
 
-Treat the pull request title and description as the canonical review record
-for every PR. For the single-checkpoint exception, that same metadata also
-becomes the generated squash commit that lands on `main`.
+Treat the pull request title and description as the review record that governs
+merge and mainline history for every PR. For the single-checkpoint exception,
+that same metadata also becomes the generated squash commit that lands on
+`main`.
 
 Protected-branch rule:
 

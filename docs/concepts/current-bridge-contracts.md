@@ -216,6 +216,49 @@ Current bridge bundle to preserve:
   - no other non-primary leg kinds
   - renderers derive inbound and outbound adapter concepts from sign
 
+### Mixed Kernel Bridge Note
+
+`TransactionFact` currently mixes computationally important fields, bridge
+semantics, and bridge envelope detail in one record.
+
+Computational core still carried today:
+
+- `fact_id`
+- `source`
+- `adapter_id`
+- `timestamp`
+- `effective_at`
+- `effective_precision`
+- `location_id`
+- `legs`
+- `leg_policy`
+
+Bridge semantic layer still carried today:
+
+- `economic_kind`
+- `projection_hint`
+- `accounting_intent_hint`
+- `tax_treatment_hint`
+
+Bridge envelope and audit detail still carried today:
+
+- `description`
+- `provider_operation_key`
+- `operation_group_id`
+- `tx_hash`
+- `raw_file`
+- `raw_row_ref`
+- `confidence`
+- `status`
+
+Rules:
+
+- the current serializer persists all of these fields together because that is
+  live bridge truth
+- this mixed shape is not the canonical target kernel rule for future products
+- forward transformation rules and bounded proto-product mapping now live in
+  [Bridge To Target Mapping](bridge-to-target-mapping.md)
+
 ### Current Normalization Window Contract
 
 - runtime timestamps are timezone-aware UTC in drafts, facts, balance
@@ -318,3 +361,6 @@ Rules:
   than mutating current bridge pages into a blended current-and-future hybrid
 - treat this bridge as the active runtime seam that later target slices must
   replace cleanly, not as a structure that should be immortalized
+- use [Bridge To Target Mapping](bridge-to-target-mapping.md) as the single
+  authority for how these bridge seams land in bounded proto-products during
+  migration

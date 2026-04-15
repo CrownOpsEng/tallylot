@@ -78,6 +78,30 @@ Rules:
 - use `SubjectRef` only where shared infrastructure needs a generic pointer
 - do not use `SubjectRef` as an excuse to stop modeling the true concept
 
+## Non-Subject Scope Identity
+
+Non-subject scopes are allowed only when no narrower truthful subject exists.
+
+Required scope ids:
+
+- `selection_group_id`
+- `continuity_segment_id`
+- `checkpoint_candidate_id`
+- `dataset_id`
+
+Rules:
+
+- every non-subject gap attachment uses one stable scope id
+- `selection_group_id` identifies one deterministic evidence-selection
+  decision boundary
+- `continuity_segment_id` identifies one bounded reconciliation window
+- `checkpoint_candidate_id` identifies one reconciliation-owned checkpoint
+  proposal before acceptance
+- `dataset_id` identifies one persisted stage kernel or one explicit slice-wide
+  dataset under review
+- do not attach a gap to `dataset` scope when `subject`, `selection_group`, or
+  `checkpoint_candidate` would be truthful
+
 ## Gap Model
 
 The target shared gap model splits compact blocking truth from explanation.
@@ -118,6 +142,7 @@ Rules:
 - `blocking_stages` identifies who is blocked by the unresolved condition
 - later stages may add stage-local subtyping, but they should not redefine the
   shared core out of existence
+- non-subject scopes must still use stable ids rather than prose labels
 
 ### `GapExplanation`
 
@@ -188,6 +213,12 @@ Shared status vocabulary:
 - `partial`
 - `not_applicable`
 
+`partial` means:
+
+- some required interpretations or assertions resolved
+- at least one blocking gap still open
+- the remaining uncertainty is recorded through gap ids, not prose-only summary
+
 ### `SubjectReadinessRecord`
 
 Purpose:
@@ -217,6 +248,23 @@ Rules:
 - a subject may be ready for one stage and blocked for another
 - readiness should point to blocking gap ids rather than hiding blockers in
   summary text
+
+## Reducer Rules
+
+Readiness reducers should remain compact, deterministic, and subject-first.
+
+Rules:
+
+- reducers work from `GapCore`, stable scope ids, and subject readiness records
+- reducers must not infer readiness from explanation prose
+- reducers may roll up from subject truth into reporting projections, but the
+  projection is derived output, not the only stored truth
+- `partial` readiness requires at least one resolved assertion plus at least
+  one open blocking gap id
+- if no required assertion has resolved yet, status is `blocked`, not `partial`
+- if no blocker applies, status is `ready`, not `partial`
+- dataset summaries should be reproducible from ordered readiness and gap
+  records without manual status editing
 
 ### `ReadinessProjection`
 
@@ -252,6 +300,23 @@ Rules:
 - checkpoint assertions should stay first-class and referenceable
 - downstream stages may reuse them, but should not redefine them into
   incompatible local variants
+
+## Bridge Mapping From Issue And Review Records
+
+The live bridge still emits `IssueRecord` and `NormalizationReviewRecord`.
+
+Mapping rules:
+
+- a blocking `IssueRecord` maps to one `GapCore` plus one `GapExplanation`
+  when owner stage, blocking stages, scope, and blocker semantics align
+- `IssueRecord.kind`, `severity`, `context_timestamp`, and typed provenance are
+  gap inputs, not free text to reinterpret later
+- `NormalizationReviewRecord` remains a review sidecar unless a paired
+  blocking condition also exists
+- when one factual cause produces both a blocker and an advisory review, the
+  blocker lands in `GapCore` and the review remains keyed sidecar context
+- current bridge ids should remain traceable when later stages adopt
+  target-native gap or review ids
 
 ## Anti-Duplication And Sidecar Rules
 
