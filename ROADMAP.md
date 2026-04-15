@@ -7,7 +7,9 @@ This file is the forward planning document for the repo.
   [`docs/status/current-state.md`](docs/status/current-state.md).
 - Detailed contract ownership lives in:
   - [`docs/concepts/current-bridge-contracts.md`](docs/concepts/current-bridge-contracts.md)
+  - [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
   - [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
+  - [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md)
   - [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
   - [`docs/concepts/gaps-and-readiness.md`](docs/concepts/gaps-and-readiness.md)
   - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
@@ -54,8 +56,12 @@ These are blocking shared foundations for later implementation work:
 
 - the live bridge contracts documented in
   [`docs/concepts/current-bridge-contracts.md`](docs/concepts/current-bridge-contracts.md)
+- the bridge-to-target transformation rules documented in
+  [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
 - the target stage contracts documented in
   [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
+- the bounded first-slice parity and replay contract documented in
+  [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md)
 - the target ontology and identity seams documented in
   [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
 - the shared gap, readiness, and `SubjectRef` rules documented in
@@ -102,8 +108,9 @@ Shared-foundation deliverables before broad pipeline expansion:
   adoption, accounting, and tax
 - one checkpoint acceptance vocabulary for trust level, acceptance basis,
   evidence class, continuity proof, and minimum admissibility rules
-- one bridge note for how current planner and translation seams become the first
-  proto-`EvidenceSet` and proto-`ClaimSet` slices
+- one canonical bridge-to-target mapping for how current planner and
+  translation seams become the first proto-`EvidenceSet` and proto-`ClaimSet`
+  slices
 - one named first vertical slice with parity and replay gates
 
 Exit criteria:
@@ -115,7 +122,15 @@ Exit criteria:
 - dataset summaries derive from subject-level readiness instead of hand-built
   status prose
 - target products have owned versioning and fingerprint rules
+- the canonical bridge-to-target mapping is published and linked as the single
+  authority
+- per-product kernel, id, serialization, fingerprint, and adjudication rules
+  are frozen on the target owner page
+- `CheckpointAssertion`, issue-to-gap mapping, and review-sidecar rules are
+  defined on their owning pages
 - the first vertical slice and its bridge-to-target landing path are explicit
+- broad target package scaffolding does not begin before these contracts are
+  frozen
 
 ## MVP Scope Guardrails
 
@@ -134,6 +149,10 @@ Exit criteria:
 - default first vertical slice: the planner-enabled Coinbase retail export
   family plus statement-backed balance observation flow, unless the active
   filing workspace requires another Tier A family to land first
+- the repo default first slice is the bounded contract in
+  [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md);
+  it is not a claim that the actual `2023` to `2025` filing adapter inventory
+  is already known in-repo
 - keep crypto filing-critical coverage primary for the MVP while using generic
   runtime names and boundaries that can later absorb other instrument classes
 - keep filing-critical adapter stabilization distinct from broad family
@@ -180,8 +199,9 @@ Deliver:
 - shared gap scope, `SubjectRef`, and evidence-readiness rules
 - minimum `ClaimSet`, `EconomicFacts`, `Checkpoint`, and `TaxInputs`
   vocabularies
-- one bridge note for how current planner and translation seams land the first
-  proto-`EvidenceSet` and proto-`ClaimSet` slices
+- one canonical bridge-to-target mapping for how current planner and
+  translation seams land the first proto-`EvidenceSet` and proto-`ClaimSet`
+  slices
 - unified adapter product and facet prep where it removes first-slice drift,
   without broad family migration or wrapper lanes
 - one named first vertical slice with parity and replay gates
@@ -193,8 +213,12 @@ Exit criteria:
   definition in several conflicting places
 - the first slice does not depend on an implicit adapter rewrite that is not
   written down
+- the first slice does not depend on inventing ids, ordering, serialization,
+  fingerprints, replay checks, or allowed drift at implementation time
 - broad implementation can start without each stage inventing its own meaning
   for gaps, claims, checkpoint acceptance, or fingerprints
+- broad implementation does not start with target package scaffolding that
+  outruns the frozen contract set
 
 ### Phase 1. Formalize `EvidenceSet`
 

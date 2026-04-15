@@ -178,6 +178,13 @@ Out of scope now:
 - broad parity work for adapters not used in the current filing path
 - redesigning discovery to support future adapter kinds
 
+Repo-status rule:
+
+- this repo may freeze the default Coinbase-first slice and its contract
+  boundaries
+- this repo must not pretend it already knows the actual `2023` to `2025`
+  filing adapter inventory without an external workspace source list
+
 Exit criteria:
 
 - the team can say exactly which adapters must be stable before filing
@@ -398,6 +405,9 @@ Rules:
 - no dual active runtime centers
 - no adapter-local hidden semantics beyond provider-local meaning
 - no broad family migration as a hidden prerequisite for the first slice
+- [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md) is the
+  single owner for the canonical bridge mapping; this page only records the
+  adapter-delivery implications
 
 Default bridge mapping for the first slice:
 
@@ -456,6 +466,8 @@ Default first-slice direction:
   Tier A family to land first
 - keep `cointracking_csv` projection compatibility in scope for the same slice
   where it protects filing output determinism
+- use [First Slice Contract](../reference/first-slice-contract.md) as the
+  bounded parity, replay, and allowed-drift contract for that default slice
 
 ### 5. Allow Shared Compiler And Verifier Prep
 

@@ -80,6 +80,8 @@ This page does not re-own every lower-level contract.
 Use these pages as the detailed contract owners:
 
 - [Current Bridge Contracts](current-bridge-contracts.md)
+- [Bridge To Target Mapping](bridge-to-target-mapping.md)
+- [First Slice Contract](../reference/first-slice-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gaps And Readiness](gaps-and-readiness.md)
@@ -211,16 +213,33 @@ Rules:
 Expensive recalculation must be partitionable by the dimensions the owning
 stage actually uses, including:
 
-- source
-- location
-- instrument
-- subject reference where applicable
-- continuity segment where applicable
-- checkpoint date where applicable
-- tax year where applicable
+| Stage family | Required partition keys |
+| --- | --- |
+| Evidence and claims | `source`, `capture_uid`, `selection_group_id`, `claim_set_id` |
+| Reconciliation | `source`, `location`, `instrument`, `continuity_segment_id`, `checkpoint_date` |
+| Tax | `tax_year`, `beneficial_owner`, `basis_pool_ref` |
 
 Use derived reporting projections instead of forcing every stage to key every
 record by every dimension.
+
+### Cardinality And Scope Boundaries
+
+Partition boundaries are also cardinality contracts.
+
+Rules:
+
+- evidence selection comparisons stay bounded to one `selection_group_id`
+- claim adjudication stays bounded to one `claim_set_id` and one
+  `interpretation_group_id` at a time
+- reconciliation reducers may read one continuity segment plus its explicit
+  upstream references; they must not rescan unrelated full-history partitions
+  per balance target
+- tax reducers may read one tax year plus explicitly referenced carry-forward
+  basis-pool state; they must not recompute unrelated years by default
+- unbounded pairwise candidate comparison outside one deterministic selection
+  group is not allowed
+- full-history rescans per target are not allowed when a bounded partition or
+  reusable materialized state exists
 
 ### Materialized State
 
@@ -229,10 +248,14 @@ too high.
 
 Typical surfaces include:
 
+- evidence selection-group snapshots
+- interpretation-group decision snapshots
 - checkpoint state snapshots
 - reconciliation continuity summaries
 - position state snapshots where replay cost is material
+- accepted checkpoint assertions
 - tax pool and carry-forward state by tax year
+- year-open basis or pool state reused as next-year starting state
 - validated posting aggregates where useful
 
 Derived state remains replaceable and does not replace source-of-truth history.
@@ -251,6 +274,8 @@ Avoid:
 - repeated global joins across the full history
 - repeated scanning of unrelated sources or years
 - repeated evidence-level parsing during later-stage calculations
+- repeated full-history rescans per target
+- unbounded pairwise comparison across unrelated selection groups
 - dynamic policy dispatch inside tight per-record loops
 
 ### Tax Performance Rules

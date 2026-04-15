@@ -10,7 +10,9 @@ related:
   - ROADMAP.md
   - docs/status/adapter-delivery-plan.md
   - docs/guides/write-an-adapter.md
+  - docs/concepts/bridge-to-target-mapping.md
   - docs/concepts/pipeline-stage-contracts.md
+  - docs/reference/first-slice-contract.md
   - docs/concepts/domain-ontology.md
   - docs/concepts/reconciliation-tax-architecture.md
   - docs/concepts/oracle-boundaries.md
@@ -246,31 +248,36 @@ Boundary note:
 
 ### 1. EvidenceSet
 
-Purpose:
+Adapter-emission purpose:
 
-- represent the evidence selected for one adapter-owned read operation
+- emit the canonical `EvidenceSet` product owned by
+  [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - preserve discovery results, family classification, provenance, and typed
-  parse outputs without making semantic commitments too early
+  parse outputs without adapter-local semantic invention
 
 Owned by:
 
 - reader facets and shared evidence orchestration
 
-Must include:
+Adapter emission must include:
 
 - adapter id
 - capture or input identity
-- manifest version and fingerprint
+- stable ids required by the canonical `EvidenceSet` kernel
+- manifest version and manifest fingerprint reference
 - evidence members with typed provenance
 - evidence family ids
 - parse diagnostics
-- deterministic member ordering
-- evidence fingerprint
+- deterministic member ordering that matches the canonical kernel order
+- an `EvidenceSet` fingerprint computed from the canonical product kernel plus
+  upstream refs, not from duplicated manifest payload blobs
 
 Must not include:
 
-- current bridge facts or downstream runtime products
+- current bridge facts
+- downstream runtime products beyond the canonical `EvidenceSet`
 - target-specific output rows
+- competing evidence-product rules that differ from the pipeline-stage owner doc
 
 Typical contents:
 
@@ -282,9 +289,12 @@ Typical contents:
 
 ### 2. ClaimSet
 
-Purpose:
+Adapter-emission purpose:
 
-- hold provider-local semantic claims before shared compilation
+- emit the canonical `ClaimSet` product owned by
+  [Pipeline Stage Contracts](pipeline-stage-contracts.md)
+- hold provider-local semantic claims before shared compilation without
+  redefining target-product meaning locally
 
 Owned by:
 
@@ -301,21 +311,24 @@ Claim types may include:
 - `ContractTermClaim`
 - `ValuationClaim`
 - `ProjectionAnnotation`
-- `EvidenceIssue`
-- `EvidenceReview`
+- `IssueCandidate`
+- `ReviewCandidate`
 
-Must include:
+Adapter emission must include:
 
 - deterministic claim ids
 - typed provenance references back to the evidence set
 - structural status for each claim
 - blocking versus advisory distinction
-- claim-set fingerprint
+- canonical claim ordering
+- a `ClaimSet` fingerprint computed from the canonical product kernel plus
+  referenced upstream ids or fingerprints, not duplicated manifest payloads
 
 Must not include:
 
 - inferred final identities that have not been resolved
 - writer-specific rows
+- competing claim-product rules that differ from the pipeline-stage owner doc
 
 ### 3. Bridge Result While The Current Path Remains Active
 
@@ -784,6 +797,8 @@ Serialization rules should:
 - avoid implicit ordering from language runtime containers
 - exclude presentation-only noise
 - include semantically relevant fields only
+- reference manifest fingerprints as upstream inputs instead of duplicating
+  manifest payload blobs into product kernels
 
 ## Assertions, Issues, And Reviews
 
@@ -1041,8 +1056,6 @@ These questions are intentionally left open for later design review:
 - Which manifest fields should be purely declarative versus code-generated?
 - How much of current timezone and precision policy belongs in manifest data
   versus provider-local code?
-- Should claim and product fingerprints include manifest fingerprints
-  directly, or reference them externally?
 
 These are implementation questions, not reasons to keep the bundled current
 contract.

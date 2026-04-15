@@ -38,6 +38,7 @@ The target model should use these concepts explicitly:
 - `CheckpointAssertion`
 - `Posting`
 - `TaxInput`
+- `BasisPoolRef`
 
 These are not interchangeable labels. They represent distinct business
 concepts, and the model should keep them distinct even when one adapter or one
@@ -106,6 +107,22 @@ Implication:
   for `Instrument`, `Location`, ownership identities, counterparties, or
   `CheckpointAssertion`
 
+## `CheckpointAssertion`
+
+`CheckpointAssertion` is the accepted checkpoint-truth record for one subject
+and one as-of point.
+
+Rules:
+
+- it is distinct from a reconciliation `CheckpointCandidate`
+- it is distinct from a computed `BalanceSnapshot`
+- it is distinct from a raw `BalanceReference`
+- it is distinct from the containing accepted `Checkpoint`
+- downstream stages may consume checkpoint assertions, but they must not
+  redefine them into incompatible local variants
+- accepted checkpoint truth should be modeled as checkpoint assertions first
+  and checkpoint containers second
+
 ## Valuation
 
 Valuation is first-class whenever it changes downstream behavior.
@@ -132,6 +149,26 @@ Rules:
   policy blobs
 - missing or uncertain valuation should remain explicit when downstream stages
   still need to reason about it
+
+## Temporal Semantics
+
+Time rules must survive replay, retroactive correction, and cross-stage audit.
+
+Required distinctions:
+
+- `effective_at` expresses when the economic or checkpoint meaning applies
+- `effective_precision` preserves whether that time is exact or date-scoped
+- `recorded_at` expresses when the system accepted or recorded the later-stage
+  truth
+
+Rules:
+
+- `effective_at` and `recorded_at` are not interchangeable
+- date-only meaning must remain distinct from exact timestamps
+- retroactive corrections emit superseding records with explicit lineage rather
+  than mutating prior accepted truth in place
+- later stages may compare `effective_at` and `recorded_at`, but they should
+  not collapse them into one timeline just to make replay look simpler
 
 ## Economic Model
 
@@ -192,16 +229,69 @@ Rules:
 - unresolved ownership transitions should remain visible to reconciliation,
   checkpoint, accounting, or tax as appropriate
 
-## Settlement And Lifecycle State
+## `SettlementState`
+
+`SettlementState` remains first-class whenever completeness, continuity, or
+later treatment depends on it.
+
+Shared vocabulary:
+
+- `pending`
+- `partial`
+- `settled`
+- `failed`
+- `reversed`
+- `unknown`
 
 Rules:
 
 - settlement state should remain explicit where timing, completeness, or
   continuity matters
-- lifecycle changes such as restructurings, migrations, contract rolls, and
-  supersession chains should not be flattened into generic trade-like labels
+- settlement state should not be inferred later from one output-specific row
+  label when the economic model can carry it directly
+
+## `LifecycleEvent`
+
+`LifecycleEvent` remains first-class whenever restructurings, migrations,
+rolls, term changes, or supersession chains affect later reasoning.
+
+Shared vocabulary:
+
+- `created`
+- `amended`
+- `migrated`
+- `rolled`
+- `restructured`
+- `terminated`
+- `superseded`
+
+Rules:
+
+- lifecycle changes should not be flattened into generic trade-like labels
 - corrections should preserve supersession lineage instead of mutating earlier
   accepted meaning in place
+- lifecycle events belong in the target economic model, not only in adapter
+  annotations or tax-policy notes
+
+## Basis Pool
+
+`BasisPoolRef` is the shared identity seam for pooled-basis or basis-tracking
+state reused by tax inputs and policy execution.
+
+Minimum key dimensions:
+
+- tax policy
+- jurisdiction or regime
+- beneficial owner
+- pool scope
+
+Rules:
+
+- basis pools are first-class domain seams, not renderer metadata
+- reconciliation and checkpoint stages may reference basis-relevant state, but
+  tax owns basis-pool transitions and treatment
+- pooled-basis jurisdictions must not force each stage to invent its own pool
+  identity model
 
 ## Bridge Classifications Versus Target Ontology
 
@@ -217,6 +307,22 @@ Rules:
   ontology, not by endlessly adding new activity labels
 - output hints and policy hints remain downstream aids, not the primary source
   of economic truth
+
+## Neutral Export Surface
+
+The target-neutral domain API should not be inferred from the current bridge
+export surface.
+
+Rules:
+
+- the root `domain` export surface is current-state convenience, not target API
+  precedent
+- current bridge-era helpers such as `asset_claim()` are crypto-oriented
+  identity conveniences, not the intended neutral ontology center
+- later target package exports should follow stage and ontology ownership, not
+  the current bridge-era convenience surface
+- do not treat bridge-era crypto helpers as a reason to shape new core models
+  around crypto-first assumptions
 
 Bridge-specific classification rules live in
 [Transaction Classification](transaction-classification.md), not here.
