@@ -31,7 +31,7 @@ GENERATED_MAINLINE_COMMIT_OPTIONAL_SECTIONS = (
     *PR_BODY_OPTIONAL_SECTIONS,
 )
 SUBJECT_PATTERN = re.compile(
-    rf"^(?:{TYPE_PATTERN})(?:\(({SCOPE_PATTERN})\))?: (?P<summary>.+)$"
+    rf"^(?:{TYPE_PATTERN})\(({SCOPE_PATTERN})\): (?P<summary>.+)$"
 )
 FOOTER_PATTERN = re.compile(r"^(?:BREAKING CHANGE|[A-Za-z][A-Za-z0-9-]*):(?: .+)?$")
 LABEL_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9 -]*:(?: .+)?$")
@@ -55,8 +55,8 @@ def validate_subject_line(subject: str) -> tuple[str, ...]:
     if match is None:
         allowed_types = ", ".join(ALLOWED_TYPES)
         errors.append(
-            "subject must match `type(scope): imperative summary` or "
-            f"`type: imperative summary` using one of: {allowed_types}"
+            "subject must match `type(scope): imperative summary` "
+            f"using one of: {allowed_types}"
         )
         return tuple(errors)
     if match.group("summary").strip().lower() in GENERIC_SUMMARY_PHRASES:

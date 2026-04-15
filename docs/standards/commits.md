@@ -26,12 +26,6 @@ Use this format for the first line:
 type(scope): imperative summary
 ```
 
-The scope is optional:
-
-```text
-type: imperative summary
-```
-
 Allowed types:
 
 - `feat`
@@ -48,7 +42,7 @@ Allowed types:
 Subject rules:
 
 - lowercase type
-- optional lowercase kebab-case scope
+- required lowercase kebab-case scope
 - non-empty imperative summary
 - summary names a concrete repo area or behavior
 - maximum 72 characters for the full subject line

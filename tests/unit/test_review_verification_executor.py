@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import threading
 
 from pytest import MonkeyPatch
 
@@ -109,6 +110,47 @@ def test_run_plan_fail_fast_skips_remaining_checks(monkeypatch: MonkeyPatch) -> 
     assert summary.results[0].status == "failed"
     assert summary.results[1].status == "skipped"
     assert commands_seen == [("ruff", "check", ".")]
+
+
+def test_run_plan_can_execute_ready_checks_in_parallel(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    barrier = threading.Barrier(2)
+
+    def fake_run_check(spec: object, *, context: CheckExecutionContext) -> CheckResult:
+        del context
+        barrier.wait(timeout=1.0)
+        check_id = getattr(spec, "id")
+        return CheckResult(
+            check_id=check_id,
+            status="passed",
+            returncode=0,
+            elapsed=0.0,
+            stdout="",
+            stderr="",
+        )
+
+    monkeypatch.setattr(
+        "repo_support.review_verification.executor.run_check",
+        fake_run_check,
+    )
+    plan = build_verification_plan(
+        paths=("docs/guides/source-intake.md",),
+        trigger="local",
+        mode="planned",
+    )
+
+    summary = run_plan(
+        plan,
+        context=CheckExecutionContext(trigger="local"),
+        fail_fast=True,
+        parallel=True,
+    )
+
+    assert tuple(result.check_id for result in summary.results) == (
+        "docs-maintenance",
+        "markdownlint",
+    )
 
 
 def test_execution_summary_detects_blocking_failures() -> None:

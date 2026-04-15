@@ -90,6 +90,7 @@ def _run_staged_verification(paths: tuple[str, ...]) -> int:
         plan,
         context=CheckExecutionContext(trigger="local"),
         fail_fast=True,
+        parallel=True,
     )
     return 1 if summary.has_blocking_failures else 0
 

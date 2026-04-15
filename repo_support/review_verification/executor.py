@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from repo_support.parallel_work import run_parallel_batch
 from repo_support.pyright_config import ensure_pyright_local_config
 from repo_support.uv_environment import repo_uv_environment
 
@@ -265,51 +266,115 @@ def _print_summary(results: Sequence[CheckResult]) -> None:
         print(f"[summary:{status}] {values}", flush=True)
 
 
+def _run_ready_checks(
+    ready_check_ids: tuple[str, ...],
+    *,
+    context: CheckExecutionContext,
+    parallel: bool,
+) -> tuple[CheckResult, ...]:
+    if not parallel:
+        return tuple(
+            run_check(CHECK_SPECS[check_id], context=context)
+            for check_id in ready_check_ids
+        )
+    return run_parallel_batch(
+        ready_check_ids,
+        runner=lambda check_id: run_check(CHECK_SPECS[check_id], context=context),
+    )
+
+
 def run_plan(
     plan: VerificationPlan,
     *,
     context: CheckExecutionContext,
     fail_fast: bool,
+    parallel: bool = False,
 ) -> ExecutionSummary:
     results: list[CheckResult] = []
     results_by_check_id: dict[str, CheckResult] = {}
     stop_after_failure = False
 
-    for check_id in plan.selected_check_ids:
-        spec = CHECK_SPECS[check_id]
+    pending_check_ids: list[str] = list(plan.selected_check_ids)
+    while pending_check_ids:
         if stop_after_failure:
-            result = _skipped_result(
-                check_id, reason=f"fail-fast after {results[-1].check_id}"
-            )
-            results.append(result)
-            results_by_check_id[check_id] = result
-            _print_result(result)
-            continue
+            for check_id in pending_check_ids:
+                result = _skipped_result(
+                    check_id, reason=f"fail-fast after {results[-1].check_id}"
+                )
+                results.append(result)
+                results_by_check_id[check_id] = result
+                _print_result(result)
+            break
 
-        blocking_dependency = next(
-            (
-                dependency_id
+        ready_check_ids: list[str] = []
+        blocked_check_ids: list[tuple[str, str]] = []
+        for check_id in pending_check_ids:
+            spec = CHECK_SPECS[check_id]
+            blocking_dependency = next(
+                (
+                    dependency_id
+                    for dependency_id in spec.dependency_ids
+                    if dependency_id in results_by_check_id
+                    and results_by_check_id[dependency_id].status != "passed"
+                ),
+                None,
+            )
+            if blocking_dependency is not None:
+                blocked_check_ids.append(
+                    (check_id, f"dependency {blocking_dependency} did not pass")
+                )
+                continue
+            if all(
+                dependency_id in results_by_check_id
                 for dependency_id in spec.dependency_ids
-                if results_by_check_id[dependency_id].status != "passed"
-            ),
-            None,
-        )
-        if blocking_dependency is not None:
-            result = _blocked_result(
-                check_id,
-                reason=f"dependency {blocking_dependency} did not pass",
+            ):
+                ready_check_ids.append(check_id)
+
+        if ready_check_ids:
+            first_ready_check_id: str = ready_check_ids[0]
+            batch_check_ids: tuple[str, ...] = (
+                tuple(ready_check_ids) if parallel else (first_ready_check_id,)
             )
-            results.append(result)
-            results_by_check_id[check_id] = result
-            _print_result(result)
+            ready_results = _run_ready_checks(
+                batch_check_ids,
+                context=context,
+                parallel=parallel,
+            )
+            for result in ready_results:
+                results.append(result)
+                results_by_check_id[result.check_id] = result
+                _print_result(result)
+            pending_check_ids = [
+                check_id
+                for check_id in pending_check_ids
+                if check_id not in batch_check_ids
+            ]
+            if fail_fast and any(
+                CHECK_SPECS[result.check_id].blocking and result.status == "failed"
+                for result in ready_results
+            ):
+                stop_after_failure = True
             continue
 
-        result = run_check(spec, context=context)
-        results.append(result)
-        results_by_check_id[check_id] = result
-        _print_result(result)
-        if fail_fast and spec.blocking and result.status == "failed":
-            stop_after_failure = True
+        if blocked_check_ids:
+            blocked_check_id_set: set[str] = {
+                blocked_check_id for blocked_check_id, _reason in blocked_check_ids
+            }
+            for check_id, reason in blocked_check_ids:
+                result = _blocked_result(check_id, reason=reason)
+                results.append(result)
+                results_by_check_id[check_id] = result
+                _print_result(result)
+            pending_check_ids = [
+                check_id
+                for check_id in pending_check_ids
+                if check_id not in blocked_check_id_set
+            ]
+            continue
+
+        raise RuntimeError(
+            "verification plan contains unresolved dependency cycle or missing dependency result"
+        )
 
     _print_summary(results)
     return ExecutionSummary(results=tuple(results))
