@@ -68,7 +68,7 @@ EXPECTED_SKILLS = {
             "docs/standards/commits.md",
             ".claude/commands/pr-review.md",
             "make audit-pr-review",
-            "applicable surface groups",
+            "applicable file groups",
             "issue-finding with open outcome",
         ),
     ),

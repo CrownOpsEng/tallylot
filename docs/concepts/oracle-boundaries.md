@@ -1,6 +1,6 @@
 ---
 title: "Oracle Boundaries"
-summary: "Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts."
+summary: "Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts."
 doc_type: concept
 audience: human
 owner: repo
@@ -10,7 +10,7 @@ nav_order: 30
 
 Use this document to keep the next architecture phase platform-agnostic. It
 defines which artifacts are normal runtime inputs, which ones are optional
-adapter-format surfaces, and which ones are oracle-only support files.
+adapter-format outputs, and which ones are oracle-only support files.
 
 The goal is simple: the system must be able to reconstruct, reconcile, journal,
 and compute tax state from source evidence and intentional checkpoints without
@@ -24,7 +24,7 @@ depending on any one portfolio tracker.
   adapters or policies are crypto-first.
 - Source evidence and source-backed checkpoints are first-class.
 - Operator confirmations may support runtime reconciliation, but they are a
-  lower-trust reference surface than source-backed evidence.
+  lower-trust reference input than source-backed evidence.
 - Output and import adapters are optional edges, not central dependencies.
 - Oracle artifacts are comparison aids only.
 - No tax, reconciliation, or journal logic may require CoinTracking-specific
@@ -63,7 +63,7 @@ Current runtime note:
 
 - today's bridge path still centers on `TransactionFact` plus shared balance
   artifacts
-- treat that bridge as an incremental delivery seam, not as the long-term
+- treat that bridge as an incremental delivery boundary, not as the long-term
   endpoint of the architecture
 
 ## CoinTracking-Specific Rules
@@ -72,7 +72,7 @@ CoinTracking support is intentionally narrow:
 
 - CoinTracking import/export shapes may be supported as adapters.
 - CoinTracking row types may be targeted by adapter-local renderer mappings
-  when producing that export surface.
+  when producing that export output.
 - CoinTracking reports may be parsed for comparison by dev-only tooling.
 - CoinTracking tax outputs may be used as black-box oracles during validation.
 
@@ -136,7 +136,7 @@ Those artifacts may support comparison, but not checkpoint existence.
 - Keep import-shape parsing behind adapter boundaries.
 - Keep domain services unaware of CoinTracking report schemas.
 - Keep crypto-, FX-, and security-specific terms out of shared core abstractions
-  unless the concept is inherently specific to that surface.
+  unless the concept is inherently specific to that adapter or output.
 - Keep tax policy operating on `TaxInputs` built from reconciled economics and
   accepted checkpoint truth only.
 - Keep journal rendering operating on reconciled economics, accepted checkpoint

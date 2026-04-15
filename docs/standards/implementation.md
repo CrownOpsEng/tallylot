@@ -1,6 +1,6 @@
 ---
 title: "Implementation Working Agreement"
-summary: "Execution rules for shaping, verifying, refactoring, and checkpointing repo work."
+summary: "Execution rules for shaping, verifying, refactoring, and committing repo work."
 doc_type: standard
 audience: human
 owner: repo
@@ -15,14 +15,14 @@ future sessions do not depend on repeated reminders from the user.
 This document complements:
 
 - `docs/standards/engineering.md` for placement and modularity rules
-- `docs/standards/commits.md` for commit format and checkpoint policy
+- `docs/standards/commits.md` for commit format and commit-boundary policy
 - `docs/concepts/reconciliation-tax-architecture.md` for architecture direction
 - `docs/status/migration-sequence.md` for no-big-bang migration order
 
 ## Repo-Native Tooling To Use
 
 This repo uses the external environment at `$(HOME)/.venvs/tallylot-py312`.
-Use the root `Makefile` as the standard local command surface. It prepends the
+Use the root `Makefile` as the standard local command interface. It prepends the
 external environment's `bin/` directory to `PATH`, which keeps repo commands
 machine-neutral and sandbox-safe without inline environment prefixes.
 
@@ -41,7 +41,7 @@ Prefer the repo's built-in tooling before inventing local workflows:
 - run the explicit full-suite override only when it is intentionally needed with
   `make quality-full`
   The repo starts the standard quality gates together by default, keeps the
-  fast pytest slice on 4 workers by default, and reserves phased scheduling as
+  fast pytest bundle on 4 workers by default, and reserves phased scheduling as
   an explicit alternate mode for comparison or debugging.
   Override the fast worker count only through
   `TALLYLOT_FAST_PYTEST_WORKERS`; use `0` to force serial.
@@ -55,7 +55,7 @@ Prefer the repo's built-in tooling before inventing local workflows:
   together when changing delivery policy, branch protection, or CI guardrails
   with
   `make audit-delivery-guardrails`
-- audit PR review surface coverage with
+- audit PR review file-group coverage with
   `make audit-pr-review` and run the required review checks for the current
   diff with `make pr-review`
 - run the blocking flake and order-sensitivity lane with
@@ -72,7 +72,7 @@ Prefer the repo's built-in tooling before inventing local workflows:
   `pyrightconfig.tests.json` before rerunning
 - refresh adapter golden fixtures with
   `make refresh-adapter-goldens ARGS='...'`
-- benchmark test-slice changes with
+- benchmark test-bundle changes with
   `make benchmark-tests`
 - benchmark quality-gate scheduling changes with
   `make benchmark-quality`
@@ -102,7 +102,7 @@ generated file, commit that change and rerun the gates.
 When repo-native tooling and tests need shared support:
 
 - keep production/runtime concerns out of `tools/` and the current live
-  `repo_support/` surface
+  `repo_support/` package area
 - keep shared repo-only support in the current live `repo_support/` package,
   not in ad hoc duplicated test helpers or tool-local path constants
 - keep `tools/` focused on entry points and task-specific dev modules
@@ -110,7 +110,7 @@ When repo-native tooling and tests need shared support:
   under `dev_support/`; do not expand `repo_support/` as if it were the desired
   long-term boundary
 
-## Default Coding Posture
+## Default Coding Expectations
 
 Agents should assume all of these are expected unless the task explicitly says
 otherwise:
@@ -118,11 +118,11 @@ otherwise:
 - keep the architecture aligned with
   `docs/concepts/reconciliation-tax-architecture.md`
 - for reconciliation, checkpoint, accounting, tax, or core pipeline work,
-  reload the owning roadmap and migration docs before shaping the slice:
+  reload the owning roadmap and migration docs before shaping the change:
   `ROADMAP.md` and `docs/status/migration-sequence.md`
 - read the narrow forward-looking roadmap, architecture, migration, or owning
   boundary guidance before shaping a non-trivial change
-- refactor when a clearer shared seam is already visible
+- refactor when a clearer shared boundary is already visible
 - extract shared components before copy-paste patterns harden
 - create or update tests alongside the implementation
 - commit at stable checkpoints without waiting to be reminded
@@ -133,7 +133,7 @@ otherwise:
 
 For non-trivial implementation work, use this order:
 
-1. confirm the target seam and owning layer
+1. confirm the target boundary and owning layer
 2. create or update the typed models, contracts, or artifact schemas first
 3. create or update tests that define the intended behavior
 4. implement the behavior
@@ -145,7 +145,7 @@ Do not start by patching call sites ad hoc and only later trying to discover
 the right structure.
 
 Before shaping a non-trivial fix, reload the narrow forward-looking guidance
-that owns the change surface. Prefer the intended end-state seam over a local
+that owns the change area. Prefer the intended end-state boundary over a local
 temporary patch when the repo already documents the target ownership model.
 
 For reconciliation, checkpoint, accounting, tax, and core pipeline work,
@@ -156,7 +156,7 @@ the normal minimum routing set is:
 - `docs/status/migration-sequence.md`
 
 Add `docs/concepts/oracle-boundaries.md` and
-`docs/concepts/transaction-classification.md` when the slice changes
+`docs/concepts/transaction-classification.md` when the change alters
 boundaries or semantic classification.
 
 ## Refactor Expectations
@@ -170,7 +170,7 @@ Refactor during the task when any of these are true:
 - a module is gaining a second responsibility
 - a new feature would deepen coupling across layers
 - repeated parsing, validation, or mapping rules are visible
-- tests are getting repetitive because the production seam is wrong
+- tests are getting repetitive because the production boundary is wrong
 - new work would make an existing hotspot materially worse
 
 Do not defer an obvious structural fix if the change is already in the code you
@@ -179,7 +179,7 @@ forward.
 
 ## Shared Component Rules
 
-Extract shared code only to a specific, named seam.
+Extract shared code only to a specific, named boundary.
 
 Good extractions:
 
@@ -199,12 +199,12 @@ Avoid generic sinks:
 
 For repo-native tooling and test support:
 
-- use the current live `repo_support/` package only for narrow shared seams
-  that are reused by multiple repo-native surfaces
+- use the current live `repo_support/` package only for narrow shared
+  boundaries that are reused by multiple repo-native areas
 - do not create generic `repo_support/helpers.py` or `repo_support/utils.py`
 - if only one tool owns the logic, keep it local to that tool instead of
   promoting it into `repo_support/`
-- later implementation should rename and split this dev-only support surface
+- later implementation should rename and split this dev-only support package area
   under `dev_support/` instead of treating `repo_support/` as the final name
 
 Shared components must stay owned by one layer and one concept.
@@ -233,11 +233,12 @@ Meaningful tests only:
 - do not add trivial getter or setter tests, wording-only assertions, duplicate
   coverage at multiple layers, or call-order tests unless that order is the
   contract
-- when tests become repetitive, treat that as a signal that the production seam
-  may be wrong and refactor the seam instead of piling on more near-duplicate
+- when tests become repetitive, treat that as a signal that the production
+  boundary may be wrong and refactor that boundary instead of piling on more
+  near-duplicate
   tests
 - for repo-side agent scripts and internal workflow entry points, cover
-  behavior in-process when a callable seam exists and reserve subprocess tests
+  behavior in-process when a callable entry point exists and reserve subprocess tests
   for the real launch boundary
 - avoid duplicate in-process and subprocess tests that prove the same workflow
   behavior; once behavior is covered in-process, thin launch-boundary tests may
@@ -263,9 +264,9 @@ afterthoughts.
 
 Expected behavior:
 
-- make a commit when a bounded slice is stable and verified
+- make a commit when a bounded change is stable and verified
 - keep commits cohesive and reviewable
-- prefer one commit per coherent reshape slice, not one commit per file
+- prefer one commit per coherent change, not one commit per file
 - keep each authored commit bounded to one reviewable concern with a clear
   rollback boundary
 - before a checkpoint commit is pushed, amend or fix up a small, scoped
@@ -275,12 +276,12 @@ Expected behavior:
 - do not use repeated amend cycles to grow one broad checkpoint that should be
   split into separate commits with clearer review and rollback boundaries
 - for large but separable scopes, create multiple bounded checkpoint commits
-  before closeout instead of ending on one umbrella authored commit
+  before finishing instead of ending on one umbrella authored commit
 - do not bundle unrelated fixes
 - do not wait for the user to remind you to commit once the task has reached a
   real checkpoint
 - when a refactor spans structure, routing, tooling, and tests, checkpoint each
-  stable slice that already passes the narrow checks for that slice
+  stable change that already passes the narrow checks for that change
 - when opening a PR, use a Conventional Commit title and the structured PR body
   defined in `docs/standards/commits.md` because that metadata
   stays attached to the PR record and becomes the squash commit on `main` for
@@ -289,13 +290,13 @@ Expected behavior:
   problem or constraint, `What:` should state the concrete repo change, and
   neither section should use rhetorical or promotional wording
 - before merging a PR or rewriting mainline history, verify whether the pull
-  request record must stay attached to the landing commit; if yes, do not
+  request record must stay attached to the merged commit; if yes, do not
   rewrite that merge commit after merge
 - if a multi-checkpoint PR merges with a merge commit, use
   `<pr title> (#<pr number>)` as the merge subject so the mainline log keeps
   the PR number visible
 - if a repair PR replaces an older pull request, mark the old PR with the
-  repo's neutral duplicate/superseded label before closing the repair loop
+  repo's neutral duplicate/superseded label before closing the older PR
 - add a neutral replacement comment only when the repo has no suitable label
   or the user explicitly asks for explanatory prose
 - when the work uncovers follow-up or out-of-scope changes that do not belong
@@ -321,18 +322,18 @@ Expected behavior:
   commands such as `rm -rf`, `git restore`, `git reset`, or `git checkout --`
   unless the user explicitly requests that cleanup in the current thread
 - keep tracked docs, templates, and control-plane artifacts neutral and durable
-- keep scratch review notes, temporary hardening ledgers, and compaction aids
+- keep scratch review notes, temporary review ledgers, and compaction aids
   untracked; recover from deterministic repo facts instead
 
 When not to commit:
 
 - the worktree is inconsistent
-- the tests for the slice are failing
+- the tests for the change are failing
 - the checkpoint would be hard to review or roll back
-- the current diff still contains multiple separable reviewable slices
+- the current diff still contains multiple separable reviewable changes
 
 Do not collapse a broad but separable refactor into one giant commit unless
-the slice truly cannot be reviewed or validated incrementally.
+the change truly cannot be reviewed or validated incrementally.
 
 ## Compaction Recovery
 
@@ -344,7 +345,7 @@ When context is lost before more edits, commits, or delivery steps:
 2. inspect the current diff and recent commits
 3. inspect current PR metadata and changed files when PR work is active
 4. reread only the narrow repo standards and start-skill docs for the active
-   surface
+   area
 5. reload the latest targeted verification results
 
 Do not rely on tracked scratch notes, phase logs, or preserved review ledgers
@@ -366,7 +367,7 @@ is:
 - verify the changed behavior at the smallest useful level first
 - then run `tools.run_quality_gates` before closing the task
 - escalate to `tools.run_pr_review_checks --mode full` when the change touches
-  CI, packaging, release, or other workflow surfaces where the local pass
+  CI, packaging, release, or other workflow areas where the local pass
   should mirror the final non-draft PR suite before handoff
 - avoid `tools.run_quality_gates --full-tests` unless you explicitly need the
   full-suite override rather than the standard agent path
@@ -378,7 +379,7 @@ is:
   verifier selection instead of a fixed pytest bundle
 
 For PR review and repair loops, use `tools.audit_pr_review` to classify the
-changed surface groups and use `tools.run_pr_review_checks` as the shared
+changed file groups and use `tools.run_pr_review_checks` as the shared
 verification entrypoint:
 
 - draft pull-request CI always runs `commit-messages` and `pr-metadata`, then
@@ -396,19 +397,19 @@ verification entrypoint:
   not decide PR or CI verification selection
 
 Coverage hotspot reports are informative review output only. Use them to pick
-the next hardening target after a full-suite run; do not treat them as a
+the next review target after a full-suite run; do not treat them as a
 replacement for correctness tests or the existing repo-wide coverage gate.
 
 If you are changing commit-time or suite-selection policy, keep the hook path
-limited to bounded checkpoint checks and use the shared quality runner or the
+limited to bounded commit checks and use the shared quality runner or the
 full PR-review runner as the single broad verification source. Benchmark with
 `tools.benchmark_tests` and `tools.benchmark_quality_gates` when you are
-proposing a different test slice or quality-gate schedule, and do not expand
+proposing a different test bundle or quality-gate schedule, and do not expand
 the hook path into a second full-suite verification pass.
 
 ## Migration Discipline
 
-When a task touches a migrating surface:
+When a task touches a migrating area:
 
 - implement on the fact-based path first
 - preserve external output projections only as needed
@@ -416,7 +417,7 @@ When a task touches a migrating surface:
 - add parity coverage before retiring older paths
 
 If the change would force a big-bang rewrite, the migration sequence is wrong.
-Split the work into a smaller compatible slice.
+Split the work into a smaller compatible increment.
 
 ## Workflow Integrity Rules
 
@@ -436,7 +437,7 @@ Keep workflow integrity rules explicit while the repo continues migrating.
 - evidence references recorded in normalized or checkpoint-supporting artifacts
   must stay source-relative and portable across workspaces
 - docs, command routes, and agent entrypoints must stay aligned with the
-  implemented runtime surface
+  implemented runtime
 
 ## Adapter And Artifact Discipline
 
@@ -465,7 +466,7 @@ Agents should not require repeated reminders to:
 - use `Decimal`
 - log unsupported or ambiguous facts explicitly
 - update roadmap and design docs when architecture changes
-- extract shared seams when duplication becomes obvious
+- extract shared boundaries when duplication becomes obvious
 - add or update tests for new behavior
 - create stable checkpoint commits
 
@@ -492,7 +493,7 @@ Pause feature work and fix the structure first when:
 Before closing non-trivial work, confirm:
 
 - the owning layer is still clear
-- shared logic is extracted to the right seam
+- shared logic is extracted to the right boundary
 - tests pin the new behavior
 - unsupported behavior is explicit
 - docs are updated if architecture or workflow changed

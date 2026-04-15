@@ -26,7 +26,7 @@ Place code by responsibility, not by convenience:
 - `adapters/`: source and output adapters plus their adapter-local helpers.
 - `interfaces/`: thin entry points such as the CLI. Interfaces orchestrate
   services; they do not own business rules.
-- `repo_support/`: the current live shared support seam for repo-native tooling
+- `repo_support/`: the current live shared support boundary for repo-native tooling
   and repo-side tests. Keep this outside `src/tallylot/` because it is not
   production/runtime code.
 
@@ -38,9 +38,9 @@ Repo-native support boundaries:
 - `src/tallylot/` remains production/runtime code only.
 - `tools/` remains the home for repo-native entry points and task-specific
   dev-only modules.
-- `repo_support/` is the current live shared seam for repo-native tooling and
+- `repo_support/` is the current live shared support boundary for repo-native tooling and
   repo-side tests.
-- later implementation should rename that dev-only surface to `dev_support/`
+- later implementation should rename that dev-only package area to `dev_support/`
   so the boundary is explicit.
 - until that rename lands, `repo_support/` must stay narrow, typed,
   stdlib-first, and named by concept.
@@ -89,11 +89,11 @@ Default to one responsibility per module.
   `misc.py`, or another catch-all `common.py`.
 - Existing generic modules should shrink over time, not absorb more unrelated
   behavior.
-- Apply the same rule to the current live `repo_support/` surface and the later
-  target `dev_support/` surface. Shared repo-only support must be split by
-  named seam, not collected under generic support modules.
+- Apply the same rule to the current live `repo_support/` package area and the
+  later target `dev_support/` package area. Shared repo-only support must be
+  split by named boundaries, not collected under generic support modules.
 
-When a capability grows, split by stable seams:
+When a capability grows, split by stable boundaries:
 
 - `domain/`: separate models, value objects, and typed aliases by concept.
 - `application/`: organize by bounded capability packages such as
@@ -112,7 +112,7 @@ When a capability grows, split by stable seams:
   persistence, or composition-root wiring. Do not push application policy down
   here just to share code.
 - `repo_support/`: host reusable repo-only support only when it is shared by
-  multiple repo-native surfaces such as `tools/` and `tests/`. This is the
+  multiple repo-native areas such as `tools/` and `tests/`. This is the
   current live name for a later `dev_support/` target. Do not move
   production/runtime concerns here.
 
@@ -168,7 +168,7 @@ Current application of this rule:
 - Keep public names and commands simple, neutral, and ergonomic. Prefer short
   names that match the user-visible operation over long implementation labels,
   and only add qualifiers when a real naming collision or ambiguity exists.
-- Follow the same naming posture for modules, functions, classes, and commands:
+- Follow the same naming approach for modules, functions, classes, and commands:
   choose concise descriptive names over decorative jargon.
 - Reject verbose pattern-label suffixes such as `UseCase`, `Manager`, or
   `Handler` unless they disambiguate a real collision in the surrounding
@@ -181,7 +181,7 @@ Current application of this rule:
   unless the concept is genuinely adapter-local or asset-class-specific.
 - Under `adapters/sources/`, group packages by source kind before the provider:
   `platforms/<provider>/`, `wallets/<provider>/`, `explorers/<provider>/`,
-  `portfolio/<surface>/`, `generic/<contract>/`, or `stubs/<reserved>/`.
+  `portfolio/<input_kind>/`, `generic/<contract>/`, or `stubs/<reserved>/`.
 - Keep naming stable across implementation, tests, and adapter metadata.
 
 ## Refactor-First Hotspots
@@ -192,7 +192,7 @@ Split these modules before adding materially new behavior:
 - `src/tallylot/adapters/sources/platforms/binance/adapter.py`
 - `src/tallylot/adapters/sources/platforms/coinbase/adapter.py`
 
-Preserve these shared-surface package seams instead of collapsing them back
+Preserve these shared package boundaries instead of collapsing them back
 into single modules:
 
 - `src/tallylot/domain/transactions/`

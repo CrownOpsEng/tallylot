@@ -1,6 +1,6 @@
 # Source Diff
 
-Use this route when a rendered candidate or fact-derived slice needs a direct
+Use this route when a rendered candidate or fact-derived output set needs a direct
 row comparison against a reference ledger extract.
 
 1. run `make oracle ARGS='source diff'`

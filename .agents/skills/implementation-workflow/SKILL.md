@@ -26,7 +26,8 @@ work that should be captured as a follow-up issue.
    architecture guidance before editing.
 3. Add or update only the tests that define meaningful behavior, contracts, or
    regressions.
-4. Implement the change and refactor obvious shared seams while the seam is open.
+4. Implement the change and refactor obvious shared boundaries while the code
+   area is already in motion.
 5. Use fresh editor diagnostics first when available, then targeted tests while
    iterating.
 6. Before closing substantial work, run:
@@ -44,5 +45,5 @@ work that should be captured as a follow-up issue.
 
 - keep strict typed layer boundaries
 - keep `Decimal` for monetary values
-- surface ambiguity as explicit issues
+- record ambiguity as explicit issues
 - update `ROADMAP.md` with architecture or sequencing changes

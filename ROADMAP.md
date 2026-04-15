@@ -108,7 +108,7 @@ Shared-foundation deliverables before broad pipeline expansion:
   adoption, accounting, and tax
 - one checkpoint acceptance vocabulary for trust level, acceptance basis,
   evidence class, continuity proof, and minimum admissibility rules
-- one canonical bridge-to-target mapping for how current planner and
+- one bridge-to-target mapping for how current planner and
   translation seams become the first proto-`EvidenceSet` and proto-`ClaimSet`
   slices
 - one named first vertical slice with parity and replay gates
@@ -122,7 +122,7 @@ Exit criteria:
 - dataset summaries derive from subject-level readiness instead of hand-built
   status prose
 - target products have owned versioning and fingerprint rules
-- the canonical bridge-to-target mapping is published and linked as the single
+- the bridge-to-target mapping is published and linked as the single
   authority
 - per-product kernel, id, serialization, fingerprint, and adjudication rules
   are frozen on the target owner page
@@ -199,7 +199,7 @@ Deliver:
 - shared gap scope, `SubjectRef`, and evidence-readiness rules
 - minimum `ClaimSet`, `EconomicFacts`, `Checkpoint`, and `TaxInputs`
   vocabularies
-- one canonical bridge-to-target mapping for how current planner and
+- one bridge-to-target mapping for how current planner and
   translation seams land the first proto-`EvidenceSet` and proto-`ClaimSet`
   slices
 - unified adapter product and facet prep where it removes first-slice drift,

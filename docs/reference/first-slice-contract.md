@@ -1,6 +1,6 @@
 ---
 title: "First Slice Contract"
-summary: "Bounded contract for the default Coinbase-first proto-EvidenceSet and proto-ClaimSet slice."
+summary: "Bounded contract for the default Coinbase-first proto-EvidenceSet and proto-ClaimSet increment."
 doc_type: reference
 audience: human
 owner: repo
@@ -133,7 +133,7 @@ Id rules:
 
 Fingerprint rules:
 
-- kernel fingerprints use canonical UTF-8 JSON serialization with stable object
+- kernel fingerprints use stable UTF-8 JSON serialization with stable object
   key order and declared array order, hashed with SHA-256
 - product fingerprints include semantically relevant upstream ids or
   fingerprint references, not duplicated upstream payload blobs

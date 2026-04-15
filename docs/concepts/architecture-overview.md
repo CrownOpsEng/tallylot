@@ -42,7 +42,7 @@ The live runtime bridge currently centers on:
 
 That bridge is:
 
-- the current implementation seam
+- the current implementation boundary
 - the current delivery path
 - the current parity baseline
 - not the final architecture center
@@ -60,7 +60,7 @@ The target model is stage-first and ontology-first:
 
 - source evidence and source-backed checkpoints remain first-class
 - reconciliation and checkpoint trust gates come before accounting and tax
-- CoinTracking remains an edge output and oracle surface, not the core ledger
+- CoinTracking remains an edge output and oracle input, not the core ledger
   model
 - bridge classifications remain current runtime vocabulary, not the long-term
   ontology center
@@ -85,14 +85,14 @@ Use these pages as the owning contract set:
 - [Current Bridge Contracts](current-bridge-contracts.md)
   Live bridge contracts, bridge artifacts, and current schema rules.
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
-  Canonical mapping from current seams into bounded proto-products during
+  Primary mapping from current bridge boundaries into bounded proto-products during
   migration.
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
   Target stage products, responsibilities, and handoff guarantees.
 - [First Slice Contract](../reference/first-slice-contract.md)
   Bounded Coinbase-first parity, replay, and allowed-drift contract.
 - [Domain Ontology](domain-ontology.md)
-  Target ontology, identity seams, and bridge-versus-target modeling rules.
+  Target ontology, identity boundaries, and bridge-versus-target modeling rules.
 - [Gaps And Readiness](gaps-and-readiness.md)
   Target shared blocker model, readiness model, and `SubjectRef` rules.
 - [Transaction Classification](transaction-classification.md)

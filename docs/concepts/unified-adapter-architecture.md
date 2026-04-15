@@ -250,7 +250,7 @@ Boundary note:
 
 Adapter-emission purpose:
 
-- emit the canonical `EvidenceSet` product owned by
+- emit the `EvidenceSet` product owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - preserve discovery results, family classification, provenance, and typed
   parse outputs without adapter-local semantic invention
@@ -263,19 +263,19 @@ Adapter emission must include:
 
 - adapter id
 - capture or input identity
-- stable ids required by the canonical `EvidenceSet` kernel
+- stable ids required by the `EvidenceSet` kernel
 - manifest version and manifest fingerprint reference
 - evidence members with typed provenance
 - evidence family ids
 - parse diagnostics
-- deterministic member ordering that matches the canonical kernel order
-- an `EvidenceSet` fingerprint computed from the canonical product kernel plus
+- deterministic member ordering that matches the declared kernel order
+- an `EvidenceSet` fingerprint computed from the product kernel plus
   upstream refs, not from duplicated manifest payload blobs
 
 Must not include:
 
 - current bridge facts
-- downstream runtime products beyond the canonical `EvidenceSet`
+- downstream runtime products beyond `EvidenceSet`
 - target-specific output rows
 - competing evidence-product rules that differ from the pipeline-stage owner doc
 
@@ -291,7 +291,7 @@ Typical contents:
 
 Adapter-emission purpose:
 
-- emit the canonical `ClaimSet` product owned by
+- emit the `ClaimSet` product owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - hold provider-local semantic claims before shared compilation without
   redefining target-product meaning locally
@@ -320,8 +320,8 @@ Adapter emission must include:
 - typed provenance references back to the evidence set
 - structural status for each claim
 - blocking versus advisory distinction
-- canonical claim ordering
-- a `ClaimSet` fingerprint computed from the canonical product kernel plus
+- declared claim ordering
+- a `ClaimSet` fingerprint computed from the product kernel plus
   referenced upstream ids or fingerprints, not duplicated manifest payloads
 
 Must not include:

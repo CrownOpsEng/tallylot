@@ -16,7 +16,7 @@ model, artifact contracts, and repo standards.
 - Guides describe how to perform a task.
 - Reference pages define factual contracts, artifacts, and workspace semantics.
 - Standards capture repo implementation rules.
-- Status pages describe the current implemented surface and active migration
+- Status pages describe the current implemented capabilities and active migration
   state.
 
 ## Start Here
@@ -41,11 +41,11 @@ Agent-specific routing and repo execution rules live in
 <!-- docs-maintenance:start concepts -->
 - [Architecture Overview](concepts/architecture-overview.md): High-level map of the current bridge, the target pipeline, and the focused pages that own each major contract.
 - [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for trust gates, performance rules, tax-policy architecture, and filing-critical rollout from the current bridge toward the target pipeline.
-- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Owning concept page for the live bridge contracts, bridge artifacts, and current schema rules.
-- [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Single authority for how live bridge seams land in the target pipeline during Phase 0 and the first bounded slice.
+- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Primary concept page for the live bridge contracts, bridge artifacts, and current schema rules.
+- [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Single authority for how live bridge boundaries map into the target pipeline during Phase 0 and the first bounded increment.
 - [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries.
-- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts.
-- [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, identity seams, package direction, and bridge-versus-target modeling rules.
+- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts.
+- [Domain Ontology](concepts/domain-ontology.md): Primary concept page for the target economic ontology, identity boundaries, package direction, and bridge-versus-target modeling rules.
 - [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
 - [Gaps And Readiness](concepts/gaps-and-readiness.md): Owning concept page for the target gap model, readiness model, sidecar rules, and shared `SubjectRef` contracts.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
@@ -70,7 +70,7 @@ below when you need the detailed procedure for one stage of the workflow.
 
 <!-- docs-maintenance:start reference -->
 - [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
-- [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the default Coinbase-first proto-EvidenceSet and proto-ClaimSet slice.
+- [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the default Coinbase-first proto-EvidenceSet and proto-ClaimSet increment.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
 - [Wallet Inventory Artifacts](reference/wallet-inventory-artifacts.md): Artifact contract for location inventory outputs and evidence rows.
 - [Timezone Validation Artifacts](reference/timezone-validation-artifacts.md): Artifact contract for timezone provenance outputs and validation issues.
@@ -89,7 +89,7 @@ that follows the external workspace layout.
 ## Current Status
 
 <!-- docs-maintenance:start status -->
-- [Current State](status/current-state.md): Implemented runtime capabilities, current operational surface, and deferred areas.
+- [Current State](status/current-state.md): Implemented runtime capabilities, current operational capabilities, and deferred areas.
 - [Migration Sequence](status/migration-sequence.md): Incremental migration order from the current bridge toward the target stage-first pipeline with parity gates and retirement rules.
 - [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the unified adapter contract rewrite until after filing-critical work.
 <!-- docs-maintenance:end status -->
@@ -98,8 +98,8 @@ that follows the external workspace layout.
 
 <!-- docs-maintenance:start standards -->
 - [Engineering Standards](standards/engineering.md): Code placement, typing, modularity, and naming rules for the typed application.
-- [Implementation Working Agreement](standards/implementation.md): Execution rules for shaping, verifying, refactoring, and checkpointing repo work.
-- [Commit Standards](standards/commits.md): Conventional Commit, checkpoint, and PR body rules for stable repo history.
+- [Implementation Working Agreement](standards/implementation.md): Execution rules for shaping, verifying, refactoring, and committing repo work.
+- [Commit Standards](standards/commits.md): Conventional Commit subjects, reviewable commit boundaries, and PR body rules for stable repo history.
 - [Issue Standards](standards/issues.md): Issue scope, privacy rules, template usage, and proactive follow-up issue handling for repo work.
 - [Delivery Guardrails](standards/delivery-guardrails.md): Control hierarchy, enforcement tiers, and exception handling for repo delivery and agent-assisted Git operations.
 <!-- docs-maintenance:end standards -->

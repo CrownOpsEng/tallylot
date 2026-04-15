@@ -32,7 +32,7 @@ The target runtime pipeline is:
 - no stage may suppress uncertainty that a later stage must still see
 - no stage may duplicate upstream semantic payloads unless the meaning has
   changed
-- target-product kernel rules in this page are canonical; other docs may point
+- target-product kernel rules in this page are authoritative; other docs may point
   here but should not restate competing kernel, id, or fingerprint contracts
 
 ## Handoff Rules
@@ -65,9 +65,9 @@ Shared rules:
   compatibility unless the owning product explicitly declares a narrower window
 - regeneration from upstream products or evidence is the normal recovery path
   for incompatible target-stage artifacts
-- every target product defines one canonical serialization and one stable
+- every target product defines one stable serialization and one stable
   fingerprint over semantically relevant kernel content
-- kernel fingerprints use canonical UTF-8 JSON serialization with stable object
+- kernel fingerprints use stable UTF-8 JSON serialization with stable object
   key order and declared array order, hashed with SHA-256
 - fingerprints include semantically relevant upstream ids or upstream
   fingerprint references plus owning stage decisions
@@ -173,7 +173,7 @@ Envelope content may include:
 - `selection_group_id` identifies one deterministic evidence-selection
   decision boundary
 
-### EvidenceSet Canonical Ordering
+### EvidenceSet Ordering
 
 - sort by `source`
 - then `capture_uid`
@@ -182,17 +182,17 @@ Envelope content may include:
 - then `member_id`
 - then `observation_id`
 
-### EvidenceSet Canonical Serialization
+### EvidenceSet Serialization
 
 - serialize kernel records only
 - use stable object-key ordering
 - preserve the declared kernel record order above
-- represent timestamps and `Decimal` values using the repo's canonical string
+- represent timestamps and `Decimal` values using the repo's stable string
   forms so the fingerprint is independent of language runtime defaults
 
 ### EvidenceSet Fingerprint Inputs
 
-- kernel records in canonical order
+- kernel records in declared order
 - `schema_version`
 - `manifest_fingerprint_ref`
 - `plan_fingerprint_ref`
@@ -248,14 +248,14 @@ Envelope content may include:
 - `claim_id` identifies one claim family member with one stable semantic role
 - `interpretation_group_id` identifies one mutually exclusive claim bundle
 
-### ClaimSet Canonical Ordering
+### ClaimSet Ordering
 
 - sort by `claim_family`
 - then `effective_at` when present
 - then `claim_id`
 - then `interpretation_group_id`
 
-### ClaimSet Canonical Serialization
+### ClaimSet Serialization
 
 - serialize kernel records only
 - use stable object-key ordering
@@ -264,7 +264,7 @@ Envelope content may include:
 
 ### ClaimSet Fingerprint Inputs
 
-- kernel records in canonical order
+- kernel records in declared order
 - `schema_version`
 - `claim_set_id`
 - referenced `EvidenceSet` ids or fingerprints
@@ -365,14 +365,14 @@ Envelope content may include:
 - `leg_id` identifies one stable leg under one accepted event
 - `adjudication_record_id` identifies one compiler decision record
 
-### EconomicFacts Canonical Ordering
+### EconomicFacts Ordering
 
 - sort by `effective_at` when present
 - otherwise by `recorded_at`
 - then `event_id`
 - then `leg_id`
 
-### EconomicFacts Canonical Serialization
+### EconomicFacts Serialization
 
 - serialize kernel event records and kernel leg records only
 - use stable object-key ordering
@@ -380,7 +380,7 @@ Envelope content may include:
 
 ### EconomicFacts Fingerprint Inputs
 
-- kernel event and leg records in canonical order
+- kernel event and leg records in declared order
 - `schema_version`
 - accepted claim refs
 - `adjudication_record_id`
@@ -467,14 +467,14 @@ Envelope content may include:
 - `checkpoint_candidate_id` identifies one reconciliation-owned checkpoint
   proposal
 
-### ReconciliationState Canonical Ordering
+### ReconciliationState Ordering
 
 - sort by `checkpoint_date`
 - then `continuity_segment_id`
 - then `link_id`
 - then `checkpoint_candidate_id`
 
-### ReconciliationState Canonical Serialization
+### ReconciliationState Serialization
 
 - serialize kernel reconciliation records only
 - use stable object-key ordering
@@ -482,7 +482,7 @@ Envelope content may include:
 
 ### ReconciliationState Fingerprint Inputs
 
-- kernel reconciliation records in canonical order
+- kernel reconciliation records in declared order
 - `schema_version`
 - referenced `EconomicFacts` ids or fingerprints
 - referenced balance-target ids
@@ -550,13 +550,13 @@ Envelope content may include:
 - `checkpoint_assertion_id` identifies one accepted checkpoint truth record for
   one subject and one as-of point
 
-### Checkpoint Canonical Ordering
+### Checkpoint Ordering
 
 - sort by `asserted_as_of_at`
 - then `subject_ref`
 - then `checkpoint_assertion_id`
 
-### Checkpoint Canonical Serialization
+### Checkpoint Serialization
 
 - serialize kernel checkpoint assertion records only
 - use stable object-key ordering
@@ -564,7 +564,7 @@ Envelope content may include:
 
 ### Checkpoint Fingerprint Inputs
 
-- kernel checkpoint assertion records in canonical order
+- kernel checkpoint assertion records in declared order
 - `schema_version`
 - referenced `ReconciliationState` ids or fingerprints
 - referenced accepted evidence ids
@@ -665,13 +665,13 @@ Envelope content may include:
 - `entry_id` identifies one journal entry
 - `posting_id` identifies one posting under one journal entry
 
-### Journal Canonical Ordering
+### Journal Ordering
 
 - sort by `journal_id`
 - then `entry_id`
 - then `posting_id`
 
-### Journal Canonical Serialization
+### Journal Serialization
 
 - serialize kernel journal records only
 - use stable object-key ordering
@@ -679,7 +679,7 @@ Envelope content may include:
 
 ### Journal Fingerprint Inputs
 
-- kernel journal records in canonical order
+- kernel journal records in declared order
 - `schema_version`
 - referenced `EconomicFacts` ids
 - referenced `Checkpoint` assertion ids
@@ -740,14 +740,14 @@ Envelope content may include:
 - `determinant_id` identifies one tax determinant
 - `basis_pool_ref` identifies one tax basis or pool seam reused across tax years
 
-### TaxInputs Canonical Ordering
+### TaxInputs Ordering
 
 - sort by `tax_year`
 - then `basis_pool_ref`
 - then `determinant_family`
 - then `determinant_id`
 
-### TaxInputs Canonical Serialization
+### TaxInputs Serialization
 
 - serialize kernel determinant records only
 - use stable object-key ordering
@@ -755,7 +755,7 @@ Envelope content may include:
 
 ### TaxInputs Fingerprint Inputs
 
-- kernel determinant records in canonical order
+- kernel determinant records in declared order
 - `schema_version`
 - referenced `EconomicFacts` ids
 - referenced `Checkpoint` assertion ids
@@ -842,14 +842,14 @@ Envelope content may include:
 
 - `tax_output_id` identifies one policy-owned output emission
 
-### TaxOutputs Canonical Ordering
+### TaxOutputs Ordering
 
 - sort by `policy_id`
 - then `tax_year`
 - then `output_family`
 - then `tax_output_id`
 
-### TaxOutputs Canonical Serialization
+### TaxOutputs Serialization
 
 - serialize kernel tax-output records only
 - use stable object-key ordering
@@ -857,7 +857,7 @@ Envelope content may include:
 
 ### TaxOutputs Fingerprint Inputs
 
-- kernel tax-output records in canonical order
+- kernel tax-output records in declared order
 - `schema_version`
 - referenced `TaxInputs` ids or fingerprints
 - selected `policy_id`
@@ -879,7 +879,7 @@ The pipeline products rely on shared supporting contracts defined elsewhere:
 
 - [Current Bridge Contracts](current-bridge-contracts.md) for the live bridge
   runtime truth
-- [Bridge To Target Mapping](bridge-to-target-mapping.md) for the canonical
+- [Bridge To Target Mapping](bridge-to-target-mapping.md) for the primary
   current-to-target transformation rules
 - [First Slice Contract](../reference/first-slice-contract.md) for the bounded
   Coinbase-first replay and parity contract

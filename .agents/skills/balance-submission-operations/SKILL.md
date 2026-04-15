@@ -17,8 +17,8 @@ Use this skill for the manual balance submission path.
    matching route checklist.
 2. Scaffold the package first with
    `.agents/skills/balance-submission-operations/scripts/balance_submission_operations.py`.
-3. Inspect the filled files before submit so missing required values surface
-   explicitly.
+3. Inspect the filled files before submit so missing required values are called
+   out explicitly.
 4. Submit only when the package is ready; do not guess `instrument_id`,
    timestamps, quantities, support refs, or identity values.
 5. Use `$reconciliation-balance-operations` only after balance artifacts
