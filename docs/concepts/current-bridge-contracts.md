@@ -259,6 +259,23 @@ Rules:
 - forward transformation rules and bounded proto-product mapping now live in
   [Bridge To Target Mapping](bridge-to-target-mapping.md)
 
+### Bridge Fact Replay Fingerprint
+
+For first-slice replay and parity checks, compiled bridge facts use one bridge
+replay fingerprint contract.
+
+Rules:
+
+- fingerprint input is `[schema_version, ordered_fact_rows]`
+- fact row order is `[timestamp, effective_at_or_null, fact_id]`
+- leg order within each fact is `leg_id`
+- include `fact_id`, identity fields, time fields, participant fields,
+  semantic fields, `legs`, `FactLegPolicy`, and `status`
+- exclude `description`, `raw_file`, `raw_row_ref`, `confidence`,
+  `fact_annotations.json`, and other bridge sidecars
+- serialize as stable UTF-8 JSON with stable object-key order and SHA-256
+  hashing
+
 ### Current Normalization Window Contract
 
 - runtime timestamps are timezone-aware UTC in drafts, facts, balance
@@ -309,8 +326,8 @@ Rules:
 
 ### Transitional Adapter Draft Seam
 
-Source normalization should translate through `EconomicActivityDraft` until all
-adapters emit `TransactionFact` artifacts directly.
+Source normalization currently translates through `EconomicActivityDraft`
+before shared bridge fact compilation.
 
 Required draft responsibilities:
 
