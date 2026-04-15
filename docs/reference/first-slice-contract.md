@@ -36,16 +36,27 @@ The slice is not:
 
 ## Evidence Families
 
+Planner candidate inventory from `translation_input_candidates.json` remains
+`EvidenceSet` envelope or selection-sidecar reasoning as owned by
+[Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md). The
+bounded slice kernel uses the selected, superseded, and blocked plan records.
+
 The slice recognizes only these evidence families:
 
 | Evidence family | Meaning | Required kernel role |
 | --- | --- | --- |
-| `coinbase_retail_export` | planner-selected Coinbase retail CSV member chosen for translation | selected, superseded, or blocked planner member |
+| `coinbase_retail_export` | Coinbase retail CSV member recorded by one selected, superseded, or blocked planner decision | selected, superseded, or blocked plan member |
 | `coinbase_statement_document` | recognized Coinbase statement PDF document used for statement-backed quantity observation | selected evidence member with document identity |
 | `coinbase_statement_balance_row` | one parsed statement quantity row from a recognized Coinbase statement document | evidence observation keyed to the owning document and row anchor |
 | `coinbase_translation_selection_group` | deterministic planner decision boundary for one retail export family selection | bounded `selection_group_id` for the slice |
 
 ## Claim Families
+
+The shared minimum claim taxonomy is owned by
+[Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md). This
+bounded slice may emit only the subset below; `OwnershipClaim`,
+`StatementClaim`, and `ContractTermClaim` remain canonical shared families but
+stay out of scope for the default slice.
 
 The first slice may emit only these claim families:
 
@@ -116,20 +127,37 @@ inventing new bridge-only schemas:
 
 ## Id And Fingerprint Rules
 
-Id rules:
+Stable-id format:
 
-- `evidence_set_id` is deterministic from `source`, `adapter_id`, `capture_uid`,
-  and one stable `selection_group_id`
-- `member_id` is deterministic from evidence provenance, member identity, and
-  the selected evidence family
-- `observation_id` is deterministic from `member_id` plus the row, page, or
-  anchor identity for the observation
-- `claim_set_id` is deterministic from `evidence_set_id` plus the claim-emitting
-  translation family for the slice
-- `claim_id` is deterministic from `claim_family`, provider-local operation or
-  row grouping identity, and `interpretation_group_id`
-- `interpretation_group_id` is deterministic from one mutually exclusive claim
-  bundle; independent bundles must not share a group id
+- use the stable-id recipe owned by
+  [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md):
+  `<kind>:<sha256(lowercase-hex)>` over one canonical UTF-8 JSON array of
+  ordered components
+- use the shared `evidence_set_id`, `member_id`, `observation_id`, and
+  `claim_set_id` component recipes unchanged
+- for the default slice, `selection_group_id` for Coinbase retail export
+  planning is the current deterministic planner group id `coinbase:retail_export`
+
+Slice-specific component arrays:
+
+- retail activity `claim_id` uses
+  `[claim_set_id, "ActivityClaim", raw_file, raw_row_ref, interpretation_group_id]`
+- statement-derived `claim_id` uses
+  `[claim_set_id, claim_family, document_member_id, row_anchor, interpretation_group_id]`
+- retail activity `interpretation_group_id` uses
+  `[claim_set_id, raw_file, raw_row_ref, bundle_discriminator]`
+- statement-derived `interpretation_group_id` uses
+  `[claim_set_id, document_member_id, row_anchor, bundle_discriminator]`
+- for the default slice, the provider operation identity for one retail
+  activity claim is the Coinbase retail row anchor `[raw_file, raw_row_ref]`
+- `document_member_id` is the `member_id` for one recognized
+  `coinbase_statement_document`
+- `row_anchor` is the stable row anchor emitted for one recognized
+  `coinbase_statement_balance_row`
+- `bundle_discriminator` follows the shared rule from
+  [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md):
+  `default` for one bundle under one anchor, otherwise `alt:1`, `alt:2`, and
+  so on in canonical bundle order
 
 Fingerprint rules:
 

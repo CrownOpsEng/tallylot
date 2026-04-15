@@ -300,23 +300,11 @@ Owned by:
 
 - reader and translation facets
 
-Claim types may include:
-
-- `ActivityClaim`
-- `BalanceObservationClaim`
-- `OwnershipClaim`
-- `LocationClaim`
-- `StatementClaim`
-- `InstrumentIdentityClaim`
-- `ContractTermClaim`
-- `ValuationClaim`
-- `ProjectionAnnotation`
-- `IssueCandidate`
-- `ReviewCandidate`
-
 Adapter emission must include:
 
 - deterministic claim ids
+- claim families chosen from the canonical minimum taxonomy owned by
+  [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - typed provenance references back to the evidence set
 - structural status for each claim
 - blocking versus advisory distinction
@@ -697,31 +685,15 @@ If adapters choose winners internally:
 
 ## Claim Taxonomy
 
-The future architecture should separate provider-local claims by job.
+The canonical minimum `ClaimSet` family list, stable-id recipes, and
+first-slice subset live in:
 
-Recommended claim families:
+- [Pipeline Stage Contracts](pipeline-stage-contracts.md) for the shared
+  repo-wide taxonomy and deterministic id rules
+- [First Slice Contract](../reference/first-slice-contract.md) for the bounded
+  Coinbase-first subset
 
-| Claim family | Purpose |
-| --- | --- |
-| `ActivityClaim` | A provider-local economic activity candidate with raw semantic details. |
-| `BalanceObservationClaim` | A quantity-backed balance or position observation tied to evidence. |
-| `OwnershipClaim` | A claim that a location identifier is controlled or owned. |
-| `LocationClaim` | A provider-local claim about where activity, balances, or positions are held. |
-| `StatementClaim` | A parsed statement row or document-level claim. |
-| `InstrumentIdentityClaim` | One provider-local identity assertion for an asset or instrument. |
-| `ContractTermClaim` | A provider-local claim about instrument or position terms that later economic compilation may need. |
-| `ValuationClaim` | A provider-local valuation observation with purpose, time, and provenance. |
-| `ProjectionAnnotation` | Output-oriented metadata that is not itself a bridge or downstream runtime fact. |
-| `IssueCandidate` | A blocking or informational problem requiring shared issue assembly. |
-| `ReviewCandidate` | A review-needed case requiring shared review assembly. |
-
-These claim families let the core compiler distinguish:
-
-- hard semantic assertions
-- evidence observations
-- identity claims
-- output hints
-- workflow diagnostics
+This page does not define an alternate claim-family list.
 
 ## Shared Compilation Rules
 

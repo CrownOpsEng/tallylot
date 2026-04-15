@@ -89,25 +89,15 @@ Rules:
 
 ## Bridge-To-Target Landing Rules
 
-- `EvidenceSet` formalizes deterministic evidence selection and source-local
-  observations now spread across intake, profiling, and translation-input
-  planning
-- current planner artifacts may serve as the first bridge path into
-  proto-`EvidenceSet`; broad unified-adapter family migration is not a hidden
-  prerequisite
-- `ClaimSet` becomes the place where `EconomicActivityDraft` responsibilities
-  can split into source-local meaning plus preserved ambiguity
-- claim-native output may first arrive through one bounded adapter family or
-  a shared compiler boundary before any repo-wide adapter facet migration
-- `EconomicFacts` becomes the accepted economic truth that the current
-  `TransactionFact` bridge only approximates today
-- `ReconciliationState` and `Checkpoint` absorb the trust-gate work currently
-  expressed through bridge-era balances, links, and checkpoint scaffolding
-- `Journal`, `TaxInputs`, and `TaxOutputs` replace the remaining bridge-era
-  tendency to push accounting or tax meaning downward too early
-- unified adapter product and facet work may advance during shared foundations
-  when it removes first-increment drift, but broad family migration waits until
-  the contract lock and first increment are stable
+- [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md) owns the
+  live-to-target transformation rules
+- [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) owns the
+  target product kernels, claim taxonomy, stable ids, ordering, serialization,
+  and fingerprint rules
+- [First Slice Contract](../reference/first-slice-contract.md) owns the bounded
+  Coinbase-first slice, including its replay and parity rules
+- broad unified-adapter family migration remains optional prep work, not a
+  hidden prerequisite for the first bounded increment
 
 Default first-increment direction:
 
@@ -126,15 +116,8 @@ Default first-increment direction:
 Deliver before broad code changes:
 
 - aligned bridge, target, ontology, and support-model docs
-- shared provenance, gaps, readiness, checkpoint assertions, identity seams,
-  `SubjectRef`, and tax-policy selection contracts
-- target-product versioning, serialization, and fingerprint rules
-- checkpoint acceptance vocabularies and minimum admissibility rules
-- kernel-and-envelope rules with stable rehydration joins
-- minimum `ClaimSet`, `EconomicFacts`, `Checkpoint`, and `TaxInputs`
-  vocabularies
-- one primary bridge-to-target mapping for how current planner and
-  translation paths map to proto-`EvidenceSet` and proto-`ClaimSet`
+- freeze the detailed contract content on the owning concept and reference
+  pages instead of restating those semantics here
 - one named first vertical increment with parity and replay gates
 - clear bridge-versus-target ownership so later code increments do not re-decide
   naming or stage boundaries

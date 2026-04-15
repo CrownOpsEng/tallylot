@@ -75,6 +75,22 @@ Shared rules:
   and sidecar payloads that do not change kernel meaning
 - sidecars and explanation payloads use their own schema and fingerprint rules
   when they are persisted independently
+- every stable id defined on this page uses the format
+  `<kind>:<sha256(lowercase-hex)>`
+- the hash input is one canonical UTF-8 JSON array of ordered components
+- component arrays use the owning product's canonical scalar forms exactly as
+  emitted; do not add hidden trimming, lowercasing, or resorting outside the
+  declared tuple rules
+
+### Composite Tuple Rules
+
+- `SubjectRef` serializes and sorts as
+  `[subject_kind, subject_id]`
+- `BasisPoolRef` serializes and sorts as
+  `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_scope]`
+- when one stable-id recipe, ordering rule, or fingerprint input includes one
+  of these composite references, use the tuple form above rather than an
+  object-name shorthand
 
 ### Kernel And Envelope Rule
 
@@ -172,6 +188,22 @@ Envelope content may include:
 - `observation_id` identifies one typed observation under one evidence member
 - `selection_group_id` identifies one deterministic evidence-selection
   decision boundary
+- `evidence_set_id` uses component array
+  `[source, adapter_id, capture_uid, selection_group_id]`
+- `member_id` uses component array
+  `[evidence_set_id, member_class, member_locator_identity]`
+- `observation_id` uses component array
+  `[member_id, observation_class, observation_anchor]`
+- `selection_group_id` is emitted by the evidence-selection stage and remains a
+  stable upstream id rather than a downstream recomputation
+- `member_class` is the stable evidence-family or member-role label emitted for
+  the member
+- `member_locator_identity` is the stage-owned stable locator tuple for one
+  evidence member
+- `observation_class` is the stable observation family label emitted for one
+  typed observation
+- `observation_anchor` is the stable row, page, anchor, or typed observation
+  locator emitted for that observation
 
 ### EvidenceSet Ordering
 
@@ -192,7 +224,7 @@ Envelope content may include:
 
 ### EvidenceSet Fingerprint Inputs
 
-- kernel records in declared order
+- kernel records in canonical order
 - `schema_version`
 - `manifest_fingerprint_ref`
 - `plan_fingerprint_ref`
@@ -242,18 +274,60 @@ Envelope content may include:
 - advisory review payloads
 - output-oriented annotations
 
+### Minimum ClaimSet Taxonomy
+
+This section is the sole owner of the shared minimum `ClaimSet` family
+vocabulary.
+
+| Claim family | Shared role | Default first-slice status |
+| --- | --- | --- |
+| `ActivityClaim` | provider-local activity or transaction meaning before shared compilation | in scope |
+| `BalanceObservationClaim` | quantity-backed balance or as-of observation tied to evidence | in scope |
+| `OwnershipClaim` | provider-local ownership or control assertion that may matter later | canonical but out of scope |
+| `LocationClaim` | provider-local location or sub-location assertion | in scope |
+| `StatementClaim` | parsed statement row or document-level semantic claim | canonical but out of scope |
+| `InstrumentIdentityClaim` | provider-local instrument identity assertion | in scope |
+| `ContractTermClaim` | provider-local term or contract assertion needed later | canonical but out of scope |
+| `ValuationClaim` | valuation observation whose purpose affects later behavior | in scope |
+| `ProjectionAnnotation` | output-oriented metadata that is not accepted economic truth | in scope |
+| `IssueCandidate` | blocking pre-economic diagnostic candidate | in scope |
+| `ReviewCandidate` | advisory pre-economic review candidate | in scope |
+
+Rules:
+
+- secondary docs may reference these claim families, but they must not publish
+  competing repo-wide family lists
+- later slices may use canonical families that are out of scope for the default
+  first slice without redefining the shared vocabulary
+
 ### ClaimSet Stable Ids
 
 - `claim_set_id` identifies one bounded semantic emission over one evidence set
 - `claim_id` identifies one claim family member with one stable semantic role
 - `interpretation_group_id` identifies one mutually exclusive claim bundle
+- `claim_set_id` uses component array
+  `[evidence_set_id, claim_emitter_id]`
+- `claim_id` uses component array
+  `[claim_set_id, claim_family, claim_anchor, interpretation_group_id]`
+- `interpretation_group_id` uses component array
+  `[claim_set_id, bundle_anchor, bundle_discriminator]`
+- `claim_emitter_id` is the stable id of the translation family or shared
+  compiler boundary that emitted the claim set
+- `claim_anchor` is the stable provider-local anchor for one asserted meaning;
+  slice-specific anchor choices live in
+  [First Slice Contract](../reference/first-slice-contract.md)
+- `bundle_anchor` is the stable anchor shared by all mutually exclusive bundles
+  over the same source-local meaning
+- `bundle_discriminator` is `default` when one anchor has exactly one bundle;
+  otherwise use `alt:1`, `alt:2`, and so on in canonical bundle order under
+  that anchor
 
 ### ClaimSet Ordering
 
-- sort by `claim_family`
-- then `effective_at` when present
-- then `claim_id`
-- then `interpretation_group_id`
+- sort by tuple
+  `[claim_family, effective_at_or_null, claim_id, interpretation_group_id]`
+- use JSON `null` for `effective_at_or_null` when the claim has no effective
+  time
 
 ### ClaimSet Serialization
 
@@ -264,7 +338,7 @@ Envelope content may include:
 
 ### ClaimSet Fingerprint Inputs
 
-- kernel records in declared order
+- kernel records in canonical order
 - `schema_version`
 - `claim_set_id`
 - referenced `EvidenceSet` ids or fingerprints
@@ -549,12 +623,13 @@ Envelope content may include:
 - `checkpoint_id` identifies one accepted checkpoint container
 - `checkpoint_assertion_id` identifies one accepted checkpoint truth record for
   one subject and one as-of point
+- `checkpoint_assertion_id` uses component array
+  `[assertion_kind, asserted_as_of_at, subject_ref.subject_kind, subject_ref.subject_id]`
 
 ### Checkpoint Ordering
 
-- sort by `asserted_as_of_at`
-- then `subject_ref`
-- then `checkpoint_assertion_id`
+- sort by tuple
+  `[asserted_as_of_at, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
 
 ### Checkpoint Serialization
 
@@ -564,7 +639,7 @@ Envelope content may include:
 
 ### Checkpoint Fingerprint Inputs
 
-- kernel checkpoint assertion records in declared order
+- kernel checkpoint assertion records in canonical order
 - `schema_version`
 - referenced `ReconciliationState` ids or fingerprints
 - referenced accepted evidence ids
@@ -679,7 +754,7 @@ Envelope content may include:
 
 ### Journal Fingerprint Inputs
 
-- kernel journal records in declared order
+- kernel journal records in canonical order
 - `schema_version`
 - referenced `EconomicFacts` ids
 - referenced `Checkpoint` assertion ids
@@ -739,13 +814,17 @@ Envelope content may include:
 
 - `determinant_id` identifies one tax determinant
 - `basis_pool_ref` identifies one tax basis or pool seam reused across tax years
+- `determinant_id` uses component array
+  `[tax_year, determinant_family, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_scope, determinant_anchor]`
+- `basis_pool_ref` serializes, sorts, and fingerprints using
+  `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_scope]`
+- `determinant_anchor` is the stable tax-owned anchor for one determinant under
+  one basis or pool scope
 
 ### TaxInputs Ordering
 
-- sort by `tax_year`
-- then `basis_pool_ref`
-- then `determinant_family`
-- then `determinant_id`
+- sort by tuple
+  `[tax_year, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_scope, determinant_family, determinant_id]`
 
 ### TaxInputs Serialization
 
@@ -755,7 +834,7 @@ Envelope content may include:
 
 ### TaxInputs Fingerprint Inputs
 
-- kernel determinant records in declared order
+- kernel determinant records in canonical order
 - `schema_version`
 - referenced `EconomicFacts` ids
 - referenced `Checkpoint` assertion ids

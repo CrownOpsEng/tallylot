@@ -411,29 +411,19 @@ Rules:
 
 Default bridge mapping for the first increment:
 
-- proto-`EvidenceSet` kernel:
-  - selected, superseded, and blocked members from
-    `translation_input_candidates.json` and `translation_input_plan.json`
-  - typed provenance and locator identity from the current normalization-owned
-    evidence and statement paths
-  - source-local parsed observations from planner-selected input families and
-    statement extraction outputs where the increment uses them
-- proto-`ClaimSet` kernel:
-  - provider-local semantic assertions emitted after deterministic evidence
-    selection and before final draft or fact acceptance
-  - balance observation claims from statement-backed quantities and other
-    quantity-backed evidence used by the increment
-  - location, ownership, instrument, and contract-facing claims only where the
-    current adapter can already state them safely
-  - claim-owned blocking and advisory outputs derived from current
-    source-local issues and reviews when the meaning is still pre-economic
-- bridge continuity during migration:
-  - `SourceTranslationBatch` remains the honest current runtime boundary while the
-    first increment also emits bounded proto-`EvidenceSet` or proto-`ClaimSet`
-    artifacts
-  - the shared compiler remains responsible for producing current bridge outputs
-    from accepted claims until the corresponding downstream target-stage increment
-    replaces that bridge responsibility
+- [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md) owns the
+  exact planner-candidate, planner-plan, statement-evidence, and bridge-only
+  landing rules
+- [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) owns the
+  shared claim taxonomy plus the deterministic id, ordering, serialization, and
+  fingerprint contracts
+- [First Slice Contract](../reference/first-slice-contract.md) owns the bounded
+  Coinbase-first evidence families, claim families, replay, parity, and
+  allowed-drift rules
+- `SourceTranslationBatch` remains the honest current runtime boundary while
+  the first increment emits bounded proto-products beside it, and the shared
+  compiler keeps ownership of current bridge outputs until the downstream
+  target-stage replacement lands
 
 ### 3. Freeze Adapter Determinism And Compatibility Rules
 
