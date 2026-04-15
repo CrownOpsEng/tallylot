@@ -71,7 +71,7 @@ The current bridge families that matter for target mapping are:
 | --- | --- | --- | --- |
 | `translation_input_candidates.json` | `EvidenceSet` envelope and selection sidecars | preserve planner candidate membership, coverage, and comparability as evidence-selection reasoning; these candidates do not become `EvidenceSet` kernel records | remains bridge-owned until `EvidenceSet` lands |
 | `translation_input_plan.json` | `EvidenceSet` kernel | selected, superseded, and blocked planner decisions from this file supply the kernel `selection_status` records under one deterministic `selection_group_id` | dual-emitted during the first increment |
-| recognized statement balance rows | `EvidenceSet` observations and `BalanceObservationClaim` inputs | preserve statement document identity, row identity, as-of time, precision, quantity, and provenance without forcing final checkpoint acceptance | dual-emitted during the first increment |
+| recognized statement balance rows | `EvidenceSet` observations and `BalanceObservationClaim` inputs | preserve statement document identity, row identity, as-of time, precision, quantity, and provenance as typed observations under the owning statement document without forcing final checkpoint acceptance | dual-emitted during the first increment |
 | `EconomicActivityDraft` | `ClaimSet` | split one draft into `ActivityClaim`, `InstrumentIdentityClaim`, `LocationClaim`, `BalanceObservationClaim`, `ValuationClaim`, `ProjectionAnnotation`, issue candidates, and review candidates | bridge boundary remains live until claim-native increments replace it |
 | `SourceTranslationBatch` | migration continuity between `EvidenceSet`, `ClaimSet`, and current bridge outputs | keep the bundled bridge boundary honest while bounded proto-products are emitted beside it | live runtime boundary |
 | `TransactionFact` | bridge-only approximation of `EconomicFacts` | treat accepted bridge facts as the current approximation of accepted economic meaning, not as the final target contract | bridge-only until `EconomicFacts` lands |
@@ -137,14 +137,17 @@ First-increment rules:
   `translation_input_plan.json` supplies the kernel `selection_status` records
   for the increment
 - recognized statement rows become evidence observations first and
-  `BalanceObservationClaim` inputs second; they do not become accepted
-  checkpoint truth inside the increment
+  `BalanceObservationClaim` inputs second; they do not become evidence member
+  families or accepted checkpoint truth inside the increment
 - `EconomicActivityDraft` remains the provider-local pre-economic bridge boundary,
   but its responsibilities are split conceptually into claim families so later
   increments do not need to rediscover that cut
 - the shared compiler remains responsible for producing current bridge outputs
   from accepted claims until `EconomicFacts` and later downstream products
   replace that responsibility
+- first-slice observation classes, evidence member families, and bounded
+  `selection_group_id` rules are frozen only on
+  [First Slice Contract](../reference/first-slice-contract.md)
 - the first increment must not create a second active runtime center, a permanent
   dual-write lane, or a repo-wide adapter-facet migration prerequisite
 - unchanged evidence must preserve selected evidence membership, claim identity

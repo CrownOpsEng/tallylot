@@ -83,6 +83,8 @@ Use these pages as the detailed contract owners:
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
 - [First Slice Contract](../reference/first-slice-contract.md)
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
+- [Target Contract Primitives](../reference/target-contract-primitives.md)
+- [Target Product Artifacts](../reference/target-product-artifacts.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gaps And Readiness](gaps-and-readiness.md)
@@ -329,6 +331,12 @@ Must include:
   - `experimental`
   - `deferred`
 
+Wire-identity rule:
+
+- forward-looking target tax-stage docs use `tax_policy_id`
+- the exact `TaxPolicyId` wire format is owned by
+  [Target Contract Primitives](../reference/target-contract-primitives.md)
+
 ### `TaxPolicy`
 
 Consumes:
@@ -344,10 +352,10 @@ Produces:
 
 ### Selection Semantics
 
-- one run may select one or more policy ids
+- one run may select one or more `tax_policy_id` values
 - all selected policies run independently against the same input set
 - one policy's unsupported coverage does not invalidate another's results
-- unknown policy ids fail request validation immediately
+- unknown `tax_policy_id` values fail request validation immediately
 - missing explicit selection and missing configured default also fail
   validation
 - configured defaults live only at application, config, and interface

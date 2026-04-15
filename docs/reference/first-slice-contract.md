@@ -9,6 +9,7 @@ nav_order: 15
 related:
   - docs/concepts/bridge-to-target-mapping.md
   - docs/concepts/pipeline-stage-contracts.md
+  - docs/reference/target-contract-primitives.md
   - docs/status/adapter-delivery-plan.md
   - ROADMAP.md
 ---
@@ -34,21 +35,40 @@ The slice is not:
 - a broad unified-adapter facet rollout
 - a replacement for `EconomicFacts`, `ReconciliationState`, or `Checkpoint`
 
-## Evidence Families
+## Evidence Member Families
 
 Planner candidate inventory from `translation_input_candidates.json` remains
 `EvidenceSet` envelope or selection-sidecar reasoning as owned by
 [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md). The
 bounded slice kernel uses the selected, superseded, and blocked plan records.
 
-The slice recognizes only these evidence families:
+The slice recognizes only these evidence member families:
 
-| Evidence family | Meaning | Required kernel role |
+| Evidence member family | Meaning | Required kernel role |
 | --- | --- | --- |
 | `coinbase_retail_export` | Coinbase retail CSV member recorded by one selected, superseded, or blocked planner decision | selected, superseded, or blocked plan member |
 | `coinbase_statement_document` | recognized Coinbase statement PDF document used for statement-backed quantity observation | selected evidence member with document identity |
-| `coinbase_statement_balance_row` | one parsed statement quantity row from a recognized Coinbase statement document | evidence observation keyed to the owning document and row anchor |
-| `coinbase_translation_selection_group` | deterministic planner decision boundary for one retail export family selection | bounded `selection_group_id` for the slice |
+
+## Observation Classes
+
+The slice recognizes only these typed observation classes:
+
+| Observation class | Meaning | Owning member family |
+| --- | --- | --- |
+| `selection_decision` | deterministic selected, superseded, or blocked planner decision preserved as an evidence observation | `coinbase_retail_export` |
+| `document_identity` | recognized statement document identity preserved under the selected statement document member | `coinbase_statement_document` |
+| `coinbase_statement_balance_row` | one parsed statement quantity row keyed to the owning recognized statement document and row anchor | `coinbase_statement_document` |
+
+`coinbase_statement_balance_row` is an observation class only. It is not an
+evidence member family for this slice.
+
+## Selection Groups
+
+The slice freezes one bounded selection-group vocabulary:
+
+| `selection_group_id` | Meaning |
+| --- | --- |
+| `coinbase:retail_export` | deterministic planner decision boundary for one Coinbase retail export family selection |
 
 ## Claim Families
 
@@ -129,14 +149,16 @@ inventing new bridge-only schemas:
 
 Stable-id format:
 
-- use the stable-id recipe owned by
-  [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md):
-  `<kind>:<sha256(lowercase-hex)>` over one canonical UTF-8 JSON array of
-  ordered components
+- use the stable-id recipe, canonical scalar forms, and anchor admissibility
+  rules owned by
+  [Target Contract Primitives](target-contract-primitives.md) and reused by
+  [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
 - use the shared `evidence_set_id`, `member_id`, `observation_id`, and
   `claim_set_id` component recipes unchanged
 - for the default slice, `selection_group_id` for Coinbase retail export
   planning is the current deterministic planner group id `coinbase:retail_export`
+- for the default slice, `claim_emitter_id` is the reusable primitives-page id
+  over `[source, adapter_id, "bridge-claim-compiler"]`
 
 Slice-specific component arrays:
 
@@ -164,6 +186,10 @@ Slice-specific component arrays:
   `[claim_set_id, raw_file, raw_row_ref, bundle_discriminator]`
 - statement-derived `interpretation_group_id` uses
   `[claim_set_id, document_member_id, row_anchor, bundle_discriminator]`
+- the slice-specific `claim_anchor` arrays above are admissible shared anchors
+  under [Target Contract Primitives](target-contract-primitives.md)
+- the slice-specific `bundle_anchor` arrays above are likewise admissible
+  shared anchors and do not redefine the repo-wide anchor rules
 - for the default slice, the provider operation identity for one retail
   activity claim is the Coinbase retail row anchor `[raw_file, raw_row_ref]`
 - `document_member_id` is the `member_id` for one recognized

@@ -122,13 +122,13 @@ Rules:
   redefine them into incompatible local variants
 - accepted checkpoint truth should be modeled as checkpoint assertions first
   and checkpoint containers second
-- checkpoint assertions carry one `CheckpointAssertionValue`, not one
-  untyped convenience payload
+- checkpoint assertions carry one shared `AssertionValue`, not one untyped
+  convenience payload
 
-## `CheckpointAssertionValue`
+## `AssertionValue`
 
-`CheckpointAssertionValue` is the target union carried by
-`Checkpoint.accepted_value`.
+`AssertionValue` is the shared value union carried by accepted checkpoint
+assertions and reconciliation comparison values.
 
 Variants:
 
@@ -147,8 +147,12 @@ Variant rules:
 - `LocationValue` carries one accepted location state
 - the union remains explicit so a later implementation cannot silently use one
   scalar type to stand in for quantity, money, ownership, and location truth
-- checkpoint assertion ids and fingerprints must treat the accepted-value
-  variant and its canonical content as semantically relevant
+- `CheckpointAssertion.accepted_value` carries exactly one `AssertionValue`
+- downstream `BalanceTargetRecord.expected_value` and
+  `BalanceTargetRecord.observed_value_or_null` reuse the same union instead of
+  inventing a second reconciliation-only value type
+- exact field, serialization, and fingerprint rules for the shared union live
+  in [Target Contract Primitives](../reference/target-contract-primitives.md)
 
 ## Valuation
 
@@ -169,6 +173,8 @@ Rules:
 
 - valuation belongs in the economic model when it changes checkpoint,
   accounting, or tax behavior
+- when downstream behavior depends on persisted valuation truth, the target
+  runtime emits first-class `ValuationRecord` rows under `EconomicFacts`
 - valuation purpose should be explicit enough to distinguish checkpoint,
   accounting, tax, and general market-observation use instead of letting one
   valuation silently stand in for another job
@@ -402,6 +408,42 @@ Bridge-specific classification rules live in
 - do not force a docs-only bridge rename just to make the target vocabulary
   appear already implemented
 
+## Shared Support Ownership
+
+The target shared-support boundary is required and not optional.
+
+Required ownership:
+
+- `domain/support/` owns `SubjectRef`, `GapCore`, `GapExplanation`,
+  readiness primitives, and shared review attachment rules
+- current `domain/issues/` remains current-state bridge truth for live bridge
+  issue and review models until later implementation replaces them
+
+Rules:
+
+- target-stage gap, readiness, or review-attachment contracts must not land in
+  `domain/issues/`
+- bridge-era issue and review models remain accurate in current-state docs,
+  but they do not become the long-term shared-support boundary
+
+## Implementation Landing Rules During Migration
+
+Use these rules when placing new target-stage code while current bridge
+packages still exist.
+
+Rules:
+
+- target evidence models land in `domain/evidence/` and
+  `application/evidence/`
+- first claim-native emission lands in `domain/claims/` plus
+  `application/normalization/`
+- target economic compilation lands in `domain/economics/` plus
+  `application/economics/`
+- target shared support types do not land in `domain/issues/`
+- bridge-only extensions may stay in current bridge packages until replaced
+- no new target-stage records land in `domain/transactions/`,
+  `domain/balances/`, `domain/issues/`, or `application/facts/`
+
 ## Required Package Ownership
 
 The target package layout follows stage ownership and is not advisory.
@@ -416,11 +458,12 @@ Required domain ownership:
   settlement state, and lifecycle state
 - `domain/reconciliation/` for continuity segments, link state, balance
   targets, readiness reducers, and checkpoint candidacy
-- `domain/checkpoints/` for accepted checkpoint truth, checkpoint assertions,
-  and `CheckpointAssertionValue`
+- `domain/checkpoints/` for accepted checkpoint truth and checkpoint assertions
 - `domain/accounting/` for journals, entries, postings, and validation outputs
 - `domain/tax/` for tax determinants, basis transitions, tax-policy contracts,
   carry-forward state, and outputs
+- `domain/support/` for `SubjectRef`, gap and readiness primitives, and shared
+  review attachment rules
 
 Required application ownership:
 
@@ -430,9 +473,11 @@ Required application ownership:
 - `application/profiling/` for capture profile construction, inventory
   inspection, and timezone review
 - `application/normalization/` for evidence-to-claim translation planning and
-  current bridge artifact production
+  current bridge artifact production plus the bounded first claim-emission seam
 - `application/normalization/assembly/` for deterministic merge of accepted
   capture outputs into assembled source datasets
+- `application/economics/` for `ClaimSet -> EconomicFacts` compilation and
+  bridge interop during migration
 - `application/reconciliation/` for continuity, linkage, balance-target
   evaluation, readiness reducers, and checkpoint candidates
 - `application/checkpoints/` for checkpoint evidence assembly, manual balance

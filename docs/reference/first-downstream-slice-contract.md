@@ -9,6 +9,7 @@ nav_order: 16
 related:
   - docs/reference/first-slice-contract.md
   - docs/concepts/pipeline-stage-contracts.md
+  - docs/reference/target-contract-primitives.md
   - docs/concepts/reconciliation-tax-architecture.md
   - docs/status/migration-sequence.md
   - ROADMAP.md
@@ -51,11 +52,12 @@ The slice may emit only these downstream kernel families:
 | --- | --- | --- |
 | `EconomicFacts` | `EconomicEventRecord` | only `asset_movement`, `cash_movement`, `fee_or_rebate`, and `correction` event families |
 | `EconomicFacts` | `EconomicLegRecord` | only `holding_change`, `cash_change`, `fee`, and `rebate` leg roles |
+| `EconomicFacts` | `ValuationRecord` | zero rows by default; `valuation_ref_or_null` stays empty unless a later parity-preserving slice widens valuation support |
 | `ReconciliationState` | `ContinuitySegmentRecord` | one segment per Coinbase-held position subject and one checkpoint date |
-| `ReconciliationState` | `BalanceTargetRecord` | only `target_kind = exact_balance` |
+| `ReconciliationState` | `BalanceTargetRecord` | only `target_kind = exact_balance`, with inline `expected_value` and `observed_value_or_null` using `AssertionValue` |
 | `ReconciliationState` | `CheckpointCandidateRecord` | only candidates supported by in-scope exact-balance targets and statement evidence |
 | `Checkpoint` | `CheckpointRecord` | accepted container for in-scope checkpoint assertions only |
-| `Checkpoint` | `CheckpointAssertionRecord` | only `assertion_kind = position_quantity` |
+| `Checkpoint` | `CheckpointAssertionRecord` | only `assertion_kind = position_quantity`, with `accepted_value` using `AssertionValue` |
 
 `LinkRecord` remains out of scope for this bounded slice. The first downstream
 slice may emit no `LinkRecord` rows and still be complete.
@@ -88,15 +90,20 @@ Slice-specific rules:
   inputs and unchanged compilation decisions
 - `EconomicLegRecord` ids must remain stable on unchanged accepted event
   structure, leg roles, subject refs, quantities, and valuation refs
+- `valuation_ref_or_null` stays empty for the default Coinbase-first downstream
+  slice unless a later parity-preserving slice explicitly widens valuation
+  support
 - `ContinuitySegmentRecord` subjects in this slice are limited to one Coinbase
   position subject per segment; do not mix multiple positions into one segment
 - `BalanceTargetRecord` ids in this slice are limited to one exact
-  statement-backed target per subject and as-of time
+  statement-backed target per subject and as-of time, with `expected_value`
+  and `observed_value_or_null` using the shared `AssertionValue` contract from
+  [Target Contract Primitives](target-contract-primitives.md)
 - `CheckpointCandidateRecord` ids in this slice must derive only from in-scope
   balance-target refs and statement-backed evidence refs
 - `CheckpointAssertionRecord` ids in this slice must include the accepted-value
   fingerprint exactly as owned by
-  [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
+  [Target Contract Primitives](target-contract-primitives.md)
 
 In-scope checkpoint vocabularies for the slice:
 
