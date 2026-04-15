@@ -22,14 +22,14 @@ Current runtime note:
 
 ## Design Rules
 
-- shared support types should stay compact and stage-neutral
+- shared support types stay compact and stage-neutral
 - explanation-heavy payloads belong in sidecars, not in the hot-path core
-- stage-owned blockers stay explicit; no stage should invent an incompatible
+- stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - dataset summaries are derived from subject-level truth, not stored as the
   only truth
-- shared support structures should help stages interoperate without erasing
-  stage ownership
+- shared support structures help stages interoperate without erasing stage
+  ownership
 
 ## Provenance
 
@@ -42,8 +42,8 @@ Rules:
 - file and member identity stay separate from row, page, or anchor identity
 - capture identity stays separate from human-readable labels and file-system
   paths
-- shared support models should link to provenance rather than embedding large
-  repeated evidence payloads directly
+- shared support models link to provenance rather than embedding large repeated
+  evidence payloads directly
 
 ## `SubjectRef`
 
@@ -77,6 +77,8 @@ Rules:
 - use `Contract` and `Position` explicitly in business logic and modeling
 - use `SubjectRef` only where shared infrastructure needs a generic pointer
 - do not use `SubjectRef` as an excuse to stop modeling the true concept
+- `SubjectRef` serializes, sorts, and fingerprints as
+  `[subject_kind, subject_id]`
 
 ## Non-Subject Scope Identity
 
@@ -102,6 +104,28 @@ Rules:
 - do not attach a gap to `dataset` scope when `subject`, `selection_group`, or
   `checkpoint_candidate` would be truthful
 
+## Shared Stage Vocabulary
+
+Use one stage vocabulary across gaps, readiness, checkpoint reuse, and
+downstream reporting.
+
+Shared stage vocabulary:
+
+- `evidence`
+- `claim`
+- `economic`
+- `reconciliation`
+- `checkpoint`
+- `accounting`
+- `tax`
+
+Rules:
+
+- `owner_stage` and `blocking_stages` use this vocabulary
+- readiness records and projections use this vocabulary
+- do not use alternate labels such as `semantic` once target-stage artifacts
+  are emitted
+
 ## Gap Model
 
 The target shared gap model splits compact blocking truth from explanation.
@@ -112,37 +136,92 @@ Purpose:
 
 - compact shared blocker record used across stages
 
-Minimum fields:
+Kernel fields:
 
 - `gap_id`
 - `owner_stage`
 - `blocking_stages`
 - `scope_kind`
+- `scope_id_or_null`
+- `subject_ref_or_null`
 - `gap_kind`
+- `gap_anchor`
 - `status`
 - `materiality`
 - `confidence`
-- `subject_ref` when `scope_kind` is `subject`
 
-Rules:
+Controlled vocabularies:
 
-- `scope_kind` is the attachment contract for the gap core
-- supported `scope_kind` values are:
+- `scope_kind`:
   - `subject`
   - `selection_group`
   - `continuity_segment`
   - `checkpoint_candidate`
   - `dataset`
-- use `subject_ref` whenever one truthful subject exists
-- use non-subject scope kinds only when no narrower truthful subject exists
+- `gap_kind`:
+  - `missing_evidence`
+  - `unresolved_identity`
+  - `unresolved_linkage`
+  - `contradiction`
+  - `policy_required_determination`
+  - `operator_override_required`
+- `status`:
+  - `open`
+  - `resolved`
+  - `superseded`
+- `materiality`:
+  - `material`
+  - `contextual`
+  - `informational`
+- `confidence`:
+  - `high`
+  - `medium`
+  - `low`
+
+Stable ids:
+
+- `gap_id` identifies one shared blocker record
+- `gap_id` uses component array
+  `[owner_stage, scope_kind, scope_anchor, gap_kind, gap_anchor]`
+- `scope_anchor` uses the `SubjectRef` tuple when `scope_kind` is `subject`
+- `scope_anchor` uses `scope_id_or_null` when `scope_kind` is not `subject`
+- `scope_id_or_null` is required when `scope_kind` is not `subject`
+- `subject_ref_or_null` is required when `scope_kind` is `subject`
+- `gap_anchor` is the stage-owned stable discriminator for one blocking
+  condition inside the declared scope
+
+Ordering:
+
+- sort by tuple
+  `[owner_stage, scope_kind, subject_ref_or_null, scope_id_or_null, gap_kind, gap_id]`
+- use JSON `null` ordering for `subject_ref_or_null` and `scope_id_or_null`
+  when one field is not applicable
+
+Serialization:
+
+- serialize kernel records only
+- use stable object-key ordering
+- preserve the declared gap order above
+- sort `blocking_stages` in canonical stage order
+
+Fingerprint inputs:
+
+- kernel records in canonical order
+- `schema_version`
+- sorted `blocking_stages`
+
+Rules:
+
 - `GapCore` is the shared blocking truth
 - it stays compact enough for reducers, indexing, and hot-path references
 - it must not absorb large explanatory text blobs
 - `owner_stage` identifies who owns the gap semantics
 - `blocking_stages` identifies who is blocked by the unresolved condition
-- later stages may add stage-local subtyping, but they should not redefine the
+- stages may add stage-local subtyping later, but they must not redefine the
   shared core out of existence
 - non-subject scopes must still use stable ids rather than prose labels
+- `resolved` and `superseded` gaps remain valid persisted history; they are not
+  deleted in place
 
 ### `GapExplanation`
 
@@ -150,7 +229,7 @@ Purpose:
 
 - explanation sidecar keyed to one `GapCore`
 
-Minimum fields:
+Fields:
 
 - `gap_id`
 - `known_facts`
@@ -161,48 +240,38 @@ Minimum fields:
 - `recommended_next_action`
 - `provenance_refs`
 
+Ordering:
+
+- sort by `gap_id`
+- preserve list order inside one explanation field when the owning stage has a
+  meaningful canonical order
+
+Serialization:
+
+- serialize explanation records only
+- use stable object-key ordering
+- preserve the declared explanation order above
+- sort `provenance_refs` when the stage does not declare a stronger order
+
+Fingerprint inputs:
+
+- explanation records in canonical order
+- `schema_version`
+- `gap_id`
+- sorted `provenance_refs`
+
 Rules:
 
 - explanation belongs in `GapExplanation`, not in `GapCore`
-- explanation may grow richer over time without bloating the compact shared
-  blocker record
+- explanation may grow richer over time without bloating the compact blocker
+  record
 - stages may attach richer explanation or decision history later, but the
-  common explanation shape should stay recognizable across the repo
-
-### Minimum Gap Taxonomy
-
-- `missing_evidence`
-- `unresolved_identity`
-- `unresolved_linkage`
-- `contradiction`
-- `policy_required_determination`
-- `operator_override_required`
-
-Rules:
-
-- gap ownership stays explicit by stage
-- accounting-owned gaps, reconciliation-owned gaps, checkpoint-owned gaps, and
-  tax-owned gaps must not be conflated operationally
-- stages may add stage-local subtyping later, but not by replacing the shared
-  taxonomy completely
-- materiality and confidence should remain first-class attributes on the gap
-  core, not only free-text explanation details
+  common explanation shape stays recognizable across the repo
 
 ## Readiness Model
 
 Readiness is subject-first, stage-specific, and reducible into reporting
 projections.
-
-### `ReadinessStage`
-
-Shared stage vocabulary:
-
-- `evidence`
-- `semantic`
-- `reconciliation`
-- `checkpoint`
-- `accounting`
-- `tax`
 
 ### `ReadinessStatus`
 
@@ -225,46 +294,46 @@ Purpose:
 
 - stage-specific readiness for one `SubjectRef`
 
-Minimum fields:
+Kernel fields:
 
 - `subject_ref`
 - `stage`
 - `status`
 - `blocking_gap_ids`
 
-Optional derived context may include:
+Stable ids:
 
-- confidence
-- materiality
-- provenance or explanation references
+- `subject_readiness_id` identifies one readiness record for one subject and
+  one stage
+- `subject_readiness_id` uses component array `[subject_ref, stage]`
+
+Ordering:
+
+- sort by tuple `[stage, subject_ref.subject_kind, subject_ref.subject_id]`
+- sort `blocking_gap_ids` lexicographically
+
+Serialization:
+
+- serialize readiness records only
+- use stable object-key ordering
+- preserve the declared readiness order above
+
+Fingerprint inputs:
+
+- readiness records in canonical order
+- `schema_version`
+- sorted `blocking_gap_ids`
 
 Rules:
 
 - subject readiness is the base truth
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before semantic commitment
-- reducers should work from subject readiness plus gaps, not from hand-built
-  whole-dataset statuses
+- reducers work from subject readiness plus gaps, not from hand-built whole
+  dataset statuses
 - a subject may be ready for one stage and blocked for another
-- readiness should point to blocking gap ids rather than hiding blockers in
-  summary text
-
-## Reducer Rules
-
-Readiness reducers should remain compact, deterministic, and subject-first.
-
-Rules:
-
-- reducers work from `GapCore`, stable scope ids, and subject readiness records
-- reducers must not infer readiness from explanation prose
-- reducers may roll up from subject truth into reporting projections, but the
-  projection is derived output, not the only stored truth
-- `partial` readiness requires at least one resolved assertion plus at least
-  one open blocking gap id
-- if no required assertion has resolved yet, status is `blocked`, not `partial`
-- if no blocker applies, status is `ready`, not `partial`
-- dataset summaries should be reproducible from ordered readiness and gap
-  records without manual status editing
+- readiness points to blocking gap ids rather than hiding blockers in summary
+  text
 
 ### `ReadinessProjection`
 
@@ -272,23 +341,74 @@ Purpose:
 
 - derived reporting view over subject readiness
 
-Allowed optional projection dimensions:
+Fields:
 
-- source
-- location
-- instrument
-- continuity segment
-- checkpoint date
-- tax year
+- `projection_id`
+- `stage`
+- `projection_dimension`
+- `projection_key`
+- `status`
+- `blocking_gap_ids`
+- `ready_subject_count`
+- `partial_subject_count`
+- `blocked_subject_count`
+- `not_applicable_subject_count`
+
+Controlled `projection_dimension` vocabulary:
+
+- `source`
+- `location`
+- `instrument`
+- `continuity_segment`
+- `checkpoint_date`
+- `tax_year`
+- `dataset`
+
+Projection-key rules:
+
+- `source` uses the source string
+- `location` uses one `location_id`
+- `instrument` uses one `instrument_id`
+- `continuity_segment` uses one `continuity_segment_id`
+- `checkpoint_date` uses one canonical `YYYY-MM-DD` date string
+- `tax_year` uses one integer tax year
+- `dataset` uses one `dataset_id`
+
+Stable ids:
+
+- `projection_id` identifies one derived readiness projection
+- `projection_id` uses component array
+  `[stage, projection_dimension, projection_key]`
+
+Ordering:
+
+- sort by tuple `[stage, projection_dimension, projection_key]`
+- sort `blocking_gap_ids` lexicographically
+
+Serialization:
+
+- serialize projection records only
+- use stable object-key ordering
+- preserve the declared projection order above
+
+Fingerprint inputs:
+
+- projection records in canonical order
+- `schema_version`
+- sorted `blocking_gap_ids`
+- the ordered `SubjectReadinessRecord` ids that fed the projection
 
 Rules:
 
-- these are reporting and recalculation dimensions, not mandatory keys on
-  every readiness record
-- a stage should use only the dimensions it actually owns or can derive
-  safely
-- do not turn readiness into a mandatory global cube just to satisfy one
-  report
+- projections are derived output, not the only stored truth
+- `partial` requires at least one resolved assertion plus at least one open
+  blocking gap id
+- if no required assertion has resolved yet, status is `blocked`, not
+  `partial`
+- if no blocker applies, status is `ready`, not `partial`
+- dataset summaries remain reproducible from ordered readiness and gap records
+  without manual status editing
+- stages use only the dimensions they actually own or can derive safely
 
 ## Shared Checkpoint Assertions
 
@@ -297,7 +417,7 @@ checkpoints, accounting, and tax.
 
 Rules:
 
-- checkpoint assertions should stay first-class and referenceable
+- checkpoint assertions stay first-class and referenceable
 - downstream stages may reuse them, but should not redefine them into
   incompatible local variants
 
@@ -315,8 +435,8 @@ Mapping rules:
   blocking condition also exists
 - when one factual cause produces both a blocker and an advisory review, the
   blocker lands in `GapCore` and the review remains keyed sidecar context
-- current bridge ids should remain traceable when later stages adopt
-  target-native gap or review ids
+- current bridge ids remain traceable when later stages adopt target-native gap
+  or review ids
 
 ## Anti-Duplication And Sidecar Rules
 
@@ -368,5 +488,5 @@ Performance implication:
   outputs today
 - later implementation may map current bridge issues and reviews into the
   target gap/readiness model where the stage ownership and semantics line up
-- current-state docs should keep current issue and review names where accuracy
+- current-state docs keep current issue and review names where accuracy
   requires them

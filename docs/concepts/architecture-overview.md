@@ -91,6 +91,8 @@ Use these pages as the owning contract set:
   Target stage products, responsibilities, and handoff guarantees.
 - [First Slice Contract](../reference/first-slice-contract.md)
   Bounded Coinbase-first parity, replay, and allowed-drift contract.
+- [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
+  Bounded first `EconomicFacts -> ReconciliationState -> Checkpoint` contract.
 - [Domain Ontology](domain-ontology.md)
   Target ontology, identity boundaries, and bridge-versus-target modeling rules.
 - [Gaps And Readiness](gaps-and-readiness.md)
@@ -102,6 +104,11 @@ Use these pages as the owning contract set:
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)
   Trust gates, performance rules, and rollout alignment.
 
+Owner-page rule:
+
+- bounded slice references live under `docs/reference/`
+- numbered program sequencing lives only in [ROADMAP.md](../../ROADMAP.md)
+
 ## Read Next
 
 - [Current Bridge Contracts](current-bridge-contracts.md)
@@ -109,6 +116,7 @@ Use these pages as the owning contract set:
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [First Slice Contract](../reference/first-slice-contract.md)
+- [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gaps And Readiness](gaps-and-readiness.md)
 - [Oracle Boundaries](oracle-boundaries.md)

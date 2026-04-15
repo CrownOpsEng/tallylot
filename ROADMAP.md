@@ -10,6 +10,7 @@ This file is the forward planning document for the repo.
   - [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
   - [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
   - [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md)
+  - [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
   - [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
   - [`docs/concepts/gaps-and-readiness.md`](docs/concepts/gaps-and-readiness.md)
   - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
@@ -62,6 +63,8 @@ These are blocking shared foundations for later implementation work:
   [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
 - the bounded first-slice parity and replay contract documented in
   [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md)
+- the bounded first downstream consumer contract documented in
+  [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
 - the target ontology and identity seams documented in
   [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
 - the shared gap, readiness, and `SubjectRef` rules documented in
@@ -90,6 +93,9 @@ Shared-foundation deliverables before broad pipeline expansion:
   of restating family lists, kernel makeup, or bridge landing rules
 - use the bounded first-slice owner page for Coinbase-first replay and parity
   instead of redefining that contract here
+- use the bounded first downstream slice owner page for the first
+  `EconomicFacts -> ReconciliationState -> Checkpoint` consumer path
+  instead of leaving that handoff implicit
 
 Exit criteria:
 
@@ -107,6 +113,8 @@ Exit criteria:
 - `CheckpointAssertion`, issue-to-gap mapping, and review-sidecar rules are
   defined on their owning pages
 - the first vertical slice and its bridge-to-target landing path are explicit
+- downstream record-family contracts, enum vocabularies, and checkpoint value
+  shapes are frozen before broad parallel implementation begins
 - broad target package scaffolding does not begin before these contracts are
   frozen
 
@@ -175,6 +183,8 @@ Deliver:
 - freeze the detailed product, taxonomy, id, ordering, fingerprint, temporal,
   and bridge-mapping contracts on the owner pages instead of restating them
   here
+- freeze the downstream record-family contracts needed for the first
+  `EconomicFacts -> ReconciliationState -> Checkpoint` consumer path
 - unified adapter product and facet prep where it removes first-slice drift,
   without broad family migration or wrapper lanes
 - one named first vertical slice with parity and replay gates
@@ -188,6 +198,10 @@ Exit criteria:
   written down
 - the first slice does not depend on inventing ids, ordering, serialization,
   fingerprints, replay checks, or allowed drift at implementation time
+- downstream stage owner pages define record families, enum vocabularies, and
+  artifact shapes before implementation slices start landing in parallel
+- shared gap, readiness, and checkpoint assertion artifacts are frozen down to
+  stable ids, ordering, serialization, and fingerprint rules
 - broad implementation can start without each stage inventing its own meaning
   for gaps, claims, checkpoint acceptance, or fingerprints
 - broad implementation does not start with target package scaffolding that
@@ -254,10 +268,14 @@ Deliver:
 
 - claim-to-economic compilation seam
 - target-directed economic models aligned to the target ontology
+- explicit `EconomicEventRecord` and `EconomicLegRecord` contracts with frozen
+  `event_family` and `leg_role` vocabularies
 - explicit preservation of settlement, lifecycle, valuation, and identity seams
 - bridge retirement rules for the slices that no longer need
   `EconomicActivityDraft` or `TransactionFact`
 - parity coverage for the first claim-to-economic vertical slice
+- the bounded downstream handoff documented in
+  [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
 
 Exit criteria:
 
@@ -276,6 +294,9 @@ Deliver:
 
 - transfer links, balance targets, continuity, and checkpoint candidacy under
   `ReconciliationState`
+- explicit `ContinuitySegmentRecord`, `LinkRecord`, `BalanceTargetRecord`, and
+  `CheckpointCandidateRecord` contracts with frozen ids and status
+  vocabularies
 - target gap and readiness models where the owning stage can support them
 - corroboration sidecars and deterministic correction handling
 - independence from raw capture layout and bridge-only balance assumptions
@@ -299,6 +320,9 @@ Deliver:
 - trust level and acceptance basis
 - intentional opening-state adoption with provenance
 - manual balance submission as typed checkpoint-owned input
+- `CheckpointAssertionValue`, frozen `assertion_kind` vocabulary, and the
+  bounded first consumer path documented in
+  [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
 
 Exit criteria:
 
@@ -602,6 +626,12 @@ of the following together:
 - `ROADMAP.md`
 - `docs/concepts/reconciliation-tax-architecture.md`
 - `docs/status/migration-sequence.md`
+
+Program-ownership rule:
+
+- `ROADMAP.md` is the only numbered implementation program of record
+- `docs/status/migration-sequence.md` mirrors landing rules and retirement
+  sequencing without defining competing phase numbers
 
 ## Time Summary
 
