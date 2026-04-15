@@ -14,8 +14,8 @@ related:
   - ROADMAP.md
 ---
 
-Use this page when you need the primary mapping from the live bridge into the
-target pipeline. This document owns transformation direction and migration
+Use this page when you need the bridge-to-target mapping from the live bridge
+into the target pipeline. This document owns transformation direction and migration
 continuity. It does not re-own either live bridge truth or target product
 contracts.
 

@@ -41,11 +41,11 @@ Agent-specific routing and repo execution rules live in
 <!-- docs-maintenance:start concepts -->
 - [Architecture Overview](concepts/architecture-overview.md): High-level map of the current bridge, the target pipeline, and the focused pages that own each major contract.
 - [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for trust gates, performance rules, tax-policy architecture, and filing-critical rollout from the current bridge toward the target pipeline.
-- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Primary concept page for the live bridge contracts, bridge artifacts, and current schema rules.
+- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Owning concept page for the live bridge contracts, bridge artifacts, and current schema rules.
 - [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Single authority for how live bridge boundaries map into the target pipeline during Phase 0 and the first bounded increment.
 - [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries.
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts.
-- [Domain Ontology](concepts/domain-ontology.md): Primary concept page for the target economic ontology, identity boundaries, package direction, and bridge-versus-target modeling rules.
+- [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, identity boundaries, package direction, and bridge-versus-target modeling rules.
 - [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
 - [Gaps And Readiness](concepts/gaps-and-readiness.md): Owning concept page for the target gap model, readiness model, sidecar rules, and shared `SubjectRef` contracts.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.

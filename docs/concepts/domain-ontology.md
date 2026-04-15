@@ -1,6 +1,6 @@
 ---
 title: "Domain Ontology"
-summary: "Primary concept page for the target economic ontology, identity boundaries, package direction, and bridge-versus-target modeling rules."
+summary: "Owning concept page for the target economic ontology, identity boundaries, package direction, and bridge-versus-target modeling rules."
 doc_type: concept
 audience: human
 owner: repo

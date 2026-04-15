@@ -85,8 +85,8 @@ Use these pages as the owning contract set:
 - [Current Bridge Contracts](current-bridge-contracts.md)
   Live bridge contracts, bridge artifacts, and current schema rules.
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
-  Primary mapping from current bridge boundaries into bounded proto-products during
-  migration.
+  Bridge-to-target mapping from current bridge boundaries into bounded
+  proto-products during migration.
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
   Target stage products, responsibilities, and handoff guarantees.
 - [First Slice Contract](../reference/first-slice-contract.md)

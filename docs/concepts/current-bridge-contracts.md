@@ -1,6 +1,6 @@
 ---
 title: "Current Bridge Contracts"
-summary: "Primary concept page for the live bridge contracts, bridge artifacts, and current schema rules."
+summary: "Owning concept page for the live bridge contracts, bridge artifacts, and current schema rules."
 doc_type: concept
 audience: human
 owner: repo

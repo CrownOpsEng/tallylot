@@ -77,8 +77,8 @@ These foundations are prerequisites, not later cleanup:
 - target-product versioning, compatibility, serialization, and fingerprint
   rules
 - kernel-and-envelope rules with stable rehydration joins
-- one primary bridge-to-target mapping for how current adapter outputs map to
-  proto-`EvidenceSet` and proto-`ClaimSet`
+- one bridge-to-target mapping page that owns how current adapter outputs map
+  to proto-`EvidenceSet` and proto-`ClaimSet`
 
 Rules:
 
