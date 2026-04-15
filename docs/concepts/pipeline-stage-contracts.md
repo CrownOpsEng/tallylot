@@ -53,6 +53,41 @@ Shared rules:
 - stage contracts should stay compact enough for deterministic replay and
   partitioned recomputation
 
+## Shared Product Rules
+
+### Versioning, Serialization, And Fingerprints
+
+- every target product carries a `schema_version`
+- readers accept only the declared supported versions for that product
+- unknown schema versions fail fast
+- compatibility is forward-only by default; do not promise long-lived in-place
+  compatibility unless the owning product explicitly declares a narrower
+  compatibility window
+- regeneration from upstream products or evidence is the normal recovery path
+  for incompatible target-stage artifacts
+- every target product defines one canonical serialization and one stable
+  fingerprint over semantically relevant content
+- fingerprints include semantically relevant upstream references and owning
+  decisions, but exclude presentation-only formatting noise and derived
+  explanation payloads that do not change kernel meaning
+- sidecars and explanation payloads use their own schema and fingerprint rules
+  when persisted independently
+- presentation-only formatting or ordering noise must not affect fingerprints
+
+### Kernel And Envelope Rule
+
+- every target product separates a compact computational kernel from optional
+  envelopes or sidecars
+- the kernel holds stable ids, ordering keys, owning decisions, and the
+  downstream-required references needed for replay and reducers
+- envelopes and sidecars hold provenance detail, explanation, reviews,
+  comparison traces, and policy notes
+- any later rehydration path must join through stable ids emitted by the kernel
+- sidecars must not become the only copy of business meaning or determinant
+  state
+- replay and parity gates operate on kernels first and inspect envelopes
+  separately when the slice requires them
+
 ## `EvidenceSet`
 
 Purpose:
@@ -111,7 +146,7 @@ Owns:
 Carries:
 
 - activity claims
-- balance claims
+- balance observation claims
 - ownership claims
 - location claims
 - instrument claims
@@ -120,11 +155,25 @@ Carries:
 - candidate interpretations
 - claim-owned issues and reviews
 
+Minimum claim-family distinctions:
+
+- `ActivityClaim`
+- `BalanceObservationClaim`
+- `OwnershipClaim`
+- `LocationClaim`
+- `InstrumentIdentityClaim`
+- `ContractTermClaim`
+- `ValuationClaim`
+- `ProjectionAnnotation`
+- blocking issue and review candidate surfaces
+
 Must guarantee:
 
 - source-local semantics only
 - preserved ambiguity where one safe final interpretation is unavailable
 - provenance for every claim
+- adapters may add provider-local subtyping, but they must preserve the shared
+  claim-family distinctions above so later compilation is interoperable
 
 Must not:
 
@@ -164,6 +213,19 @@ Carries:
 - valuations
 - confidence and ambiguity markers
 
+Minimum accepted economic determinants:
+
+- stable event identity and event-kind family
+- effective time and temporal precision
+- one stable leg set with signed quantities and explicit leg roles
+- settlement state where later stages depend on it
+- lifecycle state where later stages depend on it
+- supersession or correction lineage
+- ownership and counterparty references where known
+- valuation records with explicit purpose where downstream behavior depends on
+  them
+- stable references back to accepted upstream claims
+
 Must support:
 
 - holdings movements
@@ -177,6 +239,14 @@ Must support:
 - corporate actions
 - restructurings
 - lifecycle-heavy activity
+
+Rules:
+
+- accepted event kinds stay jurisdiction-neutral and output-neutral
+- corrections preserve supersession lineage instead of mutating accepted
+  economic truth in place
+- unresolved economic detail may remain explicit only where later stages can
+  still reason safely from the accepted kernel
 
 Must not:
 
@@ -257,11 +327,52 @@ Carries:
 - continuity decisions into accepted state
 - trust level and acceptance basis
 
+Controlled checkpoint vocabularies:
+
+- `trust_level`:
+  - `filing_ready`
+  - `analysis_ready`
+  - `operator_only`
+- `acceptance_basis`:
+  - `source_document`
+  - `source_system_balance`
+  - `reconciled_continuity`
+  - `adopted_opening_state`
+  - `operator_assertion`
+- `evidence_class`:
+  - `statement_balance`
+  - `platform_balance`
+  - `wallet_snapshot`
+  - `inventory_proof`
+  - `operator_assertion`
+- `continuity_proof`:
+  - `direct_observation`
+  - `reconciled_rollforward`
+  - `opening_state_rollforward`
+  - `partial_continuity`
+
+Minimum admissibility rules:
+
+- `filing_ready` requires:
+  - `acceptance_basis` other than `operator_assertion`
+  - `evidence_class` other than `operator_assertion`
+  - `continuity_proof` other than `partial_continuity`
+- `analysis_ready` may use `operator_assertion` or `partial_continuity`, but the
+  lower-trust basis must stay explicit in the accepted checkpoint record
+- `operator_only` is required when accepted checkpoint truth relies solely on
+  operator assertion without a source-backed evidence class
+- `adopted_opening_state` remains a distinct acceptance basis and must preserve
+  provenance plus the continuity proof used to roll it into accepted state
+
 Must guarantee:
 
 - accepted checkpoint truth is first-class
 - source-backed evidence remains preferred
 - operator assertions do not silently become filing-ready checkpoint truth
+- `filing_ready` checkpoint truth must not rely solely on `operator_assertion`
+  acceptance
+- adopted opening state remains explicit instead of masquerading as direct
+  observation
 
 Must not:
 
@@ -335,11 +446,37 @@ Carries:
 - basis or pool state transitions
 - tax-owned unresolved items
 
+Minimum determinant families:
+
+- `acquisition`
+- `disposition`
+- `income`
+- `expense_or_fee`
+- `financing_cost`
+- `internal_transfer`
+- `basis_adjustment`
+- `corporate_action`
+
+Each determinant preserves, where applicable:
+
+- stable determinant identity
+- determinant family
+- effective time and temporal precision
+- instrument, pool, or other affected subject reference
+- quantity and direction
+- tax-relevant valuation
+- ownership or counterparty references
+- upstream economic-event references
+- accepted checkpoint or opening-state references when tax basis depends on them
+- basis or pool transition references
+
 Must guarantee:
 
 - jurisdiction-neutral determinants
 - explicit basis-affecting state changes
 - explicit tax-owned blockers where upstream truth is not tax-complete
+- tax-incomplete items stay explicit instead of being upgraded into guessed
+  treatment
 
 Must not:
 

@@ -54,13 +54,26 @@ Minimum fields:
 - `subject_kind`
 - `subject_id`
 
-Initial supported `subject_kind` values:
+Supported `subject_kind` values for shared infrastructure:
 
+- `evidence_member`
+- `evidence_record`
+- `claim`
+- `instrument`
+- `location`
+- `legal_owner`
+- `beneficial_owner`
+- `counterparty`
 - `position`
 - `contract`
+- `economic_event`
+- `checkpoint_assertion`
 
 Rules:
 
+- use the narrowest truthful subject kind the current stage can prove safely
+- early-stage gaps may attach to evidence or claim subjects before business
+  identities are fully resolved
 - use `Contract` and `Position` explicitly in business logic and modeling
 - use `SubjectRef` only where shared infrastructure needs a generic pointer
 - do not use `SubjectRef` as an excuse to stop modeling the true concept
@@ -80,14 +93,24 @@ Minimum fields:
 - `gap_id`
 - `owner_stage`
 - `blocking_stages`
-- `subject_ref`
+- `scope_kind`
 - `gap_kind`
 - `status`
 - `materiality`
 - `confidence`
+- `subject_ref` when `scope_kind` is `subject`
 
 Rules:
 
+- `scope_kind` is the attachment contract for the gap core
+- supported `scope_kind` values are:
+  - `subject`
+  - `selection_group`
+  - `continuity_segment`
+  - `checkpoint_candidate`
+  - `dataset`
+- use `subject_ref` whenever one truthful subject exists
+- use non-subject scope kinds only when no narrower truthful subject exists
 - `GapCore` is the shared blocking truth
 - it stays compact enough for reducers, indexing, and hot-path references
 - it must not absorb large explanatory text blobs
@@ -149,6 +172,7 @@ projections.
 
 Shared stage vocabulary:
 
+- `evidence`
 - `semantic`
 - `reconciliation`
 - `checkpoint`
@@ -186,6 +210,8 @@ Optional derived context may include:
 Rules:
 
 - subject readiness is the base truth
+- `evidence` readiness covers deterministic evidence selection and observation
+  completeness before semantic commitment
 - reducers should work from subject readiness plus gaps, not from hand-built
   whole-dataset statuses
 - a subject may be ready for one stage and blocked for another

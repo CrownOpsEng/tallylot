@@ -361,14 +361,18 @@ The system is filing-ready only when all of these are true:
 
 ## Materiality And Unsupported Cases
 
-Default materiality rules:
+Materiality is explicit and policy-owned.
+
+Architecture rules:
 
 - do not silently suppress any non-zero drift
 - log every difference
 - allow explicit immaterial waivers only in artifacts, never in code comments
-- default immaterial threshold: `<= CAD 25` per asset and `<= CAD 250`
-  aggregate
-- do not auto-waive `CAD`, `BTC`, `ETH`, or stablecoins
+- numeric thresholds, non-waive lists, and filing-program defaults belong to
+  checkpoint policy, tax policy, config, or delivery notes rather than this
+  architecture anchor
+- the stage contracts must preserve enough detail for those policy-owned
+  materiality decisions to remain explicit and reviewable
 
 Unsupported or ambiguous truth must produce explicit outputs and roadmap items.
 Do not guess on:

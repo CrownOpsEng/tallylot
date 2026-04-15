@@ -32,10 +32,13 @@ The repo should use a filing-first adapter strategy:
 - extract only those shared seams that remove current drift on the filing path
 - write down the future unified adapter design now, but migrate to it later
 
-This plan treats adapter work as two tracks:
+This plan treats adapter work as three tracks:
 
 - `now`: filing-critical hardening on the current seams
-- `roadmap`: the post-filing unified adapter interface and migration
+- `prep`: first-principles unified adapter contract and bridge-mapping work
+  needed by shared foundations and the first target-stage slice
+- `roadmap`: broader family migration into the unified adapter contract once the
+  filing path and first slice are stable
 
 Forward-looking adapter work must map into the main runtime pipeline in
 `docs/concepts/pipeline-stage-contracts.md` and the trust-gate rules in
@@ -350,10 +353,133 @@ filing workspace:
 The filing window does not require every adapter to be elegant. It requires
 the filing path to be trustworthy.
 
+## Work To Advance During Shared Foundations
+
+The `prep` track is allowed before the full adapter migration because Phase 0
+cannot safely proceed on stage contracts alone. The repo also needs adapter
+product and bridge-mapping rules that let `EvidenceSet` and `ClaimSet` land
+without creating a second architecture center or forcing a brutal later
+rewrite.
+
+### 1. Freeze Adapter Product Contracts Needed By The First Slice
+
+Write and align the minimum adapter-scoped products needed by shared
+foundations and the first vertical slice:
+
+- `EvidenceSet`
+- `ClaimSet`
+- `SourceTranslationBatch` as the current bridge seam during migration
+- any bounded bridge note needed for `ProjectionBundle` or `ArtifactBundle`
+
+Required rules:
+
+- the adapter-scoped products must map explicitly into the core runtime
+  pipeline
+- the current bridge seam remains honest current-state truth until a bounded
+  replacement slice lands
+- target-stage product ownership stays in the core architecture docs, not in
+  adapter docs
+
+### 2. Freeze Bridge Mapping From Current Seams To Proto Target Products
+
+The first target-stage slice must say exactly how current artifacts land in the
+new products.
+
+Required bridge notes:
+
+- how planner-owned candidate and selection artifacts become proto-`EvidenceSet`
+- how current translation seams, draft compilation, and claim-like diagnostics
+  become proto-`ClaimSet`
+- where the shared compiler owns meaning versus where adapters remain
+  provider-local
+
+Rules:
+
+- no dual active runtime centers
+- no adapter-local hidden semantics beyond provider-local meaning
+- no broad family migration as a hidden prerequisite for the first slice
+
+Default bridge mapping for the first slice:
+
+- proto-`EvidenceSet` kernel:
+  - selected, superseded, and blocked members from
+    `translation_input_candidates.json` and `translation_input_plan.json`
+  - typed provenance and locator identity from the current normalization-owned
+    evidence and statement seams
+  - source-local parsed observations from planner-selected input families and
+    statement extraction outputs where the slice uses them
+- proto-`ClaimSet` kernel:
+  - provider-local semantic assertions emitted after deterministic evidence
+    selection and before final draft or fact acceptance
+  - balance observation claims from statement-backed quantities and other
+    quantity-backed evidence used by the slice
+  - location, ownership, instrument, and contract-facing claims only where the
+    current adapter can already state them safely
+  - claim-owned blocking and advisory surfaces derived from current
+    source-local issues and reviews when the meaning is still pre-economic
+- bridge continuity during migration:
+  - `SourceTranslationBatch` remains the honest current runtime seam while the
+    first slice also emits bounded proto-`EvidenceSet` or proto-`ClaimSet`
+    artifacts
+  - the shared compiler remains responsible for producing current bridge outputs
+    from accepted claims until the corresponding downstream target-stage slice
+    replaces that bridge responsibility
+
+### 3. Freeze Adapter Determinism And Compatibility Rules
+
+Shared foundations need adapter determinism to be a written contract, not only
+an implementation preference.
+
+Required prep work:
+
+- declared ordering rules for adapter-scoped products
+- schema-version and compatibility rules aligned with target product rules
+- canonical serialization and fingerprint rules
+- explicit ownership of manifest fingerprints versus product fingerprints
+
+### 4. Name The First Adapter-Family Vertical Slice
+
+The first unified-adapter-facing slice should be explicit instead of implied.
+
+Required slice definition:
+
+- one adapter family
+- the evidence families and claim families in scope
+- the bridge outputs or target products it must still interoperate with
+- replay and parity gates on unchanged evidence
+- unsupported or ambiguous cases that must remain explicit
+
+Default first-slice direction:
+
+- use the planner-enabled `coinbase` retail export family plus statement-backed
+  balance observation flow unless the active filing workspace requires another
+  Tier A family to land first
+- keep `cointracking_csv` projection compatibility in scope for the same slice
+  where it protects filing output determinism
+
+### 5. Allow Shared Compiler And Verifier Prep
+
+The repo may advance shared compiler and verifier work during prep when that
+work reduces drift across the first slice.
+
+Allowed prep work:
+
+- shared claim compilation seams
+- shared product verifiers
+- shared replay and fingerprint checks
+- shared bridge-to-target comparison helpers
+
+Not allowed in prep:
+
+- repo-wide family migration
+- wrappers that keep old and new contracts alive indefinitely
+- broad facet rollout with no bounded consumer
+
 ## Work To Roadmap
 
-The `roadmap` track is the full unified adapter redesign that should happen
-after filing-critical work no longer depends on current seam stability.
+The `roadmap` track covers broader family migration and contract adoption after
+the shared foundations and first slice are stable enough that the filing path
+is not depending on unresolved adapter semantics.
 
 ### Roadmap Objective
 
@@ -372,9 +498,10 @@ provider-local semantics only.
 - keep the compiler and verifier shared
 - keep provider-local code focused on parsing, semantic mapping, and rendering
 
-### Roadmap Phase R1. Define Adapter Products
+### Roadmap Phase R1. Finish Adapter Products Beyond The First Slice
 
-Design and write the future adapter-scoped products:
+Complete and extend the future adapter-scoped products beyond the bounded
+contracts already needed for the first slice:
 
 - `EvidenceSet`
 - `ClaimSet`
@@ -398,8 +525,8 @@ Deliverables:
 
 Entry criteria:
 
-- filing-critical path is stable enough that the team can change contracts
-  without risking the tax deadline
+- shared foundations and first-slice bridge mapping are stable enough that
+  broader family migration will not re-open core contract questions
 
 ### Roadmap Phase R2. Split The Contract Into Facets
 
@@ -498,7 +625,7 @@ Retirement conditions:
 ## Decision Rules While Filing Work Is Active
 
 Use these rules to decide whether an adapter change belongs in `now` or
-`roadmap`.
+`prep` or `roadmap`.
 
 Choose `now` when:
 
@@ -508,6 +635,16 @@ Choose `now` when:
   seam
 - the change improves replay confidence on unchanged inputs
 - the change makes unsupported or ambiguous behavior explicit
+
+Choose `prep` when:
+
+- the change freezes adapter products or bridge mapping required by Phase 0
+- the change aligns current planner or translation seams with proto-
+  `EvidenceSet` or proto-`ClaimSet`
+- the change establishes shared ordering, fingerprint, or compatibility rules
+- the change enables one bounded family slice without introducing wrapper lanes
+- the change advances shared compiler or verifier seams needed by the first
+  target-stage slice
 
 Choose `roadmap` when:
 

@@ -81,18 +81,30 @@ Shared-foundation deliverables before broad pipeline expansion:
 
 - one typed provenance family across evidence, claims, balances, gaps,
   readiness, checkpoints, accounting, and tax artifacts
+- one target-product versioning, compatibility, canonical-serialization, and
+  fingerprint rule
 - one controlled gap taxonomy with stage ownership, blocking scope,
   `SubjectRef`, candidate interpretations, required evidence, and allowed
   resolution methods
+- one gap-attachment rule that covers subject, group, and dataset scopes
 - one readiness vocabulary reused across all stages
 - one subject-first readiness model with derived projections rather than one
   mandatory global readiness cube
+- one kernel-and-envelope rule with stable rehydration joins
 - one explicit identity seam for instrument, contract, position, location,
   legal owner, beneficial owner, and counterparty identity
+- one minimum `ClaimSet` taxonomy shared across adapters and later compilation
+- one minimum `EconomicFacts` invariant grammar
 - one typed tax-policy selection seam reused by later `TaxInputs` and
   `TaxOutputs` work
+- one minimum `TaxInputs` determinant grammar
 - one checkpoint assertion vocabulary reused by reconciliation, checkpoint
   adoption, accounting, and tax
+- one checkpoint acceptance vocabulary for trust level, acceptance basis,
+  evidence class, continuity proof, and minimum admissibility rules
+- one bridge note for how current planner and translation seams become the first
+  proto-`EvidenceSet` and proto-`ClaimSet` slices
+- one named first vertical slice with parity and replay gates
 
 Exit criteria:
 
@@ -102,6 +114,8 @@ Exit criteria:
   formats
 - dataset summaries derive from subject-level readiness instead of hand-built
   status prose
+- target products have owned versioning and fingerprint rules
+- the first vertical slice and its bridge-to-target landing path are explicit
 
 ## MVP Scope Guardrails
 
@@ -117,10 +131,14 @@ Exit criteria:
   low-confidence partial support
 - prefer one end-to-end vertical slice that proves a new stage over several
   horizontal framework layers with no proven consumer
+- default first vertical slice: the planner-enabled Coinbase retail export
+  family plus statement-backed balance observation flow, unless the active
+  filing workspace requires another Tier A family to land first
 - keep crypto filing-critical coverage primary for the MVP while using generic
   runtime names and boundaries that can later absorb other instrument classes
-- keep current-contract adapter stabilization distinct from the later adapter
-  redesign
+- keep filing-critical adapter stabilization distinct from broad family
+  migration, while allowing unified adapter contract and bridge-mapping work in
+  Phase 0 when it removes first-slice drift
 
 ## Performance Expectations
 
@@ -139,12 +157,14 @@ Rules:
 
 ## Implementation Program
 
-### Phase 0. Shared Foundations And Docs Lock
+### Phase 0. Shared Foundations, Contract Lock, And First-Slice Prep
 
 Goal:
 
 - finish the shared architecture, naming, support-model, and control-plane
   baseline before broad implementation slices land
+- freeze the contracts that the first implementation slice must rely on instead
+  of leaving them to stage-local interpretation
 
 Deliver:
 
@@ -155,12 +175,26 @@ Deliver:
   remains truth in current-state text
 - explicit trust-gate ownership for reconciliation, checkpoints, accounting,
   and tax
+- target-product versioning, serialization, and fingerprint rules
+- kernel-and-envelope rules with stable rehydration joins
+- shared gap scope, `SubjectRef`, and evidence-readiness rules
+- minimum `ClaimSet`, `EconomicFacts`, `Checkpoint`, and `TaxInputs`
+  vocabularies
+- one bridge note for how current planner and translation seams land the first
+  proto-`EvidenceSet` and proto-`ClaimSet` slices
+- unified adapter product and facet prep where it removes first-slice drift,
+  without broad family migration or wrapper lanes
+- one named first vertical slice with parity and replay gates
 
 Exit criteria:
 
 - a contributor can identify what is current, what is target, who owns each
   contract, and what the next slice should land without reading the same
   definition in several conflicting places
+- the first slice does not depend on an implicit adapter rewrite that is not
+  written down
+- broad implementation can start without each stage inventing its own meaning
+  for gaps, claims, checkpoint acceptance, or fingerprints
 
 ### Phase 1. Formalize `EvidenceSet`
 
@@ -177,6 +211,8 @@ Deliver:
 - evidence provenance and locator guarantees aligned with the target contract
 - evidence summary and issue surfaces that remain source-local rather than
   prematurely economic
+- a bridge landing path from planner-owned artifacts into proto-`EvidenceSet`
+  without requiring broad unified-adapter migration first
 
 Exit criteria:
 
@@ -201,6 +237,8 @@ Deliver:
   into final bridge semantics
 - at least one ambiguous row family that survives as a claim rather than being
   coerced into a guessed final fact
+- a bounded adapter-family path that can emit claim-native outputs without
+  making the full unified adapter migration a hidden prerequisite
 
 Exit criteria:
 
