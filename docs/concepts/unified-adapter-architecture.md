@@ -39,7 +39,7 @@ Owner-page precedence:
 
 The future adapter architecture should unify around:
 
-- one manifest family
+- one manifest model
 - a small set of purpose-defined facets
 - deterministic adapter products that map into the core runtime pipeline
 - one shared verification model
@@ -57,7 +57,7 @@ Adapters own provider-specific work only.
 
 Reader-side examples:
 
-- recognizing provider-specific evidence families
+- recognizing provider-specific evidence kinds
 - parsing provider-specific files and documents
 - mapping provider fields into provider-local claims
 - surfacing provider-local ambiguity, precision, or unsupported cases
@@ -99,7 +99,7 @@ Use a small set of purpose-defined facets rather than one giant contract.
 
 | Facet | Purpose |
 | --- | --- |
-| `ProbeFacet` | Recognize evidence and describe route, family, or confidence hints. |
+| `ProbeFacet` | Recognize evidence and describe route, kind, or confidence hints. |
 | `EvidenceFacet` | Read selected evidence and emit `EvidenceSet`-aligned outputs. |
 | `StatementFacet` | Recognize and parse statement documents plus statement-specific evidence detail. |
 | `ClaimFacet` | Emit provider-local semantic meaning that maps into `ClaimSet`. |
@@ -114,7 +114,7 @@ Adapter verification must be a written contract, not a best-effort habit.
 
 Required verification properties:
 
-- unchanged inputs preserve declared evidence-family recognition
+- unchanged inputs preserve declared evidence-kind recognition
 - unchanged inputs preserve declared ordering and fingerprints
 - unsupported or ambiguous cases surface explicitly
 - compatibility projections remain reproducible from authoritative target

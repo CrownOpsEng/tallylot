@@ -37,7 +37,7 @@ Filing-critical stabilization on the current adapter boundaries.
 Allowed now:
 
 - planner determinism for filing-critical adapters
-- shared family recognition and statement extraction improvements
+- shared evidence-kind recognition and statement extraction improvements
 - explicit timezone review behavior
 - strict output-policy validation for filing outputs such as `cointracking_csv`
 - replay-grade verification for unchanged filing inputs
@@ -131,7 +131,7 @@ Prep work must not:
 
 - create a second architecture center in adapter docs
 - redefine target product kernels locally
-- force repo-wide family migration before the bounded slices land
+- force repo-wide adapter migration before the bounded slices land
 
 ## Deferred Redesign
 

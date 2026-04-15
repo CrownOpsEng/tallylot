@@ -33,9 +33,9 @@ Ownership boundaries:
   product kernels, ids, ordering, serialization, and fingerprints for
   `EvidenceSet`, `ClaimSet`, `EconomicFacts`, `ReconciliationState`,
   `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
-- [Gaps And Readiness](gaps-and-readiness.md) owns `GapCore`,
+- [Gaps And Readiness](gaps-and-readiness.md) owns `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
-  `SubjectReadinessRecord`, `ReadinessProjection`, and `SubjectRef`.
+  `ReadinessRecord`, `ReadinessProjection`, and `SubjectRef`.
 - this page owns how bridge surfaces move to target products without creating
   dual authorities
 
@@ -45,9 +45,9 @@ Naming rules:
   truth
 - forward-looking docs use target product names directly, even when a slice has
   bounded coverage
-- `ProjectionAnnotation` is not a canonical `ClaimSet` family; if bridge or
-  output compatibility still needs annotation material, it must live in a
-  derived compatibility sidecar
+- bridge or output annotation payloads are not canonical `ClaimSet` kinds; if
+  compatibility still needs annotation material, it must live in a derived
+  compatibility sidecar
 
 ## Migration Authority Rules
 
@@ -89,16 +89,16 @@ cutover contract.
 
 | Current surface | Authoritative source now | Authoritative source after slice | Derived compatibility projection | Active readers now | Target readers after cutover | Cutover gate | Retirement gate |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `translation_input_candidates.json` | planner-enabled normalization | `EvidenceSet` envelope and selection sidecars | optional planner review projection derived from `EvidenceSet` plus planning metadata | normalization review tools and planner inspection flows | evidence review and claim translation flows that read `EvidenceSet` directly | selected, superseded, and blocked membership are preserved with stable `selection_group_id` and `member_id` outcomes | retire once planner/operator review surfaces no longer require the legacy file |
+| `translation_input_candidates.json` | planner-enabled normalization | `EvidenceSet` envelope and selection sidecars | optional planner review projection derived from `EvidenceSet` plus planning metadata | normalization review tools and planner inspection flows | evidence review and claim translation flows that read `EvidenceSet` directly | selected, superseded, and blocked membership are preserved with stable `selection_id` and `member_id` outcomes | retire once planner/operator review surfaces no longer require the legacy file |
 | `translation_input_plan.json` | planner-enabled normalization | `EvidenceSet` | `translation_input_plan.json` regenerated from `EvidenceSet` during the compatibility window | translation entry points that still expect a plan file | evidence consumers and claim translation that read `EvidenceSet` directly | one authoritative `EvidenceSet` exists for the capture and reproduces the same selected, superseded, and blocked decisions | retire when no in-scope reader requires the plan file and parity is enforced on `EvidenceSet` instead |
 | recognized statement parse outputs and balance rows | shared statement extraction outputs | `EvidenceSet` observations | statement-facing compatibility payloads derived from `EvidenceObservationRecord` sidecars | normalization review and statement debugging flows | claim translation and downstream support flows that read `EvidenceSet` observations | statement document identity, row anchors, quantities, and provenance are preserved under `EvidenceSet` | retire legacy parse-only outputs when all readers use `EvidenceSet` observations or declared sidecars |
-| `EconomicActivityDraft` | source translation boundary | `ClaimSet` | `EconomicActivityDraft` rows derived from accepted `InterpretationBundleRecord` and `ClaimRecord` kernels plus declared compatibility sidecars keyed by `claim_id` or `bundle_id` for `economic_kind`, `projection_hint`, `accounting_intent_hint`, `tax_treatment_hint`, `description`, `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status` | `SourceTranslationBatch` assembly and bridge compilers | economic compilation that reads `ClaimSet` directly | first-slice claim field tables, `evidence_observation_refs`, bundle selection, and the retained legacy claim fields are all frozen either in canonical claim kernels or in declared compatibility sidecars | retire when no bridge compiler or batch builder still consumes drafts |
-| `SourceTranslationBatch` | source translation boundary | `ClaimSet` | `SourceTranslationBatch` bundle derived from `ClaimSet` plus declared compatibility sidecars for `economic_kind`, `projection_hint`, `accounting_intent_hint`, `tax_treatment_hint`, `description`, `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status`, plus shared support artifacts | current normalization application surface and bridge interop flows | target application paths in `application/claims/` and later `application/economics/` | in-scope readers can be pointed to `ClaimSet` or a declared compatibility surface without semantic loss, and no retained batch-only field remains undefined | retire when no active runtime path reads the batch as its primary semantic surface |
+| `EconomicActivityDraft` | source translation boundary | `ClaimSet` | `EconomicActivityDraft` rows derived from accepted `ClaimBundleRecord` and `ClaimRecord` kernels plus declared compatibility sidecars keyed by `claim_id` or `bundle_id` for `economic_kind`, `projection_hint`, `accounting_intent_hint`, `tax_treatment_hint`, `description`, `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status` | `SourceTranslationBatch` assembly and bridge compilers | economic compilation that reads `ClaimSet` directly | first-slice claim field tables, `evidence_observation_refs`, bundle selection, and the retained legacy claim fields are all frozen either in canonical claim kernels or in declared compatibility sidecars | retire when no bridge compiler or batch builder still consumes drafts |
+| `SourceTranslationBatch` | source translation boundary | `ClaimSet` | `SourceTranslationBatch` bundle derived from `ClaimSet` plus declared compatibility sidecars for `economic_kind`, `projection_hint`, `accounting_intent_hint`, `tax_treatment_hint`, `description`, `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status`, plus shared support records and sidecars | current normalization application surface and bridge interop flows | target application paths in `application/claims/` and later `application/economics/` | in-scope readers can be pointed to `ClaimSet` or a declared compatibility surface without semantic loss, and no retained batch-only field remains undefined | retire when no active runtime path reads the batch as its primary semantic surface |
 | `TransactionFact` and `facts.csv` | current bridge fact path | `EconomicFacts` | `TransactionFact` rows and `facts.csv` rendered from `EconomicFacts` plus declared upstream claim compatibility sidecars for `economic_kind`, `projection_hint`, `accounting_intent_hint`, `tax_treatment_hint`, `description`, `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status` when legacy hint reproduction still needs them | balance builders, output renderers, oracle comparison flows | reconciliation, checkpoint, accounting, and tax paths that read `EconomicFacts` | accepted `EconomicEventRecord` and `EconomicLegRecord` parity is proven and current bridge facts are reproducible from `EconomicFacts` plus declared upstream compatibility sidecars rather than from bridge artifacts as peer authorities | retire when no runtime reader depends on `TransactionFact` as economic authority |
 | `balance_snapshots.csv` | current bridge balance reducers | `ReconciliationState` | `balance_snapshots.csv` derived from `ReconciliationState` for unmigrated balance surfaces | balance inspect/check/summarize and downstream review workflows | reconciliation readers and later checkpoint assembly that read `ReconciliationState` | continuity segments and balance targets exist for the in-scope subjects and reproduce current snapshot results | retire when active balance surfaces read `ReconciliationState` directly |
 | `balance_references.csv` | current bridge balance support path | `Checkpoint` and `ReconciliationState` | `balance_references.csv` derived from `ReconciliationState`, `Checkpoint`, and declared support sidecars | balance inspect/check/summarize and current checkpoint support workflows | checkpoint assembly and reconciliation readers that consume target support directly | direct `AssertionValue` fields, checkpoint candidates, and checkpoint assertions reproduce the current reference content for in-scope subjects | retire when no active surface consumes the CSV as its authoritative support input |
-| `exceptions.csv` and bridge `IssueRecord` outputs | stage-local bridge diagnostics | target product plus shared support artifacts | bridge issue projection derived from `GapCore` and `GapExplanation` when a target stage owns the blocker | operator review and current normalization diagnostics | target support reducers and readiness views | the owning target stage can preserve blocker scope, severity, materiality, and stage ownership | retire per stage when that stage emits target-native gaps for the same scope |
-| `normalization_reviews.csv` and `NormalizationReviewRecord` outputs | stage-local bridge advisory diagnostics | target product plus shared support artifacts | bridge review projection derived from `ReviewRecord` and `ReviewExplanation` | operator review and current normalization diagnostics | target review and readiness views | advisory review scope and provenance are preserved without turning reviews into blockers | retire per stage when that stage emits target-native reviews for the same scope |
+| `exceptions.csv` and bridge `IssueRecord` outputs | stage-local bridge diagnostics | target product plus shared support records | bridge issue projection derived from `GapRecord` and `GapExplanation` when a target stage owns the blocker | operator review and current normalization diagnostics | target support reducers and readiness views | the owning target stage can preserve blocker scope, severity, materiality, and stage ownership | retire per stage when that stage emits target-native gaps for the same scope |
+| `normalization_reviews.csv` and `NormalizationReviewRecord` outputs | stage-local bridge advisory diagnostics | target product plus shared support records and sidecars | bridge review projection derived from `ReviewRecord` and `ReviewExplanation` | operator review and current normalization diagnostics | target review and readiness views | advisory review scope and provenance are preserved without turning reviews into blockers | retire per stage when that stage emits target-native reviews for the same scope |
 | `fact_annotations.json` and `location_annotations.json` | bridge-only sidecar generation | target products plus bridge/output compatibility sidecars | derived annotation sidecars keyed to target ids or bridge projection ids | current bridge renderers and comparison tooling | target-aware output and comparison flows that no longer require canonical annotation payloads in claims | no target semantic meaning depends on annotation payloads and bridge/output consumers can read derived sidecars instead | retire when the affected renderer or comparison flow no longer depends on the annotation file |
 
 ## Compatibility Sidecars And Support Mapping
@@ -108,8 +108,8 @@ surfaces during migration.
 
 Rules:
 
-- `ProjectionAnnotation` remains bridge or output compatibility metadata only
-- no target `ClaimSet` family may be introduced for bridge hints, render notes,
+- bridge or output annotation payloads remain compatibility metadata only
+- no target `ClaimSet` kind may be introduced for bridge hints, render notes,
   or output annotations
 - if a current renderer or comparison path still needs annotation content, emit
   it as a derived sidecar keyed to the relevant `claim_id`, `event_id`, or
@@ -125,13 +125,13 @@ Rules:
 
 Diagnostic mapping rules:
 
-- a blocking bridge `IssueRecord` maps to `GapCore` plus `GapExplanation` only
+- a blocking bridge `IssueRecord` maps to `GapRecord` plus `GapExplanation` only
   when the target stage can preserve blocker scope, severity, blocking stages,
   and provenance
 - a bridge `NormalizationReviewRecord` maps to `ReviewRecord` plus
   `ReviewExplanation`
 - reviews remain advisory even when they share the same factual cause as a gap
-- support artifacts never become claim families
+- support records and sidecars never become claim kinds
 
 ## First Bounded Slice Rules
 

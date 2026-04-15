@@ -32,18 +32,18 @@ Use the owner pages first:
 This page keeps only reusable helper ids and tuples that are not primary owner
 concepts elsewhere.
 
-## Claim Emitter Identity
+## Claim Producer Identity
 
-`claim_emitter_id` identifies the shared compiler or translation family that
-emitted one `ClaimSet`.
+`claim_producer_id` identifies the shared compiler or translation family that
+produced one `ClaimSet`.
 
 Rules:
 
-- `claim_emitter_id` uses the stable-id format owned by
+- `claim_producer_id` uses the stable-id format owned by
   [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
-- the component array is `[source, adapter_id, emitter_slug]`
-- `emitter_slug` must be kebab-case
-- the default first-slice `emitter_slug` is `bridge-claim-compiler`
+- the component array is `[source, adapter_id, producer_slug]`
+- `producer_slug` must be kebab-case
+- the default first-slice `producer_slug` is `claim-compiler`
 
 ## Valuation Source Identity
 
