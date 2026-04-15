@@ -117,7 +117,7 @@ otherwise:
 
 - keep the architecture aligned with
   `docs/concepts/reconciliation-tax-architecture.md`
-- for reconciliation, checkpoint, accounting, tax, or core pipeline work,
+- for reconciliation, checkpoint, accounting, tax, or target pipeline work,
   reload the owning roadmap and migration docs before shaping the change:
   `ROADMAP.md` and `docs/status/migration-sequence.md`
 - read the narrow forward-looking roadmap, architecture, migration, or owning
@@ -148,7 +148,7 @@ Before shaping a non-trivial fix, reload the narrow forward-looking guidance
 that owns the change area. Prefer the intended end-state boundary over a local
 temporary patch when the repo already documents the target ownership model.
 
-For reconciliation, checkpoint, accounting, tax, and core pipeline work,
+For reconciliation, checkpoint, accounting, tax, and target pipeline work,
 the normal minimum routing set is:
 
 - `docs/concepts/reconciliation-tax-architecture.md`

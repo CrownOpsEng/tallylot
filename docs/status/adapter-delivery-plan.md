@@ -56,15 +56,15 @@ adapter redesign begins.
 Allowed prep:
 
 - bridge-to-target mapping needed for the first slice
-- adapter participation in canonical `EvidenceSet` and `ClaimSet` emission
+- adapter participation in `EvidenceSet` and `ClaimSet` emission
 - shared determinism and verification helpers that remove first-slice drift
 
 Required prep rule:
 
-- first-slice adapter work must emit target products through the canonical
-  owner docs, not adapter-local alternate schemas
+- first-slice adapter work must emit target products through the owner pages,
+  not adapter-local alternate schemas
 - retained legacy hints needed for current drafts or facts may survive only in
-  declared compatibility sidecars, not in canonical `EvidenceSet` or
+  declared compatibility sidecars, not in `EvidenceSet` or
   `ClaimSet` fields
 
 ### `roadmap`
@@ -107,7 +107,7 @@ The filing window should focus on:
 Exit criteria for the filing window:
 
 - every filing-critical source maps to one supported adapter
-- planner-enabled Tier A adapters emit stable planning artifacts before
+- planner-enabled Tier A adapters emit stable planning files before
   translation
 - unchanged filing inputs preserve expected fact, evidence, issue, and review
   behavior unless a documented product decision changes them
@@ -120,7 +120,7 @@ Prep work is allowed only when it materially reduces first-slice drift.
 
 Examples:
 
-- canonical bridge-to-target mapping for planner artifacts and statement
+- declared bridge-to-target mapping for planner files and statement
   evidence
 - shared verifiers for `EvidenceSet`, `ClaimSet`, and declared compatibility
   projections
@@ -138,7 +138,7 @@ Prep work must not:
 The broader unified adapter redesign stays deferred until:
 
 - the filing path is stable enough to trust
-- the contract-lock owner docs are frozen
+- the contract-lock owner pages are frozen
 - the first upstream and downstream bounded slices have landed cleanly
 
 At that point, use

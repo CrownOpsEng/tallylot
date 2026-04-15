@@ -20,7 +20,7 @@ depending on any one portfolio tracker.
 
 - The current bridge centers on `TransactionFact` plus shared balance
   artifacts, but the target pipeline extends beyond facts alone.
-- The internal core should remain asset-class-agnostic even when current
+- The shared runtime should remain asset-class-agnostic even when current
   adapters or policies are crypto-first.
 - Source evidence and source-backed checkpoints are first-class.
 - Operator confirmations may support runtime reconciliation, but they are a
@@ -32,7 +32,7 @@ depending on any one portfolio tracker.
 
 ## Input Classes
 
-| Class | Examples | Allowed To Create Core Facts | Required In Normal Workflow | Notes |
+| Class | Examples | Allowed To Establish Runtime Truth | Required In Normal Workflow | Notes |
 | ---- | ---- | ---- | ---- | ---- |
 | Source evidence | exchange exports, wallet exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
 | Checkpoint evidence | balance statements, wallet snapshots, source-backed checkpoint artifacts | Yes | Yes | First-class reconciliation input |
@@ -45,12 +45,13 @@ depending on any one portfolio tracker.
 The normal filing-capable workflow is:
 
 1. Ingest source evidence.
-2. Normalize to transaction facts.
-3. Reconcile transfers, balances, and reconciliation windows.
-4. Build or validate checkpoints.
-5. Render a double-entry journal.
-6. Build `TaxInputs` from reconciled economics plus accepted checkpoint truth.
-7. Apply selected tax policies to emit `TaxOutputs`.
+2. Select evidence and emit source-local claims.
+3. Compile accepted economics.
+4. Reconcile continuity, transfers, and balance targets.
+5. Accept or validate checkpoints.
+6. Render a double-entry journal.
+7. Build `TaxInputs` from reconciled economics plus accepted checkpoint truth.
+8. Apply selected tax policies to emit `TaxOutputs`.
 
 This workflow must remain valid even when no CoinTracking tax outputs are
 available.
@@ -80,13 +81,13 @@ CoinTracking support must not expand into:
 
 - required runtime inputs for tax computation
 - required runtime inputs for checkpoint assembly
-- core domain enums or invariants that only exist because CoinTracking has
+- shared domain enums or invariants that only exist because CoinTracking has
   them
 - business logic keyed primarily on CoinTracking report columns
 
 ## Oracle-Only Artifact Policy
 
-Oracle-only artifacts are valuable, but they are not part of the core runtime
+Oracle-only artifacts are valuable, but they are not part of the shared runtime
 contract.
 
 They are development and validation aids only, not production dependencies.
@@ -135,7 +136,7 @@ Those artifacts may support comparison, but not checkpoint existence.
   `src/tallylot/`.
 - Keep import-shape parsing behind adapter boundaries.
 - Keep domain services unaware of CoinTracking report schemas.
-- Keep crypto-, FX-, and security-specific terms out of shared core abstractions
+- Keep crypto-, FX-, and security-specific terms out of shared runtime abstractions
   unless the concept is inherently specific to that adapter or output.
 - Keep tax policy operating on `TaxInputs` built from reconciled economics and
   accepted checkpoint truth only.

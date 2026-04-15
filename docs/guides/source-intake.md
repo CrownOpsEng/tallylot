@@ -126,7 +126,7 @@ Review:
 - `timezone_issues.csv`
 
 `profile_inventory.csv` is the capture-scoped discovery contract used later by
-shared statement extraction and normalization issue-context resolution. Review
+shared statement extraction and normalization issue and review routing. Review
 fields such as `capture_uid`, `source`, `evidence_role`,
 `observed_period_start`, `observed_period_end`, `observed_period_label`,
 `statement_kind`, and `originality_class` instead of rediscovering files by

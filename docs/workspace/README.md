@@ -1,6 +1,6 @@
 ---
-title: "Workspace Guides"
-summary: "Mirrored repo guidance for the external workspace layout, templates, and subtree contracts."
+title: "Workspace Reference"
+summary: "Mirrored repo reference for the external workspace layout, templates, and subtree contracts."
 doc_type: reference
 audience: both
 owner: repo
@@ -31,32 +31,32 @@ paths keep them too.
 - [`evidence/raw/source/README.md`](evidence/raw/source/README.md): raw source
   evidence conventions
 - [`evidence/raw/portfolio/README.md`](evidence/raw/portfolio/README.md):
-  portfolio export conventions
+  portfolio export bundle conventions
 
 ## Working
 
-- [`working/README.md`](working/README.md): derived artifact boundaries
+- [`working/README.md`](working/README.md): derived working-file boundaries
 - [`working/import_batches/README.md`](working/import_batches/README.md): staged
-  import candidate rules
+  import batch rules
 - [`working/normalized/README.md`](working/normalized/README.md): normalized
-  artifact contract
+  output guide
 - [`working/supporting_artifacts/README.md`](working/supporting_artifacts/README.md):
   non-raw derivative guidance
 - [`working/supporting_artifacts/balance_submissions/README.md`](working/supporting_artifacts/balance_submissions/README.md):
   manual balance submission package guidance
 - [`working/verification/README.md`](working/verification/README.md):
-  verification package structure
+  verification export structure
 
 ## Analysis
 
 - [`analysis/checklists/work-checklists.md`](analysis/checklists/work-checklists.md):
-  repair and import round checklist
-- [`analysis/inventory/README.md`](analysis/inventory/README.md): wallet
-  inventory artifact guide
+  repair and import round checklists
+- [`analysis/inventory/README.md`](analysis/inventory/README.md): location
+  inventory output guide
 - [`analysis/issues/README.md`](analysis/issues/README.md): issue and source
-  inventory guide
+  inventory file guide
 - [`analysis/reconciliation/README.md`](analysis/reconciliation/README.md):
-  durable reconciliation artifact guide
+  reconciliation output guide
 
 ## Templates
 
@@ -72,8 +72,8 @@ paths keep them too.
 ## Outputs
 
 - [`outputs/checkpoints/README.md`](outputs/checkpoints/README.md): checkpoint
-  package guidance
+  output guidance
 - [`outputs/checkpoints/2025-12-31-final/README.md`](outputs/checkpoints/2025-12-31-final/README.md):
-  expected final checkpoint target
-- [`outputs/reports/README.md`](outputs/reports/README.md): final report
+  expected 2025 year-end checkpoint target
+- [`outputs/reports/README.md`](outputs/reports/README.md): closeout report
   guidance

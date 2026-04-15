@@ -1,6 +1,6 @@
 ---
-title: "Working Area"
-summary: "Boundaries for derived working artifacts used during normalization, staging, and verification."
+title: "Working Files"
+summary: "Reference for derived working files used during normalization, staging, and verification."
 doc_type: reference
 audience: both
 owner: repo

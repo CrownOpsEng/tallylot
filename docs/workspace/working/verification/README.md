@@ -1,6 +1,6 @@
 ---
-title: "Verification Packages"
-summary: "Layout rules for per-round verification export sets and comparison outputs."
+title: "Verification Exports"
+summary: "Reference for per-round verification export sets and comparison outputs."
 doc_type: reference
 audience: both
 owner: repo

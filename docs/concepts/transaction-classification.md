@@ -47,7 +47,7 @@ Naming convention:
   safe to say on the current fact path
 - `ProjectionHint`: output projection metadata for concrete renderers
 
-Core behavior should not key primarily on the legacy normalized `category`
+Bridge behavior should not key primarily on the legacy normalized `category`
 string.
 
 ## Support Tiers
@@ -85,7 +85,7 @@ aligned on these values exactly.
   `fee_legs` lane and no first-leg compatibility view on `TransactionFact`
 - leg-level semantics live on the leg through `LegKind`; fact classification
   remains a separate fact-level layer
-- `ProjectionHint` is output metadata, not the long-term core driver of
+- `ProjectionHint` is output metadata, not the long-term driver of
   business behavior
 - output adapters map bridge classifications into concrete external row
   families when they need them

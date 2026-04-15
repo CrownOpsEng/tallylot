@@ -41,14 +41,14 @@ The future adapter architecture should unify around:
 
 - one manifest model
 - a small set of purpose-defined facets
-- deterministic adapter products that map into the core runtime pipeline
+- deterministic adapter products that map into the target runtime pipeline
 - one shared verification model
 
 It should not unify around:
 
 - one monolithic source-adapter interface
 - adapter-local target schemas
-- a second architecture center beside the main runtime pipeline
+- a second architecture center beside the target runtime pipeline
 - indefinite bridge wrappers or dual-contract shims
 
 ## Adapter Responsibility Boundary
@@ -59,15 +59,15 @@ Reader-side examples:
 
 - recognizing provider-specific evidence kinds
 - parsing provider-specific files and documents
-- mapping provider fields into provider-local claims
-- surfacing provider-local ambiguity, precision, or unsupported cases
+- mapping provider fields into source-local claims
+- surfacing source-local ambiguity, precision, or unsupported cases
 
 Writer-side examples:
 
 - mapping accepted upstream truth into target-specific row models
 - applying target-specific formatting and validation rules
 
-Shared core owns cross-provider workflow:
+Shared runtime owns cross-provider workflow:
 
 - evidence selection and candidate comparison
 - stable ordering and fingerprints
@@ -75,16 +75,16 @@ Shared core owns cross-provider workflow:
 - claim compilation into economic truth
 - bridge compatibility projection
 - replay and parity verification
-- artifact writing and output packaging
+- projection writing and output packaging
 
 If two adapters need the same rule and the rule is not provider-specific, it
-belongs in shared core services rather than duplicated adapter logic.
+belongs in shared runtime services rather than duplicated adapter logic.
 
 ## Manifest Direction
 
 Every future adapter should publish one manifest that answers:
 
-- what evidence or artifacts it reads or writes
+- what evidence files, projections, or output packages it reads or writes
 - which facets it implements
 - which determinism guarantees it provides
 - which compatibility window and schema versions it supports
@@ -102,8 +102,8 @@ Use a small set of purpose-defined facets rather than one giant contract.
 | `ProbeFacet` | Recognize evidence and describe route, kind, or confidence hints. |
 | `EvidenceFacet` | Read selected evidence and emit `EvidenceSet`-aligned outputs. |
 | `StatementFacet` | Recognize and parse statement documents plus statement-specific evidence detail. |
-| `ClaimFacet` | Emit provider-local semantic meaning that maps into `ClaimSet`. |
-| `WriteFacet` | Emit target-specific projections or artifacts from accepted upstream truth. |
+| `ClaimFacet` | Emit source-local claim meaning that maps into `ClaimSet`. |
+| `OutputFacet` | Emit target-specific projections or output packages from accepted upstream truth. |
 
 Portfolio behavior is not a separate species. It is evidence-reading behavior
 that emits position or balance meaning instead of activity-heavy claim sets.
@@ -132,10 +132,10 @@ bounded first slices are stable.
 Rules during the current migration window:
 
 - first-slice adapter work must emit target products through the canonical
-  owner docs, not adapter-local alternate schemas
+  owner pages, not adapter-local alternate schemas
 - adapters may emit declared compatibility sidecars for retained legacy
   draft-or-fact reproduction during migration, but canonical target kernels
-  stay semantic-only
+  stay limited to target meaning
 - adapter docs may describe how adapters participate in `EvidenceSet`,
   `ClaimSet`, and compatibility projections, but they may not redefine those
   products

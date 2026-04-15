@@ -40,8 +40,8 @@ That bridge is:
 - raw evidence stays outside the repo
 - normalization and profiling operate on one materialized raw capture root at a
   time
-- planner-enabled adapters provide translation input candidates and the core
-  selects the winning plan
+- planner-enabled adapters provide translation input candidates and the
+  normalization flow selects the winning plan
 - ambiguity blocks fact and balance artifact emission
 - assembled source datasets are the reconciliation input
 - provenance stays typed in runtime models and is flattened only at artifact
@@ -224,7 +224,7 @@ Current bridge bundle to preserve:
 `TransactionFact` currently mixes computationally important fields, bridge
 semantics, and bridge envelope detail in one record.
 
-Computational core still carried today:
+Computational kernel still carried today:
 
 - `fact_id`
 - `source`
@@ -358,7 +358,7 @@ Required draft responsibilities:
 Rules:
 
 - provider modules translate into drafts only; they do not assemble
-  CoinTracking rows or other output-adapter payloads directly
+  CoinTracking rows or other output-adapter shapes directly
 - shared identifier resolution must succeed to exactly one instrument before
   fact construction
 - unresolved or ambiguous identifier resolution blocks fact emission for the

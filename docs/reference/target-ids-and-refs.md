@@ -1,6 +1,6 @@
 ---
-title: "Target Contract Primitives"
-summary: "Helper reference for reusable ids and tuples that complement the owner pages without redefining target product contracts."
+title: "Target Ids And Refs"
+summary: "Helper reference for reusable target ids and ref tuples that complement the owner pages without redefining product contracts."
 doc_type: reference
 audience: human
 owner: repo
@@ -14,8 +14,8 @@ related:
 ---
 
 Use this page as a helper reference when a target-stage implementation needs a
-reusable id helper or tuple that is not itself a stage contract. Owner pages
-take precedence.
+reusable target id or ref tuple that is not itself a stage contract. Owner
+pages take precedence.
 
 ## Precedence
 
@@ -29,21 +29,23 @@ Use the owner pages first:
 - [Gaps And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
   shared support attachments, and `dataset_id`
 
-This page keeps only reusable helper ids and tuples that are not primary owner
-concepts elsewhere.
+This page keeps only reusable target ids and ref tuples that are not primary
+owner concepts elsewhere.
 
-## Claim Producer Identity
+## Claim Emitter Identity
 
-`claim_producer_id` identifies the shared compiler or translation family that
-produced one `ClaimSet`.
+`claim_emitter_id` identifies the shared compiler or translation family that
+emitted one `ClaimSet`.
 
 Rules:
 
-- `claim_producer_id` uses the stable-id format owned by
+- `claim_emitter_id` uses the stable-id format owned by
   [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
-- the component array is `[source, adapter_id, producer_slug]`
-- `producer_slug` must be kebab-case
-- the default first-slice `producer_slug` is `claim-compiler`
+- the component array is `[source_slug, adapter_id, emitter_key]`
+- `source_slug` uses the shared source slug across source-local
+  products
+- `emitter_key` must be kebab-case
+- the default first-slice `emitter_key` is `claim-compiler`
 
 ## Valuation Source Identity
 
@@ -52,13 +54,14 @@ Rules:
 
 Rules:
 
+- `ValuationRecord.source_ref` uses `ValuationSourceRef`
 - `ValuationSourceRef` serializes and sorts as `[source_kind, source_id]`
 - `source_kind` names the immediate valuation source surface, such as
   `claim`, `evidence_observation`, or `market_reference`
 - when the source is already a target-kernel subject, `source_id` uses that
   subject's stable id
 - when the source is an external market reference, `source_id` uses the
-  stage-owned stable market anchor rather than renderer-local prose
+  stage-owned stable market key rather than renderer-local prose
 
 ## Accounting Reference Tuples
 
@@ -103,8 +106,8 @@ Rules:
 
 - `TaxPolicyId` uses the stable-id format owned by
   [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
-- the component array is `[jurisdiction_or_regime, policy_slug, policy_version]`
-- `policy_slug` must be kebab-case
+- the component array is `[jurisdiction_or_regime, policy_key, policy_version]`
+- `policy_key` must be kebab-case
 
 ## Reminder
 

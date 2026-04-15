@@ -8,14 +8,15 @@ status: active
 ---
 
 The TallyLot docs cover the typed runtime, operator workflows, workspace
-model, artifact contracts, repo standards, and the owner-page contracts that
+model, file and reference contracts, repo standards, and the owner pages that
 freeze product ids, critical-path kernel fields, and compatibility boundaries.
 
 ## How Docs Are Organized
 
 - Concepts explain why the system is shaped the way it is.
 - Guides describe how to perform a task.
-- Reference pages define factual contracts, artifacts, and workspace semantics.
+- Reference pages define factual contracts, helper references, and workspace
+  contracts.
 - Standards capture repo implementation rules.
 - Status pages describe the current implemented capabilities and active migration
   state.
@@ -48,7 +49,7 @@ Agent-specific routing and repo execution rules live in
 - [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Single authority for how live bridge surfaces cut over to target products during migration, including writer ownership, reader cutovers, and retirement gates.
 - [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries.
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts.
-- [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, entity and ref seams, package direction, and bridge-versus-target modeling rules.
+- [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, entity and ref seams, package ownership, and bridge-versus-target modeling rules.
 - [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
 - [Gaps And Readiness](concepts/gaps-and-readiness.md): Owning concept page for the target gap model, review model, readiness model, sidecar rules, and shared `SubjectRef` contracts.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
@@ -74,16 +75,16 @@ below when you need the detailed procedure for one stage of the workflow.
 <!-- docs-maintenance:start reference -->
 - [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
 - [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the default Coinbase-first EvidenceSet and ClaimSet slice, including cardinality, ids, replay gates, and bridge compatibility projections.
-- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the first Coinbase-first EconomicFacts, ReconciliationState, and Checkpoint slice, including selected-bundle event identity and bridge compatibility projections.
-- [Target Contract Primitives](reference/target-contract-primitives.md): Helper reference for reusable ids and tuples that complement the owner pages without redefining target product contracts.
-- [Target Product Artifacts](reference/target-product-artifacts.md): Helper reference that points to the owner pages for target persistence, partitions, and bounded slice artifact expectations.
+- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the first Coinbase-first EconomicFacts, ReconciliationState, and Checkpoint slice, including bundle-based event identity and bridge compatibility projections.
+- [Target Ids And Refs](reference/target-ids-and-refs.md): Helper reference for reusable target ids and ref tuples that complement the owner pages without redefining product contracts.
+- [Target Persistence Reference](reference/target-persistence-reference.md): Helper reference that points to the owner pages for target persistence, partition scopes, and bounded-slice compatibility expectations.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
-- [Wallet Inventory Artifacts](reference/wallet-inventory-artifacts.md): Artifact contract for location inventory outputs and evidence rows.
-- [Timezone Validation Artifacts](reference/timezone-validation-artifacts.md): Artifact contract for timezone provenance outputs and validation issues.
+- [Location Inventory Outputs](reference/wallet-inventory-artifacts.md): Reference for location inventory outputs and evidence rows.
+- [Timezone Validation Outputs](reference/timezone-validation-artifacts.md): Reference for timezone provenance outputs and validation issues.
 - [Canadian Crypto Tax Guide](reference/canadian-crypto-tax-guide.md): Working CRA-aligned tax reference for the repo's Canadian crypto workflow.
 - [Tax Source Map](reference/tax-source-map.md): Targeted routing from repo tax questions to CRA-aligned reference sources.
 - [CoinTracking Oracle Artifacts](reference/cointracking-oracle-artifacts.md): Repo-safe reference for CoinTracking artifact families used only for development and validation.
-- [Manual Balance Submission Artifacts](reference/manual-balance-submission-artifacts.md): Reference contract for scaffolded manual balance submission packages and their balance outputs.
+- [Manual Balance Submission Packages](reference/manual-balance-submission-artifacts.md): Reference for scaffolded manual balance submission packages and their balance outputs.
 - [Repository History](reference/repository-history.md): Reference note for the public baseline sequence and where ordinary forward development begins.
 <!-- docs-maintenance:end reference -->
 

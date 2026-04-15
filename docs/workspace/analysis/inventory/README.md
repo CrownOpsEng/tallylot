@@ -1,14 +1,14 @@
 ---
-title: "Wallet Inventory Artifacts"
-summary: "Mirrored workspace contract for aggregate location inventory outputs and refresh commands."
+title: "Location Inventory Outputs"
+summary: "Mirrored workspace reference for aggregate location inventory outputs and refresh commands."
 doc_type: reference
 audience: both
 owner: repo
 status: active
 ---
 
-This folder holds the aggregate location inventory rebuilt from normalized source
-artifacts.
+This folder holds the aggregate location inventory rebuilt from normalized
+source outputs.
 
 Files:
 
@@ -21,7 +21,7 @@ Files:
 `source_captures.csv` is the append-only capture registry keyed by
 `capture_uid`. Each row records one lifecycle event for one capture, including
 duplicate-blocked or excluded outcomes that never materialize a new raw capture
-root. `location_inventory.csv` and the related evidence and issue artifacts
+root. `location_inventory.csv` and the related evidence and issue outputs
 remain derived outputs rebuilt from normalized datasets.
 
 `location_inventory_evidence.csv` carries the shared flattened provenance

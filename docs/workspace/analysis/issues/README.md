@@ -1,5 +1,5 @@
 ---
-title: "Issues And Inventory Guide"
+title: "Issue And Inventory Files"
 summary: "Rules for the live issue and source inventory control files in the mirrored workspace."
 doc_type: reference
 audience: both
@@ -10,7 +10,7 @@ status: active
 This folder holds the live issue, inventory, and intake-control files that
 must stay current during execution.
 
-Related generated inventory artifacts now live beside them in
+Related generated inventory outputs now live beside them in
 `analysis/inventory/`, especially `source_captures.csv`,
 `location_inventory.csv`, and `location_inventory_issues.csv`.
 
@@ -89,7 +89,7 @@ These values describe the current typed capture and assembly lifecycle:
 
 - `capture_complete` → at least one non-blocked capture row exists for the
   source
-- `profiled` → at least one capture has profile artifacts
+- `profiled` → at least one capture has profile outputs
 - `normalized` → at least one capture has normalized output
 - `assembled` → `source assemble` produced the current assembled source dataset
 
@@ -138,7 +138,7 @@ Rules:
 - scoped `.` rows may coexist when each row uses a different
   `incoming_capture_scope`
 - keep prefixes durable and operator-meaningful rather than adapter-specific
-- use the file when raw source evidence or source-scoped working artifacts
+- use the file when raw source evidence or source-scoped working outputs
   should stay associated with an existing stable source label
 - do not use this file to invent new source labels implicitly; add the source
   to `source_inventory.csv` first

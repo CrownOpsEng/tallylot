@@ -1,6 +1,6 @@
 ---
 title: "Domain Ontology"
-summary: "Owning concept page for the target economic ontology, entity and ref seams, package direction, and bridge-versus-target modeling rules."
+summary: "Owning concept page for the target economic ontology, entity and ref seams, package ownership, and bridge-versus-target modeling rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,7 +9,7 @@ nav_order: 35
 ---
 
 Use this page when shaping the target domain model. This document owns the
-target ontology, entity seams, ref recipes, and forward package direction.
+target ontology, entity seams, ref recipes, and target package ownership.
 
 Current bridge note:
 
@@ -44,9 +44,9 @@ These are not interchangeable labels. They represent distinct business
 concepts, and the model should keep them distinct even when one adapter or one
 report happens to collapse them operationally.
 
-## Generic Core Requirements
+## Generic Model Requirements
 
-The target core should remain:
+The target model should remain:
 
 - instrument-agnostic
 - source-agnostic
@@ -152,7 +152,7 @@ Variant rules:
   scalar type to stand in for quantity, money, ownership, and location truth
 - assertion ids and fingerprints must treat the value variant and its canonical
   content as semantically relevant
-- the canonical `AssertionValue` fingerprint uses one canonical UTF-8 JSON array
+- the `AssertionValue` fingerprint uses one UTF-8 JSON array
   `[assertion_value_kind, value_content]`
 
 ## `CheckpointAssertion`
@@ -162,16 +162,16 @@ and one as-of point.
 
 Rules:
 
-- it is distinct from a reconciliation `CheckpointCandidate`
+- it is distinct from a reconciliation `CheckpointProposal`
 - it is distinct from a computed `BalanceSnapshot`
 - it is distinct from a raw `BalanceReference`
 - it is distinct from the containing accepted `Checkpoint`
 - downstream stages may consume checkpoint assertions, but they must not
   redefine them into incompatible local variants
 - accepted checkpoint truth should be modeled as checkpoint assertions first
-  and checkpoint containers second
+  and checkpoint root records second
 - checkpoint assertions carry one `AssertionValue`, not one untyped convenience
-  payload
+  blob
 
 ## Valuation
 
@@ -203,8 +203,8 @@ Rules:
   accounting, or tax behavior
 - valuation purpose must be explicit enough to distinguish economic,
   checkpoint, accounting, tax, and market-reference jobs
-- valuation should not be hidden only inside renderer metadata or one-off
-  policy blobs
+- valuation should not be hidden only inside renderer detail or one-off policy
+  sidecars
 - missing or uncertain valuation should remain explicit when downstream stages
   still need to reason about it
 
@@ -347,8 +347,8 @@ Rules:
 - bridge classifications stay valid for the current bridge and for current
   renderer hints
 - bridge classifications do not define the full ontology
-- future support for broader financial instruments should be driven by the core
-  ontology, not by endlessly adding new activity labels
+- future support for broader financial instruments should be driven by the
+  target ontology, not by endlessly adding new activity labels
 - output hints and policy hints remain downstream aids, not the primary source
   of economic truth
 
@@ -375,7 +375,7 @@ The target package layout follows stage ownership and is not advisory.
 
 Required domain ownership:
 
-- `domain/entities/` for refs and stable identity seams
+- `domain/entities/` for entity models, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
 - `domain/claims/` for claims, interpretation scopes, bundles, and compilation
@@ -384,8 +384,8 @@ Required domain ownership:
   lifecycle state
 - `domain/assertions/` for `AssertionValue` and its variants
 - `domain/support/` for gaps, reviews, readiness, and `SubjectRef`
-- `domain/reconciliation/` for continuity segments, links, balance targets, and
-  checkpoint candidates
+- `domain/reconciliation/` for continuity segments, event links, balance
+  targets, and checkpoint proposals
 - `domain/checkpoints/` for accepted checkpoint truth
 - `domain/accounting/` for journal models
 - `domain/tax/` for determinants, basis transitions, tax-policy contracts,
@@ -400,11 +400,11 @@ Required application ownership:
   and provenance locator handling
 - `application/claims/` for evidence-to-claim translation
 - `application/economics/` for claim compilation to economic facts
-- `application/bridge_compat/` for bridge compatibility projections only
+- `application/compatibility/` for bridge compatibility projections only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance-target
-  evaluation, readiness reducers, and checkpoint candidates
+  evaluation, readiness reducers, and checkpoint proposals
 - `application/checkpoints/` for checkpoint evidence assembly, manual balance
   submission validation, and checkpoint acceptance
 - `application/accounting/` for journal expansion, validation, and summaries
@@ -417,7 +417,7 @@ Boundary rules:
 
 - `application/normalization/` is current-state truth now, but the
   forward-looking target model treats it as migration-era orchestration that
-  splits into `evidence`, `claims`, `economics`, and `bridge_compat`
+  splits into `evidence`, `claims`, `economics`, and `compatibility`
 - `interfaces/` orchestrates services only
 - `infrastructure/` implements ports
 - `application/` depends on domain and ports

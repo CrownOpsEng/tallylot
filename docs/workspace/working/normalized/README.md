@@ -1,6 +1,6 @@
 ---
-title: "Normalized Files"
-summary: "Artifact contract for capture-scoped normalization outputs, assembled source datasets, and working candidates."
+title: "Normalized Outputs"
+summary: "Reference for capture-scoped normalization outputs, assembled source datasets, and working candidates."
 doc_type: reference
 audience: both
 owner: repo
@@ -83,7 +83,7 @@ screening and are approved for import.
 normalization. In addition to timezone provenance, it records fields such as
 `capture_uid`, `source`, `evidence_role`, `observed_period_start`,
 `observed_period_end`, `observed_period_label`, `statement_kind`, and
-`originality_class` so statement extraction and issue-context resolution do not
+`originality_class` so statement extraction and issue and review routing do not
 need to rediscover raw files by crawling the tree.
 
 `balance_references.csv` preserves the flattened source-document provenance
