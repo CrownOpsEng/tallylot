@@ -29,16 +29,16 @@ The repo should use a filing-first adapter strategy:
 
 - harden the current adapter layer where it directly reduces filing risk
 - avoid a broad source and output adapter contract rewrite before filing
-- extract only those shared seams that remove current drift on the filing path
+- extract only those shared boundaries that remove current drift on the filing path
 - write down the future unified adapter design now, but migrate to it later
 
 This plan treats adapter work as three tracks:
 
-- `now`: filing-critical hardening on the current seams
+- `now`: filing-critical hardening on the current adapter boundaries
 - `prep`: first-principles unified adapter contract and bridge-mapping work
-  needed by shared foundations and the first target-stage slice
+  needed by shared foundations and the first target-stage increment
 - `roadmap`: broader family migration into the unified adapter contract once the
-  filing path and first slice are stable
+  filing path and first increment are stable
 
 Forward-looking adapter work must map into the main runtime pipeline in
 `docs/concepts/pipeline-stage-contracts.md` and the trust-gate rules in
@@ -81,7 +81,7 @@ current behavior sooner than they depend on a perfect future contract.
 
 ### Current Source-Side Jobs
 
-| Job | Current seam | Why it matters |
+| Job | Current boundary | Why it matters |
 | --- | --- | --- |
 | Source selection | `match(...)` | Chooses the owning adapter for profiling and normalization. |
 | File-family recognition | `classify_profile_families(...)` | Drives deterministic family ownership before translation. |
@@ -95,7 +95,7 @@ current behavior sooner than they depend on a perfect future contract.
 
 ### Current Output-Side Jobs
 
-| Job | Current seam | Why it matters |
+| Job | Current boundary | Why it matters |
 | --- | --- | --- |
 | Output policy declaration | `render_policy` | Rejects facts that the target format cannot represent safely. |
 | Rendering | `render(...)` | Produces deterministic external output artifacts. |
@@ -115,13 +115,13 @@ current behavior sooner than they depend on a perfect future contract.
 | `evm_wallet` | source wallet | wallet inventory, transaction translation | Tier A only when wallet-state evidence is needed |
 | `crypto_com` | source platform | translation, intake routing | Tier B unless required in the filing workspace |
 | `gtrade` | source platform | translation, intake routing, location inventory | Tier B unless required in the filing workspace |
-| `structured_csv` | generic source | generic structured import surface | Tier B unless the filing workspace depends on it |
+| `structured_csv` | generic source | generic structured import path | Tier B unless the filing workspace depends on it |
 | `cointracking_portfolio` | portfolio intake | intake-only routing of portfolio exports | Tier B for intake stability, not for translation |
 | `cointracking_csv` | output | filing-oriented CSV projection | Tier A because output determinism directly affects filing |
-| `cointracking_api` | output stub | reserved edge surface | Tier C |
-| `generic_http_output` | output stub | reserved edge surface | Tier C |
-| `platform_api_stub` | source stub | reserved non-runtime surface | Tier C |
-| `blockchain_stub` | source stub | reserved non-runtime surface | Tier C |
+| `cointracking_api` | output stub | reserved edge adapter | Tier C |
+| `generic_http_output` | output stub | reserved edge adapter | Tier C |
+| `platform_api_stub` | source stub | reserved non-runtime adapter | Tier C |
+| `blockchain_stub` | source stub | reserved non-runtime adapter | Tier C |
 
 ### Priority Tiers
 
@@ -137,7 +137,7 @@ desire for repo-wide completeness.
 ## Filing-First Principles
 
 - Prefer deterministic current behavior over ambitious interface redesign.
-- Prefer shared support extraction over copy-paste repairs when the shared seam
+- Prefer shared support extraction over copy-paste repairs when the shared boundary
   is already visible.
 - Prefer explicit issues and reviews over adapter-local guesswork.
 - Prefer content signatures, coverage metadata, and fingerprints over filename
@@ -191,14 +191,14 @@ Exit criteria:
 
 ### 2. Harden Shared Determinism Surfaces
 
-These shared surfaces reduce drift across multiple adapters and are worth
+These shared areas reduce drift across multiple adapters and are worth
 changing during the filing window.
 
 | Work item | Why now | Concrete work | Explicitly out of scope | Exit criteria |
 | --- | --- | --- | --- | --- |
 | Translation input selection | File winner logic is one of the biggest drift sources. | Finish planner migration for filing-critical adapters, remove path-order and filename-order winning logic, keep selected, superseded, and blocked candidates explicit. | A new global adapter DSL. | Unchanged raw inputs pick the same candidates every run and emit the same plan artifacts. |
 | Deterministic ordering | Output drift can come from unordered iteration even when facts are correct. | Canonicalize ordering for candidates, selected files, drafts, issues, reviews, balance references, and rendered rows where the target format permits it. | New storage formats. | Repeated normalization and rendering runs are byte-stable or field-stable on unchanged inputs. |
-| Shared file-family recognition | Family ownership drift creates downstream translation drift. | Prefer content and schema signatures, publish stable family ids, and keep family claims in profile artifacts authoritative for translation. | Rewriting discovery around the future facet model. | Filing-critical adapters translate only recognized families and surface unmatched files explicitly. |
+| Shared file-family recognition | Family ownership drift creates downstream translation drift. | Prefer content and schema signatures, publish stable family ids, and keep family claims in profile artifacts authoritative for translation. | Rewriting discovery around the future facet model. | Filing-critical adapters translate only recognized families and report unmatched files explicitly. |
 | Timezone handling | Silent timestamp drift directly changes tax outcomes. | Keep timezone policy explicit, centralize common timezone summaries and review patterns, and reject ambiguous timestamp interpretation. | A universal temporal framework rewrite. | Filing-critical adapters no longer silently coerce naive timestamps into facts. |
 | Statement extraction | Statement evidence is needed for checkpoint and balance trust. | Keep one shared PDF extraction path, align statement matching and instrument-claim resolution, and fail explicitly on recognized-but-empty parses. | A new statement plugin system. | Statement-backed balance evidence is deterministic across repeated runs. |
 | Identity resolution feedback | Instrument ambiguity must block fact creation consistently. | Keep draft compilation as the shared gate, standardize blocking issue and review paths, and remove adapter-local special cases where possible. | New identity domains or taxonomy expansion. | All unresolved identity paths fail the same way across filing-critical adapters. |
@@ -231,8 +231,8 @@ Exit criteria:
 ### 4. Reduce Adapter-Local Orchestration In Tier A Adapters
 
 Tier A adapters should stay responsible for provider-local semantics only.
-They should not own their own mini workflow engines when a shared seam already
-exists.
+They should not own their own mini workflow engines when a shared boundary
+already exists.
 
 Allowed extractions now:
 
@@ -387,15 +387,15 @@ Required rules:
 - target-stage product ownership stays in the core architecture docs, not in
   adapter docs
 
-### 2. Freeze Bridge Mapping From Current Seams To Proto Target Products
+### 2. Freeze Bridge Mapping From Current Boundaries To Proto Target Products
 
-The first target-stage slice must say exactly how current artifacts land in the
+The first target-stage increment must say exactly how current artifacts map into the
 new products.
 
 Required bridge notes:
 
 - how planner-owned candidate and selection artifacts become proto-`EvidenceSet`
-- how current translation seams, draft compilation, and claim-like diagnostics
+- how current translation boundaries, draft compilation, and claim-like diagnostics
   become proto-`ClaimSet`
 - where the shared compiler owns meaning versus where adapters remain
   provider-local
@@ -404,35 +404,35 @@ Rules:
 
 - no dual active runtime centers
 - no adapter-local hidden semantics beyond provider-local meaning
-- no broad family migration as a hidden prerequisite for the first slice
+- no broad family migration as a hidden prerequisite for the first increment
 - [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md) is the
-  single owner for the canonical bridge mapping; this page only records the
+  single owner for the primary bridge mapping; this page only records the
   adapter-delivery implications
 
-Default bridge mapping for the first slice:
+Default bridge mapping for the first increment:
 
 - proto-`EvidenceSet` kernel:
   - selected, superseded, and blocked members from
     `translation_input_candidates.json` and `translation_input_plan.json`
   - typed provenance and locator identity from the current normalization-owned
-    evidence and statement seams
+    evidence and statement paths
   - source-local parsed observations from planner-selected input families and
-    statement extraction outputs where the slice uses them
+    statement extraction outputs where the increment uses them
 - proto-`ClaimSet` kernel:
   - provider-local semantic assertions emitted after deterministic evidence
     selection and before final draft or fact acceptance
   - balance observation claims from statement-backed quantities and other
-    quantity-backed evidence used by the slice
+    quantity-backed evidence used by the increment
   - location, ownership, instrument, and contract-facing claims only where the
     current adapter can already state them safely
-  - claim-owned blocking and advisory surfaces derived from current
+  - claim-owned blocking and advisory outputs derived from current
     source-local issues and reviews when the meaning is still pre-economic
 - bridge continuity during migration:
-  - `SourceTranslationBatch` remains the honest current runtime seam while the
-    first slice also emits bounded proto-`EvidenceSet` or proto-`ClaimSet`
+  - `SourceTranslationBatch` remains the honest current runtime boundary while the
+    first increment also emits bounded proto-`EvidenceSet` or proto-`ClaimSet`
     artifacts
   - the shared compiler remains responsible for producing current bridge outputs
-    from accepted claims until the corresponding downstream target-stage slice
+    from accepted claims until the corresponding downstream target-stage increment
     replaces that bridge responsibility
 
 ### 3. Freeze Adapter Determinism And Compatibility Rules
@@ -444,14 +444,14 @@ Required prep work:
 
 - declared ordering rules for adapter-scoped products
 - schema-version and compatibility rules aligned with target product rules
-- canonical serialization and fingerprint rules
+- stable serialization and fingerprint rules
 - explicit ownership of manifest fingerprints versus product fingerprints
 
-### 4. Name The First Adapter-Family Vertical Slice
+### 4. Name The First Adapter-Family Vertical Increment
 
-The first unified-adapter-facing slice should be explicit instead of implied.
+The first unified-adapter-facing increment should be explicit instead of implied.
 
-Required slice definition:
+Required increment definition:
 
 - one adapter family
 - the evidence families and claim families in scope
@@ -459,24 +459,24 @@ Required slice definition:
 - replay and parity gates on unchanged evidence
 - unsupported or ambiguous cases that must remain explicit
 
-Default first-slice direction:
+Default first-increment direction:
 
 - use the planner-enabled `coinbase` retail export family plus statement-backed
   balance observation flow unless the active filing workspace requires another
   Tier A family to land first
-- keep `cointracking_csv` projection compatibility in scope for the same slice
+- keep `cointracking_csv` projection compatibility in scope for the same increment
   where it protects filing output determinism
 - use [First Slice Contract](../reference/first-slice-contract.md) as the
-  bounded parity, replay, and allowed-drift contract for that default slice
+  bounded parity, replay, and allowed-drift contract for that default increment
 
 ### 5. Allow Shared Compiler And Verifier Prep
 
 The repo may advance shared compiler and verifier work during prep when that
-work reduces drift across the first slice.
+work reduces drift across the first increment.
 
 Allowed prep work:
 
-- shared claim compilation seams
+- shared claim compilation boundaries
 - shared product verifiers
 - shared replay and fingerprint checks
 - shared bridge-to-target comparison helpers
@@ -490,19 +490,19 @@ Not allowed in prep:
 ## Work To Roadmap
 
 The `roadmap` track covers broader family migration and contract adoption after
-the shared foundations and first slice are stable enough that the filing path
+the shared foundations and first increment are stable enough that the filing path
 is not depending on unresolved adapter semantics.
 
 ### Roadmap Objective
 
 Replace the current bundled source contract and separate output contract with a
 smaller, purpose-defined adapter architecture built around evidence, claims,
-explicit bridge seams during migration, deterministic verification, and
+explicit bridge boundaries during migration, deterministic verification, and
 provider-local semantics only.
 
 ### Roadmap Principles
 
-- unify around explicit adapter products, not around one giant method surface
+- unify around explicit adapter products, not around one giant method interface
 - keep manifests declarative and authoritative
 - separate hard assertions from soft annotations
 - treat provenance as a first-class runtime concept
@@ -510,14 +510,14 @@ provider-local semantics only.
 - keep the compiler and verifier shared
 - keep provider-local code focused on parsing, semantic mapping, and rendering
 
-### Roadmap Phase R1. Finish Adapter Products Beyond The First Slice
+### Roadmap Phase R1. Finish Adapter Products Beyond The First Increment
 
 Complete and extend the future adapter-scoped products beyond the bounded
-contracts already needed for the first slice:
+contracts already needed for the first increment:
 
 - `EvidenceSet`
 - `ClaimSet`
-- `SourceTranslationBatch` as the current bridge seam, with a target-direction
+- `SourceTranslationBatch` as the current bridge boundary, with a target-direction
   move toward `TranslationResult` only when code changes land
 - `ProjectionBundle`
 - `ArtifactBundle`
@@ -537,7 +537,7 @@ Deliverables:
 
 Entry criteria:
 
-- shared foundations and first-slice bridge mapping are stable enough that
+- shared foundations and first-increment bridge mapping are stable enough that
   broader family migration will not re-open core contract questions
 
 ### Roadmap Phase R2. Split The Contract Into Facets

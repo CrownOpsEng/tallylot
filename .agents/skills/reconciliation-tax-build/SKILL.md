@@ -23,7 +23,7 @@ Use this skill for architecture-sensitive core workflow work.
 2. Confirm whether the task changes facts, reconciliation, checkpoints,
    accounting, tax policy, or oracle-only compatibility code.
 3. Keep provider-neutral facts at the center and keep CoinTracking-specific
-   behavior in compatibility or oracle surfaces.
+   behavior in compatibility or oracle paths.
 4. Add or update schema, invariant, reconciliation, or tax tests before
    implementing behavior.
 5. Update `ROADMAP.md` in the same checkpoint when architecture or sequencing

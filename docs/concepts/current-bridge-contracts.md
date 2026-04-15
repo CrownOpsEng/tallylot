@@ -1,6 +1,6 @@
 ---
 title: "Current Bridge Contracts"
-summary: "Owning concept page for the live bridge contracts, bridge artifacts, and current schema rules."
+summary: "Primary concept page for the live bridge contracts, bridge artifacts, and current schema rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -12,7 +12,7 @@ Use this page when you need the current runtime truth for the bridge that
 exists today. This document owns the live bridge contracts and artifact rules.
 
 The current bridge is real runtime behavior, not a historical footnote. It is
-the active implementation seam until later bounded slices replace it. At the
+the active implementation boundary until later bounded increments replace it. At the
 same time, it is not the final architecture center. Future stage contracts live
 in [Pipeline Stage Contracts](pipeline-stage-contracts.md).
 
@@ -27,7 +27,7 @@ The live bridge currently centers on:
 
 That bridge is:
 
-- the live implementation seam
+- the live implementation boundary
 - the current delivery path
 - the current parity baseline
 - not the final architecture center
@@ -40,7 +40,7 @@ That bridge is:
 - planner-enabled adapters provide translation input candidates and the core
   selects the winning plan
 - ambiguity blocks fact and balance artifact emission
-- assembled source datasets are the reconciliation input surface
+- assembled source datasets are the reconciliation input
 - provenance stays typed in runtime models and is flattened only at artifact
   boundaries
 - operator-confirmed balance references may support runtime progress but do not
@@ -255,7 +255,7 @@ Rules:
 
 - the current serializer persists all of these fields together because that is
   live bridge truth
-- this mixed shape is not the canonical target kernel rule for future products
+- this mixed shape is not the target kernel rule for future products
 - forward transformation rules and bounded proto-product mapping now live in
   [Bridge To Target Mapping](bridge-to-target-mapping.md)
 

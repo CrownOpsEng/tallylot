@@ -27,16 +27,16 @@ parity gates, clean retirement rules, and no wrapper-lane sprawl.
 Current bridge truth:
 
 - `EconomicActivityDraft`, `TransactionFact`, and the shared balance artifacts
-  are the live implementation seam
-- that seam is the current parity baseline
-- that seam is not the final architecture center
+  are the live implementation boundary
+- that boundary is the current parity baseline
+- that boundary is not the final architecture center
 
 Bridge naming rule:
 
 - keep current bridge names in live bridge code until later implementation
-  slices replace them
+  increments replace them
 - do not perform large bridge renames as a prerequisite for the next bounded
-  architecture slice
+  architecture increment
 
 Current live bridge contract owner:
 
@@ -69,20 +69,20 @@ Owning contract pages:
 These foundations are prerequisites, not later cleanup:
 
 - shared stage contracts
-- shared ontology and identity seams
+- shared ontology and identity boundaries
 - shared gap and readiness model
 - shared `SubjectRef` rules
 - shared checkpoint-assertion direction
-- typed tax-policy selection seam
+- typed tax-policy selection boundary
 - target-product versioning, compatibility, serialization, and fingerprint
   rules
 - kernel-and-envelope rules with stable rehydration joins
-- one bridge-to-target mapping page that owns how current adapter seams land in
+- one primary bridge-to-target mapping for how current adapter outputs map to
   proto-`EvidenceSet` and proto-`ClaimSet`
 
 Rules:
 
-- no stage should invent an incompatible blocker or readiness surface
+- no stage should invent an incompatible blocker category or readiness model
 - no stage should use `SubjectRef` as a substitute for real domain modeling
 - no stage should restate the target contracts in a competing document when an
   owning contract page already exists
@@ -92,13 +92,13 @@ Rules:
 - `EvidenceSet` formalizes deterministic evidence selection and source-local
   observations now spread across intake, profiling, and translation-input
   planning
-- current planner artifacts may serve as the first bridge landing path into
+- current planner artifacts may serve as the first bridge path into
   proto-`EvidenceSet`; broad unified-adapter family migration is not a hidden
   prerequisite
 - `ClaimSet` becomes the place where `EconomicActivityDraft` responsibilities
   can split into source-local meaning plus preserved ambiguity
-- claim-native output may first land through one bounded adapter family or
-  shared compiler seam before any repo-wide adapter facet migration
+- claim-native output may first arrive through one bounded adapter family or
+  a shared compiler boundary before any repo-wide adapter facet migration
 - `EconomicFacts` becomes the accepted economic truth that the current
   `TransactionFact` bridge only approximates today
 - `ReconciliationState` and `Checkpoint` absorb the trust-gate work currently
@@ -106,21 +106,22 @@ Rules:
 - `Journal`, `TaxInputs`, and `TaxOutputs` replace the remaining bridge-era
   tendency to push accounting or tax meaning downward too early
 - unified adapter product and facet work may advance during shared foundations
-  when it removes first-slice drift, but broad family migration waits until the
-  contract lock and first slice are stable
+  when it removes first-increment drift, but broad family migration waits until
+  the contract lock and first increment are stable
 
-Default first-slice direction:
+Default first-increment direction:
 
 - use the planner-enabled Coinbase retail export family plus statement-backed
   balance observation flow unless the active filing workspace requires another
   Tier A family to land first
 - use [First Slice Contract](../reference/first-slice-contract.md) as the
-  bounded default-slice contract instead of inferring extra adapter inventory
+  bounded default contract for the first increment instead of inferring extra
+  adapter inventory
   from the repo
 
 ## Phase Order
 
-### Phase 0. Shared Foundations, Contract Lock, And First-Slice Prep
+### Phase 0. Shared Foundations, Contract Lock, And First-Increment Prep
 
 Deliver before broad code changes:
 
@@ -132,10 +133,10 @@ Deliver before broad code changes:
 - kernel-and-envelope rules with stable rehydration joins
 - minimum `ClaimSet`, `EconomicFacts`, `Checkpoint`, and `TaxInputs`
   vocabularies
-- one canonical bridge-to-target mapping for how current planner and
-  translation seams land proto-`EvidenceSet` and proto-`ClaimSet`
-- one named first vertical slice with parity and replay gates
-- clear bridge-versus-target ownership so later code slices do not re-decide
+- one primary bridge-to-target mapping for how current planner and
+  translation paths map to proto-`EvidenceSet` and proto-`ClaimSet`
+- one named first vertical increment with parity and replay gates
+- clear bridge-versus-target ownership so later code increments do not re-decide
   naming or stage boundaries
 
 Rules:
@@ -143,7 +144,7 @@ Rules:
 - do not start broad tax-engine work before these contracts are written down
 - do not let the bridge contract masquerade as the target ontology
 - do not make broad unified-adapter family migration a hidden prerequisite for
-  the first target-stage slice
+  the first target-stage increment
 - do not start broad target package scaffolding before these contracts are
   frozen on their owner pages
 
@@ -154,15 +155,16 @@ Deliver:
 - deterministic selection outputs
 - explicit selected, superseded, and blocked evidence outputs
 - source-local parsed observation contracts
-- a bounded landing path from current planner artifacts into proto-`EvidenceSet`
+- a bounded path from current planner artifacts into proto-`EvidenceSet`
 
 Rules:
 
 - evidence selection remains deterministic
 - evidence does not force economic meaning
 - evidence selection reasoning must survive beyond intake-time heuristics
-- the first `EvidenceSet` slice may reuse current adapter seams as long as the
-  landing contract is explicit and no second architecture center is created
+- the first `EvidenceSet` increment may reuse current adapter boundaries as
+  long as the mapping contract is explicit and no second architecture center is
+  created
 
 ### Phase 2. Introduce `ClaimSet`
 
@@ -171,7 +173,7 @@ Deliver:
 - claim-native contracts
 - claim-owned issues and reviews
 - explicit materially unresolved meaning
-- claim-to-economic compilation seam boundaries
+- claim-to-economic compilation boundary rules
 - one bounded adapter-family path for claim-native output before any broad
   facet migration
 
@@ -180,22 +182,22 @@ Rules:
 - ambiguous rows may remain claims without being forced into final economic,
   accounting, or tax meaning
 - adapters own source-local meaning only
-- the current bridge may remain as a bounded seam during migration, but it must
+- the current bridge may remain as a bounded boundary during migration, but it must
   stop forcing final semantics too early
-- the first `ClaimSet` slice must not require repo-wide dual-contract support
+- the first `ClaimSet` increment must not require repo-wide dual-contract support
 
 ### Phase 3. Land `EconomicFacts`
 
 Deliver:
 
-- claim-to-economic compilation seam
+- claim-to-economic compilation boundary
 - target-directed economic models aligned to the target ontology
 - explicit identity, settlement, lifecycle, and valuation handling
 
 Rules:
 
 - no wrapper lane beside the active runtime path
-- no bridge rename is required before the first target economic slice lands
+- no bridge rename is required before the first target economic increment lands
 - accepted economic meaning should move away from bridge activity-label
   centrality
 
@@ -211,7 +213,7 @@ Deliver:
 Rules:
 
 - reconciliation consumes accepted economic truth plus checkpoint evidence
-- exact balance assertions are one reconciliation input surface, not the whole
+- exact balance assertions are one reconciliation input, not the whole
   reconciliation product
 
 ### Phase 5. Land `Checkpoint`
@@ -257,12 +259,12 @@ Rules:
 - tax policy does not decide source meaning, reconciliation truth, or
   checkpoint truth
 
-### Phase 8. Retire Superseded Bridge Surfaces
+### Phase 8. Retire Superseded Bridge Outputs And Assumptions
 
-Retire or demote bridge surfaces only after:
+Retire or demote bridge outputs and assumptions only after:
 
-- parity tests exist for the affected slice
-- the replacement slice has one active runtime path
+- parity tests exist for the affected increment
+- the replacement increment has one active runtime path
 - downstream stages no longer depend on the superseded bridge-only assumptions
 - current-state docs are updated to reflect the new live truth
 
@@ -284,9 +286,9 @@ The docs and control-plane baseline for this migration is:
 - target stage contracts, ontology, and gap/readiness ownership are already
   separated into focused concept pages
 - current-state docs keep current bridge terms where accuracy requires them
-- later implementation should rename the dev-only shared repo support surface
+- later implementation should rename the dev-only shared repo support package area
   from `repo_support/` to `dev_support/`, but this remains future work until
-  the corresponding implementation slice lands
+  the corresponding implementation increment lands
 - roadmap, migration, and architecture anchors must be updated together when a
-  slice changes stage ownership, trust-gate sequencing, or shared support
+  change updates stage ownership, trust-gate sequencing, or shared support
   contracts

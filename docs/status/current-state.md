@@ -1,6 +1,6 @@
 ---
 title: "Current State"
-summary: "Implemented runtime capabilities, current operational surface, and deferred areas."
+summary: "Implemented runtime capabilities, current operational capabilities, and deferred areas."
 doc_type: status
 audience: human
 owner: repo
@@ -36,14 +36,14 @@ product names `EvidenceSet`, `ClaimSet`, `EconomicFacts`,
 
 - The implemented bridge currently centers on `EconomicActivityDraft`,
   `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`.
-- Treat that bridge as the current delivery seam, not as the final architecture
+- Treat that bridge as the current delivery boundary, not as the final architecture
   center.
 - The target pipeline products and stage contracts live in
   `docs/concepts/pipeline-stage-contracts.md`; system-level trust gates and
   rollout alignment live in
   `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md`.
 - MVP work should extend the current bridge incrementally where it protects the
-  filing path, while landing richer pipeline products only when a concrete next
+  filing path, while adding richer pipeline products only when a concrete next
   stage needs them.
 
 ## Current Operational Surface
@@ -81,7 +81,7 @@ The repo currently ships typed replacements for the core workflow capabilities:
 - checkpoint location inventory rebuild with evidence, issues, and summary
   artifacts
 - checkpoint PDF balance extraction for supported statement families through
-  the shared statement extraction seam
+  the shared statement extraction path
 - `application/balances` owns the shared balance capability: inspect, check,
   and summarize workflows with explicit drift, missing-side, duplicate-input,
   blocker outputs, additive cross-source corroboration sidecars, explicit
@@ -139,7 +139,7 @@ The repo currently ships typed replacements for the core workflow capabilities:
   targets whose location and asset identity are already known.
 - On-chain asset ids with immutable chain identity are the prerequisite for
   historical public-ledger provider hydration. Symbol-only token rows remain
-  explicit unsupported surfaces until immutable identity is proven.
+  explicit unsupported cases until immutable identity is proven.
 - `balance_snapshots.csv` and `balance_references.csv` are the only runtime
   balance artifacts. `balances.csv` and `balance_evidence.csv` are superseded
   generated outputs and are not runtime inputs.
@@ -152,7 +152,7 @@ The repo currently ships typed replacements for the core workflow capabilities:
 
 ## Current Migration Notes
 
-- Translation input planning is opt-in per adapter during the first slice.
+- Translation input planning is opt-in per adapter during the first increment.
 - Coinbase is the first planner-enabled adapter and now describes retail CSV
   candidates instead of choosing one file by path order.
 - Legacy adapters still use the fallback `translate(...)` path until their

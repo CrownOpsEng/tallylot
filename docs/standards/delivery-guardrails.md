@@ -8,7 +8,7 @@ status: active
 nav_order: 40
 ---
 
-Use this document when delivery safety, branch protection, PR landing, merge
+Use this document when delivery safety, branch protection, PR merge behavior, merge
 metadata, or agent-default Git behavior is part of the task.
 
 This standard exists to prevent a repeat of failures where policy was known in
@@ -19,9 +19,9 @@ structure, authoring rules, and baseline context from `AGENTS.md`,
 `docs/README.md`, `docs/status/current-state.md`,
 `docs/reference/repository-history.md`, `tools/docs_maintenance/cli.py`, and
 `tools/docs_maintenance/metadata.py` so new material lands in the right repo
-surface and follows the repo's documentation metadata rules.
-Use the repo-local workflow for the active surface on that reload path and pair
-it with the `markdown` skill when the task edits Markdown or docs surfaces.
+area and follows the repo's documentation metadata rules.
+Use the repo-local workflow for the active area on that reload path and pair
+it with the `markdown` skill when the task edits Markdown or docs files.
 When the task changes GitHub-side delivery controls, run
 `make audit-delivery-guardrails`
 before and after the change so the local CODEOWNERS state and the live remote
@@ -42,19 +42,19 @@ when the higher-layer control is available.
 
 ## Default Delivery Posture
 
-- protected branches are PR-only landing surfaces
+- protected branches are PR-only branches
 - pull requests open as draft by default
 - a PR becomes ready for review only after the full issue-finding hardening
   loop yields no new meaningful findings
 - direct pushes to `main` are forbidden except for an explicit one-time repair
   requested in the current thread
 - a merged `main` commit must not be rewritten when the original PR record
-  needs to remain attached to the landing commit
+  needs to remain attached to the merged commit
 - multi-checkpoint PRs land with a merge commit using
   `<pr title> (#<pr number>)`
 - single-checkpoint PRs land with squash merge
 - replaced PRs use the repo's neutral duplicate or superseded label as the
-  primary closeout marker
+  primary closure marker
 - comments on replaced PRs are fallback-only, not the default
 - PRs are never closed autonomously without explicit user instruction
 
@@ -65,7 +65,7 @@ when the higher-layer control is available.
 Prefer GitHub controls that reject bad actions before they land:
 
 - rulesets or branch protection that require pull requests
-- required status checks pinned to their owning app, not only named by context
+- required status checks pinned to their responsible app, not only named by context
 - required reviews
 - blocked force pushes on protected branches
 - stale-review dismissal or last-push review requirements when the repo wants
@@ -111,9 +111,9 @@ Control-plane files include:
 
 Current-state note:
 
-- these `repo_support/**` paths are current live control-plane surfaces today
+- these `repo_support/**` paths are current live control-plane files today
 - later implementation may rename that dev-only shared support boundary under
-  `dev_support/`, but until that slice lands the current live paths remain the
+  `dev_support/`, but until that change lands the current live paths remain the
   enforcement truth
 
 If a repo policy depends on a platform-native control that is not enabled, call
@@ -137,7 +137,7 @@ machine-checkable guard instead of only adding more prose.
 
 ### 3. Repo Standards And Checklists
 
-Use standards docs and checkpoint routes to explain:
+Use standards docs and implementation routes to explain:
 
 - why the rule exists
 - what exact behavior is required
@@ -149,7 +149,7 @@ Standards work itself must verify whether a rule belongs in human docs, agent
 routing, or repo-native automation before adding a new document or route.
 
 PR review is a repeatable procedure, not an improvised pass. Review starts from
-the changed surface groups in the current PR diff:
+the changed file groups in the current PR diff:
 
 - `human_docs`
   - paths: `README.md`, `CHANGELOG.md`, and `docs/**` except
@@ -173,13 +173,13 @@ the changed surface groups in the current PR diff:
     terminology, documentation and control-plane alignment
 - `ci_or_release`
   - paths: `.github/actions/**`, `.github/workflows/**`, and the repo's
-    delivery planner, workflow helpers, and workflow-sensitive config surfaces
+    delivery planner, workflow helpers, and workflow-sensitive config files
   - review domains: workflow correctness, delivery enforcement, metadata parity
 
 Verification selection is deterministic and atomic:
 
-- review domains are the union across every applicable surface group
-- `tools.audit_pr_review` reports changed paths, grouped surfaces, review
+- review domains are the union across every applicable file group
+- `tools.audit_pr_review` reports changed paths, grouped file groups, review
   domains, the selected verification mode, selected checks, suppressed checks,
   and any unmapped paths
 - pull-request CI is draft-aware:
@@ -201,8 +201,8 @@ Verification selection is deterministic and atomic:
 
 Each PR review pass should:
 
-- re-check prior fix surfaces first
-- use `tools.audit_pr_review` to confirm the applicable surface groups, review
+- re-check prior fixes first
+- use `tools.audit_pr_review` to confirm the applicable file groups, review
   domains, required verification family, and any unmapped paths before deciding
   the current pass found no new meaningful findings
 - treat passing `tools.run_pr_review_checks` or broader verification as review
@@ -210,23 +210,23 @@ Each PR review pass should:
   loop or decides the pass outcome
 - describe each upcoming pass as issue-finding with open outcome; do not
   pre-label the next pass as clean, final, or publish-ready
-- red-team one adjacent applicable surface group and look for up to 5 new
-  unique evidence-backed findings for the current pass
+- review one adjacent applicable file group and look for up to 5 new unique
+  evidence-backed findings for the current pass
 - repair every finding from that pass before starting the next pass
-- reload the narrow repo guidance needed for each repair surface before editing:
+- reload the narrow repo guidance needed for each repaired area before editing:
   use `AGENTS.md`, its task-routing table, and the owning roadmap,
-  architecture, migration, or delivery docs surfaced by that route or by repo
+  architecture, migration, or delivery docs identified by that route or by repo
   search hints instead of forcing one oversized preload bundle for every pass
-- run the required review checks for the repaired slice and create bounded
+- run the required review checks for the repaired change and create bounded
   checkpoint commits during the loop using the repo's normal commit rules
 - when a meaningful finding is real but should not expand the active PR, search
   existing issues first and open or link the follow-up issue before merge
 - when a pass finds fewer than 5 new findings, report only those findings and
   keep the loop moving
-- stop only after every applicable changed surface group has been revisited and
-  a full applicable-surface loop yields no new meaningful findings; if the only
+- stop only after every applicable changed file group has been revisited and
+  a full review cycle yields no new meaningful findings; if the only
   remaining item is a minor finishing touch, repair it and finish once no other
-  meaningful issues surface
+  meaningful issues appear
 - keep scratch tracking ephemeral and untracked
 
 ### 4. Agent Defaults
@@ -241,7 +241,7 @@ missing:
 - prefer neutral direct `Why:` and `What:` language
 - frame each upcoming review pass as issue-finding with open outcome rather
   than as a pre-labeled clean or final pass
-- re-check merge method and subject immediately before landing
+- re-check merge method and subject immediately before merging
 - report unresolved policy gaps instead of silently improvising
 - use the relevant safety and authoring skills up front rather than relying on
   mid-task memory
@@ -260,7 +260,7 @@ push-to-mainline CI.
   resolve PR metadata for the branch
 - the `plan-pr-review` workflow job audits the diff with
   `tools.audit_pr_review`, publishes the selected checks for transparency, and
-  keeps the human review surface routing visible while choosing planned mode
+  keeps the human review routing visible while choosing planned mode
   for draft PRs and full mode for non-draft PRs
 - the `pr-review` PR status aggregates the selected blocking checks for draft
   PR plans and the full non-duplicated blocking suite for non-draft PRs; it
@@ -278,7 +278,7 @@ push-to-mainline CI.
 Before calling delivery complete, verify and report:
 
 - which repo standards were reloaded immediately before the action
-- which applicable changed surface groups were reviewed
+- which applicable changed file groups were reviewed
 - whether the PR remained draft until the hardening procedure finished cleanly
 - whether the branch shape matched the allowed merge method
 - which checks were required and whether they passed
@@ -286,14 +286,14 @@ Before calling delivery complete, verify and report:
   linked from the PR when they stayed out of scope
 - whether any linked follow-up issue content remained privacy-safe and
   repo-scoped
-- whether the landing subject exactly matched the required format
+- whether the merge subject exactly matched the required format
 - whether older superseded PRs were labeled correctly
 - whether the final remote branch tip still matches the reviewed PR record
 - whether review requirements are truly enforced or explicitly deferred because
   the repo currently has only one single review-capable collaborator
 - whether PR-only CI enforcement required `commit-messages`, `pr-metadata`,
   and `pr-review` for mergeable pull requests
-- whether required PR-only statuses were pinned to the owning GitHub Actions
+- whether required PR-only statuses were pinned to the responsible GitHub Actions
   app instead of relying on unpinned status-context names alone
 
 ## Exception Handling

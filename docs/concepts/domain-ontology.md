@@ -1,6 +1,6 @@
 ---
 title: "Domain Ontology"
-summary: "Owning concept page for the target economic ontology, identity seams, package direction, and bridge-versus-target modeling rules."
+summary: "Primary concept page for the target economic ontology, identity boundaries, package direction, and bridge-versus-target modeling rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,14 +9,14 @@ nav_order: 35
 ---
 
 Use this page when shaping the target domain model. This document owns the
-target ontology and identity seams.
+target ontology and identity boundaries.
 
 Current bridge note:
 
 - current bridge code still uses `EconomicActivityDraft`, `TransactionFact`,
   layered bridge classifications, and fact-leg policies
 - those bridge contracts remain current-state runtime truth
-- this page defines the target ontology that later implementation slices should
+- this page defines the target ontology that later implementation increments should
   grow toward
 
 ## Core Business Concepts
@@ -42,7 +42,7 @@ The target model should use these concepts explicitly:
 
 These are not interchangeable labels. They represent distinct business
 concepts, and the model should keep them distinct even when one adapter or one
-reporting surface happens to collapse them operationally.
+report happens to collapse them operationally.
 
 ## Generic Core Requirements
 
@@ -56,7 +56,7 @@ The target core should remain:
 Rules:
 
 - crypto is the current filing scope, not the ontology center
-- CoinTracking is an edge import, export, and oracle surface, not a runtime
+- CoinTracking is an edge import, export, and oracle input, not a runtime
   dependency
 - persistence implements the model; it does not define the model
 - no wrapper lanes, compatibility shims, or legacy parallel runtime models
@@ -65,9 +65,9 @@ Rules:
   ready
 - tests and parity must be preserved or strengthened through refactors
 
-## Identity Seams
+## Identity Boundaries
 
-Keep these seams separate:
+Keep these boundaries separate:
 
 - instrument identity
 - contract identity
@@ -82,7 +82,7 @@ Rules:
 - do not collapse these identities into one generic id family
 - resolve only the identity that the current stage can prove safely
 - preserve unresolved identity as explicit blockers instead of guessing across
-  seams
+  boundaries
 
 Identity resolution should be incremental and explicit. Earlier stages may know
 less than later stages, and that is acceptable as long as uncertainty stays

@@ -18,7 +18,7 @@ Use this route before closing any non-trivial coding task.
    - duplicate logic appeared
    - a second responsibility was added to a module
    - a hotspot module absorbed more behavior
-   - tests became repetitive because the seam is wrong
+   - tests became repetitive because the boundary is wrong
 4. Confirm tests were added or updated for:
    - new decision logic
    - new parser or renderer contracts
@@ -41,7 +41,7 @@ Use this route before closing any non-trivial coding task.
    - reserve `make quality-full`
      for the explicit full-suite override when a specific task needs it
    - `make pr-review-full` when the change touches CI,
-     packaging, release, or other workflow surfaces and you want the final non-draft PR suite locally
+     packaging, release, or other workflow areas and you want the final non-draft PR suite locally
 8. If architecture, schema, or sequencing changed, update:
    - `ROADMAP.md`
    - `docs/concepts/reconciliation-tax-architecture.md`
@@ -51,7 +51,7 @@ Use this route before closing any non-trivial coding task.
      architecture and sequencing material:
      - `AGENTS.md`
      - `.claude/commands/reconciliation-tax-build.md`
-     - `.claude/commands/adapter-authoring.md` when adapter surfaces are part
+     - `.claude/commands/adapter-authoring.md` when adapter areas are part
        of the same change
    - if standards, docs placement, doc authoring rules, or agent-default enforcement changed, reload:
      - `AGENTS.md`
@@ -63,15 +63,15 @@ Use this route before closing any non-trivial coding task.
      and confirm any new material belongs in human docs rather than agent-only
      routing and still follows the docs-maintenance scaffold and metadata rules
 9. After compaction or context loss, reload the narrow standards for the active
-   surface before more edits or commits:
+   area before more edits or commits:
 
    - `docs/standards/implementation.md`
    - `docs/standards/commits.md`
    - `docs/standards/delivery-guardrails.md` when delivery work is active
 
-10. Create the stable checkpoint commit when the slice is coherent and verified.
-   If the task contains more than one separable reviewable slice, split it into
-   multiple bounded checkpoint commits before closeout. Do not close the task
+10. Create the stable checkpoint commit when the change is coherent and verified.
+   If the task contains more than one separable reviewable change, split it into
+   multiple bounded checkpoint commits before finishing. Do not close the task
    first and plan to commit afterward.
 
 11. Include a short parity note in the checkpoint summary when tests changed:
@@ -82,11 +82,11 @@ Use this route before closing any non-trivial coding task.
 12. Confirm branch handling stayed PR-only for protected branches: do not push
     directly to `main`; do not use branch-protection bypass for ordinary
     delivery; do not rewrite a merged `main` commit if the original pull
-    request must remain attached to the landing commit and use a new repair
+    request must remain attached to the merged commit and use a new repair
     pull request instead; for multi-checkpoint PR merges, use
     `<pr title> (#<pr number>)` as the merge subject; if a repair PR replaces
     an older PR, apply the repo's neutral duplicate/superseded label before
-    closing the repair loop; if the user explicitly requested a one-time
+    closing the older PR; if the user explicitly requested a one-time
     protected-branch repair, verify the remote branch tip afterward and return
     to PR-only flow.
 
