@@ -57,6 +57,12 @@ Shared rules:
 
 ## Shared Product Rules
 
+Shared primitive and artifact authorities used by this page live in
+[Target Contract Primitives](../reference/target-contract-primitives.md) and
+[Target Product Artifacts](../reference/target-product-artifacts.md). This
+page remains the owner of stage semantics, record families, stage-owned
+vocabularies, and handoff guarantees.
+
 ### Versioning, Serialization, And Fingerprints
 
 - every target product carries a `schema_version`
@@ -80,12 +86,18 @@ Shared rules:
 - component arrays use the owning product's canonical scalar forms exactly as
   emitted; do not add hidden trimming, lowercasing, or resorting outside the
   declared tuple rules
+- canonical scalar forms, admissible anchor components, shared dataset
+  identity, reusable tuple contracts, and default target dataset packaging are
+  owned by the reference pages above rather than redefined here
 
 ### Composite Tuple Rules
 
 - `SubjectRef` serializes and sorts as `[subject_kind, subject_id]`
 - `BasisPoolRef` serializes and sorts as
   `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_scope]`
+- plain `*_ref` and `*_refs` fields point to stable ids unless the owning page
+  explicitly names a structured tuple contract such as `SubjectRef`,
+  `BasisPoolRef`, `AccountRef`, `CommodityRef`, or `OriginRef`
 - when one stable-id recipe, ordering rule, or fingerprint input includes one
   of these composite references, use the tuple form above rather than an
   object-name shorthand
@@ -186,13 +198,14 @@ Stable ids:
 - `observation_id` uses component array
   `[member_id, observation_class, observation_anchor]`
 - `selection_group_id` is emitted by the evidence-selection stage and remains a
-  stable upstream id rather than a downstream recomputation
-- `member_class` is the stable evidence-family or member-role label emitted for
-  the member
+  stable upstream id rather than a downstream recomputation; it is a
+  decision-boundary id, not an evidence member family
+- `member_class` is the stable evidence member-family or member-role label
+  emitted for the member
 - `member_locator_identity` is the stage-owned stable locator tuple for one
   evidence member
-- `observation_class` is the stable observation family label emitted for one
-  typed observation
+- `observation_class` is the stable typed observation label emitted for one
+  observation under the owning evidence member
 - `observation_anchor` is the stable row, page, anchor, or typed observation
   locator emitted for that observation
 
@@ -312,12 +325,19 @@ Stable ids:
 - `adjudication_record_id` uses component array
   `[claim_set_id, interpretation_group_id, compilation_outcome, resolution_basis, accepted_claim_refs, rejected_claim_refs, deferred_claim_refs]`
 - `claim_emitter_id` is the stable id of the translation family or shared
-  compiler boundary that emitted the claim set
+  compiler boundary that emitted the claim set; its reusable id recipe is
+  owned by
+  [Target Contract Primitives](../reference/target-contract-primitives.md)
+- `claim_emitter_id` is product-scoped `ClaimSet` metadata, not an implicit
+  local variable or adapter-private constant
 - `claim_anchor` is the stable provider-local anchor for one asserted meaning;
-  slice-specific anchor choices live in
+  the shared admissibility rules for anchor components live in
+  [Target Contract Primitives](../reference/target-contract-primitives.md),
+  while slice-specific anchor choices live in
   [First Slice Contract](../reference/first-slice-contract.md)
 - `bundle_anchor` is the stable anchor shared by all mutually exclusive bundles
-  over the same source-local meaning
+  over the same source-local meaning; its admissibility rules also live in
+  [Target Contract Primitives](../reference/target-contract-primitives.md)
 - `bundle_discriminator` is `default` when one anchor has exactly one bundle;
   otherwise use `alt:1`, `alt:2`, and so on in canonical bundle order under
   that anchor
@@ -416,6 +436,16 @@ Record families:
   - `location_ref_or_null`
   - `quantity`
   - `valuation_ref_or_null`
+- `ValuationRecord`
+  - `valuation_id`
+  - `amount`
+  - `currency`
+  - `valuation_purpose`
+  - `valued_at_or_null`
+  - `value_precision_or_null`
+  - `source_kind`
+  - `confidence`
+  - `provenance_refs`
 
 Controlled vocabularies:
 
@@ -440,10 +470,15 @@ Controlled vocabularies:
   - `fee`
   - `rebate`
   - `withholding`
+- `valuation_purpose`:
+  - `economic`
+  - `checkpoint_support`
+  - `accounting_support`
+  - `tax_support`
+  - `market_observation`
 
 Envelope content may include:
 
-- detailed valuations
 - ownership and counterparty explanation
 - explanation of accepted identity seams
 - supporting claim traces
@@ -453,10 +488,16 @@ Stable ids:
 
 - `event_id` identifies one accepted economic event
 - `leg_id` identifies one stable leg under one accepted event
+- `valuation_id` identifies one persisted valuation kernel record
 - `event_id` uses component array `[adjudication_record_id, event_index]`
 - `leg_id` uses component array `[event_id, leg_role, subject_ref, leg_index]`
+- `valuation_id` uses component array
+  `[amount, currency, valuation_purpose, valued_at_or_null, value_precision_or_null, source_kind, confidence, provenance_refs]`
 - `event_index` and `leg_index` are zero-based canonical positions in declared
   event and leg order
+- `valuation_ref_or_null` points to `valuation_id` when a downstream stage
+  must reason from persisted valuation truth instead of rehydrating envelope
+  detail
 
 Ordering:
 
@@ -464,18 +505,22 @@ Ordering:
 - otherwise sort by `recorded_at`
 - then `event_id`
 - `EconomicLegRecord` rows sort by `[event_id, leg_id]`
+- `ValuationRecord` rows sort by `[valuation_purpose, valued_at_or_null, valuation_id]`
 
 Serialization:
 
-- serialize `EconomicEventRecord` rows and `EconomicLegRecord` rows as separate
-  ordered arrays
+- serialize `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
+  rows as separate ordered arrays
 - use stable object-key ordering
 - preserve the declared event and leg order above
+- sort `provenance_refs` lexicographically when a stronger stage-owned order is
+  not declared
 
 Fingerprint inputs:
 
 - canonical `EconomicEventRecord` rows
 - canonical `EconomicLegRecord` rows
+- canonical `ValuationRecord` rows
 - `schema_version`
 - referenced `CompilationDecisionRecord` ids
 
@@ -484,6 +529,8 @@ Must guarantee:
 - accepted event families stay jurisdiction-neutral and output-neutral
 - event and leg records carry the computation-critical determinants needed for
   later reconciliation, checkpointing, accounting, and tax
+- valuation records stay first-class kernel truth whenever later checkpoint,
+  accounting, or tax behavior depends on them
 - corrections preserve supersession lineage instead of mutating accepted
   economic truth in place
 - unresolved economic detail may remain explicit only where later stages can
@@ -498,8 +545,8 @@ Must not:
 Handoff to `ReconciliationState`:
 
 - `EconomicFacts` provides accepted economic events, economic legs, identity
-  seams, settlement links, lifecycle state, and valuation references where
-  they are already safe
+  seams, settlement links, lifecycle state, and valuation records or
+  references where they are already safe
 - it does not claim that continuity is complete, transfers are fully linked, or
   checkpoint truth is accepted
 
@@ -545,8 +592,8 @@ Record families:
   - `target_kind`
   - `target_as_of_at`
   - `target_precision`
-  - `expected_value_ref`
-  - `observed_value_ref_or_null`
+  - `expected_value`
+  - `observed_value_or_null`
   - `balance_target_status`
 - `CheckpointCandidateRecord`
   - `checkpoint_candidate_id`
@@ -603,9 +650,18 @@ Stable ids:
 - `link_id` uses component array
   `[continuity_segment_id, link_kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
-  `[continuity_segment_id, subject_ref, target_kind, target_as_of_at, target_precision, expected_value_ref]`
+  `[continuity_segment_id, subject_ref, target_kind, target_as_of_at, target_precision, expected_value_fingerprint]`
 - `checkpoint_candidate_id` uses component array
   `[continuity_segment_id, subject_ref, checkpoint_date, supporting_balance_target_refs, supporting_evidence_refs]`
+- `expected_value` and `observed_value_or_null` use the shared
+  `AssertionValue` union owned by
+  [Target Contract Primitives](../reference/target-contract-primitives.md)
+- `expected_value_fingerprint` is the canonical fingerprint of one
+  `AssertionValue` and keeps stable-id recipes on admissible scalar inputs
+- reconciliation comparison values stay inline because they are
+  kernel-critical determinants, not detachable sidecars
+- `checkpoint_candidate_id` depends on supporting refs only; it does not
+  include observed-value payloads or comparison text
 
 Ordering:
 
@@ -734,8 +790,8 @@ Stable ids:
 - `checkpoint_assertion_id` uses component array
   `[assertion_kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
 - `accepted_value_fingerprint` is the canonical fingerprint of one
-  `CheckpointAssertionValue` variant from
-  [Domain Ontology](domain-ontology.md)
+  `AssertionValue` from
+  [Target Contract Primitives](../reference/target-contract-primitives.md)
 
 Ordering:
 
@@ -823,7 +879,7 @@ Record families:
   - `commodity_ref`
   - `amount`
   - `posting_side`
-  - `source_ref`
+  - `origin_ref`
 - `ValidationRecord`
   - `validation_id`
   - `entry_id`
@@ -867,11 +923,16 @@ Stable ids:
 - `entry_id` uses component array
   `[journal_id, entry_kind, effective_at_or_null, economic_event_refs, checkpoint_assertion_refs]`
 - `posting_id` uses component array
-  `[entry_id, account_ref, commodity_ref, amount, posting_side, source_ref]`
+  `[entry_id, account_ref, commodity_ref, amount, posting_side, origin_ref]`
 - `validation_id` uses component array `[entry_id, validation_kind]`
 - `ordered_economic_event_refs`, `ordered_checkpoint_assertion_refs`, and
   `ordered_entry_kinds` are the canonical flattened journal-level arrays
   derived from the emitted `JournalEntryRecord` rows
+- `account_ref`, `commodity_ref`, and `origin_ref` use the structured tuple
+  contracts owned by
+  [Target Contract Primitives](../reference/target-contract-primitives.md)
+- `origin_ref` points to the immediate kernel origin for the posting rather
+  than to a provider label, renderer label, or free-form source string
 
 Ordering:
 
@@ -1052,7 +1113,7 @@ Record families:
 
 - `TaxOutputRecord`
   - `tax_output_id`
-  - `policy_id`
+  - `tax_policy_id`
   - `output_family`
   - `tax_year`
   - `tax_status`
@@ -1091,16 +1152,18 @@ Stable ids:
 - `carry_forward_id` identifies one carry-forward state record
 - `unsupported_item_id` identifies one persisted unsupported-item record
 - `tax_output_id` uses component array
-  `[policy_id, output_family, tax_year, basis_pool_refs]`
+  `[tax_policy_id, output_family, tax_year, basis_pool_refs]`
 - `carry_forward_id` uses component array
   `[tax_output_id, basis_pool_ref, next_tax_year]`
 - `unsupported_item_id` uses component array
   `[tax_output_id, determinant_ref]`
+- `tax_policy_id` uses the reusable `TaxPolicyId` contract owned by
+  [Target Contract Primitives](../reference/target-contract-primitives.md)
 
 Ordering:
 
 - `TaxOutputRecord` rows sort by
-  `[policy_id, tax_year, output_family, tax_output_id]`
+  `[tax_policy_id, tax_year, output_family, tax_output_id]`
 - `CarryForwardRecord` rows sort by
   `[tax_output_id, next_tax_year, basis_pool_ref, carry_forward_id]`
 - `UnsupportedItemRecord` rows sort by
@@ -1120,7 +1183,7 @@ Fingerprint inputs:
 - canonical `UnsupportedItemRecord` rows
 - `schema_version`
 - referenced `TaxInputs` ids or fingerprints
-- selected `policy_id`
+- selected `tax_policy_id`
 
 Must guarantee:
 
@@ -1146,6 +1209,11 @@ The pipeline products rely on shared supporting contracts defined elsewhere:
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
   for the first bounded `EconomicFacts -> ReconciliationState -> Checkpoint`
   contract
+- [Target Contract Primitives](../reference/target-contract-primitives.md) for
+  canonical scalar forms, reusable tuple contracts, shared `AssertionValue`,
+  and reusable target ids
+- [Target Product Artifacts](../reference/target-product-artifacts.md) for
+  target dataset packaging, kernel filenames, and sidecar locations
 - [Domain Ontology](domain-ontology.md) for the target ontology and identity
   seams
 - [Gaps And Readiness](gaps-and-readiness.md) for `GapCore`,

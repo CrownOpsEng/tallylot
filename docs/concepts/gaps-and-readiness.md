@@ -100,7 +100,10 @@ Rules:
 - `checkpoint_candidate_id` identifies one reconciliation-owned checkpoint
   proposal before acceptance
 - `dataset_id` identifies one persisted stage kernel or one explicit slice-wide
-  dataset under review
+  dataset under review; its reusable wire identity is owned by
+  [Target Contract Primitives](../reference/target-contract-primitives.md) and
+  its persisted dataset packaging is owned by
+  [Target Product Artifacts](../reference/target-product-artifacts.md)
 - do not attach a gap to `dataset` scope when `subject`, `selection_group`, or
   `checkpoint_candidate` would be truthful
 
@@ -421,6 +424,24 @@ Rules:
 - downstream stages may reuse them, but should not redefine them into
   incompatible local variants
 
+## Review Sidecar Rules
+
+The target runtime does not define one shared cross-stage `ReviewRecord`
+kernel.
+
+Rules:
+
+- reviews are advisory and never block by themselves
+- a review may pair with one gap through `paired_gap_id`
+- when a blocker and a review share one cause, the gap owns the blocker and
+  the review remains sidecar context
+- downstream stages must not require upstream review sidecars as kernel inputs
+- persisted review sidecars remain stage-local under `sidecars/reviews.json`
+  as owned by
+  [Target Product Artifacts](../reference/target-product-artifacts.md)
+- `NormalizationReviewRecord` maps to stage-local review sidecars, not to a
+  shared target review kernel
+
 ## Bridge Mapping From Issue And Review Records
 
 The live bridge still emits `IssueRecord` and `NormalizationReviewRecord`.
@@ -431,8 +452,8 @@ Mapping rules:
   when owner stage, blocking stages, scope, and blocker semantics align
 - `IssueRecord.kind`, `severity`, `context_timestamp`, and typed provenance are
   gap inputs, not free text to reinterpret later
-- `NormalizationReviewRecord` remains a review sidecar unless a paired
-  blocking condition also exists
+- `NormalizationReviewRecord` remains a stage-local review sidecar unless a
+  paired blocking condition also exists
 - when one factual cause produces both a blocker and an advisory review, the
   blocker lands in `GapCore` and the review remains keyed sidecar context
 - current bridge ids remain traceable when later stages adopt target-native gap

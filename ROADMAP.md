@@ -9,6 +9,8 @@ This file is the forward planning document for the repo.
   - [`docs/concepts/current-bridge-contracts.md`](docs/concepts/current-bridge-contracts.md)
   - [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
   - [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
+  - [`docs/reference/target-contract-primitives.md`](docs/reference/target-contract-primitives.md)
+  - [`docs/reference/target-product-artifacts.md`](docs/reference/target-product-artifacts.md)
   - [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md)
   - [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
   - [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
@@ -61,6 +63,12 @@ These are blocking shared foundations for later implementation work:
   [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
 - the target stage contracts documented in
   [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
+- the shared target scalar, tuple, dataset-id, and reusable value contracts
+  documented in
+  [`docs/reference/target-contract-primitives.md`](docs/reference/target-contract-primitives.md)
+- the forward-looking target dataset packaging and artifact layout documented
+  in
+  [`docs/reference/target-product-artifacts.md`](docs/reference/target-product-artifacts.md)
 - the bounded first-slice parity and replay contract documented in
   [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md)
 - the bounded first downstream consumer contract documented in
@@ -96,6 +104,8 @@ Shared-foundation deliverables before broad pipeline expansion:
 - use the bounded first downstream slice owner page for the first
   `EconomicFacts -> ReconciliationState -> Checkpoint` consumer path
   instead of leaving that handoff implicit
+- freeze review-sidecar policy, package landing rules, shared primitive
+  contracts, and target artifact layout before broad parallel implementation
 
 Exit criteria:
 
@@ -115,6 +125,9 @@ Exit criteria:
 - the first vertical slice and its bridge-to-target landing path are explicit
 - downstream record-family contracts, enum vocabularies, and checkpoint value
   shapes are frozen before broad parallel implementation begins
+- no target record field points to an undefined shared type
+- no target package placement is left to implementation-time judgment
+- no target artifact layout is left to local command or author preference
 - broad target package scaffolding does not begin before these contracts are
   frozen
 
@@ -183,8 +196,16 @@ Deliver:
 - freeze the detailed product, taxonomy, id, ordering, fingerprint, temporal,
   and bridge-mapping contracts on the owner pages instead of restating them
   here
+- frozen scalar, tuple, reusable ref, and shared-value contracts for target
+  products
+- frozen target dataset packaging, kernel filenames, and persistence layout
 - freeze the downstream record-family contracts needed for the first
   `EconomicFacts -> ReconciliationState -> Checkpoint` consumer path
+- explicit review-sidecar policy and shared review-attachment rules
+- explicit package landing rules for target-stage code while bridge packages
+  still exist
+- corrected first-slice evidence-member, observation-class, and
+  selection-group taxonomy
 - unified adapter product and facet prep where it removes first-slice drift,
   without broad family migration or wrapper lanes
 - one named first vertical slice with parity and replay gates
@@ -202,6 +223,9 @@ Exit criteria:
   artifact shapes before implementation slices start landing in parallel
 - shared gap, readiness, and checkpoint assertion artifacts are frozen down to
   stable ids, ordering, serialization, and fingerprint rules
+- no target record field still points to an undefined shared type
+- no target package placement is left to implementation-time judgment
+- no target artifact layout is left to local command or author preference
 - broad implementation can start without each stage inventing its own meaning
   for gaps, claims, checkpoint acceptance, or fingerprints
 - broad implementation does not start with target package scaffolding that
@@ -320,7 +344,7 @@ Deliver:
 - trust level and acceptance basis
 - intentional opening-state adoption with provenance
 - manual balance submission as typed checkpoint-owned input
-- `CheckpointAssertionValue`, frozen `assertion_kind` vocabulary, and the
+- `AssertionValue`, frozen `assertion_kind` vocabulary, and the
   bounded first consumer path documented in
   [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
 

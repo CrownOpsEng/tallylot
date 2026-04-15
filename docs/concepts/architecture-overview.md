@@ -89,6 +89,12 @@ Use these pages as the owning contract set:
   during migration.
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
   Target stage products, responsibilities, and handoff guarantees.
+- [Target Contract Primitives](../reference/target-contract-primitives.md)
+  Shared target scalar forms, tuple contracts, dataset ids, and reusable value
+  primitives.
+- [Target Product Artifacts](../reference/target-product-artifacts.md)
+  Forward-looking target dataset packaging, kernel filenames, and sidecar
+  locations.
 - [First Slice Contract](../reference/first-slice-contract.md)
   Bounded Coinbase-first parity, replay, and allowed-drift contract.
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
@@ -107,6 +113,8 @@ Use these pages as the owning contract set:
 Owner-page rule:
 
 - bounded slice references live under `docs/reference/`
+- primitive and artifact authorities are split into dedicated reference pages
+  so owner pages do not compete on low-level wire details
 - numbered program sequencing lives only in [ROADMAP.md](../../ROADMAP.md)
 
 ## Read Next
@@ -115,6 +123,8 @@ Owner-page rule:
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
+- [Target Contract Primitives](../reference/target-contract-primitives.md)
+- [Target Product Artifacts](../reference/target-product-artifacts.md)
 - [First Slice Contract](../reference/first-slice-contract.md)
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
 - [Domain Ontology](domain-ontology.md)

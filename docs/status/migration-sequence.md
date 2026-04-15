@@ -59,6 +59,8 @@ Owning contract pages:
 - [`docs/concepts/current-bridge-contracts.md`](../concepts/current-bridge-contracts.md)
 - [`docs/concepts/bridge-to-target-mapping.md`](../concepts/bridge-to-target-mapping.md)
 - [`docs/concepts/pipeline-stage-contracts.md`](../concepts/pipeline-stage-contracts.md)
+- [`docs/reference/target-contract-primitives.md`](../reference/target-contract-primitives.md)
+- [`docs/reference/target-product-artifacts.md`](../reference/target-product-artifacts.md)
 - [`docs/reference/first-slice-contract.md`](../reference/first-slice-contract.md)
 - [`docs/reference/first-downstream-slice-contract.md`](../reference/first-downstream-slice-contract.md)
 - [`docs/concepts/domain-ontology.md`](../concepts/domain-ontology.md)
@@ -72,6 +74,9 @@ These foundations are prerequisites, not later cleanup:
 - shared ontology and identity boundaries
 - shared gap and readiness model
 - shared checkpoint-assertion direction
+- shared primitive contracts for scalars, tuple refs, dataset ids, and
+  reusable target value shapes
+- shared target artifact packaging and kernel filename rules
 - target-product versioning, serialization, and fingerprint rules
 - kernel-and-envelope rules with stable rehydration joins
 - one bridge-to-target mapping page that owns how current adapter outputs map
@@ -110,6 +115,10 @@ Deliver before broad code changes:
 - one named first upstream slice and one named first downstream slice
 - clear bridge-versus-target ownership so later code increments do not
   re-decide naming, package placement, or stage boundaries
+- shared primitive contracts frozen
+- target artifact packaging frozen
+- review-sidecar policy frozen
+- package landing rules frozen
 
 Rules:
 
@@ -197,7 +206,7 @@ Deliver:
 
 - explicit checkpoint truth and acceptance basis
 - source-backed checkpoint evidence requirements
-- `CheckpointAssertionValue` plus frozen `assertion_kind` vocabulary
+- `AssertionValue` plus frozen `assertion_kind` vocabulary
 - trust level and adopted opening-state handling
 - checkpoint continuity reports
 
