@@ -122,6 +122,33 @@ Rules:
   redefine them into incompatible local variants
 - accepted checkpoint truth should be modeled as checkpoint assertions first
   and checkpoint containers second
+- checkpoint assertions carry one `CheckpointAssertionValue`, not one
+  untyped convenience payload
+
+## `CheckpointAssertionValue`
+
+`CheckpointAssertionValue` is the target union carried by
+`Checkpoint.accepted_value`.
+
+Variants:
+
+- `QuantityValue`
+- `MoneyValue`
+- `OwnerValue`
+- `LocationValue`
+
+Variant rules:
+
+- `QuantityValue` carries one signed quantity plus the subject references needed
+  to explain what was measured
+- `MoneyValue` carries one monetary amount plus one currency
+- `OwnerValue` carries one accepted ownership state over legal-owner,
+  beneficial-owner, or counterparty references
+- `LocationValue` carries one accepted location state
+- the union remains explicit so a later implementation cannot silently use one
+  scalar type to stand in for quantity, money, ownership, and location truth
+- checkpoint assertion ids and fingerprints must treat the accepted-value
+  variant and its canonical content as semantically relevant
 
 ## Valuation
 
@@ -375,39 +402,44 @@ Bridge-specific classification rules live in
 - do not force a docs-only bridge rename just to make the target vocabulary
   appear already implemented
 
-## Package Direction
+## Required Package Ownership
 
-The target package direction should follow the ontology and stage ownership:
+The target package layout follows stage ownership and is not advisory.
 
-- `domain/claims/` for source-local claim types
-- `domain/economics/` for economic events, legs, valuations, settlement, and
-  lifecycle state
-- `domain/reconciliation/` for continuity, linkage, readiness, and checkpoint
-  candidacy
-- `domain/checkpoints/` for accepted checkpoint truth and checkpoint
-  assertions
+Required domain ownership:
+
+- `domain/evidence/` for evidence-member identity, typed observations, and
+  other source-local evidence concepts
+- `domain/claims/` for source-local claim types and interpretation-group
+  semantics
+- `domain/economics/` for economic events, economic legs, valuations,
+  settlement state, and lifecycle state
+- `domain/reconciliation/` for continuity segments, link state, balance
+  targets, readiness reducers, and checkpoint candidacy
+- `domain/checkpoints/` for accepted checkpoint truth, checkpoint assertions,
+  and `CheckpointAssertionValue`
 - `domain/accounting/` for journals, entries, postings, and validation outputs
-- `domain/tax/` for tax inputs, policy contracts, carry-forward state, and
-  outputs
+- `domain/tax/` for tax determinants, basis transitions, tax-policy contracts,
+  carry-forward state, and outputs
 
-Suggested application ownership:
+Required application ownership:
 
-- `application/intake/` for capture planning, apply, and evidence selection
-- `application/evidence/` for shared statement extraction and provenance
-  locator handling
+- `application/intake/` for capture planning and apply
+- `application/evidence/` for shared statement extraction, evidence selection,
+  and provenance locator handling
 - `application/profiling/` for capture profile construction, inventory
   inspection, and timezone review
 - `application/normalization/` for evidence-to-claim translation planning and
   current bridge artifact production
 - `application/normalization/assembly/` for deterministic merge of accepted
   capture outputs into assembled source datasets
-- `application/reconciliation/` for links, continuity, readiness reducers, and
-  checkpoint candidates
+- `application/reconciliation/` for continuity, linkage, balance-target
+  evaluation, readiness reducers, and checkpoint candidates
 - `application/checkpoints/` for checkpoint evidence assembly, manual balance
   submission validation, and checkpoint acceptance
 - `application/accounting/` for journal expansion, validation, and summaries
-- `application/tax/` for tax-input assembly, policy selection, and tax-output
-  rendering
+- `application/tax/` for tax-input assembly, basis transitions, policy
+  selection, and tax-output rendering
 - `application/outputs/` for downstream renderer orchestration
 
 Boundary rules:
@@ -417,5 +449,12 @@ Boundary rules:
 - `application/` depends on domain and ports
 - `domain/` has no infrastructure imports
 
-This is target direction only. It does not claim the current runtime already
-uses that package layout.
+Implementation-shaping rule:
+
+- use this page plus
+  [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
+  when choosing where new target-stage work lands
+- do not leave package placement to drafting-time judgment once the target
+  contract already names the owning stage
+- this page defines the required target ownership model; it does not claim the
+  current runtime already uses that package layout

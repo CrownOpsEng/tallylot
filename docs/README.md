@@ -28,6 +28,7 @@ model, artifact contracts, and repo standards.
 - [Bridge-to-target mapping](concepts/bridge-to-target-mapping.md)
 - [Pipeline stage contracts](concepts/pipeline-stage-contracts.md)
 - [First-slice contract](reference/first-slice-contract.md)
+- [First downstream slice contract](reference/first-downstream-slice-contract.md)
 - [Domain ontology](concepts/domain-ontology.md)
 - [Reconciliation and tax architecture](concepts/reconciliation-tax-architecture.md)
 - [Engineering standards](standards/engineering.md)
@@ -71,6 +72,7 @@ below when you need the detailed procedure for one stage of the workflow.
 <!-- docs-maintenance:start reference -->
 - [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
 - [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the default Coinbase-first proto-EvidenceSet and proto-ClaimSet increment.
+- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the first Coinbase-first EconomicFacts, ReconciliationState, and Checkpoint increment.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
 - [Wallet Inventory Artifacts](reference/wallet-inventory-artifacts.md): Artifact contract for location inventory outputs and evidence rows.
 - [Timezone Validation Artifacts](reference/timezone-validation-artifacts.md): Artifact contract for timezone provenance outputs and validation issues.

@@ -8,19 +8,25 @@ status: active
 nav_order: 20
 ---
 
-Use this document to implement the next phase without a big-bang refactor. The
-goal is to move from the current bridge into the target pipeline with explicit
-parity gates, clean retirement rules, and no wrapper-lane sprawl.
+Use this document to implement the next increment without a big-bang refactor.
+The goal is to move from the current bridge into the target pipeline with
+explicit parity gates, clean retirement rules, and no wrapper-lane sprawl.
 
-## Migration Objectives
+## Roadmap Ownership
 
-- preserve current working behavior while new foundations land
-- avoid freezing the current bridge as the long-term architecture center
-- keep adapters and services shippable at every checkpoint
-- keep CoinTracking as one edge projection and oracle family, not a migration
-  anchor
-- preserve current bridge truth while establishing the target stage and
-  ontology ownership model
+`ROADMAP.md` is the only numbered implementation program of record.
+
+Use this page for:
+
+- landing rules for the next increment
+- bridge-retirement rules
+- parity and replay expectations between increments
+
+Do not use this page for:
+
+- competing phase numbers
+- alternate phase labels
+- a second copy of roadmap sequencing
 
 ## Current Bridge
 
@@ -46,14 +52,7 @@ Current live bridge contract owner:
 
 The target architecture lands as these final products:
 
-1. `EvidenceSet`
-2. `ClaimSet`
-3. `EconomicFacts`
-4. `ReconciliationState`
-5. `Checkpoint`
-6. `Journal`
-7. `TaxInputs`
-8. `TaxOutputs`
+`EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
 Owning contract pages:
 
@@ -61,6 +60,7 @@ Owning contract pages:
 - [`docs/concepts/bridge-to-target-mapping.md`](../concepts/bridge-to-target-mapping.md)
 - [`docs/concepts/pipeline-stage-contracts.md`](../concepts/pipeline-stage-contracts.md)
 - [`docs/reference/first-slice-contract.md`](../reference/first-slice-contract.md)
+- [`docs/reference/first-downstream-slice-contract.md`](../reference/first-downstream-slice-contract.md)
 - [`docs/concepts/domain-ontology.md`](../concepts/domain-ontology.md)
 - [`docs/concepts/gaps-and-readiness.md`](../concepts/gaps-and-readiness.md)
 
@@ -71,67 +71,55 @@ These foundations are prerequisites, not later cleanup:
 - shared stage contracts
 - shared ontology and identity boundaries
 - shared gap and readiness model
-- shared `SubjectRef` rules
 - shared checkpoint-assertion direction
-- typed tax-policy selection boundary
-- target-product versioning, compatibility, serialization, and fingerprint
-  rules
+- target-product versioning, serialization, and fingerprint rules
 - kernel-and-envelope rules with stable rehydration joins
 - one bridge-to-target mapping page that owns how current adapter outputs map
   to proto-`EvidenceSet` and proto-`ClaimSet`
+- one bounded downstream slice page that owns the first
+  `EconomicFacts -> ReconciliationState -> Checkpoint` consumer path
 
 Rules:
 
-- no stage should invent an incompatible blocker category or readiness model
-- no stage should use `SubjectRef` as a substitute for real domain modeling
-- no stage should restate the target contracts in a competing document when an
-  owning contract page already exists
+- no stage may invent an incompatible blocker category or readiness model
+- no stage may use `SubjectRef` as a substitute for real domain modeling
+- no stage may restate target contracts in a competing document when an owning
+  contract page already exists
 
 ## Bridge-To-Target Landing Rules
 
 - [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md) owns the
   live-to-target transformation rules
-- [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) owns the
-  target product kernels, claim taxonomy, stable ids, ordering, serialization,
+- [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) own the
+  target product kernels, record families, stable ids, ordering, serialization,
   and fingerprint rules
 - [First Slice Contract](../reference/first-slice-contract.md) owns the bounded
-  Coinbase-first slice, including its replay and parity rules
+  Coinbase-first `EvidenceSet` and `ClaimSet` landing path
+- [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
+  owns the bounded first `EconomicFacts -> ReconciliationState -> Checkpoint`
+  landing path
 - broad unified-adapter family migration remains optional prep work, not a
-  hidden prerequisite for the first bounded increment
+  hidden prerequisite for the first bounded increments
 
-Default first-increment direction:
-
-- use the planner-enabled Coinbase retail export family plus statement-backed
-  balance observation flow unless the active filing workspace requires another
-  Tier A family to land first
-- use [First Slice Contract](../reference/first-slice-contract.md) as the
-  bounded default contract for the first increment instead of inferring extra
-  adapter inventory
-  from the repo
-
-## Phase Order
-
-### Phase 0. Shared Foundations, Contract Lock, And First-Increment Prep
+## Contract Lock
 
 Deliver before broad code changes:
 
 - aligned bridge, target, ontology, and support-model docs
-- freeze the detailed contract content on the owning concept and reference
-  pages instead of restating those semantics here
-- one named first vertical increment with parity and replay gates
-- clear bridge-versus-target ownership so later code increments do not re-decide
-  naming or stage boundaries
+- frozen downstream record-family contracts and shared support artifacts
+- one named first upstream slice and one named first downstream slice
+- clear bridge-versus-target ownership so later code increments do not
+  re-decide naming, package placement, or stage boundaries
 
 Rules:
 
-- do not start broad tax-engine work before these contracts are written down
-- do not let the bridge contract masquerade as the target ontology
-- do not make broad unified-adapter family migration a hidden prerequisite for
-  the first target-stage increment
 - do not start broad target package scaffolding before these contracts are
   frozen on their owner pages
+- do not let the bridge contract masquerade as the target ontology
+- do not leave gap ids, readiness ids, checkpoint assertion ids, or downstream
+  kernel families to implementation-time judgment
 
-### Phase 1. Formalize `EvidenceSet`
+## `EvidenceSet` Increment
 
 Deliver:
 
@@ -144,12 +132,12 @@ Rules:
 
 - evidence selection remains deterministic
 - evidence does not force economic meaning
-- evidence selection reasoning must survive beyond intake-time heuristics
+- evidence-selection reasoning must survive beyond intake-time heuristics
 - the first `EvidenceSet` increment may reuse current adapter boundaries as
   long as the mapping contract is explicit and no second architecture center is
   created
 
-### Phase 2. Introduce `ClaimSet`
+## `ClaimSet` Increment
 
 Deliver:
 
@@ -165,17 +153,19 @@ Rules:
 - ambiguous rows may remain claims without being forced into final economic,
   accounting, or tax meaning
 - adapters own source-local meaning only
-- the current bridge may remain as a bounded boundary during migration, but it must
-  stop forcing final semantics too early
-- the first `ClaimSet` increment must not require repo-wide dual-contract support
+- the current bridge may remain as a bounded boundary during migration, but it
+  must stop forcing final semantics too early
+- the first `ClaimSet` increment must not require repo-wide dual-contract
+  support
 
-### Phase 3. Land `EconomicFacts`
+## `EconomicFacts` Increment
 
 Deliver:
 
-- claim-to-economic compilation boundary
-- target-directed economic models aligned to the target ontology
-- explicit identity, settlement, lifecycle, and valuation handling
+- target-directed accepted economic truth through `EconomicEventRecord` and
+  `EconomicLegRecord`
+- frozen `event_family` and `leg_role` vocabularies on the owner page
+- claim-to-economic compilation decisions with stable adjudication records
 
 Rules:
 
@@ -184,27 +174,30 @@ Rules:
 - accepted economic meaning should move away from bridge activity-label
   centrality
 
-### Phase 4. Land `ReconciliationState`
+## `ReconciliationState` Increment
 
 Deliver:
 
-- explicit reconciliation completeness and continuity outputs
+- explicit `ContinuitySegmentRecord`, `LinkRecord`, `BalanceTargetRecord`, and
+  `CheckpointCandidateRecord` contracts
+- explicit completeness and continuity outputs
 - target gap and readiness adoption where the owning stage can support it
-- transfer linkage, balance targets, and checkpoint candidacy under one
-  reconciliation-owned product
 
 Rules:
 
 - reconciliation consumes accepted economic truth plus checkpoint evidence
 - exact balance assertions are one reconciliation input, not the whole
   reconciliation product
+- the first downstream slice may keep `LinkRecord` out of scope while the
+  remainder of the reconciliation contract is still frozen
 
-### Phase 5. Land `Checkpoint`
+## `Checkpoint` Increment
 
 Deliver:
 
 - explicit checkpoint truth and acceptance basis
 - source-backed checkpoint evidence requirements
+- `CheckpointAssertionValue` plus frozen `assertion_kind` vocabulary
 - trust level and adopted opening-state handling
 - checkpoint continuity reports
 
@@ -213,36 +206,41 @@ Rules:
 - checkpoint truth remains source-backed where filing readiness requires it
 - operator-confirmed balances may support runtime progress but do not become
   filing-ready checkpoint truth by default
+- the first downstream slice requires statement-backed checkpoint evidence
+  rather than operator-only acceptance
 
-### Phase 6. Land `Journal`
+## `Journal` Increment
 
 Deliver:
 
-- internal journal model
-- posting expansion and validation
+- `JournalEntryRecord`, `PostingRecord`, and `ValidationRecord`
+- posting expansion and validation surfaces
 - accounting-owned blockers
 
 Rules:
 
 - accounting validates accepted truth
 - accounting does not repair truth
+- posting determinants required for validation stay in the kernel contract
 
-### Phase 7. Land `TaxInputs` And `TaxOutputs`
+## `Tax` Increment
 
 Deliver:
 
-- `TaxInputs`
-- selected tax-policy execution
+- `TaxDeterminantRecord` and `BasisTransitionRecord`
+- selected tax-policy execution over `TaxInputs`
 - year-partitioned carry-forward state
-- policy-owned `TaxOutputs`
+- `TaxOutputRecord`, `CarryForwardRecord`, and `UnsupportedItemRecord`
 
 Rules:
 
 - tax outputs flow from `TaxInputs` through selected tax policies
 - tax policy does not decide source meaning, reconciliation truth, or
   checkpoint truth
+- tax determinants keep effective time, quantity, direction, and basis
+  transitions in the kernel
 
-### Phase 8. Retire Superseded Bridge Outputs And Assumptions
+## Bridge Retirement
 
 Retire or demote bridge outputs and assumptions only after:
 
@@ -266,12 +264,12 @@ Do not remove an older path until all relevant gates pass:
 
 The docs and control-plane baseline for this migration is:
 
-- target stage contracts, ontology, and gap/readiness ownership are already
-  separated into focused concept pages
+- target stage contracts, ontology, and gap/readiness ownership are separated
+  into focused owner pages
 - current-state docs keep current bridge terms where accuracy requires them
-- later implementation should rename the dev-only shared repo support package area
-  from `repo_support/` to `dev_support/`, but this remains future work until
-  the corresponding implementation increment lands
-- roadmap, migration, and architecture anchors must be updated together when a
+- later implementation should rename the dev-only shared repo support package
+  area from `repo_support/` to `dev_support/`, but that remains future work
+  until the corresponding implementation increment lands
+- roadmap, migration, and architecture anchors are updated together when a
   change updates stage ownership, trust-gate sequencing, or shared support
   contracts

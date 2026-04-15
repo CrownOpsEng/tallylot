@@ -82,6 +82,7 @@ Use these pages as the detailed contract owners:
 - [Current Bridge Contracts](current-bridge-contracts.md)
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
 - [First Slice Contract](../reference/first-slice-contract.md)
+- [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gaps And Readiness](gaps-and-readiness.md)
@@ -169,7 +170,12 @@ Inner-loop calculations for:
 
 must operate on compact typed records only.
 
-Hot-path data should include:
+Hot-path data should include the compact kernel fields carried by
+`EconomicEventRecord`, `EconomicLegRecord`, `ContinuitySegmentRecord`,
+`BalanceTargetRecord`, `CheckpointAssertionRecord`, `PostingRecord`,
+`ValidationRecord`, `TaxDeterminantRecord`, and `BasisTransitionRecord`.
+
+Required hot-path content includes:
 
 - stable ids
 - timestamps and effective times
@@ -216,8 +222,8 @@ stage actually uses, including:
 | Stage family | Required partition keys |
 | --- | --- |
 | Evidence and claims | `source`, `capture_uid`, `selection_group_id`, `claim_set_id` |
-| Reconciliation | `source`, `location`, `instrument`, `continuity_segment_id`, `checkpoint_date` |
-| Tax | `tax_year`, `beneficial_owner`, `basis_pool_ref` |
+| Reconciliation | `source`, `continuity_segment_id`, `balance_target_id`, `checkpoint_candidate_id` |
+| Tax | `tax_year`, `basis_pool_ref`, `determinant_id`, `basis_transition_id` |
 
 Use derived reporting projections instead of forcing every stage to key every
 record by every dimension.

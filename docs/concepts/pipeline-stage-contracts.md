@@ -32,15 +32,16 @@ The target runtime pipeline is:
 - no stage may suppress uncertainty that a later stage must still see
 - no stage may duplicate upstream semantic payloads unless the meaning has
   changed
-- target-product kernel rules in this page are authoritative; other docs may point
-  here but should not restate competing kernel, id, or fingerprint contracts
+- target-product kernel rules in this page are authoritative; other docs may
+  point here but should not restate competing kernel, id, or fingerprint
+  contracts
 
 ## Handoff Rules
 
-Every stage contract should answer four questions clearly:
+Every stage contract answers four questions:
 
 - what comes in
-- what the stage is allowed to decide
+- what the stage may decide
 - what comes out
 - what remains explicitly unresolved for later stages
 
@@ -61,24 +62,18 @@ Shared rules:
 - every target product carries a `schema_version`
 - `schema_version` is a product-level kernel field persisted once per emitted
   product beside the ordered kernel records for that product
-- per-record kernel field lists below do not repeat `schema_version` unless one
-  product truly carries it on every record
 - readers accept only the declared supported versions for that product
 - unknown schema versions fail fast
-- compatibility is forward-only by default; do not promise long-lived in-place
-  compatibility unless the owning product explicitly declares a narrower window
-- regeneration from upstream products or evidence is the normal recovery path
-  for incompatible target-stage artifacts
+- compatibility is forward-only by default; regeneration from upstream
+  products or evidence is the normal recovery path for incompatible artifacts
 - every target product defines one stable serialization and one stable
   fingerprint over semantically relevant kernel content
 - kernel fingerprints use stable UTF-8 JSON serialization with stable object
   key order and declared array order, hashed with SHA-256
 - fingerprints include semantically relevant upstream ids or upstream
-  fingerprint references plus owning stage decisions
+  fingerprint references plus owning-stage decisions
 - fingerprints exclude presentation-only formatting noise, explanation text,
   and sidecar payloads that do not change kernel meaning
-- sidecars and explanation payloads use their own schema and fingerprint rules
-  when they are persisted independently
 - every stable id defined on this page uses the format
   `<kind>:<sha256(lowercase-hex)>`
 - the hash input is one canonical UTF-8 JSON array of ordered components
@@ -88,8 +83,7 @@ Shared rules:
 
 ### Composite Tuple Rules
 
-- `SubjectRef` serializes and sorts as
-  `[subject_kind, subject_id]`
+- `SubjectRef` serializes and sorts as `[subject_kind, subject_id]`
 - `BasisPoolRef` serializes and sorts as
   `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_scope]`
 - when one stable-id recipe, ordering rule, or fingerprint input includes one
@@ -131,10 +125,6 @@ Use these bounded status vocabularies across target kernels:
   - `complete`
   - `partial`
   - `blocked`
-- `checkpoint_status`:
-  - `accepted`
-  - `adopted`
-  - `blocked`
 - `journal_status`:
   - `expanded`
   - `validated`
@@ -154,26 +144,23 @@ Owns:
 
 - selected evidence membership
 - superseded and blocked alternatives
-- deterministic evidence selection decisions
+- deterministic evidence-selection decisions
 - typed provenance and locator identity for selected evidence
 - source-local parsed observations that do not yet require economic meaning
 
-### EvidenceSet Kernel
+Record families:
 
-Kernel fields:
-
-- `evidence_set_id`
-- `source`
-- `adapter_id`
-- `capture_uid`
-- `member_id`
-- `selection_group_id`
-- `observation_id`
-- `selection_status`
-- `manifest_fingerprint_ref`
-- `plan_fingerprint_ref`
-
-### EvidenceSet Envelope
+- `EvidenceRecord`
+  - `evidence_set_id`
+  - `source`
+  - `adapter_id`
+  - `capture_uid`
+  - `member_id`
+  - `selection_group_id`
+  - `observation_id`
+  - `selection_status`
+  - `manifest_fingerprint_ref`
+  - `plan_fingerprint_ref`
 
 Envelope content may include:
 
@@ -184,7 +171,7 @@ Envelope content may include:
 - parse diagnostics
 - rich provenance payloads
 
-### EvidenceSet Stable Ids
+Stable ids:
 
 - `evidence_set_id` identifies one bounded evidence emission for one source,
   adapter, capture, and selection-group scope
@@ -209,7 +196,7 @@ Envelope content may include:
 - `observation_anchor` is the stable row, page, anchor, or typed observation
   locator emitted for that observation
 
-### EvidenceSet Ordering
+Ordering:
 
 - sort by `source`
 - then `capture_uid`
@@ -218,17 +205,17 @@ Envelope content may include:
 - then `member_id`
 - then `observation_id`
 
-### EvidenceSet Serialization
+Serialization:
 
-- serialize kernel records only
+- serialize `EvidenceRecord` rows only
 - use stable object-key ordering
-- preserve the declared kernel record order above
+- preserve the declared evidence order above
 - represent timestamps and `Decimal` values using the repo's stable string
   forms so the fingerprint is independent of language runtime defaults
 
-### EvidenceSet Fingerprint Inputs
+Fingerprint inputs:
 
-- kernel records in canonical order
+- canonical `EvidenceRecord` rows
 - `schema_version`
 - `manifest_fingerprint_ref`
 - `plan_fingerprint_ref`
@@ -254,21 +241,28 @@ Owns:
   available
 - claim-owned issues and reviews
 
-### ClaimSet Kernel
+Record families:
 
-Kernel fields:
-
-- `claim_set_id`
-- `claim_id`
-- `claim_family`
-- `claim_status`
-- `interpretation_group_id`
-- `evidence_member_refs`
-- `effective_at`
-- `effective_precision`
-- `provenance_refs`
-
-### ClaimSet Envelope
+- `ClaimRecord`
+  - `claim_set_id`
+  - `claim_id`
+  - `claim_family`
+  - `claim_status`
+  - `interpretation_group_id`
+  - `evidence_member_refs`
+  - `effective_at`
+  - `effective_precision`
+  - `provenance_refs`
+- `CompilationDecisionRecord`
+  - `claim_set_id`
+  - `adjudication_record_id`
+  - `interpretation_group_id`
+  - `compilation_outcome`
+  - `accepted_claim_refs`
+  - `rejected_claim_refs`
+  - `deferred_claim_refs`
+  - `resolution_basis`
+  - `blocking_gap_refs`
 
 Envelope content may include:
 
@@ -301,20 +295,22 @@ Rules:
 
 - secondary docs may reference these claim families, but they must not publish
   competing repo-wide family lists
-- later slices may use canonical families that are out of scope for the default
-  first slice without redefining the shared vocabulary
+- later slices may use canonical families that are out of scope for the
+  default first slice without redefining the shared vocabulary
 
-### ClaimSet Stable Ids
+Stable ids:
 
 - `claim_set_id` identifies one bounded semantic emission over one evidence set
 - `claim_id` identifies one claim family member with one stable semantic role
 - `interpretation_group_id` identifies one mutually exclusive claim bundle
-- `claim_set_id` uses component array
-  `[evidence_set_id, claim_emitter_id]`
+- `adjudication_record_id` identifies one compilation-decision record
+- `claim_set_id` uses component array `[evidence_set_id, claim_emitter_id]`
 - `claim_id` uses component array
   `[claim_set_id, claim_family, claim_anchor, interpretation_group_id]`
 - `interpretation_group_id` uses component array
   `[claim_set_id, bundle_anchor, bundle_discriminator]`
+- `adjudication_record_id` uses component array
+  `[claim_set_id, interpretation_group_id, compilation_outcome, resolution_basis, accepted_claim_refs, rejected_claim_refs, deferred_claim_refs]`
 - `claim_emitter_id` is the stable id of the translation family or shared
   compiler boundary that emitted the claim set
 - `claim_anchor` is the stable provider-local anchor for one asserted meaning;
@@ -325,81 +321,6 @@ Rules:
 - `bundle_discriminator` is `default` when one anchor has exactly one bundle;
   otherwise use `alt:1`, `alt:2`, and so on in canonical bundle order under
   that anchor
-
-### ClaimSet Ordering
-
-- sort by tuple
-  `[claim_family, effective_at_or_null, claim_id, interpretation_group_id]`
-- use JSON `null` for `effective_at_or_null` when the claim has no effective
-  time
-
-### ClaimSet Serialization
-
-- serialize kernel records only
-- use stable object-key ordering
-- preserve the declared claim order above
-- include evidence-member refs and provenance refs in sorted order
-
-### ClaimSet Fingerprint Inputs
-
-- kernel records in canonical order
-- `schema_version`
-- `claim_set_id`
-- referenced `EvidenceSet` ids or fingerprints
-- `interpretation_group_id`
-
-Must guarantee:
-
-- source-local semantics only
-- preserved ambiguity where one safe final interpretation is unavailable
-- provenance for every claim
-- adapters may add provider-local subtyping, but they must preserve the shared
-  claim-family distinctions so later compilation remains interoperable
-
-Must not:
-
-- force unresolved meaning into final economic or policy interpretations
-- silently discard materially relevant alternative interpretations
-
-### ClaimSet -> EconomicFacts Adjudication
-
-The compiler owns adjudication between `ClaimSet` and `EconomicFacts`.
-
-`InterpretationGroup`:
-
-- one stable `interpretation_group_id`
-- one bounded set of mutually exclusive claims or claim bundles
-- one status describing whether the group is still unresolved, accepted, or
-  blocked
-- one shared contract that keeps mutually exclusive meanings explicit instead
-  of flattening them into one guessed record
-
-`CompilationDecision`:
-
-- one stable `adjudication_record_id`
-- one `compilation_outcome`
-- accepted or rejected claim references
-- one resolution basis describing why the compiler accepted, deferred, or
-  blocked the interpretation group
-
-### CompilationDecision Kernel
-
-Kernel fields:
-
-- `claim_set_id`
-- `adjudication_record_id`
-- `interpretation_group_id`
-- `compilation_outcome`
-- `accepted_claim_refs`
-- `rejected_claim_refs`
-- `deferred_claim_refs`
-- `resolution_basis`
-- `blocking_gap_refs`
-
-Stable ids:
-
-- `adjudication_record_id` uses component array
-  `[claim_set_id, interpretation_group_id, compilation_outcome, resolution_basis, accepted_claim_refs, rejected_claim_refs, deferred_claim_refs]`
 
 Controlled `resolution_basis` vocabulary:
 
@@ -413,23 +334,42 @@ Controlled `resolution_basis` vocabulary:
 
 Ordering:
 
-- sort by `interpretation_group_id`
-- then `adjudication_record_id`
+- `ClaimRecord` rows sort by tuple
+  `[claim_family, effective_at_or_null, claim_id, interpretation_group_id]`
+- use JSON `null` for `effective_at_or_null` when the claim has no effective
+  time
+- `CompilationDecisionRecord` rows sort by
+  `[interpretation_group_id, adjudication_record_id]`
 
 Serialization:
 
-- serialize kernel decision records only
+- serialize `ClaimRecord` rows and `CompilationDecisionRecord` rows as separate
+  ordered arrays
 - use stable object-key ordering
-- preserve sorted claim-ref and gap-ref arrays
+- preserve the declared claim and decision order above
+- sort `evidence_member_refs`, `provenance_refs`, `accepted_claim_refs`,
+  `rejected_claim_refs`, `deferred_claim_refs`, and `blocking_gap_refs`
+  lexicographically
 
-Adjudication rules:
+Fingerprint inputs:
 
-- interpretation groups are bundle-atomic
-- the compiler may accept one whole interpretation group, block one whole
-  interpretation group, or defer one whole interpretation group
-- partial emission is allowed only across independent interpretation groups
-- partial emission is never allowed by accepting only part of one mutually
-  dependent group
+- canonical `ClaimRecord` rows
+- canonical `CompilationDecisionRecord` rows
+- `schema_version`
+- referenced `EvidenceSet` ids or fingerprints
+
+Must guarantee:
+
+- source-local semantics only
+- preserved ambiguity where one safe final interpretation is unavailable
+- provenance for every claim
+- adapters may add provider-local subtyping, but they must preserve the shared
+  claim-family distinctions so later compilation remains interoperable
+
+Must not:
+
+- force unresolved meaning into final economic or policy interpretations
+- silently discard materially relevant alternative interpretations
 
 Handoff to `EconomicFacts`:
 
@@ -451,80 +391,99 @@ Owns:
 - stable economic event and leg structure
 - explicit remaining ambiguity that is still economically safe to preserve
 
-### EconomicFacts Kernel
+Record families:
 
-Kernel fields:
+- `EconomicEventRecord`
+  - `event_id`
+  - `event_family`
+  - `adjudication_record_id`
+  - `accepted_claim_refs`
+  - `effective_at`
+  - `effective_precision`
+  - `recorded_at`
+  - `settlement_state`
+  - `lifecycle_state`
+  - `legal_owner_ref_or_null`
+  - `beneficial_owner_ref_or_null`
+  - `counterparty_ref_or_null`
+  - `supersedes_event_id_or_null`
+- `EconomicLegRecord`
+  - `leg_id`
+  - `event_id`
+  - `leg_role`
+  - `subject_ref`
+  - `instrument_ref_or_null`
+  - `location_ref_or_null`
+  - `quantity`
+  - `valuation_ref_or_null`
 
-- `event_id`
-- `event_family`
-- `leg_id`
-- `accepted_claim_refs`
-- `adjudication_record_id`
-- `effective_at`
-- `effective_precision`
-- `recorded_at`
-- `settlement_state`
-- `lifecycle_state`
-- `supersedes_event_id`
+Controlled vocabularies:
 
-### EconomicFacts Envelope
+- `event_family`:
+  - `asset_movement`
+  - `cash_movement`
+  - `obligation_or_right`
+  - `settlement`
+  - `collateral_change`
+  - `financing_flow`
+  - `fee_or_rebate`
+  - `withholding`
+  - `lifecycle_restructure`
+  - `correction`
+- `leg_role`:
+  - `holding_change`
+  - `cash_change`
+  - `obligation_change`
+  - `settlement_change`
+  - `collateral_change`
+  - `financing_change`
+  - `fee`
+  - `rebate`
+  - `withholding`
 
 Envelope content may include:
 
 - detailed valuations
-- ownership and counterparty context
+- ownership and counterparty explanation
 - explanation of accepted identity seams
 - supporting claim traces
 - review context carried forward for audit
 
-### EconomicFacts Stable Ids
+Stable ids:
 
 - `event_id` identifies one accepted economic event
 - `leg_id` identifies one stable leg under one accepted event
-- `adjudication_record_id` identifies one compiler decision record
 - `event_id` uses component array `[adjudication_record_id, event_index]`
-- `leg_id` uses component array `[event_id, leg_index]`
+- `leg_id` uses component array `[event_id, leg_role, subject_ref, leg_index]`
 - `event_index` and `leg_index` are zero-based canonical positions in declared
   event and leg order
 
-### EconomicFacts Ordering
+Ordering:
 
-- sort by `effective_at` when present
-- otherwise by `recorded_at`
+- `EconomicEventRecord` rows sort by `effective_at` when present
+- otherwise sort by `recorded_at`
 - then `event_id`
-- then `leg_id`
+- `EconomicLegRecord` rows sort by `[event_id, leg_id]`
 
-### EconomicFacts Serialization
+Serialization:
 
-- serialize kernel event records and kernel leg records only
+- serialize `EconomicEventRecord` rows and `EconomicLegRecord` rows as separate
+  ordered arrays
 - use stable object-key ordering
 - preserve the declared event and leg order above
 
-### EconomicFacts Fingerprint Inputs
+Fingerprint inputs:
 
-- kernel event and leg records in declared order
+- canonical `EconomicEventRecord` rows
+- canonical `EconomicLegRecord` rows
 - `schema_version`
-- accepted claim refs
-- `adjudication_record_id`
-- supersession links
+- referenced `CompilationDecisionRecord` ids
 
-Must support:
-
-- holdings movements
-- cash movements
-- obligations and rights
-- settlements
-- collateral changes
-- financing flows
-- fees, rebates, and withholding
-- corrections and supersession chains
-- corporate actions
-- restructurings
-- lifecycle-heavy activity
-
-Rules:
+Must guarantee:
 
 - accepted event families stay jurisdiction-neutral and output-neutral
+- event and leg records carry the computation-critical determinants needed for
+  later reconciliation, checkpointing, accounting, and tax
 - corrections preserve supersession lineage instead of mutating accepted
   economic truth in place
 - unresolved economic detail may remain explicit only where later stages can
@@ -534,11 +493,13 @@ Must not:
 
 - collapse to spot-trade assumptions
 - let output hints drive core behavior
+- push leg quantity, location, or instrument truth into envelopes only
 
 Handoff to `ReconciliationState`:
 
-- `EconomicFacts` provides accepted economic events, legs, identity seams,
-  settlement links, lifecycle state, and valuations where they are already safe
+- `EconomicFacts` provides accepted economic events, economic legs, identity
+  seams, settlement links, lifecycle state, and valuation references where
+  they are already safe
 - it does not claim that continuity is complete, transfers are fully linked, or
   checkpoint truth is accepted
 
@@ -558,20 +519,68 @@ Owns:
 - checkpoint candidacy derived from reconciled economics plus checkpoint
   evidence
 
-### ReconciliationState Kernel
+Record families:
 
-Kernel fields:
+- `ContinuitySegmentRecord`
+  - `continuity_segment_id`
+  - `source`
+  - `subject_ref`
+  - `segment_start_at_or_null`
+  - `segment_start_precision_or_null`
+  - `segment_end_at_or_null`
+  - `segment_end_precision_or_null`
+  - `reconciliation_status`
+  - `checkpoint_date_or_null`
+- `LinkRecord`
+  - `link_id`
+  - `continuity_segment_id`
+  - `link_kind`
+  - `left_event_ref`
+  - `right_event_ref`
+  - `link_status`
+- `BalanceTargetRecord`
+  - `balance_target_id`
+  - `continuity_segment_id`
+  - `subject_ref`
+  - `target_kind`
+  - `target_as_of_at`
+  - `target_precision`
+  - `expected_value_ref`
+  - `observed_value_ref_or_null`
+  - `balance_target_status`
+- `CheckpointCandidateRecord`
+  - `checkpoint_candidate_id`
+  - `continuity_segment_id`
+  - `subject_ref`
+  - `checkpoint_date`
+  - `candidate_status`
+  - `supporting_balance_target_refs`
+  - `supporting_evidence_refs`
 
-- `reconciliation_state_id`
-- `continuity_segment_id`
-- `link_id`
-- `checkpoint_candidate_id`
-- `subject_ref`
-- `reconciliation_status`
-- `balance_target_refs`
-- `checkpoint_date`
+Controlled vocabularies:
 
-### ReconciliationState Envelope
+- `link_kind`:
+  - `transfer_pair`
+  - `settlement_pair`
+- `link_status`:
+  - `linked`
+  - `candidate`
+  - `blocked`
+  - `superseded`
+- `target_kind`:
+  - `exact_balance`
+  - `range_balance`
+  - `continuity_anchor`
+- `balance_target_status`:
+  - `matched`
+  - `mismatched`
+  - `missing_observation`
+  - `blocked`
+- `candidate_status`:
+  - `ready`
+  - `partial`
+  - `blocked`
+  - `superseded`
 
 Envelope content may include:
 
@@ -581,45 +590,50 @@ Envelope content may include:
 - comparison traces
 - stage-owned gap and readiness sidecars
 
-### ReconciliationState Stable Ids
+Stable ids:
 
-- `reconciliation_state_id` identifies one persisted reconciliation product
 - `continuity_segment_id` identifies one bounded continuity window
 - `link_id` identifies one owned transfer or settlement linkage
+- `balance_target_id` identifies one reconciliation-owned balance assertion
+  target
 - `checkpoint_candidate_id` identifies one reconciliation-owned checkpoint
   proposal
 - `continuity_segment_id` uses component array
-  `[source, subject_ref, segment_start_or_null, segment_end_or_null]`
-- `link_id` uses component array `[continuity_segment_id, link_index]`
+  `[source, subject_ref, segment_start_at_or_null, segment_start_precision_or_null, segment_end_at_or_null, segment_end_precision_or_null]`
+- `link_id` uses component array
+  `[continuity_segment_id, link_kind, left_event_ref, right_event_ref]`
+- `balance_target_id` uses component array
+  `[continuity_segment_id, subject_ref, target_kind, target_as_of_at, target_precision, expected_value_ref]`
 - `checkpoint_candidate_id` uses component array
-  `[checkpoint_date, subject_ref, continuity_segment_id, candidate_index]`
-- `reconciliation_state_id` uses component array
+  `[continuity_segment_id, subject_ref, checkpoint_date, supporting_balance_target_refs, supporting_evidence_refs]`
+
+Ordering:
+
+- `ContinuitySegmentRecord` rows sort by
+  `[checkpoint_date_or_null, source, subject_ref, continuity_segment_id]`
+- `LinkRecord` rows sort by
+  `[continuity_segment_id, link_kind, left_event_ref, right_event_ref, link_id]`
+- `BalanceTargetRecord` rows sort by
+  `[continuity_segment_id, subject_ref, target_as_of_at, balance_target_id]`
+- `CheckpointCandidateRecord` rows sort by
   `[checkpoint_date, subject_ref, continuity_segment_id, checkpoint_candidate_id]`
-- `segment_start_or_null` and `segment_end_or_null` use canonical timestamp
-  scalars or JSON `null`
-- `link_index` and `candidate_index` are zero-based canonical positions in
-  declared order
 
-### ReconciliationState Ordering
+Serialization:
 
-- sort by `checkpoint_date`
-- then `continuity_segment_id`
-- then `link_id`
-- then `checkpoint_candidate_id`
-
-### ReconciliationState Serialization
-
-- serialize kernel reconciliation records only
+- serialize each reconciliation record family as its own ordered array
 - use stable object-key ordering
-- preserve the declared reconciliation order above
+- preserve the declared order above
+- sort `supporting_balance_target_refs` and `supporting_evidence_refs`
+  lexicographically
 
-### ReconciliationState Fingerprint Inputs
+Fingerprint inputs:
 
-- kernel reconciliation records in declared order
+- canonical `ContinuitySegmentRecord` rows
+- canonical `LinkRecord` rows
+- canonical `BalanceTargetRecord` rows
+- canonical `CheckpointCandidateRecord` rows
 - `schema_version`
 - referenced `EconomicFacts` ids or fingerprints
-- referenced balance-target ids
-- referenced checkpoint evidence ids
 
 Must guarantee:
 
@@ -633,6 +647,7 @@ Must not:
 
 - reclassify upstream economics to make continuity easier
 - bury missing evidence inside whole-dataset summaries
+- use stable-id recipes that depend on undeclared fields or hidden indexes
 
 Handoff to `Checkpoint`:
 
@@ -652,64 +667,33 @@ Owns:
 - adopted opening state when intentionally used
 - acceptance basis, trust level, and continuity into accepted state
 
-### Checkpoint Kernel
+Record families:
 
-Kernel fields:
+- `CheckpointRecord`
+  - `checkpoint_id`
+  - `asserted_as_of_at`
+  - `ordered_checkpoint_assertion_ids`
+- `CheckpointAssertionRecord`
+  - `checkpoint_assertion_id`
+  - `checkpoint_id`
+  - `subject_ref`
+  - `assertion_kind`
+  - `asserted_as_of_at`
+  - `accepted_value`
+  - `trust_level`
+  - `acceptance_basis`
+  - `evidence_class`
+  - `continuity_proof`
+  - `reconciliation_refs`
 
-- `checkpoint_id`
-- `checkpoint_assertion_id`
-- `subject_ref`
-- `assertion_kind`
-- `asserted_as_of_at`
-- `accepted_value`
-- `trust_level`
-- `acceptance_basis`
-- `evidence_class`
-- `continuity_proof`
+Controlled vocabularies:
 
-### Checkpoint Envelope
-
-Envelope content may include:
-
-- supporting evidence refs
-- supporting provenance detail
-- continuity explanation
-- opening-state adoption detail
-- acceptance rationale
-
-### Checkpoint Stable Ids
-
-- `checkpoint_id` identifies one accepted checkpoint container
-- `checkpoint_assertion_id` identifies one accepted checkpoint truth record for
-  one subject and one as-of point
-- `checkpoint_id` uses component array
-  `[asserted_as_of_at, ordered_checkpoint_assertion_ids]`
-- `checkpoint_assertion_id` uses component array
-  `[assertion_kind, asserted_as_of_at, subject_ref.subject_kind, subject_ref.subject_id]`
-- `ordered_checkpoint_assertion_ids` is the canonical ordered list of
-  assertion ids persisted in that accepted checkpoint container
-
-### Checkpoint Ordering
-
-- sort by tuple
-  `[asserted_as_of_at, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
-
-### Checkpoint Serialization
-
-- serialize kernel checkpoint assertion records only
-- use stable object-key ordering
-- preserve the declared checkpoint order above
-
-### Checkpoint Fingerprint Inputs
-
-- kernel checkpoint assertion records in canonical order
-- `schema_version`
-- referenced `ReconciliationState` ids or fingerprints
-- referenced accepted evidence ids
-- referenced opening-state ids when adoption is used
-
-Controlled checkpoint vocabularies:
-
+- `assertion_kind`:
+  - `position_quantity`
+  - `cash_quantity`
+  - `basis_value`
+  - `ownership_state`
+  - `location_state`
 - `trust_level`:
   - `filing_ready`
   - `analysis_ready`
@@ -732,6 +716,50 @@ Controlled checkpoint vocabularies:
   - `opening_state_rollforward`
   - `partial_continuity`
 
+Envelope content may include:
+
+- supporting evidence refs
+- supporting provenance detail
+- continuity explanation
+- opening-state adoption detail
+- acceptance rationale
+
+Stable ids:
+
+- `checkpoint_id` identifies one accepted checkpoint container
+- `checkpoint_assertion_id` identifies one accepted checkpoint truth record for
+  one subject and one as-of point
+- `checkpoint_id` uses component array
+  `[asserted_as_of_at, ordered_checkpoint_assertion_ids]`
+- `checkpoint_assertion_id` uses component array
+  `[assertion_kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
+- `accepted_value_fingerprint` is the canonical fingerprint of one
+  `CheckpointAssertionValue` variant from
+  [Domain Ontology](domain-ontology.md)
+
+Ordering:
+
+- `CheckpointRecord` rows sort by `[asserted_as_of_at, checkpoint_id]`
+- `CheckpointAssertionRecord` rows sort by tuple
+  `[asserted_as_of_at, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
+
+Serialization:
+
+- serialize `CheckpointRecord` rows and `CheckpointAssertionRecord` rows as
+  separate ordered arrays
+- use stable object-key ordering
+- preserve the declared checkpoint order above
+- sort `reconciliation_refs` lexicographically
+
+Fingerprint inputs:
+
+- canonical `CheckpointRecord` rows
+- canonical `CheckpointAssertionRecord` rows
+- `schema_version`
+- referenced `ReconciliationState` ids or fingerprints
+- referenced accepted evidence ids
+- referenced opening-state ids when adoption is used
+
 Minimum admissibility rules:
 
 - `filing_ready` requires:
@@ -739,7 +767,7 @@ Minimum admissibility rules:
   - `evidence_class` other than `operator_assertion`
   - `continuity_proof` other than `partial_continuity`
 - `analysis_ready` may use `operator_assertion` or `partial_continuity`, but
-  the lower-trust basis must stay explicit in the accepted checkpoint record
+  the lower-trust basis stays explicit in the accepted checkpoint record
 - `operator_only` is required when accepted checkpoint truth relies solely on
   operator assertion without a source-backed evidence class
 - `adopted_opening_state` remains a distinct acceptance basis and must preserve
@@ -777,18 +805,48 @@ Owns:
 - accounting validation results
 - accounting-owned gaps
 
-### Journal Kernel
+Record families:
 
-Kernel fields:
+- `JournalEntryRecord`
+  - `journal_id`
+  - `entry_id`
+  - `entry_kind`
+  - `effective_at`
+  - `effective_precision`
+  - `economic_event_refs`
+  - `checkpoint_assertion_refs`
+  - `journal_status`
+- `PostingRecord`
+  - `posting_id`
+  - `entry_id`
+  - `account_ref`
+  - `commodity_ref`
+  - `amount`
+  - `posting_side`
+  - `source_ref`
+- `ValidationRecord`
+  - `validation_id`
+  - `entry_id`
+  - `validation_kind`
+  - `validation_status`
+  - `blocking_gap_refs`
 
-- `journal_id`
-- `entry_id`
-- `posting_id`
-- `economic_event_refs`
-- `checkpoint_assertion_refs`
-- `journal_status`
+Controlled vocabularies:
 
-### Journal Envelope
+- `entry_kind`:
+  - `economic_event_entry`
+  - `checkpoint_opening_entry`
+  - `adjustment_entry`
+- `posting_side`:
+  - `debit`
+  - `credit`
+- `validation_kind`:
+  - `balanced`
+  - `commodity_balance`
+  - `unsupported_coverage`
+- `validation_status`:
+  - `passed`
+  - `blocked`
 
 Envelope content may include:
 
@@ -797,35 +855,44 @@ Envelope content may include:
 - renderer-facing annotations
 - accounting-owned gap sidecars
 
-### Journal Stable Ids
+Stable ids:
 
-- `journal_id` identifies one accounting emission
+- `journal_id` identifies one accounting emission over a canonical set of
+  upstream entries
 - `entry_id` identifies one journal entry
 - `posting_id` identifies one posting under one journal entry
+- `validation_id` identifies one validation result under one journal entry
 - `journal_id` uses component array
-  `[ordered_economic_event_refs, ordered_checkpoint_assertion_refs]`
-- `entry_id` uses component array `[journal_id, entry_index]`
-- `posting_id` uses component array `[entry_id, posting_index]`
-- `ordered_economic_event_refs` and `ordered_checkpoint_assertion_refs` use
-  the canonical reference ordering declared by the emitted journal product
-- `entry_index` and `posting_index` are zero-based canonical positions in
-  declared order
+  `[ordered_economic_event_refs, ordered_checkpoint_assertion_refs, ordered_entry_kinds]`
+- `entry_id` uses component array
+  `[journal_id, entry_kind, effective_at_or_null, economic_event_refs, checkpoint_assertion_refs]`
+- `posting_id` uses component array
+  `[entry_id, account_ref, commodity_ref, amount, posting_side, source_ref]`
+- `validation_id` uses component array `[entry_id, validation_kind]`
+- `ordered_economic_event_refs`, `ordered_checkpoint_assertion_refs`, and
+  `ordered_entry_kinds` are the canonical flattened journal-level arrays
+  derived from the emitted `JournalEntryRecord` rows
 
-### Journal Ordering
+Ordering:
 
-- sort by `journal_id`
-- then `entry_id`
-- then `posting_id`
+- `JournalEntryRecord` rows sort by `[effective_at_or_null, entry_kind, entry_id]`
+- `PostingRecord` rows sort by
+  `[entry_id, posting_side, account_ref, commodity_ref, posting_id]`
+- `ValidationRecord` rows sort by `[entry_id, validation_kind, validation_id]`
 
-### Journal Serialization
+Serialization:
 
-- serialize kernel journal records only
+- serialize each journal record family as its own ordered array
 - use stable object-key ordering
-- preserve the declared journal order above
+- preserve the declared order above
+- sort `economic_event_refs`, `checkpoint_assertion_refs`, and
+  `blocking_gap_refs` lexicographically
 
-### Journal Fingerprint Inputs
+Fingerprint inputs:
 
-- kernel journal records in canonical order
+- canonical `JournalEntryRecord` rows
+- canonical `PostingRecord` rows
+- canonical `ValidationRecord` rows
 - `schema_version`
 - referenced `EconomicFacts` ids
 - referenced `Checkpoint` assertion ids
@@ -835,10 +902,12 @@ Must guarantee:
 - deterministic posting expansion
 - explicit validation
 - explicit unsupported accounting coverage
+- posting determinants required for validation remain part of the kernel
 
 Must not:
 
 - become a truth repair layer
+- hide postings or validation blockers in envelopes only
 
 Handoff to downstream renderers:
 
@@ -859,20 +928,51 @@ Owns:
   truth
 - explicit tax-owned blockers where upstream truth is still not tax-complete
 
-### TaxInputs Kernel
+Record families:
 
-Kernel fields:
+- `TaxDeterminantRecord`
+  - `determinant_id`
+  - `determinant_family`
+  - `tax_year`
+  - `basis_pool_ref`
+  - `beneficial_owner_ref`
+  - `instrument_ref`
+  - `effective_at`
+  - `effective_precision`
+  - `quantity`
+  - `direction`
+  - `valuation_ref_or_null`
+  - `counterparty_ref_or_null`
+  - `economic_event_refs`
+  - `checkpoint_assertion_refs`
+  - `basis_transition_ref_or_null`
+- `BasisTransitionRecord`
+  - `basis_transition_id`
+  - `basis_pool_ref`
+  - `from_determinant_ref_or_null`
+  - `to_determinant_ref`
+  - `transition_kind`
 
-- `determinant_id`
-- `determinant_family`
-- `basis_pool_ref`
-- `beneficial_owner_ref`
-- `instrument_ref`
-- `economic_event_refs`
-- `checkpoint_assertion_refs`
-- `tax_year`
+Controlled vocabularies:
 
-### TaxInputs Envelope
+- `determinant_family`:
+  - `acquisition`
+  - `disposition`
+  - `income`
+  - `expense_or_fee`
+  - `financing_cost`
+  - `internal_transfer`
+  - `basis_adjustment`
+  - `corporate_action`
+- `direction`:
+  - `increase`
+  - `decrease`
+  - `neutral`
+- `transition_kind`:
+  - `pool_open`
+  - `pool_adjustment`
+  - `pool_close`
+  - `carry_forward`
 
 Envelope content may include:
 
@@ -881,59 +981,37 @@ Envelope content may include:
 - pool-transition explanation
 - tax-owned blocker detail
 
-### TaxInputs Stable Ids
+Stable ids:
 
 - `determinant_id` identifies one tax determinant
-- `basis_pool_ref` identifies one tax basis or pool seam reused across tax years
+- `basis_transition_id` identifies one basis or pool transition
 - `determinant_id` uses component array
-  `[tax_year, determinant_family, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_scope, determinant_anchor]`
-- `basis_pool_ref` serializes, sorts, and fingerprints using
-  `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_scope]`
-- `determinant_anchor` is the stable tax-owned anchor for one determinant under
-  one basis or pool scope
+  `[tax_year, determinant_family, basis_pool_ref, beneficial_owner_ref, instrument_ref, effective_at_or_null, effective_precision_or_null, quantity, direction, economic_event_refs, checkpoint_assertion_refs]`
+- `basis_transition_id` uses component array
+  `[basis_pool_ref, transition_kind, from_determinant_ref_or_null, to_determinant_ref]`
 
-### TaxInputs Ordering
+Ordering:
 
-- sort by tuple
-  `[tax_year, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_scope, determinant_family, determinant_id]`
+- `TaxDeterminantRecord` rows sort by tuple
+  `[tax_year, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_scope, determinant_family, effective_at_or_null, determinant_id]`
+- `BasisTransitionRecord` rows sort by
+  `[basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_scope, transition_kind, basis_transition_id]`
 
-### TaxInputs Serialization
+Serialization:
 
-- serialize kernel determinant records only
+- serialize `TaxDeterminantRecord` rows and `BasisTransitionRecord` rows as
+  separate ordered arrays
 - use stable object-key ordering
-- preserve the declared determinant order above
+- preserve the declared determinant and transition order above
+- sort `economic_event_refs` and `checkpoint_assertion_refs` lexicographically
 
-### TaxInputs Fingerprint Inputs
+Fingerprint inputs:
 
-- kernel determinant records in canonical order
+- canonical `TaxDeterminantRecord` rows
+- canonical `BasisTransitionRecord` rows
 - `schema_version`
 - referenced `EconomicFacts` ids
 - referenced `Checkpoint` assertion ids
-- referenced basis-pool ids
-
-Minimum determinant families:
-
-- `acquisition`
-- `disposition`
-- `income`
-- `expense_or_fee`
-- `financing_cost`
-- `internal_transfer`
-- `basis_adjustment`
-- `corporate_action`
-
-Each determinant preserves, where applicable:
-
-- stable determinant identity
-- determinant family
-- effective time and temporal precision
-- instrument, pool, or other affected subject reference
-- quantity and direction
-- tax-relevant valuation
-- ownership or counterparty references
-- upstream economic-event references
-- accepted checkpoint or opening-state references when tax basis depends on them
-- basis or pool transition references
 
 Must guarantee:
 
@@ -948,6 +1026,8 @@ Must not:
 - embed one jurisdiction's output schema
 - decide source meaning, reconciliation truth, checkpoint truth, or accounting
   truth
+- push effective time, quantity, direction, or basis transitions into
+  envelopes only
 
 Handoff to `TaxOutputs`:
 
@@ -968,18 +1048,35 @@ Owns:
 - tax-policy explanations, limitations, and unsupported outputs
 - tax-owned blockers that survive policy execution
 
-### TaxOutputs Kernel
+Record families:
 
-Kernel fields:
+- `TaxOutputRecord`
+  - `tax_output_id`
+  - `policy_id`
+  - `output_family`
+  - `tax_year`
+  - `tax_status`
+  - `basis_pool_refs`
+- `CarryForwardRecord`
+  - `carry_forward_id`
+  - `tax_output_id`
+  - `basis_pool_ref`
+  - `next_tax_year`
+  - `state_fingerprint_ref`
+- `UnsupportedItemRecord`
+  - `unsupported_item_id`
+  - `tax_output_id`
+  - `determinant_ref`
+  - `blocking_gap_refs`
 
-- `tax_output_id`
-- `policy_id`
-- `output_family`
-- `tax_year`
-- `basis_pool_refs`
-- `tax_status`
+Controlled vocabularies:
 
-### TaxOutputs Envelope
+- `output_family`:
+  - `realized_gains_schedule`
+  - `income_schedule`
+  - `expense_schedule`
+  - `carry_forward_state`
+  - `unsupported_items_report`
 
 Envelope content may include:
 
@@ -988,30 +1085,39 @@ Envelope content may include:
 - carry-forward explanation
 - unsupported-coverage notes
 
-### TaxOutputs Stable Ids
+Stable ids:
 
 - `tax_output_id` identifies one policy-owned output emission
+- `carry_forward_id` identifies one carry-forward state record
+- `unsupported_item_id` identifies one persisted unsupported-item record
 - `tax_output_id` uses component array
-  `[policy_id, output_family, tax_year, ordered_basis_pool_refs]`
-- `ordered_basis_pool_refs` is the canonical ordered list of basis-pool tuple
-  references included in that emitted tax output
+  `[policy_id, output_family, tax_year, basis_pool_refs]`
+- `carry_forward_id` uses component array
+  `[tax_output_id, basis_pool_ref, next_tax_year]`
+- `unsupported_item_id` uses component array
+  `[tax_output_id, determinant_ref]`
 
-### TaxOutputs Ordering
+Ordering:
 
-- sort by `policy_id`
-- then `tax_year`
-- then `output_family`
-- then `tax_output_id`
+- `TaxOutputRecord` rows sort by
+  `[policy_id, tax_year, output_family, tax_output_id]`
+- `CarryForwardRecord` rows sort by
+  `[tax_output_id, next_tax_year, basis_pool_ref, carry_forward_id]`
+- `UnsupportedItemRecord` rows sort by
+  `[tax_output_id, determinant_ref, unsupported_item_id]`
 
-### TaxOutputs Serialization
+Serialization:
 
-- serialize kernel tax-output records only
+- serialize each tax-output record family as its own ordered array
 - use stable object-key ordering
-- preserve the declared tax-output order above
+- preserve the declared order above
+- sort `basis_pool_refs` and `blocking_gap_refs` lexicographically
 
-### TaxOutputs Fingerprint Inputs
+Fingerprint inputs:
 
-- kernel tax-output records in declared order
+- canonical `TaxOutputRecord` rows
+- canonical `CarryForwardRecord` rows
+- canonical `UnsupportedItemRecord` rows
 - `schema_version`
 - referenced `TaxInputs` ids or fingerprints
 - selected `policy_id`
@@ -1037,10 +1143,12 @@ The pipeline products rely on shared supporting contracts defined elsewhere:
   current-to-target transformation rules
 - [First Slice Contract](../reference/first-slice-contract.md) for the bounded
   Coinbase-first replay and parity contract
+- [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
+  for the first bounded `EconomicFacts -> ReconciliationState -> Checkpoint`
+  contract
 - [Domain Ontology](domain-ontology.md) for the target ontology and identity
   seams
 - [Gaps And Readiness](gaps-and-readiness.md) for `GapCore`,
   `GapExplanation`, readiness, and `SubjectRef`
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) for
   performance rules, partitioning rules, and filing-critical acceptance
-  criteria
