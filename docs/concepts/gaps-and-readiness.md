@@ -112,7 +112,7 @@ Rules:
 - `selection_id` identifies one deterministic evidence-selection
   decision boundary
 - `claim_scope_id` identifies one claim-stage meaning decision
-  boundary before bundle selection or subject resolution is final
+  boundary before claim-bundle selection or subject resolution is final
 - `continuity_segment_id` identifies one bounded reconciliation window
 - `balance_target_id` identifies one reconciliation-owned balance assertion
   target when one exact target is the truthful blocker or review scope
@@ -164,7 +164,7 @@ Shared stage vocabulary:
 Rules:
 
 - `owner_stage` and `blocking_stages` use this vocabulary
-- readiness records and summaries use this vocabulary
+- readiness records and rollups use this vocabulary
 - do not use alternate labels such as `semantic` once target-stage products
   are emitted
 

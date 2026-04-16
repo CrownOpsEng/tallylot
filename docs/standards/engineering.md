@@ -215,6 +215,11 @@ Current application of this rule:
   aggregates that are not the canonical grouped record family. Inside
   explanation or review sidecars, prefer concrete prose-field names such as
   `headline`, `known_facts`, or `recommended_follow_up` over `*_summary`.
+- Do not use bare `summary` as a target-stage controlled-vocabulary value or
+  package responsibility label when a more concrete output noun would say what
+  the surface holds. Prefer names such as `policy_summary`,
+  `supporting_schedule`, `filing_form`, `validation_report`, or
+  `readiness_rollup` when those are the real shapes.
 - Prefer concrete owning nouns over abstract containers. Avoid names such as
   `Core`, `Data`, `Info`, `Context`, `Payload`, or `Item` when `Record`,
   `Explanation`, `Projection`, or the domain noun would say what the surface
@@ -239,6 +244,11 @@ Current application of this rule:
 - Do not shorten a child name when that child must travel outside the owning
   family and the shorter noun would become ambiguous across stages or products.
   Keep the longer owning stem only when that broader ambiguity is real.
+- When one stage's child id becomes a stable downstream dependency, keep enough
+  of the owning family noun to stay unambiguous outside that source stage.
+  Prefer names such as `claim_bundle_id`, `bundle_decision_id`, and
+  `entry_check_id` over bare `bundle_id`, `decision_id`, or `check_id` once
+  those ids cross stage boundaries.
 - When a record or product owns one primary as-of time, prefer `as_of`.
   Add a longer prefix only when the same record carries multiple as-of fields
   or one field is explicitly naming another concept's as-of time.
@@ -253,9 +263,15 @@ Current application of this rule:
   inside a record. Prefer `member_refs`, `observation_refs`, `event_refs`,
   `assertion_refs`, or `gap_ids` over longer forms when the owning record
   already supplies the missing context.
-- Use singular `*_ref` for exactly one upstream or child reference and plural
-  `*_refs` for an ordered list. Do not use a plural name for one required ref
-  or a singular name for a list-shaped contract.
+- Use `*_id` and `*_ids` for stable-id fields that name the owned record
+  itself or enumerate owned members directly.
+- Use singular `*_ref` for one pointer to another product, record family, or
+  reusable tuple ref and plural `*_refs` for an ordered list of those
+  pointers. This includes same-product relationship fields such as
+  `claim_refs`, `proposal_refs`, or `event_refs` when the field is describing
+  lineage or ordered linkage rather than simply naming the owned member ids.
+- Do not use a plural name for one required ref or id, or a singular name for
+  a list-shaped contract.
 - For stage-owned product-emission identities, prefer `emitter_id` and
   `emitter_key` over the more abstract `producer_id` and `producer_key`.
 - When product metadata or a record already supplies the owner, prefer the

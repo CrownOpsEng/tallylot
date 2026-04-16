@@ -413,7 +413,7 @@ Required application ownership:
   evaluation, readiness reducers, and checkpoint proposals
 - `application/checkpoint/` for checkpoint assembly, manual balance
   submission validation, and checkpoint acceptance
-- `application/accounting/` for journal expansion, validation, and summaries
+- `application/accounting/` for journal expansion, validation, and reporting
 - `application/tax/` for tax input construction, basis transitions, policy
   selection, and tax-output generation
 - `application/rendering/` for downstream rendering orchestration

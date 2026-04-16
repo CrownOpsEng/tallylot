@@ -48,7 +48,8 @@ Every stage contract answers four questions:
 Shared rules:
 
 - every output preserves stable ids and enough upstream linkage for later audit
-- later stages may add stage-owned sidecars and summaries, but must not
+- later stages may add stage-owned sidecars, rollups, and reporting
+  projections, but must not
   silently rewrite upstream truth to make their own outputs look tidy
 - if a stage cannot support a required decision, it emits explicit blockers,
   unresolved records, or deferred records rather than inventing a fallback
@@ -400,7 +401,7 @@ Record families:
 - `ClaimRecord`
   - `claim_set_id`
   - `claim_scope_id`
-  - `bundle_id`
+  - `claim_bundle_id`
   - `claim_id`
   - `kind`
   - `status`
@@ -413,14 +414,14 @@ Record families:
 - `ClaimBundleRecord`
   - `claim_set_id`
   - `claim_scope_id`
-  - `bundle_id`
+  - `claim_bundle_id`
   - `key`
   - `scope_key`
   - `claim_refs`
 - `BundleDecisionRecord`
   - `claim_set_id`
   - `claim_scope_id`
-  - `decision_id`
+  - `bundle_decision_id`
   - `outcome`
   - `accepted_bundle_ref`
   - `rejected_bundle_refs`
@@ -432,7 +433,7 @@ Cardinality:
 
 - one or more `ClaimBundleRecord` rows may exist per `claim_scope_id`
 - one `BundleDecisionRecord` exists per `claim_scope_id`
-- one or more `ClaimRecord` rows may exist per `bundle_id`
+- one or more `ClaimRecord` rows may exist per `claim_bundle_id`
 
 Canonical `ClaimRecord.kind` values:
 
@@ -514,7 +515,7 @@ out of `ClaimSet` kernels.
 Rules:
 
 - these bridge-only fields must live only in derived compatibility sidecars
-  keyed by `claim_id` or `bundle_id`:
+  keyed by `claim_id` or `claim_bundle_id`:
   `economic_kind`, `projection_hint`, `accounting_intent_hint`,
   `tax_treatment_hint`, `description`, `tx_hash_or_null`,
   `operation_group_id_or_null`, `confidence`, and `status`
@@ -538,29 +539,29 @@ Stable ids:
   may admit one or more mutually exclusive bundles
 - `scope_key` is the stage-owned stable discriminator for one evidence-local
   scope within one claim set
-- `bundle_id` identifies one mutually exclusive claim bundle
-- `claim_id` identifies one evidence-local claim under one bundle
-- `decision_id` identifies one bundle decision record for one
+- `claim_bundle_id` identifies one mutually exclusive claim bundle
+- `claim_id` identifies one evidence-local claim under one claim bundle
+- `bundle_decision_id` identifies one bundle decision record for one
   scope
 - `claim_set_id` uses component array `[evidence_set_id, emitter_id]`
 - downstream products keep claim lineage through `claim_set_ref` or
   `claim_set_refs`; they do not copy `source_slug`, `adapter_id`, or
   `emitter_id` into later product ids
 - `claim_scope_id` uses component array `[claim_set_id, scope_key]`
-- `bundle_id` uses component array
+- `claim_bundle_id` uses component array
   `[claim_scope_id, key]`
-- `claim_id` uses component array `[bundle_id, kind, key]`
-- `decision_id` uses component array
+- `claim_id` uses component array `[claim_bundle_id, kind, key]`
+- `bundle_decision_id` uses component array
   `[claim_set_id, claim_scope_id]`
 
 Ordering:
 
 - `ClaimRecord` rows sort by tuple
-  `[bundle_id, kind, effective_at, precision, claim_id]`
+  `[claim_bundle_id, kind, effective_at, precision, claim_id]`
 - `ClaimBundleRecord` rows sort by
-  `[claim_scope_id, key, bundle_id]`
+  `[claim_scope_id, key, claim_bundle_id]`
 - `BundleDecisionRecord` rows sort by
-  `[claim_scope_id, decision_id]`
+  `[claim_scope_id, bundle_decision_id]`
 
 Serialization:
 
@@ -604,7 +605,7 @@ Handoff to `EconomicFacts`:
 
 - `ClaimSet` hands off evidence-local assertions, mutually exclusive bundles, and
   bundle decisions
-- the economic stage decides which bundle can become accepted economic truth
+- the economic stage decides which claim bundle can become accepted economic truth
   and which scopes remain blocked, deferred, or superseded
 
 ## `EconomicFacts`
@@ -630,8 +631,8 @@ Record families:
 
 - `EconomicEventRecord`
   - `event_id`
-  - `bundle_id`
-  - `decision_id`
+  - `claim_bundle_id`
+  - `bundle_decision_id`
   - `kind`
   - `effective_at`
   - `recorded_at`
@@ -696,13 +697,13 @@ Stable ids:
 - `economic_facts_id` uses component array `[claim_set_refs]`
 - `origin_ref` uses `OriginRef` from
   [Target Ids And Refs](../reference/target-ids-and-refs.md)
-- `event_id` uses component array `[bundle_id, event_slot]`
+- `event_id` uses component array `[claim_bundle_id, event_slot]`
 - `leg_id` uses component array `[event_id, role, subject_ref, leg_slot]`
 - `valuation_id` uses component array
   `[origin_ref, purpose, amount, currency, valued_at, precision]`
 - `event_slot` and `leg_slot` are zero-based canonical positions in declared
   event and leg order
-- `decision_id` may be referenced for audit, but it does not define
+- `bundle_decision_id` may be referenced for audit, but it does not define
   event identity
 
 Ordering:
@@ -818,7 +819,7 @@ Controlled vocabularies:
   - `settlement`
 - `EventLinkRecord.status`:
   - `linked`
-  - `candidate`
+  - `proposed`
   - `blocked`
   - `superseded`
 - `BalanceTargetRecord.kind`:
@@ -864,6 +865,9 @@ Stable ids:
   `[economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id` uses component array
   `[subject_ref, segment_start_at, segment_end_at]`
+- `continuity_segment_id` is the reusable stage-local scope id for support
+  attachments and rollups; `reconciliation_state_id` is the emitted product id
+  over that scope plus its upstream lineage
 - `event_link_id` uses component array
   `[continuity_segment_id, kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
@@ -1118,7 +1122,7 @@ Record families:
   - `side`
   - `origin_ref`
 - `EntryCheckRecord`
-  - `check_id`
+  - `entry_check_id`
   - `entry_id`
   - `kind`
   - `status`
@@ -1159,7 +1163,7 @@ Stable ids:
   upstream truth set
 - `entry_id` identifies one journal entry
 - `posting_id` identifies one posting under one journal entry
-- `check_id` identifies one journal entry check result
+- `entry_check_id` identifies one journal entry check result
 - `account_ref`, `commodity_ref`, and `origin_ref` use `AccountRef`,
   `CommodityRef`, and `OriginRef` from
   [Target Ids And Refs](../reference/target-ids-and-refs.md)
@@ -1169,14 +1173,14 @@ Stable ids:
   `[journal_id, kind, effective_at, event_refs, assertion_refs]`
 - `posting_id` uses component array
   `[entry_id, account_ref, commodity_ref, amount, side, origin_ref]`
-- `check_id` uses component array `[entry_id, kind]`
+- `entry_check_id` uses component array `[entry_id, kind]`
 
 Ordering:
 
 - `JournalEntryRecord` rows sort by `[effective_at, kind, entry_id]`
 - `PostingRecord` rows sort by
   `[entry_id, side, account_ref, commodity_ref, origin_ref, posting_id]`
-- `EntryCheckRecord` rows sort by `[entry_id, kind, check_id]`
+- `EntryCheckRecord` rows sort by `[entry_id, kind, entry_check_id]`
 
 Serialization:
 
@@ -1358,7 +1362,7 @@ Product metadata:
 Owns:
 
 - policy-owned output groups, carry-forward state, and unsupported-input
-  reporting
+  records
 - tax-policy explanations, limitations, and rendered output detail
 - tax-owned blockers that survive policy execution
 
@@ -1378,7 +1382,7 @@ Record families:
   - `next_tax_year`
   - `fingerprint`
 - `UnsupportedTaxInputRecord`
-  - `unsupported_tax_input_id`
+  - `unsupported_input_id`
   - `tax_output_id`
   - `tax_input_ref`
   - `blocking_gap_refs`
@@ -1386,9 +1390,9 @@ Record families:
 Controlled vocabularies:
 
 - `TaxOutputRecord.kind`:
-  - `summary`
-  - `schedule`
-  - `form`
+  - `policy_summary`
+  - `supporting_schedule`
+  - `filing_form`
 
 Sidecar content may include:
 
@@ -1409,14 +1413,14 @@ Stable ids:
 - `tax_outputs_id` identifies one emitted `TaxOutputs` kernel
 - `tax_output_id` identifies one policy-owned output emission
 - `carry_forward_id` identifies one carry-forward state record
-- `unsupported_tax_input_id` identifies one persisted unsupported tax input
+- `unsupported_input_id` identifies one persisted unsupported tax input
   record
 - `tax_outputs_id` uses component array `[tax_inputs_ref, tax_policy_id, tax_year]`
 - `tax_output_id` uses component array
   `[tax_policy_id, kind, tax_year, basis_pool_refs]`
 - `carry_forward_id` uses component array
   `[tax_output_id, basis_pool_ref, next_tax_year]`
-- `unsupported_tax_input_id` uses component array
+- `unsupported_input_id` uses component array
   `[tax_output_id, tax_input_ref]`
 
 Ordering:
@@ -1426,7 +1430,7 @@ Ordering:
 - `CarryForwardRecord` rows sort by
   `[tax_output_id, next_tax_year, basis_pool_ref, carry_forward_id]`
 - `UnsupportedTaxInputRecord` rows sort by
-  `[tax_output_id, tax_input_ref, unsupported_tax_input_id]`
+  `[tax_output_id, tax_input_ref, unsupported_input_id]`
 
 Serialization:
 

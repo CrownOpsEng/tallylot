@@ -328,11 +328,11 @@ high.
 
 Typical sidecar or cache surfaces include:
 
-- evidence selection summaries
-- claim-scope decision summaries
-- reconciliation continuity summaries
-- checkpoint summaries
-- journal validation summaries
+- evidence selection explanations
+- claim-scope decision explanations
+- reconciliation continuity explanations
+- checkpoint acceptance reports
+- journal validation reports
 - tax carry-forward state indexes
 
 Rules:

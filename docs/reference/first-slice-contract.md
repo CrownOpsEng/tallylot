@@ -171,13 +171,13 @@ Slice cardinality rules:
 - one `claim_scope_id` exists per evidence-local scope
 - one or more `ClaimBundleRecord` rows may exist per `claim_scope_id`
 - one `BundleDecisionRecord` exists per `claim_scope_id`
-- one or more `ClaimRecord` rows may exist per `bundle_id`
+- one or more `ClaimRecord` rows may exist per `claim_bundle_id`
 
 Ownership rules:
 
 - `SelectionRecord` owns selection basis and blocking-gap refs only
 - `EvidenceMemberRecord` owns selected, superseded, or blocked membership
-- `BundleDecisionRecord` remains claim-owned and records bundle selection,
+- `BundleDecisionRecord` remains claim-owned and records claim-bundle selection,
   deferral, blocking, or supersession only
 - claim-stage gaps and reviews may attach to `claim_scope_id` when
   no narrower truthful subject has resolved yet
@@ -198,7 +198,7 @@ Required derived compatibility projections:
 
 - `translation_input_plan.json` derived from `EvidenceSet`
 - `EconomicActivityDraft` derived from `ClaimSet` plus declared compatibility
-  sidecars keyed by `claim_id` or `bundle_id`
+  sidecars keyed by `claim_id` or `claim_bundle_id`
 - `SourceTranslationBatch` derived from `ClaimSet` plus declared
   compatibility sidecars and shared support sidecars
 - compiled `TransactionFact` rows preserved for current bridge consumers
@@ -273,7 +273,7 @@ Unchanged evidence must preserve all of the following:
 
 - selected, superseded, and blocked evidence membership
 - `selection_id`, `member_id`, and `observation_id`
-- `claim_id`, `bundle_id`, and `decision_id`
+- `claim_id`, `claim_bundle_id`, and `bundle_decision_id`
 - claim ordering and bundle ordering
 - timestamps and temporal precision
 - quantities and sign

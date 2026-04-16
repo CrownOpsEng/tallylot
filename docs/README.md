@@ -75,7 +75,7 @@ below when you need the detailed procedure for one stage of the workflow.
 <!-- docs-maintenance:start reference -->
 - [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
 - [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the current first EvidenceSet and ClaimSet slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility projections.
-- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including bundle-based event identity and bridge compatibility projections.
+- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including claim-bundle event identity and bridge compatibility projections.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Helper reference for reusable target ids and ref tuples that complement the owner pages without redefining product contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Helper reference that points to the owner pages for target persistence, partition scopes, and bounded-slice compatibility expectations.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.

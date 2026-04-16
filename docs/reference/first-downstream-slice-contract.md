@@ -1,6 +1,6 @@
 ---
 title: "First Downstream Slice Contract"
-summary: "Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including bundle-based event identity and bridge compatibility projections."
+summary: "Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including claim-bundle event identity and bridge compatibility projections."
 doc_type: reference
 audience: human
 owner: repo
@@ -106,7 +106,7 @@ Compilation-input rules:
 Slice cardinality rules:
 
 - one or more accepted `EconomicEventRecord` rows may be emitted from one
-  accepted bundle
+  accepted claim bundle
 - one or more `EconomicLegRecord` rows may be emitted under one `event_id`
 - zero `ValuationRecord` rows are expected by default in this slice
 - one `ContinuitySegmentRecord` exists per `PositionRef` in this slice and bounded
@@ -120,9 +120,9 @@ Slice cardinality rules:
 
 Ownership rules:
 
-- `event_id` is derived from the selected bundle, not from
+- `event_id` is derived from the selected claim bundle, not from
   adjudication bookkeeping
-- `decision_id` may be referenced for audit, but it does not define
+- `bundle_decision_id` may be referenced for audit, but it does not define
   event identity
 - `BalanceTargetRecord` carries direct `AssertionValue` fields and must not
   point to undefined value refs or sidecars for hot-path meaning
@@ -140,11 +140,14 @@ This slice freezes the active bounds and the first position identity shape.
 Slice-specific rules:
 
 - `economic_facts_id = [claim_set_refs]`
-- `event_id = [bundle_id, event_slot]`
+- `event_id = [claim_bundle_id, event_slot]`
 - `leg_id = [event_id, role, subject_ref, leg_slot]`
 - `valuation_id = [origin_ref, purpose, amount, currency, valued_at, precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id = [subject_ref, segment_start_at, segment_end_at]`
+- `continuity_segment_id` remains the reusable reconciliation scope id, while
+  `reconciliation_state_id` is the emitted product id over that scope plus its
+  upstream lineage
 - `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
 - `checkpoint_proposal_id = [continuity_segment_id, subject_ref, as_of, target_refs]`
 - `checkpoint_id = [reconciliation_state_refs, as_of]`
@@ -152,7 +155,7 @@ Slice-specific rules:
 
 Not allowed in this slice:
 
-- event identity based on `decision_id` or rejected-bundle lists
+- event identity based on `bundle_decision_id` or rejected-bundle lists
 - `expected_value_ref`
 - `observed_value_ref`
 - proposal ids that include raw evidence-ref lists as identity components

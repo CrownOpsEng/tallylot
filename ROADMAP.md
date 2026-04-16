@@ -66,7 +66,7 @@ Must freeze:
   `selection_fingerprint` identity churn
 - critical-path `EvidenceObservationRecord` field tables for
   `statement_document` and `statement_balance_row`
-- `ClaimSet` claim-scope, bundle, and bundle-decision model
+- `ClaimSet` claim-scope, claim-bundle, and bundle-decision model
 - critical-path `ClaimRecord` field tables, `observation_refs`, and
   the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
@@ -78,8 +78,9 @@ Must freeze:
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `product_scope_id`
 - target naming rules that distinguish concepts, refs, ids, records,
-  projections, and sidecars without baking bridge-era qualifiers or
-  source-specific crypto nouns into shared target names
+  projections, rollups, reports, and sidecars without baking bridge-era
+  qualifiers or source-specific crypto nouns into shared target names, and
+  that keep stage-local ids explicit once they cross into downstream products
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
 - migration authority rules, compatibility projections, reader cutovers, and
@@ -154,7 +155,7 @@ Goal:
 Deliver:
 
 - evidence-local `ClaimSet` emission keyed by `claim_set_id`
-- explicit claim scopes, mutually exclusive bundles, and
+- explicit claim scopes, mutually exclusive claim bundles, and
   bundle-decision records
 - claim fields frozen for the current first slice plus `observation_refs`
 - shared support records and sidecars attached to claim scopes where needed
@@ -166,7 +167,7 @@ Exit criteria:
 
 - ambiguous source meaning can remain explicit without being forced into final
   economic meaning
-- claim bundle decisions remain claim-owned and do not carry economic
+- claim-bundle decisions remain claim-owned and do not carry economic
   truth
 
 ## Phase 3. Land `EconomicFacts`
@@ -181,7 +182,7 @@ Deliver:
 - `EconomicFacts` kernels keyed by `economic_facts_id` over ordered
   `claim_set_refs`
 - `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
-- bundle-based event identity
+- claim-bundle event identity
 - bridge compatibility projection for `TransactionFact`
 - parity coverage for the first claim-to-economic slice
 
@@ -399,7 +400,7 @@ Rules:
 - add replay coverage for target kernels and compatibility projections
 - add reconciliation parity and checkpoint continuity tests
 - add journal validation coverage
-- add tax policy coverage with explicit unsupported-tax-input reporting
+- add tax policy coverage with explicit unsupported-input records
 - keep end-to-end smoke workflows for each major slice before removing older
   transition paths
 
