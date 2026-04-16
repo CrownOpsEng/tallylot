@@ -386,8 +386,7 @@ Required domain ownership:
 - `domain/entities/` for entity models, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
-- `domain/claims/` for claims, claim scopes, bundles, and compilation
-  decisions
+- `domain/claims/` for claims, claim scopes, bundles, and bundle decisions
 - `domain/economics/` for events, legs, valuations, settlement status, and
   lifecycle events
 - `domain/assertions/` for `AssertionValue` and its variants
@@ -407,7 +406,7 @@ Required application ownership:
 - `application/evidence/` for shared statement extraction, evidence selection,
   and provenance locator handling
 - `application/claims/` for claim construction from evidence
-- `application/economics/` for economic compilation
+- `application/economics/` for economic-fact construction
 - `application/compatibility/` for bridge compatibility projections only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists

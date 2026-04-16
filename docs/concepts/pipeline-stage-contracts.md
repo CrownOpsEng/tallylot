@@ -202,7 +202,7 @@ Purpose:
 
 - deterministic, capture-scoped evidence output before claim commitment
 
-Kernel header:
+Product header:
 
 - `evidence_set_id`
 - `schema_version`
@@ -389,7 +389,7 @@ Purpose:
 
 - evidence-local meaning before economic truth is fixed
 
-Kernel header:
+Product header:
 
 - `claim_set_id`
 - `schema_version`
@@ -619,7 +619,7 @@ Purpose:
 
 - economic truth the system can safely assert
 
-Kernel header:
+Product header:
 
 - `economic_facts_id`
 - `schema_version`
@@ -768,7 +768,7 @@ Purpose:
 - completeness, linkage, continuity, checkpoint proposal records, and
   reconciliation-owned blockers
 
-Kernel header:
+Product header:
 
 - `reconciliation_state_id`
 - `schema_version`
@@ -939,7 +939,7 @@ Purpose:
 
 - accepted checkpoint truth and acceptance basis
 
-Kernel header:
+Product header:
 
 - `checkpoint_id`
 - `schema_version`
@@ -1097,7 +1097,7 @@ Purpose:
 
 - accounting expansion and validation over accepted truth
 
-Kernel header:
+Product header:
 
 - `journal_id`
 - `schema_version`
@@ -1231,7 +1231,7 @@ Purpose:
 
 - policy-ready, jurisdiction-neutral tax input surface
 
-Kernel header:
+Product header:
 
 - `tax_inputs_id`
 - `schema_version`
@@ -1358,7 +1358,7 @@ Purpose:
 
 - one selected tax policy's outputs
 
-Kernel header:
+Product header:
 
 - `tax_outputs_id`
 - `schema_version`
