@@ -238,7 +238,7 @@ Rules:
 
 ## Economic Model
 
-The target economic layer centers on durable economic meaning rather than on
+The target economics layer centers on durable economic meaning rather than on
 activity-label expansion.
 
 Modeling rules:
@@ -250,7 +250,7 @@ Modeling rules:
   checkpoint, or tax behavior
 - let ownership and counterparty state remain explicit where known
 
-The target economic layer must be able to express:
+The target economics layer must be able to express:
 
 - holdings movements
 - cash movements
@@ -374,6 +374,9 @@ Bridge-specific classification rules live in
 - keep `journal` aligned across the end-state stage vocabulary, package roots,
   and product-adjacent prose; reserve `accounting` for broader prose or
   bridge-local hint families
+- keep `economics` aligned across stage vocabulary, package roots, and
+  product-adjacent prose; reserve `economic` for adjective use inside the
+  owned product family such as `EconomicFacts`
 - prefer explicit family names such as `gap`, `review`, and `readiness` in
   forward-looking prose when those are the owned sidecars; reserve generic
   `support` for the intentional shared root or bounded field names such as
@@ -384,8 +387,8 @@ Bridge-specific classification rules live in
   `assertion/`
 - keep target-layer kind families aligned to the shared domain noun or held
   truth axis. Prefer `contract` over `contract_term`, and kind families such
-  as `basis_amount`, `owner_state`, and `location_state` over mixed or more
-  generic alternates
+  as `cash_amount`, `basis_amount`, `owner_state`, and `location_state` over
+  mixed or more generic alternates
 - do not bake bridge, legacy, current, or compatibility qualifiers into
   target-layer concept names or helper ids unless the name is intentionally
   current-state or adapter-local

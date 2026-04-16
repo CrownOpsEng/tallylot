@@ -132,7 +132,7 @@ Frozen kind-specific claim fields:
 `leg_specs` entry shape:
 
 - `slot`
-- `leg_kind`
+- `role`
 - `quantity`
 - `instrument_claim_refs`
 - `location_claim_ref`
@@ -145,7 +145,8 @@ Claim-field and linkage rules:
   slice
 - `leg_specs` lift ordered leg meaning from the current draft-leg
   contract, including sign, subtype, optional attributed-leg linkage, and
-  optional location
+  optional location, while keeping the downstream `EconomicLegRecord.role`
+  stem aligned across the later family
 - retail claims with `kind = activity` use `member_refs` plus
   `[retail_member_id, raw_row_ref]` claim-scope keys
 - statement-derived claims use both `member_refs` and

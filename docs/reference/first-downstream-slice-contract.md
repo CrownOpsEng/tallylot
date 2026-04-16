@@ -185,7 +185,7 @@ Required derived compatibility views:
 Compatibility rule:
 
 - compatibility views remain required during the migration window
-- they are not authoritative for economic, reconciliation, or
+- they are not authoritative for economics, reconciliation, or
   checkpoint truth once the target products exist
 - retained legacy hint reproduction must come from declared compatibility
   sidecars, not from `EconomicActivityDraft`, `SourceTranslationBatch`, or
@@ -204,7 +204,7 @@ This slice allows only:
 - `support_kind`:
   - `document_observation`
 - `continuity_kind`:
-  - `direct_observation`
+  - `observed_continuity`
   - `reconciled_rollforward`
 
 Not allowed in this slice:

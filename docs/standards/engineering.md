@@ -214,6 +214,10 @@ Current application of this rule:
   `rendering/` are allowed when the shorter adjective form would be less clear.
   Treat those as narrow exceptions, not permission for loose plural package
   names.
+- When a stage, package root, and shared stage vocabulary all name the same
+  boundary, use the same noun form across them. Prefer `economics` over
+  `economic` for stage labels and shared stage vocabularies because the repo
+  already owns `domain/economics/` and `application/economics/`.
 - Prefer explicit identity-family package roots over umbrella containers once
   the owned families are already known. Use roots such as `instrument/`,
   `location/`, `ownership/`, `counterparty/`, `contract/`, `position/`,
@@ -393,6 +397,10 @@ Current application of this rule:
   depend on accepted checkpoint lineage plus ordered `economic_facts_refs`,
   prefer `checkpoint-economic-lineage-scoped` over a shorter label such as
   `checkpoint-lineage-scoped`.
+- Keep mixed-upstream header order, id recipes, and partition labels aligned.
+  For checkpoint-economic-lineage-scoped products, prefer `checkpoint_ref`
+  before ordered `economic_facts_refs` in the product header and product-id
+  recipe so the persisted contract reads in one stable order everywhere.
 - When prose or helper formulas need the canonical lower-snake-case emitted
   product token, prefer `product_slug` over `product_name` so the stable token
   reads in parallel with `source_slug` and does not sound like display prose.
@@ -492,7 +500,8 @@ Current application of this rule:
   `reconciled_continuity` in `basis`, observation-shape labels such as
   `document_observation`, `reported_observation`, and `manual_assertion` in
   `support_kind`, and continuity-shape labels such as
-  `reconciled_rollforward` in `continuity_kind`.
+  `observed_continuity`, `reconciled_rollforward`,
+  `opening_rollforward`, and `partial_rollforward` in `continuity_kind`.
 - Do not reuse a label such as `reported_observation` or `manual_assertion`
   across both `basis` and `support_kind` just because one slice happens to
   allow both; keep the reason axis and the support-shape axis distinct.
@@ -594,7 +603,7 @@ Current application of this rule:
   `commodity_balance` on end-state target surfaces.
 - When one `kind` family mixes quantities, amounts, and state, keep those
   suffixes parallel across the sibling values. Prefer families such as
-  `position_quantity`, `cash_quantity`, `basis_amount`, `owner_state`, and
+  `position_quantity`, `cash_amount`, `basis_amount`, `owner_state`, and
   `location_state` over mixing bare nouns or generic `*_value` labels into the
   same target-controlled vocabulary.
 - When a target-layer `kind` is naming one shared domain concept and the

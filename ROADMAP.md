@@ -27,7 +27,7 @@ These anchors drive sequencing and acceptance criteria:
 
 - reconciliation remains the trust gate before checkpoint adoption, journal
   emission, and tax
-- checkpoint truth is accepted checkpoint state with explicit acceptance basis
+- accepted checkpoint truth has explicit acceptance basis
 - primary evidence and evidence-backed checkpoints remain first-class
 - raw-evidence derivation is the supported meaning-parity path
 - capture identity is `capture_uid`, not path
@@ -98,19 +98,22 @@ Must freeze:
   canonical downstream stems instead of shorter or mixed-family alternates
 - checkpoint-assertion kind naming that keeps quantity, amount, and state
   stems parallel across sibling values such as `position_quantity`,
-  `cash_quantity`, `basis_amount`, `owner_state`, and `location_state`
+  `cash_amount`, `basis_amount`, `owner_state`, and `location_state`
 - checkpoint acceptance vocabulary that keeps `basis`, `support_kind`, and
   `continuity_kind` on distinct semantic axes, using reason labels such as
   `document_support`, `reported_support`, `manual_support`, and
   `reconciled_continuity`, observation-shape labels such as
   `document_observation`, `reported_observation`, and `manual_assertion`, and
-  continuity-shape labels such as `reconciled_rollforward`
+  continuity-shape labels such as `observed_continuity`,
+  `reconciled_rollforward`, `opening_rollforward`, and
+  `partial_rollforward`
 - package-root naming that keeps `journal` aligned across stage vocabulary and
-  package ownership, uses singular concept roots such as `assertion/`, avoids
-  umbrella roots such as `entities/` when the identity families are already
-  known, keeps gap/review/readiness roots explicit when the docs mean those
-  families directly, and keeps the shared `support/` root split into concrete
-  nested families
+  package ownership, keeps `economics` aligned across stage vocabulary,
+  package ownership, and stage prose, uses singular concept roots such as
+  `assertion/`, avoids umbrella roots such as `entities/` when the identity
+  families are already known, keeps gap/review/readiness roots explicit when
+  the docs mean those families directly, and keeps the shared `support/` root
+  split into concrete nested families
   such as `gap/`, `review/`, and `readiness/`
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
@@ -211,7 +214,7 @@ Exit criteria:
 Goal:
 
 - move accepted economic meaning off the bridge fact path and onto the target
-  economic layer
+  economics layer
 
 Deliver:
 
@@ -220,7 +223,7 @@ Deliver:
 - `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
 - claim-bundle-derived event identity
 - bridge compatibility view for `TransactionFact`
-- parity coverage for the first claim-to-economic slice
+- parity coverage for the first claim-to-economics slice
 
 Exit criteria:
 
@@ -264,7 +267,7 @@ Deliver:
 
 Exit criteria:
 
-- checkpoint truth is explicit accepted checkpoint state, not an inferred side effect
+- accepted checkpoint truth is explicit, not an inferred side effect
 - statement-backed checkpoint acceptance is separated cleanly from manual-only
   runtime aids
 
