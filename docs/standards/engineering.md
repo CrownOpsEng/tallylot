@@ -98,10 +98,10 @@ When a capability grows, split by stable boundaries:
 - `domain/`: separate models, value objects, and typed aliases by concept.
 - `application/`: organize by bounded capability packages such as
   `application/intake/`, `application/profiling/`, `application/normalization/`,
-  `application/checkpoints/`, and `application/outputs/`. Keep request and
+  `application/checkpoints/`, and `application/rendering/`. Keep request and
   response contracts in capability-local `contracts.py` files and keep
   orchestration entry points in explicitly named use-case modules such as
-  `build_profile.py`, `normalize_source.py`, or `render_output.py`.
+  `build_profile.py`, `normalize_source.py`, or `render_export.py`.
 - `interfaces/`: keep command parsing and command execution thin; move real work
   into application use cases.
 - `adapters/`: move larger adapters to package-style modules with an
@@ -158,7 +158,7 @@ Current application of this rule:
   planned-item models, review assembly, and report rendering.
 - Normalization window and derived-balance helpers belong under
   `application/normalization/` rather than as nearby flat siblings.
-- Output rendering belongs under `application/outputs/`; CoinTracking is one
+- Rendering belongs under `application/rendering/`; CoinTracking is one
   output adapter, not an application-center compatibility lane.
 - Dev-only oracle tooling must live outside `src/tallylot/`.
 
@@ -181,7 +181,7 @@ Current application of this rule:
   - concepts use PascalCase nouns such as `BasisPool`
   - stable id helper types use `ThingId`
   - tuple helpers use `ThingRef`
-  - kernel families use `ThingRecord`
+  - persisted record families use `ThingRecord`
   - persisted fields and filenames use snake_case such as `thing_id`,
     `thing_ref`, `thing_refs`, and `thing.json`
 - Reject verbose pattern-label suffixes such as `UseCase`, `Manager`, or
@@ -190,7 +190,7 @@ Current application of this rule:
 - Reserve suffixes precisely:
   - `Ref` for canonical identity tuples or stable pointers
   - `Id` and `*_id` for stable identifiers only
-  - `Record` for persisted kernel families
+  - `Record` for persisted record families
   - `Explanation` for explanatory sidecars keyed to one kernel or support record
   - `Projection` for compatibility outputs or reshaped reader-facing views
   - `Summary` for aggregate rollups over subject or scope truth
@@ -210,14 +210,36 @@ Current application of this rule:
   `gap_id` or `ReadinessRecord` plus `readiness_id` over longer names that
   repeat context the record family already supplies, unless a real sibling
   family would make the shorter stem ambiguous.
-- When a record or product owns one primary as-of time, prefer `as_of_at`.
+- Apply the same rule to child-local fields, refs, and helper names. When the
+  owning product or record already supplies the parent context, prefer the
+  shortest truthful child noun such as `selection_id`, `proposal_refs`, or
+  `assertion_ids` over longer forms that restate the parent stem.
+- Do not shorten a child name when that child must travel outside the owning
+  family and the shorter noun would become ambiguous across stages or products.
+  Keep the longer owning stem only when that broader ambiguity is real.
+- When a record or product owns one primary as-of time, prefer `as_of`.
   Add a longer prefix only when the same record carries multiple as-of fields
   or one field is explicitly naming another concept's as-of time.
+- For checkpoint proposals, accepted checkpoints, and other acceptance-time
+  contracts, prefer `as_of` over workflow labels such as `checkpoint_date`
+  unless the field genuinely stores a calendar label rather than the contract's
+  canonical as-of scalar.
 - When a record owns one obvious child-id or child-ref family, prefer the
   child noun directly, such as `assertion_ids`, `proposal_refs`, or
   `target_refs`, over repeating the full stage or product stem.
+- Apply the same rule to one obvious upstream-ref family or review-pair field
+  inside a record. Prefer `member_refs`, `observation_refs`, `event_refs`,
+  `assertion_refs`, or `gap_ids` over longer forms when the owning record
+  already supplies the missing context.
 - For stage-owned product-emission identities, prefer `emitter_id` and
   `emitter_key` over the more abstract `producer_id` and `producer_key`.
+- When product metadata or a record already supplies the owner, prefer the
+  bare role field, such as `emitter_id` or `side`, over longer names such as
+  `claim_emitter_id` or `posting_side`. Add the owning prefix only when one
+  shape carries multiple fields of that role.
+- In claim-stage contracts, prefer direct stems such as `claim_scope` over more
+  abstract workflow labels such as `interpretation_scope` when the claim stage
+  already owns that scope boundary.
 - Fingerprints are scalar values, not refs. Use `fingerprint` when a record or
   product owns one primary fingerprint. Use `*_fingerprint` when the
   fingerprint belongs to another concept or when multiple fingerprint fields
@@ -227,6 +249,12 @@ Current application of this rule:
   root-record id in the same product, use `<product>_set_id`
   rather than process labels such as `*_run_id`, `*_batch_id`, or `*_job_id`
   unless the product itself is truly a run, batch, or job.
+- When one product owns exactly one root record and the product id and root
+  record id naturally describe the same accepted object, prefer one shared
+  `<product>_id` over inventing `<product>_set_id` only to separate metadata
+  from that root record.
+- For shared support attachment over one emitted kernel, prefer the explicit
+  `kernel_scope_id` over generic names such as `dataset_id`.
 - For persisted files and workspace basenames, prefer the owning product or
   support role in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
@@ -247,26 +275,67 @@ Current application of this rule:
   `source`. Reserve bare `source` for prose, for grouping dimensions whose
   enclosing field already states the role, or for source-scoped provider
   families where the contract is not storing the slug itself.
-- In canonical target-layer evidence and claim contracts, prefer `source_*`
-  or `source_local_*` over `provider_*` unless the field truly preserves an
-  adapter-local or compatibility-only provider label.
+- In canonical target-layer evidence and claim contracts, use `source_*` only
+  when the field truly stores source identity or another source-derived value
+  that would be ambiguous without the prefix. When the stage already supplies
+  that locality, prefer the shorter held-thing noun such as `activity_label`,
+  `location_label`, or `statement_kind` over `source_local_*`.
 - When a record owns one primary lifecycle, decision, or resolution field,
   prefer plain `status`, `basis`, or `outcome` over repeating the record stem.
   Add a prefix only when the field describes another concept's status or basis
   rather than the record's own state.
+- Prefer `status` over `state` for bounded field vocabularies. Reserve
+  `State` for named domain concepts or broader state bundles when `status`
+  would underspecify the concept.
+- Apply the same status-versus-state rule to named vocabulary concepts.
+  Prefer concept names such as `SettlementStatus` when the concept is a
+  bounded status family rather than a broader state bundle.
 - When a record owns one primary classification, role, or intent field,
-  prefer plain `kind`, `role`, `purpose`, or `measure_kind` over repeating the
-  record stem. Add a longer prefix only when the same record carries multiple
-  fields of that family or the field describes another concept's role or
-  purpose.
+  prefer plain `kind`, `role`, `side`, `purpose`, or `measure_kind` over
+  repeating the record stem. Add a longer prefix only when the same record
+  carries multiple fields of that family or the field describes another
+  concept's role or purpose.
+- For controlled vocabularies on one record-local kind field, prefer singular
+  nouns or noun phrases such as `economic_event`, `adjustment`,
+  `carry_forward`, or `unsupported_mapping` unless the value truly names a
+  collection artifact rather than one record-local kind.
+- When a `kind` field already supplies the owning family, keep the value as a
+  lower-snake noun phrase and do not repeat the owner noun. Prefer values such
+  as `activity`, `beneficial_owner`, or `statement_document` over pseudo-type
+  labels such as `ActivityClaim` or `StatementObservation`.
+- For bounded `basis` or similar reason vocabularies, drop redundant suffixes
+  such as `_match`, `_preferred`, or `_duplicate` when the field already
+  establishes that the value is the decision basis.
+- Reserve `proof` for proof artifacts or explicit proof-bearing detail.
+  When a bounded field selects one continuity or support classification from a
+  vocabulary, prefer `*_kind` or `*_basis` over `*_proof`.
+- In forward-looking target kernels, avoid `*_hint` for fields that are part of
+  the declared emitted claim or record shape. Reserve `*_hint` for current
+  bridge surfaces, compatibility sidecars, or genuinely non-authoritative
+  adapter-local hints.
+- In forward-looking target kernels, avoid actor-specific canonical names such
+  as `operator_*` when the concept is a generic manual or user-supplied input.
+  Prefer neutral names such as `manual_assertion` unless the actor identity is
+  itself the owned business concept.
 - Apply the same naming rules to observation kinds and controlled-vocabulary
   members. Name the held thing or decision shape directly instead of hiding it
   behind abstract labels such as `identity` or `anchor` when the canonical
   noun is already known.
+- For canonical target observation kinds and claim kinds, keep provider labels
+  and redundant `Observation` or `Assertion` qualifiers out of the canonical
+  name when the owning stage already supplies that context and the shorter
+  name stays unambiguous. Reserve provider prefixes for adapter-local or
+  genuinely provider-exclusive kinds.
+- In issue, review, and check vocabularies, prefer direct required-decision or
+  unsupported-shape names over long nominalizations such as
+  `*_required_determination` when a shorter label stays explicit.
 - Keep controlled-vocabulary members parallel inside one field family. If a
   balance-target vocabulary names balance shapes, prefer values such as
   `exact_balance`, `range_balance`, and `boundary_balance` over mixing balance
   shapes with support metaphors.
+- In kind vocabularies for emitted records, drop redundant suffixes such as
+  `schedule`, `report`, or `state` when the record family already tells the
+  reader they are looking at an output or emitted state surface.
 - Do not encode nullability in canonical target field names. Use the base noun
   or ref name and state optionality in the field contract rather than in
   suffixes that spell out nullability.
@@ -281,12 +350,21 @@ Current application of this rule:
   `*_discriminator` when the field simply holds the stable key for that parent
   scope.
 - For reusable ref tuples that serialize or flatten across many products, keep
-  explicit slot names such as `subject_kind`, `source_kind`, `policy_key`, or
+  explicit slot names such as `subject_kind`, `origin_kind`, `policy_key`, or
   `position_key` when bare `kind` or `key` would become ambiguous outside the
   owning type declaration.
+- When one record or nested entry carries one primary precision or slot field,
+  prefer `precision` or `slot`. Add a longer prefix only when multiple
+  precision or slot fields coexist in the same shape.
+- Prefer `name` over `display_name` in forward-looking target contracts unless
+  the same shape also carries a distinct canonical name, legal name, or other
+  parallel naming field that makes `display_name` materially clearer.
 - Inside aggregate summary records, use `rollup_kind` and `rollup_key` for the
   grouping dimensions so `summary` remains the record shape, not a second
   generic field prefix.
+- Inside aggregate summary records, drop repeated subject or entity nouns from
+  count fields when the summary already establishes that context. Prefer
+  `ready_count` over `ready_subject_count`.
 - Prefer `Proposal` for stage-owned pre-acceptance records that later become
   accepted truth. Reserve `Candidate` for raw search-space options or other
   unmanaged alternatives that the owning stage has not yet shaped into a
@@ -295,12 +373,20 @@ Current application of this rule:
   the stem when the shorter noun would be generic across stages. Prefer
   `EventLinkRecord` or `EntryCheckRecord` over ambiguous cross-stage names such
   as `LinkRecord` or `ValidationRecord`.
+- Use generic shared nouns only for intentionally repo-owned cross-stage seams.
+  Names such as `SubjectRef` or `OriginRef` are allowed only when the
+  abstraction itself is the owned contract. Everywhere else, prefer the
+  narrowest truthful concept name over a broader shared label.
+- Do not fork parallel helper-ref families when one shared tuple already owns
+  the same meaning. Reuse repo-owned seams such as `OriginRef` instead of
+  minting stage-prefixed variants for the same `[origin_kind, origin_id]`
+  shape.
 - Prefer the base noun when a field already stores the locator or ref itself.
   Avoid extra suffixes such as `_identity` when `locator` or
-  `source_ref` already says what the value holds.
+  `origin_ref` already says what the value holds.
 - For compatibility-only material that is not a target concept, name it by
   boundary and role rather than promoting it to a pseudo-domain type.
-  Prefer `bridge annotation detail`, `output note sidecar`, or
+  Prefer `bridge annotation sidecar detail`, `output annotation sidecar`, or
   `compatibility sidecar` over introducing a new canonical-seeming type name in
   forward-looking docs or code.
 - Name the held thing separately from its identity seam or persistence shell:
@@ -312,6 +398,30 @@ Current application of this rule:
   second.
 - New domain and application names should avoid crypto-exclusive language
   unless the concept is genuinely adapter-local or asset-class-specific.
+- In forward-looking target-layer names, keep source or asset-class nouns such
+  as `wallet`, `exchange`, `address`, `token`, `lot`, `chain`, and `tx_hash`
+  on source-evidence, adapter-local, compatibility, or current-state surfaces
+  unless the target concept is genuinely that specific. Prefer repo-owned
+  canonical nouns such as `Location`, `Instrument`, `Position`, `Contract`,
+  `Subject`, or `Transfer` when those are the broader end-state seams.
+- Once the pipeline moves past evidence-local products such as `EvidenceSet`
+  and `ClaimSet`, do not keep provider or source-system nouns in later product
+  record names, helper refs, stable ids, or partition labels unless those
+  nouns are themselves the persisted concept. Prefer lineage-, origin-, or
+  subject-owned names over carry-through source labels in downstream kernels.
+- When a canonical target contract must preserve a source-provided label,
+  preserve the value without freezing the source noun into the field name.
+  Prefer target-aligned names such as `location_label` over
+  source-specific names such as `wallet_label` when `Location` already owns
+  the shared boundary.
+- In forward-looking prose, use `primary evidence`, `evidence-backed`, or the
+  owning support noun when describing trust or support quality. Reserve
+  `source_*` names for actual source identity such as `source_slug`,
+  source-scoped adapter families, or current-state/source-local surfaces.
+- Prefer product-aligned nouns over abstract process jargon when the product
+  already owns the boundary. For example, `TaxInputRecord` is clearer than a
+  more abstract tax-record noun when the record is the kernel row inside
+  `TaxInputs`.
 - Do not bake migration qualifiers such as `bridge`, `legacy`, `current`, or
   `compat` into canonical target-layer concepts, helper ids, or product ids
   unless the name is intentionally current-state or adapter-local.
@@ -322,22 +432,23 @@ Current application of this rule:
   docs.
 - In prose, prefer the canonical owning noun once a target product or record
   family already exists. Use phrases such as `claim bundle`, `claim scope`,
-  `source-local meaning`, and `dataset-level` over looser labels such as
-  `semantic bundle`, `semantic scope`, or `whole-dataset` unless the extra
+  `evidence-local meaning`, and `kernel-scope` over looser labels such as
+  `semantic bundle`, `semantic scope`, or `whole-kernel` unless the extra
   abstraction is the point.
 - Prefer the shortest boundary noun that still distinguishes the seam. When one
   package exists only to host migration compatibility projections,
   `compatibility/` is clearer than `bridge_compatibility/` unless another
   compatibility boundary would make the shorter name ambiguous.
 
-### Five-View Naming Audit
+### Five-View Naming And Congruency Audit
 
 Run this audit before freezing or renaming any forward-looking product, record
 family, ref, id, package, or file name.
 
 1. Concept view:
-   - does the name say what the thing is in domain terms, not just when it is
-     used in the workflow
+   - does the name say what the thing is in end-state domain terms, not just
+     when it is used in the workflow
+   - would the name still read correctly if the source were not crypto-specific
 2. Shape view:
    - does the noun match the held shape exactly: concept, id, ref, record,
      summary, sidecar, projection, file, package, observation kind, or
@@ -350,8 +461,14 @@ family, ref, id, package, or file name.
      without relying on directory context alone, and do local discriminators
      use keys rather than anchors or other abstract stand-ins
 5. Migration view:
-   - are bridge, current, legacy, compat, oracle, and output qualifiers kept
-     only on intentionally non-canonical surfaces
+   - are bridge, current, legacy, compat, oracle, output, and source-specific
+     qualifiers or nouns kept only on intentionally non-canonical surfaces
+6. Family view:
+   - do record families, ids, refs, filenames, and bounded vocabulary members
+     keep one shared stem and mirrored role naming across the whole family
+7. Kind-value view:
+   - do `kind` values name the held thing directly without repeating the owning
+     family or drifting into pseudo-type labels
 
 When one canonical target name changes, update every owner page, bounded-slice
 reference, roadmap phase, helper reference, and control-plane routing page that

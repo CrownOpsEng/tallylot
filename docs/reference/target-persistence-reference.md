@@ -19,7 +19,7 @@ guidance. It does not define a second persistence contract.
 
 ## Precedence
 
-Use these pages as the authoritative sources:
+Use these pages as the authoritative owners:
 
 - [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) for
   target product kernels, record families, ids, and fingerprints
@@ -36,7 +36,7 @@ When persisting target products:
 
 - persist one authoritative kernel per declared scope partition
 - keep product ids in kernel metadata and keep those product ids distinct from
-  `dataset_id`
+  `kernel_scope_id`
 - keep bridge CSVs and bridge bundles as compatibility projections only once a
   target product is authoritative for that scope
 - keep provenance, explanations, reviews, comparison traces, and other

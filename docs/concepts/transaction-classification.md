@@ -97,7 +97,7 @@ Require explicit review when:
 - the fact could be either a transfer or a taxable disposition
 - the fact changes beneficial ownership but not obvious tax treatment
 - the economic meaning is safe enough for reconciliation, but tax treatment
-  still depends on later policy-owned determinants
+  still depends on later policy-owned tax inputs
 - a provider row collapses financing, trading, and fee semantics into one
   record
 - a future activity type would require a new bridge classification value

@@ -13,7 +13,7 @@ defines which artifacts are normal runtime inputs, which ones are optional
 adapter-format outputs, and which ones are oracle-only support files.
 
 The goal is simple: the system must be able to reconstruct, reconcile, journal,
-and compute tax state from source evidence and intentional checkpoints without
+and compute tax state from primary evidence and intentional checkpoints without
 depending on any one portfolio tracker.
 
 ## Design Rules
@@ -22,9 +22,9 @@ depending on any one portfolio tracker.
   artifacts, but the target pipeline extends beyond facts alone.
 - The shared runtime should remain asset-class-agnostic even when current
   adapters or policies are crypto-first.
-- Source evidence and source-backed checkpoints are first-class.
+- Primary evidence and evidence-backed checkpoints are first-class.
 - Operator confirmations may support runtime reconciliation, but they are a
-  lower-trust reference input than source-backed evidence.
+  lower-trust reference input than primary evidence.
 - Output and import adapters are optional edges, not central dependencies.
 - Oracle artifacts are comparison aids only.
 - No tax, reconciliation, or journal logic may require CoinTracking-specific
@@ -34,8 +34,8 @@ depending on any one portfolio tracker.
 
 | Class | Examples | Allowed To Establish Runtime Truth | Required In Normal Workflow | Notes |
 | ---- | ---- | ---- | ---- | ---- |
-| Source evidence | exchange exports, wallet exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
-| Checkpoint evidence | balance statements, wallet snapshots, source-backed checkpoint artifacts | Yes | Yes | First-class reconciliation input |
+| Primary evidence | exchange exports, wallet exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
+| Checkpoint evidence | balance statements, location snapshots, evidence-backed checkpoint artifacts | Yes | Yes | First-class reconciliation input |
 | Adapter-format inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
 | Oracle support artifacts | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry exports | No | No | Development and validation only; never production runtime inputs |
 | Derived outputs | CoinTracking export projection, Ledger journal, tax outputs package, checkpoint artifacts | No | No | Produced by the system |
@@ -44,8 +44,8 @@ depending on any one portfolio tracker.
 
 The normal filing-capable workflow is:
 
-1. Ingest source evidence.
-2. Select evidence and emit source-local claims.
+1. Ingest primary evidence.
+2. Select evidence and emit evidence-local claims.
 3. Compile accepted economics.
 4. Reconcile continuity, transfers, and balance targets.
 5. Accept or validate checkpoints.
@@ -108,7 +108,7 @@ Forbidden uses:
 
 ## Checkpoint Rules
 
-Checkpoints must be derived from source-backed evidence or from an explicit
+Checkpoints must be derived from primary evidence or from an explicit
 checkpoint-import workflow.
 
 Operator-confirmed balance references may unblock runtime balance checks, but
@@ -117,9 +117,9 @@ they do not satisfy filing-ready checkpoint requirements by themselves.
 A valid checkpoint may be built from:
 
 - exchange balances
-- wallet balances
+- location balances
 - statement evidence
-- source-backed inventory proofs
+- evidence-backed inventory proofs
 - an intentionally adopted opening-state package with provenance
 
 A valid checkpoint must not require:
@@ -138,6 +138,9 @@ Those artifacts may support comparison, but not checkpoint existence.
 - Keep domain services unaware of CoinTracking report schemas.
 - Keep crypto-, FX-, and security-specific terms out of shared runtime abstractions
   unless the concept is inherently specific to that adapter or output.
+  When a source literally uses a term such as `wallet`, preserve it in
+  evidence-stage records or adapter-local labels rather than in canonical
+  target product names.
 - Keep tax policy operating on `TaxInputs` built from reconciled economics and
   accepted checkpoint truth only.
 - Keep journal rendering operating on reconciled economics, accepted checkpoint
@@ -148,6 +151,6 @@ Those artifacts may support comparison, but not checkpoint existence.
 Ask this before approving new design work:
 
 > If CoinTracking disappeared tomorrow, would the system still reconstruct,
-> reconcile, checkpoint, journal, and compute taxes from source evidence?
+> reconcile, checkpoint, journal, and compute taxes from primary evidence?
 
 If the answer is no, the design has drifted out of bounds.

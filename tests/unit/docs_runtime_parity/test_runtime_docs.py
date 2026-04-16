@@ -82,7 +82,7 @@ def test_runtime_docs_pin_flattened_provenance_locator_columns() -> None:
         docs_root() / "workspace" / "working" / "normalized" / "README.md"
     ).read_text(encoding="utf-8")
     inventory_text = (
-        docs_root() / "reference" / "wallet-inventory-artifacts.md"
+        docs_root() / "reference" / "location-inventory-artifacts.md"
     ).read_text(encoding="utf-8")
 
     for column in provenance_locator_header():

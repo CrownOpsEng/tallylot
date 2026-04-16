@@ -51,7 +51,7 @@ Migration-wide rules:
 - no consumer may read a bridge surface and a target product as peer
   authorities
 - once a target product exists for an in-scope family, that target product is
-  the authoritative persisted source for that scope
+  the authoritative persisted truth surface for that scope
 - bridge surfaces that remain in use after that point are compatibility
   projections only
 - unchanged bridge outputs must remain reproducible from the authoritative
@@ -82,19 +82,19 @@ aligned and frozen.
 
 ### 2. First Upstream Slice
 
-Land the bounded
+Land the current first upstream
 [`EvidenceSet -> ClaimSet`](../reference/first-slice-contract.md) slice.
 
 Required posture:
 
 - `EvidenceSet` becomes authoritative for in-scope evidence selection
-- `ClaimSet` becomes authoritative for in-scope source-local meaning
+- `ClaimSet` becomes authoritative for in-scope evidence-local meaning
 - `translation_input_plan.json`, `EconomicActivityDraft`, and
   `SourceTranslationBatch` survive only as derived compatibility projections
 
 ### 3. First Downstream Slice
 
-Land the bounded
+Land the current first downstream
 [`EconomicFacts -> ReconciliationState -> Checkpoint`](../reference/first-downstream-slice-contract.md)
 slice.
 
@@ -109,7 +109,7 @@ Required posture:
 
 ### 4. Reader Cutovers
 
-After the bounded slices land, migrate readers one consumer surface at a time:
+After those slices land, migrate readers one consumer surface at a time:
 
 - evidence and claim readers move to target kernels first
 - reconciliation and checkpoint readers move next

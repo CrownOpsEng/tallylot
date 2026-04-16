@@ -31,7 +31,7 @@ The filing-critical output horizon remains `2023` through `2025`.
 
 The system must:
 
-- establish one source-backed, balance-confirmed checkpoint near `2026-03-23`
+- establish one evidence-backed, balance-confirmed checkpoint near `2026-03-23`
 - use the `2023-08-05` CoinTracking export set as a historical oracle, not a
   hard checkpoint
 - compute forward tax state for `2023` to `2025`
@@ -67,13 +67,13 @@ The target runtime pipeline is:
 Trust and ownership rules:
 
 - evidence selection is deterministic before claim commitment
-- claims preserve source-local meaning and explicit ambiguity
+- claims preserve evidence-local meaning and explicit ambiguity
 - economic facts assert only economic truth the system can prove safely
 - reconciliation is the trust gate before checkpoint adoption, accounting, and
   tax
 - checkpoint truth is accepted state with explicit acceptance basis
 - accounting expands and validates accepted truth; it does not repair truth
-- tax inputs assemble determinants from reconciled economics plus accepted
+- tax inputs assemble policy-ready tax inputs from reconciled economics plus accepted
   checkpoint truth
 - selected tax policies decide treatment in `TaxOutputs`; they do not decide
   source meaning, reconciliation truth, checkpoint truth, or accounting truth
@@ -82,9 +82,9 @@ Trust and ownership rules:
 
 ### Source Boundaries
 
-- source adapters produce source-local evidence today and source-local claims
-  later
-- adapters may emit only safe bridge hints and safe source-local meaning
+- source adapters produce selected-evidence observations today and evidence-local
+  claims later
+- adapters may emit only safe bridge hints and safe evidence-local meaning
 - adapters do not own reconciliation
 - adapters do not own checkpoint acceptance
 - adapters do not own accounting
@@ -139,11 +139,12 @@ Forward-looking persistence rules:
 
 - target product kernels persist as JSON documents
 - every persisted kernel carries its declared product id in metadata
-- product ids are distinct from `dataset_id`
-- upstream `*_ref` metadata fields store product ids, never `dataset_id` and
+- product ids are distinct from `kernel_scope_id`
+- upstream `*_ref` metadata fields store product ids, never `kernel_scope_id`
+  and
   never raw kernel fingerprints
 - product sidecars persist separately from kernels and are keyed by
-  `dataset_id` or narrower truthful record ids
+  `kernel_scope_id` or narrower truthful record ids
 - target basenames use the owning product or support role directly
   rather than generic names or bridge-era qualifiers
 - writes are replace-whole-partition operations, not append-in-place mutation
@@ -158,11 +159,11 @@ Forward-looking persistence rules:
 | --- | --- |
 | `EvidenceSet` | capture-scoped |
 | `ClaimSet` | capture-scoped |
-| `EconomicFacts` | assembled-source-scoped |
-| `ReconciliationState` | continuity-segment-scoped under one source scope |
-| `Checkpoint` | checkpoint-set-scoped |
+| `EconomicFacts` | claim-lineage-scoped |
+| `ReconciliationState` | continuity-segment-scoped |
+| `Checkpoint` | checkpoint-scoped |
 | `Journal` | journal-scoped under one checkpoint scope |
-| `TaxInputs` | tax-input-set-scoped |
+| `TaxInputs` | tax-input-scoped |
 | `TaxOutputs` | policy-and-tax-year-scoped inside one tax-input scope |
 
 Rules:
@@ -171,18 +172,21 @@ Rules:
 - one persisted partition owns one product id aligned with that partition
 - partition boundaries are chosen by the dimensions the owning stage actually
   reduces over
+- migration-era workspace paths may still group later products under a
+  source-scoped directory tree, but that filesystem placement does not make
+  source identity part of downstream product naming or stable-id recipes
 - target products may expose derived reporting projections across several
   partitions, but those projections do not replace the authoritative partition
   kernels
 - `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
   whole-product kernel per declared partition
 - one persisted `ReconciliationState` kernel owns one continuity-segment root
-- one persisted `Checkpoint` kernel owns one checkpoint root record
+- one persisted `Checkpoint` kernel owns one checkpoint record
 - one persisted `Journal` kernel owns one journal emission root
 - one persisted `TaxInputs` kernel owns one tax-input emission root
 - one persisted `TaxOutputs` kernel owns one policy-and-tax-year output root
 - readers use product ids or narrower record ids for target-kernel lookup;
-  `dataset_id` remains for shared support attachment and reporting only
+  `kernel_scope_id` remains for shared support attachment and reporting only
 
 ### Default Filesystem Placement
 
@@ -191,19 +195,26 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/normalized/captures/<capture_uid>/evidence_set.json`
 - `working/normalized/captures/<capture_uid>/claim_set.json`
 - `working/normalized/captures/<capture_uid>/support/gaps.json`
+- `working/normalized/captures/<capture_uid>/support/gap_explanations.json`
 - `working/normalized/captures/<capture_uid>/support/reviews.json`
+- `working/normalized/captures/<capture_uid>/support/review_explanations.json`
 - `working/normalized/captures/<capture_uid>/support/readiness.json`
+- `working/normalized/captures/<capture_uid>/support/readiness_summaries.json`
 - `working/normalized/sources/<source>/economic_facts.json`
 - `working/normalized/sources/<source>/bridge/facts.csv`
 - `working/normalized/sources/<source>/bridge/balance_snapshots.csv`
 - `working/normalized/sources/<source>/bridge/balance_references.csv`
 - `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/reconciliation_state.json`
 - `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gaps.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gap_explanations.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/reviews.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/review_explanations.json`
 - `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness.json`
-- `outputs/checkpoints/<checkpoint_label>/checkpoint.json`
-- `outputs/checkpoints/<checkpoint_label>/journal.json`
-- `outputs/checkpoints/<checkpoint_label>/tax_inputs.json`
-- `outputs/checkpoints/<checkpoint_label>/tax_outputs/<tax_policy_id>/<tax_year>.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness_summaries.json`
+- `outputs/checkpoints/<checkpoint_id>/checkpoint.json`
+- `outputs/checkpoints/<checkpoint_id>/journal.json`
+- `outputs/checkpoints/<checkpoint_id>/tax_inputs.json`
+- `outputs/checkpoints/<checkpoint_id>/tax_outputs/<tax_policy_id>/<tax_year>.json`
 
 Rules:
 
@@ -287,21 +298,22 @@ Required partition keys:
 
 | Stage family | Required partition keys |
 | --- | --- |
-| Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `interpretation_scope_id` |
+| Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `claim_scope_id` |
 | Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_proposal_id` |
-| Checkpoint and accounting | `checkpoint_set_id`, `journal_id`, `checkpoint_assertion_id`, `entry_id` |
-| Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `determinant_id`, `basis_transition_id` |
+| Checkpoint and accounting | `checkpoint_id`, `journal_id`, `checkpoint_assertion_id`, `entry_id` |
+| Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `tax_input_id`, `basis_transition_id` |
 
 Rules:
 
 - evidence selection comparisons stay bounded to one `selection_id`
-- claim adjudication stays bounded to one `interpretation_scope_id` at a time
+- claim adjudication stays bounded to one `claim_scope_id` at a time
 - economic reducers stay bounded to one `economic_facts_id` partition at a time
 - reconciliation reducers may read one continuity segment plus its explicit
   upstream references; they must not rescan unrelated full-history partitions
   per balance target
-- checkpoint reducers may read the declared `checkpoint_set_id` inputs plus
-  explicit upstream refs; they must not treat `dataset_id` as the product-join
+- checkpoint reducers may read the declared `checkpoint_id` inputs plus
+  explicit upstream refs; they must not treat `kernel_scope_id` as the
+  product-join
   key
 - tax reducers may read one tax year plus explicitly referenced carry-forward
   basis-pool state; they must not recompute unrelated years by default
@@ -318,7 +330,7 @@ high.
 Typical sidecar or cache surfaces include:
 
 - evidence selection summaries
-- interpretation-scope decision summaries
+- claim-scope decision summaries
 - reconciliation continuity summaries
 - checkpoint summaries
 - journal validation summaries
@@ -327,7 +339,8 @@ Typical sidecar or cache surfaces include:
 Rules:
 
 - sidecars are never the sole copy of business meaning
-- sidecars may be keyed by `dataset_id` or narrower truthful record ids, but
+- sidecars may be keyed by `kernel_scope_id` or narrower truthful record ids,
+  but
   they do not replace product ids for kernel lookup
 - caches are always regenerable from authoritative kernels and upstream refs
 - materialized indexes are allowed only when they accelerate declared product
@@ -348,7 +361,7 @@ or tax, ask:
 - does the design keep one authoritative kernel per scope partition
 - can unmigrated consumers survive on compatibility projections alone
 - can migrated consumers read target products without bridge lookups
-- is every hot-path determinant present in the kernel rather than in a sidecar
+- is every hot-path field present in the kernel rather than in a sidecar
 - can the stage replay deterministically from its upstream authorities
 
 If the answer to any of these is no, the design is not ready.

@@ -8,8 +8,8 @@ status: active
 nav_order: 10
 ---
 
-TallyLot is a typed Python package and CLI for source-backed intake,
-reconciliation, checkpointing, accounting validation, output rendering, and
+TallyLot is a typed Python package and CLI for evidence intake,
+reconciliation, checkpointing, accounting validation, rendering, and
 tax-oriented work.
 
 ## Runtime Posture
@@ -29,7 +29,7 @@ The target runtime pipeline is:
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
 The owner pages freeze product ids, critical-path kernel field tables, and the
-compatibility-sidecar boundary for retained legacy projections.
+compatibility sidecar boundary for retained legacy projections.
 
 ## Layer Shape
 
@@ -55,8 +55,8 @@ Use these pages as the primary owners:
 | [Domain Ontology](domain-ontology.md) | entity seams, ref recipes, and package ownership |
 | [Gaps And Readiness](gaps-and-readiness.md) | blockers, reviews, readiness, and `SubjectRef` |
 | [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) | trust gates, persistence, partitioning, and fast-path rules |
-| [First Slice Contract](../reference/first-slice-contract.md) | bounded upstream `EvidenceSet -> ClaimSet` slice |
-| [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | bounded downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |
+| [First Slice Contract](../reference/first-slice-contract.md) | current first upstream `EvidenceSet -> ClaimSet` slice |
+| [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | current first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |
 | [ROADMAP.md](../../ROADMAP.md) | sequencing, gating, and rollout phases |
 | [Current State](../status/current-state.md) | implemented runtime truth and live package layout |
 

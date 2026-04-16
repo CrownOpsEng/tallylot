@@ -17,7 +17,7 @@ materialize balance outputs.
 
 Manual submission is a checkpoint-owned input path. It produces
 `balance_snapshots.csv` and `balance_references.csv` rows for runtime balance
-checks, but it does not create source-backed document evidence on its own.
+checks, but it does not create document evidence on its own.
 
 ## Workflow
 
@@ -199,7 +199,7 @@ Successful submission reports:
 
 Manual submission writes `operator_assertion` rows into the shared unified
 reference artifact. It does not create `source_document` evidence or satisfy a
-filing-ready source-backed checkpoint on its own.
+filing-ready evidence-backed checkpoint on its own.
 
 ## Corroboration Limits
 

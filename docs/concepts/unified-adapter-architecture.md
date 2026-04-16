@@ -53,38 +53,38 @@ It should not unify around:
 
 ## Adapter Responsibility Boundary
 
-Adapters own provider-specific work only.
+Adapters own adapter-local work only.
 
 Reader-side examples:
 
-- recognizing provider-specific evidence kinds
-- parsing provider-specific files and documents
-- mapping provider fields into source-local claims
-- surfacing source-local ambiguity, precision, or unsupported cases
+- recognizing adapter-specific evidence kinds
+- parsing adapter-specific files and documents
+- mapping adapter fields into evidence-local claims
+- surfacing evidence-local ambiguity, precision, or unsupported cases
 
 Writer-side examples:
 
-- mapping accepted upstream truth into target-specific row models
+- mapping accepted upstream truth into output-specific row models
 - applying target-specific formatting and validation rules
 
-Shared runtime owns cross-provider workflow:
+Shared runtime owns cross-adapter workflow:
 
 - evidence selection and candidate comparison
 - stable ordering and fingerprints
 - shared issue, review, and readiness conventions
-- claim compilation into economic truth
-- bridge compatibility projection
+- economic compilation
+- bridge compatibility projection generation
 - replay and parity verification
-- projection writing and output packaging
+- output packaging
 
-If two adapters need the same rule and the rule is not provider-specific, it
+If two adapters need the same rule and the rule is not adapter-specific, it
 belongs in shared runtime services rather than duplicated adapter logic.
 
 ## Manifest Direction
 
 Every future adapter should publish one manifest that answers:
 
-- what evidence files, projections, or output packages it reads or writes
+- what evidence files, projections, or rendered packages it reads or writes
 - which facets it implements
 - which determinism guarantees it provides
 - which compatibility window and schema versions it supports
@@ -99,11 +99,11 @@ Use a small set of purpose-defined facets rather than one giant contract.
 
 | Facet | Purpose |
 | --- | --- |
-| `ProbeFacet` | Recognize evidence and describe route, kind, or confidence hints. |
+| `DiscoveryFacet` | Discover evidence and describe route, kind, or confidence hints. |
 | `EvidenceFacet` | Read selected evidence and emit `EvidenceSet`-aligned outputs. |
 | `StatementFacet` | Recognize and parse statement documents plus statement-specific evidence detail. |
-| `ClaimFacet` | Emit source-local claim meaning that maps into `ClaimSet`. |
-| `OutputFacet` | Emit target-specific projections or output packages from accepted upstream truth. |
+| `ClaimFacet` | Emit evidence-local claim meaning that maps into `ClaimSet`. |
+| `RenderFacet` | Emit rendered files or external packages from accepted upstream truth. |
 
 Portfolio behavior is not a separate species. It is evidence-reading behavior
 that emits position or balance meaning instead of activity-heavy claim sets.
@@ -127,11 +127,11 @@ adapter-local shell choreography.
 ## Migration Posture
 
 The unified adapter redesign remains deferred until the filing-critical path and
-bounded first slices are stable.
+current first slices are stable.
 
 Rules during the current migration window:
 
-- first-slice adapter work must emit target products through the canonical
+- adapter work for the current first slice must emit target products through the canonical
   owner pages, not adapter-local alternate schemas
 - adapters may emit declared compatibility sidecars for retained legacy
   draft-or-fact reproduction during migration, but canonical target kernels
@@ -139,7 +139,7 @@ Rules during the current migration window:
 - adapter docs may describe how adapters participate in `EvidenceSet`,
   `ClaimSet`, and compatibility projections, but they may not redefine those
   products
-- the first bounded slice must not depend on a repo-wide facet migration
+- the current first slice must not depend on a repo-wide facet migration
 - `SourceTranslationBatch` remains honest current-state truth until its bounded
   replacement slice lands
 

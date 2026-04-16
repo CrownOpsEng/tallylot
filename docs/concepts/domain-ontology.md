@@ -33,7 +33,7 @@ The target model should use these concepts explicitly:
 - `EconomicEvent`
 - `EconomicLeg`
 - `Valuation`
-- `SettlementState`
+- `SettlementStatus`
 - `LifecycleEvent`
 - `AssertionValue`
 - `CheckpointAssertion`
@@ -58,6 +58,11 @@ Rules:
 - crypto is the current filing scope, not the ontology center
 - CoinTracking is an edge import, export, and oracle input, not a runtime
   dependency
+- source-specific crypto nouns such as `wallet`, `exchange`, `address`,
+  `token`, `chain`, and `tx_hash` may remain in adapter-local,
+  source-evidence, compatibility, or current-state surfaces, but the target
+  ontology should map those ideas to repo-owned domain nouns such as
+  `Location`, `Instrument`, `Position`, or `Contract`
 - persistence implements the model; it does not define the model
 - no wrapper lanes, compatibility shims, or legacy parallel runtime models
   should survive after a clean replacement is ready
@@ -163,13 +168,13 @@ and one as-of point.
 Rules:
 
 - it is distinct from a reconciliation `CheckpointProposal`
-- it is distinct from a computed `BalanceSnapshot`
-- it is distinct from a raw `BalanceReference`
+- it is distinct from current bridge balance snapshots
+- it is distinct from current bridge balance references
 - it is distinct from the containing accepted `Checkpoint`
 - downstream stages may consume checkpoint assertions, but they must not
   redefine them into incompatible local variants
 - accepted checkpoint truth should be modeled as checkpoint assertions first
-  and checkpoint root records second
+  and checkpoint records second
 - checkpoint assertions carry one `AssertionValue`, not one untyped convenience
   blob
 
@@ -183,7 +188,7 @@ Minimum valuation concerns:
 - currency
 - purpose
 - timestamp
-- source
+- origin
 - confidence
 - provenance
 
@@ -268,7 +273,7 @@ Minimum invariant seams:
   withholding, lifecycle restructure, and correction or supersession behavior
 - one stable leg set with signed quantities and explicit leg roles
 - explicit effective time in canonical temporal form
-- explicit settlement and lifecycle state where continuity or later treatment
+- explicit settlement status and lifecycle event where continuity or later treatment
   depends on them
 - explicit supersession lineage for corrections instead of in-place mutation
 - ownership and counterparty refs where they are known and later stages rely on
@@ -276,9 +281,9 @@ Minimum invariant seams:
 - valuation records with explicit purpose where downstream behavior depends on
   them
 
-## `SettlementState`
+## `SettlementStatus`
 
-`SettlementState` remains first-class whenever completeness, continuity, or
+`SettlementStatus` remains first-class whenever completeness, continuity, or
 later treatment depends on it.
 
 Shared vocabulary:
@@ -292,9 +297,9 @@ Shared vocabulary:
 
 Rules:
 
-- settlement state should remain explicit where timing, completeness, or
+- settlement status should remain explicit where timing, completeness, or
   continuity matters
-- settlement state should not be inferred later from one output-specific row
+- settlement status should not be inferred later from one output-specific row
   label when the economic model can carry it directly
 
 ## `LifecycleEvent`
@@ -322,18 +327,18 @@ Rules:
 
 ## First Downstream Slice Restriction
 
-The first bounded downstream slice intentionally uses a narrow `PositionRef`
+The current first downstream slice intentionally uses a narrow `PositionRef`
 surface for Coinbase-held spot balances.
 
 First-slice rule:
 
-- the first downstream slice may use only
-  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_balance"]`
+- this slice may use only
+  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_position"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
 - `location_ref` must resolve to the Coinbase-held custodial spot location or
   sub-location in scope
 - `instrument_ref` must resolve to the in-scope spot asset
-- `contract_ref` stays `null` in the first downstream slice
+- `contract_ref` stays `null` in this slice
 - later slices may widen `position_key` values and contract participation,
   but they must keep the canonical tuple shape unchanged
 
@@ -349,7 +354,8 @@ Rules:
 - bridge classifications do not define the full ontology
 - future support for broader financial instruments should be driven by the
   target ontology, not by endlessly adding new activity labels
-- output hints and policy hints remain downstream aids, not the primary source
+- output hints and policy hints remain downstream aids, not the primary
+  authority
   of economic truth
 
 Bridge-specific classification rules live in
@@ -378,7 +384,7 @@ Required domain ownership:
 - `domain/entities/` for entity models, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
-- `domain/claims/` for claims, interpretation scopes, bundles, and compilation
+- `domain/claims/` for claims, claim scopes, bundles, and compilation
   decisions
 - `domain/economics/` for events, legs, valuations, settlement state, and
   lifecycle state
@@ -388,7 +394,7 @@ Required domain ownership:
   targets, and checkpoint proposals
 - `domain/checkpoints/` for accepted checkpoint truth
 - `domain/accounting/` for journal models
-- `domain/tax/` for determinants, basis transitions, tax-policy contracts,
+- `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
   carry-forward state, and outputs
 
 Required application ownership:
@@ -398,19 +404,19 @@ Required application ownership:
   inspection, and timezone review
 - `application/evidence/` for shared statement extraction, evidence selection,
   and provenance locator handling
-- `application/claims/` for evidence-to-claim translation
-- `application/economics/` for claim compilation to economic facts
+- `application/claims/` for claim construction from evidence
+- `application/economics/` for economic compilation
 - `application/compatibility/` for bridge compatibility projections only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
-- `application/reconciliation/` for continuity, linkage, balance-target
+- `application/reconciliation/` for continuity, linkage, balance target
   evaluation, readiness reducers, and checkpoint proposals
-- `application/checkpoints/` for checkpoint evidence assembly, manual balance
+- `application/checkpoints/` for checkpoint assembly, manual balance
   submission validation, and checkpoint acceptance
 - `application/accounting/` for journal expansion, validation, and summaries
-- `application/tax/` for tax-input assembly, basis transitions, policy
-  selection, and tax-output rendering
-- `application/outputs/` for downstream renderer orchestration
+- `application/tax/` for tax input construction, basis transitions, policy
+  selection, and tax-output generation
+- `application/rendering/` for downstream rendering orchestration
 - `application/workspace/` for workspace resolution and initialization
 
 Boundary rules:
