@@ -43,6 +43,9 @@ When persisting target products:
   target product is authoritative for that scope
 - keep provenance, explanations, reviews, comparison traces, and other
   non-kernel detail in sidecars
+- keep shared support basenames aligned to the stored families, for example
+  `gap_records.json`, `review_records.json`, `readiness_records.json`, and
+  `readiness_rollup_records.json`
 - treat caches and indexes as regenerable accelerators, not as business truth
 
 ## Reminder

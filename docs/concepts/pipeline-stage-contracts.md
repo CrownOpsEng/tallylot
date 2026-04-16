@@ -253,12 +253,12 @@ Cardinality:
 
 Sidecar content may include:
 
-- document metadata
+- document detail
 - statement row detail
 - inventory detail
-- candidate-selection reasoning
+- selection rationale
 - parse diagnostics
-- rich provenance detail
+- provenance detail
 
 Controlled vocabularies:
 
@@ -752,7 +752,7 @@ Must not:
 Handoff to `ReconciliationState`:
 
 - `EconomicFacts` provides accepted economic events, legs, identity seams,
-  settlement state, lifecycle state, and valuations where they are already
+  settlement status, lifecycle events, and valuations where they are already
   safe
 - it records the upstream `claim_set_refs` that justified the accepted
   economic kernel
@@ -763,7 +763,7 @@ Handoff to `ReconciliationState`:
 
 Purpose:
 
-- completeness, linkage, continuity, checkpoint proposals, and
+- completeness, linkage, continuity, checkpoint proposal records, and
   reconciliation-owned blockers
 
 Kernel header:
@@ -778,7 +778,7 @@ Owns:
 - continuity decisions
 - balance targets and assertion outcomes
 - reconciliation-owned gaps and readiness
-- checkpoint proposals derived from reconciled economics plus checkpoint
+- checkpoint proposal records derived from reconciled economics plus checkpoint
   evidence
 
 Record families:
@@ -863,7 +863,7 @@ Stable ids:
 - `balance_target_id` identifies one reconciliation-owned balance assertion
   target
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
-  proposal
+  proposal record
 - `reconciliation_state_id` uses component array
   `[economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id` uses component array
@@ -879,8 +879,8 @@ Stable ids:
   `[continuity_segment_id, subject_ref, as_of, target_refs]`
 - `expected_value_fingerprint` is the canonical fingerprint of the
   `AssertionValue` carried in `expected_value`
-- `evidence_refs` provide audit support, but they are not part of proposal
-  identity
+- `evidence_refs` provide audit support, but they are not part of checkpoint
+  proposal identity
 
 Ordering:
 
@@ -927,7 +927,7 @@ Must not:
 
 Handoff to `Checkpoint`:
 
-- `ReconciliationState` provides checkpoint proposals, corroboration,
+- `ReconciliationState` provides checkpoint proposal records, corroboration,
   continuity outcomes, and reconciliation-owned blockers
 - checkpoint acceptance still belongs to the checkpoint stage
 
@@ -1001,8 +1001,8 @@ Controlled vocabularies:
 
 Sidecar content may include:
 
-- supporting evidence refs
-- supporting provenance detail
+- evidence refs
+- provenance detail
 - continuity explanation
 - opening-state adoption detail
 - acceptance rationale
@@ -1043,10 +1043,11 @@ Serialization:
 Lineage rule:
 
 - `proposal_refs` uses ordered `checkpoint_proposal_id` values
-  when reconciliation-owned proposals support the accepted assertion
+  when reconciliation-owned checkpoint proposal records support the accepted
+  assertion
 - product-level `reconciliation_state_refs` remain the broader upstream
-  partition lineage; assertion-level proposal refs point only at the accepted
-  proposal lineage when that narrower lineage exists
+  partition lineage; assertion-level proposal refs point only at accepted
+  checkpoint proposal record lineage when that narrower lineage exists
 
 Fingerprint inputs:
 
@@ -1288,7 +1289,7 @@ Controlled vocabularies:
 Sidecar content may include:
 
 - tax-relevant valuation detail
-- supporting ownership and counterparty detail
+- ownership and counterparty detail
 - pool-transition explanation
 - tax-owned blocker detail
 
@@ -1330,7 +1331,7 @@ Must guarantee:
 - jurisdiction-neutral tax inputs
 - explicit basis-affecting state changes
 - explicit tax-owned blockers where upstream truth is not tax-complete
-- tax-incomplete items stay explicit instead of being upgraded into guessed
+- tax-incomplete inputs stay explicit instead of being upgraded into guessed
   treatment
 
 Must not:
@@ -1364,9 +1365,8 @@ Kernel header:
 
 Owns:
 
-- policy-owned output groups, carry-forward state, and unsupported-input
-  records
-- tax-policy explanations, limitations, and rendered output detail
+- tax output records, carry-forward records, and unsupported-input records
+- tax-policy explanations, limitations, and rendered output content
 - tax-owned blockers that survive policy execution
 
 Record families:
@@ -1402,7 +1402,7 @@ Sidecar content may include:
 - rendered policy content
 - filing notes and limitations
 - carry-forward explanation
-- unsupported-input notes
+- unsupported-input explanation
 
 Product-root cardinality:
 
@@ -1415,7 +1415,7 @@ Stable ids:
 
 - `tax_outputs_id` identifies one emitted `TaxOutputs` kernel
 - `tax_output_id` identifies one policy-owned output emission
-- `carry_forward_id` identifies one carry-forward state record
+- `carry_forward_id` identifies one carry-forward record
 - `unsupported_input_id` identifies one persisted unsupported input
   record
 - `tax_outputs_id` uses component array `[tax_inputs_ref, tax_policy_id, tax_year]`
@@ -1478,6 +1478,7 @@ The pipeline products rely on shared support contracts defined elsewhere:
 - [Domain Ontology](domain-ontology.md) for entity seams, refs,
   `AssertionValue`, and package ownership
 - [Gaps And Readiness](gaps-and-readiness.md) for `GapRecord`,
-  `GapExplanation`, reviews, readiness, and `SubjectRef`
+  `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
+  `ReadinessRecord`, `ReadinessRollupRecord`, and `SubjectRef`
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) for
   persistence rules, partitioning rules, and fast-path expectations

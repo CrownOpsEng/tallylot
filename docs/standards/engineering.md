@@ -214,7 +214,7 @@ Current application of this rule:
   Reserve `summary` for current-state, presentation, or compatibility
   aggregates that are not the canonical grouped record family. Inside
   explanation or review sidecars, prefer concrete prose-field names such as
-  `headline`, `known_facts`, or `recommended_follow_up` over `*_summary`.
+  `headline`, `known_facts`, or `follow_up` over `*_summary`.
 - Do not use bare `summary` as a target-stage controlled-vocabulary value or
   package responsibility label when a more concrete output noun would say what
   the surface holds. Prefer names such as `policy_summary`,
@@ -263,6 +263,11 @@ Current application of this rule:
 - When a record owns one obvious child-id or child-ref family, prefer the
   child noun directly, such as `assertion_ids`, `proposal_refs`, or
   `target_refs`, over repeating the full stage or product stem.
+- In prose or downstream contracts outside the owning record family, keep the
+  full stage-owned noun when the shorter child noun would blur the family.
+  Prefer `checkpoint proposal ids` or `checkpoint proposal lineage` over bare
+  `proposal ids` or `proposal lineage` once the discussion leaves
+  `CheckpointProposalRecord` fields.
 - Apply the same rule to one obvious upstream-ref family or review-pair field
   inside a record. Prefer `member_refs`, `observation_refs`, `event_refs`,
   `assertion_refs`, or `gap_ids` over longer forms when the owning record
@@ -304,6 +309,10 @@ Current application of this rule:
   support role in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
   need directory context alone to tell what the file holds.
+- Inside shared support directories, make basenames mirror the stored record or
+  explanation family. Prefer `gap_records.json`, `review_records.json`,
+  `readiness_records.json`, and `readiness_rollup_records.json` over shorter
+  plurals that need `support/` context to reveal shape.
 - In forward-looking docs and code, reserve `artifact` for current-state bridge
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `projection`,
@@ -447,6 +456,11 @@ Current application of this rule:
 - Prefer the base noun when a field already stores the locator or ref itself.
   Avoid extra suffixes such as `_identity` when `locator` or
   `origin_ref` already says what the value holds.
+- In explanation sidecars, drop guidance adjectives once the field role already
+  implies them. Prefer `possible_meanings`, `resolution_options`,
+  `next_action`, or `follow_up` over `candidate_meanings`,
+  `allowed_resolution_methods`, `recommended_next_action`, or
+  `recommended_follow_up` unless the longer form changes the contract.
 - For compatibility-only material that is not a target concept, name it by
   boundary and role rather than promoting it to a pseudo-domain type.
   Prefer `bridge annotation sidecar detail`, `output annotation sidecar`, or
@@ -455,6 +469,11 @@ Current application of this rule:
 - Name the held thing separately from its identity seam or persistence shell:
   `BasisPool` is a concept, `BasisPoolRef` is its ref, and
   `BasisTransitionRecord` is a kernel row family.
+- When prose is naming one persisted emitted family rather than the broader
+  concept, use the record-family noun. Prefer `checkpoint proposal records`,
+  `readiness records`, or `carry-forward records` over looser prose such as
+  `proposals`, `readiness`, or `carry-forward state` when the stored shape is
+  the point.
 - Prefer specific names such as `csv_parser.py`, `balance_mapper.py`, or
   `issue_rules.py` over generic names.
 - Match package structure to the architecture first and the external provider

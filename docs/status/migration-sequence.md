@@ -70,7 +70,7 @@ Before broad implementation, freeze:
   [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
 - ontology and ref seams on
   [Domain Ontology](../concepts/domain-ontology.md)
-- shared blockers, reviews, readiness, and `SubjectRef` rules on
+- shared gap, review, and readiness contracts plus `SubjectRef` rules on
   [Gaps And Readiness](../concepts/gaps-and-readiness.md)
 - persistence, partitioning, and fast-path rules on
   [Reconciliation And Tax Architecture](../concepts/reconciliation-tax-architecture.md)

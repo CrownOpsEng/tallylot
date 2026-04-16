@@ -54,7 +54,7 @@ Use these pages as the primary owners:
 | [Bridge To Target Mapping](bridge-to-target-mapping.md) | authoritative writer rules, compatibility projections, and reader cutovers |
 | [Pipeline Stage Contracts](pipeline-stage-contracts.md) | target product kernels, ids, ordering, and handoff rules |
 | [Domain Ontology](domain-ontology.md) | entity seams, ref recipes, and package ownership |
-| [Gaps And Readiness](gaps-and-readiness.md) | blockers, reviews, readiness, and `SubjectRef` |
+| [Gaps And Readiness](gaps-and-readiness.md) | gap, review, and readiness contracts plus `SubjectRef` |
 | [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) | trust gates, persistence, partitioning, and fast-path rules |
 | [First Slice Contract](../reference/first-slice-contract.md) | current first upstream `EvidenceSet -> ClaimSet` slice |
 | [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | current first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |

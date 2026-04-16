@@ -202,8 +202,9 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
 - stage-owned support sidecars live under
   `working/products/<product_family>/<product_id>/support/` using
-  `gaps.json`, `gap_explanations.json`, `reviews.json`,
-  `review_explanations.json`, `readiness.json`, and `readiness_rollups.json`
+  `gap_records.json`, `gap_explanations.json`, `review_records.json`,
+  `review_explanations.json`, `readiness_records.json`, and
+  `readiness_rollup_records.json`
 - compatibility projections live under the authoritative product they depend on,
   for example:
   - `working/products/economic_facts/<economic_facts_id>/compatibility/facts.csv`
@@ -265,7 +266,7 @@ Required hot-path content includes:
 
 The hot path should not repeatedly join in:
 
-- full provenance detail
+- provenance detail
 - reviews
 - large explanation text
 - evidence sidecar detail
@@ -333,7 +334,7 @@ Typical sidecar or cache surfaces include:
 - reconciliation continuity explanations
 - checkpoint acceptance reports
 - journal validation reports
-- tax carry-forward state indexes
+- tax carry-forward record indexes
 
 Rules:
 

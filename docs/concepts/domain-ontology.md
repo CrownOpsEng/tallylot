@@ -168,7 +168,7 @@ and one as-of point. Persisted kernels carry that concept as
 
 Rules:
 
-- it is distinct from a reconciliation checkpoint proposal
+- it is distinct from a reconciliation-stage checkpoint proposal record
 - it is distinct from current bridge balance snapshots
 - it is distinct from current bridge balance references
 - it is distinct from the containing accepted `Checkpoint`
@@ -244,7 +244,7 @@ activity-label expansion.
 Modeling rules:
 
 - model accepted economic meaning as `EconomicEvent` plus `EconomicLeg`
-- keep settlement, supersession, and lifecycle state explicit instead of
+- keep settlement status, supersession lineage, and lifecycle events explicit instead of
   flattening them into activity labels
 - keep valuation first-class when it changes downstream accounting,
   checkpoint, or tax behavior
@@ -388,16 +388,16 @@ Required domain ownership:
   decisions
 - `domain/claims/` for claims, claim scopes, bundles, and compilation
   decisions
-- `domain/economics/` for events, legs, valuations, settlement state, and
-  lifecycle state
+- `domain/economics/` for events, legs, valuations, settlement status, and
+  lifecycle events
 - `domain/assertions/` for `AssertionValue` and its variants
-- `domain/support/` for gaps, reviews, readiness, and `SubjectRef`
+- `domain/support/` for gap, review, and readiness models plus `SubjectRef`
 - `domain/reconciliation/` for continuity segments, event links, balance
-  targets, and checkpoint proposals
+  targets, and checkpoint proposal records
 - `domain/checkpoint/` for accepted checkpoint truth
 - `domain/accounting/` for journal models
 - `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
-  carry-forward state, and outputs
+  carry-forward records, and outputs
 
 Required application ownership:
 
@@ -412,7 +412,7 @@ Required application ownership:
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
-  evaluation, readiness reducers, and checkpoint proposals
+  evaluation, readiness reducers, and checkpoint proposal records
 - `application/checkpoint/` for checkpoint assembly, manual balance
   submission validation, and checkpoint acceptance
 - `application/accounting/` for journal expansion, validation, and reporting

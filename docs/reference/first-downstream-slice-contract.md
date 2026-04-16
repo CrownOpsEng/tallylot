@@ -29,7 +29,8 @@ This slice is:
 - accepted `EconomicFacts` emission for supported Coinbase retail activity and
   recognized statement-backed balance observations
 - bounded `ReconciliationState` emission for continuity segments, exact balance
-  targets, and checkpoint proposals over the economic facts in this slice
+  targets, and checkpoint proposal records over the economic facts in this
+  slice
 - bounded `Checkpoint` emission for statement-backed position-quantity
   assertions
 - continued compatibility with current `TransactionFact`,
@@ -54,7 +55,7 @@ The slice may emit only these downstream kernel families:
 | `EconomicFacts` | `ValuationRecord` | zero rows by default; valuations land only when an unchanged parity slice proves they are required |
 | `ReconciliationState` | `ContinuitySegmentRecord` | one segment per Coinbase position subject in this slice and bounded time span |
 | `ReconciliationState` | `BalanceTargetRecord` | only `kind = exact_balance`, with direct `expected_value` and `observed_value` using `AssertionValue` |
-| `ReconciliationState` | `CheckpointProposalRecord` | only proposals supported by exact-balance targets and statement evidence in this slice |
+| `ReconciliationState` | `CheckpointProposalRecord` | only checkpoint proposal records supported by exact-balance targets and statement evidence in this slice |
 | `Checkpoint` | `CheckpointRecord` | accepted checkpoint record for assertions in this slice only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
@@ -158,7 +159,8 @@ Not allowed in this slice:
 - event identity based on `bundle_decision_id` or rejected-bundle lists
 - `expected_value_ref`
 - `observed_value_ref`
-- proposal ids that include raw evidence-ref lists as identity components
+- checkpoint proposal ids that include raw evidence-ref lists as identity
+  components
 
 ## Bridge Compatibility Projections
 
@@ -245,14 +247,15 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 
 Replay checks must also prove that incidental input ordering changes do not
 change event ids, leg ids, continuity segment ids, balance target ids,
-proposal ids, assertion ids, or rendered output.
+checkpoint proposal ids, checkpoint assertion ids, or rendered output.
 
 ## Allowed Drift
 
 Not allowed:
 
 - drift in accepted economic kernel fields
-- drift in continuity segment, balance target, proposal, or assertion ids
+- drift in continuity segment ids, balance target ids, checkpoint proposal ids,
+  or checkpoint assertion ids
 - quantity, accepted-value, trust-level, or acceptance-basis drift
 - bridge-output drift on unchanged evidence in this slice
 - balance inspect/check/summarize drift on unchanged evidence in this slice

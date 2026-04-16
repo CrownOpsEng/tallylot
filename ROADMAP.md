@@ -197,7 +197,7 @@ Exit criteria:
 
 Goal:
 
-- move continuity, linkage, completeness, and checkpoint proposals onto an
+- move continuity, linkage, completeness, and checkpoint proposal records onto an
   explicit reconciliation product
 
 Deliver:
@@ -260,7 +260,7 @@ Deliver:
 
 - `TaxInputs` contracts
 - selected tax-policy execution over those inputs
-- year partitioning and carry-forward state
+- year partitioning and carry-forward records
 - filing-critical policy outputs derived from accepted runtime truth rather than
   CoinTracking tax reports
 
@@ -362,7 +362,7 @@ Rules:
   repeatedly joining provenance, review, or renderer detail
 - derived snapshots and reusable state should be introduced where replay cost
   becomes material
-- tax work should support tax-year partitioning and carry-forward reuse instead
+- tax work should support tax-year partitioning and carry-forward record reuse instead
   of recomputing full acquisition history for every output row
 
 ## Guardrails

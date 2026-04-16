@@ -8,7 +8,7 @@ status: active
 nav_order: 45
 ---
 
-Use this page when defining shared blocker, review, readiness, or generic
+Use this page when defining shared gap, review, readiness, or generic
 subject-reference contracts. This document owns the target cross-stage support
 model.
 
@@ -117,7 +117,7 @@ Rules:
 - `balance_target_id` identifies one reconciliation-owned balance assertion
   target when one exact target is the truthful blocker or review scope
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
-  proposal before acceptance
+  proposal record before acceptance
 - `product_scope_id` identifies one shared support attachment scope over one
   canonical product kernel and is not a substitute for a narrower scope
 - do not attach a gap or review to `product_scope` when `subject`,
@@ -148,8 +148,8 @@ Rules:
 
 ## Shared Stage Vocabulary
 
-Use one stage vocabulary across gaps, reviews, readiness, checkpoint reuse, and
-downstream reporting.
+Use one stage vocabulary across gap records, review records, readiness
+records, checkpoint-stage reuse, and downstream reporting.
 
 Shared stage vocabulary:
 
@@ -277,10 +277,10 @@ Fields:
 - `gap_id`
 - `known_facts`
 - `missing_inputs`
-- `candidate_meanings`
+- `possible_meanings`
 - `required_evidence`
-- `allowed_resolution_methods`
-- `recommended_next_action`
+- `resolution_options`
+- `next_action`
 - `provenance_refs`
 
 Ordering:
@@ -404,7 +404,7 @@ Fields:
 - `review_id`
 - `headline`
 - `known_facts`
-- `recommended_follow_up`
+- `follow_up`
 - `provenance_refs`
 
 Ordering:
@@ -617,7 +617,7 @@ Keep these first-class:
 - valuations
 - identities and refs
 - ownership state
-- settlement and lifecycle state
+- settlement status and lifecycle events
 - `CheckpointAssertion` truth
 - postings
 - tax inputs and outputs
