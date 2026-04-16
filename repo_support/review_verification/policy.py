@@ -68,6 +68,7 @@ STANDARDS_GUARD_EXACT_PATHS = {
     "AGENTS.md",
     "ROADMAP.md",
     "Makefile",
+    ".gitmessage.txt",
     ".gitignore",
     ".vscode/settings.json",
 }

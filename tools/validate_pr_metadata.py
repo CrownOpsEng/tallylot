@@ -97,8 +97,9 @@ def _validate_why_entries(entries: tuple[str, ...]) -> tuple[str, ...]:
             entry
         ):
             return (
-                "`Why:` must describe the problem or constraint; move issue linkage "
-                "bullets to `Issue linkage:`",
+                "`Why:` must describe the motivating problem, trigger, constraint, "
+                "or risk that makes the PR necessary; move issue linkage bullets "
+                "to `Issue linkage:`",
             )
     return ()
 
