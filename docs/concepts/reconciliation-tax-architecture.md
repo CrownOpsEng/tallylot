@@ -91,7 +91,7 @@ Trust and ownership rules:
   `location_label` rather than source-era nouns in canonical target contracts
 - adapters do not own reconciliation
 - adapters do not own checkpoint acceptance
-- adapters do not own journal expansion or validation
+- adapters do not own journal expansion or entry checks
 - adapters do not own tax policy
 
 ### Output Boundaries
@@ -153,9 +153,10 @@ Forward-looking persistence rules:
   page documents a stronger reason to differ
 - product sidecars persist separately from kernels and are keyed by
   `product_scope_id` or narrower truthful record ids
-- canonical shared-support rollups stay stage- and domain-oriented;
+- canonical readiness rollups stay stage- and domain-oriented;
   source-grouped operator views stay as derived reports or compatibility
-  projections rather than as shared support record or rollup families
+  projections rather than as gap, review, or readiness record families or
+  readiness rollups
 - target basenames use the owning product or support role directly
   rather than generic names or bridge-era qualifiers
 - stable ids and helper refs keep the owning family stem once they cross
@@ -206,8 +207,9 @@ Rules:
 - one persisted `Journal` kernel owns one journal emission root
 - one persisted `TaxInputs` kernel owns one tax-input emission root
 - one persisted `TaxOutputs` kernel owns one tax-input-policy-year output root
-- readers use product ids or narrower record ids for authoritative product lookup;
-  `product_scope_id` remains for shared support attachment and reporting only
+- readers use product ids or narrower record ids for authoritative product
+  lookup; `product_scope_id` remains for shared reporting plus
+  gap/review/readiness attachment only
 
 ### Default Filesystem Placement
 
@@ -221,7 +223,8 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/products/journals/<journal_id>/journal.json`
 - `working/products/tax_inputs/<tax_inputs_id>/tax_inputs.json`
 - `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
-- stage-owned support sidecars live beside the authoritative kernel in that
+- stage-owned gap, review, and readiness sidecars live beside the
+  authoritative kernel in that
   same product directory, under `support/`, using `gap_records.json`,
   `gap_explanations.json`, `review_records.json`,
   `review_explanations.json`, `readiness_records.json`, and

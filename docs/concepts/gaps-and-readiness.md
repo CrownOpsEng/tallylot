@@ -9,29 +9,29 @@ nav_order: 45
 ---
 
 Use this page when defining shared gap, review, readiness, or generic
-subject-reference contracts. This document owns the target cross-stage support
-model.
+subject-reference contracts. This document owns the target cross-stage gap,
+review, and readiness model.
 
 Current runtime note:
 
 - the live runtime still uses stage-specific issue and review outputs such as
   `IssueRecord` and `NormalizationReviewRecord`
 - those current surfaces remain current-state truth
-- this page defines the target shared support contracts for later
+- this page defines the target gap, review, and readiness contracts for later
   implementation
   slices
 
 ## Design Rules
 
-- shared support types stay compact and stage-neutral
+- gap, review, and readiness records stay compact and stage-neutral
 - explanation-heavy detail belongs in sidecars, not in hot-path kernels
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
 - product-scope `ReadinessRollupRecord` rows are derived from subject-level or
   scope-level truth, not stored as the only truth
-- shared support records and sidecars help stages interoperate without erasing
-  stage ownership
+- gap, review, and readiness records plus sidecars help stages interoperate
+  without erasing stage ownership
 
 ## Provenance
 
@@ -45,8 +45,8 @@ Rules:
   identity
 - capture identity stays separate from human-readable labels and filesystem
   paths
-- shared support records and sidecars link to provenance rather than embedding
-  large repeated evidence detail directly
+- gap, review, and readiness records and sidecars link to provenance rather
+  than embedding large repeated evidence detail directly
 
 ## `SubjectRef`
 
@@ -119,16 +119,17 @@ Rules:
   target when one exact target is the truthful blocker or review scope
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
   proposal record before acceptance
-- `product_scope_id` identifies one shared support attachment scope over one
-  canonical product kernel and is not a substitute for a narrower scope
+- `product_scope_id` identifies one shared gap/review/readiness attachment
+  scope over one canonical product kernel and is not a substitute for a
+  narrower scope
 - do not attach a gap or review to `product_scope` when `subject`,
   `selection`, `claim_scope`, `continuity_segment`,
   `balance_target`, or `checkpoint_proposal` would be truthful
 
 ### `product_scope_id`
 
-`product_scope_id` is defined once for all target support records, rollups,
-projections, and sidecars.
+`product_scope_id` is defined once for target gap, review, readiness, rollup,
+projection, and sidecar attachments.
 
 Rules:
 
@@ -141,8 +142,9 @@ Rules:
 - `product_scope_id` is never a target product id, never an upstream product
   ref, and never the primary reader key when one product id or narrower record
   id exists
-- `product_scope_id` is used only for shared reporting and sidecar attachment
-  when no narrower truthful subject or scope exists
+- `product_scope_id` is used only for shared reporting plus gap/review/
+  readiness sidecar attachment when no narrower truthful subject or scope
+  exists
 - `product_scope_id` must not replace `selection_id`,
   `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
   `checkpoint_proposal_id`, or one record id when those are truthful
@@ -262,7 +264,7 @@ Rules:
 - `owner_stage` identifies who owns the gap meaning
 - `blocking_stages` identifies who is blocked by the unresolved condition
 - stages may add stage-local subtyping later, but they must not redefine the
-  shared support contracts out of existence
+  gap, review, and readiness contracts out of existence
 - non-subject scopes must still use stable ids rather than prose labels
 - `resolved` and `superseded` gaps remain valid persisted history; they are not
   deleted in place
@@ -654,6 +656,7 @@ Performance implication:
 - current `IssueRecord` and `NormalizationReviewRecord` remain live bridge
   outputs today
 - later implementation may map current bridge issues and reviews into the
-  shared support contracts where stage ownership and meaning line up
+  shared gap/review/readiness contracts where stage ownership and meaning line
+  up
 - current-state docs keep current issue and review names where accuracy
   requires them

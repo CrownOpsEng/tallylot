@@ -70,7 +70,8 @@ Must freeze:
 - critical-path `ClaimRecord` field tables, `observation_refs`, and
   the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
-- shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
+- shared gap, review, and readiness records and sidecars:
+  `GapRecord`, `GapExplanation`, `ReviewRecord`,
   `ReviewExplanation`, `ReadinessRecord`, `ReadinessRollupRecord`,
   `SubjectRef`, truthful `claim_scope_id` and `balance_target_id`
   attachments, and the downstream shared-subject seams needed for journal
@@ -95,10 +96,15 @@ Must freeze:
 - child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
   `checkpoint_proposal_id`, `JournalAccountRef`, and `JournalUnitRef` as the
   canonical downstream stems instead of shorter or mixed-family alternates
+- checkpoint-assertion kind naming that keeps quantity, amount, and state
+  stems parallel across sibling values such as `position_quantity`,
+  `cash_quantity`, `basis_amount`, `owner_state`, and `location_state`
 - package-root naming that keeps `journal` aligned across stage vocabulary and
   package ownership, uses singular concept roots such as `assertion/`, avoids
   umbrella roots such as `entities/` when the identity families are already
-  known, and keeps shared support roots split into concrete nested families
+  known, keeps gap/review/readiness roots explicit when the docs mean those
+  families directly, and keeps shared support roots split into concrete nested
+  families
   such as `gap/`, `review/`, and `readiness/`
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
@@ -109,7 +115,8 @@ Must freeze:
 
 Deliver:
 
-- aligned owner pages for target products, ontology, support records and sidecars, and
+- aligned owner pages for target products, ontology, gap/review/readiness
+  records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
 - one first upstream slice and one first downstream slice
@@ -180,7 +187,8 @@ Deliver:
   claim-bundle-decision records
 - claim fields frozen for the first upstream slice plus
   `observation_refs`
-- shared support records and sidecars attached to claim scopes where needed
+- shared gap, review, and readiness records and sidecars attached to claim
+  scopes where needed
 - declared compatibility projections for `EconomicActivityDraft` and
   `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
   kernels

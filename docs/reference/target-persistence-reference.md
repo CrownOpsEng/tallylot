@@ -46,8 +46,9 @@ When persisting target products:
 - keep provenance, explanations, reviews, comparison traces, and other
   non-kernel detail in sidecars
 - keep source-grouped operator views as derived reports or compatibility
-  projections rather than as canonical shared-support rollups
-- keep shared support basenames aligned to the stored families, for example
+  projections rather than as canonical readiness rollups
+- keep gap/review/readiness basenames aligned to the stored families, for
+  example
   `gap_records.json`, `review_records.json`, `readiness_records.json`, and
   `readiness_rollup_records.json`
 - treat caches and indexes as regenerable accelerators, not as business truth

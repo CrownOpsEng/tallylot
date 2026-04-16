@@ -113,10 +113,10 @@ Out of scope for this slice:
 - `legal_owner`
 - `counterparty`
 - `statement_document`
-- `contract_term`
+- `contract`
 
-Bridge or output annotation sidecar detail and gap or review support sidecar
-content are not claim kinds and are never emitted by this slice.
+Bridge or output annotation sidecar detail and gap, review, or readiness
+sidecar content are not claim kinds and are never emitted by this slice.
 
 Frozen kind-specific claim fields:
 
@@ -203,7 +203,7 @@ Required derived compatibility projections:
 - `EconomicActivityDraft` derived from `ClaimSet` plus declared compatibility
   sidecars keyed by `claim_id` or `claim_bundle_id`
 - `SourceTranslationBatch` derived from `ClaimSet` plus declared
-  compatibility sidecars and shared support sidecars
+  compatibility sidecars and shared gap/review/readiness sidecars
 - derived `TransactionFact` rows preserved for current bridge consumers
 - `balance_references.csv` preserved for current downstream compatibility
 - `cointracking_csv` preserved through the active bridge/output path
@@ -325,7 +325,8 @@ Not allowed:
 Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 
 - richer explanation text
-- additional support sidecar fields or detail that do not change product
+- additional gap, review, readiness, or other sidecar detail that does not
+  change product
   meaning
 
 ## Explicitly Out Of Scope

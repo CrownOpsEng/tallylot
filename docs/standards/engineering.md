@@ -172,7 +172,7 @@ Current application of this rule:
 - Forward-looking cross-stage support reducers and readiness reporting belong
   under `application/readiness/` rather than being buried under
   `application/reconciliation/`.
-- Forward-looking journal expansion and validation belong under
+- Forward-looking journal expansion and entry checks belong under
   `application/journal/` rather than under a broader `accounting/` umbrella or
   as extra checkpoint-side helpers.
 - Rendering belongs under `application/rendering/`; CoinTracking is one
@@ -240,6 +240,11 @@ Current application of this rule:
   concrete and mirrored. `support/` is acceptable only when it is split into
   families such as `gap/`, `review/`, and `readiness/` rather than flattened
   into one catch-all boundary.
+- In forward-looking prose, prefer explicit family names such as `gap`,
+  `review`, and `readiness` over the looser umbrella `shared support` when
+  those are the actual owned families. Reserve generic `support` for
+  intentional roots or bounded field names such as `domain/support/`,
+  `support/`, or `support_kind`.
 - When cross-stage support logic needs its own application boundary, give it
   the family noun directly, such as `application/readiness/`, rather than
   burying it under a neighboring stage package.
@@ -371,8 +376,9 @@ Current application of this rule:
   record id naturally describe the same accepted object, prefer one shared
   `<product>_id` over inventing `<product>_set_id` only to separate metadata
   from that root record.
-- For shared support attachment over one emitted product kernel, prefer the
-  explicit `product_scope_id` over generic names such as `dataset_id`.
+- For shared gap/review/readiness attachment over one emitted product kernel,
+  prefer the explicit `product_scope_id` over generic names such as
+  `dataset_id`.
 - Name partition scopes after the actual stable dimensions the product id
   reduces over. If `TaxOutputs` depends on tax-input lineage plus policy and
   year, prefer `tax-input-policy-year-scoped` over a shorter label that hides
@@ -388,10 +394,11 @@ Current application of this rule:
   support role in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
   need directory context alone to tell what the file holds.
-- Inside shared support directories, make basenames mirror the stored record or
-  explanation family. Prefer `gap_records.json`, `review_records.json`,
-  `readiness_records.json`, and `readiness_rollup_records.json` over shorter
-  plurals that need `support/` context to reveal shape.
+- Inside `support/` directories that hold shared gap/review/readiness sidecars,
+  make basenames mirror the stored record or explanation family. Prefer
+  `gap_records.json`, `review_records.json`, `readiness_records.json`, and
+  `readiness_rollup_records.json` over shorter plurals that need `support/`
+  context to reveal shape.
 - In forward-looking docs and code, reserve `artifact` for current-state bridge
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `projection`,
@@ -555,11 +562,23 @@ Current application of this rule:
   forward-looking prose for stage-owned persisted outputs and sidecars.
   Reserve broader `validation` wording for human review, workflow posture, or
   adapter-edge rules rather than for the canonical target check family.
+- Once `Journal` owns `EntryCheckRecord`, prefer `entry check` or
+  `entry-check` wording over generic `validation` when naming target-stage
+  journal records, prose, or package responsibilities.
 - In target controlled vocabularies, keep the stage noun and held-thing noun
   aligned once the target stage owns the boundary. Prefer
   `economic_measurement`, `checkpoint_measurement`, `journal_measurement`, and
   `tax_measurement` over mixed-purpose labels, and `unit_balance` over
   `commodity_balance` on end-state target surfaces.
+- When one `kind` family mixes quantities, amounts, and state, keep those
+  suffixes parallel across the sibling values. Prefer families such as
+  `position_quantity`, `cash_quantity`, `basis_amount`, `owner_state`, and
+  `location_state` over mixing bare nouns or generic `*_value` labels into the
+  same target-controlled vocabulary.
+- When a target-layer `kind` is naming one shared domain concept and the
+  narrower detail lives in the fields, keep the shared domain noun as the kind.
+  Prefer `contract` over `contract_term` when the kind still belongs to the
+  shared `Contract` family.
 - Use generic shared nouns only for intentionally repo-owned cross-stage seams.
   Names such as `SubjectRef` or `OriginRef` are allowed only when the
   abstraction itself is the owned contract. Everywhere else, prefer the
@@ -661,35 +680,39 @@ Current application of this rule:
   `compatibility/` is clearer than `bridge_compatibility/` unless another
   compatibility boundary would make the shorter name ambiguous.
 
-### Seven-View Naming And Congruency Audit
+### Ten-View Naming And Congruency Audit
 
 Run this audit before freezing or renaming any forward-looking product, record
 family, ref, id, package, or file name.
 
-1. Concept view:
-   - does the name say what the thing is in end-state domain terms, not just
-     when it is used in the workflow
-   - would the name still read correctly if the source were not crypto-specific
-2. Shape view:
-   - does the noun match the held shape exactly: concept, id, ref, record,
-     rollup, summary, sidecar, projection, file, package, observation kind, or
-     controlled-vocabulary value
-3. Ownership view:
-   - does the name point at the owning stage, layer, or boundary instead of a
-     generic cross-stage label
-4. Persistence view:
-   - do field names, filenames, and package paths make the held truth obvious
-     without relying on directory context alone, and do local discriminators
-     use keys rather than anchors or other abstract stand-ins
-5. Migration view:
-   - are bridge, current, legacy, compat, oracle, output, and source-specific
-     qualifiers or nouns kept only on intentionally non-canonical surfaces
-6. Family view:
-   - do record families, ids, refs, filenames, and bounded vocabulary members
-     keep one shared stem and mirrored role naming across the whole family
-7. Kind-value view:
-   - do `kind` values name the held thing directly without repeating the owning
-     family or drifting into pseudo-type labels
+1. Concept view: does the name say what the thing is in end-state domain terms,
+   not just when it is used in the workflow, and would it still read correctly
+   if the source were not crypto-specific?
+2. Shape view: does the noun match the held shape exactly: concept, id, ref,
+   record, rollup, summary, sidecar, projection, file, package, observation
+   kind, or controlled-vocabulary value?
+3. Ownership view: does the name point at the owning stage, layer, or
+   boundary instead of a generic cross-stage label?
+4. Persistence view: do field names, filenames, and package paths make the
+   held truth obvious without relying on directory context alone, and do local
+   discriminators use keys rather than anchors or other abstract stand-ins?
+5. Migration view: are bridge, current, legacy, compat, oracle, output, and
+   source-specific qualifiers or nouns kept only on intentionally
+   non-canonical surfaces?
+6. Family view: do record families, ids, refs, filenames, and bounded
+   vocabulary members keep one shared stem and mirrored role naming across the
+   whole family?
+7. Kind-value view: do `kind` values name the held thing directly without
+   repeating the owning family or drifting into pseudo-type labels?
+8. Source-bleed view: are source-system, provider, asset-class, bridge-era,
+   or oracle nouns kept only on intentionally local, compatibility, or
+   current-state surfaces?
+9. Parallel-family view: do sibling products, record families, helper refs,
+   and package stems mirror each other in suffix, role naming, and vocabulary
+   style?
+10. Paired-axis view: do paired fields or vocabulary families such as
+    `basis`, `support_kind`, and `continuity_kind` stay on distinct semantic
+    axes without overlapping or drifting into synonyms?
 
 When one canonical target name changes, update every owner page, bounded-slice
 reference, roadmap phase, helper reference, and control-plane routing page that

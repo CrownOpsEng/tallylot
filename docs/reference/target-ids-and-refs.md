@@ -28,7 +28,7 @@ Use the owner pages first:
   `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain refs plus
   identity seams
 - [Gaps And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
-  shared support attachments, and `product_scope_id`
+  shared gap/review/readiness attachments, and `product_scope_id`
 
 This page keeps only reusable target ids and ref tuples that are not primary
 owner concepts elsewhere.

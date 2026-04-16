@@ -374,10 +374,18 @@ Bridge-specific classification rules live in
 - keep `journal` aligned across the end-state stage vocabulary, package roots,
   and product-adjacent prose; reserve `accounting` for broader prose or
   bridge-local hint families
+- prefer explicit family names such as `gap`, `review`, and `readiness` in
+  forward-looking prose when those are the owned sidecars; reserve generic
+  `support` for the intentional shared root or bounded field names such as
+  `support_kind`
 - avoid umbrella package roots such as `entities/` once the owned identity
   families are already known
 - keep singular concept families on singular package stems such as
   `assertion/`
+- keep target-layer kind families aligned to the shared domain noun or held
+  truth axis. Prefer `contract` over `contract_term`, and kind families such
+  as `basis_amount`, `owner_state`, and `location_state` over mixed or more
+  generic alternates
 - do not bake bridge, legacy, current, or compatibility qualifiers into
   target-layer concept names or helper ids unless the name is intentionally
   current-state or adapter-local
