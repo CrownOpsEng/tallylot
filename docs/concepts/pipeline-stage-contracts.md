@@ -101,8 +101,8 @@ Shared rules:
 - when a product id hashes ordered upstream header refs, keep the component
   array in the same canonical order as the header fields unless this page
   explicitly declares a stronger reason to differ
-- `product_scope_id` remains a derived shared-support and reporting attachment
-  only;
+- `product_scope_id` remains a derived gap/review/readiness and reporting
+  attachment only;
   it is not a product id or upstream product ref
 
 ### Record Reference Rule
@@ -162,8 +162,9 @@ Shared rules:
 - `product_scope_id` is derived from the emitted kernel fingerprint after
   canonical fingerprinting; it is not part of the product header or fingerprint
   inputs
-- `product_scope_id` is the product-scope attachment id for readiness,
-  comparison, and other shared sidecars when no narrower truthful scope exists
+- `product_scope_id` is the product-scope attachment id for gap, review,
+  readiness, comparison, and other declared shared sidecars when no narrower
+  truthful scope exists
 - `product_scope_id` is not a substitute for a narrower record id or stage-owned
   scope such as `selection_id`, `claim_scope_id`, `continuity_segment_id`,
   `balance_target_id`, or `checkpoint_proposal_id`
@@ -873,9 +874,10 @@ Stable ids:
   `[economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id` uses component array
   `[subject_ref, segment_start_at, segment_end_at]`
-- `continuity_segment_id` is the reusable stage-local scope id for support
-  attachments and rollups; `reconciliation_state_id` is the emitted product id
-  over that scope plus its upstream lineage
+- `continuity_segment_id` is the reusable stage-local scope id for gap,
+  review, and readiness attachments plus readiness rollups;
+  `reconciliation_state_id` is the emitted product id over that scope plus its
+  upstream lineage
 - `event_link_id` uses component array
   `[continuity_segment_id, kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
@@ -884,8 +886,8 @@ Stable ids:
   `[continuity_segment_id, subject_ref, as_of, target_refs]`
 - `expected_value_fingerprint` is the canonical fingerprint of the
   `AssertionValue` carried in `expected_value`
-- `evidence_refs` provide audit support, but they are not part of checkpoint
-  proposal identity
+- `evidence_refs` provide audit traceability, but they are not part of
+  checkpoint proposal identity
 
 Ordering:
 
@@ -988,14 +990,14 @@ Controlled vocabularies:
   - `reference_ready`
 - `CheckpointAssertionRecord.basis`:
   - `document_evidence`
-  - `reported_balance`
-  - `reconciled_rollforward`
+  - `reported_observation`
+  - `reconciled_continuity`
   - `adopted_opening`
   - `manual_assertion`
 - `CheckpointAssertionRecord.support_kind`:
-  - `document_balance`
-  - `reported_balance`
-  - `location_balance`
+  - `document_observation`
+  - `reported_observation`
+  - `location_observation`
   - `inventory_observation`
   - `manual_assertion`
 - `continuity_kind`:
@@ -1048,7 +1050,7 @@ Serialization:
 Lineage rule:
 
 - `proposal_refs` uses ordered `checkpoint_proposal_id` values
-  when reconciliation-owned checkpoint proposal records support the accepted
+  when reconciliation-owned checkpoint proposal records back the accepted
   assertion
 - product-level `reconciliation_state_refs` remain the broader upstream
   partition lineage; assertion-level checkpoint proposal refs point only at accepted
@@ -1070,7 +1072,7 @@ Minimum admissibility rules:
   the lower-trust basis stays explicit in the accepted checkpoint record
 - `reference_ready` is required when accepted checkpoint truth is suitable only
   for reference use because it relies solely on manual assertion without
-  evidence-backed support
+  evidence-backed corroboration
 - `adopted_opening` remains a distinct acceptance basis and must preserve
   provenance plus the continuity kind used to roll it into accepted checkpoint
   state
@@ -1078,7 +1080,7 @@ Minimum admissibility rules:
 Must guarantee:
 
 - accepted checkpoint truth is first-class
-- evidence-backed support remains preferred
+- evidence-backed corroboration remains preferred
 - manual assertions do not silently become filing-ready checkpoint truth
 - adopted opening state remains explicit instead of masquerading as direct
   observation

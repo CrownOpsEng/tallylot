@@ -29,7 +29,7 @@ Owner-page precedence:
   kernels, ids, ordering, and fingerprints
 - [Domain Ontology](domain-ontology.md) owns identity seams and ref recipes
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) owns migration
-  cutovers and compatibility projections
+  cutovers and compatibility views
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)
   owns persistence, partitioning, and fast-path rules
 - this page owns only adapter responsibilities, manifest direction, facet
@@ -72,8 +72,8 @@ Shared runtime owns cross-adapter workflow:
 - evidence selection and candidate comparison
 - stable ordering and fingerprints
 - shared issue, review, and readiness conventions
-- economic-fact construction
-- bridge compatibility projection generation
+- `EconomicFacts` construction
+- bridge compatibility view generation
 - replay and parity verification
 - output packaging
 
@@ -84,7 +84,7 @@ belongs in shared runtime services rather than duplicated adapter logic.
 
 Every future adapter should publish one manifest that answers:
 
-- what evidence files, projections, or rendered packages it reads or writes
+- what evidence files, compatibility views, or rendered packages it reads or writes
 - which facets it implements
 - which determinism guarantees it provides
 - which compatibility window and schema versions it supports
@@ -123,11 +123,11 @@ Required verification properties:
 - unchanged inputs preserve declared evidence-kind recognition
 - unchanged inputs preserve declared ordering and fingerprints
 - unsupported or ambiguous cases surface explicitly
-- compatibility projections remain reproducible from authoritative target
+- compatibility views remain reproducible from authoritative target
   kernels during migration
 - output adapters reject unsupported upstream shapes before serialization
 
-Verification should center on adapter outputs and shared projections, not on
+Verification should center on adapter outputs and shared compatibility views, not on
 adapter-local shell choreography.
 
 ## Migration Posture
@@ -143,7 +143,7 @@ Rules during the current migration window:
   draft-or-fact reproduction during migration, but canonical target kernels
   stay limited to target meaning
 - adapter docs may describe how adapters participate in `EvidenceSet`,
-  `ClaimSet`, and compatibility projections, but they may not redefine those
+  `ClaimSet`, and compatibility views, but they may not redefine those
   products
 - the first upstream slice must not depend on a repo-wide facet
   migration

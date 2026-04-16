@@ -17,7 +17,7 @@ the active implementation boundary until later bounded increments replace it. At
 same time, it is not the final architecture center. Future stage contracts live
 in [Pipeline Stage Contracts](pipeline-stage-contracts.md).
 
-During migration, bridge compatibility projections may remain valid runtime
+During migration, bridge compatibility views may remain valid runtime
 surfaces for unmigrated readers, but they are never target contracts.
 
 ## Bridge Purpose And Limits

@@ -89,7 +89,7 @@ in-repo guesswork.
 ## Filing-Window Rules
 
 - prefer deterministic current behavior over ambitious interface redesign
-- prefer shared support extraction over adapter-local workflow drift
+- prefer shared adapter-foundation extraction over adapter-local workflow drift
 - prefer explicit issues and reviews over guesswork
 - do not widen the current source adapter contract during the filing window
 - do not make the unified adapter redesign a hidden prerequisite for the first

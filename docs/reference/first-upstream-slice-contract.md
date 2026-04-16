@@ -1,6 +1,6 @@
 ---
 title: "First Upstream Slice Contract"
-summary: "Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility projections."
+summary: "Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
@@ -187,7 +187,7 @@ Ownership rules:
 - `ClaimBundleDecisionRecord` must not carry event fields, leg fields, or
   other economic facts
 
-## Bridge Compatibility Projections
+## Bridge Compatibility Views
 
 For evidence in this slice, the first upstream slice changes authority but
 preserves bridge compatibility.
@@ -197,7 +197,7 @@ Authoritative products after the slice:
 - `EvidenceSet` for evidence selection and typed observations
 - `ClaimSet` for evidence-local meaning
 
-Required derived compatibility projections:
+Required derived compatibility views:
 
 - `translation_input_plan.json` derived from `EvidenceSet`
 - `EconomicActivityDraft` derived from `ClaimSet` plus declared compatibility
@@ -210,8 +210,8 @@ Required derived compatibility projections:
 
 Compatibility rule:
 
-- bridge projections remain required during the compatibility window
-- bridge projections are not authoritative for target meaning in this slice once
+- bridge views remain required during the compatibility window
+- bridge views are not authoritative for target meaning in this slice once
   `EvidenceSet` and `ClaimSet` exist
 
 Declared compatibility sidecar boundary:
@@ -271,7 +271,7 @@ Bundle rule:
 
 ## Parity Gates
 
-Retained compatibility projections are part of the slice parity bar. Kernel
+Retained compatibility views are part of the slice parity bar. Kernel
 parity alone is not sufficient while these legacy readers remain active.
 
 Unchanged evidence must preserve all of the following:

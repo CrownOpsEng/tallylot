@@ -9,7 +9,7 @@ nav_order: 10
 ---
 
 TallyLot is a typed Python package and CLI for evidence intake,
-reconciliation, checkpoint assembly, journal entry checks, rendering, and
+reconciliation, checkpoint acceptance, journal entry checks, rendering, and
 tax computation.
 
 ## Runtime Posture
@@ -30,7 +30,7 @@ The target runtime pipeline is:
 
 The owner pages freeze product ids, product headers, critical-path kernel field
 tables, and the compatibility sidecar boundary for retained legacy
-projections.
+hint fields.
 
 ## Layer Shape
 
@@ -51,7 +51,7 @@ Use these pages as the primary owners:
 | Page | Owns |
 | --- | --- |
 | [Current Bridge Contracts](current-bridge-contracts.md) | live bridge truth and bridge surface rules |
-| [Bridge To Target Mapping](bridge-to-target-mapping.md) | authoritative writer rules, compatibility projections, and reader cutovers |
+| [Bridge To Target Mapping](bridge-to-target-mapping.md) | authoritative writer rules, compatibility views, and reader cutovers |
 | [Pipeline Stage Contracts](pipeline-stage-contracts.md) | target product kernels, ids, ordering, and handoff rules |
 | [Domain Ontology](domain-ontology.md) | identity seams, ref recipes, and package ownership |
 | [Gaps And Readiness](gaps-and-readiness.md) | gap, review, and readiness contracts plus `SubjectRef` |

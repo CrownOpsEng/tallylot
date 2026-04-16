@@ -142,7 +142,7 @@ Rules:
 - `product_scope_id` is never a target product id, never an upstream product
   ref, and never the primary reader key when one product id or narrower record
   id exists
-- `product_scope_id` is used only for shared reporting plus gap/review/
+- `product_scope_id` is used only for shared operator views plus gap/review/
   readiness sidecar attachment when no narrower truthful subject or scope
   exists
 - `product_scope_id` must not replace `selection_id`,
@@ -152,7 +152,7 @@ Rules:
 ## Shared Stage Vocabulary
 
 Use one stage vocabulary across gap records, review records, readiness
-records, checkpoint-stage reuse, and downstream reporting.
+records, checkpoint-stage reuse, and downstream operator views.
 
 Shared stage vocabulary:
 
@@ -439,7 +439,7 @@ Rules:
 ## Readiness Model
 
 Readiness is subject-first, stage-specific, and reducible into canonical
-rollups plus derived reports.
+rollups plus operator views.
 
 ### `ReadinessStatus`
 
@@ -579,7 +579,7 @@ Rules:
   readiness and gap records without manual status editing
 - canonical rollup kinds stay stage- and domain-oriented rather than grouping
   by source identity
-- source-grouped operator views belong in derived reports or compatibility
+- source-grouped views belong in operator views or compatibility
   projections rather than in `ReadinessRollupRecord.rollup_kind`
 - stages use only the dimensions they actually own or can derive safely
 
@@ -608,7 +608,8 @@ Meaning:
 
 - one stage owns one meaning surface
 - downstream stages reference upstream records by stable ids or product ids
-- `product_scope_id` is allowed only for shared reporting and sidecar attachment
+- `product_scope_id` is allowed only for shared operator views and sidecar
+  attachment
   when no narrower truthful product id, scope id, or record id exists
 - downstream stages add stage-owned outputs only
 
@@ -649,7 +650,8 @@ Performance implication:
 - repeated full detail copies increase read amplification, join cost, and drift
   risk
 - the correct shape is stable ids or product ids plus stage-owned deltas, with
-  `product_scope_id` reserved for shared reporting or sidecar attachment only
+  `product_scope_id` reserved for shared operator views or sidecar attachment
+  only
 
 ## Current-To-Target Boundary
 

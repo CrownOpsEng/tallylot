@@ -21,8 +21,9 @@ depending on any one portfolio tracker.
 
 - The current bridge centers on `TransactionFact` plus shared balance
   files, but the target pipeline extends beyond facts alone.
-- The shared runtime should remain asset-class-agnostic even when current
-  adapters or policies are crypto-first.
+- The shared runtime should remain source-agnostic and asset-class-agnostic
+  once work moves beyond adapter-local and evidence-local boundaries, even when
+  current adapters or policies are crypto-first.
 - Primary evidence and evidence-backed checkpoints are first-class.
 - Operator confirmations may support runtime reconciliation, but they are a
   lower-trust reference input than primary evidence.
@@ -46,9 +47,9 @@ depending on any one portfolio tracker.
 The normal filing-capable workflow is:
 
 1. Ingest primary evidence.
-2. Select evidence and emit evidence-local claims.
-3. Compile accepted economics.
-4. Reconcile continuity, transfers, and balance targets.
+2. Emit `EvidenceSet` and `ClaimSet`.
+3. Build `EconomicFacts`.
+4. Build `ReconciliationState`.
 5. Accept checkpoints.
 6. Emit a journal and run its entry checks.
 7. Build `TaxInputs` from reconciled economics plus accepted checkpoint truth.
@@ -81,7 +82,7 @@ CoinTracking support is intentionally narrow:
 CoinTracking support must not expand into:
 
 - required runtime inputs for tax computation
-- required runtime inputs for checkpoint assembly
+- required runtime inputs for checkpoint acceptance
 - shared domain enums or invariants that only exist because CoinTracking has
   them
 - business logic keyed primarily on CoinTracking report columns

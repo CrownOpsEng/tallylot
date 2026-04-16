@@ -169,8 +169,9 @@ Current application of this rule:
   planned-item models, review assembly, and report rendering.
 - Normalization window and derived-balance helpers belong under
   `application/normalization/` rather than as nearby flat siblings.
-- Forward-looking cross-stage support reducers and readiness reporting belong
-  under `application/readiness/` rather than being buried under
+- Forward-looking cross-stage gap, review, and readiness reducers plus
+  readiness rollups and operator views belong under
+  `application/readiness/` rather than being buried under
   `application/reconciliation/`.
 - Forward-looking journal expansion and entry checks belong under
   `application/journal/` rather than under a broader `accounting/` umbrella or
@@ -265,7 +266,9 @@ Current application of this rule:
   - `Id` and `*_id` for stable identifiers only
   - `Record` for persisted record families
   - `Explanation` for explanatory sidecars keyed to one kernel or support record
-  - `Projection` for compatibility outputs or reshaped reader-facing views
+  - `View` for compatibility outputs or other reshaped reader-facing surfaces
+  - `Projection` for transformation or mapping concepts rather than the
+    persisted or emitted reader surface itself
   - `Rollup` for derived grouped records over subject or scope truth
   - `Summary` for reader-facing or compatibility aggregates that do not define a
     stable grouped kernel contract
@@ -286,7 +289,7 @@ Current application of this rule:
   per-product field set.
 - Prefer concrete owning nouns over abstract containers. Avoid names such as
   `Core`, `Data`, `Info`, `Context`, `Payload`, or `Item` when `Record`,
-  `Explanation`, `Projection`, or the domain noun would say what the surface
+  `Explanation`, `View`, or the domain noun would say what the surface
   actually holds.
 - Avoid abstract boundary labels such as `core` or `main` for forward-looking
   package, product, or concept names when the owning stage, layer, or domain
@@ -391,7 +394,7 @@ Current application of this rule:
   product token, prefer `product_slug` over `product_name` so the stable token
   reads in parallel with `source_slug` and does not sound like display prose.
 - For persisted files and workspace basenames, prefer the owning product or
-  support role in the filename. Avoid generic names such as `state.json`,
+  sidecar family in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
   need directory context alone to tell what the file holds.
 - Inside `support/` directories that hold shared gap/review/readiness sidecars,
@@ -401,14 +404,14 @@ Current application of this rule:
   context to reveal shape.
 - In forward-looking docs and code, reserve `artifact` for current-state bridge
   outputs, oracle/reference packages, or intentionally mixed file families.
-  When the storage role is known, prefer `kernel`, `sidecar`, `projection`,
+  When the storage role is known, prefer `kernel`, `sidecar`, `view`,
   `file`, or `package`.
 - In forward-looking migration prose, use `surface` for anything readers and
   writers cut over. Reserve `artifact` for current-state file families,
   oracle/reference bundles, or mixed packages where the stored shape itself is
   the point.
 - In forward-looking migration docs, describe non-authoritative bridge outputs
-  as derived compatibility projections or compatibility sidecars. Reserve
+  as derived compatibility views or compatibility sidecars. Reserve
   bridge-era process verbs such as `compiled` for live bridge implementation
   surfaces only.
 - Reserve `surface` for migration, runtime-boundary, or application-boundary
@@ -430,10 +433,10 @@ Current application of this rule:
 - Inside canonical target rollups, use the actual grouping identifier in
   `rollup_kind` when the key is itself a canonical identifier.
 - Keep canonical target rollup families stage- and domain-oriented. If
-  operators still need source-grouped views, expose them as derived reports or
-  compatibility projections rather than as shared target `RollupRecord`
+  operators still need source-grouped views, expose them as operator views or
+  compatibility views rather than as shared target `RollupRecord`
   vocabulary members.
-- When a derived report or compatibility projection truly stores the shared
+- When an operator view or compatibility view truly stores the shared
   source slug as its grouping key, prefer `source_slug` over bare `source`.
 - In canonical target-layer evidence and claim contracts, use `source_*` only
   when the field truly stores source identity or another source-derived value
@@ -477,6 +480,12 @@ Current application of this rule:
   trust or readiness tiers for `trust_level`, support shapes for
   `support_kind`, and acceptance reasons for `basis` instead of mixing those
   dimensions inside one field family.
+- When adjacent vocabularies live on different semantic axes, do not reuse one
+  slice-local label across all of them if that would blur reason, support
+  shape, and continuity shape. Prefer reason labels such as
+  `reconciled_continuity` in `basis`, observation-shape labels such as
+  `document_observation` in `support_kind`, and continuity-shape labels such
+  as `reconciled_rollforward` in `continuity_kind`.
 - For bounded `basis` or similar reason vocabularies, drop redundant suffixes
   such as `_match`, `_preferred`, or `_duplicate` when the field already
   establishes that the value is the decision basis.
@@ -619,7 +628,8 @@ Current application of this rule:
   on source-evidence, adapter-local, compatibility, or current-state surfaces
   unless the target concept is genuinely that specific. Prefer repo-owned
   canonical nouns such as `Location`, `Instrument`, `Position`, `Contract`,
-  `Subject`, or `Transfer` when those are the broader end-state seams.
+  `EventLink`, or `CheckpointAssertion` when those are the broader end-state
+  seams.
 - Once the pipeline moves past evidence-local products such as `EvidenceSet`
   and `ClaimSet`, do not keep provider or source-system nouns in later product
   record names, helper refs, stable ids, or partition labels unless those
@@ -629,10 +639,10 @@ Current application of this rule:
   exception, keep that provider noun in the scope paragraph, example, or
   bounded-slice section rather than in canonical target record names, helper
   refs, stable ids, or directory stems.
-- Derived reports and compatibility projections may still group by
+- Operator views and compatibility views may still group by
   `source_slug` where operators need that reporting lens, but that dimension
   must not leak into downstream product ids, record ids, authoritative
-  directory stems, or canonical shared-support rollup vocabularies.
+  directory stems, or canonical readiness-rollup vocabularies.
 - When a canonical target contract must preserve a source-provided label,
   preserve the value without freezing the source noun into the field name.
   Prefer target-aligned names such as `location_label` over
@@ -647,7 +657,8 @@ Current application of this rule:
   asset-class-specific qualifiers into default keys such as `position_key`
   when the broader noun already owns the slice.
 - In forward-looking prose, use `primary evidence`, `evidence-backed`, or the
-  owning support noun when describing trust or support quality. Reserve
+  concrete corroboration noun when describing trust or corroboration quality.
+  Reserve
   `source_*` names for actual source identity such as `source_slug`,
   source-scoped adapter families, or current-state/source-local surfaces.
 - Prefer product-aligned nouns over abstract process jargon when the product
@@ -655,8 +666,12 @@ Current application of this rule:
   more abstract tax-record noun when the record is the kernel row inside
   `TaxInputs`, and `JournalEntryRecord` is clearer than an alternate
   `AccountingEntryRecord` once `Journal` is the owned product family.
+- In forward-looking workflow prose, use the emitted product name once the
+  owner page already freezes that boundary. Prefer phrases such as
+  `build EconomicFacts`, `build ReconciliationState`, or `emit TaxOutputs`
+  over looser process wording such as `compile accepted economics`.
 - In forward-looking target persistence, authoritative directory stems should
-  follow the owning product or support family. Keep source- or checkpoint-local
+  follow the owning product or sidecar family. Keep source- or checkpoint-local
   directory stems only for current-state, compatibility, or genuinely
   source-owned or checkpoint-owned surfaces.
 - Do not bake migration qualifiers such as `bridge`, `legacy`, `current`, or
@@ -676,7 +691,7 @@ Current application of this rule:
   `semantic bundle`, `semantic scope`, or `whole-kernel` unless the extra
   abstraction is the point.
 - Prefer the shortest boundary noun that still distinguishes the seam. When one
-  package exists only to host migration compatibility projections,
+  package exists only to host migration compatibility views,
   `compatibility/` is clearer than `bridge_compatibility/` unless another
   compatibility boundary would make the shorter name ambiguous.
 
@@ -689,7 +704,7 @@ family, ref, id, package, or file name.
    not just when it is used in the workflow, and would it still read correctly
    if the source were not crypto-specific?
 2. Shape view: does the noun match the held shape exactly: concept, id, ref,
-   record, rollup, summary, sidecar, projection, file, package, observation
+   record, rollup, summary, sidecar, view, projection, file, package, observation
    kind, or controlled-vocabulary value?
 3. Ownership view: does the name point at the owning stage, layer, or
    boundary instead of a generic cross-stage label?
