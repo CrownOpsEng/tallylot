@@ -27,7 +27,7 @@ Current runtime note:
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- kernel-scope readiness summaries are derived from subject-level or scope-level
+- kernel-scope readiness rollups are derived from subject-level or scope-level
   truth, not stored as the only truth
 - shared support structures help stages interoperate without erasing stage
   ownership
@@ -496,12 +496,12 @@ Rules:
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before claim commitment
 - reducers work from subject readiness plus gaps, not from hand-built
-  kernel-scope readiness summaries
+  kernel-scope readiness rollups
 - a subject may be ready for one stage and blocked for another
 - readiness points to blocking gap ids rather than hiding blockers in summary
   text
 
-### `ReadinessSummaryRecord`
+### `ReadinessRollupRecord`
 
 Purpose:
 
@@ -509,7 +509,7 @@ Purpose:
 
 Fields:
 
-- `readiness_summary_id`
+- `readiness_rollup_id`
 - `stage`
 - `rollup_kind`
 - `rollup_key`
@@ -532,7 +532,8 @@ Controlled `rollup_kind` vocabulary:
 
 Rollup-key rules:
 
-- `source` uses the shared source slug
+- `source` uses the shared source slug and remains a reporting-only rollup
+  dimension rather than a downstream domain identity
 - `location` uses one `location_id`
 - `instrument` uses one `instrument_id`
 - `continuity_segment` uses one `continuity_segment_id`
@@ -542,8 +543,8 @@ Rollup-key rules:
 
 Stable ids:
 
-- `readiness_summary_id` identifies one derived readiness summary record
-- `readiness_summary_id` uses component array
+- `readiness_rollup_id` identifies one derived readiness rollup record
+- `readiness_rollup_id` uses component array
   `[stage, rollup_kind, rollup_key]`
 
 Ordering:
@@ -553,26 +554,26 @@ Ordering:
 
 Serialization:
 
-- serialize readiness summary records only
+- serialize readiness rollup records only
 - use stable object-key ordering
-- preserve the declared readiness summary order above
+- preserve the declared readiness rollup order above
 
 Fingerprint inputs:
 
-- readiness summary records in canonical order
+- readiness rollup records in canonical order
 - `schema_version`
 - sorted `blocking_gap_ids`
-- the ordered `ReadinessRecord` ids that fed the summary
+- the ordered `ReadinessRecord` ids that fed the rollup
 
 Rules:
 
-- `ReadinessSummaryRecord` rows are derived output, not the only stored truth
+- `ReadinessRollupRecord` rows are derived output, not the only stored truth
 - `partial` requires at least one resolved assertion plus at least one open
   blocking gap id
 - if no required assertion has resolved yet, status is `blocked`, not
   `partial`
 - if no blocker applies, status is `ready`, not `partial`
-- kernel-scope readiness summaries remain reproducible from ordered readiness
+- kernel-scope readiness rollups remain reproducible from ordered readiness
   and gap records without manual status editing
 - stages use only the dimensions they actually own or can derive safely
 

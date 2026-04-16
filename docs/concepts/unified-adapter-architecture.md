@@ -108,6 +108,12 @@ Use a small set of purpose-defined facets rather than one giant contract.
 Portfolio behavior is not a separate species. It is evidence-reading behavior
 that emits position or balance meaning instead of activity-heavy claim sets.
 
+Facet names stay short and family-consistent. Avoid mixing one longer alternate
+such as `RenderingFacet` or one unrelated boundary noun such as `OutputFacet`
+into the same facet family when the shorter repo term is already established.
+The repo keeps `RenderFacet` at the executable facet boundary while the broader
+application package remains `application/rendering/`.
+
 ## Deterministic Verification Model
 
 Adapter verification must be a written contract, not a best-effort habit.

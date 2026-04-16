@@ -35,6 +35,8 @@ Use these pages as the authoritative owners:
 When persisting target products:
 
 - persist one authoritative kernel per declared scope partition
+- keep authoritative kernels under product-owned directories rather than
+  migration-era source or checkpoint containers
 - keep product ids in kernel metadata and keep those product ids distinct from
   `kernel_scope_id`
 - keep bridge CSVs and bridge bundles as compatibility projections only once a

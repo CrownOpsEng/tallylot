@@ -192,34 +192,33 @@ Rules:
 
 Use these paths in forward-looking docs and later implementation work:
 
-- `working/normalized/captures/<capture_uid>/evidence_set.json`
-- `working/normalized/captures/<capture_uid>/claim_set.json`
-- `working/normalized/captures/<capture_uid>/support/gaps.json`
-- `working/normalized/captures/<capture_uid>/support/gap_explanations.json`
-- `working/normalized/captures/<capture_uid>/support/reviews.json`
-- `working/normalized/captures/<capture_uid>/support/review_explanations.json`
-- `working/normalized/captures/<capture_uid>/support/readiness.json`
-- `working/normalized/captures/<capture_uid>/support/readiness_summaries.json`
-- `working/normalized/sources/<source>/economic_facts.json`
-- `working/normalized/sources/<source>/bridge/facts.csv`
-- `working/normalized/sources/<source>/bridge/balance_snapshots.csv`
-- `working/normalized/sources/<source>/bridge/balance_references.csv`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/reconciliation_state.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gaps.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gap_explanations.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/reviews.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/review_explanations.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness_summaries.json`
-- `outputs/checkpoints/<checkpoint_id>/checkpoint.json`
-- `outputs/checkpoints/<checkpoint_id>/journal.json`
-- `outputs/checkpoints/<checkpoint_id>/tax_inputs.json`
-- `outputs/checkpoints/<checkpoint_id>/tax_outputs/<tax_policy_id>/<tax_year>.json`
+- `working/products/evidence_sets/<evidence_set_id>/evidence_set.json`
+- `working/products/claim_sets/<claim_set_id>/claim_set.json`
+- `working/products/economic_facts/<economic_facts_id>/economic_facts.json`
+- `working/products/reconciliation_states/<reconciliation_state_id>/reconciliation_state.json`
+- `working/products/checkpoints/<checkpoint_id>/checkpoint.json`
+- `working/products/journals/<journal_id>/journal.json`
+- `working/products/tax_inputs/<tax_inputs_id>/tax_inputs.json`
+- `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
+- stage-owned support sidecars live under
+  `working/products/<product_family>/<product_id>/support/` using
+  `gaps.json`, `gap_explanations.json`, `reviews.json`,
+  `review_explanations.json`, `readiness.json`, and `readiness_rollups.json`
+- compatibility projections live under the authoritative product they depend on,
+  for example:
+  - `working/products/economic_facts/<economic_facts_id>/compatibility/facts.csv`
+  - `working/products/reconciliation_states/<reconciliation_state_id>/compatibility/balance_snapshots.csv`
+  - `working/products/checkpoints/<checkpoint_id>/compatibility/balance_references.csv`
 
 Rules:
 
 - the external workspace remains the runtime location for evidence and emitted
   files
+- authoritative target kernels use product-owned directory stems rather than
+  migration-era source or checkpoint containers
+- source-scoped or checkpoint-scoped workspace groupings remain valid only for
+  current-state surfaces, compatibility projections, or genuinely source-owned
+  or checkpoint-owned packages
 - later implementation may add indexes or caches beside these kernels, but
   must not rename the authoritative kernel paths without updating the owner
   docs

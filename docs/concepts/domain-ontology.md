@@ -328,16 +328,16 @@ Rules:
 ## First Downstream Slice Restriction
 
 The current first downstream slice intentionally uses a narrow `PositionRef`
-surface for Coinbase-held spot balances.
+surface for the current custodial balance slice.
 
 First-slice rule:
 
 - this slice may use only
-  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_position"]`
+  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_position"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
-- `location_ref` must resolve to the Coinbase-held custodial spot location or
-  sub-location in scope
-- `instrument_ref` must resolve to the in-scope spot asset
+- `location_ref` must resolve to the in-scope custodial location or
+  sub-location
+- `instrument_ref` must resolve to the in-scope instrument
 - `contract_ref` stays `null` in this slice
 - later slices may widen `position_key` values and contract participation,
   but they must keep the canonical tuple shape unchanged

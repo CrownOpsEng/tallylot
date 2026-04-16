@@ -90,6 +90,8 @@ Shared rules:
   `journal_id`, `tax_inputs_id`, and `tax_outputs_id`
 - upstream product metadata refs use product ids only; they never use
   `kernel_scope_id` or a raw kernel fingerprint
+- use singular `*_ref` for one upstream product id and plural `*_refs` for an
+  ordered product-id list
 - ordered metadata fields such as `claim_set_refs`,
   `reconciliation_state_refs`, and `economic_facts_refs` sort
   lexicographically by product id unless the owning product declares a
@@ -318,6 +320,8 @@ Stable ids:
   `[source_slug, adapter_id, capture_uid, selection_fingerprint]`
 - `source_slug` uses the shared source slug for the capture boundary that owns
   the emitted evidence set
+- `source_slug` and `adapter_id` remain evidence-local identity inputs and do
+  not reappear in downstream product ids once `evidence_set_ref` is available
 - `selection_id` uses component array
   `[evidence_set_id, key]`
 - `member_id` uses component array
@@ -539,6 +543,9 @@ Stable ids:
 - `decision_id` identifies one bundle decision record for one
   scope
 - `claim_set_id` uses component array `[evidence_set_id, emitter_id]`
+- downstream products keep claim lineage through `claim_set_ref` or
+  `claim_set_refs`; they do not copy `source_slug`, `adapter_id`, or
+  `emitter_id` into later product ids
 - `claim_scope_id` uses component array `[claim_set_id, scope_key]`
 - `bundle_id` uses component array
   `[claim_scope_id, key]`
@@ -908,7 +915,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside kernel-scope readiness summaries
+- bury missing evidence inside kernel-scope readiness rollups
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:
@@ -942,6 +949,7 @@ Record families:
   - `checkpoint_id`
   - `as_of`
   - `assertion_ids`
+  - `proposal_refs`
 - `CheckpointAssertionRecord`
   - `checkpoint_assertion_id`
   - `checkpoint_id`
@@ -953,7 +961,6 @@ Record families:
   - `basis`
   - `support_kind`
   - `continuity_kind`
-- `proposal_refs`
 
 Controlled vocabularies:
 
@@ -1350,8 +1357,9 @@ Product metadata:
 
 Owns:
 
-- policy-specific summaries, forms, schedules, and carry-forward state
-- tax-policy explanations, limitations, and unsupported outputs
+- policy-owned output groups, carry-forward state, and unsupported-input
+  reporting
+- tax-policy explanations, limitations, and rendered output detail
 - tax-owned blockers that survive policy execution
 
 Record families:
@@ -1378,16 +1386,14 @@ Record families:
 Controlled vocabularies:
 
 - `TaxOutputRecord.kind`:
-  - `realized_gain`
-  - `income`
-  - `expense`
-  - `carry_forward`
-  - `unsupported_input`
+  - `summary`
+  - `schedule`
+  - `form`
 
 Sidecar content may include:
 
-- policy-specific summaries
-- schedules and forms
+- rendered policy content
+- filing notes and limitations
 - carry-forward explanation
 - unsupported tax input notes
 

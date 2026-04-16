@@ -101,7 +101,7 @@ This slice may emit only this subset of `ClaimRecord.kind` values:
 | `activity` | evidence-local activity assertion derived from selected Coinbase retail rows |
 | `balance` | quantity-backed balance claim derived from recognized statement rows |
 | `instrument_identity` | instrument identity assertion tied to one activity or statement observation |
-| `location` | assertion about the Coinbase-held location or sub-location in scope |
+| `location` | assertion about the in-scope custodial location or sub-location |
 | `beneficial_owner` | assertion for the beneficial owner needed by downstream position identity |
 | `valuation` | canonically defined now but zero-row by default in this slice |
 

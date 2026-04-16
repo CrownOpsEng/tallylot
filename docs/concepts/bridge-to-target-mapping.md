@@ -35,7 +35,7 @@ Ownership boundaries:
   `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
 - [Gaps And Readiness](gaps-and-readiness.md) owns `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
-  `ReadinessRecord`, `ReadinessSummaryRecord`, and `SubjectRef`.
+  `ReadinessRecord`, `ReadinessRollupRecord`, and `SubjectRef`.
 - this page owns how bridge surfaces move to target products without creating
   dual authorities
 

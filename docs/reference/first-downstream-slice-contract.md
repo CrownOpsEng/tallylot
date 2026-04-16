@@ -64,7 +64,7 @@ The slice may emit only these downstream kernel families:
 
 This slice freezes one position identity shape:
 
-- `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_position"]`
+- `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_position"]`
 
 Rules:
 
