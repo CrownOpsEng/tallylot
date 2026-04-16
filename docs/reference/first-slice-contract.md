@@ -268,6 +268,9 @@ Bundle rule:
 
 ## Parity Gates
 
+Retained compatibility projections are part of the slice parity bar. Kernel
+parity alone is not sufficient while these legacy readers remain active.
+
 Unchanged evidence must preserve all of the following:
 
 - selected, superseded, and blocked evidence membership
@@ -276,6 +279,9 @@ Unchanged evidence must preserve all of the following:
 - claim ordering and bundle ordering
 - timestamps and temporal precision
 - quantities and sign
+- `translation_input_plan.json` content
+- `EconomicActivityDraft` ordering and content for evidence in this slice
+- `SourceTranslationBatch` content for evidence in this slice
 - compiled `TransactionFact` ordering and semantics for evidence in this slice
 - `balance_references.csv` content for evidence in this slice
 - `cointracking_csv` row ordering and field values for supported projections
@@ -287,6 +293,9 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical selected, superseded, and blocked retail-export partitions
 - identical statement recognition outcomes
 - identical `EvidenceSet` and `ClaimSet` kernel fingerprints
+- identical `translation_input_plan.json` content
+- identical `EconomicActivityDraft` content for evidence in this slice
+- identical `SourceTranslationBatch` content for evidence in this slice
 - identical derived bridge fact fingerprints for evidence in this slice
 - identical `balance_references.csv` content for evidence in this slice
 - identical `cointracking_csv` output for supported bridge facts
@@ -303,6 +312,8 @@ Not allowed:
 - kernel-field drift in ids, statuses, ordering, or bundle structure
 - timestamp or precision drift
 - quantity drift
+- `translation_input_plan.json`, `EconomicActivityDraft`, or
+  `SourceTranslationBatch` drift on unchanged evidence in this slice
 - derived bridge fact drift on unchanged evidence in this slice
 - `balance_references.csv` or `cointracking_csv` drift on unchanged evidence in
   this slice

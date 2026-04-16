@@ -172,7 +172,7 @@ For subjects in this slice, the authoritative products after the slice are:
 
 Required derived compatibility projections:
 
-- `TransactionFact` and related fact CSV outputs derived from `EconomicFacts`
+- `TransactionFact` and `facts.csv` derived from `EconomicFacts`
   plus declared upstream claim compatibility sidecars when legacy hint
   reproduction still needs them
 - `balance_snapshots.csv` derived from `ReconciliationState`
@@ -218,6 +218,9 @@ Not allowed in this slice:
 
 ## Parity Gates
 
+Retained compatibility projections are part of the slice parity bar. Kernel
+parity alone is not sufficient while these legacy readers remain active.
+
 Unchanged inputs from the current first upstream slice must preserve all of the
 following:
 
@@ -228,6 +231,7 @@ following:
 - `CheckpointProposalRecord` ids, ordering, and statuses
 - `CheckpointAssertionRecord` ids, ordering, and accepted values
 - compiled `TransactionFact` ordering and semantics for evidence in this slice
+- `facts.csv` content for evidence in this slice
 - `balance_snapshots.csv` content for evidence in this slice
 - `balance_references.csv` content for evidence in this slice
 - balance inspect/check/summarize output for evidence in this slice
@@ -241,6 +245,7 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical `ReconciliationState` kernel fingerprints
 - identical `Checkpoint` kernel fingerprints
 - identical compiled bridge fact fingerprints for evidence in this slice
+- identical `facts.csv` content for evidence in this slice
 - identical `balance_snapshots.csv` and `balance_references.csv` content for
   evidence in this slice
 - identical balance inspect/check/summarize output for supported slice subjects
