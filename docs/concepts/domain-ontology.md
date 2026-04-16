@@ -424,20 +424,21 @@ Required application ownership:
   inspection, and timezone review
 - `application/evidence/` for shared statement extraction, evidence selection,
   and provenance locator handling
-- `application/claim/` for claim construction from evidence
-- `application/economics/` for economic-fact construction
-- `application/compatibility/` for bridge compatibility projections only
+- `application/claim/` for `ClaimSet` construction from evidence
+- `application/economics/` for `EconomicFacts` construction
+- `application/compatibility/` for bridge compatibility views only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
   evaluation, and checkpoint proposal records
 - `application/readiness/` for cross-stage gap, review, and readiness
-  reduction plus reporting
-- `application/checkpoint/` for checkpoint assembly, manual balance
-  submission validation, and checkpoint acceptance
-- `application/journal/` for journal expansion, entry checks, and reporting
-- `application/tax/` for tax input construction, basis transitions, policy
-  selection, and tax-output generation
+  reduction plus readiness rollups and operator views
+- `application/checkpoint/` for `Checkpoint` acceptance, manual balance
+  submission validation, and opening-state adoption
+- `application/journal/` for journal expansion, entry checks, and journal
+  views
+- `application/tax/` for `TaxInputs` construction, basis transitions, policy
+  selection, and `TaxOutputs` generation
 - `application/rendering/` for downstream rendering orchestration
 - `application/workspace/` for workspace resolution and initialization
 

@@ -42,11 +42,11 @@ When persisting target products:
 - keep partition-scope labels aligned to the owner pages' stage-owned scope
   names instead of inventing alternate helper vocabulary here
 - keep bridge CSVs and bridge draft or batch surfaces as compatibility
-  projections only once a target product is authoritative for that scope
+  views only once a target product is authoritative for that scope
 - keep provenance, explanations, reviews, comparison traces, and other
   non-kernel detail in sidecars
-- keep source-grouped operator views as derived reports or compatibility
-  projections rather than as canonical readiness rollups
+- keep source-grouped views as operator views or compatibility
+  views rather than as canonical readiness rollups
 - keep gap/review/readiness basenames aligned to the stored families, for
   example
   `gap_records.json`, `review_records.json`, `readiness_records.json`, and

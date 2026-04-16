@@ -1,6 +1,6 @@
 ---
 title: "First Downstream Slice Contract"
-summary: "Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, scoped to the Coinbase custodial path, including claim-bundle-derived event identity and bridge compatibility projections."
+summary: "Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, scoped to the Coinbase custodial path, including claim-bundle-derived event identity and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
@@ -170,7 +170,7 @@ For subjects in this slice, the authoritative products after the slice are:
 - `ReconciliationState` for continuity segments and balance targets
 - `Checkpoint` for accepted checkpoint truth
 
-Required derived compatibility projections:
+Required derived compatibility views:
 
 - `TransactionFact` and `facts.csv` derived from `EconomicFacts`
   plus declared upstream claim compatibility sidecars when legacy hint
@@ -179,12 +179,12 @@ Required derived compatibility projections:
 - `balance_references.csv` derived from `ReconciliationState`, `Checkpoint`,
   and declared reconciliation/checkpoint sidecars
 - balance inspect/check/summarize outputs preserved through the active bridge
-  compatibility surface until that application layer is repointed
+  compatibility view until that application layer is repointed
 - `cointracking_csv` preserved through the active output compatibility path
 
 Compatibility rule:
 
-- compatibility projections remain required during the migration window
+- compatibility views remain required during the migration window
 - they are not authoritative for economic, reconciliation, or
   checkpoint truth once the target products exist
 - retained legacy hint reproduction must come from declared compatibility
@@ -200,9 +200,9 @@ This slice allows only:
   - `filing_ready`
 - `basis`:
   - `document_evidence`
-  - `reconciled_rollforward`
+  - `reconciled_continuity`
 - `support_kind`:
-  - `document_balance`
+  - `document_observation`
 - `continuity_kind`:
   - `direct_observation`
   - `reconciled_rollforward`
@@ -211,14 +211,14 @@ Not allowed in this slice:
 
 - `manual_assertion`
 - `adopted_opening`
-- `reported_balance`
-- `location_balance`
+- `reported_observation`
+- `location_observation`
 - `inventory_observation`
 - `partial_rollforward`
 
 ## Parity Gates
 
-Retained compatibility projections are part of the slice parity bar. Kernel
+Retained compatibility views are part of the slice parity bar. Kernel
 parity alone is not sufficient while these legacy readers remain active.
 
 Unchanged inputs from the first upstream slice must preserve all of the

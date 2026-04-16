@@ -74,7 +74,7 @@ Frozen `origin_kind` vocabulary:
 - `checkpoint_assertion`
 - `basis_adjustment`
 
-## Journal Helper Refs
+## Journal Refs
 
 `JournalAccountRef` identifies one chart account.
 

@@ -97,7 +97,7 @@ Trust and ownership rules:
 ### Output Boundaries
 
 - renderers consume downstream-owned products or approved compatibility
-  projections
+  views
 - renderer-specific constraints stay at the edge
 - CoinTracking row rules remain output-adapter concerns only
 
@@ -120,7 +120,7 @@ Trust and ownership rules:
 - active SQLite rollout is deferred until after the filing-critical path is
   stable
 
-## Authoritative Kernels Versus Compatibility Projections
+## Authoritative Kernels Versus Compatibility Views
 
 The target runtime uses one authoritative persisted kernel per declared
 partition scope.
@@ -129,13 +129,13 @@ Rules:
 
 - target products persist as JSON kernels with separate sidecars
 - once a target product becomes authoritative for an in-scope family, bridge
-  CSV files for that same scope become compatibility projections only
-- compatibility projections remain valid during migration, but they are never
+  CSV files for that same scope become compatibility views only
+- compatibility views remain valid during migration, but they are never
   peer authorities beside the target kernel
 - consumers read one authority at a time:
-  - unmigrated consumers read the derived compatibility projection
+  - unmigrated consumers read the derived compatibility view
   - migrated consumers read the authoritative target product directly
-- compatibility projections must stay reproducible from authoritative kernels
+- compatibility views must stay reproducible from authoritative kernels
   for the duration of the compatibility window
 
 ## Authoritative Persistence Model
@@ -154,10 +154,10 @@ Forward-looking persistence rules:
 - product sidecars persist separately from kernels and are keyed by
   `product_scope_id` or narrower truthful record ids
 - canonical readiness rollups stay stage- and domain-oriented;
-  source-grouped operator views stay as derived reports or compatibility
-  projections rather than as gap, review, or readiness record families or
-  readiness rollups
-- target basenames use the owning product or support role directly
+  source-grouped views stay as operator views or
+  compatibility views rather than as gap, review, or readiness record
+  families or readiness rollups
+- target basenames use the owning product or sidecar family directly
   rather than generic names or bridge-era qualifiers
 - stable ids and helper refs keep the owning family stem once they cross
   product or stage boundaries; prefer names such as
@@ -229,7 +229,7 @@ Use these paths in forward-looking docs and later implementation work:
   `gap_explanations.json`, `review_records.json`,
   `review_explanations.json`, `readiness_records.json`, and
   `readiness_rollup_records.json`
-- compatibility projections live under the authoritative product they depend on,
+- compatibility views live under the authoritative product they depend on,
   for example:
   - `working/products/economic_facts/<economic_facts_id>/compatibility/facts.csv`
   - `working/products/reconciliation_states/<reconciliation_state_id>/compatibility/balance_snapshots.csv`
@@ -242,7 +242,7 @@ Rules:
 - authoritative target kernels use product-owned directory stems rather than
   migration-era source or checkpoint containers
 - source-scoped or checkpoint-scoped workspace groupings remain valid only for
-  current-state surfaces, compatibility projections, or genuinely source-owned
+  current-state surfaces, compatibility views, or genuinely source-owned
   or checkpoint-owned packages
 - later implementation may add indexes or caches beside these kernels, but
   must not rename the authoritative kernel paths without updating the owner
@@ -384,7 +384,7 @@ Before approving structural work in reconciliation, checkpoint, journal,
 or tax, ask:
 
 - does the design keep one authoritative kernel per partition scope
-- can unmigrated consumers survive on compatibility projections alone
+- can unmigrated consumers survive on compatibility views alone
 - can migrated consumers read target products without bridge lookups
 - is every hot-path field present in the kernel rather than in a sidecar
 - can the stage replay deterministically from its upstream authorities

@@ -45,7 +45,7 @@ These anchors drive sequencing and acceptance criteria:
 - avoid freezing the current bridge as the long-term architecture center
 - keep adapters and services shippable at every checkpoint
 - preserve current bridge truth while establishing target product ownership
-- do not let bridge compatibility projections become a second architecture
+- do not let bridge compatibility views become a second architecture
   center
 - do not rename live bridge symbols or repo-only support packages as a docs-only
   side effect
@@ -79,18 +79,18 @@ Must freeze:
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `product_scope_id`
 - target naming rules that distinguish concepts, refs, ids, records,
-  projections, rollups, reports, and sidecars without baking bridge-era
+  views, rollups, reports, and sidecars without baking bridge-era
   qualifiers or source-specific crypto nouns into shared target names, and
   that keep stage-local ids explicit once they cross into downstream products,
   keep stage-owned helper-ref families mirrored across sibling refs,
   keep product-id component order aligned to product-header order, keep
-  canonical shared-support rollups stage- and domain-oriented, use target-owned
+  canonical readiness rollups stage- and domain-oriented, use target-owned
   label pairs such as `location_group_label` and `location_label` when
   preserving source-provided location labels, keep generic downstream record
   families stage-owned with names such as `TaxCarryForwardRecord` and
   `TaxUnsupportedInputRecord`, keep partition-scope labels aligned to the
   actual identity dimensions they reduce over, describe non-authoritative
-  bridge outputs as derived compatibility projections rather than bridge-era
+  bridge outputs as derived compatibility views rather than bridge-era
   compile steps, and prefer direct kind values such as `instrument` over
   pseudo-type labels
 - child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
@@ -99,16 +99,20 @@ Must freeze:
 - checkpoint-assertion kind naming that keeps quantity, amount, and state
   stems parallel across sibling values such as `position_quantity`,
   `cash_quantity`, `basis_amount`, `owner_state`, and `location_state`
+- checkpoint acceptance vocabulary that keeps `basis`, `support_kind`, and
+  `continuity_kind` on distinct semantic axes, using reason labels such as
+  `reconciled_continuity` and observation or continuity-shape labels such as
+  `document_observation` and `reconciled_rollforward`
 - package-root naming that keeps `journal` aligned across stage vocabulary and
   package ownership, uses singular concept roots such as `assertion/`, avoids
   umbrella roots such as `entities/` when the identity families are already
   known, keeps gap/review/readiness roots explicit when the docs mean those
-  families directly, and keeps shared support roots split into concrete nested
-  families
+  families directly, and keeps the shared `support/` root split into concrete
+  nested families
   such as `gap/`, `review/`, and `readiness/`
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
-- migration authority rules, compatibility projections, reader cutovers, and
+- migration authority rules, compatibility views, reader cutovers, and
   retirement gates
 - package ownership and layer placement for shared functionality
 - explicit no-invention rules for non-critical observation and claim kinds
@@ -164,7 +168,7 @@ Deliver:
 - typed evidence observations that survive beyond intake heuristics, including
   field tables frozen for the first upstream slice for
   `statement_document` and `statement_balance_row`
-- bridge compatibility projection for `translation_input_plan.json`
+- bridge compatibility view for `translation_input_plan.json`
 
 Exit criteria:
 
@@ -189,7 +193,7 @@ Deliver:
   `observation_refs`
 - shared gap, review, and readiness records and sidecars attached to claim
   scopes where needed
-- declared compatibility projections for `EconomicActivityDraft` and
+- declared compatibility views for `EconomicActivityDraft` and
   `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
   kernels
 
@@ -213,7 +217,7 @@ Deliver:
   `claim_set_refs`
 - `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
 - claim-bundle-derived event identity
-- bridge compatibility projection for `TransactionFact`
+- bridge compatibility view for `TransactionFact`
 - parity coverage for the first claim-to-economic slice
 
 Exit criteria:
@@ -235,7 +239,7 @@ Deliver:
   `CheckpointProposalRecord`
 - direct `AssertionValue` fields for expected and observed balance meaning
 - fixed subject and position identity seams for in-scope reconciliation
-- bridge compatibility projection for `balance_snapshots.csv`
+- bridge compatibility view for `balance_snapshots.csv`
 
 Exit criteria:
 
@@ -254,7 +258,7 @@ Deliver:
 - `CheckpointRecord` and `CheckpointAssertionRecord`
 - explicit trust level, acceptance basis, support kind, and continuity kind
 - direct `AssertionValue` accepted truth
-- bridge compatibility projection for `balance_references.csv`
+- bridge compatibility view for `balance_references.csv`
 
 Exit criteria:
 
@@ -305,7 +309,7 @@ Exit criteria:
 
 Goal:
 
-- rename and split the dev-only shared support surface cleanly
+- rename and split the dev-only repo-support boundary cleanly
 
 Deliver:
 
@@ -428,8 +432,8 @@ Rules:
 ### Verification And Tests
 
 - maintain parser and adapter contract tests
-- expand projection parity tests
-- add replay coverage for target kernels and compatibility projections
+- expand compatibility-view parity tests
+- add replay coverage for target kernels and compatibility views
 - add reconciliation parity and checkpoint continuity tests
 - add journal entry-check coverage
 - add tax policy coverage with explicit tax unsupported-input records
