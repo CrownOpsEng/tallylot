@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from repo_support.paths import repo_root
 from repo_support.uv_environment import (
     default_project_environment,
     repo_uv_environment,
@@ -30,3 +31,31 @@ def test_repo_uv_environment_sets_default_when_missing() -> None:
     assert environment["UV_PROJECT_ENVIRONMENT"] == expected
     assert environment["VIRTUAL_ENV"] == expected
     assert environment["PATH"].split(":")[0] == f"{expected}/bin"
+
+
+def test_repo_uv_environment_ignores_repo_local_dot_venv() -> None:
+    environment = repo_uv_environment(
+        {
+            "VIRTUAL_ENV": str(repo_root() / ".venv"),
+            "PATH": "/tmp/test-bin",
+        }
+    )
+
+    expected = str(Path.home() / ".venvs" / "tallylot-py312")
+
+    assert environment["UV_PROJECT_ENVIRONMENT"] == expected
+    assert environment["VIRTUAL_ENV"] == expected
+    assert environment["PATH"].split(":")[0] == f"{expected}/bin"
+
+
+def test_repo_uv_environment_preserves_non_repo_virtual_env() -> None:
+    environment = repo_uv_environment(
+        {
+            "VIRTUAL_ENV": "/tmp/custom-venv",
+            "PATH": "/tmp/test-bin",
+        }
+    )
+
+    assert environment["UV_PROJECT_ENVIRONMENT"] == "/tmp/custom-venv"
+    assert environment["VIRTUAL_ENV"] == "/tmp/custom-venv"
+    assert environment["PATH"].split(":")[0] == "/tmp/custom-venv/bin"

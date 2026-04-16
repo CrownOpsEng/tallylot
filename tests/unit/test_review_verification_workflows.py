@@ -92,6 +92,12 @@ def test_setup_action_pins_external_actions_and_uv_version() -> None:
     assert "astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9" in action_text
     assert 'version: "0.9.20"' in action_text
     assert "enable-cache: true" in action_text
+    assert 'PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"' in action_text
+    assert (
+        'echo "UV_PROJECT_ENVIRONMENT=$PROJECT_ENVIRONMENT" >> "$GITHUB_ENV"'
+        in action_text
+    )
+    assert 'echo "$PROJECT_ENVIRONMENT/bin" >> "$GITHUB_PATH"' in action_text
     assert "uv cache prune --ci" in action_text
 
 

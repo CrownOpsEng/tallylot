@@ -56,5 +56,6 @@
     "-m",
     "tools.vscode_pylint"
   ],
-  "pylint.importStrategy": "fromEnvironment"
+  "pylint.importStrategy": "fromEnvironment",
+  "makefile.configureOnOpen": false
 }

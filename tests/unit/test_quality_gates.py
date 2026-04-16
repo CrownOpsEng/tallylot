@@ -110,7 +110,7 @@ def test_fast_pytest_honors_worker_override(
     assert build_fast_pytest_command() == expected_command
 
 
-def test_run_gate_uses_current_process_environment(
+def test_run_gate_ignores_repo_local_dot_venv_for_subprocesses(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured_environment: dict[str, str] = {}
@@ -132,6 +132,7 @@ def test_run_gate_uses_current_process_environment(
     monkeypatch.setattr(subprocess, "run", fake_run)
     monkeypatch.delenv("UV_PROJECT_ENVIRONMENT", raising=False)
     monkeypatch.delenv("UV_CACHE_DIR", raising=False)
+    monkeypatch.setenv("VIRTUAL_ENV", str(repo_root() / ".venv"))
     monkeypatch.setenv("PATH", "/tmp/test-bin")
 
     gate = available_quality_gates(full_tests=False)["markdownlint"]

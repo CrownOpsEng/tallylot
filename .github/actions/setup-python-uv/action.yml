@@ -11,6 +11,12 @@ runs:
       with:
         version: "0.9.20"
         enable-cache: true
+    - name: Export repo project environment
+      shell: bash
+      run: |
+        PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"
+        echo "UV_PROJECT_ENVIRONMENT=$PROJECT_ENVIRONMENT" >> "$GITHUB_ENV"
+        echo "$PROJECT_ENVIRONMENT/bin" >> "$GITHUB_PATH"
     - name: Sync dependencies
       shell: bash
       run: uv sync --python 3.12 --frozen

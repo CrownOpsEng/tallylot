@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from repo_support.paths import repo_root
 from repo_support.review_verification import (
     CheckExecutionContext,
     CheckResult,
@@ -287,6 +288,7 @@ def test_install_hooks_syncs_environment_before_writing_repo_hooks(
     )
     monkeypatch.setattr("tools.install_git_hooks.sys.prefix", str(environment_root))
     monkeypatch.setattr("tools.install_git_hooks.sys.base_prefix", "/usr")
+    monkeypatch.setenv("VIRTUAL_ENV", str(repo_root() / ".venv"))
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     tools.install_git_hooks._install_hooks(tmp_path)
