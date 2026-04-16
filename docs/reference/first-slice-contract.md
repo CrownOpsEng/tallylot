@@ -59,7 +59,7 @@ Frozen kind-specific observation fields:
 
 | Observation kind | Frozen kernel fields |
 | --- | --- |
-| `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of_at`, `statement_as_of_precision` |
+| `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of`, `statement_as_of_precision` |
 | `statement_balance_row` | `account_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
 
 Observation-field rules:
@@ -67,7 +67,7 @@ Observation-field rules:
 - there is no retail-row observation kind in this pass
 - `statement_document.statement_kind` uses the recognized statement-adapter kind
   for the selected document member
-- `statement_document.statement_as_of_at` and `document_effective_at` lift the
+- `statement_document.statement_as_of` and `document_effective_at` lift the
   current parsed statement times, and the paired `*_precision` fields follow
   the repo-wide temporal
   precision contract
@@ -94,23 +94,23 @@ does not become a kernel record family.
 
 ## `ClaimSet` Coverage
 
-This slice may emit only this subset of claim kinds:
+This slice may emit only this subset of `ClaimRecord.kind` values:
 
 | Claim kind | Meaning in the slice |
 | --- | --- |
-| `ActivityClaim` | source-local activity assertion derived from selected Coinbase retail rows |
-| `BalanceClaim` | quantity-backed balance claim derived from recognized statement rows |
-| `InstrumentIdentityClaim` | instrument identity assertion tied to one activity or statement observation |
-| `LocationClaim` | assertion about the Coinbase-held location or sub-location in scope |
-| `BeneficialOwnerClaim` | assertion for the beneficial owner needed by downstream position identity |
-| `ValuationClaim` | canonically defined now but zero-row by default in this slice |
+| `activity` | evidence-local activity assertion derived from selected Coinbase retail rows |
+| `balance` | quantity-backed balance claim derived from recognized statement rows |
+| `instrument_identity` | instrument identity assertion tied to one activity or statement observation |
+| `location` | assertion about the Coinbase-held location or sub-location in scope |
+| `beneficial_owner` | assertion for the beneficial owner needed by downstream position identity |
+| `valuation` | canonically defined now but zero-row by default in this slice |
 
 Out of scope for this slice:
 
-- `LegalOwnerClaim`
-- `CounterpartyClaim`
-- `StatementClaim`
-- `ContractTermClaim`
+- `legal_owner`
+- `counterparty`
+- `statement`
+- `contract_term`
 
 Bridge or output annotation sidecar detail and gap or review support sidecar
 content are not claim kinds and are never emitted by this slice.
@@ -119,14 +119,14 @@ Frozen kind-specific claim fields:
 
 | Claim kind | Frozen kernel fields |
 | --- | --- |
-| `ActivityClaim` | `source_activity_kind`, `location_claim_ref`, `activity_leg_specs` |
-| `BalanceClaim` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
-| `InstrumentIdentityClaim` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
-| `LocationClaim` | `location_ref`, `account_label`, `location_label` |
-| `BeneficialOwnerClaim` | `beneficial_owner_ref` |
-| `ValuationClaim` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
+| `activity` | `activity_label`, `location_claim_ref`, `leg_specs` |
+| `balance` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
+| `instrument_identity` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
+| `location` | `location_ref`, `account_label`, `location_label` |
+| `beneficial_owner` | `beneficial_owner_ref` |
+| `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
-`activity_leg_specs` entry shape:
+`leg_specs` entry shape:
 
 - `slot`
 - `leg_kind`
@@ -138,20 +138,20 @@ Frozen kind-specific claim fields:
 
 Claim-field and linkage rules:
 
-- `ActivityClaim.source_activity_kind` is the owning field for the current
-  Coinbase retail transaction type in this slice
-- `activity_leg_specs` lift ordered leg meaning from the current draft-leg
+- `activity` claims own the current Coinbase retail `activity_label` in this
+  slice
+- `leg_specs` lift ordered leg meaning from the current draft-leg
   contract, including sign, subtype, optional attributed-leg linkage, and
   optional location
-- retail activity claims use `member_refs` plus
+- retail claims with `kind = activity` use `member_refs` plus
   `[retail_member_id, raw_row_ref]` claim-scope keys
 - statement-derived claims use both `member_refs` and
   `observation_refs`
-- `BalanceClaim` must include the row observation id and may also
+- `balance` claims must include the row observation id and may also
   include the paired `statement_document` observation id
-- `ValuationClaim` remains zero-row by default until a later owner-doc pass
+- `valuation` claims remain zero-row by default until a later owner-doc pass
   freezes numeric statement valuation inputs
-- `LocationClaim.location_label` follows the same target-contract rule as
+- `location` claims use `location_label` under the same target-contract rule as
   `statement_balance_row.location_label`: preserve the source-provided
   lower-scope label, but keep the canonical target noun aligned to
   `Location`
@@ -168,7 +168,7 @@ Slice cardinality rules:
   `selection_id`
 - zero or more `EvidenceObservationRecord` rows may belong to one `member_id`
 - one `ClaimSet` is emitted per `[evidence_set_id, emitter_id]`
-- one `claim_scope_id` exists per source-local scope
+- one `claim_scope_id` exists per evidence-local scope
 - one or more `ClaimBundleRecord` rows may exist per `claim_scope_id`
 - one `BundleDecisionRecord` exists per `claim_scope_id`
 - one or more `ClaimRecord` rows may exist per `bundle_id`
@@ -192,7 +192,7 @@ compatibility.
 Authoritative products after the slice:
 
 - `EvidenceSet` for evidence selection and typed observations
-- `ClaimSet` for source-local meaning
+- `ClaimSet` for evidence-local meaning
 
 Required derived compatibility projections:
 
@@ -218,7 +218,7 @@ Declared compatibility sidecar boundary:
   `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status`
   stay outside `ClaimSet` kernels
 - legacy `provider_operation_key` stays satisfied by
-  `ActivityClaim.source_activity_kind` and is not duplicated as a
+  `activity_label` on claims with `kind = activity` and is not duplicated as a
   compatibility-only claim field
 
 ## Id And Fingerprint Rules
@@ -230,8 +230,8 @@ This slice only freezes the admissible keys and bounded vocabularies.
 Slice-specific identity rules:
 
 - `emitter_id` is the shared emitter id over
-  `[source_slug, adapter_id, "claim-emitter"]`
-- `source_slug` uses the shared source slug across source-local
+  `[source_slug, adapter_id, "claim"]`
+- `source_slug` uses the shared source slug across evidence-local
   products
 - `evidence_set_id` intentionally changes when `selection_fingerprint`
   changes, because the authoritative capture-level evidence emission changed

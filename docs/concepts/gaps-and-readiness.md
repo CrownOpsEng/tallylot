@@ -27,8 +27,8 @@ Current runtime note:
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- dataset readiness summaries are derived from subject-level or scope-level truth, not
-  stored as the only truth
+- kernel-scope readiness summaries are derived from subject-level or scope-level
+  truth, not stored as the only truth
 - shared support structures help stages interoperate without erasing stage
   ownership
 
@@ -104,7 +104,7 @@ Required scope ids:
 - `continuity_segment_id`
 - `balance_target_id`
 - `checkpoint_proposal_id`
-- `dataset_id`
+- `kernel_scope_id`
 
 Rules:
 
@@ -118,31 +118,31 @@ Rules:
   target when one exact target is the truthful blocker or review scope
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
   proposal before acceptance
-- `dataset_id` identifies one shared support attachment scope over one
+- `kernel_scope_id` identifies one shared support attachment scope over one
   canonical product kernel and is not a substitute for a narrower scope
-- do not attach a gap or review to `dataset` scope when `subject`,
+- do not attach a gap or review to `kernel_scope` when `subject`,
   `selection`, `claim_scope`, `continuity_segment`,
   `balance_target`, or `checkpoint_proposal` would be truthful
 
-### `dataset_id`
+### `kernel_scope_id`
 
-`dataset_id` is defined once for all target support records, summaries,
+`kernel_scope_id` is defined once for all target support records, summaries,
 projections, and sidecars.
 
 Rules:
 
-- `dataset_id` is `<product_kind>:<kernel_fingerprint>`
+- `kernel_scope_id` is `<product_kind>:<kernel_fingerprint>`
 - `product_kind` uses the lower-snake-case target product name
 - `kernel_fingerprint` is the canonical product fingerprint owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
-- `dataset_id` is derived after canonical kernel fingerprinting and is not a
-  kernel metadata field or a fingerprint input itself
-- `dataset_id` is never a target product id, never an upstream product ref,
-  and never the primary reader key when one product id or narrower record id
-  exists
-- `dataset_id` is used only for shared reporting and sidecar attachment when no
-  narrower truthful subject or scope exists
-- `dataset_id` must not replace `selection_id`,
+- `kernel_scope_id` is derived after canonical kernel fingerprinting and is not
+  a kernel metadata field or a fingerprint input itself
+- `kernel_scope_id` is never a target product id, never an upstream product
+  ref, and never the primary reader key when one product id or narrower record
+  id exists
+- `kernel_scope_id` is used only for shared reporting and sidecar attachment
+  when no narrower truthful subject or scope exists
+- `kernel_scope_id` must not replace `selection_id`,
   `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
   `checkpoint_proposal_id`, or one record id when those are truthful
 
@@ -201,14 +201,14 @@ Controlled vocabularies:
   - `continuity_segment`
   - `balance_target`
   - `checkpoint_proposal`
-  - `dataset`
+  - `kernel_scope`
 - `gap_kind`:
   - `missing_evidence`
   - `unresolved_identity`
   - `unresolved_linkage`
   - `contradiction`
   - `policy_decision_required`
-  - `operator_decision_required`
+  - `manual_decision_required`
 - `status`:
   - `open`
   - `resolved`
@@ -277,7 +277,7 @@ Fields:
 - `gap_id`
 - `known_facts`
 - `missing_inputs`
-- `candidate_interpretations`
+- `candidate_meanings`
 - `required_evidence`
 - `allowed_resolution_methods`
 - `recommended_next_action`
@@ -344,7 +344,7 @@ Controlled vocabularies:
   - `continuity_segment`
   - `balance_target`
   - `checkpoint_proposal`
-  - `dataset`
+  - `kernel_scope`
 - `status`:
   - `open`
   - `acknowledged`
@@ -449,7 +449,7 @@ Shared status vocabulary:
 
 `partial` means:
 
-- some required interpretations or assertions resolved
+- some required meanings or assertions resolved
 - at least one blocking gap still open
 - the remaining uncertainty is recorded through gap ids, not prose-only summary
 
@@ -496,12 +496,12 @@ Rules:
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before claim commitment
 - reducers work from subject readiness plus gaps, not from hand-built
-  dataset readiness summaries
+  kernel-scope readiness summaries
 - a subject may be ready for one stage and blocked for another
 - readiness points to blocking gap ids rather than hiding blockers in summary
   text
 
-### `ReadinessSummary`
+### `ReadinessSummaryRecord`
 
 Purpose:
 
@@ -526,9 +526,9 @@ Controlled `rollup_kind` vocabulary:
 - `location`
 - `instrument`
 - `continuity_segment`
-- `checkpoint_date`
+- `as_of`
 - `tax_year`
-- `dataset`
+- `kernel_scope`
 
 Rollup-key rules:
 
@@ -536,13 +536,13 @@ Rollup-key rules:
 - `location` uses one `location_id`
 - `instrument` uses one `instrument_id`
 - `continuity_segment` uses one `continuity_segment_id`
-- `checkpoint_date` uses one canonical `YYYY-MM-DD` date string
+- `as_of` uses one canonical `YYYY-MM-DD` date string
 - `tax_year` uses one integer tax year
-- `dataset` uses one `dataset_id`
+- `kernel_scope` uses one `kernel_scope_id`
 
 Stable ids:
 
-- `readiness_summary_id` identifies one derived readiness summary
+- `readiness_summary_id` identifies one derived readiness summary record
 - `readiness_summary_id` uses component array
   `[stage, rollup_kind, rollup_key]`
 
@@ -566,14 +566,14 @@ Fingerprint inputs:
 
 Rules:
 
-- `ReadinessSummary` records are derived output, not the only stored truth
+- `ReadinessSummaryRecord` rows are derived output, not the only stored truth
 - `partial` requires at least one resolved assertion plus at least one open
   blocking gap id
 - if no required assertion has resolved yet, status is `blocked`, not
   `partial`
 - if no blocker applies, status is `ready`, not `partial`
-- dataset readiness summaries remain reproducible from ordered readiness and gap records
-  without manual status editing
+- kernel-scope readiness summaries remain reproducible from ordered readiness
+  and gap records without manual status editing
 - stages use only the dimensions they actually own or can derive safely
 
 ## Bridge Mapping From Issue And Review Records
@@ -601,7 +601,7 @@ Meaning:
 
 - one stage owns one meaning surface
 - downstream stages reference upstream records by stable ids or product ids
-- `dataset_id` is allowed only for shared reporting and sidecar attachment
+- `kernel_scope_id` is allowed only for shared reporting and sidecar attachment
   when no narrower truthful product id, scope id, or record id exists
 - downstream stages add stage-owned outputs only
 
@@ -609,7 +609,7 @@ Keep these first-class:
 
 - evidence members
 - evidence observations
-- claims and interpretation bundles
+- claims and claim bundles
 - economic events
 - economic legs
 - valuations
@@ -642,7 +642,7 @@ Performance implication:
 - repeated full detail copies increase read amplification, join cost, and drift
   risk
 - the correct shape is stable ids or product ids plus stage-owned deltas, with
-  `dataset_id` reserved for shared reporting or sidecar attachment only
+  `kernel_scope_id` reserved for shared reporting or sidecar attachment only
 
 ## Current-To-Target Boundary
 

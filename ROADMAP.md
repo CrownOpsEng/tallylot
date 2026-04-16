@@ -28,7 +28,7 @@ These anchors drive sequencing and acceptance criteria:
 - reconciliation remains the trust gate before checkpoint adoption, accounting,
   and tax
 - checkpoint truth is accepted state with explicit acceptance basis
-- source-backed evidence and source-backed checkpoints remain first-class
+- primary evidence and evidence-backed checkpoints remain first-class
 - raw-evidence derivation is the supported meaning-parity path
 - capture identity is metadata, not path
 - typed provenance stays a runtime model and is flattened only at artifact
@@ -36,7 +36,7 @@ These anchors drive sequencing and acceptance criteria:
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - current bridge names remain current-state truth until later implementation
   slices replace them
-- CoinTracking remains an edge projection and oracle family, not the runtime
+- CoinTracking remains an edge projection and oracle surface, not the runtime
   ledger model
 
 ## Transition Rules
@@ -71,12 +71,12 @@ Must freeze:
   the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
 - shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
-  `ReviewExplanation`, `ReadinessRecord`, `ReadinessSummary`,
+  `ReviewExplanation`, `ReadinessRecord`, `ReadinessSummaryRecord`,
   `SubjectRef`, truthful `claim_scope_id` and `balance_target_id`
   attachments, and the downstream shared-subject seams needed for accounting
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
-  refs use product ids rather than `dataset_id`
+  refs use product ids rather than `kernel_scope_id`
 - target naming rules that distinguish concepts, refs, ids, records,
   projections, and sidecars without baking bridge-era qualifiers or
   source-specific crypto nouns into shared target names
@@ -105,7 +105,7 @@ Exit criteria:
 - no cross-stage support record or sidecar masquerades as a claim kind
 - claim-stage blockers can attach to `claim_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
-  accounting or tax subjects without collapsing to dataset-only scope
+  accounting or tax subjects without collapsing to kernel-scope attachment only
 - no target id or helper id bakes bridge-era naming into target identity
 - no canonical target contract keeps source-specific crypto nouns such as
   `wallet` when a repo-owned domain noun already owns that seam
@@ -113,7 +113,8 @@ Exit criteria:
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
   field table
-- no target product metadata ref uses `dataset_id` where a product id exists
+- no target product metadata ref uses `kernel_scope_id` where a product id
+  exists
 - non-critical observation and claim kinds are explicitly deferred rather
   than left implicit
 - implementation placement is mechanical rather than interpretive
@@ -124,7 +125,7 @@ Exit criteria:
 
 Goal:
 
-- make deterministic evidence selection and source-local observation capture
+- make deterministic evidence selection and typed observation capture
   the formal first pipeline product
 
 Deliver:
@@ -152,7 +153,7 @@ Goal:
 
 Deliver:
 
-- source-local `ClaimSet` emission keyed by `claim_set_id`
+- evidence-local `ClaimSet` emission keyed by `claim_set_id`
 - explicit claim scopes, mutually exclusive bundles, and
   bundle-decision records
 - claim fields frozen for the current first slice plus `observation_refs`
@@ -227,7 +228,7 @@ Deliver:
 Exit criteria:
 
 - checkpoint truth is explicit accepted state, not an inferred side effect
-- statement-backed checkpoint acceptance is separated cleanly from operator-only
+- statement-backed checkpoint acceptance is separated cleanly from manual-only
   runtime aids
 
 ## Phase 6. Land `Journal`
@@ -240,7 +241,7 @@ Deliver:
 
 - `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
 - accounting-owned blockers and validation rules
-- renderer orchestration over accepted upstream truth
+- rendering orchestration over accepted upstream truth
 
 Exit criteria:
 

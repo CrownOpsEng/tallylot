@@ -27,7 +27,7 @@ Use the owner pages first:
 - [Domain Ontology](../concepts/domain-ontology.md) for `AssertionValue`,
   `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain ref seams
 - [Gaps And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
-  shared support attachments, and `dataset_id`
+  shared support attachments, and `kernel_scope_id`
 
 This page keeps only reusable target ids and ref tuples that are not primary
 owner concepts elsewhere.
@@ -41,10 +41,10 @@ Rules:
 - `ClaimSet.emitter_id` uses the stable-id format owned by
   [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
 - the component array is `[source_slug, adapter_id, emitter_key]`
-- `source_slug` uses the shared source slug across source-local
+- `source_slug` uses the shared source slug across evidence-local
   products
 - `emitter_key` must be kebab-case
-- the current first slice `emitter_key` is `claim-emitter`
+- the current first slice `emitter_key` is `claim`
 
 ## Origin Identity
 
@@ -69,7 +69,7 @@ Frozen `origin_kind` vocabulary:
 - `market_reference`
 - `economic_leg`
 - `checkpoint_assertion`
-- `adjustment_basis`
+- `basis_adjustment`
 
 ## Accounting Reference Tuples
 
@@ -104,6 +104,6 @@ Rules:
 
 ## Reminder
 
-Do not implement target product ids, upstream product refs, `dataset_id`,
+Do not implement target product ids, upstream product refs, `kernel_scope_id`,
 `AssertionValue`, `SubjectRef`, or target product kernel structure from this
 page. Those contracts live on their owner pages.

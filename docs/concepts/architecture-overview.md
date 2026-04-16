@@ -8,8 +8,8 @@ status: active
 nav_order: 10
 ---
 
-TallyLot is a typed Python package and CLI for source-backed intake,
-reconciliation, checkpointing, accounting validation, output rendering, and
+TallyLot is a typed Python package and CLI for evidence intake,
+reconciliation, checkpointing, accounting validation, rendering, and
 tax-oriented work.
 
 ## Runtime Posture

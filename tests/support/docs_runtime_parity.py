@@ -38,7 +38,7 @@ def production_route_doc_paths() -> list[Path]:
         docs / "guides" / "source-intake.md",
         docs / "guides" / "normalize-screen-stage.md",
         docs / "reference" / "manual-balance-submission-artifacts.md",
-        docs / "reference" / "wallet-inventory-artifacts.md",
+        docs / "reference" / "location-inventory-artifacts.md",
         docs / "workspace" / "analysis" / "inventory" / "README.md",
         commands_root / "balance-submission-operations.md",
         commands_root / "reconciliation-balance-operations.md",

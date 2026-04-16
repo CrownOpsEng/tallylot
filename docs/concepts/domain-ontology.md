@@ -168,8 +168,8 @@ and one as-of point.
 Rules:
 
 - it is distinct from a reconciliation `CheckpointProposal`
-- it is distinct from a computed `BalanceSnapshot`
-- it is distinct from a raw `BalanceReference`
+- it is distinct from current bridge balance snapshots
+- it is distinct from current bridge balance references
 - it is distinct from the containing accepted `Checkpoint`
 - downstream stages may consume checkpoint assertions, but they must not
   redefine them into incompatible local variants
@@ -188,7 +188,7 @@ Minimum valuation concerns:
 - currency
 - purpose
 - timestamp
-- source
+- origin
 - confidence
 - provenance
 
@@ -333,7 +333,7 @@ surface for Coinbase-held spot balances.
 First-slice rule:
 
 - this slice may use only
-  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_balance"]`
+  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_position"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
 - `location_ref` must resolve to the Coinbase-held custodial spot location or
   sub-location in scope
@@ -354,7 +354,8 @@ Rules:
 - bridge classifications do not define the full ontology
 - future support for broader financial instruments should be driven by the
   target ontology, not by endlessly adding new activity labels
-- output hints and policy hints remain downstream aids, not the primary source
+- output hints and policy hints remain downstream aids, not the primary
+  authority
   of economic truth
 
 Bridge-specific classification rules live in
@@ -414,8 +415,8 @@ Required application ownership:
   submission validation, and checkpoint acceptance
 - `application/accounting/` for journal expansion, validation, and summaries
 - `application/tax/` for tax input construction, basis transitions, policy
-  selection, and tax-output rendering
-- `application/outputs/` for downstream renderer orchestration
+  selection, and tax-output generation
+- `application/rendering/` for downstream rendering orchestration
 - `application/workspace/` for workspace resolution and initialization
 
 Boundary rules:

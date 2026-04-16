@@ -35,7 +35,7 @@ Ownership boundaries:
   `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
 - [Gaps And Readiness](gaps-and-readiness.md) owns `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
-  `ReadinessRecord`, `ReadinessSummary`, and `SubjectRef`.
+  `ReadinessRecord`, `ReadinessSummaryRecord`, and `SubjectRef`.
 - this page owns how bridge surfaces move to target products without creating
   dual authorities
 
@@ -54,7 +54,7 @@ Naming rules:
 Authoritative writer rule:
 
 - as soon as a target product exists for an in-scope family, that product
-  becomes the sole authoritative persisted source for that scope
+  becomes the sole authoritative persisted truth surface for that scope
 - any remaining bridge surface for that scope becomes a derived compatibility
   projection only
 
@@ -87,7 +87,7 @@ Every implementation slice must name the authoritative writer and active reader
 for each affected surface before code lands. Use this matrix as the default
 cutover contract.
 
-| Current surface | Authoritative source now | Authoritative source after slice | Derived compatibility projection | Active readers now | Target readers after cutover | Cutover gate | Retirement gate |
+| Current surface | Authoritative surface now | Authoritative surface after slice | Derived compatibility projection | Active readers now | Target readers after cutover | Cutover gate | Retirement gate |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `translation_input_candidates.json` | planner-enabled normalization | `EvidenceSet` kernel plus planning sidecar | optional planner review projection derived from `EvidenceSet` plus planning sidecar | normalization review tools and planner inspection flows | evidence review and claim-construction flows that read `EvidenceSet` directly | selected, superseded, and blocked membership are preserved with stable `selection_id` and `member_id` outcomes | retire once planner/operator review surfaces no longer require the legacy file |
 | `translation_input_plan.json` | planner-enabled normalization | `EvidenceSet` | `translation_input_plan.json` regenerated from `EvidenceSet` during the compatibility window | translation entry points that still expect a plan file | evidence consumers and claim construction that read `EvidenceSet` directly | one authoritative `EvidenceSet` exists for the capture and reproduces the same selected, superseded, and blocked decisions | retire when no in-scope reader requires the plan file and parity is enforced on `EvidenceSet` instead |
@@ -119,8 +119,8 @@ Rules:
   `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status`
   remain outside `ClaimSet` kernels and survive only through
   declared compatibility sidecars when a live bridge reader still needs them
-- legacy `provider_operation_key` stays satisfied by
-  `ActivityClaim.source_activity_kind` and does not require a duplicate
+- legacy `provider_operation_key` stays satisfied by `activity_label` on
+  claims with `kind = activity` and does not require a duplicate
   compatibility-only field
 
 Diagnostic mapping rules:

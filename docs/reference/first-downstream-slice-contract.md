@@ -41,7 +41,7 @@ The slice is not:
 - a broad downstream migration for every source
 - a replacement for `Journal`, `TaxInputs`, or `TaxOutputs`
 - a claim that cross-source transfer pairing is already solved
-- a claim that operator-only checkpoint inputs satisfy filing-ready truth
+- a claim that manual-only checkpoint inputs satisfy filing-ready truth
 
 ## In-Scope Record Families
 
@@ -64,13 +64,15 @@ The slice may emit only these downstream kernel families:
 
 This slice freezes one position identity shape:
 
-- `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_balance"]`
+- `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_position"]`
 
 Rules:
 
-- `beneficial_owner_ref` comes from this slice's `BeneficialOwnerClaim` output
-- `location_ref` comes from this slice's `LocationClaim` output
-- `instrument_ref` comes from this slice's `InstrumentIdentityClaim` output
+- `beneficial_owner_ref` comes from this slice's claims with
+  `kind = beneficial_owner`
+- `location_ref` comes from this slice's claims with `kind = location`
+- `instrument_ref` comes from this slice's claims with
+  `kind = instrument_identity`
 - `contract_ref` stays `null` for this slice
 - one continuity segment covers one `PositionRef`; do not mix positions into one
   segment
@@ -85,8 +87,8 @@ Product metadata fields in this slice:
   `claim_set_refs`
 - `ReconciliationState` carries `reconciliation_state_id`,
   `schema_version`, and `economic_facts_ref`
-- `Checkpoint` carries `checkpoint_set_id`, `schema_version`,
-  `reconciliation_state_refs`, and `as_of_at`
+- `Checkpoint` carries `checkpoint_id`, `schema_version`,
+  `reconciliation_state_refs`, and `as_of`
 
 Compilation-input rules:
 
@@ -95,7 +97,8 @@ Compilation-input rules:
   from authoritative `ClaimSet` kernels
 - downstream compilation must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
-- upstream `*_ref` metadata fields store target product ids, never `dataset_id`
+- upstream `*_ref` metadata fields store target product ids, never
+  `kernel_scope_id`
   and never raw kernel fingerprints
 
 ## Kernel Cardinality And Ownership
@@ -142,10 +145,10 @@ Slice-specific rules:
 - `valuation_id = [origin_ref, purpose, amount, currency, valued_at, precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id = [subject_ref, segment_start_at, segment_end_at]`
-- `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of_at, expected_value_fingerprint]`
-- `checkpoint_proposal_id = [continuity_segment_id, subject_ref, checkpoint_date, target_refs]`
-- `checkpoint_set_id = [reconciliation_state_refs, as_of_at]`
-- `checkpoint_assertion_id = [kind, as_of_at, subject_ref, accepted_value_fingerprint]`
+- `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
+- `checkpoint_proposal_id = [continuity_segment_id, subject_ref, as_of, target_refs]`
+- `checkpoint_id = [reconciliation_state_refs, as_of]`
+- `checkpoint_assertion_id = [kind, as_of, subject_ref, accepted_value_fingerprint]`
 
 Not allowed in this slice:
 
@@ -191,7 +194,7 @@ This slice allows only:
   - `analysis_ready`
   - `filing_ready`
 - `basis`:
-  - `source_document`
+  - `document_evidence`
   - `reconciled_rollforward`
 - `support_kind`:
   - `document_balance`
@@ -201,11 +204,11 @@ This slice allows only:
 
 Not allowed in this slice:
 
-- `operator_assertion`
+- `manual_assertion`
 - `adopted_opening`
-- `source_balance`
+- `reported_balance`
 - `location_balance`
-- `inventory_evidence`
+- `inventory_observation`
 - `partial_rollforward`
 
 ## Parity Gates
@@ -264,7 +267,7 @@ This slice does not:
 - emit `EventLinkRecord` rows as a required success condition
 - widen beyond the current first upstream slice already defined by
   [First Slice Contract](first-slice-contract.md)
-- make operator-only checkpoint acceptance part of the filing path
+- make manual-only checkpoint acceptance part of the filing path
 - use adopted opening state as an accepted checkpoint basis
 - define runtime `Journal`, `TaxInputs`, or `TaxOutputs`
 - require broad balance-provider hydration or cross-source transfer pairing

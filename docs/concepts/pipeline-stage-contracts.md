@@ -86,15 +86,16 @@ Shared rules:
 - `EvidenceSet` and `ClaimSet` keep `evidence_set_id` and `claim_set_id` as
   their product ids
 - later products use dedicated product ids:
-  `economic_facts_id`, `reconciliation_state_id`, `checkpoint_set_id`,
+  `economic_facts_id`, `reconciliation_state_id`, `checkpoint_id`,
   `journal_id`, `tax_inputs_id`, and `tax_outputs_id`
 - upstream product metadata refs use product ids only; they never use
-  `dataset_id` or a raw kernel fingerprint
+  `kernel_scope_id` or a raw kernel fingerprint
 - ordered metadata fields such as `claim_set_refs`,
   `reconciliation_state_refs`, and `economic_facts_refs` sort
   lexicographically by product id unless the owning product declares a
   stronger canonical order
-- `dataset_id` remains a derived shared-support and reporting attachment only;
+- `kernel_scope_id` remains a derived shared-support and reporting attachment
+  only;
   it is not a product id or upstream product ref
 
 ### Record Reference Rule
@@ -122,7 +123,7 @@ Shared rules:
 ### Temporal Scalar Rule
 
 - where a field or id recipe uses a temporal scalar such as `effective_at`,
-  `as_of_at`, or `valued_at`, the
+  `as_of`, or `valued_at`, the
   canonical serialized form must preserve whether the meaning is date-scoped
   or timestamp-scoped
 - stages may carry an additional precision field when that stage needs it
@@ -144,16 +145,17 @@ Shared rules:
 - any later rehydration path must join through stable ids emitted by the
   kernel
 
-### Dataset Id And Sidecar Attachment
+### Kernel-Scope Id And Sidecar Attachment
 
 - every target product has one canonical kernel fingerprint
-- the shared `dataset_id` contract is owned by
+- the shared `kernel_scope_id` contract is owned by
   [Gaps And Readiness](gaps-and-readiness.md)
-- `dataset_id` is derived from the emitted kernel fingerprint after canonical
+- `kernel_scope_id` is derived from the emitted kernel fingerprint after
+  canonical
   fingerprinting; it is not part of kernel metadata or fingerprint inputs
-- `dataset_id` is the product-scope attachment id for readiness,
+- `kernel_scope_id` is the product-scope attachment id for readiness,
   comparison, and other shared sidecars when no narrower truthful scope exists
-- `dataset_id` is not a substitute for a narrower record id or stage-owned
+- `kernel_scope_id` is not a substitute for a narrower record id or stage-owned
   scope such as `selection_id`, `claim_scope_id`, `continuity_segment_id`,
   `balance_target_id`, or `checkpoint_proposal_id`
 
@@ -205,7 +207,7 @@ Owns:
 - superseded and blocked alternatives
 - deterministic evidence-selection decisions
 - typed provenance and locator identity for selected evidence members
-- source-local typed observations that do not yet require economic meaning
+- typed observations that do not yet require economic meaning
 
 Record families:
 
@@ -271,7 +273,7 @@ required:
 
 | `kind` | Kind-owned kernel fields |
 | --- | --- |
-| `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of_at`, `statement_as_of_precision` |
+| `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of`, `statement_as_of_precision` |
 | `statement_balance_row` | `account_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
 
 Rules:
@@ -279,7 +281,7 @@ Rules:
 - the kind-specific fields above are kernel meaning, not sidecar detail
 - `statement_document.statement_kind` uses the recognized statement-adapter
   kind for the selected document member
-- `statement_document.statement_as_of_at` lifts the current parsed statement
+- `statement_document.statement_as_of` lifts the current parsed statement
   as-of time and `statement_as_of_precision` follows the
   repo-wide temporal precision contract for that value
 - `statement_document.document_effective_at` lifts the current parsed
@@ -359,7 +361,7 @@ Must guarantee:
 
 Must not:
 
-- force economic interpretation
+- force economic meaning
 - collapse many selections into one fake product-wide decision
 - use file order as identity
 
@@ -367,14 +369,14 @@ Handoff to `ClaimSet`:
 
 - `EvidenceSet` provides selected evidence, typed observations, provenance, and
   deterministic selection decisions
-- it does not provide final economic interpretation, checkpoint acceptance,
+- it does not provide final economic meaning, checkpoint acceptance,
   journal logic, or tax treatment
 
 ## `ClaimSet`
 
 Purpose:
 
-- source-local meaning before economic truth is fixed
+- evidence-local meaning before economic truth is fixed
 
 Product metadata:
 
@@ -385,7 +387,7 @@ Product metadata:
 
 Owns:
 
-- source-local assertions derived from evidence
+- evidence-local assertions derived from evidence
 - explicit scopes and mutually exclusive bundles
 - bundle decisions over scopes
 
@@ -428,18 +430,18 @@ Cardinality:
 - one `BundleDecisionRecord` exists per `claim_scope_id`
 - one or more `ClaimRecord` rows may exist per `bundle_id`
 
-Canonical claim kinds:
+Canonical `ClaimRecord.kind` values:
 
-- `ActivityClaim`
-- `BalanceClaim`
-- `InstrumentIdentityClaim`
-- `LocationClaim`
-- `LegalOwnerClaim`
-- `BeneficialOwnerClaim`
-- `CounterpartyClaim`
-- `StatementClaim`
-- `ContractTermClaim`
-- `ValuationClaim`
+- `activity`
+- `balance`
+- `instrument_identity`
+- `location`
+- `legal_owner`
+- `beneficial_owner`
+- `counterparty`
+- `statement`
+- `contract_term`
+- `valuation`
 
 Controlled vocabularies:
 
@@ -459,14 +461,14 @@ bounded slice, these kind-specific kernel fields are also required:
 
 | `kind` | Kind-owned kernel fields |
 | --- | --- |
-| `ActivityClaim` | `source_activity_kind`, `location_claim_ref`, `activity_leg_specs` |
-| `BalanceClaim` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
-| `InstrumentIdentityClaim` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
-| `LocationClaim` | `location_ref`, `account_label`, `location_label` |
-| `BeneficialOwnerClaim` | `beneficial_owner_ref` |
-| `ValuationClaim` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
+| `activity` | `activity_label`, `location_claim_ref`, `leg_specs` |
+| `balance` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
+| `instrument_identity` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
+| `location` | `location_ref`, `account_label`, `location_label` |
+| `beneficial_owner` | `beneficial_owner_ref` |
+| `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
-`activity_leg_specs` entry shape:
+`leg_specs` entry shape:
 
 - `slot`
 - `leg_kind`
@@ -478,24 +480,24 @@ bounded slice, these kind-specific kernel fields are also required:
 
 Current first slice linkage rules:
 
-- `ActivityClaim.source_activity_kind` is the owning field for the current
-  source-local activity kind used by the current first slice
-- `activity_leg_specs` lift ordered leg meaning from the current
+- `activity` claims own the current evidence-local `activity_label` used by
+  the current first slice
+- `leg_specs` lift ordered leg meaning from the current
   `EconomicLegDraft` contract, including sign, instrument identity claims,
   optional subtype, optional attributed-leg linkage, and optional location
-- retail activity claims use `member_refs` plus the scope used in the current
+- retail claims with `kind = activity` use `member_refs` plus the scope used in the current
   first slice
   key `[retail_member_id, raw_row_ref]`; they do not require a retail-row
   observation kind in this pass
 - statement-derived claims use both `member_refs` and
   `observation_refs`
-- `BalanceClaim` must include the row observation id in
+- `balance` claims must include the row observation id in
   `observation_refs` and may also include the paired
   `statement_document` observation id for the same statement document
-- `ValuationClaim` is defined now but emits zero rows by default in
+- `valuation` claims are defined now but emit zero rows by default in
   the current first slice until a later owner-doc pass locks numeric
   statement valuation inputs
-- `LocationClaim.location_label` follows the same target-contract rule as
+- `location` claims use `location_label` under the same target-contract rule as
   `statement_balance_row.location_label`: preserve the source-provided
   lower-scope label, but keep the canonical target noun aligned to
   `Location`
@@ -513,7 +515,7 @@ Rules:
   `tax_treatment_hint`, `description`, `tx_hash_or_null`,
   `operation_group_id_or_null`, `confidence`, and `status`
 - legacy `provider_operation_key` is satisfied by
-  `ActivityClaim.source_activity_kind` and must not be duplicated into a
+  `activity_label` on claims with `kind = activity` and must not be duplicated into a
   compatibility sidecar field
 - review markers map to shared support records and sidecars rather than
   claim-kernel fields or compatibility sidecars that masquerade as claim
@@ -526,14 +528,14 @@ Rules:
 
 Stable ids:
 
-- `claim_set_id` identifies one source-local claim emission over one evidence
+- `claim_set_id` identifies one evidence-local claim emission over one evidence
   set
-- `claim_scope_id` identifies one source-local scope that
+- `claim_scope_id` identifies one evidence-local scope that
   may admit one or more mutually exclusive bundles
-- `scope_key` is the stage-owned stable discriminator for one source-local
+- `scope_key` is the stage-owned stable discriminator for one evidence-local
   scope within one claim set
 - `bundle_id` identifies one mutually exclusive claim bundle
-- `claim_id` identifies one source-local claim under one bundle
+- `claim_id` identifies one evidence-local claim under one bundle
 - `decision_id` identifies one bundle decision record for one
   scope
 - `claim_set_id` uses component array `[evidence_set_id, emitter_id]`
@@ -572,9 +574,9 @@ Fingerprint inputs:
 
 Must guarantee:
 
-- source-local meaning only
+- evidence-local meaning only
 - explicit scope and bundle structure
-- preserved ambiguity where one safe final interpretation is unavailable
+- preserved ambiguity where one safe final meaning is unavailable
 - claim-stage gaps and reviews may attach to `claim_scope_id` when
   no narrower truthful subject has resolved yet
 - kind-owned kernel fields are frozen wherever this page defines them; later
@@ -587,13 +589,13 @@ Must guarantee:
 
 Must not:
 
-- force unresolved meaning into final economic or policy interpretations
+- force unresolved meaning into final economic meaning or policy outcomes
 - treat bridge compatibility annotations as claim kernels
 - silently discard materially relevant alternative bundles
 
 Handoff to `EconomicFacts`:
 
-- `ClaimSet` hands off source-local assertions, mutually exclusive bundles, and
+- `ClaimSet` hands off evidence-local assertions, mutually exclusive bundles, and
   bundle decisions
 - the economic stage decides which bundle can become accepted economic truth
   and which scopes remain blocked, deferred, or superseded
@@ -776,7 +778,7 @@ Record families:
   - `segment_start_at`
   - `segment_end_at`
   - `status`
-  - `checkpoint_date`
+  - `as_of`
 - `EventLinkRecord`
   - `event_link_id`
   - `continuity_segment_id`
@@ -789,7 +791,7 @@ Record families:
   - `continuity_segment_id`
   - `subject_ref`
   - `kind`
-  - `as_of_at`
+  - `as_of`
   - `expected_value`
   - `observed_value`
   - `status`
@@ -797,7 +799,7 @@ Record families:
   - `checkpoint_proposal_id`
   - `continuity_segment_id`
   - `subject_ref`
-  - `checkpoint_date`
+  - `as_of`
   - `status`
   - `target_refs`
   - `evidence_refs`
@@ -805,8 +807,8 @@ Record families:
 Controlled vocabularies:
 
 - `EventLinkRecord.kind`:
-  - `transfer_pair`
-  - `settlement_pair`
+  - `transfer`
+  - `settlement`
 - `EventLinkRecord.status`:
   - `linked`
   - `candidate`
@@ -858,9 +860,9 @@ Stable ids:
 - `event_link_id` uses component array
   `[continuity_segment_id, kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
-  `[continuity_segment_id, subject_ref, kind, as_of_at, expected_value_fingerprint]`
+  `[continuity_segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
 - `checkpoint_proposal_id` uses component array
-  `[continuity_segment_id, subject_ref, checkpoint_date, target_refs]`
+  `[continuity_segment_id, subject_ref, as_of, target_refs]`
 - `expected_value_fingerprint` is the canonical fingerprint of the
   `AssertionValue` carried in `expected_value`
 - `evidence_refs` provide audit support, but they are not part of proposal
@@ -869,13 +871,13 @@ Stable ids:
 Ordering:
 
 - `ContinuitySegmentRecord` rows sort by
-  `[checkpoint_date, subject_ref, continuity_segment_id]`
+  `[as_of, subject_ref, continuity_segment_id]`
 - `EventLinkRecord` rows sort by
   `[continuity_segment_id, kind, left_event_ref, right_event_ref, event_link_id]`
 - `BalanceTargetRecord` rows sort by
-  `[continuity_segment_id, subject_ref, as_of_at, balance_target_id]`
+  `[continuity_segment_id, subject_ref, as_of, balance_target_id]`
 - `CheckpointProposalRecord` rows sort by
-  `[checkpoint_date, subject_ref, continuity_segment_id, checkpoint_proposal_id]`
+  `[as_of, subject_ref, continuity_segment_id, checkpoint_proposal_id]`
 
 Serialization:
 
@@ -906,7 +908,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside dataset readiness summaries
+- bury missing evidence inside kernel-scope readiness summaries
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:
@@ -923,10 +925,10 @@ Purpose:
 
 Product metadata:
 
-- `checkpoint_set_id`
+- `checkpoint_id`
 - `schema_version`
 - `reconciliation_state_refs`
-- `as_of_at`
+- `as_of`
 
 Owns:
 
@@ -938,14 +940,14 @@ Record families:
 
 - `CheckpointRecord`
   - `checkpoint_id`
-  - `as_of_at`
+  - `as_of`
   - `assertion_ids`
 - `CheckpointAssertionRecord`
   - `checkpoint_assertion_id`
   - `checkpoint_id`
   - `subject_ref`
   - `kind`
-  - `as_of_at`
+  - `as_of`
   - `accepted_value`
   - `trust_level`
   - `basis`
@@ -964,19 +966,19 @@ Controlled vocabularies:
 - `trust_level`:
   - `filing_ready`
   - `analysis_ready`
-  - `operator_only`
+  - `manual_only`
 - `CheckpointAssertionRecord.basis`:
-  - `source_document`
-  - `source_balance`
+  - `document_evidence`
+  - `reported_balance`
   - `reconciled_rollforward`
   - `adopted_opening`
-  - `operator_assertion`
+  - `manual_assertion`
 - `CheckpointAssertionRecord.support_kind`:
   - `document_balance`
-  - `source_balance`
+  - `reported_balance`
   - `location_balance`
-  - `inventory_evidence`
-  - `operator_assertion`
+  - `inventory_observation`
+  - `manual_assertion`
 - `continuity_kind`:
   - `direct_observation`
   - `reconciled_rollforward`
@@ -999,24 +1001,22 @@ Product-root cardinality:
 
 Stable ids:
 
-- `checkpoint_set_id` identifies one accepted checkpoint kernel
-- `checkpoint_id` identifies one accepted checkpoint record
+- `checkpoint_id` identifies one accepted checkpoint kernel and its accepted
+  root record
 - `checkpoint_assertion_id` identifies one accepted checkpoint truth record for
   one subject and one as-of point
-- `checkpoint_set_id` uses component array
-  `[reconciliation_state_refs, as_of_at]`
 - `checkpoint_id` uses component array
-  `[as_of_at, assertion_ids]`
+  `[reconciliation_state_refs, as_of]`
 - `checkpoint_assertion_id` uses component array
-  `[kind, as_of_at, subject_ref, accepted_value_fingerprint]`
+  `[kind, as_of, subject_ref, accepted_value_fingerprint]`
 - `accepted_value_fingerprint` is the canonical fingerprint of one
   `AssertionValue` variant from [Domain Ontology](domain-ontology.md)
 
 Ordering:
 
-- `CheckpointRecord` rows sort by `[as_of_at, checkpoint_id]`
+- `CheckpointRecord` rows sort by `[as_of, checkpoint_id]`
 - `CheckpointAssertionRecord` rows sort by tuple
-  `[as_of_at, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
+  `[as_of, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
 
 Serialization:
 
@@ -1043,27 +1043,27 @@ Fingerprint inputs:
 Minimum admissibility rules:
 
 - `filing_ready` requires:
-  - `basis` other than `operator_assertion`
-  - `support_kind` other than `operator_assertion`
+  - `basis` other than `manual_assertion`
+  - `support_kind` other than `manual_assertion`
   - `continuity_kind` other than `partial_rollforward`
-- `analysis_ready` may use `operator_assertion` or `partial_rollforward`, but
+- `analysis_ready` may use `manual_assertion` or `partial_rollforward`, but
   the lower-trust basis stays explicit in the accepted checkpoint record
-- `operator_only` is required when accepted checkpoint truth relies solely on
-  operator assertion without source-backed support
+- `manual_only` is required when accepted checkpoint truth relies solely on
+  manual assertion without evidence-backed support
 - `adopted_opening` remains a distinct acceptance basis and must preserve
   provenance plus the continuity kind used to roll it into accepted state
 
 Must guarantee:
 
 - accepted checkpoint truth is first-class
-- source-backed evidence remains preferred
-- operator assertions do not silently become filing-ready checkpoint truth
+- evidence-backed support remains preferred
+- manual assertions do not silently become filing-ready checkpoint truth
 - adopted opening state remains explicit instead of masquerading as direct
   observation
 
 Must not:
 
-- silently elevate operator convenience inputs into filing-ready truth
+- silently elevate manual convenience inputs into filing-ready truth
 - hide the acceptance basis, trust level, or continuity assumptions
 
 Handoff to `Journal` and `TaxInputs`:

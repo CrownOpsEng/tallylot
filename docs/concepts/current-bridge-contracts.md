@@ -321,7 +321,7 @@ Rules:
   `working/normalized/captures/<capture_uid>/`
 - assembled source outputs live under `working/normalized/sources/<source>/`
 - source assembly merges accepted captures deterministically, preserves the
-  union of source-backed evidence, collapses exact semantic duplicates, and
+  union of primary evidence, collapses exact semantic duplicates, and
   surfaces semantic conflicts explicitly
 - location inventory and balance evidence provenance reference captures by
   `capture_uid`, with human-readable labels and roots treated as optional

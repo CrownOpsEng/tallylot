@@ -51,7 +51,7 @@ Migration-wide rules:
 - no consumer may read a bridge surface and a target product as peer
   authorities
 - once a target product exists for an in-scope family, that target product is
-  the authoritative persisted source for that scope
+  the authoritative persisted truth surface for that scope
 - bridge surfaces that remain in use after that point are compatibility
   projections only
 - unchanged bridge outputs must remain reproducible from the authoritative
@@ -88,7 +88,7 @@ Land the current first upstream
 Required posture:
 
 - `EvidenceSet` becomes authoritative for in-scope evidence selection
-- `ClaimSet` becomes authoritative for in-scope source-local meaning
+- `ClaimSet` becomes authoritative for in-scope evidence-local meaning
 - `translation_input_plan.json`, `EconomicActivityDraft`, and
   `SourceTranslationBatch` survive only as derived compatibility projections
 
