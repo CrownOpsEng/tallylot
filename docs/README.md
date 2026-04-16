@@ -48,7 +48,7 @@ Agent-specific routing and repo execution rules live in
 - [Current Bridge Contracts](concepts/current-bridge-contracts.md): Owning concept page for the live bridge contracts, bridge surfaces, and current schema rules.
 - [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Single authority for how live bridge surfaces cut over to target products during migration, including writer ownership, reader cutovers, and retirement gates.
 - [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries.
-- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts.
+- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only comparison packages.
 - [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, identity seams, ref recipes, package ownership, and bridge-versus-target modeling rules.
 - [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
 - [Gaps And Readiness](concepts/gaps-and-readiness.md): Owning concept page for the target gap model, review model, readiness model, sidecar rules, and shared `SubjectRef` contracts.

@@ -41,7 +41,7 @@ projections.
 - `adapters/` translates source and output formats
 - `interfaces/` exposes CLI entry points over application capabilities
 
-Raw evidence and live operator artifacts remain in the external workspace, not
+Raw evidence and live workspace files remain in the external workspace, not
 in the repo.
 
 ## Contract Map

@@ -60,7 +60,7 @@ Frozen kind-specific observation fields:
 | Observation kind | Frozen kernel fields |
 | --- | --- |
 | `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of`, `statement_as_of_precision` |
-| `statement_balance_row` | `account_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
+| `statement_balance_row` | `location_group_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
 
 Observation-field rules:
 
@@ -71,12 +71,15 @@ Observation-field rules:
   current parsed statement times, and the paired `*_precision` fields follow
   the repo-wide temporal
   precision contract
-- `statement_balance_row` lifts account and location labels, balance
+- `statement_balance_row` lifts location-group and location labels, balance
   kind, instrument, quantity, as-of time, and optional note or valuation text
   directly from the current statement-row contract
-- `location_label` preserves the source-provided lower-scope label, such as a
-  source sub-location name, without freezing that source noun into
-  the canonical target field list
+- `location_group_label` preserves the higher-scope source-provided grouping
+  label, such as an account or custody container name, without freezing that
+  source noun into the canonical target field list
+- `location_label` preserves the source-provided lower-scope or direct
+  location label, such as a source sub-location name, without freezing that
+  source noun into the canonical target field list
 - `statement_document` may leave shell `observed_at` or
   `precision` empty when the kind-specific document timing
   fields carry the truthful time meaning
@@ -122,7 +125,7 @@ Frozen kind-specific claim fields:
 | `activity` | `activity_label`, `location_claim_ref`, `leg_specs` |
 | `balance` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
 | `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
-| `location` | `location_ref`, `account_label`, `location_label` |
+| `location` | `location_ref`, `location_group_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
 | `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
@@ -151,10 +154,10 @@ Claim-field and linkage rules:
   include the paired `statement_document` observation id
 - `valuation` claims remain zero-row by default until a later owner-page pass
   freezes numeric statement valuation inputs
-- `location` claims use `location_label` under the same target-contract rule as
-  `statement_balance_row.location_label`: preserve the source-provided
-  lower-scope label, but keep the canonical target noun aligned to
-  `Location`
+- `location` claims use `location_group_label` and `location_label` under the
+  same target-contract rules as `statement_balance_row`: preserve the
+  source-provided higher-scope and lower-scope labels, but keep the canonical
+  target nouns aligned to `Location`
 - no generic claim payload blob is allowed for kinds in this slice
 
 ## Kernel Cardinality And Ownership

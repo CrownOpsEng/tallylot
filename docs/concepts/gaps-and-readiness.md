@@ -14,7 +14,7 @@ model.
 
 Current runtime note:
 
-- the live runtime still uses stage-specific issue and review artifacts such as
+- the live runtime still uses stage-specific issue and review outputs such as
   `IssueRecord` and `NormalizationReviewRecord`
 - those current surfaces remain current-state truth
 - this page defines the target shared support model for later implementation
@@ -39,7 +39,7 @@ Use one typed provenance model across stages.
 Rules:
 
 - provenance stays typed in runtime models
-- flattening happens only at artifact and export boundaries
+- flattening happens only at file and export boundaries
 - file and member identity stay separate from row, page, or other locator
   identity
 - capture identity stays separate from human-readable labels and filesystem
@@ -131,8 +131,8 @@ projections, and sidecars.
 
 Rules:
 
-- `product_scope_id` is `<product_name>:<kernel_fingerprint>`
-- `product_name` uses the lower-snake-case target product name
+- `product_scope_id` is `<product_slug>:<kernel_fingerprint>`
+- `product_slug` uses the lower-snake-case target product stem
 - `kernel_fingerprint` is the canonical product fingerprint owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - `product_scope_id` is derived after canonical kernel fingerprinting and is not

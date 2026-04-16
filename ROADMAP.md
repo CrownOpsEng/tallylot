@@ -31,8 +31,8 @@ These anchors drive sequencing and acceptance criteria:
 - primary evidence and evidence-backed checkpoints remain first-class
 - raw-evidence derivation is the supported meaning-parity path
 - capture identity is `capture_uid`, not path
-- typed provenance stays a runtime model and is flattened only at artifact
-  boundaries
+- typed provenance stays a runtime model and is flattened only at file and
+  export boundaries
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - current bridge names remain current-state truth until later implementation
   slices replace them
@@ -82,8 +82,10 @@ Must freeze:
   qualifiers or source-specific crypto nouns into shared target names, and
   that keep stage-local ids explicit once they cross into downstream products,
   keep product-id component order aligned to product-header order, keep
-  canonical shared-support rollups stage- and domain-oriented, and prefer
-  direct kind values such as `instrument` over pseudo-type labels
+  canonical shared-support rollups stage- and domain-oriented, use target-owned
+  label pairs such as `location_group_label` and `location_label` when
+  preserving source-provided location labels, and prefer direct kind values
+  such as `instrument` over pseudo-type labels
 - package-root naming that keeps `journal` aligned across stage vocabulary and
   package ownership, uses singular concept roots such as `assertion/`, avoids
   umbrella roots such as `entities/` when the identity families are already

@@ -282,7 +282,7 @@ required:
 | `kind` | Kind-owned kernel fields |
 | --- | --- |
 | `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of`, `statement_as_of_precision` |
-| `statement_balance_row` | `account_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
+| `statement_balance_row` | `location_group_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
 
 Rules:
 
@@ -298,14 +298,17 @@ Rules:
 - `statement_balance_row.observed_at` and `precision` lift
   the current statement-row as-of value and
   precision directly
-- `statement_balance_row` account and location labels, quantity, notes, and
+- `statement_balance_row` location-group and location labels, quantity, notes, and
   valuation-text
   fields lift the current statement-row contract directly; `pdf_file` and
   `raw_row_ref` stay in provenance and observation keys rather than
   duplicated business fields
+- `statement_balance_row.location_group_label` preserves the higher-scope
+  source-provided grouping label, such as an account or custody container
+  name, without freezing that source noun into the canonical target field list
 - `statement_balance_row.location_label` preserves the source-provided
-  lower-scope label, such as a source sub-location name, without
-  freezing the source noun into the canonical target field list
+  lower-scope or direct location label, such as a source sub-location name,
+  without freezing the source noun into the canonical target field list
 - `statement_document` may leave the shell `observed_at` and
   `precision` empty when the meaningful document times are
   instead expressed through the kind-owned document-effective or
@@ -475,7 +478,7 @@ bounded slice, these kind-specific kernel fields are also required:
 | `activity` | `activity_label`, `location_claim_ref`, `leg_specs` |
 | `balance` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
 | `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
-| `location` | `location_ref`, `account_label`, `location_label` |
+| `location` | `location_ref`, `location_group_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
 | `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
@@ -507,10 +510,10 @@ First upstream slice linkage rules:
 - `valuation` claims are defined now but emit zero rows by default in
   the first upstream slice until a later owner-page pass locks numeric
   statement valuation inputs
-- `location` claims use `location_label` under the same target-contract rule as
-  `statement_balance_row.location_label`: preserve the source-provided
-  lower-scope label, but keep the canonical target noun aligned to
-  `Location`
+- `location` claims use `location_group_label` and `location_label` under the
+  same target-contract rules as `statement_balance_row`: preserve the
+  source-provided higher-scope and lower-scope labels, but keep the canonical
+  target nouns aligned to `Location`
 
 ### Derived Compatibility Sidecars
 

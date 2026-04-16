@@ -361,6 +361,9 @@ Current application of this rule:
   from that root record.
 - For shared support attachment over one emitted product kernel, prefer the
   explicit `product_scope_id` over generic names such as `dataset_id`.
+- When prose or helper formulas need the canonical lower-snake-case emitted
+  product token, prefer `product_slug` over `product_name` so the stable token
+  reads in parallel with `source_slug` and does not sound like display prose.
 - For persisted files and workspace basenames, prefer the owning product or
   support role in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
@@ -574,6 +577,10 @@ Current application of this rule:
   Prefer target-aligned names such as `location_label` over
   source-specific names such as `wallet_label` when `Location` already owns
   the shared boundary.
+- When one canonical target contract must preserve both a higher-scope and a
+  lower-scope source-provided location label, prefer
+  `location_group_label` and `location_label` over source-era pairs such as
+  `account_label` and `wallet_label`.
 - For stable keys and default directory stems, prefer the shortest durable
   domain noun that preserves identity. Do not carry venue-, market-, or
   asset-class-specific qualifiers into default keys such as `position_key`

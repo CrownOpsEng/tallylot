@@ -85,6 +85,9 @@ Trust and ownership rules:
 - source adapters produce selected-evidence observations today and evidence-local
   claims later
 - adapters may emit only safe bridge hints and safe evidence-local meaning
+- when source-provided hierarchical location labels survive into evidence-local
+  kernels, use target-owned field names such as `location_group_label` and
+  `location_label` rather than source-era nouns in canonical target contracts
 - adapters do not own reconciliation
 - adapters do not own checkpoint acceptance
 - adapters do not own journal expansion or validation

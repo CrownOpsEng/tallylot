@@ -391,7 +391,7 @@ The target package layout follows stage ownership and is not advisory.
 Required domain ownership:
 
 - `domain/instrument/`, `domain/location/`, `domain/ownership/`,
-  `domain/counterparty/`, `domain/contract/`, and `domain/position/` for core
+  `domain/counterparty/`, `domain/contract/`, and `domain/position/` for
   identity concepts, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
