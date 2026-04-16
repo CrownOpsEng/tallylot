@@ -32,7 +32,7 @@ Use the owner pages first:
 This page keeps only reusable target ids and ref tuples that are not primary
 owner concepts elsewhere.
 
-## Emitter Identity
+## Emitter Id
 
 `emitter_id` identifies the shared claim emitter that emitted one `ClaimSet`.
 
@@ -48,7 +48,7 @@ Rules:
 - `emitter_key` must be kebab-case
 - the current first slice `emitter_key` is `claim`
 
-## Origin Identity
+## Origin Ref
 
 `OriginRef` identifies the immediate upstream origin for one emitted kernel
 record.
@@ -73,7 +73,7 @@ Frozen `origin_kind` vocabulary:
 - `checkpoint_assertion`
 - `basis_adjustment`
 
-## Accounting Reference Tuples
+## Accounting Refs
 
 `AccountRef` identifies one accounting account.
 
@@ -93,7 +93,7 @@ Frozen `commodity_kind` vocabulary:
 - `currency`
 - `synthetic_unit`
 
-## Tax Policy Identity
+## Tax Policy Id
 
 `TaxPolicyId` identifies one selected tax policy.
 

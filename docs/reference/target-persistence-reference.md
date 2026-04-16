@@ -34,15 +34,19 @@ Use these pages as the authoritative owners:
 
 When persisting target products:
 
-- persist one authoritative kernel per declared scope partition
+- persist one authoritative kernel per declared partition scope
 - keep authoritative kernels under product-owned directories rather than
   migration-era source or checkpoint containers
 - keep product ids in the product header and keep those product ids distinct from
   `product_scope_id`
+- keep partition-scope labels aligned to the owner docs' stage-owned scope
+  names instead of inventing alternate helper vocabulary here
 - keep bridge CSVs and bridge bundles as compatibility projections only once a
   target product is authoritative for that scope
 - keep provenance, explanations, reviews, comparison traces, and other
   non-kernel detail in sidecars
+- keep source-grouped operator views as derived reports or compatibility
+  projections rather than as canonical shared-support rollups
 - keep shared support basenames aligned to the stored families, for example
   `gap_records.json`, `review_records.json`, `readiness_records.json`, and
   `readiness_rollup_records.json`

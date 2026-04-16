@@ -143,8 +143,14 @@ Forward-looking persistence rules:
 - upstream `*_ref` fields in the product header store product ids, never `product_scope_id`
   and
   never raw kernel fingerprints
+- when a product id hashes ordered upstream header refs, the component array
+  stays in the same canonical order as those header fields unless the owner
+  page documents a stronger reason to differ
 - product sidecars persist separately from kernels and are keyed by
   `product_scope_id` or narrower truthful record ids
+- canonical shared-support rollups stay stage- and domain-oriented;
+  source-grouped operator views stay as derived reports or compatibility
+  projections rather than as shared support kernel families
 - target basenames use the owning product or support role directly
   rather than generic names or bridge-era qualifiers
 - writes are replace-whole-partition operations, not append-in-place mutation
@@ -159,12 +165,12 @@ Forward-looking persistence rules:
 | --- | --- |
 | `EvidenceSet` | capture-scoped |
 | `ClaimSet` | capture-scoped |
-| `EconomicFacts` | claim-lineage-scoped |
+| `EconomicFacts` | claim-set-lineage-scoped |
 | `ReconciliationState` | continuity-segment-scoped |
 | `Checkpoint` | checkpoint-scoped |
-| `Journal` | journal-scoped under one checkpoint scope |
-| `TaxInputs` | tax-input-scoped |
-| `TaxOutputs` | policy-and-tax-year-scoped inside one tax-input scope |
+| `Journal` | checkpoint-lineage-scoped |
+| `TaxInputs` | checkpoint-lineage-scoped |
+| `TaxOutputs` | tax-policy-year-scoped |
 
 Rules:
 
@@ -172,6 +178,9 @@ Rules:
 - one persisted partition owns one product id aligned with that partition
 - partition boundaries are chosen by the dimensions the owning stage actually
   reduces over
+- `Journal` and `TaxInputs` stay checkpoint-lineage-scoped because both product
+  ids hash the accepted checkpoint ref plus the ordered upstream
+  `economic_facts_refs`
 - migration-era workspace paths may still group later products under a
   source-scoped directory tree, but that filesystem placement does not make
   source identity part of downstream product naming or stable-id recipes
@@ -184,7 +193,7 @@ Rules:
 - one persisted `Checkpoint` kernel owns one checkpoint record
 - one persisted `Journal` kernel owns one journal emission root
 - one persisted `TaxInputs` kernel owns one tax-input emission root
-- one persisted `TaxOutputs` kernel owns one policy-and-tax-year output root
+- one persisted `TaxOutputs` kernel owns one tax-policy-year output root
 - readers use product ids or narrower record ids for authoritative product lookup;
   `product_scope_id` remains for shared support attachment and reporting only
 
@@ -358,7 +367,7 @@ Required hot-path indexes:
 Before approving structural work in reconciliation, checkpointing, accounting,
 or tax, ask:
 
-- does the design keep one authoritative kernel per scope partition
+- does the design keep one authoritative kernel per partition scope
 - can unmigrated consumers survive on compatibility projections alone
 - can migrated consumers read target products without bridge lookups
 - is every hot-path field present in the kernel rather than in a sidecar

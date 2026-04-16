@@ -93,7 +93,7 @@ Rules:
 - `SubjectRef` serializes, sorts, and fingerprints as
   `[subject_kind, subject_id]`
 
-## Non-Subject Scope Identity
+## Non-Subject Scope Ids
 
 Non-subject scopes are allowed only when no narrower truthful subject exists.
 
@@ -435,8 +435,8 @@ Rules:
 
 ## Readiness Model
 
-Readiness is subject-first, stage-specific, and reducible into reporting
-rollups.
+Readiness is subject-first, stage-specific, and reducible into canonical
+rollups plus derived reports.
 
 ### `ReadinessStatus`
 
@@ -523,7 +523,6 @@ Fields:
 
 Controlled `rollup_kind` vocabulary:
 
-- `source_slug`
 - `location`
 - `instrument`
 - `continuity_segment`
@@ -533,8 +532,6 @@ Controlled `rollup_kind` vocabulary:
 
 Rollup-key rules:
 
-- `source_slug` uses the canonical source slug and remains a reporting-only rollup
-  dimension rather than a downstream domain identity
 - `location` uses one `location_id`
 - `instrument` uses one `instrument_id`
 - `continuity_segment` uses one `continuity_segment_id`
@@ -576,6 +573,10 @@ Rules:
 - if no blocker applies, status is `ready`, not `partial`
 - product-scope `ReadinessRollupRecord` rows remain reproducible from ordered
   readiness and gap records without manual status editing
+- canonical rollup kinds stay stage- and domain-oriented rather than grouping
+  by source identity
+- source-grouped operator views belong in derived reports or compatibility
+  projections rather than in `ReadinessRollupRecord.rollup_kind`
 - stages use only the dimensions they actually own or can derive safely
 
 ## Bridge Mapping From Issue And Review Records

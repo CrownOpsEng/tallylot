@@ -100,7 +100,7 @@ This slice may emit only this subset of `ClaimRecord.kind` values:
 | --- | --- |
 | `activity` | evidence-local activity assertion derived from selected Coinbase retail rows |
 | `balance` | quantity-backed balance claim derived from recognized statement rows |
-| `instrument_identity` | instrument identity assertion tied to one activity or statement observation |
+| `instrument` | instrument assertion tied to one activity or statement observation |
 | `location` | assertion about the in-scope custodial location or sub-location |
 | `beneficial_owner` | assertion for the beneficial owner needed by downstream position identity |
 | `valuation` | canonically defined now but zero-row by default in this slice |
@@ -121,7 +121,7 @@ Frozen kind-specific claim fields:
 | --- | --- |
 | `activity` | `activity_label`, `location_claim_ref`, `leg_specs` |
 | `balance` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
-| `instrument_identity` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
+| `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
 | `location` | `location_ref`, `account_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
 | `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |

@@ -30,7 +30,7 @@ These anchors drive sequencing and acceptance criteria:
 - checkpoint truth is accepted state with explicit acceptance basis
 - primary evidence and evidence-backed checkpoints remain first-class
 - raw-evidence derivation is the supported meaning-parity path
-- capture identity is metadata, not path
+- capture identity is `capture_uid`, not path
 - typed provenance stays a runtime model and is flattened only at artifact
   boundaries
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
@@ -80,7 +80,10 @@ Must freeze:
 - target naming rules that distinguish concepts, refs, ids, records,
   projections, rollups, reports, and sidecars without baking bridge-era
   qualifiers or source-specific crypto nouns into shared target names, and
-  that keep stage-local ids explicit once they cross into downstream products
+  that keep stage-local ids explicit once they cross into downstream products,
+  keep product-id component order aligned to product-header order, keep
+  canonical shared-support rollups stage- and domain-oriented, and prefer
+  direct kind values such as `instrument` over pseudo-type labels
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
 - migration authority rules, compatibility projections, reader cutovers, and

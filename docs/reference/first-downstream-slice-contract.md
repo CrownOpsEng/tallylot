@@ -73,7 +73,7 @@ Rules:
   `kind = beneficial_owner`
 - `location_ref` comes from this slice's claims with `kind = location`
 - `instrument_ref` comes from this slice's claims with
-  `kind = instrument_identity`
+  `kind = instrument`
 - `contract_ref` stays `null` for this slice
 - one continuity segment covers one `PositionRef`; do not mix positions into one
   segment

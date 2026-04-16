@@ -97,6 +97,9 @@ Shared rules:
   `reconciliation_state_refs`, and `economic_facts_refs` sort
   lexicographically by product id unless the owning product declares a
   stronger canonical order
+- when a product id hashes ordered upstream header refs, keep the component
+  array in the same canonical order as the header fields unless this page
+  explicitly declares a stronger reason to differ
 - `product_scope_id` remains a derived shared-support and reporting attachment
   only;
   it is not a product id or upstream product ref
@@ -442,7 +445,7 @@ Canonical `ClaimRecord.kind` values:
 
 - `activity`
 - `balance`
-- `instrument_identity`
+- `instrument`
 - `location`
 - `legal_owner`
 - `beneficial_owner`
@@ -471,7 +474,7 @@ bounded slice, these kind-specific kernel fields are also required:
 | --- | --- |
 | `activity` | `activity_label`, `location_claim_ref`, `leg_specs` |
 | `balance` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
-| `instrument_identity` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
+| `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
 | `location` | `location_ref`, `account_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
 | `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
@@ -491,7 +494,7 @@ Current first slice linkage rules:
 - `activity` claims own the current evidence-local `activity_label` used by
   the current first slice
 - `leg_specs` lift ordered leg meaning from the current
-  `EconomicLegDraft` contract, including sign, instrument identity claims,
+  `EconomicLegDraft` contract, including sign, instrument claims,
   optional subtype, optional attributed-leg linkage, and optional location
 - retail claims with `kind = activity` use `member_refs` plus the scope used in the current
   first slice
@@ -554,8 +557,7 @@ Stable ids:
 - `claim_bundle_id` uses component array
   `[claim_scope_id, key]`
 - `claim_id` uses component array `[claim_bundle_id, kind, key]`
-- `bundle_decision_id` uses component array
-  `[claim_set_id, claim_scope_id]`
+- `bundle_decision_id` uses component array `[claim_scope_id]`
 
 Ordering:
 
@@ -980,7 +982,7 @@ Controlled vocabularies:
 - `trust_level`:
   - `filing_ready`
   - `analysis_ready`
-  - `manual_only`
+  - `reference_ready`
 - `CheckpointAssertionRecord.basis`:
   - `document_evidence`
   - `reported_balance`
@@ -1063,8 +1065,9 @@ Minimum admissibility rules:
   - `continuity_kind` other than `partial_rollforward`
 - `analysis_ready` may use `manual_assertion` or `partial_rollforward`, but
   the lower-trust basis stays explicit in the accepted checkpoint record
-- `manual_only` is required when accepted checkpoint truth relies solely on
-  manual assertion without evidence-backed support
+- `reference_ready` is required when accepted checkpoint truth is suitable only
+  for reference use because it relies solely on manual assertion without
+  evidence-backed support
 - `adopted_opening` remains a distinct acceptance basis and must preserve
   provenance plus the continuity kind used to roll it into accepted state
 
@@ -1172,7 +1175,7 @@ Stable ids:
   `CommodityRef`, and `OriginRef` from
   [Target Ids And Refs](../reference/target-ids-and-refs.md)
 - `journal_id` uses component array
-  `[checkpoint_ref, economic_facts_refs]`
+  `[economic_facts_refs, checkpoint_ref]`
 - `entry_id` uses component array
   `[journal_id, kind, effective_at, event_refs, assertion_refs]`
 - `posting_id` uses component array
@@ -1281,9 +1284,9 @@ Controlled vocabularies:
   - `decrease`
   - `neutral`
 - `BasisTransitionRecord.kind`:
-  - `pool_open`
-  - `pool_adjustment`
-  - `pool_close`
+  - `open`
+  - `adjustment`
+  - `close`
   - `carry_forward`
 
 Sidecar content may include:
@@ -1299,7 +1302,7 @@ Stable ids:
 - `tax_input_id` identifies one tax input record
 - `basis_transition_id` identifies one basis or pool transition
 - `tax_inputs_id` uses component array
-  `[checkpoint_ref, economic_facts_refs]`
+  `[economic_facts_refs, checkpoint_ref]`
 - `tax_input_id` uses component array
   `[tax_year, kind, basis_pool_ref, beneficial_owner_ref, instrument_ref, effective_at, quantity, direction, event_refs, assertion_refs]`
 - `basis_transition_id` uses component array

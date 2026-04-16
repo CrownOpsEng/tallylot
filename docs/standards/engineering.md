@@ -333,9 +333,14 @@ Current application of this rule:
   `source`. Reserve bare `source` for prose, for grouping dimensions whose
   enclosing field already states the role, or for source-scoped provider
   families where the contract is not storing the slug itself.
-- Inside rollups, use the actual grouping identifier in `rollup_kind` when the
-  key is itself a canonical identifier. Prefer `source_slug` over bare
-  `source` when the rollup key stores the shared slug.
+- Inside canonical target rollups, use the actual grouping identifier in
+  `rollup_kind` when the key is itself a canonical identifier.
+- Keep canonical target rollup families stage- and domain-oriented. If
+  operators still need source-grouped views, expose them as derived reports or
+  compatibility projections rather than as shared target `RollupRecord`
+  vocabulary members.
+- When a derived report or compatibility projection truly stores the shared
+  source slug as its grouping key, prefer `source_slug` over bare `source`.
 - In canonical target-layer evidence and claim contracts, use `source_*` only
   when the field truly stores source identity or another source-derived value
   that would be ambiguous without the prefix. When the stage already supplies
@@ -366,13 +371,18 @@ Current application of this rule:
   collection artifact rather than one record-local kind.
 - When a `kind` field already supplies the owning family, keep the value as a
   lower-snake noun phrase and do not repeat the owner noun. Prefer values such
-  as `activity`, `beneficial_owner`, or `statement_document` over pseudo-type
-  labels such as `ActivityClaim` or `StatementObservation`.
+  as `activity`, `instrument`, `beneficial_owner`, or `statement_document`
+  over pseudo-type labels such as `instrument_identity`,
+  `ActivityClaim`, or `StatementObservation`.
 - When one emitted product already gives a persisted concept its own sibling
   record family, do not repeat that sibling family as a `kind` value inside a
   different record family. Prefer distinct output-group kinds over values that
   merely restate sibling families such as carry-forward or unsupported-input
   records.
+- Keep all members of one bounded vocabulary on the same semantic axis. Use
+  trust or readiness tiers for `trust_level`, support shapes for
+  `support_kind`, and acceptance reasons for `basis` instead of mixing those
+  dimensions inside one field family.
 - For bounded `basis` or similar reason vocabularies, drop redundant suffixes
   such as `_match`, `_preferred`, or `_duplicate` when the field already
   establishes that the value is the decision basis.
@@ -431,6 +441,9 @@ Current application of this rule:
 - Prefer `name` over `display_name` in forward-looking target contracts unless
   the same shape also carries a distinct canonical name, legal name, or other
   parallel naming field that makes `display_name` materially clearer.
+- When a product header carries an ordered set of upstream refs, keep any
+  matching product-id component array in that same canonical order unless the
+  owner page documents a stronger reason to differ.
 - Inside aggregate rollup records, use `rollup_kind` and `rollup_key` for the
   grouping dimensions so `rollup` remains the record shape instead of becoming
   a second generic field prefix.
@@ -491,9 +504,10 @@ Current application of this rule:
   record names, helper refs, stable ids, or partition labels unless those
   nouns are themselves the persisted concept. Prefer lineage-, origin-, or
   subject-owned names over carry-through source labels in downstream kernels.
-- Reporting rollups may still group by `source_slug` where operators need that
-  reporting lens, but that rollup dimension must not leak into downstream
-  product ids, record ids, or authoritative directory stems.
+- Derived reports and compatibility projections may still group by
+  `source_slug` where operators need that reporting lens, but that dimension
+  must not leak into downstream product ids, record ids, authoritative
+  directory stems, or canonical shared-support rollup vocabularies.
 - When a canonical target contract must preserve a source-provided label,
   preserve the value without freezing the source noun into the field name.
   Prefer target-aligned names such as `location_label` over
@@ -536,7 +550,7 @@ Current application of this rule:
   `compatibility/` is clearer than `bridge_compatibility/` unless another
   compatibility boundary would make the shorter name ambiguous.
 
-### Five-View Naming And Congruency Audit
+### Seven-View Naming And Congruency Audit
 
 Run this audit before freezing or renaming any forward-looking product, record
 family, ref, id, package, or file name.
