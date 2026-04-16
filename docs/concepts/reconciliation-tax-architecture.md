@@ -10,7 +10,7 @@ nav_order: 20
 
 This document is the implementation anchor for evolving the repo away from
 tracker-dependent historical workflows and into an independent reconciliation,
-checkpoint, accounting, and tax runtime.
+checkpoint, journal, and tax runtime.
 
 Use it when making structural decisions that affect persistence,
 reconciliation, checkpointing, journaling, or tax computation. Treat it as a
@@ -69,14 +69,14 @@ Trust and ownership rules:
 - evidence selection is deterministic before claim commitment
 - claims preserve evidence-local meaning and explicit ambiguity
 - economic facts assert only economic truth the system can prove safely
-- reconciliation is the trust gate before checkpoint adoption, accounting, and
-  tax
+- reconciliation is the trust gate before checkpoint adoption, downstream
+  journal emission, and tax
 - checkpoint truth is accepted state with explicit acceptance basis
-- accounting expands and validates accepted truth; it does not repair truth
+- `Journal` expands and validates accepted truth; it does not repair truth
 - tax inputs assemble policy-ready tax inputs from reconciled economics plus accepted
   checkpoint truth
 - selected tax policies decide treatment in `TaxOutputs`; they do not decide
-  source meaning, reconciliation truth, checkpoint truth, or accounting truth
+  source meaning, reconciliation truth, checkpoint truth, or journal outcomes
 
 ## Source, Output, Oracle, And Persistence Boundaries
 
@@ -87,7 +87,7 @@ Trust and ownership rules:
 - adapters may emit only safe bridge hints and safe evidence-local meaning
 - adapters do not own reconciliation
 - adapters do not own checkpoint acceptance
-- adapters do not own accounting
+- adapters do not own journal expansion or validation
 - adapters do not own tax policy
 
 ### Output Boundaries
@@ -210,9 +210,9 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/products/journals/<journal_id>/journal.json`
 - `working/products/tax_inputs/<tax_inputs_id>/tax_inputs.json`
 - `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
-- stage-owned support sidecars live under
-  `working/products/<product_family>/<product_id>/support/` using
-  `gap_records.json`, `gap_explanations.json`, `review_records.json`,
+- stage-owned support sidecars live beside the authoritative kernel in that
+  same product directory, under `support/`, using `gap_records.json`,
+  `gap_explanations.json`, `review_records.json`,
   `review_explanations.json`, `readiness_records.json`, and
   `readiness_rollup_records.json`
 - compatibility projections live under the authoritative product they depend on,
@@ -310,7 +310,7 @@ Required partition keys:
 | --- | --- |
 | Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `claim_scope_id` |
 | Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_proposal_id` |
-| Checkpoint and accounting | `checkpoint_id`, `journal_id`, `checkpoint_assertion_id`, `entry_id` |
+| Checkpoint and journal | `checkpoint_id`, `journal_id`, `checkpoint_assertion_id`, `entry_id` |
 | Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `tax_input_id`, `basis_transition_id` |
 
 Rules:
@@ -365,7 +365,7 @@ Required hot-path indexes:
 
 ## Acceptance Rules
 
-Before approving structural work in reconciliation, checkpointing, accounting,
+Before approving structural work in reconciliation, checkpointing, journaling,
 or tax, ask:
 
 - does the design keep one authoritative kernel per partition scope

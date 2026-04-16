@@ -399,8 +399,8 @@ Product header:
 Owns:
 
 - evidence-local assertions derived from evidence
-- explicit scopes and mutually exclusive bundles
-- bundle decisions over scopes
+- explicit claim scopes and mutually exclusive claim bundles
+- claim-bundle decisions over claim scopes
 
 Record families:
 
@@ -542,13 +542,13 @@ Stable ids:
 - `claim_set_id` identifies one evidence-local claim emission over one evidence
   set
 - `claim_scope_id` identifies one evidence-local scope that
-  may admit one or more mutually exclusive bundles
+  may admit one or more mutually exclusive claim bundles
 - `scope_key` is the stage-owned stable discriminator for one evidence-local
   scope within one claim set
 - `claim_bundle_id` identifies one mutually exclusive claim bundle
 - `claim_id` identifies one evidence-local claim under one claim bundle
-- `bundle_decision_id` identifies one bundle decision record for one
-  scope
+- `bundle_decision_id` identifies one claim-bundle-decision record for one
+  claim scope
 - `claim_set_id` uses component array `[evidence_set_id, emitter_id]`
 - downstream products keep claim lineage through `claim_set_ref` or
   `claim_set_refs`; they do not copy `source_slug`, `adapter_id`, or
@@ -588,28 +588,27 @@ Fingerprint inputs:
 Must guarantee:
 
 - evidence-local meaning only
-- explicit scope and bundle structure
+- explicit scope and claim-bundle structure
 - preserved ambiguity where one safe final meaning is unavailable
 - claim-stage gaps and reviews may attach to `claim_scope_id` when
   no narrower truthful subject has resolved yet
 - kind-owned kernel fields are frozen wherever this page defines them; later
   writing and implementation must not invent alternate shells or generic blob
   fields for those kinds
-- no promotion of reviews, blockers, or renderer detail into claim
-  kinds
-- claim-owned bundle decisions that record bundle acceptance, blocking,
+- no promotion of reviews, blockers, or renderer detail into claim kinds
+- claim-owned claim-bundle decisions that record bundle acceptance, blocking,
   deferral, or supersession without carrying economic truth
 
 Must not:
 
 - force unresolved meaning into final economic meaning or policy outcomes
 - treat bridge compatibility annotations as claim kernels
-- silently discard materially relevant alternative bundles
+- silently discard materially relevant alternative claim bundles
 
 Handoff to `EconomicFacts`:
 
-- `ClaimSet` hands off evidence-local assertions, mutually exclusive bundles, and
-  bundle decisions
+- `ClaimSet` hands off evidence-local assertions, mutually exclusive claim
+  bundles and claim-bundle decisions
 - the economic stage decides which claim bundle can become accepted economic truth
   and which scopes remain blocked, deferred, or superseded
 
@@ -739,7 +738,7 @@ Must guarantee:
 - event identity is driven by the selected claim bundle, not by compilation
   bookkeeping noise
 - event, leg, and valuation records carry the computation-critical
-  fields needed for later reconciliation, checkpointing, accounting, and
+  fields needed for later reconciliation, checkpointing, journal emission, and
   tax
 - corrections preserve supersession lineage instead of mutating accepted
   economic truth in place
@@ -1048,7 +1047,7 @@ Lineage rule:
   when reconciliation-owned checkpoint proposal records support the accepted
   assertion
 - product-level `reconciliation_state_refs` remain the broader upstream
-  partition lineage; assertion-level proposal refs point only at accepted
+  partition lineage; assertion-level checkpoint proposal refs point only at accepted
   checkpoint proposal record lineage when that narrower lineage exists
 
 Fingerprint inputs:
@@ -1088,14 +1087,14 @@ Handoff to `Journal` and `TaxInputs`:
 
 - `Checkpoint` provides accepted assertions, accepted opening state where used,
   and the acceptance basis
-- downstream accounting and tax stages consume that accepted truth rather than
+- downstream journal and tax stages consume that accepted truth rather than
   re-deciding checkpoint trust locally
 
 ## `Journal`
 
 Purpose:
 
-- accounting expansion and validation over accepted truth
+- journal expansion and validation over accepted truth
 
 Product header:
 
@@ -1107,8 +1106,8 @@ Product header:
 Owns:
 
 - journal entry and posting expansion
-- accounting validation results
-- accounting-owned gaps
+- journal validation results
+- journal-owned gaps
 
 Record families:
 
@@ -1157,7 +1156,7 @@ Sidecar content may include:
 - posting explanation
 - validation notes
 - renderer-facing annotations
-- accounting-owned gap sidecars
+- journal-owned gap sidecars
 
 Product-root cardinality:
 
@@ -1209,7 +1208,7 @@ Must guarantee:
 
 - deterministic posting expansion
 - explicit validation
-- explicit unsupported accounting mapping
+- explicit unsupported journal mapping
 - posting fields required for validation remain part of the kernel
 
 Must not:
@@ -1220,8 +1219,8 @@ Must not:
 
 Handoff to downstream renderers:
 
-- `Journal` provides accounting-owned postings, validation results, and
-  accounting-owned blockers
+- `Journal` provides journal-owned postings, validation results, and
+  journal-owned blockers
 - renderer-specific row shapes stay at output boundaries rather than becoming
   part of the shared journal contract
 
@@ -1340,8 +1339,8 @@ Must guarantee:
 Must not:
 
 - embed one jurisdiction's output schema
-- decide source meaning, reconciliation truth, checkpoint truth, or accounting
-  truth
+- decide source meaning, reconciliation truth, checkpoint truth, or journal
+  outcomes
 - push effective time, quantity, direction, or basis transitions into
   sidecars only
 
@@ -1478,7 +1477,7 @@ The pipeline products rely on shared support contracts defined elsewhere:
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
   for the current first `EconomicFacts -> ReconciliationState -> Checkpoint`
   contract
-- [Domain Ontology](domain-ontology.md) for entity seams, refs,
+- [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership
 - [Gaps And Readiness](gaps-and-readiness.md) for `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,

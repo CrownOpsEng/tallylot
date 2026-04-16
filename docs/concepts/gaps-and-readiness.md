@@ -131,8 +131,8 @@ projections, and sidecars.
 
 Rules:
 
-- `product_scope_id` is `<product_kind>:<kernel_fingerprint>`
-- `product_kind` uses the lower-snake-case target product name
+- `product_scope_id` is `<product_name>:<kernel_fingerprint>`
+- `product_name` uses the lower-snake-case target product name
 - `kernel_fingerprint` is the canonical product fingerprint owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - `product_scope_id` is derived after canonical kernel fingerprinting and is not
@@ -158,7 +158,7 @@ Shared stage vocabulary:
 - `economic`
 - `reconciliation`
 - `checkpoint`
-- `accounting`
+- `journal`
 - `tax`
 
 Rules:
@@ -636,7 +636,7 @@ Use sidecars only for:
 Sidecars must never become:
 
 - the only real copy of business meaning
-- a substitute for missing entities
+- a substitute for unresolved business concepts
 - a junk drawer of unresolved text
 
 Performance implication:

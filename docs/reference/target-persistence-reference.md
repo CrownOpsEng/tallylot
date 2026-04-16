@@ -41,8 +41,8 @@ When persisting target products:
   `product_scope_id`
 - keep partition-scope labels aligned to the owner pages' stage-owned scope
   names instead of inventing alternate helper vocabulary here
-- keep bridge CSVs and bridge bundles as compatibility projections only once a
-  target product is authoritative for that scope
+- keep bridge CSVs and bridge draft or batch surfaces as compatibility
+  projections only once a target product is authoritative for that scope
 - keep provenance, explanations, reviews, comparison traces, and other
   non-kernel detail in sidecars
 - keep source-grouped operator views as derived reports or compatibility

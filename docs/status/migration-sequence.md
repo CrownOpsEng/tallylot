@@ -115,7 +115,7 @@ After those slices land, migrate readers one consumer surface at a time:
 - reconciliation and checkpoint readers move next
 - balance inspect/check/summarize moves only when its application surface is
   explicitly repointed
-- accounting and tax readers move only after their upstream products are
+- journal and tax readers move only after their upstream products are
   authoritative and stable
 
 ### 5. Later Downstream Products
@@ -125,7 +125,7 @@ products they depend on are authoritative for the relevant scope.
 
 Rules:
 
-- do not let accounting repair economic or checkpoint truth
+- do not let `Journal` repair economic or checkpoint truth
 - do not let tax decide source meaning, reconciliation completeness, or
   checkpoint acceptance
 

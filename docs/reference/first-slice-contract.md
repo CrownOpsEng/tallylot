@@ -301,7 +301,8 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical `cointracking_csv` output for supported bridge facts
 
 Replay checks must also prove that incidental input ordering changes do not
-change evidence selection, claim order, bundle order, bundle decisions, or
+change evidence selection, claim order, claim-bundle order,
+claim-bundle decisions, or
 rendered output.
 
 ## Allowed Drift
@@ -309,7 +310,7 @@ rendered output.
 Not allowed:
 
 - kernel-field drift in selected evidence membership
-- kernel-field drift in ids, statuses, ordering, or bundle structure
+- kernel-field drift in ids, statuses, ordering, or claim-bundle structure
 - timestamp or precision drift
 - quantity drift
 - `translation_input_plan.json`, `EconomicActivityDraft`, or

@@ -37,8 +37,8 @@ depending on any one portfolio tracker.
 | Primary evidence | exchange exports, wallet exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
 | Checkpoint evidence | balance statements, location snapshots, evidence-backed checkpoint artifacts | Yes | Yes | First-class reconciliation input |
 | Adapter-format inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
-| Oracle support artifacts | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry exports | No | No | Development and validation only; never production runtime inputs |
-| Derived outputs | CoinTracking export projection, Ledger journal, tax outputs package, checkpoint artifacts | No | No | Produced by the system |
+| Oracle support artifacts | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry journal exports | No | No | Development and validation only; never production runtime inputs |
+| Derived outputs | CoinTracking export projection, double-entry journal export, `TaxOutputs` package, checkpoint artifacts | No | No | Produced by the system |
 
 ## Normal Runtime Workflow
 
@@ -144,7 +144,7 @@ Those artifacts may support comparison, but not checkpoint existence.
 - Keep tax policy operating on `TaxInputs` built from reconciled economics and
   accepted checkpoint truth only.
 - Keep journal rendering operating on reconciled economics, accepted checkpoint
-  truth, and accounting coverage rules only.
+  truth, and journal validation rules only.
 
 ## Failure Test
 
