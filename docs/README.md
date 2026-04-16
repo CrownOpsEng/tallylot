@@ -32,7 +32,7 @@ freeze product ids, critical-path kernel fields, and compatibility boundaries.
 - [Domain ontology](concepts/domain-ontology.md)
 - [Gaps and readiness](concepts/gaps-and-readiness.md)
 - [Reconciliation and tax architecture](concepts/reconciliation-tax-architecture.md)
-- [First slice contract](reference/first-slice-contract.md)
+- [First upstream slice contract](reference/first-upstream-slice-contract.md)
 - [First downstream slice contract](reference/first-downstream-slice-contract.md)
 - [Engineering standards](standards/engineering.md)
 - [Workspace model](concepts/workspace-model.md)
@@ -48,7 +48,7 @@ Agent-specific routing and repo execution rules live in
 - [Current Bridge Contracts](concepts/current-bridge-contracts.md): Owning concept page for the live bridge contracts, bridge surfaces, and current schema rules.
 - [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Single authority for how live bridge surfaces cut over to target products during migration, including writer ownership, reader cutovers, and retirement gates.
 - [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries.
-- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts.
+- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only comparison packages.
 - [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, identity seams, ref recipes, package ownership, and bridge-versus-target modeling rules.
 - [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
 - [Gaps And Readiness](concepts/gaps-and-readiness.md): Owning concept page for the target gap model, review model, readiness model, sidecar rules, and shared `SubjectRef` contracts.
@@ -74,8 +74,8 @@ below when you need the detailed procedure for one stage of the workflow.
 
 <!-- docs-maintenance:start reference -->
 - [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
-- [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the current first EvidenceSet and ClaimSet slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility projections.
-- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including claim-bundle event identity and bridge compatibility projections.
+- [First Upstream Slice Contract](reference/first-upstream-slice-contract.md): Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility projections.
+- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, scoped to the Coinbase custodial path, including claim-bundle-derived event identity and bridge compatibility projections.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Helper reference for reusable target ids and ref tuples that complement the owner pages without redefining product contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Helper reference that points to the owner pages for target persistence, partition scopes, and bounded-slice compatibility expectations.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
@@ -98,7 +98,7 @@ that follows the external workspace layout.
 <!-- docs-maintenance:start status -->
 - [Current State](status/current-state.md): Implemented runtime capabilities, current operational capabilities, and deferred areas.
 - [Migration Sequence](status/migration-sequence.md): Incremental landing and retirement rules for moving from the current bridge to the target pipeline without dual authorities.
-- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and current first slices are stable.
+- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and the first upstream slice and first downstream slice are stable.
 <!-- docs-maintenance:end status -->
 
 ## Standards

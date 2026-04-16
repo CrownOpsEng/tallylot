@@ -1,13 +1,13 @@
 ---
 title: "First Downstream Slice Contract"
-summary: "Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including claim-bundle event identity and bridge compatibility projections."
+summary: "Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, scoped to the Coinbase custodial path, including claim-bundle-derived event identity and bridge compatibility projections."
 doc_type: reference
 audience: human
 owner: repo
 status: active
 nav_order: 16
 related:
-  - docs/reference/first-slice-contract.md
+  - docs/reference/first-upstream-slice-contract.md
   - docs/concepts/pipeline-stage-contracts.md
   - docs/concepts/domain-ontology.md
   - docs/concepts/reconciliation-tax-architecture.md
@@ -15,17 +15,17 @@ related:
   - ROADMAP.md
 ---
 
-Use this page when implementing or reviewing the current first downstream slice
-after the current first `EvidenceSet -> ClaimSet` landing path. This
-document freezes scope, ids, parity, replay, and allowed drift for the current
-first `EconomicFacts -> ReconciliationState -> Checkpoint` increment.
+Use this page when implementing or reviewing the first downstream slice after
+the first upstream `EvidenceSet -> ClaimSet` landing path. This document
+freezes scope, ids, parity, replay, and allowed drift for the first downstream
+`EconomicFacts -> ReconciliationState -> Checkpoint` increment.
 
 ## Slice Scope
 
 This slice is:
 
-- the current first upstream slice already defined by
-  [First Slice Contract](first-slice-contract.md)
+- the first upstream slice already defined by
+  [First Upstream Slice Contract](first-upstream-slice-contract.md)
 - accepted `EconomicFacts` emission for supported Coinbase retail activity and
   recognized statement-backed balance observations
 - bounded `ReconciliationState` emission for continuity segments, exact balance
@@ -94,7 +94,7 @@ Product header fields in this slice:
 Downstream-input rules:
 
 - downstream product construction consumes authoritative `ClaimBundleRecord`,
-  `ClaimRecord`, `BundleDecisionRecord`, and `observation_refs`
+  `ClaimRecord`, `ClaimBundleDecisionRecord`, and `observation_refs`
   from authoritative `ClaimSet` kernels
 - downstream product construction must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
@@ -221,7 +221,7 @@ Not allowed in this slice:
 Retained compatibility projections are part of the slice parity bar. Kernel
 parity alone is not sufficient while these legacy readers remain active.
 
-Unchanged inputs from the current first upstream slice must preserve all of the
+Unchanged inputs from the first upstream slice must preserve all of the
 following:
 
 - accepted event ids and ordering
@@ -277,8 +277,8 @@ Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 This slice does not:
 
 - emit `EventLinkRecord` rows as a required success condition
-- widen beyond the current first upstream slice already defined by
-  [First Slice Contract](first-slice-contract.md)
+- widen beyond the first upstream slice already defined by
+  [First Upstream Slice Contract](first-upstream-slice-contract.md)
 - make manual-only checkpoint acceptance part of the filing path
 - use adopted opening state as an accepted checkpoint basis
 - define runtime `Journal`, `TaxInputs`, or `TaxOutputs`

@@ -47,7 +47,7 @@ Rules:
   `claim_set_ref` or `claim_set_refs` rather than carrying `source_slug`,
   `adapter_id`, or `emitter_id` forward
 - `emitter_key` must be kebab-case
-- the current first upstream slice `emitter_key` is `claim`
+- the first upstream slice `emitter_key` is `claim`
 
 ## Origin Ref
 
@@ -74,23 +74,23 @@ Frozen `origin_kind` vocabulary:
 - `checkpoint_assertion`
 - `basis_adjustment`
 
-## Posting Refs
+## Journal Posting Refs
 
-`AccountRef` identifies one chart account.
-
-Rules:
-
-- `PostingRecord.account_ref` uses `AccountRef`
-- `AccountRef` serializes and sorts as `[chart_id, account_code]`
-
-`CommodityRef` identifies one posting commodity.
+`JournalAccountRef` identifies one chart account.
 
 Rules:
 
-- `PostingRecord.commodity_ref` uses `CommodityRef`
-- `CommodityRef` serializes and sorts as `[commodity_kind, commodity_id]`
+- `PostingRecord.account_ref` uses `JournalAccountRef`
+- `JournalAccountRef` serializes and sorts as `[chart_id, account_code]`
 
-Frozen `commodity_kind` vocabulary:
+`PostingUnitRef` identifies one posting unit.
+
+Rules:
+
+- `PostingRecord.unit_ref` uses `PostingUnitRef`
+- `PostingUnitRef` serializes and sorts as `[unit_kind, unit_id]`
+
+Frozen `unit_kind` vocabulary:
 
 - `instrument`
 - `currency`

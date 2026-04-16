@@ -166,8 +166,10 @@ def test_reconciliation_workspace_docs_mention_cross_source_sidecars() -> None:
         assert artifact in text
 
 
-def test_first_slice_contract_pins_all_retained_compatibility_surfaces() -> None:
-    text = (docs_root() / "reference" / "first-slice-contract.md").read_text(
+def test_first_upstream_slice_contract_pins_all_retained_compatibility_surfaces() -> (
+    None
+):
+    text = (docs_root() / "reference" / "first-upstream-slice-contract.md").read_text(
         encoding="utf-8"
     )
 

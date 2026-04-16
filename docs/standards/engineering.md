@@ -161,7 +161,7 @@ Current application of this rule:
 
 - `application/intake/` is the correct top-level feature package for intake.
 - `application/profiling/` is the correct top-level feature package for source
-  profiling workflows and profile artifact helpers.
+  profiling workflows and profile file helpers.
 - `intake/packages/`, `intake/archive/`, `intake/file_facts/`, and
   `intake/routing/` are the correct nested packages for the intake subdomains
   that now own their own models, rules, and entry points.
@@ -222,6 +222,16 @@ Current application of this rule:
 - Use `journal` for the end-state downstream stage, package, and
   product-adjacent family noun. Reserve `accounting` for broader prose,
   external schemas, or current bridge hints such as `AccountingIntentHint`.
+- Name bounded-slice references by direction rather than by a bare ordinal.
+  Prefer `First Upstream Slice Contract` and `First Downstream Slice Contract`
+  over a generic `First Slice Contract`, and avoid repeating `current` in
+  forward-looking slice names unless live runtime truth is the subject.
+- When a helper ref belongs to one downstream stage rather than to a shared
+  domain identity family, keep the stage noun on the helper type and keep the
+  field name concise inside the owning record. Prefer
+  `JournalAccountRef` with `PostingRecord.account_ref` and
+  `PostingUnitRef` with `PostingRecord.unit_ref` over broader helper types such
+  as `AccountRef` or `CommodityRef`.
 - When a broad shared root is genuinely needed, keep the immediate children
   concrete and mirrored. `support/` is acceptable only when it is split into
   families such as `gap/`, `review/`, and `readiness/` rather than flattened
@@ -277,6 +287,11 @@ Current application of this rule:
   `gap_id` or `ReadinessRecord` plus `readiness_id` over longer names that
   repeat context the record family already supplies, unless a real sibling
   family would make the shorter stem ambiguous.
+- When a record-family noun would become generic out of context, keep the
+  owning concept in the record-family stem even if child ids stay short.
+  Prefer `EvidenceSelectionRecord` and `ClaimBundleDecisionRecord` over
+  `SelectionRecord` or `BundleDecisionRecord` when the shorter record family
+  would not reveal its owner cleanly across docs or code.
 - Apply the same rule to child-local fields, refs, and helper names. When the
   owning product or record already supplies the parent context, prefer the
   shortest truthful child noun such as `selection_id`, `proposal_refs`, or
@@ -346,6 +361,9 @@ Current application of this rule:
   from that root record.
 - For shared support attachment over one emitted product kernel, prefer the
   explicit `product_scope_id` over generic names such as `dataset_id`.
+- When prose or helper formulas need the canonical lower-snake-case emitted
+  product token, prefer `product_slug` over `product_name` so the stable token
+  reads in parallel with `source_slug` and does not sound like display prose.
 - For persisted files and workspace basenames, prefer the owning product or
   support role in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
@@ -499,6 +517,11 @@ Current application of this rule:
   the stem when the shorter noun would be generic across stages. Prefer
   `EventLinkRecord` or `EntryCheckRecord` over ambiguous cross-stage names such
   as `LinkRecord` or `ValidationRecord`.
+- In target controlled vocabularies, keep the stage noun and held-thing noun
+  aligned once the target stage owns the boundary. Prefer
+  `economic_measurement`, `checkpoint_measurement`, `journal_measurement`, and
+  `tax_measurement` over mixed-purpose labels, and `unit_balance` over
+  `commodity_balance` on end-state target surfaces.
 - Use generic shared nouns only for intentionally repo-owned cross-stage seams.
   Names such as `SubjectRef` or `OriginRef` are allowed only when the
   abstraction itself is the owned contract. Everywhere else, prefer the
@@ -554,6 +577,10 @@ Current application of this rule:
   Prefer target-aligned names such as `location_label` over
   source-specific names such as `wallet_label` when `Location` already owns
   the shared boundary.
+- When one canonical target contract must preserve both a higher-scope and a
+  lower-scope source-provided location label, prefer
+  `location_group_label` and `location_label` over source-era pairs such as
+  `account_label` and `wallet_label`.
 - For stable keys and default directory stems, prefer the shortest durable
   domain noun that preserves identity. Do not carry venue-, market-, or
   asset-class-specific qualifiers into default keys such as `position_key`

@@ -12,7 +12,7 @@ This file is the forward planning document for the repo.
   - [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
   - [`docs/concepts/gaps-and-readiness.md`](docs/concepts/gaps-and-readiness.md)
   - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
-  - [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md)
+  - [`docs/reference/first-upstream-slice-contract.md`](docs/reference/first-upstream-slice-contract.md)
   - [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
   - [`docs/status/migration-sequence.md`](docs/status/migration-sequence.md)
 
@@ -31,8 +31,8 @@ These anchors drive sequencing and acceptance criteria:
 - primary evidence and evidence-backed checkpoints remain first-class
 - raw-evidence derivation is the supported meaning-parity path
 - capture identity is `capture_uid`, not path
-- typed provenance stays a runtime model and is flattened only at artifact
-  boundaries
+- typed provenance stays a runtime model and is flattened only at file and
+  export boundaries
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - current bridge names remain current-state truth until later implementation
   slices replace them
@@ -82,8 +82,10 @@ Must freeze:
   qualifiers or source-specific crypto nouns into shared target names, and
   that keep stage-local ids explicit once they cross into downstream products,
   keep product-id component order aligned to product-header order, keep
-  canonical shared-support rollups stage- and domain-oriented, and prefer
-  direct kind values such as `instrument` over pseudo-type labels
+  canonical shared-support rollups stage- and domain-oriented, use target-owned
+  label pairs such as `location_group_label` and `location_label` when
+  preserving source-provided location labels, and prefer direct kind values
+  such as `instrument` over pseudo-type labels
 - package-root naming that keeps `journal` aligned across stage vocabulary and
   package ownership, uses singular concept roots such as `assertion/`, avoids
   umbrella roots such as `entities/` when the identity families are already
@@ -101,7 +103,7 @@ Deliver:
 - aligned owner pages for target products, ontology, support records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
-- one current first upstream slice and one current first downstream slice
+- one first upstream slice and one first downstream slice
 - explicit package ownership for `domain/` and `application/`
 - explicit fast-path rule that reducers read kernels, not explanation sidecars
 - frozen critical-path field tables and product-id rules that later writing
@@ -128,7 +130,8 @@ Exit criteria:
 - non-critical observation and claim kinds are explicitly deferred rather
   than left implicit
 - implementation placement is mechanical rather than interpretive
-- the first upstream and downstream slices can be implemented without inventing
+- the first upstream slice and first downstream slice can be implemented
+  without inventing
   ids, claim bundles, values, or reader cutovers
 
 ## Phase 1. Land `EvidenceSet`
@@ -143,7 +146,7 @@ Deliver:
 - capture-scoped `EvidenceSet` emission keyed by `evidence_set_id`
 - deterministic selected, superseded, and blocked evidence membership
 - typed evidence observations that survive beyond intake heuristics, including
-  field tables frozen for the current first upstream slice for
+  field tables frozen for the first upstream slice for
   `statement_document` and `statement_balance_row`
 - bridge compatibility projection for `translation_input_plan.json`
 
@@ -166,7 +169,7 @@ Deliver:
 - evidence-local `ClaimSet` emission keyed by `claim_set_id`
 - explicit claim scopes, mutually exclusive claim bundles, and
   claim-bundle-decision records
-- claim fields frozen for the current first upstream slice plus
+- claim fields frozen for the first upstream slice plus
   `observation_refs`
 - shared support records and sidecars attached to claim scopes where needed
 - declared compatibility projections for `EconomicActivityDraft` and
@@ -192,7 +195,7 @@ Deliver:
 - `EconomicFacts` kernels keyed by `economic_facts_id` over ordered
   `claim_set_refs`
 - `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
-- claim-bundle event identity
+- claim-bundle-derived event identity
 - bridge compatibility projection for `TransactionFact`
 - parity coverage for the first claim-to-economic slice
 
@@ -390,9 +393,9 @@ Rules:
 ### Oracle Lane
 
 - keep CoinTracking report readers and comparison tooling under `tools/oracles/`
-- use oracle artifacts for regression, black-box comparison, and historical
-  review only
-- never let oracle files become hidden production dependencies
+- use oracle comparison packages for regression, black-box comparison, and
+  historical review only
+- never let oracle packages or files become hidden production dependencies
 
 ### Adapter Completion
 

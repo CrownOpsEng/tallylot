@@ -133,11 +133,11 @@ adapter-local shell choreography.
 ## Migration Posture
 
 The unified adapter redesign remains deferred until the filing-critical path and
-current first slices are stable.
+the first upstream slice and first downstream slice are stable.
 
 Rules during the current migration window:
 
-- adapter work for the current first upstream slice must emit target products
+- adapter work for the first upstream slice must emit target products
   through the canonical owner pages, not adapter-local alternate schemas
 - adapters may emit declared compatibility sidecars for retained legacy
   draft-or-fact reproduction during migration, but canonical target kernels
@@ -145,7 +145,7 @@ Rules during the current migration window:
 - adapter docs may describe how adapters participate in `EvidenceSet`,
   `ClaimSet`, and compatibility projections, but they may not redefine those
   products
-- the current first upstream slice must not depend on a repo-wide facet
+- the first upstream slice must not depend on a repo-wide facet
   migration
 - `SourceTranslationBatch` remains honest current-state truth until its bounded
   replacement slice lands

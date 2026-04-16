@@ -113,7 +113,7 @@ Shared rules:
   stem names one target record family owned on this page, the field uses that
   record family's stable id or ordered stable-id list
 - helper tuple refs such as `SubjectRef`, `BasisPoolRef`,
-  `AccountRef`, `CommodityRef`, and `OriginRef` remain
+  `JournalAccountRef`, `PostingUnitRef`, and `OriginRef` remain
   owned by their helper pages and are called out explicitly where used
 
 ### Composite Tuple Rules
@@ -178,7 +178,7 @@ Use these bounded record-local vocabularies across target kernels:
 - `ClaimRecord.status`:
   - `asserted`
   - `superseded`
-- `BundleDecisionRecord.outcome`:
+- `ClaimBundleDecisionRecord.outcome`:
   - `accepted`
   - `blocked`
   - `deferred`
@@ -239,7 +239,7 @@ Record families:
   - `observed_at`
   - `precision`
   - `provenance_refs`
-- `SelectionRecord`
+- `EvidenceSelectionRecord`
   - `evidence_set_id`
   - `selection_id`
   - `key`
@@ -249,7 +249,7 @@ Record families:
 
 Cardinality:
 
-- one `SelectionRecord` exists per `selection_id`
+- one `EvidenceSelectionRecord` exists per `selection_id`
 - one or more `EvidenceMemberRecord` rows may belong to one
   `selection_id`
 - zero or more `EvidenceObservationRecord` rows may belong to one `member_id`
@@ -265,7 +265,7 @@ Sidecar content may include:
 
 Controlled vocabularies:
 
-- `SelectionRecord.basis`:
+- `EvidenceSelectionRecord.basis`:
   - `single_member`
   - `coverage`
   - `freshness`
@@ -276,13 +276,13 @@ Controlled vocabularies:
 ### First-Slice Critical-Path Observation Kinds
 
 The `EvidenceObservationRecord` shell above is required for every observation.
-For the current first upstream slice, these kind-specific kernel fields are also
+For the first upstream slice, these kind-specific kernel fields are also
 required:
 
 | `kind` | Kind-owned kernel fields |
 | --- | --- |
 | `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of`, `statement_as_of_precision` |
-| `statement_balance_row` | `account_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
+| `statement_balance_row` | `location_group_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
 
 Rules:
 
@@ -298,14 +298,17 @@ Rules:
 - `statement_balance_row.observed_at` and `precision` lift
   the current statement-row as-of value and
   precision directly
-- `statement_balance_row` account and location labels, quantity, notes, and
+- `statement_balance_row` location-group and location labels, quantity, notes, and
   valuation-text
   fields lift the current statement-row contract directly; `pdf_file` and
   `raw_row_ref` stay in provenance and observation keys rather than
   duplicated business fields
+- `statement_balance_row.location_group_label` preserves the higher-scope
+  source-provided grouping label, such as an account or custody container
+  name, without freezing that source noun into the canonical target field list
 - `statement_balance_row.location_label` preserves the source-provided
-  lower-scope label, such as a source sub-location name, without
-  freezing the source noun into the canonical target field list
+  lower-scope or direct location label, such as a source sub-location name,
+  without freezing the source noun into the canonical target field list
 - `statement_document` may leave the shell `observed_at` and
   `precision` empty when the meaningful document times are
   instead expressed through the kind-owned document-effective or
@@ -346,7 +349,7 @@ Ordering:
 - `EvidenceMemberRecord` rows sort by tuple
   `[selection_id, status, member_id]`
 - `EvidenceObservationRecord` rows sort by `[member_id, observation_id]`
-- `SelectionRecord` rows sort by `[selection_id]`
+- `EvidenceSelectionRecord` rows sort by `[selection_id]`
 
 Serialization:
 
@@ -361,7 +364,7 @@ Fingerprint inputs:
 - product header
 - canonical `EvidenceMemberRecord` rows
 - canonical `EvidenceObservationRecord` rows
-- canonical `SelectionRecord` rows
+- canonical `EvidenceSelectionRecord` rows
 
 Must guarantee:
 
@@ -424,7 +427,7 @@ Record families:
   - `key`
   - `scope_key`
   - `claim_refs`
-- `BundleDecisionRecord`
+- `ClaimBundleDecisionRecord`
   - `claim_set_id`
   - `claim_scope_id`
   - `bundle_decision_id`
@@ -438,7 +441,7 @@ Record families:
 Cardinality:
 
 - one or more `ClaimBundleRecord` rows may exist per `claim_scope_id`
-- one `BundleDecisionRecord` exists per `claim_scope_id`
+- one `ClaimBundleDecisionRecord` exists per `claim_scope_id`
 - one or more `ClaimRecord` rows may exist per `claim_bundle_id`
 
 Canonical `ClaimRecord.kind` values:
@@ -450,13 +453,13 @@ Canonical `ClaimRecord.kind` values:
 - `legal_owner`
 - `beneficial_owner`
 - `counterparty`
-- `statement`
+- `statement_document`
 - `contract_term`
 - `valuation`
 
 Controlled vocabularies:
 
-- `BundleDecisionRecord.basis`:
+- `ClaimBundleDecisionRecord.basis`:
   - `single_bundle`
   - `insufficient_identity`
   - `insufficient_temporal_precision`
@@ -475,7 +478,7 @@ bounded slice, these kind-specific kernel fields are also required:
 | `activity` | `activity_label`, `location_claim_ref`, `leg_specs` |
 | `balance` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
 | `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
-| `location` | `location_ref`, `account_label`, `location_label` |
+| `location` | `location_ref`, `location_group_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
 | `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
@@ -489,29 +492,28 @@ bounded slice, these kind-specific kernel fields are also required:
 - `subtype`
 - `attributed_to_slot`
 
-Current first upstream slice linkage rules:
+First upstream slice linkage rules:
 
 - `activity` claims own the current evidence-local `activity_label` used by
-  the current first upstream slice
+  the first upstream slice
 - `leg_specs` lift ordered leg meaning from the current
   `EconomicLegDraft` contract, including sign, instrument claims,
   optional subtype, optional attributed-leg linkage, and optional location
-- retail claims with `kind = activity` use `member_refs` plus the scope used in the current
-  first slice
-  key `[retail_member_id, raw_row_ref]`; they do not require a retail-row
-  observation kind in this pass
+- retail claims with `kind = activity` use `member_refs` plus the
+  first upstream slice scope key `[retail_member_id, raw_row_ref]`; they do
+  not require a retail-row observation kind in this pass
 - statement-derived claims use both `member_refs` and
   `observation_refs`
 - `balance` claims must include the row observation id in
   `observation_refs` and may also include the paired
   `statement_document` observation id for the same statement document
 - `valuation` claims are defined now but emit zero rows by default in
-  the current first upstream slice until a later owner-page pass locks numeric
+  the first upstream slice until a later owner-page pass locks numeric
   statement valuation inputs
-- `location` claims use `location_label` under the same target-contract rule as
-  `statement_balance_row.location_label`: preserve the source-provided
-  lower-scope label, but keep the canonical target noun aligned to
-  `Location`
+- `location` claims use `location_group_label` and `location_label` under the
+  same target-contract rules as `statement_balance_row`: preserve the
+  source-provided higher-scope and lower-scope labels, but keep the canonical
+  target nouns aligned to `Location`
 
 ### Derived Compatibility Sidecars
 
@@ -565,7 +567,7 @@ Ordering:
   `[claim_bundle_id, kind, effective_at, precision, claim_id]`
 - `ClaimBundleRecord` rows sort by
   `[claim_scope_id, key, claim_bundle_id]`
-- `BundleDecisionRecord` rows sort by
+- `ClaimBundleDecisionRecord` rows sort by
   `[claim_scope_id, bundle_decision_id]`
 
 Serialization:
@@ -583,7 +585,7 @@ Fingerprint inputs:
 - product header
 - canonical `ClaimRecord` rows
 - canonical `ClaimBundleRecord` rows
-- canonical `BundleDecisionRecord` rows
+- canonical `ClaimBundleDecisionRecord` rows
 
 Must guarantee:
 
@@ -738,7 +740,7 @@ Must guarantee:
 - event identity is driven by the selected claim bundle, not by compilation
   bookkeeping noise
 - event, leg, and valuation records carry the computation-critical
-  fields needed for later reconciliation, checkpointing, journal emission, and
+  fields needed for later reconciliation, checkpoint, journal emission, and
   tax
 - corrections preserve supersession lineage instead of mutating accepted
   economic truth in place
@@ -1123,7 +1125,7 @@ Record families:
   - `posting_id`
   - `entry_id`
   - `account_ref`
-  - `commodity_ref`
+  - `unit_ref`
   - `amount`
   - `side`
   - `origin_ref`
@@ -1145,7 +1147,7 @@ Controlled vocabularies:
   - `credit`
 - `EntryCheckRecord.kind`:
   - `balanced`
-  - `commodity_balance`
+  - `unit_balance`
   - `unsupported_mapping`
 - `EntryCheckRecord.status`:
   - `passed`
@@ -1170,22 +1172,22 @@ Stable ids:
 - `entry_id` identifies one journal entry
 - `posting_id` identifies one posting under one journal entry
 - `entry_check_id` identifies one journal entry check result
-- `account_ref`, `commodity_ref`, and `origin_ref` use `AccountRef`,
-  `CommodityRef`, and `OriginRef` from
+- `account_ref`, `unit_ref`, and `origin_ref` use `JournalAccountRef`,
+  `PostingUnitRef`, and `OriginRef` from
   [Target Ids And Refs](../reference/target-ids-and-refs.md)
 - `journal_id` uses component array
   `[economic_facts_refs, checkpoint_ref]`
 - `entry_id` uses component array
   `[journal_id, kind, effective_at, event_refs, assertion_refs]`
 - `posting_id` uses component array
-  `[entry_id, account_ref, commodity_ref, amount, side, origin_ref]`
+  `[entry_id, account_ref, unit_ref, amount, side, origin_ref]`
 - `entry_check_id` uses component array `[entry_id, kind]`
 
 Ordering:
 
 - `JournalEntryRecord` rows sort by `[effective_at, kind, entry_id]`
 - `PostingRecord` rows sort by
-  `[entry_id, side, account_ref, commodity_ref, origin_ref, posting_id]`
+  `[entry_id, side, account_ref, unit_ref, origin_ref, posting_id]`
 - `EntryCheckRecord` rows sort by `[entry_id, kind, entry_check_id]`
 
 Serialization:
@@ -1472,10 +1474,10 @@ The pipeline products rely on shared support contracts defined elsewhere:
   runtime truth
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) for the primary
   current-to-target transformation rules and migration authority matrix
-- [First Slice Contract](../reference/first-slice-contract.md) for the current
-  first replay and parity contract
+- [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md)
+  for the first upstream replay and parity contract
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
-  for the current first `EconomicFacts -> ReconciliationState -> Checkpoint`
+  for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint`
   contract
 - [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership

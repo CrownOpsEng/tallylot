@@ -210,7 +210,7 @@ Workspace resolution order:
 ## Current Build Direction
 
 - Treat `docs/concepts/reconciliation-tax-architecture.md` as the
-  implementation anchor for reconciliation, checkpointing, journaling, and tax
+  implementation anchor for reconciliation, checkpoint, journal, and tax
   computation.
 - Treat `docs/concepts/architecture-overview.md` as the concise orientation
   page and `docs/concepts/reconciliation-tax-architecture.md` as the detailed

@@ -1,6 +1,6 @@
 ---
 title: "Oracle Boundaries"
-summary: "Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts."
+summary: "Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only comparison packages."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,8 +9,9 @@ nav_order: 30
 ---
 
 Use this document to keep the next architecture phase platform-agnostic. It
-defines which artifacts are normal runtime inputs, which ones are optional
-adapter-format outputs, and which ones are oracle-only support files.
+defines which inputs are normal runtime truth surfaces, which ones are
+optional adapter-format inputs or outputs, and which ones remain
+oracle-only comparison packages.
 
 The goal is simple: the system must be able to reconstruct, reconcile, journal,
 and compute tax state from primary evidence and intentional checkpoints without
@@ -19,14 +20,14 @@ depending on any one portfolio tracker.
 ## Design Rules
 
 - The current bridge centers on `TransactionFact` plus shared balance
-  artifacts, but the target pipeline extends beyond facts alone.
+  files, but the target pipeline extends beyond facts alone.
 - The shared runtime should remain asset-class-agnostic even when current
   adapters or policies are crypto-first.
 - Primary evidence and evidence-backed checkpoints are first-class.
 - Operator confirmations may support runtime reconciliation, but they are a
   lower-trust reference input than primary evidence.
 - Output and import adapters are optional edges, not central dependencies.
-- Oracle artifacts are comparison aids only.
+- Oracle-only packages are comparison aids only.
 - No tax, reconciliation, or journal logic may require CoinTracking-specific
   report rows to exist.
 
@@ -34,11 +35,11 @@ depending on any one portfolio tracker.
 
 | Class | Examples | Allowed To Establish Runtime Truth | Required In Normal Workflow | Notes |
 | ---- | ---- | ---- | ---- | ---- |
-| Primary evidence | exchange exports, wallet exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
-| Checkpoint evidence | balance statements, location snapshots, evidence-backed checkpoint artifacts | Yes | Yes | First-class reconciliation input |
+| Primary evidence | platform exports, custody exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
+| Checkpoint evidence | balance statements, location snapshots, accepted opening-state packages | Yes | Yes | First-class reconciliation input |
 | Adapter-format inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
-| Oracle support artifacts | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry journal exports | No | No | Development and validation only; never production runtime inputs |
-| Derived outputs | CoinTracking export projection, double-entry journal export, `TaxOutputs` package, checkpoint artifacts | No | No | Produced by the system |
+| Oracle support packages | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry journal exports | No | No | Development and validation only; never production runtime inputs |
+| Derived outputs | CoinTracking export projection, double-entry journal export, `TaxOutputs` package, `Checkpoint` kernels plus support files | No | No | Produced by the system |
 
 ## Normal Runtime Workflow
 
@@ -63,7 +64,7 @@ The detailed target product flow behind that workflow is:
 Current runtime note:
 
 - today's bridge path still centers on `TransactionFact` plus shared balance
-  artifacts
+  files
 - treat that bridge as an incremental delivery boundary, not as the long-term
   endpoint of the architecture
 
@@ -85,9 +86,9 @@ CoinTracking support must not expand into:
   them
 - business logic keyed primarily on CoinTracking report columns
 
-## Oracle-Only Artifact Policy
+## Oracle-Only Package Policy
 
-Oracle-only artifacts are valuable, but they are not part of the shared runtime
+Oracle-only packages are valuable, but they are not part of the shared runtime
 contract.
 
 They are development and validation aids only, not production dependencies.
@@ -116,8 +117,8 @@ they do not satisfy filing-ready checkpoint requirements by themselves.
 
 A valid checkpoint may be built from:
 
-- exchange balances
-- location balances
+- custodial balance evidence
+- location balance evidence
 - statement evidence
 - evidence-backed inventory proofs
 - an intentionally adopted opening-state package with provenance
@@ -128,7 +129,8 @@ A valid checkpoint must not require:
 - CoinTracking tax-year reports
 - CoinTracking average purchase price reports
 
-Those artifacts may support comparison, but not checkpoint existence.
+Those packages and reports may support comparison, but not checkpoint
+existence.
 
 ## Architecture Guardrails
 
@@ -136,8 +138,9 @@ Those artifacts may support comparison, but not checkpoint existence.
   `src/tallylot/`.
 - Keep import-shape parsing behind adapter boundaries.
 - Keep domain services unaware of CoinTracking report schemas.
-- Keep crypto-, FX-, and security-specific terms out of shared runtime abstractions
-  unless the concept is inherently specific to that adapter or output.
+- Keep crypto-, FX-, and security-specific terms out of shared runtime
+  abstractions unless the concept is inherently specific to that adapter or
+  output.
   When a source literally uses a term such as `wallet`, preserve it in
   evidence-stage records or adapter-local labels rather than in canonical
   target product names.
