@@ -28,8 +28,9 @@ The target runtime pipeline is:
 
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
-The owner pages freeze product ids, critical-path kernel field tables, and the
-compatibility sidecar boundary for retained legacy projections.
+The owner pages freeze product ids, product headers, critical-path kernel field
+tables, and the compatibility sidecar boundary for retained legacy
+projections.
 
 ## Layer Shape
 

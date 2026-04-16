@@ -231,8 +231,7 @@ Slice-specific identity rules:
 
 - `emitter_id` is the shared emitter id over
   `[source_slug, adapter_id, "claim"]`
-- `source_slug` uses the shared source slug across evidence-local
-  products
+- `source_slug` stays the same across evidence-local products
 - `evidence_set_id` intentionally changes when `selection_fingerprint`
   changes, because the authoritative capture-level evidence emission changed
 - `locator` for `coinbase_retail_export` is

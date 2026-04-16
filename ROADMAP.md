@@ -114,7 +114,8 @@ Exit criteria:
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
   field table
-- no target product metadata ref uses `product_scope_id` where a product id
+- no target product ref in a product header uses `product_scope_id` where a
+  product id
   exists
 - non-critical observation and claim kinds are explicitly deferred rather
   than left implicit

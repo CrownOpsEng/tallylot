@@ -39,8 +39,8 @@ Every slice must obey the following rules before code lands:
 - declare the slice scope
 - name the authoritative writer for every affected scope
 - name the authoritative reader for every affected consumer
-- declare the product ids and upstream product-ref fields used by each target
-  kernel the slice introduces
+- declare the product id and upstream product-ref fields carried in each target
+  product header the slice introduces
 - name the derived compatibility projection for every unmigrated reader
 - name any declared compatibility sidecars needed to preserve retained legacy
   fields for those unmigrated readers

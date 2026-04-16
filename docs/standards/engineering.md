@@ -220,6 +220,10 @@ Current application of this rule:
   the surface holds. Prefer names such as `policy_summary`,
   `supporting_schedule`, `filing_form`, `validation_report`, or
   `readiness_rollup` when those are the real shapes.
+- When describing the fixed top-level fields that travel with every emitted
+  product kernel, prefer `product header` over the more abstract `metadata`.
+  Reserve `metadata` for looser descriptive prose, not for the canonical
+  per-product field set.
 - Prefer concrete owning nouns over abstract containers. Avoid names such as
   `Core`, `Data`, `Info`, `Context`, `Payload`, or `Item` when `Record`,
   `Explanation`, `Projection`, or the domain noun would say what the surface
@@ -274,7 +278,7 @@ Current application of this rule:
   a list-shaped contract.
 - For stage-owned product-emission identities, prefer `emitter_id` and
   `emitter_key` over the more abstract `producer_id` and `producer_key`.
-- When product metadata or a record already supplies the owner, prefer the
+- When a product header or a record already supplies the owner, prefer the
   bare role field, such as `emitter_id` or `side`, over longer names such as
   `claim_emitter_id` or `posting_side`. Add the owning prefix only when one
   shape carries multiple fields of that role.
@@ -320,6 +324,9 @@ Current application of this rule:
   `source`. Reserve bare `source` for prose, for grouping dimensions whose
   enclosing field already states the role, or for source-scoped provider
   families where the contract is not storing the slug itself.
+- Inside rollups, use the actual grouping identifier in `rollup_kind` when the
+  key is itself a canonical identifier. Prefer `source_slug` over bare
+  `source` when the rollup key stores the shared slug.
 - In canonical target-layer evidence and claim contracts, use `source_*` only
   when the field truly stores source identity or another source-derived value
   that would be ambiguous without the prefix. When the stage already supplies
@@ -332,6 +339,10 @@ Current application of this rule:
 - Prefer `status` over `state` for bounded field vocabularies. Reserve
   `State` for named domain concepts or broader state bundles when `status`
   would underspecify the concept.
+- For materiality or weight vocabularies, prefer direct reader-facing labels
+  such as `material`, `supporting`, or `informational` over murkier middle
+  labels such as `contextual` when the repo means evidentiary weight rather
+  than surrounding circumstances.
 - Apply the same status-versus-state rule to named vocabulary concepts.
   Prefer concept names such as `SettlementStatus` when the concept is a
   bounded status family rather than a broader state bundle.
@@ -383,9 +394,11 @@ Current application of this rule:
   balance-target vocabulary names balance shapes, prefer values such as
   `exact_balance`, `range_balance`, and `boundary_balance` over mixing balance
   shapes with support metaphors.
-- In kind vocabularies for emitted records, drop redundant suffixes such as
-  `schedule`, `report`, or `state` when the record family already tells the
-  reader they are looking at an output or emitted state surface.
+- In kind vocabularies for emitted records, drop only truly redundant
+  output-surface suffixes when the record family already tells the reader they
+  are looking at an output or emitted state surface. Keep shape nouns such as
+  `schedule` or `form` when they distinguish the held output from sibling
+  kinds.
 - Do not encode nullability in canonical target field names. Use the base noun
   or ref name and state optionality in the field contract rather than in
   suffixes that spell out nullability.

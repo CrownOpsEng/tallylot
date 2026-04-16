@@ -129,7 +129,7 @@ Rules:
   peer authorities beside the target kernel
 - consumers read one authority at a time:
   - unmigrated consumers read the derived compatibility projection
-  - migrated consumers read the target product kernel directly
+  - migrated consumers read the authoritative target product directly
 - compatibility projections must stay reproducible from authoritative kernels
   for the duration of the compatibility window
 
@@ -138,9 +138,9 @@ Rules:
 Forward-looking persistence rules:
 
 - target product kernels persist as JSON documents
-- every persisted kernel carries its declared product id in metadata
+- every persisted kernel carries its declared product id in its product header
 - product ids are distinct from `product_scope_id`
-- upstream `*_ref` metadata fields store product ids, never `product_scope_id`
+- upstream `*_ref` fields in the product header store product ids, never `product_scope_id`
   and
   never raw kernel fingerprints
 - product sidecars persist separately from kernels and are keyed by
@@ -185,7 +185,7 @@ Rules:
 - one persisted `Journal` kernel owns one journal emission root
 - one persisted `TaxInputs` kernel owns one tax-input emission root
 - one persisted `TaxOutputs` kernel owns one policy-and-tax-year output root
-- readers use product ids or narrower record ids for target-kernel lookup;
+- readers use product ids or narrower record ids for authoritative product lookup;
   `product_scope_id` remains for shared support attachment and reporting only
 
 ### Default Filesystem Placement
@@ -340,7 +340,7 @@ Rules:
 - sidecars are never the sole copy of business meaning
 - sidecars may be keyed by `product_scope_id` or narrower truthful record ids,
   but
-  they do not replace product ids for kernel lookup
+  they do not replace product ids for authoritative product lookup
 - caches are always regenerable from authoritative kernels and upstream refs
 - materialized indexes are allowed only when they accelerate declared product
   kernels rather than replacing them
@@ -349,7 +349,7 @@ Required hot-path indexes:
 
 - `subject_ref + effective_at`
 - `continuity_segment_id`
-- `checkpoint_assertion` subject and date
+- checkpoint assertion `subject_ref + as_of`
 - `tax_year + basis_pool_ref`
 
 ## Acceptance Rules

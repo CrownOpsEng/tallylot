@@ -162,8 +162,9 @@ Variant rules:
 
 ## `CheckpointAssertion`
 
-`CheckpointAssertion` is the accepted checkpoint-truth record for one subject
-and one as-of point.
+`CheckpointAssertion` is the accepted checkpoint-truth concept for one subject
+and one as-of point. Persisted kernels carry that concept as
+`CheckpointAssertionRecord`.
 
 Rules:
 
@@ -171,11 +172,12 @@ Rules:
 - it is distinct from current bridge balance snapshots
 - it is distinct from current bridge balance references
 - it is distinct from the containing accepted `Checkpoint`
-- downstream stages may consume checkpoint assertions, but they must not
+- downstream stages may consume `CheckpointAssertion` truth, but they must not
   redefine them into incompatible local variants
-- accepted checkpoint truth should be modeled as checkpoint assertions first
+- accepted checkpoint truth should be modeled as `CheckpointAssertion` first
   and checkpoint records second
-- checkpoint assertions carry one `AssertionValue`, not one untyped convenience
+- `CheckpointAssertion` carries one `AssertionValue`, not one untyped
+  convenience
   blob
 
 ## Valuation

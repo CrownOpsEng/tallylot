@@ -41,7 +41,7 @@ The future adapter architecture should unify around:
 
 - one manifest model
 - a small set of purpose-defined facets
-- deterministic adapter products that map into the target runtime pipeline
+- deterministic adapter outputs that map into the target runtime pipeline
 - one shared verification model
 
 It should not unify around:
@@ -127,7 +127,7 @@ Required verification properties:
   kernels during migration
 - output adapters reject unsupported upstream shapes before serialization
 
-Verification should center on adapter products and shared projections, not on
+Verification should center on adapter outputs and shared projections, not on
 adapter-local shell choreography.
 
 ## Migration Posture

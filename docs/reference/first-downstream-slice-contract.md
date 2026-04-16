@@ -79,9 +79,9 @@ Rules:
 - when `SubjectRef` is needed for downstream attachment, the subject kind for
   this slice is `position`, pointing at the stable `PositionRef` identity
 
-## Product Metadata And Compilation Inputs
+## Kernel Header And Compilation Inputs
 
-Product metadata fields in this slice:
+Kernel header fields in this slice:
 
 - `EconomicFacts` carries `economic_facts_id`, `schema_version`, and
   `claim_set_refs`
@@ -97,7 +97,7 @@ Compilation-input rules:
   from authoritative `ClaimSet` kernels
 - downstream compilation must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
-- upstream `*_ref` metadata fields store target product ids, never
+- upstream `*_ref` header fields store target product ids, never
   `product_scope_id`
   and never raw kernel fingerprints
 

@@ -83,17 +83,17 @@ Shared rules:
 
 ### Product Id And Upstream Ref Rules
 
-- every target product carries one product id in product metadata
+- every target product carries one product id in its product header
 - `EvidenceSet` and `ClaimSet` keep `evidence_set_id` and `claim_set_id` as
   their product ids
 - later products use dedicated product ids:
   `economic_facts_id`, `reconciliation_state_id`, `checkpoint_id`,
   `journal_id`, `tax_inputs_id`, and `tax_outputs_id`
-- upstream product metadata refs use product ids only; they never use
+- upstream product refs use product ids only; they never use
   `product_scope_id` or a raw kernel fingerprint
 - use singular `*_ref` for one upstream product id and plural `*_refs` for an
   ordered product-id list
-- ordered metadata fields such as `claim_set_refs`,
+- ordered header fields such as `claim_set_refs`,
   `reconciliation_state_refs`, and `economic_facts_refs` sort
   lexicographically by product id unless the owning product declares a
   stronger canonical order
@@ -105,7 +105,7 @@ Shared rules:
 
 - when a kernel field name ends with `_ref`, `_refs`, or `_id` and the
   stem names one target product owned on this page, the field uses that
-  product's metadata id or ordered product-id list
+  product id from that product header or an ordered product-id list
 - when a kernel field name ends with `_ref`, `_refs`, or `_id` and the
   stem names one target record family owned on this page, the field uses that
   record family's stable id or ordered stable-id list
@@ -137,8 +137,10 @@ Shared rules:
 
 ### Kernel And Sidecar Rule
 
-- every target product separates a compact computational kernel from optional
-  sidecars
+- every target product persists as a product header, kernel record families,
+  and optional sidecars
+- the product header plus kernel record families make up the authoritative
+  kernel
 - the kernel holds stable ids, ordering keys, owning decisions, and the
   downstream-required references needed for replay and reducers
 - sidecars hold provenance detail, explanation, reviews, comparison traces,
@@ -154,8 +156,8 @@ Shared rules:
 - the shared `product_scope_id` contract is owned by
   [Gaps And Readiness](gaps-and-readiness.md)
 - `product_scope_id` is derived from the emitted kernel fingerprint after
-  canonical
-  fingerprinting; it is not part of kernel metadata or fingerprint inputs
+  canonical fingerprinting; it is not part of the product header or fingerprint
+  inputs
 - `product_scope_id` is the product-scope attachment id for readiness,
   comparison, and other shared sidecars when no narrower truthful scope exists
 - `product_scope_id` is not a substitute for a narrower record id or stage-owned
@@ -197,7 +199,7 @@ Purpose:
 
 - deterministic, capture-scoped evidence output before claim commitment
 
-Product metadata:
+Kernel header:
 
 - `evidence_set_id`
 - `schema_version`
@@ -319,7 +321,8 @@ Stable ids:
 - `observation_id` identifies one typed observation under one evidence member
 - `evidence_set_id` uses component array
   `[source_slug, adapter_id, capture_uid, selection_fingerprint]`
-- `source_slug` uses the shared source slug for the capture boundary that owns
+- `source_slug` uses the evidence-local source slug for the capture boundary
+  that owns
   the emitted evidence set
 - `source_slug` and `adapter_id` remain evidence-local identity inputs and do
   not reappear in downstream product ids once `evidence_set_ref` is available
@@ -345,14 +348,14 @@ Ordering:
 Serialization:
 
 - serialize each evidence record family as its own ordered array
-- persist product metadata once per emitted kernel
+- persist one product header once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
 - sort `provenance_refs` and `blocking_gap_refs` lexicographically
 
 Fingerprint inputs:
 
-- product metadata
+- product header
 - canonical `EvidenceMemberRecord` rows
 - canonical `EvidenceObservationRecord` rows
 - canonical `SelectionRecord` rows
@@ -383,7 +386,7 @@ Purpose:
 
 - evidence-local meaning before economic truth is fixed
 
-Product metadata:
+Kernel header:
 
 - `claim_set_id`
 - `schema_version`
@@ -566,7 +569,7 @@ Ordering:
 Serialization:
 
 - serialize each claim record family as its own ordered array
-- persist product metadata once per emitted kernel
+- persist one product header once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
 - sort `member_refs`, `observation_refs`, `provenance_refs`, `claim_refs`,
@@ -575,7 +578,7 @@ Serialization:
 
 Fingerprint inputs:
 
-- product metadata
+- product header
 - canonical `ClaimRecord` rows
 - canonical `ClaimBundleRecord` rows
 - canonical `BundleDecisionRecord` rows
@@ -614,7 +617,7 @@ Purpose:
 
 - economic truth the system can safely assert
 
-Product metadata:
+Kernel header:
 
 - `economic_facts_id`
 - `schema_version`
@@ -716,14 +719,14 @@ Ordering:
 Serialization:
 
 - serialize each economic record family as its own ordered array
-- persist product metadata once per emitted kernel
+- persist one product header once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
 - sort `provenance_refs` lexicographically
 
 Fingerprint inputs:
 
-- product metadata
+- product header
 - canonical `EconomicEventRecord` rows
 - canonical `EconomicLegRecord` rows
 - canonical `ValuationRecord` rows
@@ -763,7 +766,7 @@ Purpose:
 - completeness, linkage, continuity, checkpoint proposals, and
   reconciliation-owned blockers
 
-Product metadata:
+Kernel header:
 
 - `reconciliation_state_id`
 - `schema_version`
@@ -893,14 +896,14 @@ Ordering:
 Serialization:
 
 - serialize each reconciliation record family as its own ordered array
-- persist product metadata once per emitted kernel
+- persist one product header once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
 - sort `target_refs` and `evidence_refs` lexicographically
 
 Fingerprint inputs:
 
-- product metadata
+- product header
 - canonical `ContinuitySegmentRecord` rows
 - canonical `EventLinkRecord` rows
 - canonical `BalanceTargetRecord` rows
@@ -919,7 +922,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside product-scope readiness rollups
+- bury missing evidence inside product-scope `ReadinessRollupRecord` rows
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:
@@ -934,7 +937,7 @@ Purpose:
 
 - accepted checkpoint truth and acceptance basis
 
-Product metadata:
+Kernel header:
 
 - `checkpoint_id`
 - `schema_version`
@@ -943,7 +946,7 @@ Product metadata:
 
 Owns:
 
-- accepted checkpoint assertions
+- accepted `CheckpointAssertionRecord` rows
 - adopted opening state when intentionally used
 - acceptance basis, trust level, and continuity into accepted state
 
@@ -1032,7 +1035,7 @@ Ordering:
 Serialization:
 
 - serialize each checkpoint record family as its own ordered array
-- persist product metadata once per emitted kernel
+- persist one product header once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
 - sort `proposal_refs` lexicographically
@@ -1047,7 +1050,7 @@ Lineage rule:
 
 Fingerprint inputs:
 
-- product metadata
+- product header
 - canonical `CheckpointRecord` rows
 - canonical `CheckpointAssertionRecord` rows
 
@@ -1090,7 +1093,7 @@ Purpose:
 
 - accounting expansion and validation over accepted truth
 
-Product metadata:
+Kernel header:
 
 - `journal_id`
 - `schema_version`
@@ -1185,7 +1188,7 @@ Ordering:
 Serialization:
 
 - serialize each journal record family as its own ordered array
-- persist product metadata once per emitted kernel
+- persist one product header once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
 - sort `event_refs`, `assertion_refs`, and
@@ -1193,7 +1196,7 @@ Serialization:
 
 Fingerprint inputs:
 
-- product metadata
+- product header
 - canonical `JournalEntryRecord` rows
 - canonical `PostingRecord` rows
 - canonical `EntryCheckRecord` rows
@@ -1224,7 +1227,7 @@ Purpose:
 
 - policy-ready, jurisdiction-neutral tax input surface
 
-Product metadata:
+Kernel header:
 
 - `tax_inputs_id`
 - `schema_version`
@@ -1311,14 +1314,14 @@ Ordering:
 Serialization:
 
 - serialize each tax input record family as its own ordered array
-- persist product metadata once per emitted kernel
+- persist one product header once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
 - sort `event_refs` and `assertion_refs` lexicographically
 
 Fingerprint inputs:
 
-- product metadata
+- product header
 - canonical `TaxInputRecord` rows
 - canonical `BasisTransitionRecord` rows
 
@@ -1351,7 +1354,7 @@ Purpose:
 
 - one selected tax policy's outputs
 
-Product metadata:
+Kernel header:
 
 - `tax_outputs_id`
 - `schema_version`
@@ -1381,7 +1384,7 @@ Record families:
   - `basis_pool_ref`
   - `next_tax_year`
   - `fingerprint`
-- `UnsupportedTaxInputRecord`
+- `UnsupportedInputRecord`
   - `unsupported_input_id`
   - `tax_output_id`
   - `tax_input_ref`
@@ -1399,12 +1402,12 @@ Sidecar content may include:
 - rendered policy content
 - filing notes and limitations
 - carry-forward explanation
-- unsupported tax input notes
+- unsupported-input notes
 
 Product-root cardinality:
 
 - one `TaxOutputs` kernel may contain many `TaxOutputRecord`,
-  `CarryForwardRecord`, and `UnsupportedTaxInputRecord` rows
+  `CarryForwardRecord`, and `UnsupportedInputRecord` rows
 - one emitted `TaxOutputs` kernel must contain exactly one `tax_policy_id` and one
   `tax_year`
 
@@ -1413,7 +1416,7 @@ Stable ids:
 - `tax_outputs_id` identifies one emitted `TaxOutputs` kernel
 - `tax_output_id` identifies one policy-owned output emission
 - `carry_forward_id` identifies one carry-forward state record
-- `unsupported_input_id` identifies one persisted unsupported tax input
+- `unsupported_input_id` identifies one persisted unsupported input
   record
 - `tax_outputs_id` uses component array `[tax_inputs_ref, tax_policy_id, tax_year]`
 - `tax_output_id` uses component array
@@ -1429,29 +1432,29 @@ Ordering:
   `[tax_policy_id, tax_year, kind, tax_output_id]`
 - `CarryForwardRecord` rows sort by
   `[tax_output_id, next_tax_year, basis_pool_ref, carry_forward_id]`
-- `UnsupportedTaxInputRecord` rows sort by
+- `UnsupportedInputRecord` rows sort by
   `[tax_output_id, tax_input_ref, unsupported_input_id]`
 
 Serialization:
 
 - serialize each tax-output record family as its own ordered array
-- persist product metadata once per emitted kernel
+- persist one product header once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
 - sort `basis_pool_refs` and `blocking_gap_refs` lexicographically
 
 Fingerprint inputs:
 
-- product metadata
+- product header
 - canonical `TaxOutputRecord` rows
 - canonical `CarryForwardRecord` rows
-- canonical `UnsupportedTaxInputRecord` rows
+- canonical `UnsupportedInputRecord` rows
 
 Must guarantee:
 
 - outputs are derived from `TaxInputs` through selected tax policies
 - policy selection is explicit
-- unsupported tax inputs stay explicit instead of being silently omitted
+- unsupported inputs stay explicit instead of being silently omitted
 
 Must not:
 
@@ -1461,7 +1464,7 @@ Must not:
 
 ## Shared Contract References
 
-The pipeline products rely on shared supporting contracts defined elsewhere:
+The pipeline products rely on shared support contracts defined elsewhere:
 
 - [Current Bridge Contracts](current-bridge-contracts.md) for the live bridge
   runtime truth

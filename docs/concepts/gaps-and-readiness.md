@@ -27,10 +27,10 @@ Current runtime note:
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- product-scope readiness rollups are derived from subject-level or scope-level
-  truth, not stored as the only truth
-- shared support structures help stages interoperate without erasing stage
-  ownership
+- product-scope `ReadinessRollupRecord` rows are derived from subject-level or
+  scope-level truth, not stored as the only truth
+- shared support records and sidecars help stages interoperate without erasing
+  stage ownership
 
 ## Provenance
 
@@ -44,8 +44,8 @@ Rules:
   identity
 - capture identity stays separate from human-readable labels and filesystem
   paths
-- shared support models link to provenance rather than embedding large repeated
-  evidence detail directly
+- shared support records and sidecars link to provenance rather than embedding
+  large repeated evidence detail directly
 
 ## `SubjectRef`
 
@@ -136,7 +136,7 @@ Rules:
 - `kernel_fingerprint` is the canonical product fingerprint owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - `product_scope_id` is derived after canonical kernel fingerprinting and is not
-  a kernel metadata field or a fingerprint input itself
+  a product header field or a fingerprint input itself
 - `product_scope_id` is never a target product id, never an upstream product
   ref, and never the primary reader key when one product id or narrower record
   id exists
@@ -215,7 +215,7 @@ Controlled vocabularies:
   - `superseded`
 - `materiality`:
   - `material`
-  - `contextual`
+  - `supporting`
   - `informational`
 - `confidence`:
   - `high`
@@ -497,7 +497,7 @@ Rules:
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before claim commitment
 - reducers work from subject readiness plus gaps, not from hand-built
-  product-scope readiness rollups
+  `ReadinessRollupRecord` rows
 - a subject may be ready for one stage and blocked for another
 - readiness points to blocking gap ids rather than hiding blockers in
   explanation text
@@ -523,7 +523,7 @@ Fields:
 
 Controlled `rollup_kind` vocabulary:
 
-- `source`
+- `source_slug`
 - `location`
 - `instrument`
 - `continuity_segment`
@@ -533,7 +533,7 @@ Controlled `rollup_kind` vocabulary:
 
 Rollup-key rules:
 
-- `source` uses the shared source slug and remains a reporting-only rollup
+- `source_slug` uses the canonical source slug and remains a reporting-only rollup
   dimension rather than a downstream domain identity
 - `location` uses one `location_id`
 - `instrument` uses one `instrument_id`
@@ -574,8 +574,8 @@ Rules:
 - if no required assertion has resolved yet, status is `blocked`, not
   `partial`
 - if no blocker applies, status is `ready`, not `partial`
-- product-scope readiness rollups remain reproducible from ordered readiness
-  and gap records without manual status editing
+- product-scope `ReadinessRollupRecord` rows remain reproducible from ordered
+  readiness and gap records without manual status editing
 - stages use only the dimensions they actually own or can derive safely
 
 ## Bridge Mapping From Issue And Review Records
@@ -618,7 +618,7 @@ Keep these first-class:
 - identities and refs
 - ownership state
 - settlement and lifecycle state
-- checkpoint assertions
+- `CheckpointAssertion` truth
 - postings
 - tax inputs and outputs
 
