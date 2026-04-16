@@ -135,7 +135,7 @@ Retire or demote a bridge surface only when all of the following are true:
 
 - the slice names one authoritative writer for the affected scope
 - every active reader has a declared target reader or derived compatibility
-  projection
+  view
 - parity and replay gates for the affected slice pass on unchanged evidence
 - current-state docs are updated if the implemented live runtime surface
   changes

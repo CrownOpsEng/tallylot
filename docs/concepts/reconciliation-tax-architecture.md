@@ -197,8 +197,8 @@ Rules:
 - migration-era workspace paths may still group later products under a
   source-scoped directory tree, but that filesystem placement does not make
   source identity part of downstream product naming or stable-id recipes
-- target products may expose derived reporting projections across several
-  partitions, but those projections do not replace the authoritative partition
+- target products may expose derived reporting views across several
+  partitions, but those views do not replace the authoritative partition
   kernels
 - `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
   whole-product kernel per declared partition
@@ -225,10 +225,13 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
 - stage-owned gap, review, and readiness sidecars live beside the
   authoritative kernel in that
-  same product directory, under `support/`, using `gap_records.json`,
-  `gap_explanations.json`, `review_records.json`,
-  `review_explanations.json`, `readiness_records.json`, and
-  `readiness_rollup_records.json`
+  same product directory under `support/gap/`, `support/review/`, and
+  `support/readiness/`, using `support/gap/gap_records.json`,
+  `support/gap/gap_explanations.json`,
+  `support/review/review_records.json`,
+  `support/review/review_explanations.json`,
+  `support/readiness/readiness_records.json`, and
+  `support/readiness/readiness_rollup_records.json`
 - compatibility views live under the authoritative product they depend on,
   for example:
   - `working/products/economic_facts/<economic_facts_id>/compatibility/facts.csv`

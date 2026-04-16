@@ -47,10 +47,11 @@ When persisting target products:
   non-kernel detail in sidecars
 - keep source-grouped views as operator views or compatibility
   views rather than as canonical readiness rollups
-- keep gap/review/readiness basenames aligned to the stored families, for
-  example
-  `gap_records.json`, `review_records.json`, `readiness_records.json`, and
-  `readiness_rollup_records.json`
+- keep support family directories and basenames aligned to the stored
+  families, for example `support/gap/gap_records.json`,
+  `support/review/review_records.json`,
+  `support/readiness/readiness_records.json`, and
+  `support/readiness/readiness_rollup_records.json`
 - treat caches and indexes as regenerable accelerators, not as business truth
 
 ## Reminder

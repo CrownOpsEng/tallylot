@@ -241,6 +241,9 @@ Current application of this rule:
   concrete and mirrored. `support/` is acceptable only when it is split into
   families such as `gap/`, `review/`, and `readiness/` rather than flattened
   into one catch-all boundary.
+- Apply that same rule to persisted sidecar layout. Prefer paths such as
+  `support/gap/gap_records.json` and `support/readiness/readiness_records.json`
+  over one flat `support/` directory full of unrelated sidecar families.
 - In forward-looking prose, prefer explicit family names such as `gap`,
   `review`, and `readiness` over the looser umbrella `shared support` when
   those are the actual owned families. Reserve generic `support` for
@@ -398,10 +401,12 @@ Current application of this rule:
   `data.json`, `output.json`, or `results.json` when later call sites would
   need directory context alone to tell what the file holds.
 - Inside `support/` directories that hold shared gap/review/readiness sidecars,
+  split the directory first into `gap/`, `review/`, and `readiness/`, then
   make basenames mirror the stored record or explanation family. Prefer
-  `gap_records.json`, `review_records.json`, `readiness_records.json`, and
-  `readiness_rollup_records.json` over shorter plurals that need `support/`
-  context to reveal shape.
+  `support/gap/gap_records.json`, `support/review/review_records.json`,
+  `support/readiness/readiness_records.json`, and
+  `support/readiness/readiness_rollup_records.json` over one flat support
+  directory or shorter plurals that need directory context to reveal shape.
 - In forward-looking docs and code, reserve `artifact` for current-state bridge
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `view`,
@@ -483,9 +488,14 @@ Current application of this rule:
 - When adjacent vocabularies live on different semantic axes, do not reuse one
   slice-local label across all of them if that would blur reason, support
   shape, and continuity shape. Prefer reason labels such as
+  `document_support`, `reported_support`, `manual_support`, and
   `reconciled_continuity` in `basis`, observation-shape labels such as
-  `document_observation` in `support_kind`, and continuity-shape labels such
-  as `reconciled_rollforward` in `continuity_kind`.
+  `document_observation`, `reported_observation`, and `manual_assertion` in
+  `support_kind`, and continuity-shape labels such as
+  `reconciled_rollforward` in `continuity_kind`.
+- Do not reuse a label such as `reported_observation` or `manual_assertion`
+  across both `basis` and `support_kind` just because one slice happens to
+  allow both; keep the reason axis and the support-shape axis distinct.
 - For bounded `basis` or similar reason vocabularies, drop redundant suffixes
   such as `_match`, `_preferred`, or `_duplicate` when the field already
   establishes that the value is the decision basis.
@@ -574,6 +584,9 @@ Current application of this rule:
 - Once `Journal` owns `EntryCheckRecord`, prefer `entry check` or
   `entry-check` wording over generic `validation` when naming target-stage
   journal records, prose, or package responsibilities.
+- Apply that same rule to controlled vocabularies. Prefer `checked` over
+  `validated` for journal-entry status values once `EntryCheckRecord` is the
+  owned check family.
 - In target controlled vocabularies, keep the stage noun and held-thing noun
   aligned once the target stage owns the boundary. Prefer
   `economic_measurement`, `checkpoint_measurement`, `journal_measurement`, and

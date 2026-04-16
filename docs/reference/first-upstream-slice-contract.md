@@ -287,7 +287,8 @@ Unchanged evidence must preserve all of the following:
 - `SourceTranslationBatch` content for evidence in this slice
 - derived `TransactionFact` ordering and meaning for evidence in this slice
 - `balance_references.csv` content for evidence in this slice
-- `cointracking_csv` row ordering and field values for supported projections
+- `cointracking_csv` row ordering and field values for supported
+  `cointracking_csv` rows
 
 ## Replay Gates
 

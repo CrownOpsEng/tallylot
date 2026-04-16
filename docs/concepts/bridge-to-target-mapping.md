@@ -101,7 +101,7 @@ cutover contract.
 | `normalization_reviews.csv` and `NormalizationReviewRecord` outputs | stage-local bridge advisory diagnostics | target product plus shared gap/review/readiness records and sidecars | review compatibility view derived from `ReviewRecord` and `ReviewExplanation` | operator review and current normalization diagnostics | target review and readiness views | advisory review scope and provenance are preserved without turning reviews into blockers | retire per stage when that stage emits target-native reviews for the same scope |
 | `fact_annotations.json` and `location_annotations.json` | bridge-only sidecar generation | target products plus bridge/output compatibility sidecars | derived annotation sidecars keyed to target ids or bridge view ids | current bridge renderers and comparison tooling | target-aware output and comparison flows that no longer require annotation sidecar detail embedded in claim surfaces | no target meaning depends on annotation sidecar detail and bridge/output consumers can read derived sidecars instead | retire when the affected renderer or comparison flow no longer depends on the annotation file |
 
-## Compatibility Sidecars And Support Mapping
+## Compatibility Sidecars And Gap/Review Mapping
 
 Bridge-only annotations and diagnostics keep their meaning only as compatibility
 surfaces during migration.
@@ -150,7 +150,7 @@ Required cutovers now:
 - `balance_references.csv` becomes a compatibility view from
   `ReconciliationState` and `Checkpoint`
 - current balance inspect/check/summarize remains on bridge compatibility
-  projections until those application surfaces are repointed to target products
+  views until those application surfaces are repointed to target products
 
 ## Retirement Discipline
 

@@ -40,7 +40,7 @@ depending on any one portfolio tracker.
 | Checkpoint evidence | balance statements, location snapshots, accepted opening-state packages | Yes | Yes | First-class reconciliation input |
 | Adapter-format inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
 | Oracle support packages | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry journal exports | No | No | Development and validation only; never production runtime inputs |
-| Derived outputs | CoinTracking export projection, double-entry journal export, `TaxOutputs` package, `Checkpoint` kernels plus checkpoint-side sidecars | No | No | Produced by the system |
+| Derived outputs | CoinTracking export file, double-entry journal export, `TaxOutputs` package, `Checkpoint` kernels plus checkpoint-side sidecars | No | No | Produced by the system |
 
 ## Normal Runtime Workflow
 
