@@ -129,7 +129,7 @@ Rules:
   peer authorities beside the target kernel
 - consumers read one authority at a time:
   - unmigrated consumers read the derived compatibility projection
-  - migrated consumers read the target product kernel directly
+  - migrated consumers read the authoritative target product directly
 - compatibility projections must stay reproducible from authoritative kernels
   for the duration of the compatibility window
 
@@ -138,13 +138,19 @@ Rules:
 Forward-looking persistence rules:
 
 - target product kernels persist as JSON documents
-- every persisted kernel carries its declared product id in metadata
-- product ids are distinct from `kernel_scope_id`
-- upstream `*_ref` metadata fields store product ids, never `kernel_scope_id`
+- every persisted kernel carries its declared product id in its product header
+- product ids are distinct from `product_scope_id`
+- upstream `*_ref` fields in the product header store product ids, never `product_scope_id`
   and
   never raw kernel fingerprints
+- when a product id hashes ordered upstream header refs, the component array
+  stays in the same canonical order as those header fields unless the owner
+  page documents a stronger reason to differ
 - product sidecars persist separately from kernels and are keyed by
-  `kernel_scope_id` or narrower truthful record ids
+  `product_scope_id` or narrower truthful record ids
+- canonical shared-support rollups stay stage- and domain-oriented;
+  source-grouped operator views stay as derived reports or compatibility
+  projections rather than as shared support record or rollup families
 - target basenames use the owning product or support role directly
   rather than generic names or bridge-era qualifiers
 - writes are replace-whole-partition operations, not append-in-place mutation
@@ -159,12 +165,12 @@ Forward-looking persistence rules:
 | --- | --- |
 | `EvidenceSet` | capture-scoped |
 | `ClaimSet` | capture-scoped |
-| `EconomicFacts` | claim-lineage-scoped |
+| `EconomicFacts` | claim-set-lineage-scoped |
 | `ReconciliationState` | continuity-segment-scoped |
 | `Checkpoint` | checkpoint-scoped |
-| `Journal` | journal-scoped under one checkpoint scope |
-| `TaxInputs` | tax-input-scoped |
-| `TaxOutputs` | policy-and-tax-year-scoped inside one tax-input scope |
+| `Journal` | checkpoint-lineage-scoped |
+| `TaxInputs` | checkpoint-lineage-scoped |
+| `TaxOutputs` | tax-policy-year-scoped |
 
 Rules:
 
@@ -172,6 +178,9 @@ Rules:
 - one persisted partition owns one product id aligned with that partition
 - partition boundaries are chosen by the dimensions the owning stage actually
   reduces over
+- `Journal` and `TaxInputs` stay checkpoint-lineage-scoped because both product
+  ids hash the accepted checkpoint ref plus the ordered upstream
+  `economic_facts_refs`
 - migration-era workspace paths may still group later products under a
   source-scoped directory tree, but that filesystem placement does not make
   source identity part of downstream product naming or stable-id recipes
@@ -184,42 +193,42 @@ Rules:
 - one persisted `Checkpoint` kernel owns one checkpoint record
 - one persisted `Journal` kernel owns one journal emission root
 - one persisted `TaxInputs` kernel owns one tax-input emission root
-- one persisted `TaxOutputs` kernel owns one policy-and-tax-year output root
-- readers use product ids or narrower record ids for target-kernel lookup;
-  `kernel_scope_id` remains for shared support attachment and reporting only
+- one persisted `TaxOutputs` kernel owns one tax-policy-year output root
+- readers use product ids or narrower record ids for authoritative product lookup;
+  `product_scope_id` remains for shared support attachment and reporting only
 
 ### Default Filesystem Placement
 
 Use these paths in forward-looking docs and later implementation work:
 
-- `working/normalized/captures/<capture_uid>/evidence_set.json`
-- `working/normalized/captures/<capture_uid>/claim_set.json`
-- `working/normalized/captures/<capture_uid>/support/gaps.json`
-- `working/normalized/captures/<capture_uid>/support/gap_explanations.json`
-- `working/normalized/captures/<capture_uid>/support/reviews.json`
-- `working/normalized/captures/<capture_uid>/support/review_explanations.json`
-- `working/normalized/captures/<capture_uid>/support/readiness.json`
-- `working/normalized/captures/<capture_uid>/support/readiness_summaries.json`
-- `working/normalized/sources/<source>/economic_facts.json`
-- `working/normalized/sources/<source>/bridge/facts.csv`
-- `working/normalized/sources/<source>/bridge/balance_snapshots.csv`
-- `working/normalized/sources/<source>/bridge/balance_references.csv`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/reconciliation_state.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gaps.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gap_explanations.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/reviews.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/review_explanations.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness.json`
-- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness_summaries.json`
-- `outputs/checkpoints/<checkpoint_id>/checkpoint.json`
-- `outputs/checkpoints/<checkpoint_id>/journal.json`
-- `outputs/checkpoints/<checkpoint_id>/tax_inputs.json`
-- `outputs/checkpoints/<checkpoint_id>/tax_outputs/<tax_policy_id>/<tax_year>.json`
+- `working/products/evidence_sets/<evidence_set_id>/evidence_set.json`
+- `working/products/claim_sets/<claim_set_id>/claim_set.json`
+- `working/products/economic_facts/<economic_facts_id>/economic_facts.json`
+- `working/products/reconciliation_states/<reconciliation_state_id>/reconciliation_state.json`
+- `working/products/checkpoints/<checkpoint_id>/checkpoint.json`
+- `working/products/journals/<journal_id>/journal.json`
+- `working/products/tax_inputs/<tax_inputs_id>/tax_inputs.json`
+- `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
+- stage-owned support sidecars live under
+  `working/products/<product_family>/<product_id>/support/` using
+  `gap_records.json`, `gap_explanations.json`, `review_records.json`,
+  `review_explanations.json`, `readiness_records.json`, and
+  `readiness_rollup_records.json`
+- compatibility projections live under the authoritative product they depend on,
+  for example:
+  - `working/products/economic_facts/<economic_facts_id>/compatibility/facts.csv`
+  - `working/products/reconciliation_states/<reconciliation_state_id>/compatibility/balance_snapshots.csv`
+  - `working/products/checkpoints/<checkpoint_id>/compatibility/balance_references.csv`
 
 Rules:
 
 - the external workspace remains the runtime location for evidence and emitted
   files
+- authoritative target kernels use product-owned directory stems rather than
+  migration-era source or checkpoint containers
+- source-scoped or checkpoint-scoped workspace groupings remain valid only for
+  current-state surfaces, compatibility projections, or genuinely source-owned
+  or checkpoint-owned packages
 - later implementation may add indexes or caches beside these kernels, but
   must not rename the authoritative kernel paths without updating the owner
   docs
@@ -266,7 +275,7 @@ Required hot-path content includes:
 
 The hot path should not repeatedly join in:
 
-- full provenance detail
+- provenance detail
 - reviews
 - large explanation text
 - evidence sidecar detail
@@ -312,7 +321,7 @@ Rules:
   upstream references; they must not rescan unrelated full-history partitions
   per balance target
 - checkpoint reducers may read the declared `checkpoint_id` inputs plus
-  explicit upstream refs; they must not treat `kernel_scope_id` as the
+  explicit upstream refs; they must not treat `product_scope_id` as the
   product-join
   key
 - tax reducers may read one tax year plus explicitly referenced carry-forward
@@ -329,19 +338,19 @@ high.
 
 Typical sidecar or cache surfaces include:
 
-- evidence selection summaries
-- claim-scope decision summaries
-- reconciliation continuity summaries
-- checkpoint summaries
-- journal validation summaries
-- tax carry-forward state indexes
+- evidence selection explanations
+- claim-scope decision explanations
+- reconciliation continuity explanations
+- checkpoint acceptance reports
+- journal validation reports
+- tax carry-forward record indexes
 
 Rules:
 
 - sidecars are never the sole copy of business meaning
-- sidecars may be keyed by `kernel_scope_id` or narrower truthful record ids,
+- sidecars may be keyed by `product_scope_id` or narrower truthful record ids,
   but
-  they do not replace product ids for kernel lookup
+  they do not replace product ids for authoritative product lookup
 - caches are always regenerable from authoritative kernels and upstream refs
 - materialized indexes are allowed only when they accelerate declared product
   kernels rather than replacing them
@@ -350,7 +359,7 @@ Required hot-path indexes:
 
 - `subject_ref + effective_at`
 - `continuity_segment_id`
-- `checkpoint_assertion` subject and date
+- checkpoint assertion `subject_ref + as_of`
 - `tax_year + basis_pool_ref`
 
 ## Acceptance Rules
@@ -358,7 +367,7 @@ Required hot-path indexes:
 Before approving structural work in reconciliation, checkpointing, accounting,
 or tax, ask:
 
-- does the design keep one authoritative kernel per scope partition
+- does the design keep one authoritative kernel per partition scope
 - can unmigrated consumers survive on compatibility projections alone
 - can migrated consumers read target products without bridge lookups
 - is every hot-path field present in the kernel rather than in a sidecar

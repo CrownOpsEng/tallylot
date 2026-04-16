@@ -19,7 +19,7 @@ Current bridge note:
 - this page defines the target ontology that later implementation increments
   should grow toward
 
-## Core Business Concepts
+## Target Business Concepts
 
 The target model should use these concepts explicitly:
 
@@ -162,20 +162,22 @@ Variant rules:
 
 ## `CheckpointAssertion`
 
-`CheckpointAssertion` is the accepted checkpoint-truth record for one subject
-and one as-of point.
+`CheckpointAssertion` is the accepted checkpoint-truth concept for one subject
+and one as-of point. Persisted kernels carry that concept as
+`CheckpointAssertionRecord`.
 
 Rules:
 
-- it is distinct from a reconciliation `CheckpointProposal`
+- it is distinct from a reconciliation-stage checkpoint proposal record
 - it is distinct from current bridge balance snapshots
 - it is distinct from current bridge balance references
 - it is distinct from the containing accepted `Checkpoint`
-- downstream stages may consume checkpoint assertions, but they must not
+- downstream stages may consume `CheckpointAssertion` truth, but they must not
   redefine them into incompatible local variants
-- accepted checkpoint truth should be modeled as checkpoint assertions first
+- accepted checkpoint truth should be modeled as `CheckpointAssertion` first
   and checkpoint records second
-- checkpoint assertions carry one `AssertionValue`, not one untyped convenience
+- `CheckpointAssertion` carries one `AssertionValue`, not one untyped
+  convenience
   blob
 
 ## Valuation
@@ -242,7 +244,7 @@ activity-label expansion.
 Modeling rules:
 
 - model accepted economic meaning as `EconomicEvent` plus `EconomicLeg`
-- keep settlement, supersession, and lifecycle state explicit instead of
+- keep settlement status, supersession lineage, and lifecycle events explicit instead of
   flattening them into activity labels
 - keep valuation first-class when it changes downstream accounting,
   checkpoint, or tax behavior
@@ -328,16 +330,16 @@ Rules:
 ## First Downstream Slice Restriction
 
 The current first downstream slice intentionally uses a narrow `PositionRef`
-surface for Coinbase-held spot balances.
+surface for the current custodial balance slice.
 
 First-slice rule:
 
 - this slice may use only
-  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_position"]`
+  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_position"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
-- `location_ref` must resolve to the Coinbase-held custodial spot location or
-  sub-location in scope
-- `instrument_ref` must resolve to the in-scope spot asset
+- `location_ref` must resolve to the in-scope custodial location or
+  sub-location
+- `instrument_ref` must resolve to the in-scope instrument
 - `contract_ref` stays `null` in this slice
 - later slices may widen `position_key` values and contract participation,
   but they must keep the canonical tuple shape unchanged
@@ -384,18 +386,17 @@ Required domain ownership:
 - `domain/entities/` for entity models, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
-- `domain/claims/` for claims, claim scopes, bundles, and compilation
-  decisions
-- `domain/economics/` for events, legs, valuations, settlement state, and
-  lifecycle state
+- `domain/claims/` for claims, claim scopes, bundles, and bundle decisions
+- `domain/economics/` for events, legs, valuations, settlement status, and
+  lifecycle events
 - `domain/assertions/` for `AssertionValue` and its variants
-- `domain/support/` for gaps, reviews, readiness, and `SubjectRef`
+- `domain/support/` for gap, review, and readiness models plus `SubjectRef`
 - `domain/reconciliation/` for continuity segments, event links, balance
-  targets, and checkpoint proposals
-- `domain/checkpoints/` for accepted checkpoint truth
+  targets, and checkpoint proposal records
+- `domain/checkpoint/` for accepted checkpoint truth
 - `domain/accounting/` for journal models
 - `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
-  carry-forward state, and outputs
+  carry-forward records, and outputs
 
 Required application ownership:
 
@@ -405,15 +406,15 @@ Required application ownership:
 - `application/evidence/` for shared statement extraction, evidence selection,
   and provenance locator handling
 - `application/claims/` for claim construction from evidence
-- `application/economics/` for economic compilation
+- `application/economics/` for economic-fact construction
 - `application/compatibility/` for bridge compatibility projections only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
-  evaluation, readiness reducers, and checkpoint proposals
-- `application/checkpoints/` for checkpoint assembly, manual balance
+  evaluation, readiness reducers, and checkpoint proposal records
+- `application/checkpoint/` for checkpoint assembly, manual balance
   submission validation, and checkpoint acceptance
-- `application/accounting/` for journal expansion, validation, and summaries
+- `application/accounting/` for journal expansion, validation, and reporting
 - `application/tax/` for tax input construction, basis transitions, policy
   selection, and tax-output generation
 - `application/rendering/` for downstream rendering orchestration

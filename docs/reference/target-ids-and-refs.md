@@ -43,6 +43,9 @@ Rules:
 - the component array is `[source_slug, adapter_id, emitter_key]`
 - `source_slug` uses the shared source slug across evidence-local
   products
+- `emitter_id` is evidence-local only; later products keep lineage through
+  `claim_set_ref` or `claim_set_refs` rather than carrying `source_slug`,
+  `adapter_id`, or `emitter_id` forward
 - `emitter_key` must be kebab-case
 - the current first slice `emitter_key` is `claim`
 

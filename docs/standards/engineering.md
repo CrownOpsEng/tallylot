@@ -175,6 +175,14 @@ Current application of this rule:
   `CheckpointProposal`, keep that stem in the record family, id fields,
   ref fields, slice contracts, roadmap, and package ownership docs. Do not
   let one target family mix competing stems.
+- Keep sibling families parallel in style as well as stem. If one family uses
+  short names such as `EvidenceFacet`, `ClaimFacet`, and `RenderFacet`, do not
+  mix in a longer alternate or a different boundary noun for one sibling unless
+  the whole family intentionally changes style.
+- Keep the repo's `render` versus `rendering` split intentional. Use `render`
+  for executable surfaces such as CLI verbs, facets, and operation modules, and
+  use `rendering` for the bounded package or orchestration surface such as
+  `application/rendering/`.
 - Follow the same naming approach for modules, functions, classes, and commands:
   choose concise descriptive names over decorative jargon.
 - Keep shape and casing aligned by role:
@@ -193,11 +201,15 @@ Current application of this rule:
   - `Record` for persisted record families
   - `Explanation` for explanatory sidecars keyed to one kernel or support record
   - `Projection` for compatibility outputs or reshaped reader-facing views
-  - `Summary` for aggregate rollups over subject or scope truth
+  - `Rollup` for derived grouped records over subject or scope truth
+  - `Summary` for reader-facing or compatibility aggregates that do not define a
+    stable grouped kernel contract
   - `Sidecar` for attached non-kernel detail
-- Reserve `summary` for aggregate rollups or their ids. Inside explanation or
-  review sidecars, prefer concrete prose-field names such as `headline`,
-  `known_facts`, or `recommended_follow_up` over `*_summary`.
+- Reserve `rollup` for canonical target-layer grouped records and their ids.
+  Reserve `summary` for current-state, presentation, or compatibility
+  aggregates that are not the canonical grouped record family. Inside
+  explanation or review sidecars, prefer concrete prose-field names such as
+  `headline`, `known_facts`, or `recommended_follow_up` over `*_summary`.
 - Prefer concrete owning nouns over abstract containers. Avoid names such as
   `Core`, `Data`, `Info`, `Context`, `Payload`, or `Item` when `Record`,
   `Explanation`, `Projection`, or the domain noun would say what the surface
@@ -231,6 +243,9 @@ Current application of this rule:
   inside a record. Prefer `member_refs`, `observation_refs`, `event_refs`,
   `assertion_refs`, or `gap_ids` over longer forms when the owning record
   already supplies the missing context.
+- Use singular `*_ref` for exactly one upstream or child reference and plural
+  `*_refs` for an ordered list. Do not use a plural name for one required ref
+  or a singular name for a list-shaped contract.
 - For stage-owned product-emission identities, prefer `emitter_id` and
   `emitter_key` over the more abstract `producer_id` and `producer_key`.
 - When product metadata or a record already supplies the owner, prefer the
@@ -303,6 +318,11 @@ Current application of this rule:
   lower-snake noun phrase and do not repeat the owner noun. Prefer values such
   as `activity`, `beneficial_owner`, or `statement_document` over pseudo-type
   labels such as `ActivityClaim` or `StatementObservation`.
+- When one emitted product already gives a persisted concept its own sibling
+  record family, do not repeat that sibling family as a `kind` value inside a
+  different record family. Prefer distinct output-group kinds over values that
+  merely restate sibling families such as carry-forward or unsupported-input
+  records.
 - For bounded `basis` or similar reason vocabularies, drop redundant suffixes
   such as `_match`, `_preferred`, or `_duplicate` when the field already
   establishes that the value is the decision basis.
@@ -359,11 +379,11 @@ Current application of this rule:
 - Prefer `name` over `display_name` in forward-looking target contracts unless
   the same shape also carries a distinct canonical name, legal name, or other
   parallel naming field that makes `display_name` materially clearer.
-- Inside aggregate summary records, use `rollup_kind` and `rollup_key` for the
-  grouping dimensions so `summary` remains the record shape, not a second
-  generic field prefix.
-- Inside aggregate summary records, drop repeated subject or entity nouns from
-  count fields when the summary already establishes that context. Prefer
+- Inside aggregate rollup records, use `rollup_kind` and `rollup_key` for the
+  grouping dimensions so `rollup` remains the record shape instead of becoming
+  a second generic field prefix.
+- Inside aggregate rollup records, drop repeated subject or entity nouns from
+  count fields when the rollup already establishes that context. Prefer
   `ready_count` over `ready_subject_count`.
 - Prefer `Proposal` for stage-owned pre-acceptance records that later become
   accepted truth. Reserve `Candidate` for raw search-space options or other
@@ -409,11 +429,18 @@ Current application of this rule:
   record names, helper refs, stable ids, or partition labels unless those
   nouns are themselves the persisted concept. Prefer lineage-, origin-, or
   subject-owned names over carry-through source labels in downstream kernels.
+- Reporting rollups may still group by `source_slug` where operators need that
+  reporting lens, but that rollup dimension must not leak into downstream
+  product ids, record ids, or authoritative directory stems.
 - When a canonical target contract must preserve a source-provided label,
   preserve the value without freezing the source noun into the field name.
   Prefer target-aligned names such as `location_label` over
   source-specific names such as `wallet_label` when `Location` already owns
   the shared boundary.
+- For stable keys and default directory stems, prefer the shortest durable
+  domain noun that preserves identity. Do not carry venue-, market-, or
+  asset-class-specific qualifiers into default keys such as `position_key`
+  when the broader noun already owns the slice.
 - In forward-looking prose, use `primary evidence`, `evidence-backed`, or the
   owning support noun when describing trust or support quality. Reserve
   `source_*` names for actual source identity such as `source_slug`,
@@ -422,6 +449,10 @@ Current application of this rule:
   already owns the boundary. For example, `TaxInputRecord` is clearer than a
   more abstract tax-record noun when the record is the kernel row inside
   `TaxInputs`.
+- In forward-looking target persistence, authoritative directory stems should
+  follow the owning product or support family. Keep source- or checkpoint-local
+  directory stems only for current-state, compatibility, or genuinely
+  source-owned or checkpoint-owned surfaces.
 - Do not bake migration qualifiers such as `bridge`, `legacy`, `current`, or
   `compat` into canonical target-layer concepts, helper ids, or product ids
   unless the name is intentionally current-state or adapter-local.
@@ -430,6 +461,9 @@ Current application of this rule:
   `portfolio/<input_kind>/`, `generic/<contract>/`, or `stubs/<reserved>/`.
 - Keep naming stable across implementation, tests, adapter metadata, and owner
   docs.
+- When `domain/`, `application/`, and tests each own the same capability
+  family, keep the package stem aligned across those layers unless the layers
+  truly own different concepts.
 - In prose, prefer the canonical owning noun once a target product or record
   family already exists. Use phrases such as `claim bundle`, `claim scope`,
   `evidence-local meaning`, and `kernel-scope` over looser labels such as
@@ -451,7 +485,7 @@ family, ref, id, package, or file name.
    - would the name still read correctly if the source were not crypto-specific
 2. Shape view:
    - does the noun match the held shape exactly: concept, id, ref, record,
-     summary, sidecar, projection, file, package, observation kind, or
+     rollup, summary, sidecar, projection, file, package, observation kind, or
      controlled-vocabulary value
 3. Ownership view:
    - does the name point at the owning stage, layer, or boundary instead of a

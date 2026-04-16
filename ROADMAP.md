@@ -71,17 +71,17 @@ Must freeze:
   the compatibility-sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
 - shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
-  `ReviewExplanation`, `ReadinessRecord`, `ReadinessSummaryRecord`,
+  `ReviewExplanation`, `ReadinessRecord`, `ReadinessRollupRecord`,
   `SubjectRef`, truthful `claim_scope_id` and `balance_target_id`
   attachments, and the downstream shared-subject seams needed for accounting
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `kernel_scope_id`
 - target naming rules that distinguish concepts, refs, ids, records,
-  projections, and sidecars without baking bridge-era qualifiers into
-  target names
-- authoritative persistence model, partition scopes, sidecar rules, and
-  default filesystem placement
+  projections, and sidecars without baking bridge-era qualifiers or
+  source-specific crypto nouns into shared target names
+- authoritative persistence model, product-owned directory stems, partition
+  scopes, sidecar rules, and default filesystem placement
 - migration authority rules, compatibility projections, reader cutovers, and
   retirement gates
 - package ownership and layer placement for shared functionality

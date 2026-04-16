@@ -1,6 +1,6 @@
 ---
 title: "First Downstream Slice Contract"
-summary: "Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including bundle-based event identity and bridge compatibility projections."
+summary: "Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including claim-bundle event identity and bridge compatibility projections."
 doc_type: reference
 audience: human
 owner: repo
@@ -29,7 +29,8 @@ This slice is:
 - accepted `EconomicFacts` emission for supported Coinbase retail activity and
   recognized statement-backed balance observations
 - bounded `ReconciliationState` emission for continuity segments, exact balance
-  targets, and checkpoint proposals over the economic facts in this slice
+  targets, and checkpoint proposal records over the economic facts in this
+  slice
 - bounded `Checkpoint` emission for statement-backed position-quantity
   assertions
 - continued compatibility with current `TransactionFact`,
@@ -54,7 +55,7 @@ The slice may emit only these downstream kernel families:
 | `EconomicFacts` | `ValuationRecord` | zero rows by default; valuations land only when an unchanged parity slice proves they are required |
 | `ReconciliationState` | `ContinuitySegmentRecord` | one segment per Coinbase position subject in this slice and bounded time span |
 | `ReconciliationState` | `BalanceTargetRecord` | only `kind = exact_balance`, with direct `expected_value` and `observed_value` using `AssertionValue` |
-| `ReconciliationState` | `CheckpointProposalRecord` | only proposals supported by exact-balance targets and statement evidence in this slice |
+| `ReconciliationState` | `CheckpointProposalRecord` | only checkpoint proposal records supported by exact-balance targets and statement evidence in this slice |
 | `Checkpoint` | `CheckpointRecord` | accepted checkpoint record for assertions in this slice only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
@@ -64,7 +65,7 @@ The slice may emit only these downstream kernel families:
 
 This slice freezes one position identity shape:
 
-- `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_position"]`
+- `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_position"]`
 
 Rules:
 
@@ -72,16 +73,16 @@ Rules:
   `kind = beneficial_owner`
 - `location_ref` comes from this slice's claims with `kind = location`
 - `instrument_ref` comes from this slice's claims with
-  `kind = instrument_identity`
+  `kind = instrument`
 - `contract_ref` stays `null` for this slice
 - one continuity segment covers one `PositionRef`; do not mix positions into one
   segment
 - when `SubjectRef` is needed for downstream attachment, the subject kind for
   this slice is `position`, pointing at the stable `PositionRef` identity
 
-## Product Metadata And Compilation Inputs
+## Product Header And Downstream Inputs
 
-Product metadata fields in this slice:
+Product header fields in this slice:
 
 - `EconomicFacts` carries `economic_facts_id`, `schema_version`, and
   `claim_set_refs`
@@ -90,15 +91,15 @@ Product metadata fields in this slice:
 - `Checkpoint` carries `checkpoint_id`, `schema_version`,
   `reconciliation_state_refs`, and `as_of`
 
-Compilation-input rules:
+Downstream-input rules:
 
-- downstream compilation consumes authoritative `ClaimBundleRecord`,
+- downstream product construction consumes authoritative `ClaimBundleRecord`,
   `ClaimRecord`, `BundleDecisionRecord`, and `observation_refs`
   from authoritative `ClaimSet` kernels
-- downstream compilation must not depend on `EconomicActivityDraft`,
+- downstream product construction must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
-- upstream `*_ref` metadata fields store target product ids, never
-  `kernel_scope_id`
+- upstream `*_ref` header fields store target product ids, never
+  `product_scope_id`
   and never raw kernel fingerprints
 
 ## Kernel Cardinality And Ownership
@@ -106,7 +107,7 @@ Compilation-input rules:
 Slice cardinality rules:
 
 - one or more accepted `EconomicEventRecord` rows may be emitted from one
-  accepted bundle
+  accepted claim bundle
 - one or more `EconomicLegRecord` rows may be emitted under one `event_id`
 - zero `ValuationRecord` rows are expected by default in this slice
 - one `ContinuitySegmentRecord` exists per `PositionRef` in this slice and bounded
@@ -120,9 +121,9 @@ Slice cardinality rules:
 
 Ownership rules:
 
-- `event_id` is derived from the selected bundle, not from
+- `event_id` is derived from the selected claim bundle, not from
   adjudication bookkeeping
-- `decision_id` may be referenced for audit, but it does not define
+- `bundle_decision_id` may be referenced for audit, but it does not define
   event identity
 - `BalanceTargetRecord` carries direct `AssertionValue` fields and must not
   point to undefined value refs or sidecars for hot-path meaning
@@ -140,11 +141,14 @@ This slice freezes the active bounds and the first position identity shape.
 Slice-specific rules:
 
 - `economic_facts_id = [claim_set_refs]`
-- `event_id = [bundle_id, event_slot]`
+- `event_id = [claim_bundle_id, event_slot]`
 - `leg_id = [event_id, role, subject_ref, leg_slot]`
 - `valuation_id = [origin_ref, purpose, amount, currency, valued_at, precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id = [subject_ref, segment_start_at, segment_end_at]`
+- `continuity_segment_id` remains the reusable reconciliation scope id, while
+  `reconciliation_state_id` is the emitted product id over that scope plus its
+  upstream lineage
 - `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
 - `checkpoint_proposal_id = [continuity_segment_id, subject_ref, as_of, target_refs]`
 - `checkpoint_id = [reconciliation_state_refs, as_of]`
@@ -152,10 +156,11 @@ Slice-specific rules:
 
 Not allowed in this slice:
 
-- event identity based on `decision_id` or rejected-bundle lists
+- event identity based on `bundle_decision_id` or rejected-bundle lists
 - `expected_value_ref`
 - `observed_value_ref`
-- proposal ids that include raw evidence-ref lists as identity components
+- checkpoint proposal ids that include raw evidence-ref lists as identity
+  components
 
 ## Bridge Compatibility Projections
 
@@ -242,14 +247,15 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 
 Replay checks must also prove that incidental input ordering changes do not
 change event ids, leg ids, continuity segment ids, balance target ids,
-proposal ids, assertion ids, or rendered output.
+checkpoint proposal ids, checkpoint assertion ids, or rendered output.
 
 ## Allowed Drift
 
 Not allowed:
 
 - drift in accepted economic kernel fields
-- drift in continuity segment, balance target, proposal, or assertion ids
+- drift in continuity segment ids, balance target ids, checkpoint proposal ids,
+  or checkpoint assertion ids
 - quantity, accepted-value, trust-level, or acceptance-basis drift
 - bridge-output drift on unchanged evidence in this slice
 - balance inspect/check/summarize drift on unchanged evidence in this slice
