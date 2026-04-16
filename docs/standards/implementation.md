@@ -272,8 +272,9 @@ Expected behavior:
   stays attached to the PR record and becomes the squash commit on `main` for
   the single-checkpoint exception
 - keep PR, commit, and doc language neutral and direct: `Why:` should state the
-  problem or constraint, `What:` should state the concrete repo change, and
-  neither section should use rhetorical or promotional wording
+  motivating repo problem, trigger, constraint, or risk that makes the patch
+  necessary now; `What:` should state the concrete repo change; and neither
+  section should use rhetorical or promotional wording
 - before merging a PR or rewriting mainline history, verify whether the pull
   request record must stay attached to the landing commit; if yes, do not
   rewrite that merge commit after merge

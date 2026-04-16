@@ -41,6 +41,7 @@ CONTROL_PLANE_EXACT_PATHS = (
     "AGENTS.md",
     "ROADMAP.md",
     "Makefile",
+    ".gitmessage.txt",
     ".gitignore",
     ".vscode/settings.json",
     ".github/pull_request_template.md",

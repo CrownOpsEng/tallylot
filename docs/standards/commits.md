@@ -62,13 +62,29 @@ Preferred body sections:
 
 Write `Why:` and `What:` directly:
 
-- `Why:` states the problem, constraint, or risk the change addresses
-- `Why:` should answer why the patch is needed in repo terms, not restate
-  the implementation steps or branch choreography
+- `Why:` states the motivating repo problem, trigger, constraint, or risk that
+  makes this commit necessary now
+- `Why:` should answer the question "Why is this commit being made?" in repo
+  terms, not restate the implementation steps, rename list, or branch
+  choreography
+- `Why:` should still make sense if `What:` is hidden; if it only paraphrases
+  the diff, rewrite it
+- `Why:` should name the consequence of leaving the repo unchanged when that
+  consequence is material: ambiguity, broken behavior, drift, blocked follow-on
+  work, policy mismatch, or review risk
 - `What:` states the behavior, structure, or contract changed in this patch
-- do not use `Why:` to restate the implementation
+- do not use `Why:` to restate the implementation, rename list, or document
+  inventory
 - do not use `What:` to repeat generic intent without naming the concrete
   repo change
+
+Bad `Why:` bullets are diff summaries such as:
+
+- `rename ReadinessSummaryRecord`
+- `update naming docs`
+- `refactor commit wording`
+
+Those belong in `What:`, not `Why:`.
 
 Example:
 
@@ -76,7 +92,8 @@ Example:
 refactor(adapters): split structured CSV mapping
 
 Why:
-- reduce adapter bloat and isolate row parsing rules
+- the adapter mixed translation, row parsing, and file-family concerns in one
+  hotspot, which made follow-on changes harder to review and harder to test
 
 What:
 - move row parsing into adapter-local helpers
@@ -182,7 +199,8 @@ Preferred PR body template:
 
 ```text
 Why:
-- state the problem or constraint this PR resolves
+- state the motivating problem, trigger, or risk this PR resolves and why the
+  PR is needed now
 
 What:
 - state the engineering changes that matter for review

@@ -1,10 +1,11 @@
 # type(scope): imperative summary
 #
 # Why:
-# - reason for the change
+# - motivating repo problem, trigger, constraint, or risk
+# - answer "Why is this commit being made?" not "What changed?"
 #
 # What:
-# - summary of the implementation
+# - concrete repo behavior, structure, or contract changed
 #
 # Checks:
 # - UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <focused-tests>

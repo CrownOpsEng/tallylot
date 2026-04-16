@@ -158,8 +158,9 @@ def test_pr_body_rejects_issue_linkage_in_why() -> None:
     )
 
     assert errors == (
-        "`Why:` must describe the problem or constraint; move issue linkage "
-        "bullets to `Issue linkage:`",
+        "`Why:` must describe the motivating problem, trigger, constraint, or "
+        "risk that makes the PR necessary; move issue linkage bullets to "
+        "`Issue linkage:`",
     )
 
 

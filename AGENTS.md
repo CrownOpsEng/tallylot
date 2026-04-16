@@ -129,7 +129,8 @@ Do not pre-load every repo doc by default.
     instead of one umbrella commit
   - end the task on a clean, meaningful checkpoint commit
 - Keep commit, PR, and doc language neutral and direct:
-  - `Why:` states the problem, constraint, or risk being addressed
+  - `Why:` states the motivating repo problem, trigger, constraint, or risk
+    that makes the patch necessary now
   - `What:` states the concrete repo behavior or structure changed
   - avoid rhetorical, promotional, or exaggerated wording in repo history
 - Add tests only when they protect meaningful behavior, contracts,

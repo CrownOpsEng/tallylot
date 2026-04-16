@@ -19,6 +19,7 @@ CONTROL_PLANE_CODEOWNER_PATTERNS = (
     ".github/pull_request_template.md",
     ".github/CODEOWNERS",
     "AGENTS.md",
+    ".gitmessage.txt",
     "docs/standards/**",
     ".claude/commands/**",
     "repo_support/local_autofix.py",
