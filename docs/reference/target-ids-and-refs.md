@@ -32,14 +32,14 @@ Use the owner pages first:
 This page keeps only reusable target ids and ref tuples that are not primary
 owner concepts elsewhere.
 
-## Claim Emitter Identity
+## Emitter Identity
 
-`claim_emitter_id` identifies the shared compiler or translation family that
-emitted one `ClaimSet`.
+`emitter_id` identifies the shared compiler or translation family that emitted
+one `ClaimSet`.
 
 Rules:
 
-- `claim_emitter_id` uses the stable-id format owned by
+- `ClaimSet.emitter_id` uses the stable-id format owned by
   [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
 - the component array is `[source_slug, adapter_id, emitter_key]`
 - `source_slug` uses the shared source slug across source-local

@@ -55,7 +55,7 @@ The slice may emit only these downstream kernel families:
 | `ReconciliationState` | `ContinuitySegmentRecord` | one segment per in-scope Coinbase position subject and bounded time span |
 | `ReconciliationState` | `BalanceTargetRecord` | only `kind = exact_balance`, with direct `expected_value` and `observed_value` using `AssertionValue` |
 | `ReconciliationState` | `CheckpointProposalRecord` | only proposals supported by in-scope exact-balance targets and statement evidence |
-| `Checkpoint` | `CheckpointRecord` | accepted root record for in-scope checkpoint assertions only |
+| `Checkpoint` | `CheckpointRecord` | accepted checkpoint record for in-scope checkpoint assertions only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
 `EventLinkRecord` remains out of scope for this bounded slice.
@@ -91,7 +91,7 @@ In-scope product metadata fields:
 Compilation-input rules:
 
 - downstream compilation consumes authoritative `ClaimBundleRecord`,
-  `ClaimRecord`, `BundleDecisionRecord`, and `evidence_observation_refs`
+  `ClaimRecord`, `BundleDecisionRecord`, and `observation_refs`
   from authoritative `ClaimSet` kernels
 - downstream compilation must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
@@ -119,7 +119,7 @@ Ownership rules:
 
 - `event_id` is derived from the selected claim bundle, not from
   adjudication bookkeeping
-- `bundle_decision_id` may be referenced for audit, but it does not define
+- `decision_id` may be referenced for audit, but it does not define
   event identity
 - `BalanceTargetRecord` carries direct `AssertionValue` fields and must not
   point to undefined value refs or sidecars for hot-path meaning
@@ -139,7 +139,7 @@ Slice-specific rules:
 - `economic_facts_id = [claim_set_refs]`
 - `event_id = [bundle_id, event_index]`
 - `leg_id = [event_id, role, subject_ref, leg_index]`
-- `valuation_id = [source_ref, purpose, amount, currency, valued_at, valued_precision]`
+- `valuation_id = [source_ref, purpose, amount, currency, valued_at, precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id = [source_slug, subject_ref, segment_start_at, segment_end_at]`
 - `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of_at, expected_value_fingerprint]`
@@ -149,7 +149,7 @@ Slice-specific rules:
 
 Not allowed in this slice:
 
-- event identity based on `bundle_decision_id` or rejected-bundle lists
+- event identity based on `decision_id` or rejected-bundle lists
 - `expected_value_ref`
 - `observed_value_ref`
 - proposal ids that include raw evidence-ref lists as identity components
@@ -192,21 +192,21 @@ The first downstream slice allows only:
   - `filing_ready`
 - `basis`:
   - `source_document`
-  - `reconciled_continuity`
+  - `reconciled_rollforward`
 - `support_kind`:
-  - `statement_balance`
-- `continuity_proof`:
+  - `document_balance`
+- `continuity_kind`:
   - `direct_observation`
   - `reconciled_rollforward`
 
 Not allowed in this slice:
 
 - `operator_assertion`
-- `adopted_opening_state`
-- `platform_balance`
-- `wallet_snapshot`
-- `inventory_proof`
-- `partial_continuity`
+- `adopted_opening`
+- `source_balance`
+- `wallet_balance`
+- `inventory_evidence`
+- `partial_rollforward`
 
 ## Parity Gates
 

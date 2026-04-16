@@ -53,14 +53,14 @@ The bounded slice may emit only these observation kinds:
 | Observation kind | Meaning | Owning member kind |
 | --- | --- | --- |
 | `statement_document` | recognized statement document detail preserved under the selected document member | `coinbase_statement_document` |
-| `coinbase_statement_balance_row` | one parsed statement quantity row keyed to the owning statement document and row key | `coinbase_statement_document` |
+| `statement_balance_row` | one parsed statement quantity row keyed to the owning statement document and row key | `coinbase_statement_document` |
 
 Frozen kind-specific observation fields:
 
 | Observation kind | Frozen kernel fields |
 | --- | --- |
 | `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of_at`, `statement_as_of_precision` |
-| `coinbase_statement_balance_row` | `account_label`, `wallet_label`, `balance_kind`, `asset_symbol`, `quantity`, `observed_at`, `observed_precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
+| `statement_balance_row` | `account_label`, `wallet_label`, `balance_kind`, `asset_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
 
 Observation-field rules:
 
@@ -71,11 +71,11 @@ Observation-field rules:
   current parsed statement times, and the paired `*_precision` fields follow
   the repo-wide temporal
   precision contract
-- `coinbase_statement_balance_row` lifts account, wallet, balance kind, asset,
+- `statement_balance_row` lifts account, wallet, balance kind, asset,
   quantity, as-of time, and optional note or valuation text directly from the
   current statement-row contract
 - `statement_document` may leave shell `observed_at` or
-  `observed_precision` empty when the kind-specific document timing
+  `precision` empty when the kind-specific document timing
   fields carry the truthful time meaning
 - no generic observation payload blob is allowed for in-scope kinds
 
@@ -96,7 +96,7 @@ The bounded slice may emit only this in-scope subset of claim kinds:
 | Claim kind | Meaning in the slice |
 | --- | --- |
 | `ActivityClaim` | source-local activity assertion derived from selected Coinbase retail rows |
-| `BalanceObservationClaim` | quantity-backed balance observation derived from recognized statement rows |
+| `BalanceClaim` | quantity-backed balance claim derived from recognized statement rows |
 | `InstrumentIdentityClaim` | asset identity assertion tied to one activity or statement observation |
 | `LocationClaim` | assertion about the Coinbase-held location or sub-location in scope |
 | `BeneficialOwnerClaim` | assertion for the beneficial owner needed by downstream position identity |
@@ -117,21 +117,21 @@ Frozen kind-specific claim fields:
 | Claim kind | Frozen kernel fields |
 | --- | --- |
 | `ActivityClaim` | `source_activity_kind`, `location_claim_ref`, `activity_leg_specs` |
-| `BalanceObservationClaim` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `observed_precision` |
-| `InstrumentIdentityClaim` | `scheme`, `value`, `venue`, `kind_hint`, `display_name`, `precision_hint` |
+| `BalanceClaim` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
+| `InstrumentIdentityClaim` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
 | `LocationClaim` | `location_ref`, `account_label`, `wallet_label` |
 | `BeneficialOwnerClaim` | `beneficial_owner_ref` |
-| `ValuationClaim` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `valued_precision`, `location_claim_ref`, `instrument_claim_refs` |
+| `ValuationClaim` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
 `activity_leg_specs` entry shape:
 
-- `leg_slot`
+- `slot`
 - `leg_kind`
 - `quantity`
 - `instrument_claim_refs`
 - `location_claim_ref`
 - `subtype`
-- `attributed_to_leg_slot`
+- `attributed_to_slot`
 
 Claim-field and linkage rules:
 
@@ -140,11 +140,11 @@ Claim-field and linkage rules:
 - `activity_leg_specs` lift ordered leg meaning from the current draft-leg
   contract, including sign, subtype, optional attributed-leg linkage, and
   optional location
-- retail activity claims use `evidence_member_refs` plus
-  `[retail_member_id, raw_row_ref]` interpretation-scope keys
-- statement-derived claims use both `evidence_member_refs` and
-  `evidence_observation_refs`
-- `BalanceObservationClaim` must include the row observation id and may also
+- retail activity claims use `member_refs` plus
+  `[retail_member_id, raw_row_ref]` claim-scope keys
+- statement-derived claims use both `member_refs` and
+  `observation_refs`
+- `BalanceClaim` must include the row observation id and may also
   include the paired `statement_document` observation id
 - `ValuationClaim` remains zero-row by default until a later owner-doc pass
   freezes numeric statement valuation inputs
@@ -160,10 +160,10 @@ Slice cardinality rules:
 - one or more `EvidenceMemberRecord` rows may belong to one
   `selection_id`
 - zero or more `EvidenceObservationRecord` rows may belong to one `member_id`
-- one `ClaimSet` is emitted per `[evidence_set_id, claim_emitter_id]`
-- one `interpretation_scope_id` exists per source-local claim scope
-- one or more `ClaimBundleRecord` rows may exist per `interpretation_scope_id`
-- one `BundleDecisionRecord` exists per `interpretation_scope_id`
+- one `ClaimSet` is emitted per `[evidence_set_id, emitter_id]`
+- one `claim_scope_id` exists per source-local claim scope
+- one or more `ClaimBundleRecord` rows may exist per `claim_scope_id`
+- one `BundleDecisionRecord` exists per `claim_scope_id`
 - one or more `ClaimRecord` rows may exist per `bundle_id`
 
 Ownership rules:
@@ -172,7 +172,7 @@ Ownership rules:
 - `EvidenceMemberRecord` owns selected, superseded, or blocked membership
 - `BundleDecisionRecord` remains claim-owned and records bundle selection,
   deferral, blocking, or supersession only
-- claim-stage gaps and reviews may attach to `interpretation_scope_id` when
+- claim-stage gaps and reviews may attach to `claim_scope_id` when
   no narrower truthful subject has resolved yet
 - `BundleDecisionRecord` must not carry event fields, leg fields, or
   other economic facts
@@ -222,7 +222,7 @@ This slice only freezes the admissible keys and bounded vocabularies.
 
 Slice-specific identity rules:
 
-- `claim_emitter_id` is the shared emitter id over
+- `emitter_id` is the shared emitter id over
   `[source_slug, adapter_id, "claim-compiler"]`
 - `source_slug` uses the shared source slug across source-local
   products
@@ -233,7 +233,7 @@ Slice-specific identity rules:
 - `locator` for `coinbase_statement_document` is
   `[raw_file, raw_member_ref]`
 - `key` for `statement_document` is `["document"]`
-- `key` for `coinbase_statement_balance_row` is `[row_key]`
+- `key` for `statement_balance_row` is `[row_key]`
 - `retail_member_id` means the `member_id` of the selected
   `coinbase_retail_export` member
 - `document_member_id` means the `member_id` of the selected
@@ -241,17 +241,17 @@ Slice-specific identity rules:
 - `raw_row_ref` means the stable retail-row reference preserved by the current
   Coinbase retail bridge inputs for one selected CSV row
 - `row_key` means the stable statement-row key preserved on the
-  `coinbase_statement_balance_row` observation
+  `statement_balance_row` observation
 
-Slice-specific interpretation-scope keys:
+Slice-specific claim-scope keys:
 
 - retail activity scope uses `[retail_member_id, raw_row_ref]`
 - statement balance scope uses `[document_member_id, row_key]`
 
 Slice-specific claim-key rule:
 
-- `key` uses `[scope_key, kind, claim_slot]`
-- `claim_slot` is `0` when only one claim of that kind exists in the bundle
+- `key` uses `[claim_scope_key, kind, slot]`
+- `slot` is `0` when only one claim of that kind exists in the bundle
 - repeated same-kind claims use `1`, `2`, and so on in canonical order
 
 Bundle rule:
@@ -266,7 +266,7 @@ Unchanged evidence must preserve all of the following:
 
 - selected, superseded, and blocked evidence membership
 - `selection_id`, `member_id`, and `observation_id`
-- `claim_id`, `bundle_id`, and `bundle_decision_id`
+- `claim_id`, `bundle_id`, and `decision_id`
 - claim ordering and bundle ordering
 - timestamps and temporal precision
 - quantities and sign

@@ -100,7 +100,7 @@ Non-subject scopes are allowed only when no narrower truthful subject exists.
 Required scope ids:
 
 - `selection_id`
-- `interpretation_scope_id`
+- `claim_scope_id`
 - `continuity_segment_id`
 - `balance_target_id`
 - `checkpoint_proposal_id`
@@ -111,7 +111,7 @@ Rules:
 - every non-subject gap or review attachment uses one stable scope id
 - `selection_id` identifies one deterministic evidence-selection
   decision boundary
-- `interpretation_scope_id` identifies one claim-stage meaning decision
+- `claim_scope_id` identifies one claim-stage meaning decision
   boundary before bundle selection or subject resolution is final
 - `continuity_segment_id` identifies one bounded reconciliation window
 - `balance_target_id` identifies one reconciliation-owned balance assertion
@@ -121,7 +121,7 @@ Rules:
 - `dataset_id` identifies one shared support attachment scope over one
   canonical product kernel and is not a substitute for a narrower scope
 - do not attach a gap or review to `dataset` scope when `subject`,
-  `selection`, `interpretation_scope`, `continuity_segment`,
+  `selection`, `claim_scope`, `continuity_segment`,
   `balance_target`, or `checkpoint_proposal` would be truthful
 
 ### `dataset_id`
@@ -143,7 +143,7 @@ Rules:
 - `dataset_id` is used only for shared reporting and sidecar attachment when no
   narrower truthful subject or scope exists
 - `dataset_id` must not replace `selection_id`,
-  `interpretation_scope_id`, `continuity_segment_id`, `balance_target_id`,
+  `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
   `checkpoint_proposal_id`, or one record id when those are truthful
 
 ## Shared Stage Vocabulary
@@ -197,7 +197,7 @@ Controlled vocabularies:
 - `scope_kind`:
   - `subject`
   - `selection`
-  - `interpretation_scope`
+  - `claim_scope`
   - `continuity_segment`
   - `balance_target`
   - `checkpoint_proposal`
@@ -207,8 +207,8 @@ Controlled vocabularies:
   - `unresolved_identity`
   - `unresolved_linkage`
   - `contradiction`
-  - `policy_required_determination`
-  - `operator_override_required`
+  - `policy_decision_required`
+  - `operator_decision_required`
 - `status`:
   - `open`
   - `resolved`
@@ -333,14 +333,14 @@ Kernel fields:
 - `review_key`
 - `status`
 - `confidence`
-- `paired_gap_ids`
+- `gap_ids`
 
 Controlled vocabularies:
 
 - `scope_kind`:
   - `subject`
   - `selection`
-  - `interpretation_scope`
+  - `claim_scope`
   - `continuity_segment`
   - `balance_target`
   - `checkpoint_proposal`
@@ -371,7 +371,7 @@ Ordering:
 - sort by tuple
   `[owner_stage, scope_kind, subject_ref, scope_id, review_kind, review_id]`
 - use JSON `null` ordering for inactive `subject_ref` and `scope_id` fields
-- sort `paired_gap_ids` lexicographically
+- sort `gap_ids` lexicographically
 
 Serialization:
 
@@ -383,7 +383,7 @@ Fingerprint inputs:
 
 - review records in canonical order
 - `schema_version`
-- sorted `paired_gap_ids`
+- sorted `gap_ids`
 
 Rules:
 
@@ -509,16 +509,16 @@ Purpose:
 
 Fields:
 
-- `readiness_summary_id`
+- `summary_id`
 - `stage`
 - `rollup_kind`
 - `rollup_key`
 - `status`
 - `blocking_gap_ids`
-- `ready_subject_count`
-- `partial_subject_count`
-- `blocked_subject_count`
-- `not_applicable_subject_count`
+- `ready_count`
+- `partial_count`
+- `blocked_count`
+- `not_applicable_count`
 
 Controlled `rollup_kind` vocabulary:
 
@@ -542,8 +542,8 @@ Rollup-key rules:
 
 Stable ids:
 
-- `readiness_summary_id` identifies one derived readiness summary
-- `readiness_summary_id` uses component array
+- `summary_id` identifies one derived readiness summary
+- `summary_id` uses component array
   `[stage, rollup_kind, rollup_key]`
 
 Ordering:

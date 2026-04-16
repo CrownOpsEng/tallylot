@@ -216,8 +216,19 @@ Current application of this rule:
 - When a record owns one obvious child-id or child-ref family, prefer the
   child noun directly, such as `assertion_ids`, `proposal_refs`, or
   `target_refs`, over repeating the full stage or product stem.
+- Apply the same rule to one obvious upstream-ref family or review-pair field
+  inside a record. Prefer `member_refs`, `observation_refs`, `event_refs`,
+  `assertion_refs`, or `gap_ids` over longer forms when the owning record
+  already supplies the missing context.
 - For stage-owned product-emission identities, prefer `emitter_id` and
   `emitter_key` over the more abstract `producer_id` and `producer_key`.
+- When product metadata or a record already supplies the owner, prefer the
+  bare role field, such as `emitter_id` or `side`, over longer names such as
+  `claim_emitter_id` or `posting_side`. Add the owning prefix only when one
+  shape carries multiple fields of that role.
+- In claim-stage contracts, prefer direct stems such as `claim_scope` over more
+  abstract workflow labels such as `interpretation_scope` when the claim stage
+  already owns that scope boundary.
 - Fingerprints are scalar values, not refs. Use `fingerprint` when a record or
   product owns one primary fingerprint. Use `*_fingerprint` when the
   fingerprint belongs to another concept or when multiple fingerprint fields
@@ -254,19 +265,50 @@ Current application of this rule:
   prefer plain `status`, `basis`, or `outcome` over repeating the record stem.
   Add a prefix only when the field describes another concept's status or basis
   rather than the record's own state.
+- Prefer `status` over `state` for bounded field vocabularies. Reserve
+  `State` for named domain concepts or broader state bundles when `status`
+  would underspecify the concept.
+- Apply the same status-versus-state rule to named vocabulary concepts.
+  Prefer concept names such as `SettlementStatus` when the concept is a
+  bounded status family rather than a broader state bundle.
 - When a record owns one primary classification, role, or intent field,
-  prefer plain `kind`, `role`, `purpose`, or `measure_kind` over repeating the
-  record stem. Add a longer prefix only when the same record carries multiple
-  fields of that family or the field describes another concept's role or
-  purpose.
+  prefer plain `kind`, `role`, `side`, `purpose`, or `measure_kind` over
+  repeating the record stem. Add a longer prefix only when the same record
+  carries multiple fields of that family or the field describes another
+  concept's role or purpose.
+- For controlled vocabularies on one record-local kind field, prefer singular
+  nouns or noun phrases such as `economic_event`, `adjustment`,
+  `carry_forward`, or `unsupported_mapping` unless the value truly names a
+  collection artifact rather than one record-local kind.
+- For bounded `basis` or similar reason vocabularies, drop redundant suffixes
+  such as `_match`, `_preferred`, or `_duplicate` when the field already
+  establishes that the value is the decision basis.
+- Reserve `proof` for proof artifacts or explicit proof-bearing detail.
+  When a bounded field selects one continuity or support classification from a
+  vocabulary, prefer `*_kind` or `*_basis` over `*_proof`.
+- In forward-looking target kernels, avoid `*_hint` for fields that are part of
+  the declared emitted claim or record shape. Reserve `*_hint` for current
+  bridge surfaces, compatibility sidecars, or genuinely non-authoritative
+  adapter-local hints.
 - Apply the same naming rules to observation kinds and controlled-vocabulary
   members. Name the held thing or decision shape directly instead of hiding it
   behind abstract labels such as `identity` or `anchor` when the canonical
   noun is already known.
+- For canonical target observation kinds and claim kinds, keep provider labels
+  and redundant `Observation` or `Assertion` qualifiers out of the canonical
+  name when the owning stage already supplies that context and the shorter
+  name stays unambiguous. Reserve provider prefixes for adapter-local or
+  genuinely provider-exclusive kinds.
+- In issue, review, and check vocabularies, prefer direct required-decision or
+  unsupported-shape names over long nominalizations such as
+  `*_required_determination` when a shorter label stays explicit.
 - Keep controlled-vocabulary members parallel inside one field family. If a
   balance-target vocabulary names balance shapes, prefer values such as
   `exact_balance`, `range_balance`, and `boundary_balance` over mixing balance
   shapes with support metaphors.
+- In kind vocabularies for emitted records, drop redundant suffixes such as
+  `schedule`, `report`, or `state` when the record family already tells the
+  reader they are looking at an output or emitted state surface.
 - Do not encode nullability in canonical target field names. Use the base noun
   or ref name and state optionality in the field contract rather than in
   suffixes that spell out nullability.
@@ -284,9 +326,18 @@ Current application of this rule:
   explicit slot names such as `subject_kind`, `source_kind`, `policy_key`, or
   `position_key` when bare `kind` or `key` would become ambiguous outside the
   owning type declaration.
+- When one record or nested entry carries one primary precision or slot field,
+  prefer `precision` or `slot`. Add a longer prefix only when multiple
+  precision or slot fields coexist in the same shape.
+- Prefer `name` over `display_name` in forward-looking target contracts unless
+  the same shape also carries a distinct canonical name, legal name, or other
+  parallel naming field that makes `display_name` materially clearer.
 - Inside aggregate summary records, use `rollup_kind` and `rollup_key` for the
   grouping dimensions so `summary` remains the record shape, not a second
   generic field prefix.
+- Inside aggregate summary records, drop repeated subject or entity nouns from
+  count fields when the summary already establishes that context. Prefer
+  `ready_count` over `ready_subject_count`.
 - Prefer `Proposal` for stage-owned pre-acceptance records that later become
   accepted truth. Reserve `Candidate` for raw search-space options or other
   unmanaged alternatives that the owning stage has not yet shaped into a

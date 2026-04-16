@@ -33,7 +33,7 @@ The target model should use these concepts explicitly:
 - `EconomicEvent`
 - `EconomicLeg`
 - `Valuation`
-- `SettlementState`
+- `SettlementStatus`
 - `LifecycleEvent`
 - `AssertionValue`
 - `CheckpointAssertion`
@@ -169,7 +169,7 @@ Rules:
 - downstream stages may consume checkpoint assertions, but they must not
   redefine them into incompatible local variants
 - accepted checkpoint truth should be modeled as checkpoint assertions first
-  and checkpoint root records second
+  and checkpoint records second
 - checkpoint assertions carry one `AssertionValue`, not one untyped convenience
   blob
 
@@ -268,7 +268,7 @@ Minimum invariant seams:
   withholding, lifecycle restructure, and correction or supersession behavior
 - one stable leg set with signed quantities and explicit leg roles
 - explicit effective time in canonical temporal form
-- explicit settlement and lifecycle state where continuity or later treatment
+- explicit settlement status and lifecycle event where continuity or later treatment
   depends on them
 - explicit supersession lineage for corrections instead of in-place mutation
 - ownership and counterparty refs where they are known and later stages rely on
@@ -276,9 +276,9 @@ Minimum invariant seams:
 - valuation records with explicit purpose where downstream behavior depends on
   them
 
-## `SettlementState`
+## `SettlementStatus`
 
-`SettlementState` remains first-class whenever completeness, continuity, or
+`SettlementStatus` remains first-class whenever completeness, continuity, or
 later treatment depends on it.
 
 Shared vocabulary:
@@ -292,9 +292,9 @@ Shared vocabulary:
 
 Rules:
 
-- settlement state should remain explicit where timing, completeness, or
+- settlement status should remain explicit where timing, completeness, or
   continuity matters
-- settlement state should not be inferred later from one output-specific row
+- settlement status should not be inferred later from one output-specific row
   label when the economic model can carry it directly
 
 ## `LifecycleEvent`
@@ -378,7 +378,7 @@ Required domain ownership:
 - `domain/entities/` for entity models, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
-- `domain/claims/` for claims, interpretation scopes, bundles, and compilation
+- `domain/claims/` for claims, claim scopes, bundles, and compilation
   decisions
 - `domain/economics/` for events, legs, valuations, settlement state, and
   lifecycle state

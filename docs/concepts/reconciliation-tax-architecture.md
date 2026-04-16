@@ -177,7 +177,7 @@ Rules:
 - `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
   whole-product kernel per declared partition
 - one persisted `ReconciliationState` kernel owns one continuity-segment root
-- one persisted `Checkpoint` kernel owns one checkpoint root record
+- one persisted `Checkpoint` kernel owns one checkpoint record
 - one persisted `Journal` kernel owns one journal emission root
 - one persisted `TaxInputs` kernel owns one tax-input emission root
 - one persisted `TaxOutputs` kernel owns one policy-and-tax-year output root
@@ -287,7 +287,7 @@ Required partition keys:
 
 | Stage family | Required partition keys |
 | --- | --- |
-| Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `interpretation_scope_id` |
+| Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `claim_scope_id` |
 | Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_proposal_id` |
 | Checkpoint and accounting | `checkpoint_set_id`, `journal_id`, `checkpoint_assertion_id`, `entry_id` |
 | Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `determinant_id`, `basis_transition_id` |
@@ -295,7 +295,7 @@ Required partition keys:
 Rules:
 
 - evidence selection comparisons stay bounded to one `selection_id`
-- claim adjudication stays bounded to one `interpretation_scope_id` at a time
+- claim adjudication stays bounded to one `claim_scope_id` at a time
 - economic reducers stay bounded to one `economic_facts_id` partition at a time
 - reconciliation reducers may read one continuity segment plus its explicit
   upstream references; they must not rescan unrelated full-history partitions
@@ -318,7 +318,7 @@ high.
 Typical sidecar or cache surfaces include:
 
 - evidence selection summaries
-- interpretation-scope decision summaries
+- claim-scope decision summaries
 - reconciliation continuity summaries
 - checkpoint summaries
 - journal validation summaries
