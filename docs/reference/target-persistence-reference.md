@@ -9,7 +9,7 @@ nav_order: 18
 related:
   - docs/concepts/pipeline-stage-contracts.md
   - docs/concepts/reconciliation-tax-architecture.md
-  - docs/reference/first-slice-contract.md
+  - docs/reference/first-upstream-slice-contract.md
   - docs/reference/first-downstream-slice-contract.md
   - ROADMAP.md
 ---
@@ -26,7 +26,7 @@ Use these pages as the authoritative owners:
 - [Reconciliation And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
   for persistence model, partition scopes, default filesystem placement,
   sidecars, replace rules, caches, and indexes
-- [First Slice Contract](first-slice-contract.md) and
+- [First Upstream Slice Contract](first-upstream-slice-contract.md) and
   [First Downstream Slice Contract](first-downstream-slice-contract.md) for
   bounded-slice persistence and compatibility expectations
 

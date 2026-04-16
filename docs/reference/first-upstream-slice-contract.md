@@ -1,6 +1,6 @@
 ---
-title: "First Slice Contract"
-summary: "Bounded contract for the current first EvidenceSet and ClaimSet slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility projections."
+title: "First Upstream Slice Contract"
+summary: "Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility projections."
 doc_type: reference
 audience: human
 owner: repo
@@ -15,9 +15,9 @@ related:
   - ROADMAP.md
 ---
 
-Use this page when implementing or reviewing the current first upstream slice.
-This document freezes scope, cardinality, ids, parity, replay, and allowed drift
-for the current first `EvidenceSet -> ClaimSet` landing path.
+Use this page when implementing or reviewing the first upstream slice.
+This document freezes scope, cardinality, ids, parity, replay, and allowed
+drift for the first upstream `EvidenceSet -> ClaimSet` landing path.
 
 ## Slice Scope
 
@@ -109,7 +109,7 @@ Out of scope for this slice:
 
 - `legal_owner`
 - `counterparty`
-- `statement`
+- `statement_document`
 - `contract_term`
 
 Bridge or output annotation sidecar detail and gap or review support sidecar
@@ -163,31 +163,31 @@ Slice cardinality rules:
 
 - one `EvidenceSet` is emitted per
   `[source_slug, adapter_id, capture_uid, selection_fingerprint]`
-- one `SelectionRecord` exists per `selection_id`
+- one `EvidenceSelectionRecord` exists per `selection_id`
 - one or more `EvidenceMemberRecord` rows may belong to one
   `selection_id`
 - zero or more `EvidenceObservationRecord` rows may belong to one `member_id`
 - one `ClaimSet` is emitted per `[evidence_set_id, emitter_id]`
 - one `claim_scope_id` exists per evidence-local scope
 - one or more `ClaimBundleRecord` rows may exist per `claim_scope_id`
-- one `BundleDecisionRecord` exists per `claim_scope_id`
+- one `ClaimBundleDecisionRecord` exists per `claim_scope_id`
 - one or more `ClaimRecord` rows may exist per `claim_bundle_id`
 
 Ownership rules:
 
-- `SelectionRecord` owns selection basis and blocking-gap refs only
+- `EvidenceSelectionRecord` owns selection basis and blocking-gap refs only
 - `EvidenceMemberRecord` owns selected, superseded, or blocked membership
-- `BundleDecisionRecord` remains claim-owned and records claim-bundle selection,
-  deferral, blocking, or supersession only
+- `ClaimBundleDecisionRecord` remains claim-owned and records claim-bundle
+  selection, deferral, blocking, or supersession only
 - claim-stage gaps and reviews may attach to `claim_scope_id` when
   no narrower truthful subject has resolved yet
-- `BundleDecisionRecord` must not carry event fields, leg fields, or
+- `ClaimBundleDecisionRecord` must not carry event fields, leg fields, or
   other economic facts
 
 ## Bridge Compatibility Projections
 
-For evidence in this slice, the first slice changes authority but preserves bridge
-compatibility.
+For evidence in this slice, the first upstream slice changes authority but
+preserves bridge compatibility.
 
 Authoritative products after the slice:
 

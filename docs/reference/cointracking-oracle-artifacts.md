@@ -22,7 +22,7 @@ These artifacts are useful for development and validation only:
 - investigating mismatches that simple primary evidence cannot explain
 
 They are not production/runtime inputs for reconstruction, checkpoint
-assembly, journaling, or tax computation.
+assembly, journal work, or tax computation.
 
 ## Common Artifact Families
 

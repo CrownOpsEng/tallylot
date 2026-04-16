@@ -222,6 +222,16 @@ Current application of this rule:
 - Use `journal` for the end-state downstream stage, package, and
   product-adjacent family noun. Reserve `accounting` for broader prose,
   external schemas, or current bridge hints such as `AccountingIntentHint`.
+- Name bounded-slice references by direction rather than by a bare ordinal.
+  Prefer `First Upstream Slice Contract` and `First Downstream Slice Contract`
+  over a generic `First Slice Contract`, and avoid repeating `current` in
+  forward-looking slice names unless live runtime truth is the subject.
+- When a helper ref belongs to one downstream stage rather than to a shared
+  domain identity family, keep the stage noun on the helper type and keep the
+  field name concise inside the owning record. Prefer
+  `JournalAccountRef` with `PostingRecord.account_ref` and
+  `PostingUnitRef` with `PostingRecord.unit_ref` over broader helper types such
+  as `AccountRef` or `CommodityRef`.
 - When a broad shared root is genuinely needed, keep the immediate children
   concrete and mirrored. `support/` is acceptable only when it is split into
   families such as `gap/`, `review/`, and `readiness/` rather than flattened
@@ -277,6 +287,11 @@ Current application of this rule:
   `gap_id` or `ReadinessRecord` plus `readiness_id` over longer names that
   repeat context the record family already supplies, unless a real sibling
   family would make the shorter stem ambiguous.
+- When a record-family noun would become generic out of context, keep the
+  owning concept in the record-family stem even if child ids stay short.
+  Prefer `EvidenceSelectionRecord` and `ClaimBundleDecisionRecord` over
+  `SelectionRecord` or `BundleDecisionRecord` when the shorter record family
+  would not reveal its owner cleanly across docs or code.
 - Apply the same rule to child-local fields, refs, and helper names. When the
   owning product or record already supplies the parent context, prefer the
   shortest truthful child noun such as `selection_id`, `proposal_refs`, or
@@ -499,6 +514,11 @@ Current application of this rule:
   the stem when the shorter noun would be generic across stages. Prefer
   `EventLinkRecord` or `EntryCheckRecord` over ambiguous cross-stage names such
   as `LinkRecord` or `ValidationRecord`.
+- In target controlled vocabularies, keep the stage noun and held-thing noun
+  aligned once the target stage owns the boundary. Prefer
+  `economic_measurement`, `checkpoint_measurement`, `journal_measurement`, and
+  `tax_measurement` over mixed-purpose labels, and `unit_balance` over
+  `commodity_balance` on end-state target surfaces.
 - Use generic shared nouns only for intentionally repo-owned cross-stage seams.
   Names such as `SubjectRef` or `OriginRef` are allowed only when the
   abstraction itself is the owned contract. Everywhere else, prefer the

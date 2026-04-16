@@ -198,9 +198,9 @@ Minimum valuation concerns:
 
 Shared vocabulary:
 
-- `economic_observation`
-- `checkpoint_support`
-- `accounting_measurement`
+- `economic_measurement`
+- `checkpoint_measurement`
+- `journal_measurement`
 - `tax_measurement`
 - `market_reference`
 
@@ -329,7 +329,7 @@ Rules:
 
 ## First Downstream Slice Restriction
 
-The current first downstream slice intentionally uses a narrow `PositionRef`
+The first downstream slice intentionally uses a narrow `PositionRef`
 surface for the current custodial balance slice.
 
 Slice rule:

@@ -13,7 +13,7 @@ tracker-dependent historical workflows and into an independent reconciliation,
 checkpoint, journal, and tax runtime.
 
 Use it when making structural decisions that affect persistence,
-reconciliation, checkpointing, journaling, or tax computation. Treat it as a
+reconciliation, checkpoint, journal, or tax computation. Treat it as a
 design contract, not as a loose idea list.
 
 ## Current Runtime Note
@@ -49,7 +49,7 @@ Use these pages as the detailed contract owners:
 
 - [Current Bridge Contracts](current-bridge-contracts.md)
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
-- [First Slice Contract](../reference/first-slice-contract.md)
+- [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md)
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
@@ -365,7 +365,7 @@ Required hot-path indexes:
 
 ## Acceptance Rules
 
-Before approving structural work in reconciliation, checkpointing, journaling,
+Before approving structural work in reconciliation, checkpoint, journal,
 or tax, ask:
 
 - does the design keep one authoritative kernel per partition scope

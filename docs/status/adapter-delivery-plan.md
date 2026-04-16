@@ -1,6 +1,6 @@
 ---
 title: "Adapter Delivery Plan"
-summary: "Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and current first slices are stable."
+summary: "Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and the first upstream slice and first downstream slice are stable."
 doc_type: status
 audience: human
 owner: repo
@@ -23,10 +23,10 @@ filing-critical window or in the later unified-adapter redesign.
 The repo uses a filing-first adapter strategy:
 
 - harden the current adapter path where it directly reduces filing risk
-- defer the broad unified adapter redesign until the filing path and current
-  first slices are stable
-- allow only the adapter prep work that the contract-lock pass and current
-  first slices actually need
+- defer the broad unified adapter redesign until the filing path and the first
+  upstream slice and first downstream slice are stable
+- allow only the adapter prep work that the contract-lock pass and the first
+  upstream slice and first downstream slice actually need
 
 ## Work Tracks
 
@@ -50,19 +50,20 @@ Not allowed now:
 
 ### `prep`
 
-Narrow work that Phase 0 and the current first slices need before broad
+Narrow work that Phase 0 and the first upstream slice and first downstream
+slice need before broad
 adapter redesign begins.
 
 Allowed prep:
 
-- bridge-to-target mapping needed for the current first upstream slice
+- bridge-to-target mapping needed for the first upstream slice
 - adapter participation in `EvidenceSet` and `ClaimSet` emission
-- shared determinism and verification helpers that remove drift in the current
-  first upstream slice
+- shared determinism and verification helpers that remove drift in the first
+  upstream slice
 
 Required prep rule:
 
-- adapter work for the current first upstream slice must emit target products
+- adapter work for the first upstream slice must emit target products
   through the owner pages, not adapter-local alternate schemas
 - retained legacy hints needed for current drafts or facts may survive only in
   declared compatibility sidecars, not in `EvidenceSet` or
@@ -71,7 +72,8 @@ Required prep rule:
 ### `roadmap`
 
 Broader unified-manifest and multi-facet migration after the filing path is
-stable and the current first slices have proven the contract set.
+stable and the first upstream slice and first downstream slice have proven the
+contract set.
 
 ## Priority Tiers
 
@@ -90,8 +92,8 @@ in-repo guesswork.
 - prefer shared support extraction over adapter-local workflow drift
 - prefer explicit issues and reviews over guesswork
 - do not widen the current source adapter contract during the filing window
-- do not make the unified adapter redesign a hidden prerequisite for the current
-  first slices
+- do not make the unified adapter redesign a hidden prerequisite for the first
+  upstream slice and first downstream slice
 
 ## Filing-Critical Work To Do Now
 
@@ -117,7 +119,7 @@ Exit criteria for the filing window:
 
 ## Shared-Foundation Prep
 
-Prep work is allowed only when it materially reduces drift in the current first
+Prep work is allowed only when it materially reduces drift in the first
 upstream slice.
 
 Examples:
@@ -133,7 +135,8 @@ Prep work must not:
 
 - create a second architecture center in adapter docs
 - redefine target product kernels locally
-- force repo-wide adapter migration before the current first slices land
+- force repo-wide adapter migration before the first upstream slice and first
+  downstream slice land
 
 ## Deferred Redesign
 
@@ -141,7 +144,7 @@ The broader unified adapter redesign stays deferred until:
 
 - the filing path is stable enough to trust
 - the contract-lock owner pages are frozen
-- the current first upstream and current first downstream slices have landed cleanly
+- the first upstream and first downstream slices have landed cleanly
 
 At that point, use
 [Unified Adapter Architecture](../concepts/unified-adapter-architecture.md) as

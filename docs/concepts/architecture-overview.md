@@ -9,7 +9,7 @@ nav_order: 10
 ---
 
 TallyLot is a typed Python package and CLI for evidence intake,
-reconciliation, checkpointing, journal validation, rendering, and
+reconciliation, checkpoint assembly, journal validation, rendering, and
 tax-oriented work.
 
 ## Runtime Posture
@@ -56,8 +56,8 @@ Use these pages as the primary owners:
 | [Domain Ontology](domain-ontology.md) | identity seams, ref recipes, and package ownership |
 | [Gaps And Readiness](gaps-and-readiness.md) | gap, review, and readiness contracts plus `SubjectRef` |
 | [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) | trust gates, persistence, partitioning, and fast-path rules |
-| [First Slice Contract](../reference/first-slice-contract.md) | current first upstream `EvidenceSet -> ClaimSet` slice |
-| [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | current first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |
+| [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md) | first upstream `EvidenceSet -> ClaimSet` slice |
+| [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |
 | [ROADMAP.md](../../ROADMAP.md) | sequencing, gating, and rollout phases |
 | [Current State](../status/current-state.md) | implemented runtime truth and live package layout |
 

@@ -82,8 +82,8 @@ aligned and frozen.
 
 ### 2. First Upstream Slice
 
-Land the current first upstream
-[`EvidenceSet -> ClaimSet`](../reference/first-slice-contract.md) slice.
+Land the first upstream
+[`EvidenceSet -> ClaimSet`](../reference/first-upstream-slice-contract.md) slice.
 
 Required posture:
 
@@ -94,7 +94,7 @@ Required posture:
 
 ### 3. First Downstream Slice
 
-Land the current first downstream
+Land the first downstream
 [`EconomicFacts -> ReconciliationState -> Checkpoint`](../reference/first-downstream-slice-contract.md)
 slice.
 
