@@ -15,7 +15,7 @@ related:
   - ROADMAP.md
 ---
 
-Use this page when implementing or reviewing the current first vertical slice.
+Use this page when implementing or reviewing the current first upstream slice.
 This document freezes scope, cardinality, ids, parity, replay, and allowed drift
 for the current first `EvidenceSet -> ClaimSet` landing path.
 
@@ -149,7 +149,7 @@ Claim-field and linkage rules:
   `observation_refs`
 - `balance` claims must include the row observation id and may also
   include the paired `statement_document` observation id
-- `valuation` claims remain zero-row by default until a later owner-doc pass
+- `valuation` claims remain zero-row by default until a later owner-page pass
   freezes numeric statement valuation inputs
 - `location` claims use `location_label` under the same target-contract rule as
   `statement_balance_row.location_label`: preserve the source-provided

@@ -137,15 +137,16 @@ current first slices are stable.
 
 Rules during the current migration window:
 
-- adapter work for the current first slice must emit target products through the canonical
-  owner pages, not adapter-local alternate schemas
+- adapter work for the current first upstream slice must emit target products
+  through the canonical owner pages, not adapter-local alternate schemas
 - adapters may emit declared compatibility sidecars for retained legacy
   draft-or-fact reproduction during migration, but canonical target kernels
   stay limited to target meaning
 - adapter docs may describe how adapters participate in `EvidenceSet`,
   `ClaimSet`, and compatibility projections, but they may not redefine those
   products
-- the current first slice must not depend on a repo-wide facet migration
+- the current first upstream slice must not depend on a repo-wide facet
+  migration
 - `SourceTranslationBatch` remains honest current-state truth until its bounded
   replacement slice lands
 

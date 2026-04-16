@@ -118,7 +118,8 @@ Trust and ownership rules:
 
 ## Authoritative Kernels Versus Compatibility Projections
 
-The target runtime uses one authoritative persisted kernel per product scope.
+The target runtime uses one authoritative persisted kernel per declared
+partition scope.
 
 Rules:
 

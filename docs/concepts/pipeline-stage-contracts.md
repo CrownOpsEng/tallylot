@@ -276,7 +276,7 @@ Controlled vocabularies:
 ### First-Slice Critical-Path Observation Kinds
 
 The `EvidenceObservationRecord` shell above is required for every observation.
-For the current first slice, these kind-specific kernel fields are also
+For the current first upstream slice, these kind-specific kernel fields are also
 required:
 
 | `kind` | Kind-owned kernel fields |
@@ -489,10 +489,10 @@ bounded slice, these kind-specific kernel fields are also required:
 - `subtype`
 - `attributed_to_slot`
 
-Current first slice linkage rules:
+Current first upstream slice linkage rules:
 
 - `activity` claims own the current evidence-local `activity_label` used by
-  the current first slice
+  the current first upstream slice
 - `leg_specs` lift ordered leg meaning from the current
   `EconomicLegDraft` contract, including sign, instrument claims,
   optional subtype, optional attributed-leg linkage, and optional location
@@ -506,7 +506,7 @@ Current first slice linkage rules:
   `observation_refs` and may also include the paired
   `statement_document` observation id for the same statement document
 - `valuation` claims are defined now but emit zero rows by default in
-  the current first slice until a later owner-doc pass locks numeric
+  the current first upstream slice until a later owner-page pass locks numeric
   statement valuation inputs
 - `location` claims use `location_label` under the same target-contract rule as
   `statement_balance_row.location_label`: preserve the source-provided

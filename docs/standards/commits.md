@@ -80,7 +80,7 @@ Write `Why:` and `What:` directly:
 
 Bad `Why:` bullets are diff summaries such as:
 
-- `rename ReadinessSummaryRecord`
+- `rename ReadinessRollupRecord`
 - `update naming docs`
 - `refactor commit wording`
 

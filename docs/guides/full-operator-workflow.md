@@ -117,7 +117,7 @@ part of the current round-close process.
 - Use [Export Checklist](../reference/export-checklist.md) for the required
   verification export set.
 - Use
-  [Manual Balance Submission Artifacts](../reference/manual-balance-submission-artifacts.md)
+  [Manual Balance Submission Packages](../reference/manual-balance-submission-artifacts.md)
   for the scaffolded submission package contract and balance materialization
   rules.
 - Use `checkpoint extract-pdf-balances` for supported Coinbase, Binance, and

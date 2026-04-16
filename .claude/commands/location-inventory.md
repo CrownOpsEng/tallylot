@@ -1,4 +1,4 @@
-# Wallet Inventory
+# Location Inventory
 
 Rebuild the aggregate location inventory with:
 

@@ -188,6 +188,10 @@ Current application of this rule:
   do not pluralize a package just because it holds several records. For
   example, `application/checkpoint/` and `domain/checkpoint/` are clearer than
   looser collection labels.
+- Keep that package-stem rule aligned with the contract family. For example,
+  `application/claim/` and `domain/claim/` stay aligned with `ClaimSet`,
+  `claim_scope_id`, `claim_bundle_id`, and `claim_id` better than a pluralized
+  `claims/` package stem.
 - Follow the same naming approach for modules, functions, classes, and commands:
   choose concise descriptive names over decorative jargon.
 - Keep shape and casing aligned by role:

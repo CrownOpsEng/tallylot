@@ -46,7 +46,7 @@ Rules:
   `claim_set_ref` or `claim_set_refs` rather than carrying `source_slug`,
   `adapter_id`, or `emitter_id` forward
 - `emitter_key` must be kebab-case
-- the current first slice `emitter_key` is `claim`
+- the current first upstream slice `emitter_key` is `claim`
 
 ## Origin Ref
 

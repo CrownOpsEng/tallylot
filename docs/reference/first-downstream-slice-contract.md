@@ -17,8 +17,8 @@ related:
 
 Use this page when implementing or reviewing the current first downstream slice
 after the current first `EvidenceSet -> ClaimSet` landing path. This
-document freezes scope, ids, parity, replay, and allowed drift for the first
-`EconomicFacts -> ReconciliationState -> Checkpoint` increment.
+document freezes scope, ids, parity, replay, and allowed drift for the current
+first `EconomicFacts -> ReconciliationState -> Checkpoint` increment.
 
 ## Slice Scope
 
@@ -218,7 +218,8 @@ Not allowed in this slice:
 
 ## Parity Gates
 
-Unchanged inputs from the current first slice must preserve all of the following:
+Unchanged inputs from the current first upstream slice must preserve all of the
+following:
 
 - accepted event ids and ordering
 - accepted leg ids, ordering, and quantities

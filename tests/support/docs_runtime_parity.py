@@ -43,7 +43,7 @@ def production_route_doc_paths() -> list[Path]:
         commands_root / "balance-submission-operations.md",
         commands_root / "reconciliation-balance-operations.md",
         commands_root / "source-intake.md",
-        commands_root / "wallet-inventory.md",
+        commands_root / "location-inventory.md",
         commands_root / "supporting-artifacts.md",
     ]
 
