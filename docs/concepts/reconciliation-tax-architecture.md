@@ -139,12 +139,12 @@ Forward-looking persistence rules:
 
 - target product kernels persist as JSON documents
 - every persisted kernel carries its declared product id in metadata
-- product ids are distinct from `kernel_scope_id`
-- upstream `*_ref` metadata fields store product ids, never `kernel_scope_id`
+- product ids are distinct from `product_scope_id`
+- upstream `*_ref` metadata fields store product ids, never `product_scope_id`
   and
   never raw kernel fingerprints
 - product sidecars persist separately from kernels and are keyed by
-  `kernel_scope_id` or narrower truthful record ids
+  `product_scope_id` or narrower truthful record ids
 - target basenames use the owning product or support role directly
   rather than generic names or bridge-era qualifiers
 - writes are replace-whole-partition operations, not append-in-place mutation
@@ -186,7 +186,7 @@ Rules:
 - one persisted `TaxInputs` kernel owns one tax-input emission root
 - one persisted `TaxOutputs` kernel owns one policy-and-tax-year output root
 - readers use product ids or narrower record ids for target-kernel lookup;
-  `kernel_scope_id` remains for shared support attachment and reporting only
+  `product_scope_id` remains for shared support attachment and reporting only
 
 ### Default Filesystem Placement
 
@@ -311,7 +311,7 @@ Rules:
   upstream references; they must not rescan unrelated full-history partitions
   per balance target
 - checkpoint reducers may read the declared `checkpoint_id` inputs plus
-  explicit upstream refs; they must not treat `kernel_scope_id` as the
+  explicit upstream refs; they must not treat `product_scope_id` as the
   product-join
   key
 - tax reducers may read one tax year plus explicitly referenced carry-forward
@@ -338,7 +338,7 @@ Typical sidecar or cache surfaces include:
 Rules:
 
 - sidecars are never the sole copy of business meaning
-- sidecars may be keyed by `kernel_scope_id` or narrower truthful record ids,
+- sidecars may be keyed by `product_scope_id` or narrower truthful record ids,
   but
   they do not replace product ids for kernel lookup
 - caches are always regenerable from authoritative kernels and upstream refs

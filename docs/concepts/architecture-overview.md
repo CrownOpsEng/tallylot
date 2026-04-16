@@ -49,7 +49,7 @@ Use these pages as the primary owners:
 
 | Page | Owns |
 | --- | --- |
-| [Current Bridge Contracts](current-bridge-contracts.md) | live bridge truth and bridge artifact rules |
+| [Current Bridge Contracts](current-bridge-contracts.md) | live bridge truth and bridge surface rules |
 | [Bridge To Target Mapping](bridge-to-target-mapping.md) | authoritative writer rules, compatibility projections, and reader cutovers |
 | [Pipeline Stage Contracts](pipeline-stage-contracts.md) | target product kernels, ids, ordering, and handoff rules |
 | [Domain Ontology](domain-ontology.md) | entity seams, ref recipes, and package ownership |

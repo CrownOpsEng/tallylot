@@ -76,7 +76,7 @@ Must freeze:
   attachments, and the downstream shared-subject seams needed for accounting
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
-  refs use product ids rather than `kernel_scope_id`
+  refs use product ids rather than `product_scope_id`
 - target naming rules that distinguish concepts, refs, ids, records,
   projections, and sidecars without baking bridge-era qualifiers or
   source-specific crypto nouns into shared target names
@@ -105,15 +105,15 @@ Exit criteria:
 - no cross-stage support record or sidecar masquerades as a claim kind
 - claim-stage blockers can attach to `claim_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
-  accounting or tax subjects without collapsing to kernel-scope attachment only
+  accounting or tax subjects without collapsing to product-scope attachment only
 - no target id or helper id bakes bridge-era naming into target identity
 - no canonical target contract keeps source-specific crypto nouns such as
   `wallet` when a repo-owned domain noun already owns that seam
-- no bridge artifact is left without an authority and retirement rule
+- no bridge surface is left without an authority and retirement rule
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
   field table
-- no target product metadata ref uses `kernel_scope_id` where a product id
+- no target product metadata ref uses `product_scope_id` where a product id
   exists
 - non-critical observation and claim kinds are explicitly deferred rather
   than left implicit
@@ -139,8 +139,8 @@ Deliver:
 
 Exit criteria:
 
-- the runtime can explain why every selected source artifact won and why every
-  superseded or blocked artifact did not
+- the runtime can explain why every selected evidence member won and why every
+  superseded or blocked member did not
 - evidence selection becomes authoritative through `EvidenceSet` for the
   in-scope slice
 

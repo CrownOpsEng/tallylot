@@ -98,7 +98,7 @@ When a capability grows, split by stable boundaries:
 - `domain/`: separate models, value objects, and typed aliases by concept.
 - `application/`: organize by bounded capability packages such as
   `application/intake/`, `application/profiling/`, `application/normalization/`,
-  `application/checkpoints/`, and `application/rendering/`. Keep request and
+  `application/checkpoint/`, and `application/rendering/`. Keep request and
   response contracts in capability-local `contracts.py` files and keep
   orchestration entry points in explicitly named use-case modules such as
   `build_profile.py`, `normalize_source.py`, or `render_export.py`.
@@ -183,6 +183,11 @@ Current application of this rule:
   for executable surfaces such as CLI verbs, facets, and operation modules, and
   use `rendering` for the bounded package or orchestration surface such as
   `application/rendering/`.
+- Prefer the shortest stable stage noun for stage-owned package stems. Use a
+  plural package stem only when the plural is itself the natural domain noun;
+  do not pluralize a package just because it holds several records. For
+  example, `application/checkpoint/` and `domain/checkpoint/` are clearer than
+  looser collection labels.
 - Follow the same naming approach for modules, functions, classes, and commands:
   choose concise descriptive names over decorative jargon.
 - Keep shape and casing aligned by role:
@@ -226,6 +231,11 @@ Current application of this rule:
   owning product or record already supplies the parent context, prefer the
   shortest truthful child noun such as `selection_id`, `proposal_refs`, or
   `assertion_ids` over longer forms that restate the parent stem.
+- Keep scope families parallel from the id to the matching kind value. If the
+  stable id is `claim_scope_id`, `checkpoint_proposal_id`, or
+  `product_scope_id`, the matching `scope_kind` or `rollup_kind` value should
+  be `claim_scope`, `checkpoint_proposal`, or `product_scope`, not a competing
+  alternate stem.
 - Do not shorten a child name when that child must travel outside the owning
   family and the shorter noun would become ambiguous across stages or products.
   Keep the longer owning stem only when that broader ambiguity is real.
@@ -268,8 +278,8 @@ Current application of this rule:
   record id naturally describe the same accepted object, prefer one shared
   `<product>_id` over inventing `<product>_set_id` only to separate metadata
   from that root record.
-- For shared support attachment over one emitted kernel, prefer the explicit
-  `kernel_scope_id` over generic names such as `dataset_id`.
+- For shared support attachment over one emitted product kernel, prefer the
+  explicit `product_scope_id` over generic names such as `dataset_id`.
 - For persisted files and workspace basenames, prefer the owning product or
   support role in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
@@ -278,6 +288,10 @@ Current application of this rule:
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `projection`,
   `file`, or `package`.
+- In forward-looking migration prose, use `surface` for anything readers and
+  writers cut over. Reserve `artifact` for current-state file families,
+  oracle/reference bundles, or mixed packages where the stored shape itself is
+  the point.
 - Prefer `kind` for a record's own primary one-of or variant field, and use
   `*_kind` when the field classifies another concept, a nested structure, or a
   sibling concept inside the same record. Reserve `family` for prose grouping
@@ -466,7 +480,7 @@ Current application of this rule:
   truly own different concepts.
 - In prose, prefer the canonical owning noun once a target product or record
   family already exists. Use phrases such as `claim bundle`, `claim scope`,
-  `evidence-local meaning`, and `kernel-scope` over looser labels such as
+  `evidence-local meaning`, and `product scope` over looser labels such as
   `semantic bundle`, `semantic scope`, or `whole-kernel` unless the extra
   abstraction is the point.
 - Prefer the shortest boundary noun that still distinguishes the seam. When one

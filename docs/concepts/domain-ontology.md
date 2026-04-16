@@ -19,7 +19,7 @@ Current bridge note:
 - this page defines the target ontology that later implementation increments
   should grow toward
 
-## Core Business Concepts
+## Target Business Concepts
 
 The target model should use these concepts explicitly:
 
@@ -167,7 +167,7 @@ and one as-of point.
 
 Rules:
 
-- it is distinct from a reconciliation `CheckpointProposal`
+- it is distinct from a reconciliation checkpoint proposal
 - it is distinct from current bridge balance snapshots
 - it is distinct from current bridge balance references
 - it is distinct from the containing accepted `Checkpoint`
@@ -392,7 +392,7 @@ Required domain ownership:
 - `domain/support/` for gaps, reviews, readiness, and `SubjectRef`
 - `domain/reconciliation/` for continuity segments, event links, balance
   targets, and checkpoint proposals
-- `domain/checkpoints/` for accepted checkpoint truth
+- `domain/checkpoint/` for accepted checkpoint truth
 - `domain/accounting/` for journal models
 - `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
   carry-forward state, and outputs
@@ -411,7 +411,7 @@ Required application ownership:
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
   evaluation, readiness reducers, and checkpoint proposals
-- `application/checkpoints/` for checkpoint assembly, manual balance
+- `application/checkpoint/` for checkpoint assembly, manual balance
   submission validation, and checkpoint acceptance
 - `application/accounting/` for journal expansion, validation, and summaries
 - `application/tax/` for tax input construction, basis transitions, policy

@@ -27,7 +27,7 @@ Current runtime note:
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- kernel-scope readiness rollups are derived from subject-level or scope-level
+- product-scope readiness rollups are derived from subject-level or scope-level
   truth, not stored as the only truth
 - shared support structures help stages interoperate without erasing stage
   ownership
@@ -104,7 +104,7 @@ Required scope ids:
 - `continuity_segment_id`
 - `balance_target_id`
 - `checkpoint_proposal_id`
-- `kernel_scope_id`
+- `product_scope_id`
 
 Rules:
 
@@ -118,31 +118,31 @@ Rules:
   target when one exact target is the truthful blocker or review scope
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
   proposal before acceptance
-- `kernel_scope_id` identifies one shared support attachment scope over one
+- `product_scope_id` identifies one shared support attachment scope over one
   canonical product kernel and is not a substitute for a narrower scope
-- do not attach a gap or review to `kernel_scope` when `subject`,
+- do not attach a gap or review to `product_scope` when `subject`,
   `selection`, `claim_scope`, `continuity_segment`,
   `balance_target`, or `checkpoint_proposal` would be truthful
 
-### `kernel_scope_id`
+### `product_scope_id`
 
-`kernel_scope_id` is defined once for all target support records, summaries,
+`product_scope_id` is defined once for all target support records, rollups,
 projections, and sidecars.
 
 Rules:
 
-- `kernel_scope_id` is `<product_kind>:<kernel_fingerprint>`
+- `product_scope_id` is `<product_kind>:<kernel_fingerprint>`
 - `product_kind` uses the lower-snake-case target product name
 - `kernel_fingerprint` is the canonical product fingerprint owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
-- `kernel_scope_id` is derived after canonical kernel fingerprinting and is not
+- `product_scope_id` is derived after canonical kernel fingerprinting and is not
   a kernel metadata field or a fingerprint input itself
-- `kernel_scope_id` is never a target product id, never an upstream product
+- `product_scope_id` is never a target product id, never an upstream product
   ref, and never the primary reader key when one product id or narrower record
   id exists
-- `kernel_scope_id` is used only for shared reporting and sidecar attachment
+- `product_scope_id` is used only for shared reporting and sidecar attachment
   when no narrower truthful subject or scope exists
-- `kernel_scope_id` must not replace `selection_id`,
+- `product_scope_id` must not replace `selection_id`,
   `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
   `checkpoint_proposal_id`, or one record id when those are truthful
 
@@ -201,7 +201,7 @@ Controlled vocabularies:
   - `continuity_segment`
   - `balance_target`
   - `checkpoint_proposal`
-  - `kernel_scope`
+  - `product_scope`
 - `gap_kind`:
   - `missing_evidence`
   - `unresolved_identity`
@@ -344,7 +344,7 @@ Controlled vocabularies:
   - `continuity_segment`
   - `balance_target`
   - `checkpoint_proposal`
-  - `kernel_scope`
+  - `product_scope`
 - `status`:
   - `open`
   - `acknowledged`
@@ -436,7 +436,7 @@ Rules:
 ## Readiness Model
 
 Readiness is subject-first, stage-specific, and reducible into reporting
-summaries.
+rollups.
 
 ### `ReadinessStatus`
 
@@ -451,7 +451,8 @@ Shared status vocabulary:
 
 - some required meanings or assertions resolved
 - at least one blocking gap still open
-- the remaining uncertainty is recorded through gap ids, not prose-only summary
+- the remaining uncertainty is recorded through gap ids, not prose-only
+  explanation
 
 ### `ReadinessRecord`
 
@@ -496,10 +497,10 @@ Rules:
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before claim commitment
 - reducers work from subject readiness plus gaps, not from hand-built
-  kernel-scope readiness rollups
+  product-scope readiness rollups
 - a subject may be ready for one stage and blocked for another
-- readiness points to blocking gap ids rather than hiding blockers in summary
-  text
+- readiness points to blocking gap ids rather than hiding blockers in
+  explanation text
 
 ### `ReadinessRollupRecord`
 
@@ -528,7 +529,7 @@ Controlled `rollup_kind` vocabulary:
 - `continuity_segment`
 - `as_of`
 - `tax_year`
-- `kernel_scope`
+- `product_scope`
 
 Rollup-key rules:
 
@@ -539,7 +540,7 @@ Rollup-key rules:
 - `continuity_segment` uses one `continuity_segment_id`
 - `as_of` uses one canonical `YYYY-MM-DD` date string
 - `tax_year` uses one integer tax year
-- `kernel_scope` uses one `kernel_scope_id`
+- `product_scope` uses one `product_scope_id`
 
 Stable ids:
 
@@ -573,7 +574,7 @@ Rules:
 - if no required assertion has resolved yet, status is `blocked`, not
   `partial`
 - if no blocker applies, status is `ready`, not `partial`
-- kernel-scope readiness rollups remain reproducible from ordered readiness
+- product-scope readiness rollups remain reproducible from ordered readiness
   and gap records without manual status editing
 - stages use only the dimensions they actually own or can derive safely
 
@@ -602,7 +603,7 @@ Meaning:
 
 - one stage owns one meaning surface
 - downstream stages reference upstream records by stable ids or product ids
-- `kernel_scope_id` is allowed only for shared reporting and sidecar attachment
+- `product_scope_id` is allowed only for shared reporting and sidecar attachment
   when no narrower truthful product id, scope id, or record id exists
 - downstream stages add stage-owned outputs only
 
@@ -643,7 +644,7 @@ Performance implication:
 - repeated full detail copies increase read amplification, join cost, and drift
   risk
 - the correct shape is stable ids or product ids plus stage-owned deltas, with
-  `kernel_scope_id` reserved for shared reporting or sidecar attachment only
+  `product_scope_id` reserved for shared reporting or sidecar attachment only
 
 ## Current-To-Target Boundary
 

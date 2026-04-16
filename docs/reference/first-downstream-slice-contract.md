@@ -98,7 +98,7 @@ Compilation-input rules:
 - downstream compilation must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
 - upstream `*_ref` metadata fields store target product ids, never
-  `kernel_scope_id`
+  `product_scope_id`
   and never raw kernel fingerprints
 
 ## Kernel Cardinality And Ownership

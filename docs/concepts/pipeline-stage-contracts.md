@@ -89,14 +89,14 @@ Shared rules:
   `economic_facts_id`, `reconciliation_state_id`, `checkpoint_id`,
   `journal_id`, `tax_inputs_id`, and `tax_outputs_id`
 - upstream product metadata refs use product ids only; they never use
-  `kernel_scope_id` or a raw kernel fingerprint
+  `product_scope_id` or a raw kernel fingerprint
 - use singular `*_ref` for one upstream product id and plural `*_refs` for an
   ordered product-id list
 - ordered metadata fields such as `claim_set_refs`,
   `reconciliation_state_refs`, and `economic_facts_refs` sort
   lexicographically by product id unless the owning product declares a
   stronger canonical order
-- `kernel_scope_id` remains a derived shared-support and reporting attachment
+- `product_scope_id` remains a derived shared-support and reporting attachment
   only;
   it is not a product id or upstream product ref
 
@@ -147,17 +147,17 @@ Shared rules:
 - any later rehydration path must join through stable ids emitted by the
   kernel
 
-### Kernel-Scope Id And Sidecar Attachment
+### Product-Scope Id And Sidecar Attachment
 
 - every target product has one canonical kernel fingerprint
-- the shared `kernel_scope_id` contract is owned by
+- the shared `product_scope_id` contract is owned by
   [Gaps And Readiness](gaps-and-readiness.md)
-- `kernel_scope_id` is derived from the emitted kernel fingerprint after
+- `product_scope_id` is derived from the emitted kernel fingerprint after
   canonical
   fingerprinting; it is not part of kernel metadata or fingerprint inputs
-- `kernel_scope_id` is the product-scope attachment id for readiness,
+- `product_scope_id` is the product-scope attachment id for readiness,
   comparison, and other shared sidecars when no narrower truthful scope exists
-- `kernel_scope_id` is not a substitute for a narrower record id or stage-owned
+- `product_scope_id` is not a substitute for a narrower record id or stage-owned
   scope such as `selection_id`, `claim_scope_id`, `continuity_segment_id`,
   `balance_target_id`, or `checkpoint_proposal_id`
 
@@ -915,7 +915,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside kernel-scope readiness rollups
+- bury missing evidence inside product-scope readiness rollups
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:
@@ -1037,7 +1037,7 @@ Lineage rule:
 
 - `proposal_refs` uses ordered `checkpoint_proposal_id` values
   when reconciliation-owned proposals support the accepted assertion
-- product-scope `reconciliation_state_refs` remain the broader upstream
+- product-level `reconciliation_state_refs` remain the broader upstream
   partition lineage; assertion-level proposal refs point only at the accepted
   proposal lineage when that narrower lineage exists
 
