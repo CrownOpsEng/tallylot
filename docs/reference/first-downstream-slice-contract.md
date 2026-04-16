@@ -53,10 +53,10 @@ The slice may emit only these downstream kernel families:
 | `EconomicFacts` | `EconomicLegRecord` | only `holding_change`, `cash_change`, `fee`, and `rebate` leg roles |
 | `EconomicFacts` | `ValuationRecord` | zero rows by default; valuations land only when an unchanged parity slice proves they are required |
 | `ReconciliationState` | `ContinuitySegmentRecord` | one segment per in-scope Coinbase position subject and bounded time span |
-| `ReconciliationState` | `BalanceTargetRecord` | only `target_kind = exact_balance`, with direct `expected_value` and `observed_value` using `AssertionValue` |
+| `ReconciliationState` | `BalanceTargetRecord` | only `kind = exact_balance`, with direct `expected_value` and `observed_value` using `AssertionValue` |
 | `ReconciliationState` | `CheckpointProposalRecord` | only proposals supported by in-scope exact-balance targets and statement evidence |
 | `Checkpoint` | `CheckpointRecord` | accepted root record for in-scope checkpoint assertions only |
-| `Checkpoint` | `CheckpointAssertionRecord` | only `assertion_kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
+| `Checkpoint` | `CheckpointAssertionRecord` | only `kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
 `EventLinkRecord` remains out of scope for this bounded slice.
 
@@ -142,10 +142,10 @@ Slice-specific rules:
 - `valuation_id = [valuation_source_ref, valuation_purpose, amount, currency, valued_at, valued_precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id = [source_slug, subject_ref, segment_start_at, segment_end_at]`
-- `balance_target_id = [continuity_segment_id, subject_ref, target_kind, target_as_of_at, expected_value_fingerprint]`
+- `balance_target_id = [continuity_segment_id, subject_ref, kind, target_as_of_at, expected_value_fingerprint]`
 - `checkpoint_proposal_id = [continuity_segment_id, subject_ref, checkpoint_date, balance_target_refs]`
 - `checkpoint_set_id = [reconciliation_state_refs, asserted_as_of_at]`
-- `checkpoint_assertion_id = [assertion_kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
+- `checkpoint_assertion_id = [kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
 
 Not allowed in this slice:
 
@@ -190,7 +190,7 @@ The first downstream slice allows only:
 - `trust_level`:
   - `analysis_ready`
   - `filing_ready`
-- `acceptance_basis`:
+- `basis`:
   - `source_document`
   - `reconciled_continuity`
 - `evidence_class`:

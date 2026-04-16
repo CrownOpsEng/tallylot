@@ -157,31 +157,31 @@ Shared rules:
   scope such as `selection_id`, `continuity_segment_id`,
   `balance_target_id`, or `checkpoint_proposal_id`
 
-### Shared Kernel Status Vocabulary
+### Shared Record Status And Outcome Vocabulary
 
-Use these bounded status vocabularies across target kernels:
+Use these bounded record-local vocabularies across target kernels:
 
-- `selection_status`:
+- `EvidenceMemberRecord.status`:
   - `selected`
   - `superseded`
   - `blocked`
-- `claim_status`:
+- `ClaimRecord.status`:
   - `asserted`
   - `superseded`
-- `bundle_outcome`:
+- `BundleDecisionRecord.outcome`:
   - `accepted`
   - `blocked`
   - `deferred`
   - `superseded`
-- `reconciliation_status`:
+- `ContinuitySegmentRecord.status`:
   - `complete`
   - `partial`
   - `blocked`
-- `journal_status`:
+- `JournalEntryRecord.status`:
   - `expanded`
   - `validated`
   - `blocked`
-- `tax_status`:
+- `TaxOutputRecord.status`:
   - `ready`
   - `partial`
   - `blocked`
@@ -216,25 +216,25 @@ Record families:
   - `source_slug`
   - `adapter_id`
   - `capture_uid`
-  - `member_kind`
-  - `member_locator`
-  - `selection_status`
+  - `kind`
+  - `locator`
+  - `status`
   - `manifest_fingerprint`
 - `EvidenceObservationRecord`
   - `evidence_set_id`
   - `member_id`
   - `observation_id`
-  - `observation_kind`
-  - `observation_key`
+  - `kind`
+  - `key`
   - `observed_at`
   - `observed_precision`
   - `provenance_refs`
 - `SelectionRecord`
   - `evidence_set_id`
   - `selection_id`
-  - `selection_key`
+  - `key`
   - `selection_fingerprint`
-  - `selection_basis`
+  - `basis`
   - `blocking_gap_refs`
 
 Cardinality:
@@ -255,7 +255,7 @@ Envelope or sidecar content may include:
 
 Controlled vocabularies:
 
-- `selection_basis`:
+- `SelectionRecord.basis`:
   - `single_member_match`
   - `coverage_preferred`
   - `freshness_preferred`
@@ -269,7 +269,7 @@ The `EvidenceObservationRecord` shell above is required for every observation.
 For the first bounded slice, these kind-specific kernel fields are also
 required:
 
-| `observation_kind` | Kind-owned kernel fields |
+| `kind` | Kind-owned kernel fields |
 | --- | --- |
 | `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of_at`, `statement_as_of_precision` |
 | `coinbase_statement_balance_row` | `account_label`, `wallet_label`, `balance_kind`, `asset_symbol`, `quantity`, `observed_at`, `observed_precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
@@ -313,12 +313,12 @@ Stable ids:
 - `source_slug` uses the shared source slug for the capture boundary that owns
   the emitted evidence set
 - `selection_id` uses component array
-  `[evidence_set_id, selection_key]`
+  `[evidence_set_id, key]`
 - `member_id` uses component array
-  `[evidence_set_id, member_kind, member_locator]`
+  `[evidence_set_id, kind, locator]`
 - `observation_id` uses component array
-  `[member_id, observation_kind, observation_key]`
-- `selection_key` is emitted by the evidence-selection stage and
+  `[member_id, kind, key]`
+- `key` is emitted by the evidence-selection stage and
   remains a stable upstream id rather than a downstream recomputation
 - because `selection_fingerprint` is part of `evidence_set_id`, a change in
   the authoritative selection state intentionally produces a new
@@ -327,7 +327,7 @@ Stable ids:
 Ordering:
 
 - `EvidenceMemberRecord` rows sort by tuple
-  `[selection_id, selection_status, member_id]`
+  `[selection_id, status, member_id]`
 - `EvidenceObservationRecord` rows sort by `[member_id, observation_id]`
 - `SelectionRecord` rows sort by `[selection_id]`
 
@@ -392,9 +392,9 @@ Record families:
   - `interpretation_scope_id`
   - `bundle_id`
   - `claim_id`
-  - `claim_kind`
-  - `claim_status`
-  - `claim_key`
+  - `kind`
+  - `status`
+  - `key`
   - `evidence_member_refs`
   - `evidence_observation_refs`
   - `effective_at`
@@ -404,18 +404,18 @@ Record families:
   - `claim_set_id`
   - `interpretation_scope_id`
   - `bundle_id`
-  - `bundle_key`
+  - `key`
   - `scope_key`
   - `claim_refs`
 - `BundleDecisionRecord`
   - `claim_set_id`
   - `interpretation_scope_id`
   - `bundle_decision_id`
-  - `bundle_outcome`
+  - `outcome`
   - `selected_bundle_id`
   - `rejected_bundle_refs`
   - `deferred_bundle_refs`
-  - `resolution_basis`
+  - `basis`
   - `blocking_gap_refs`
 
 Cardinality:
@@ -439,7 +439,7 @@ Canonical claim kinds:
 
 Controlled vocabularies:
 
-- `resolution_basis`:
+- `BundleDecisionRecord.basis`:
   - `single_bundle_match`
   - `insufficient_identity`
   - `insufficient_temporal_precision`
@@ -453,7 +453,7 @@ Controlled vocabularies:
 The `ClaimRecord` shell above is required for every claim. For the first
 bounded slice, these kind-specific kernel fields are also required:
 
-| `claim_kind` | Kind-owned kernel fields |
+| `kind` | Kind-owned kernel fields |
 | --- | --- |
 | `ActivityClaim` | `source_activity_kind`, `location_claim_ref`, `activity_leg_specs` |
 | `BalanceObservationClaim` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `observed_precision` |
@@ -494,7 +494,7 @@ First-slice linkage rules:
 ### Derived Compatibility Sidecars
 
 Derived compatibility sidecars keep legacy draft and fact reproduction fields
-out of canonical `ClaimSet` kernels.
+out of `ClaimSet` kernels.
 
 Rules:
 
@@ -507,9 +507,10 @@ Rules:
   `ActivityClaim.source_activity_kind` and must not be duplicated into a
   compatibility sidecar field
 - review markers map to shared support records and sidecars rather than
-  canonical claims or compatibility sidecars that masquerade as claim meaning
+  claim-kernel fields or compatibility sidecars that masquerade as claim
+  meaning
 - adapter-local extras may survive only as envelope or compatibility-sidecar
-  detail and never as canonical `ClaimSet` kernel meaning
+  detail and never as `ClaimSet` kernel meaning
 - do not add a generic `claim_payload` blob to stand in for a kind table
 - no non-critical claim kind may be implemented until this page or the
   owning bounded slice page defines its kernel field table explicitly
@@ -527,17 +528,17 @@ Stable ids:
 - `claim_set_id` uses component array `[evidence_set_id, claim_producer_id]`
 - `interpretation_scope_id` uses component array `[claim_set_id, scope_key]`
 - `bundle_id` uses component array
-  `[interpretation_scope_id, bundle_key]`
-- `claim_id` uses component array `[bundle_id, claim_kind, claim_key]`
+  `[interpretation_scope_id, key]`
+- `claim_id` uses component array `[bundle_id, kind, key]`
 - `bundle_decision_id` uses component array
   `[claim_set_id, interpretation_scope_id]`
 
 Ordering:
 
 - `ClaimRecord` rows sort by tuple
-  `[bundle_id, claim_kind, effective_at, effective_precision, claim_id]`
+  `[bundle_id, kind, effective_at, effective_precision, claim_id]`
 - `ClaimBundleRecord` rows sort by
-  `[interpretation_scope_id, bundle_key, bundle_id]`
+  `[interpretation_scope_id, key, bundle_id]`
 - `BundleDecisionRecord` rows sort by
   `[interpretation_scope_id, bundle_decision_id]`
 
@@ -576,7 +577,7 @@ Must guarantee:
 Must not:
 
 - force unresolved meaning into final economic or policy interpretations
-- treat bridge compatibility annotations as canonical claims
+- treat bridge compatibility annotations as claim kernels
 - silently discard materially relevant alternative bundles
 
 Handoff to `EconomicFacts`:
@@ -764,53 +765,53 @@ Record families:
   - `subject_ref`
   - `segment_start_at`
   - `segment_end_at`
-  - `reconciliation_status`
+  - `status`
   - `checkpoint_date`
 - `EventLinkRecord`
   - `event_link_id`
   - `continuity_segment_id`
-  - `link_kind`
+  - `kind`
   - `left_event_ref`
   - `right_event_ref`
-  - `link_status`
+  - `status`
 - `BalanceTargetRecord`
   - `balance_target_id`
   - `continuity_segment_id`
   - `subject_ref`
-  - `target_kind`
+  - `kind`
   - `target_as_of_at`
   - `expected_value`
   - `observed_value`
-  - `balance_target_status`
+  - `status`
 - `CheckpointProposalRecord`
   - `checkpoint_proposal_id`
   - `continuity_segment_id`
   - `subject_ref`
   - `checkpoint_date`
-  - `proposal_status`
+  - `status`
   - `balance_target_refs`
   - `evidence_refs`
 
 Controlled vocabularies:
 
-- `link_kind`:
+- `EventLinkRecord.kind`:
   - `transfer_pair`
   - `settlement_pair`
-- `link_status`:
+- `EventLinkRecord.status`:
   - `linked`
   - `candidate`
   - `blocked`
   - `superseded`
-- `target_kind`:
+- `BalanceTargetRecord.kind`:
   - `exact_balance`
   - `range_balance`
   - `boundary_balance`
-- `balance_target_status`:
+- `BalanceTargetRecord.status`:
   - `matched`
   - `mismatched`
   - `missing_observation`
   - `blocked`
-- `proposal_status`:
+- `CheckpointProposalRecord.status`:
   - `ready`
   - `partial`
   - `blocked`
@@ -847,9 +848,9 @@ Stable ids:
 - `source_slug` uses the shared source slug for the assembled source scope that
   owns the continuity window
 - `event_link_id` uses component array
-  `[continuity_segment_id, link_kind, left_event_ref, right_event_ref]`
+  `[continuity_segment_id, kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
-  `[continuity_segment_id, subject_ref, target_kind, target_as_of_at, expected_value_fingerprint]`
+  `[continuity_segment_id, subject_ref, kind, target_as_of_at, expected_value_fingerprint]`
 - `checkpoint_proposal_id` uses component array
   `[continuity_segment_id, subject_ref, checkpoint_date, balance_target_refs]`
 - `expected_value_fingerprint` is the canonical fingerprint of the
@@ -860,9 +861,9 @@ Stable ids:
 Ordering:
 
 - `ContinuitySegmentRecord` rows sort by
-  `[checkpoint_date, source, subject_ref, continuity_segment_id]`
+  `[checkpoint_date, source_slug, subject_ref, continuity_segment_id]`
 - `EventLinkRecord` rows sort by
-  `[continuity_segment_id, link_kind, left_event_ref, right_event_ref, event_link_id]`
+  `[continuity_segment_id, kind, left_event_ref, right_event_ref, event_link_id]`
 - `BalanceTargetRecord` rows sort by
   `[continuity_segment_id, subject_ref, target_as_of_at, balance_target_id]`
 - `CheckpointProposalRecord` rows sort by
@@ -935,18 +936,18 @@ Record families:
   - `checkpoint_assertion_id`
   - `checkpoint_id`
   - `subject_ref`
-  - `assertion_kind`
+  - `kind`
   - `asserted_as_of_at`
   - `accepted_value`
   - `trust_level`
-  - `acceptance_basis`
+  - `basis`
   - `evidence_class`
   - `continuity_proof`
 - `checkpoint_proposal_refs`
 
 Controlled vocabularies:
 
-- `assertion_kind`:
+- `CheckpointAssertionRecord.kind`:
   - `position_quantity`
   - `cash_quantity`
   - `basis_value`
@@ -956,7 +957,7 @@ Controlled vocabularies:
   - `filing_ready`
   - `analysis_ready`
   - `operator_only`
-- `acceptance_basis`:
+- `CheckpointAssertionRecord.basis`:
   - `source_document`
   - `source_system_balance`
   - `reconciled_continuity`
@@ -999,7 +1000,7 @@ Stable ids:
 - `checkpoint_id` uses component array
   `[asserted_as_of_at, checkpoint_assertion_ids]`
 - `checkpoint_assertion_id` uses component array
-  `[assertion_kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
+  `[kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
 - `accepted_value_fingerprint` is the canonical fingerprint of one
   `AssertionValue` variant from [Domain Ontology](domain-ontology.md)
 
@@ -1034,7 +1035,7 @@ Fingerprint inputs:
 Minimum admissibility rules:
 
 - `filing_ready` requires:
-  - `acceptance_basis` other than `operator_assertion`
+  - `basis` other than `operator_assertion`
   - `evidence_class` other than `operator_assertion`
   - `continuity_proof` other than `partial_continuity`
 - `analysis_ready` may use `operator_assertion` or `partial_continuity`, but
@@ -1088,11 +1089,11 @@ Record families:
 - `JournalEntryRecord`
   - `journal_id`
   - `entry_id`
-  - `entry_kind`
+  - `kind`
   - `effective_at`
   - `economic_event_refs`
   - `checkpoint_assertion_refs`
-  - `journal_status`
+  - `status`
 - `PostingRecord`
   - `posting_id`
   - `entry_id`
@@ -1104,24 +1105,24 @@ Record families:
 - `EntryCheckRecord`
   - `entry_check_id`
   - `entry_id`
-  - `check_kind`
-  - `check_status`
+  - `kind`
+  - `status`
   - `blocking_gap_refs`
 
 Controlled vocabularies:
 
-- `entry_kind`:
+- `JournalEntryRecord.kind`:
   - `economic_event_entry`
   - `checkpoint_opening_entry`
   - `adjustment_entry`
 - `posting_side`:
   - `debit`
   - `credit`
-- `check_kind`:
+- `EntryCheckRecord.kind`:
   - `balanced`
   - `commodity_balance`
   - `unsupported_coverage`
-- `check_status`:
+- `EntryCheckRecord.status`:
   - `passed`
   - `blocked`
 
@@ -1150,17 +1151,17 @@ Stable ids:
 - `journal_id` uses component array
   `[checkpoint_ref, economic_facts_refs]`
 - `entry_id` uses component array
-  `[journal_id, entry_kind, effective_at, economic_event_refs, checkpoint_assertion_refs]`
+  `[journal_id, kind, effective_at, economic_event_refs, checkpoint_assertion_refs]`
 - `posting_id` uses component array
   `[entry_id, account_ref, commodity_ref, amount, posting_side, origin_ref]`
-- `entry_check_id` uses component array `[entry_id, check_kind]`
+- `entry_check_id` uses component array `[entry_id, kind]`
 
 Ordering:
 
-- `JournalEntryRecord` rows sort by `[effective_at, entry_kind, entry_id]`
+- `JournalEntryRecord` rows sort by `[effective_at, kind, entry_id]`
 - `PostingRecord` rows sort by
   `[entry_id, posting_side, account_ref, commodity_ref, origin_ref, posting_id]`
-- `EntryCheckRecord` rows sort by `[entry_id, check_kind, entry_check_id]`
+- `EntryCheckRecord` rows sort by `[entry_id, kind, entry_check_id]`
 
 Serialization:
 
@@ -1221,7 +1222,7 @@ Record families:
 
 - `TaxDeterminantRecord`
   - `determinant_id`
-  - `determinant_kind`
+  - `kind`
   - `tax_year`
   - `basis_pool_ref`
   - `beneficial_owner_ref`
@@ -1239,11 +1240,11 @@ Record families:
   - `basis_pool_ref`
   - `from_determinant_ref`
   - `to_determinant_ref`
-  - `transition_kind`
+  - `kind`
 
 Controlled vocabularies:
 
-- `determinant_kind`:
+- `TaxDeterminantRecord.kind`:
   - `acquisition`
   - `disposition`
   - `income`
@@ -1256,7 +1257,7 @@ Controlled vocabularies:
   - `increase`
   - `decrease`
   - `neutral`
-- `transition_kind`:
+- `BasisTransitionRecord.kind`:
   - `pool_open`
   - `pool_adjustment`
   - `pool_close`
@@ -1277,16 +1278,16 @@ Stable ids:
 - `tax_inputs_id` uses component array
   `[checkpoint_ref, economic_facts_refs]`
 - `determinant_id` uses component array
-  `[tax_year, determinant_kind, basis_pool_ref, beneficial_owner_ref, instrument_ref, effective_at, quantity, direction, economic_event_refs, checkpoint_assertion_refs]`
+  `[tax_year, kind, basis_pool_ref, beneficial_owner_ref, instrument_ref, effective_at, quantity, direction, economic_event_refs, checkpoint_assertion_refs]`
 - `basis_transition_id` uses component array
-  `[basis_pool_ref, transition_kind, from_determinant_ref, to_determinant_ref]`
+  `[basis_pool_ref, kind, from_determinant_ref, to_determinant_ref]`
 
 Ordering:
 
 - `TaxDeterminantRecord` rows sort by tuple
-  `[tax_year, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_key, determinant_kind, effective_at, determinant_id]`
+  `[tax_year, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_key, kind, effective_at, determinant_id]`
 - `BasisTransitionRecord` rows sort by
-  `[basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_key, transition_kind, basis_transition_id]`
+  `[basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_key, kind, basis_transition_id]`
 
 Serialization:
 
@@ -1350,9 +1351,9 @@ Record families:
 - `TaxOutputRecord`
   - `tax_output_id`
   - `tax_policy_id`
-  - `output_kind`
+  - `kind`
   - `tax_year`
-  - `tax_status`
+  - `status`
   - `basis_pool_refs`
 - `CarryForwardRecord`
   - `carry_forward_id`
@@ -1368,7 +1369,7 @@ Record families:
 
 Controlled vocabularies:
 
-- `output_kind`:
+- `TaxOutputRecord.kind`:
   - `realized_gains_schedule`
   - `income_schedule`
   - `expense_schedule`
@@ -1398,7 +1399,7 @@ Stable ids:
   record
 - `tax_outputs_id` uses component array `[tax_inputs_ref, tax_policy_id, tax_year]`
 - `tax_output_id` uses component array
-  `[tax_policy_id, output_kind, tax_year, basis_pool_refs]`
+  `[tax_policy_id, kind, tax_year, basis_pool_refs]`
 - `carry_forward_id` uses component array
   `[tax_output_id, basis_pool_ref, next_tax_year]`
 - `unsupported_determinant_id` uses component array
@@ -1407,7 +1408,7 @@ Stable ids:
 Ordering:
 
 - `TaxOutputRecord` rows sort by
-  `[tax_policy_id, tax_year, output_kind, tax_output_id]`
+  `[tax_policy_id, tax_year, kind, tax_output_id]`
 - `CarryForwardRecord` rows sort by
   `[tax_output_id, next_tax_year, basis_pool_ref, carry_forward_id]`
 - `UnsupportedDeterminantRecord` rows sort by

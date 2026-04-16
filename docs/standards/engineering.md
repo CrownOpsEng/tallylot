@@ -225,9 +225,11 @@ Current application of this rule:
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `projection`,
   `file`, or `package`.
-- Prefer `*_kind` for canonical one-of vocab and variant fields. Reserve
-  `family` for prose grouping of related record types, adapters, or artifact
-  lines rather than for kernel field names.
+- Prefer `kind` for a record's own primary one-of or variant field, and use
+  `*_kind` when the field classifies another concept, a nested structure, or a
+  sibling concept inside the same record. Reserve `family` for prose grouping
+  of related record types, adapters, or artifact lines rather than for kernel
+  field names.
 - For canonical textual source identifiers, prefer `source_slug` over bare
   `source`. Reserve bare `source` for prose, for grouping dimensions whose
   enclosing field already states the role, or for source-scoped provider
@@ -235,6 +237,10 @@ Current application of this rule:
 - In canonical target-layer evidence and claim contracts, prefer `source_*`
   or `source_local_*` over `provider_*` unless the field truly preserves an
   adapter-local or compatibility-only provider label.
+- When a record owns one primary lifecycle, decision, or resolution field,
+  prefer plain `status`, `basis`, or `outcome` over repeating the record stem.
+  Add a prefix only when the field describes another concept's status or basis
+  rather than the record's own state.
 - Apply the same naming rules to observation kinds and controlled-vocabulary
   members. Name the held thing or decision shape directly instead of hiding it
   behind abstract labels such as `identity` or `anchor` when the canonical
@@ -250,10 +256,12 @@ Current application of this rule:
   field name when the enclosing contract already provides that meaning.
   Drop redundant ordering prefixes and contextual support adjectives when the
   record already establishes the relationship.
-- Prefer `*_key` for stable discriminators inside canonical ids, tuples, and
-  record-local identity seams. Avoid more abstract labels such as `*_anchor`
-  or redundant labels such as `*_discriminator` when the field simply holds
-  the stable key for that parent scope.
+- Prefer `key` or `locator` when a record owns one primary discriminator or
+  one primary locator. Use `*_key` or `*_locator` when the field belongs to
+  another concept or when one record carries multiple fields of that shape.
+  Avoid more abstract labels such as `*_anchor` or redundant labels such as
+  `*_discriminator` when the field simply holds the stable key for that parent
+  scope.
 - Inside aggregate summary records, use `rollup_kind` and `rollup_key` for the
   grouping dimensions so `summary` remains the record shape, not a second
   generic field prefix.
@@ -266,7 +274,7 @@ Current application of this rule:
   `EventLinkRecord` or `EntryCheckRecord` over ambiguous cross-stage names such
   as `LinkRecord` or `ValidationRecord`.
 - Prefer the base noun when a field already stores the locator or ref itself.
-  Avoid extra suffixes such as `_identity` when `member_locator` or
+  Avoid extra suffixes such as `_identity` when `locator` or
   `valuation_source_ref` already says what the value holds.
 - For compatibility-only material that is not a target concept, name it by
   boundary and role rather than promoting it to a pseudo-domain type.

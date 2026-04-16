@@ -81,10 +81,10 @@ Observation-field rules:
 
 The bounded slice uses only these selection keys:
 
-| `selection_key` | Meaning |
+| `key` | Meaning |
 | --- | --- |
 | `["coinbase_retail_export"]` | deterministic decision boundary for Coinbase retail export selection |
-| `["statement_document", member_locator]` | deterministic inclusion decision for one recognized statement document |
+| `["statement_document", locator]` | deterministic inclusion decision for one recognized statement document |
 
 `translation_input_candidates.json` remains envelope or sidecar reasoning only.
 It does not become a kernel record family.
@@ -209,7 +209,7 @@ Declared compatibility-sidecar boundary:
 - legacy bridge-only fields such as `economic_kind`, `projection_hint`,
   `accounting_intent_hint`, `tax_treatment_hint`, `description`,
   `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status`
-  stay outside canonical `ClaimSet`
+  stay outside `ClaimSet` kernels
 - `provider_operation_key` stays satisfied by
   `ActivityClaim.source_activity_kind` and is not duplicated as a
   compatibility-only claim field
@@ -228,12 +228,12 @@ Slice-specific identity rules:
   products
 - `evidence_set_id` intentionally changes when `selection_fingerprint`
   changes, because the authoritative capture-level evidence emission changed
-- `member_locator` for `coinbase_retail_export` is
+- `locator` for `coinbase_retail_export` is
   `[raw_file, raw_member_ref]`
-- `member_locator` for `coinbase_statement_document` is
+- `locator` for `coinbase_statement_document` is
   `[raw_file, raw_member_ref]`
-- `observation_key` for `statement_document` is `["document"]`
-- `observation_key` for `coinbase_statement_balance_row` is `[row_key]`
+- `key` for `statement_document` is `["document"]`
+- `key` for `coinbase_statement_balance_row` is `[row_key]`
 - `retail_member_id` means the `member_id` of the selected
   `coinbase_retail_export` member
 - `document_member_id` means the `member_id` of the selected
@@ -250,13 +250,13 @@ Slice-specific interpretation-scope keys:
 
 Slice-specific claim-key rule:
 
-- `claim_key` uses `[scope_key, claim_kind, claim_slot]`
+- `key` uses `[scope_key, kind, claim_slot]`
 - `claim_slot` is `0` when only one claim of that kind exists in the bundle
 - repeated same-kind claims use `1`, `2`, and so on in canonical order
 
 Bundle rule:
 
-- `bundle_key` is `default` when the scope has one bundle
+- `key` is `default` when the scope has one bundle
 - alternative bundles use `alt:1`, `alt:2`, and so on in canonical bundle
   order
 

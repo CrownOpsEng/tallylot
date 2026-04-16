@@ -79,7 +79,7 @@ Must freeze:
   refs use product ids rather than `dataset_id`
 - target naming rules that distinguish concepts, refs, ids, records,
   projections, and sidecars without baking bridge-era qualifiers into
-  canonical target names
+  target names
 - authoritative persistence model, partition scopes, sidecar rules, and
   default filesystem placement
 - migration authority rules, compatibility projections, reader cutovers, and
@@ -106,8 +106,7 @@ Exit criteria:
 - claim-stage blockers can attach to `interpretation_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
   accounting or tax subjects without collapsing to dataset-only scope
-- no target id or helper id bakes bridge-era naming into canonical target
-  identity
+- no target id or helper id bakes bridge-era naming into target identity
 - no bridge artifact is left without an authority and retirement rule
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
@@ -157,8 +156,8 @@ Deliver:
 - frozen first-slice claim fields plus `evidence_observation_refs`
 - shared support records and sidecars attached to claim scopes where needed
 - declared compatibility projections for `EconomicActivityDraft` and
-  `SourceTranslationBatch`, with legacy hint fields kept outside canonical
-  claims
+  `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
+  kernels
 
 Exit criteria:
 
