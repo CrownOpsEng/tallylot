@@ -27,7 +27,7 @@ These anchors drive sequencing and acceptance criteria:
 
 - reconciliation remains the trust gate before checkpoint adoption, journal
   emission, and tax
-- checkpoint truth is accepted state with explicit acceptance basis
+- checkpoint truth is accepted checkpoint state with explicit acceptance basis
 - primary evidence and evidence-backed checkpoints remain first-class
 - raw-evidence derivation is the supported meaning-parity path
 - capture identity is `capture_uid`, not path
@@ -85,8 +85,13 @@ Must freeze:
   keep product-id component order aligned to product-header order, keep
   canonical shared-support rollups stage- and domain-oriented, use target-owned
   label pairs such as `location_group_label` and `location_label` when
-  preserving source-provided location labels, and prefer direct kind values
-  such as `instrument` over pseudo-type labels
+  preserving source-provided location labels, keep generic downstream record
+  families stage-owned with names such as `TaxCarryForwardRecord` and
+  `TaxUnsupportedInputRecord`, keep partition-scope labels aligned to the
+  actual identity dimensions they reduce over, describe non-authoritative
+  bridge outputs as derived compatibility projections rather than bridge-era
+  compile steps, and prefer direct kind values such as `instrument` over
+  pseudo-type labels
 - child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
   `checkpoint_proposal_id`, `JournalAccountRef`, and `JournalUnitRef` as the
   canonical downstream stems instead of shorter or mixed-family alternates
@@ -245,7 +250,7 @@ Deliver:
 
 Exit criteria:
 
-- checkpoint truth is explicit accepted state, not an inferred side effect
+- checkpoint truth is explicit accepted checkpoint state, not an inferred side effect
 - statement-backed checkpoint acceptance is separated cleanly from manual-only
   runtime aids
 
@@ -259,7 +264,7 @@ Deliver:
 
 - `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
 - journal-owned blockers and entry-check rules
-- rendering orchestration over accepted upstream truth
+- rendering orchestration over accepted upstream products
 
 Exit criteria:
 
@@ -271,14 +276,15 @@ Exit criteria:
 Goal:
 
 - build policy-ready tax inputs and policy-owned outputs from accepted
-  upstream truth
+  upstream products
 
 Deliver:
 
 - `TaxInputs` contracts
 - selected tax-policy execution over those inputs
-- year partitioning and carry-forward records
-- filing-critical policy outputs derived from accepted runtime truth rather than
+- year partitioning and tax carry-forward records
+- explicit tax unsupported-input records where policy execution cannot proceed
+- filing-critical policy outputs derived from accepted upstream products rather than
   CoinTracking tax reports
 
 Exit criteria:
@@ -379,7 +385,7 @@ Rules:
   repeatedly joining provenance, review, or renderer detail
 - derived snapshots and reusable state should be introduced where replay cost
   becomes material
-- tax work should support tax-year partitioning and carry-forward record reuse instead
+- tax work should support tax-year partitioning and tax carry-forward record reuse instead
   of recomputing full acquisition history for every output row
 
 ## Guardrails
@@ -418,7 +424,7 @@ Rules:
 - add replay coverage for target kernels and compatibility projections
 - add reconciliation parity and checkpoint continuity tests
 - add journal entry-check coverage
-- add tax policy coverage with explicit unsupported-input records
+- add tax policy coverage with explicit tax unsupported-input records
 - keep end-to-end smoke workflows for each major slice before removing older
   transition paths
 

@@ -30,7 +30,8 @@ The target runtime pipeline is:
 - downstream stages force specificity only when they own the decision
 - no stage may guess a later-stage answer
 - no stage may suppress uncertainty that a later stage must still see
-- no stage may duplicate upstream meaning unless the downstream-owned meaning
+- no stage may duplicate upstream product meaning unless the downstream-owned
+  meaning
   has changed
 - target-product kernel rules in this page are authoritative; other docs may
   point here but should not restate competing kernel, id, fingerprint, or
@@ -50,7 +51,7 @@ Shared rules:
 - every output preserves stable ids and enough upstream linkage for later audit
 - later stages may add stage-owned sidecars, rollups, and reporting
   projections, but must not
-  silently rewrite upstream truth to make their own outputs look tidy
+  silently rewrite upstream product meaning to make their own outputs look tidy
 - if a stage cannot support a required decision, it emits explicit blockers,
   unresolved records, or deferred records rather than inventing a fallback
 - replay and parity gates operate on kernels first and inspect sidecars
@@ -951,7 +952,7 @@ Owns:
 
 - accepted `CheckpointAssertionRecord` rows
 - adopted opening state when intentionally used
-- acceptance basis, trust level, and continuity into accepted state
+- acceptance basis, trust level, and continuity into accepted checkpoint state
 
 Record families:
 
@@ -1070,7 +1071,8 @@ Minimum admissibility rules:
   for reference use because it relies solely on manual assertion without
   evidence-backed support
 - `adopted_opening` remains a distinct acceptance basis and must preserve
-  provenance plus the continuity kind used to roll it into accepted state
+  provenance plus the continuity kind used to roll it into accepted checkpoint
+  state
 
 Must guarantee:
 
@@ -1168,7 +1170,7 @@ Product-root cardinality:
 Stable ids:
 
 - `journal_id` identifies one emitted `Journal` kernel over the declared
-  upstream truth set
+  upstream product lineage
 - `entry_id` identifies one journal entry
 - `posting_id` identifies one posting under one journal entry
 - `entry_check_id` identifies one journal entry check result
@@ -1243,7 +1245,8 @@ Owns:
 
 - tax inputs derived from reconciled economics plus accepted checkpoint
   truth
-- explicit tax-owned blockers where upstream truth is still not tax-complete
+- explicit tax-owned blockers where upstream products still lack required tax
+  meaning
 
 Record families:
 
@@ -1334,7 +1337,7 @@ Must guarantee:
 
 - jurisdiction-neutral tax inputs
 - explicit basis-affecting state changes
-- explicit tax-owned blockers where upstream truth is not tax-complete
+- explicit tax-owned blockers where upstream products lack required tax meaning
 - tax-incomplete inputs stay explicit instead of being upgraded into guessed
   treatment
 
@@ -1368,7 +1371,8 @@ Product header:
 
 Owns:
 
-- tax output records, carry-forward records, and unsupported-input records
+- tax output records, tax carry-forward records, and tax unsupported-input
+  records
 - tax-policy explanations, limitations, and rendered output content
 - tax-owned blockers that survive policy execution
 
@@ -1381,14 +1385,14 @@ Record families:
   - `tax_year`
   - `status`
   - `basis_pool_refs`
-- `CarryForwardRecord`
-  - `carry_forward_id`
+- `TaxCarryForwardRecord`
+  - `tax_carry_forward_id`
   - `tax_output_id`
   - `basis_pool_ref`
   - `next_tax_year`
   - `fingerprint`
-- `UnsupportedInputRecord`
-  - `unsupported_input_id`
+- `TaxUnsupportedInputRecord`
+  - `tax_unsupported_input_id`
   - `tax_output_id`
   - `tax_input_ref`
   - `blocking_gap_refs`
@@ -1404,13 +1408,13 @@ Sidecar content may include:
 
 - rendered policy content
 - filing notes and limitations
-- carry-forward explanation
-- unsupported-input explanation
+- tax carry-forward explanation
+- tax unsupported-input explanation
 
 Product-root cardinality:
 
 - one `TaxOutputs` kernel may contain many `TaxOutputRecord`,
-  `CarryForwardRecord`, and `UnsupportedInputRecord` rows
+  `TaxCarryForwardRecord`, and `TaxUnsupportedInputRecord` rows
 - one emitted `TaxOutputs` kernel must contain exactly one `tax_policy_id` and one
   `tax_year`
 
@@ -1418,25 +1422,25 @@ Stable ids:
 
 - `tax_outputs_id` identifies one emitted `TaxOutputs` kernel
 - `tax_output_id` identifies one policy-owned output emission
-- `carry_forward_id` identifies one carry-forward record
-- `unsupported_input_id` identifies one persisted unsupported input
+- `tax_carry_forward_id` identifies one tax carry-forward record
+- `tax_unsupported_input_id` identifies one persisted tax unsupported-input
   record
 - `tax_outputs_id` uses component array `[tax_inputs_ref, tax_policy_id, tax_year]`
 - `tax_output_id` uses component array
   `[tax_policy_id, kind, tax_year, basis_pool_refs]`
-- `carry_forward_id` uses component array
+- `tax_carry_forward_id` uses component array
   `[tax_output_id, basis_pool_ref, next_tax_year]`
-- `unsupported_input_id` uses component array
+- `tax_unsupported_input_id` uses component array
   `[tax_output_id, tax_input_ref]`
 
 Ordering:
 
 - `TaxOutputRecord` rows sort by
   `[tax_policy_id, tax_year, kind, tax_output_id]`
-- `CarryForwardRecord` rows sort by
-  `[tax_output_id, next_tax_year, basis_pool_ref, carry_forward_id]`
-- `UnsupportedInputRecord` rows sort by
-  `[tax_output_id, tax_input_ref, unsupported_input_id]`
+- `TaxCarryForwardRecord` rows sort by
+  `[tax_output_id, next_tax_year, basis_pool_ref, tax_carry_forward_id]`
+- `TaxUnsupportedInputRecord` rows sort by
+  `[tax_output_id, tax_input_ref, tax_unsupported_input_id]`
 
 Serialization:
 
@@ -1450,8 +1454,8 @@ Fingerprint inputs:
 
 - product header
 - canonical `TaxOutputRecord` rows
-- canonical `CarryForwardRecord` rows
-- canonical `UnsupportedInputRecord` rows
+- canonical `TaxCarryForwardRecord` rows
+- canonical `TaxUnsupportedInputRecord` rows
 
 Must guarantee:
 

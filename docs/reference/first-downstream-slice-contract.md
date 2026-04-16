@@ -230,7 +230,7 @@ following:
 - `BalanceTargetRecord` ids, ordering, and statuses
 - `CheckpointProposalRecord` ids, ordering, and statuses
 - `CheckpointAssertionRecord` ids, ordering, and accepted values
-- compiled `TransactionFact` ordering and semantics for evidence in this slice
+- derived `TransactionFact` ordering and meaning for evidence in this slice
 - `facts.csv` content for evidence in this slice
 - `balance_snapshots.csv` content for evidence in this slice
 - `balance_references.csv` content for evidence in this slice
@@ -244,7 +244,7 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical `EconomicFacts` kernel fingerprints
 - identical `ReconciliationState` kernel fingerprints
 - identical `Checkpoint` kernel fingerprints
-- identical compiled bridge fact fingerprints for evidence in this slice
+- identical derived `TransactionFact` fingerprints for evidence in this slice
 - identical `facts.csv` content for evidence in this slice
 - identical `balance_snapshots.csv` and `balance_references.csv` content for
   evidence in this slice

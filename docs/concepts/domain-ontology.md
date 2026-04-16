@@ -407,7 +407,7 @@ Required domain ownership:
 - `domain/checkpoint/` for accepted checkpoint truth
 - `domain/journal/` for journal models
 - `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
-  carry-forward records, and outputs
+  tax carry-forward records, tax unsupported-input records, and outputs
 
 Required application ownership:
 
