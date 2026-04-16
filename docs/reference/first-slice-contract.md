@@ -121,7 +121,7 @@ Frozen kind-specific claim fields:
 | `InstrumentIdentityClaim` | `scheme`, `value`, `venue`, `kind_hint`, `display_name`, `precision_hint` |
 | `LocationClaim` | `location_ref`, `account_label`, `wallet_label` |
 | `BeneficialOwnerClaim` | `beneficial_owner_ref` |
-| `ValuationClaim` | `valuation_measure_kind`, `valuation_purpose`, `amount`, `currency`, `valued_at`, `valued_precision`, `location_claim_ref`, `instrument_claim_refs` |
+| `ValuationClaim` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `valued_precision`, `location_claim_ref`, `instrument_claim_refs` |
 
 `activity_leg_specs` entry shape:
 

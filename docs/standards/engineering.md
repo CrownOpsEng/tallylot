@@ -254,6 +254,11 @@ Current application of this rule:
   prefer plain `status`, `basis`, or `outcome` over repeating the record stem.
   Add a prefix only when the field describes another concept's status or basis
   rather than the record's own state.
+- When a record owns one primary classification, role, or intent field,
+  prefer plain `kind`, `role`, `purpose`, or `measure_kind` over repeating the
+  record stem. Add a longer prefix only when the same record carries multiple
+  fields of that family or the field describes another concept's role or
+  purpose.
 - Apply the same naming rules to observation kinds and controlled-vocabulary
   members. Name the held thing or decision shape directly instead of hiding it
   behind abstract labels such as `identity` or `anchor` when the canonical
@@ -292,7 +297,7 @@ Current application of this rule:
   as `LinkRecord` or `ValidationRecord`.
 - Prefer the base noun when a field already stores the locator or ref itself.
   Avoid extra suffixes such as `_identity` when `locator` or
-  `valuation_source_ref` already says what the value holds.
+  `source_ref` already says what the value holds.
 - For compatibility-only material that is not a target concept, name it by
   boundary and role rather than promoting it to a pseudo-domain type.
   Prefer `bridge annotation detail`, `output note sidecar`, or

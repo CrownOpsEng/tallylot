@@ -460,7 +460,7 @@ bounded slice, these kind-specific kernel fields are also required:
 | `InstrumentIdentityClaim` | `scheme`, `value`, `venue`, `kind_hint`, `display_name`, `precision_hint` |
 | `LocationClaim` | `location_ref`, `account_label`, `wallet_label` |
 | `BeneficialOwnerClaim` | `beneficial_owner_ref` |
-| `ValuationClaim` | `valuation_measure_kind`, `valuation_purpose`, `amount`, `currency`, `valued_at`, `valued_precision`, `location_claim_ref`, `instrument_claim_refs` |
+| `ValuationClaim` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `valued_precision`, `location_claim_ref`, `instrument_claim_refs` |
 
 `activity_leg_specs` entry shape:
 
@@ -612,7 +612,7 @@ Record families:
   - `event_id`
   - `bundle_id`
   - `bundle_decision_id`
-  - `event_kind`
+  - `kind`
   - `effective_at`
   - `recorded_at`
   - `settlement_state`
@@ -624,7 +624,7 @@ Record families:
 - `EconomicLegRecord`
   - `leg_id`
   - `event_id`
-  - `leg_role`
+  - `role`
   - `subject_ref`
   - `instrument_ref`
   - `location_ref`
@@ -632,8 +632,8 @@ Record families:
   - `valuation_ref`
 - `ValuationRecord`
   - `valuation_id`
-  - `valuation_source_ref`
-  - `valuation_purpose`
+  - `source_ref`
+  - `purpose`
   - `amount`
   - `currency`
   - `valued_at`
@@ -643,7 +643,7 @@ Record families:
 
 Controlled vocabularies:
 
-- `event_kind`:
+- `EconomicEventRecord.kind`:
   - `asset_movement`
   - `cash_movement`
   - `obligation_or_right`
@@ -654,7 +654,7 @@ Controlled vocabularies:
   - `withholding`
   - `lifecycle_restructure`
   - `correction`
-- `leg_role`:
+- `EconomicLegRecord.role`:
   - `holding_change`
   - `cash_change`
   - `obligation_change`
@@ -674,12 +674,12 @@ Stable ids:
 - `valuation_id` identifies one valuation record used by one or more accepted
   events or legs
 - `economic_facts_id` uses component array `[claim_set_refs]`
-- `valuation_source_ref` uses `ValuationSourceRef` from
+- `source_ref` uses `ValuationSourceRef` from
   [Target Ids And Refs](../reference/target-ids-and-refs.md)
 - `event_id` uses component array `[bundle_id, event_index]`
-- `leg_id` uses component array `[event_id, leg_role, subject_ref, leg_index]`
+- `leg_id` uses component array `[event_id, role, subject_ref, leg_index]`
 - `valuation_id` uses component array
-  `[valuation_source_ref, valuation_purpose, amount, currency, valued_at, valued_precision]`
+  `[source_ref, purpose, amount, currency, valued_at, valued_precision]`
 - `event_index` and `leg_index` are zero-based canonical positions in declared
   event and leg order
 - `bundle_decision_id` may be referenced for audit, but it does not define
@@ -690,7 +690,7 @@ Ordering:
 - `EconomicEventRecord` rows sort by `effective_at`, then `recorded_at`,
   then `event_id`
 - `EconomicLegRecord` rows sort by `[event_id, leg_id]`
-- `ValuationRecord` rows sort by `[valuation_purpose, valued_at, valuation_id]`
+- `ValuationRecord` rows sort by `[purpose, valued_at, valuation_id]`
 
 Serialization:
 

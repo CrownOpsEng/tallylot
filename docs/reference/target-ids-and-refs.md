@@ -54,6 +54,7 @@ Rules:
 
 Rules:
 
+- `ValuationRecord.source_ref` uses `ValuationSourceRef`
 - `ValuationSourceRef` serializes and sorts as `[source_kind, source_id]`
 - `source_kind` names the immediate valuation source surface, such as
   `claim`, `evidence_observation`, or `market_reference`

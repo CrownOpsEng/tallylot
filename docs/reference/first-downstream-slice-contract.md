@@ -138,8 +138,8 @@ Slice-specific rules:
 
 - `economic_facts_id = [claim_set_refs]`
 - `event_id = [bundle_id, event_index]`
-- `leg_id = [event_id, leg_role, subject_ref, leg_index]`
-- `valuation_id = [valuation_source_ref, valuation_purpose, amount, currency, valued_at, valued_precision]`
+- `leg_id = [event_id, role, subject_ref, leg_index]`
+- `valuation_id = [source_ref, purpose, amount, currency, valued_at, valued_precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id = [source_slug, subject_ref, segment_start_at, segment_end_at]`
 - `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of_at, expected_value_fingerprint]`
