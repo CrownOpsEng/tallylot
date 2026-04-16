@@ -118,7 +118,8 @@ Trust and ownership rules:
 
 ## Authoritative Kernels Versus Compatibility Projections
 
-The target runtime uses one authoritative persisted kernel per product scope.
+The target runtime uses one authoritative persisted kernel per declared
+partition scope.
 
 Rules:
 
@@ -150,7 +151,7 @@ Forward-looking persistence rules:
   `product_scope_id` or narrower truthful record ids
 - canonical shared-support rollups stay stage- and domain-oriented;
   source-grouped operator views stay as derived reports or compatibility
-  projections rather than as shared support kernel families
+  projections rather than as shared support record or rollup families
 - target basenames use the owning product or support role directly
   rather than generic names or bridge-era qualifiers
 - writes are replace-whole-partition operations, not append-in-place mutation

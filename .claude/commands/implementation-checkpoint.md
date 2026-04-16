@@ -46,7 +46,7 @@ Use this route before closing any non-trivial coding task.
    - `ROADMAP.md`
    - `docs/concepts/reconciliation-tax-architecture.md`
    - any boundary, matrix, or migration docs affected
-   - if reconciliation, checkpoint, accounting, tax, or core pipeline
+   - if reconciliation, checkpoint, accounting, tax, or target pipeline
      products changed, confirm the narrow routing docs still point to the right
      architecture and sequencing material:
      - `AGENTS.md`

@@ -126,7 +126,7 @@ The default source adapter package should keep:
 - a docstring-only package `__init__.py`; do not re-export `ADAPTER`, schema
   constants, or helper symbols from the package root
 - `translation.py` for provider-local file-family or row translation registries
-- optional provider-local parser modules and wallet-evidence modules
+- optional provider-local parser modules and location inventory helper modules
 
 Provider-local translation code should convert provider timestamps to UTC-aware
 runtime datetimes before draft construction and should publish any non-default
@@ -157,7 +157,7 @@ families in one raw source directory, the adapter should rely on the shared
 blocking scan issue instead of attempting a best-effort normalization pass.
 
 Wallet-state adapters must treat UI identity maps and friendly labels as labels
-only. Emit runtime wallet inventory only when the export proves authoritative
+only. Emit runtime location inventory only when the export proves authoritative
 chain-scoped or chain-specific ownership.
 
 When a wallet or explorer source also includes portfolio-style balance views

@@ -12,9 +12,9 @@ Use this route for a full typed intake pass:
 8. review `profile.json`, `profile_inventory.csv`, `timezone_issues.csv`
 9. `source normalize`
 10. review `facts.csv`, `exceptions.csv`, `normalization_reviews.csv`, and `normalization_summary.json`
-11. `checkpoint rebuild-location-inventory` when normalization emitted wallet evidence
+11. `checkpoint rebuild-location-inventory` when normalization emitted per-source location inventory rows
 12. `output render file` when the round needs an external output artifact such as `cointracking_candidate.csv`
-13. `tools.validate_workspace_replay` when you need to compare a rebuilt workspace against a reference workspace and confirm semantic parity
+13. `tools.validate_workspace_replay` when you need to compare a rebuilt workspace against a reference workspace and confirm meaning parity
 
 Use `docs/guides/operator-quickstart.md` for the short operator route,
 `docs/guides/source-intake.md` for the detailed intake procedure, and

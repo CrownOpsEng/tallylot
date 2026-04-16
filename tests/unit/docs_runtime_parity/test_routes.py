@@ -31,7 +31,7 @@ def test_documented_claude_command_routes_exist() -> None:
     command_paths = (
         ".claude/commands/source-intake.md",
         ".claude/commands/round-verification.md",
-        ".claude/commands/wallet-inventory.md",
+        ".claude/commands/location-inventory.md",
         ".claude/commands/normalization-exceptions.md",
         ".claude/commands/source-diff.md",
         ".claude/commands/supporting-artifacts.md",
@@ -54,7 +54,7 @@ def test_documented_claude_command_routes_are_not_ignored() -> None:
     command_paths = (
         ".claude/commands/source-intake.md",
         ".claude/commands/round-verification.md",
-        ".claude/commands/wallet-inventory.md",
+        ".claude/commands/location-inventory.md",
         ".claude/commands/normalization-exceptions.md",
         ".claude/commands/source-diff.md",
         ".claude/commands/supporting-artifacts.md",
@@ -92,6 +92,7 @@ def test_source_intake_route_mentions_current_typed_commands() -> None:
     ):
         assert command in text
     assert "source_label_map.csv" in text
+    assert "meaning parity" in text
 
 
 def test_round_verification_route_mentions_oracle_cli_commands() -> None:
@@ -145,7 +146,9 @@ def test_supporting_route_mentions_checkpoint_pdf_balance_extraction_command() -
 
 
 def test_location_inventory_route_mentions_checkpoint_command() -> None:
-    text = (claude_commands_root() / "wallet-inventory.md").read_text(encoding="utf-8")
+    text = (claude_commands_root() / "location-inventory.md").read_text(
+        encoding="utf-8"
+    )
 
     assert "checkpoint rebuild-location-inventory" in text
 

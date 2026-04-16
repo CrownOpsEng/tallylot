@@ -25,8 +25,8 @@ The repo uses a filing-first adapter strategy:
 - harden the current adapter path where it directly reduces filing risk
 - defer the broad unified adapter redesign until the filing path and current
   first slices are stable
-- allow only the adapter prep work that the contract-lock pass and first slices
-  actually need
+- allow only the adapter prep work that the contract-lock pass and current
+  first slices actually need
 
 ## Work Tracks
 
@@ -55,16 +55,15 @@ adapter redesign begins.
 
 Allowed prep:
 
-- bridge-to-target mapping needed for the current first slice
+- bridge-to-target mapping needed for the current first upstream slice
 - adapter participation in `EvidenceSet` and `ClaimSet` emission
 - shared determinism and verification helpers that remove drift in the current
-  first slice
+  first upstream slice
 
 Required prep rule:
 
-- adapter work for the current first slice must emit target products through
-  the owner pages,
-  not adapter-local alternate schemas
+- adapter work for the current first upstream slice must emit target products
+  through the owner pages, not adapter-local alternate schemas
 - retained legacy hints needed for current drafts or facts may survive only in
   declared compatibility sidecars, not in `EvidenceSet` or
   `ClaimSet` fields
@@ -91,8 +90,8 @@ in-repo guesswork.
 - prefer shared support extraction over adapter-local workflow drift
 - prefer explicit issues and reviews over guesswork
 - do not widen the current source adapter contract during the filing window
-- do not make the unified adapter redesign a hidden prerequisite for the first
-  bounded slices
+- do not make the unified adapter redesign a hidden prerequisite for the current
+  first slices
 
 ## Filing-Critical Work To Do Now
 
@@ -118,8 +117,8 @@ Exit criteria for the filing window:
 
 ## Shared-Foundation Prep
 
-Prep work is allowed only when it materially reduces drift in the current
-first slice.
+Prep work is allowed only when it materially reduces drift in the current first
+upstream slice.
 
 Examples:
 
@@ -134,7 +133,7 @@ Prep work must not:
 
 - create a second architecture center in adapter docs
 - redefine target product kernels locally
-- force repo-wide adapter migration before the bounded slices land
+- force repo-wide adapter migration before the current first slices land
 
 ## Deferred Redesign
 

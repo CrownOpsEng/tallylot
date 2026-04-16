@@ -332,7 +332,7 @@ Rules:
 The current first downstream slice intentionally uses a narrow `PositionRef`
 surface for the current custodial balance slice.
 
-First-slice rule:
+Slice rule:
 
 - this slice may use only
   `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_position"]`
@@ -386,8 +386,7 @@ Required domain ownership:
 - `domain/entities/` for entity models, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
-- `domain/claims/` for claims, claim scopes, bundles, and compilation
-  decisions
+- `domain/claim/` for claims, claim scopes, bundles, and bundle decisions
 - `domain/economics/` for events, legs, valuations, settlement status, and
   lifecycle events
 - `domain/assertions/` for `AssertionValue` and its variants
@@ -406,8 +405,8 @@ Required application ownership:
   inspection, and timezone review
 - `application/evidence/` for shared statement extraction, evidence selection,
   and provenance locator handling
-- `application/claims/` for claim construction from evidence
-- `application/economics/` for economic compilation
+- `application/claim/` for claim construction from evidence
+- `application/economics/` for economic-fact construction
 - `application/compatibility/` for bridge compatibility projections only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
@@ -425,7 +424,7 @@ Boundary rules:
 
 - `application/normalization/` is current-state truth now, but the
   forward-looking target model treats it as migration-era orchestration that
-  splits into `evidence`, `claims`, `economics`, and `compatibility`
+  splits into `evidence`, `claim`, `economics`, and `compatibility`
 - `interfaces/` orchestrates services only
 - `infrastructure/` implements ports
 - `application/` depends on domain and ports

@@ -138,8 +138,8 @@ Deliver:
 - capture-scoped `EvidenceSet` emission keyed by `evidence_set_id`
 - deterministic selected, superseded, and blocked evidence membership
 - typed evidence observations that survive beyond intake heuristics, including
-  field tables frozen for the current first slice for `statement_document` and
-  `statement_balance_row`
+  field tables frozen for the current first upstream slice for
+  `statement_document` and `statement_balance_row`
 - bridge compatibility projection for `translation_input_plan.json`
 
 Exit criteria:
@@ -161,7 +161,8 @@ Deliver:
 - evidence-local `ClaimSet` emission keyed by `claim_set_id`
 - explicit claim scopes, mutually exclusive claim bundles, and
   bundle-decision records
-- claim fields frozen for the current first slice plus `observation_refs`
+- claim fields frozen for the current first upstream slice plus
+  `observation_refs`
 - shared support records and sidecars attached to claim scopes where needed
 - declared compatibility projections for `EconomicActivityDraft` and
   `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`

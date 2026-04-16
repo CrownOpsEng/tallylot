@@ -164,3 +164,32 @@ def test_reconciliation_workspace_docs_mention_cross_source_sidecars() -> None:
         "cross_source_summary.json",
     ):
         assert artifact in text
+
+
+def test_first_slice_contract_pins_all_retained_compatibility_surfaces() -> None:
+    text = (docs_root() / "reference" / "first-slice-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    for needle in (
+        "`translation_input_plan.json` content",
+        "`EconomicActivityDraft` ordering and content for evidence in this slice",
+        "`SourceTranslationBatch` content for evidence in this slice",
+        "Retained compatibility projections are part of the slice parity bar.",
+        "legacy readers remain active.",
+    ):
+        assert needle in text
+
+
+def test_first_downstream_slice_contract_pins_fact_csv_projection_parity() -> None:
+    text = (docs_root() / "reference" / "first-downstream-slice-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    for needle in (
+        "`TransactionFact` and `facts.csv` derived from `EconomicFacts`",
+        "`facts.csv` content for evidence in this slice",
+        "Retained compatibility projections are part of the slice parity bar.",
+        "legacy readers remain active.",
+    ):
+        assert needle in text

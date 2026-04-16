@@ -39,7 +39,7 @@ When persisting target products:
   migration-era source or checkpoint containers
 - keep product ids in the product header and keep those product ids distinct from
   `product_scope_id`
-- keep partition-scope labels aligned to the owner docs' stage-owned scope
+- keep partition-scope labels aligned to the owner pages' stage-owned scope
   names instead of inventing alternate helper vocabulary here
 - keep bridge CSVs and bridge bundles as compatibility projections only once a
   target product is authoritative for that scope

@@ -17,8 +17,8 @@ related:
 
 Use this page when implementing or reviewing the current first downstream slice
 after the current first `EvidenceSet -> ClaimSet` landing path. This
-document freezes scope, ids, parity, replay, and allowed drift for the first
-`EconomicFacts -> ReconciliationState -> Checkpoint` increment.
+document freezes scope, ids, parity, replay, and allowed drift for the current
+first `EconomicFacts -> ReconciliationState -> Checkpoint` increment.
 
 ## Slice Scope
 
@@ -80,9 +80,9 @@ Rules:
 - when `SubjectRef` is needed for downstream attachment, the subject kind for
   this slice is `position`, pointing at the stable `PositionRef` identity
 
-## Kernel Header And Compilation Inputs
+## Product Header And Downstream Inputs
 
-Kernel header fields in this slice:
+Product header fields in this slice:
 
 - `EconomicFacts` carries `economic_facts_id`, `schema_version`, and
   `claim_set_refs`
@@ -91,12 +91,12 @@ Kernel header fields in this slice:
 - `Checkpoint` carries `checkpoint_id`, `schema_version`,
   `reconciliation_state_refs`, and `as_of`
 
-Compilation-input rules:
+Downstream-input rules:
 
-- downstream compilation consumes authoritative `ClaimBundleRecord`,
+- downstream product construction consumes authoritative `ClaimBundleRecord`,
   `ClaimRecord`, `BundleDecisionRecord`, and `observation_refs`
   from authoritative `ClaimSet` kernels
-- downstream compilation must not depend on `EconomicActivityDraft`,
+- downstream product construction must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
 - upstream `*_ref` header fields store target product ids, never
   `product_scope_id`
@@ -172,7 +172,7 @@ For subjects in this slice, the authoritative products after the slice are:
 
 Required derived compatibility projections:
 
-- `TransactionFact` and related fact CSV outputs derived from `EconomicFacts`
+- `TransactionFact` and `facts.csv` derived from `EconomicFacts`
   plus declared upstream claim compatibility sidecars when legacy hint
   reproduction still needs them
 - `balance_snapshots.csv` derived from `ReconciliationState`
@@ -218,7 +218,11 @@ Not allowed in this slice:
 
 ## Parity Gates
 
-Unchanged inputs from the current first slice must preserve all of the following:
+Retained compatibility projections are part of the slice parity bar. Kernel
+parity alone is not sufficient while these legacy readers remain active.
+
+Unchanged inputs from the current first upstream slice must preserve all of the
+following:
 
 - accepted event ids and ordering
 - accepted leg ids, ordering, and quantities
@@ -227,6 +231,7 @@ Unchanged inputs from the current first slice must preserve all of the following
 - `CheckpointProposalRecord` ids, ordering, and statuses
 - `CheckpointAssertionRecord` ids, ordering, and accepted values
 - compiled `TransactionFact` ordering and semantics for evidence in this slice
+- `facts.csv` content for evidence in this slice
 - `balance_snapshots.csv` content for evidence in this slice
 - `balance_references.csv` content for evidence in this slice
 - balance inspect/check/summarize output for evidence in this slice
@@ -240,6 +245,7 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical `ReconciliationState` kernel fingerprints
 - identical `Checkpoint` kernel fingerprints
 - identical compiled bridge fact fingerprints for evidence in this slice
+- identical `facts.csv` content for evidence in this slice
 - identical `balance_snapshots.csv` and `balance_references.csv` content for
   evidence in this slice
 - identical balance inspect/check/summarize output for supported slice subjects

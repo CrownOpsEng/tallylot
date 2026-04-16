@@ -89,6 +89,7 @@ Control-plane files include:
 - `.github/pull_request_template.md`
 - `.github/CODEOWNERS`
 - `AGENTS.md`
+- `.gitmessage.txt`
 - `docs/standards/**`
 - `.claude/commands/**`
 - `repo_support/local_autofix.py`
@@ -157,7 +158,8 @@ the changed file groups in the current PR diff:
   - review domains: factual accuracy, metadata and link integrity, audience
     and type placement
 - `control_plane_text`
-  - paths: `AGENTS.md`, `ROADMAP.md`, `.agents/skills/**`,
+  - paths: `AGENTS.md`, `ROADMAP.md`, `Makefile`, `.gitmessage.txt`,
+    `.gitignore`, `.vscode/settings.json`, `.agents/skills/**`,
     `.claude/commands/**`, `docs/standards/**`,
     `.github/pull_request_template.md`, `.github/ISSUE_TEMPLATE/**`,
     `.github/CODEOWNERS`

@@ -8,7 +8,7 @@ current contract.
 When repairing or extending an adapter:
 
 1. keep metadata, code, and tests aligned
-2. keep the adapter work aligned with the core pipeline in
+2. keep the adapter work aligned with the target pipeline in
    `docs/concepts/reconciliation-tax-architecture.md` without turning adapter
    work into a second architecture center
 3. prefer current-contract hardening for filing-critical adapters over
