@@ -27,7 +27,7 @@ Current runtime note:
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- dataset summaries are derived from subject-level or scope-level truth, not
+- dataset readiness summaries are derived from subject-level or scope-level truth, not
   stored as the only truth
 - shared support structures help stages interoperate without erasing stage
   ownership
@@ -76,7 +76,7 @@ Supported `subject_kind` values for shared infrastructure:
 - `journal_entry`
 - `posting`
 - `basis_pool`
-- `tax_determinant`
+- `tax_input`
 - `tax_output`
 
 Rules:
@@ -85,7 +85,7 @@ Rules:
 - early-stage gaps and reviews may attach to evidence or claim subjects before
   business identities are fully resolved
 - later-stage gaps and reviews may attach to `journal_entry`, `posting`,
-  `basis_pool`, `tax_determinant`, or `tax_output` when that later-stage
+  `basis_pool`, `tax_input`, or `tax_output` when that later-stage
   record is the truthful shared pointer
 - use `Contract` and `Position` explicitly in business logic and modeling
 - use `SubjectRef` only where shared infrastructure needs a generic pointer
@@ -496,7 +496,7 @@ Rules:
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before claim commitment
 - reducers work from subject readiness plus gaps, not from hand-built
-  dataset-level statuses
+  dataset readiness summaries
 - a subject may be ready for one stage and blocked for another
 - readiness points to blocking gap ids rather than hiding blockers in summary
   text
@@ -505,11 +505,11 @@ Rules:
 
 Purpose:
 
-- derived reporting summary over subject readiness
+- derived readiness rollup over subject readiness
 
 Fields:
 
-- `summary_id`
+- `readiness_summary_id`
 - `stage`
 - `rollup_kind`
 - `rollup_key`
@@ -542,8 +542,8 @@ Rollup-key rules:
 
 Stable ids:
 
-- `summary_id` identifies one derived readiness summary
-- `summary_id` uses component array
+- `readiness_summary_id` identifies one derived readiness summary
+- `readiness_summary_id` uses component array
   `[stage, rollup_kind, rollup_key]`
 
 Ordering:
@@ -553,26 +553,26 @@ Ordering:
 
 Serialization:
 
-- serialize summary records only
+- serialize readiness summary records only
 - use stable object-key ordering
-- preserve the declared summary order above
+- preserve the declared readiness summary order above
 
 Fingerprint inputs:
 
-- summary records in canonical order
+- readiness summary records in canonical order
 - `schema_version`
 - sorted `blocking_gap_ids`
 - the ordered `ReadinessRecord` ids that fed the summary
 
 Rules:
 
-- summaries are derived output, not the only stored truth
+- `ReadinessSummary` records are derived output, not the only stored truth
 - `partial` requires at least one resolved assertion plus at least one open
   blocking gap id
 - if no required assertion has resolved yet, status is `blocked`, not
   `partial`
 - if no blocker applies, status is `ready`, not `partial`
-- dataset summaries remain reproducible from ordered readiness and gap records
+- dataset readiness summaries remain reproducible from ordered readiness and gap records
   without manual status editing
 - stages use only the dimensions they actually own or can derive safely
 
@@ -618,7 +618,7 @@ Keep these first-class:
 - settlement and lifecycle state
 - checkpoint assertions
 - postings
-- tax determinants and outputs
+- tax inputs and outputs
 
 Use sidecars only for:
 

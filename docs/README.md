@@ -32,7 +32,7 @@ freeze product ids, critical-path kernel fields, and compatibility boundaries.
 - [Domain ontology](concepts/domain-ontology.md)
 - [Gaps and readiness](concepts/gaps-and-readiness.md)
 - [Reconciliation and tax architecture](concepts/reconciliation-tax-architecture.md)
-- [First-slice contract](reference/first-slice-contract.md)
+- [First slice contract](reference/first-slice-contract.md)
 - [First downstream slice contract](reference/first-downstream-slice-contract.md)
 - [Engineering standards](standards/engineering.md)
 - [Workspace model](concepts/workspace-model.md)
@@ -74,12 +74,12 @@ below when you need the detailed procedure for one stage of the workflow.
 
 <!-- docs-maintenance:start reference -->
 - [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
-- [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the default Coinbase-first EvidenceSet and ClaimSet slice, including cardinality, ids, replay gates, and bridge compatibility projections.
-- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the first Coinbase-first EconomicFacts, ReconciliationState, and Checkpoint slice, including bundle-based event identity and bridge compatibility projections.
+- [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the current first EvidenceSet and ClaimSet slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility projections.
+- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the current first EconomicFacts, ReconciliationState, and Checkpoint slice, scoped to the current Coinbase path, including bundle-based event identity and bridge compatibility projections.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Helper reference for reusable target ids and ref tuples that complement the owner pages without redefining product contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Helper reference that points to the owner pages for target persistence, partition scopes, and bounded-slice compatibility expectations.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
-- [Location Inventory Outputs](reference/wallet-inventory-artifacts.md): Reference for location inventory outputs and evidence rows.
+- [Location Inventory Outputs](reference/location-inventory-artifacts.md): Reference for location inventory outputs and evidence rows.
 - [Timezone Validation Outputs](reference/timezone-validation-artifacts.md): Reference for timezone provenance outputs and validation issues.
 - [Canadian Crypto Tax Guide](reference/canadian-crypto-tax-guide.md): Working CRA-aligned tax reference for the repo's Canadian crypto workflow.
 - [Tax Source Map](reference/tax-source-map.md): Targeted routing from repo tax questions to CRA-aligned reference sources.
@@ -98,7 +98,7 @@ that follows the external workspace layout.
 <!-- docs-maintenance:start status -->
 - [Current State](status/current-state.md): Implemented runtime capabilities, current operational capabilities, and deferred areas.
 - [Migration Sequence](status/migration-sequence.md): Incremental landing and retirement rules for moving from the current bridge to the target pipeline without dual authorities.
-- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and bounded first slices are stable.
+- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and current first slices are stable.
 <!-- docs-maintenance:end status -->
 
 ## Standards

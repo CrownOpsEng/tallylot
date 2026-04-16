@@ -35,7 +35,7 @@ depending on any one portfolio tracker.
 | Class | Examples | Allowed To Establish Runtime Truth | Required In Normal Workflow | Notes |
 | ---- | ---- | ---- | ---- | ---- |
 | Source evidence | exchange exports, wallet exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
-| Checkpoint evidence | balance statements, wallet snapshots, source-backed checkpoint artifacts | Yes | Yes | First-class reconciliation input |
+| Checkpoint evidence | balance statements, location snapshots, source-backed checkpoint artifacts | Yes | Yes | First-class reconciliation input |
 | Adapter-format inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
 | Oracle support artifacts | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry exports | No | No | Development and validation only; never production runtime inputs |
 | Derived outputs | CoinTracking export projection, Ledger journal, tax outputs package, checkpoint artifacts | No | No | Produced by the system |
@@ -117,7 +117,7 @@ they do not satisfy filing-ready checkpoint requirements by themselves.
 A valid checkpoint may be built from:
 
 - exchange balances
-- wallet balances
+- location balances
 - statement evidence
 - source-backed inventory proofs
 - an intentionally adopted opening-state package with provenance
@@ -138,6 +138,9 @@ Those artifacts may support comparison, but not checkpoint existence.
 - Keep domain services unaware of CoinTracking report schemas.
 - Keep crypto-, FX-, and security-specific terms out of shared runtime abstractions
   unless the concept is inherently specific to that adapter or output.
+  When a source literally uses a term such as `wallet`, preserve it in
+  source-local evidence or adapter-local labels rather than in canonical
+  target product names.
 - Keep tax policy operating on `TaxInputs` built from reconciled economics and
   accepted checkpoint truth only.
 - Keep journal rendering operating on reconciled economics, accepted checkpoint

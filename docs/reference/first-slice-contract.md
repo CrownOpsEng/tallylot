@@ -1,6 +1,6 @@
 ---
 title: "First Slice Contract"
-summary: "Bounded contract for the default Coinbase-first EvidenceSet and ClaimSet slice, including cardinality, ids, replay gates, and bridge compatibility projections."
+summary: "Bounded contract for the current first EvidenceSet and ClaimSet slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility projections."
 doc_type: reference
 audience: human
 owner: repo
@@ -15,13 +15,13 @@ related:
   - ROADMAP.md
 ---
 
-Use this page when implementing or reviewing the default first vertical slice.
+Use this page when implementing or reviewing the current first vertical slice.
 This document freezes scope, cardinality, ids, parity, replay, and allowed drift
-for the bounded Coinbase-first `EvidenceSet -> ClaimSet` landing path.
+for the current first `EvidenceSet -> ClaimSet` landing path.
 
 ## Slice Scope
 
-The default first slice is:
+This slice is:
 
 - deterministic Coinbase retail CSV evidence selection
 - recognized Coinbase statement document selection
@@ -41,14 +41,14 @@ The slice is not:
 
 ## `EvidenceSet` Coverage
 
-The bounded slice may emit only these evidence member kinds:
+This slice may emit only these evidence member kinds:
 
 | Evidence member kind | Meaning |
 | --- | --- |
 | `coinbase_retail_export` | one Coinbase retail CSV member under deterministic retail-export selection |
 | `coinbase_statement_document` | one recognized Coinbase statement PDF document under per-document selection |
 
-The bounded slice may emit only these observation kinds:
+This slice may emit only these observation kinds:
 
 | Observation kind | Meaning | Owning member kind |
 | --- | --- | --- |
@@ -60,47 +60,50 @@ Frozen kind-specific observation fields:
 | Observation kind | Frozen kernel fields |
 | --- | --- |
 | `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of_at`, `statement_as_of_precision` |
-| `statement_balance_row` | `account_label`, `wallet_label`, `balance_kind`, `asset_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
+| `statement_balance_row` | `account_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
 
 Observation-field rules:
 
-- there is no retail-row observation kind in this bounded pass
+- there is no retail-row observation kind in this pass
 - `statement_document.statement_kind` uses the recognized statement-adapter kind
   for the selected document member
 - `statement_document.statement_as_of_at` and `document_effective_at` lift the
   current parsed statement times, and the paired `*_precision` fields follow
   the repo-wide temporal
   precision contract
-- `statement_balance_row` lifts account, wallet, balance kind, asset,
-  quantity, as-of time, and optional note or valuation text directly from the
-  current statement-row contract
+- `statement_balance_row` lifts account and location labels, balance
+  kind, instrument, quantity, as-of time, and optional note or valuation text
+  directly from the current statement-row contract
+- `location_label` preserves the source-provided lower-scope label, such as a
+  source sub-location name, without freezing that source noun into
+  the canonical target field list
 - `statement_document` may leave shell `observed_at` or
   `precision` empty when the kind-specific document timing
   fields carry the truthful time meaning
-- no generic observation payload blob is allowed for in-scope kinds
+- no generic observation payload blob is allowed for kinds in this slice
 
-The bounded slice uses only these selection keys:
+This slice uses only these selection keys:
 
 | `key` | Meaning |
 | --- | --- |
 | `["coinbase_retail_export"]` | deterministic decision boundary for Coinbase retail export selection |
 | `["statement_document", locator]` | deterministic inclusion decision for one recognized statement document |
 
-`translation_input_candidates.json` remains envelope or sidecar reasoning only.
-It does not become a kernel record family.
+`translation_input_candidates.json` remains planning-sidecar content only. It
+does not become a kernel record family.
 
 ## `ClaimSet` Coverage
 
-The bounded slice may emit only this in-scope subset of claim kinds:
+This slice may emit only this subset of claim kinds:
 
 | Claim kind | Meaning in the slice |
 | --- | --- |
 | `ActivityClaim` | source-local activity assertion derived from selected Coinbase retail rows |
 | `BalanceClaim` | quantity-backed balance claim derived from recognized statement rows |
-| `InstrumentIdentityClaim` | asset identity assertion tied to one activity or statement observation |
+| `InstrumentIdentityClaim` | instrument identity assertion tied to one activity or statement observation |
 | `LocationClaim` | assertion about the Coinbase-held location or sub-location in scope |
 | `BeneficialOwnerClaim` | assertion for the beneficial owner needed by downstream position identity |
-| `ValuationClaim` | canonically defined now but zero-row by default in this bounded slice |
+| `ValuationClaim` | canonically defined now but zero-row by default in this slice |
 
 Out of scope for this slice:
 
@@ -109,8 +112,8 @@ Out of scope for this slice:
 - `StatementClaim`
 - `ContractTermClaim`
 
-Bridge or output annotation detail and gap or review helper detail are not
-claim kinds and are never emitted by this slice.
+Bridge or output annotation sidecar detail and gap or review support sidecar
+content are not claim kinds and are never emitted by this slice.
 
 Frozen kind-specific claim fields:
 
@@ -119,7 +122,7 @@ Frozen kind-specific claim fields:
 | `ActivityClaim` | `source_activity_kind`, `location_claim_ref`, `activity_leg_specs` |
 | `BalanceClaim` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
 | `InstrumentIdentityClaim` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
-| `LocationClaim` | `location_ref`, `account_label`, `wallet_label` |
+| `LocationClaim` | `location_ref`, `account_label`, `location_label` |
 | `BeneficialOwnerClaim` | `beneficial_owner_ref` |
 | `ValuationClaim` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
@@ -136,7 +139,7 @@ Frozen kind-specific claim fields:
 Claim-field and linkage rules:
 
 - `ActivityClaim.source_activity_kind` is the owning field for the current
-  Coinbase retail transaction type in this bounded slice
+  Coinbase retail transaction type in this slice
 - `activity_leg_specs` lift ordered leg meaning from the current draft-leg
   contract, including sign, subtype, optional attributed-leg linkage, and
   optional location
@@ -148,7 +151,11 @@ Claim-field and linkage rules:
   include the paired `statement_document` observation id
 - `ValuationClaim` remains zero-row by default until a later owner-doc pass
   freezes numeric statement valuation inputs
-- no generic claim payload blob is allowed for in-scope kinds
+- `LocationClaim.location_label` follows the same target-contract rule as
+  `statement_balance_row.location_label`: preserve the source-provided
+  lower-scope label, but keep the canonical target noun aligned to
+  `Location`
+- no generic claim payload blob is allowed for kinds in this slice
 
 ## Kernel Cardinality And Ownership
 
@@ -161,7 +168,7 @@ Slice cardinality rules:
   `selection_id`
 - zero or more `EvidenceObservationRecord` rows may belong to one `member_id`
 - one `ClaimSet` is emitted per `[evidence_set_id, emitter_id]`
-- one `claim_scope_id` exists per source-local claim scope
+- one `claim_scope_id` exists per source-local scope
 - one or more `ClaimBundleRecord` rows may exist per `claim_scope_id`
 - one `BundleDecisionRecord` exists per `claim_scope_id`
 - one or more `ClaimRecord` rows may exist per `bundle_id`
@@ -179,7 +186,7 @@ Ownership rules:
 
 ## Bridge Compatibility Projections
 
-For in-scope evidence, the first slice changes authority but preserves bridge
+For evidence in this slice, the first slice changes authority but preserves bridge
 compatibility.
 
 Authoritative products after the slice:
@@ -201,16 +208,16 @@ Required derived compatibility projections:
 Compatibility rule:
 
 - bridge projections remain required during the compatibility window
-- bridge projections are not authoritative for in-scope target meaning once
+- bridge projections are not authoritative for target meaning in this slice once
   `EvidenceSet` and `ClaimSet` exist
 
-Declared compatibility-sidecar boundary:
+Declared compatibility sidecar boundary:
 
 - legacy bridge-only fields such as `economic_kind`, `projection_hint`,
   `accounting_intent_hint`, `tax_treatment_hint`, `description`,
   `tx_hash_or_null`, `operation_group_id_or_null`, `confidence`, and `status`
   stay outside `ClaimSet` kernels
-- `provider_operation_key` stays satisfied by
+- legacy `provider_operation_key` stays satisfied by
   `ActivityClaim.source_activity_kind` and is not duplicated as a
   compatibility-only claim field
 
@@ -223,7 +230,7 @@ This slice only freezes the admissible keys and bounded vocabularies.
 Slice-specific identity rules:
 
 - `emitter_id` is the shared emitter id over
-  `[source_slug, adapter_id, "claim-compiler"]`
+  `[source_slug, adapter_id, "claim-emitter"]`
 - `source_slug` uses the shared source slug across source-local
   products
 - `evidence_set_id` intentionally changes when `selection_fingerprint`
@@ -243,14 +250,14 @@ Slice-specific identity rules:
 - `row_key` means the stable statement-row key preserved on the
   `statement_balance_row` observation
 
-Slice-specific claim-scope keys:
+Slice-specific scope keys:
 
 - retail activity scope uses `[retail_member_id, raw_row_ref]`
 - statement balance scope uses `[document_member_id, row_key]`
 
 Slice-specific claim-key rule:
 
-- `key` uses `[claim_scope_key, kind, slot]`
+- `key` uses `[scope_key, kind, slot]`
 - `slot` is `0` when only one claim of that kind exists in the bundle
 - repeated same-kind claims use `1`, `2`, and so on in canonical order
 
@@ -270,8 +277,8 @@ Unchanged evidence must preserve all of the following:
 - claim ordering and bundle ordering
 - timestamps and temporal precision
 - quantities and sign
-- compiled `TransactionFact` ordering and semantics for in-scope evidence
-- `balance_references.csv` content for in-scope evidence
+- compiled `TransactionFact` ordering and semantics for evidence in this slice
+- `balance_references.csv` content for evidence in this slice
 - `cointracking_csv` row ordering and field values for supported projections
 
 ## Replay Gates
@@ -281,8 +288,8 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical selected, superseded, and blocked retail-export partitions
 - identical statement recognition outcomes
 - identical `EvidenceSet` and `ClaimSet` kernel fingerprints
-- identical derived bridge-fact fingerprints for in-scope evidence
-- identical `balance_references.csv` content for in-scope evidence
+- identical derived bridge fact fingerprints for evidence in this slice
+- identical `balance_references.csv` content for evidence in this slice
 - identical `cointracking_csv` output for supported bridge facts
 
 Replay checks must also prove that incidental input ordering changes do not
@@ -297,19 +304,19 @@ Not allowed:
 - kernel-field drift in ids, statuses, ordering, or bundle structure
 - timestamp or precision drift
 - quantity drift
-- derived bridge-fact drift on unchanged in-scope evidence
-- `balance_references.csv` or `cointracking_csv` drift on unchanged in-scope
-  evidence
+- derived bridge fact drift on unchanged evidence in this slice
+- `balance_references.csv` or `cointracking_csv` drift on unchanged evidence in
+  this slice
 
 Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 
 - richer explanation text
-- additional non-kernel envelope fields
-- additional support sidecar detail that does not change product meaning
+- additional support sidecar fields or detail that do not change product
+  meaning
 
 ## Explicitly Out Of Scope
 
-This bounded slice does not:
+This slice does not:
 
 - pin the real filing workspace adapter inventory for `2023` to `2025`
 - widen beyond Coinbase retail exports and recognized Coinbase statement
@@ -318,4 +325,4 @@ This bounded slice does not:
   `Journal`, or `TaxInputs`
 - authorize broad target package scaffolding before the contract-lock pass is
   complete
-- require a repo-wide adapter-facet migration before the bounded slice lands
+- require a repo-wide adapter-facet migration before this slice lands

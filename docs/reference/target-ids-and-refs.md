@@ -34,8 +34,7 @@ owner concepts elsewhere.
 
 ## Emitter Identity
 
-`emitter_id` identifies the shared compiler or translation family that emitted
-one `ClaimSet`.
+`emitter_id` identifies the shared claim emitter that emitted one `ClaimSet`.
 
 Rules:
 
@@ -45,23 +44,32 @@ Rules:
 - `source_slug` uses the shared source slug across source-local
   products
 - `emitter_key` must be kebab-case
-- the default first-slice `emitter_key` is `claim-compiler`
+- the current first slice `emitter_key` is `claim-emitter`
 
-## Valuation Source Identity
+## Origin Identity
 
-`ValuationSourceRef` identifies the immediate source that justified one
-`ValuationRecord`.
+`OriginRef` identifies the immediate upstream origin for one emitted kernel
+record.
 
 Rules:
 
-- `ValuationRecord.source_ref` uses `ValuationSourceRef`
-- `ValuationSourceRef` serializes and sorts as `[source_kind, source_id]`
-- `source_kind` names the immediate valuation source surface, such as
-  `claim`, `evidence_observation`, or `market_reference`
-- when the source is already a target-kernel subject, `source_id` uses that
+- `ValuationRecord.origin_ref` and `PostingRecord.origin_ref` use `OriginRef`
+- `OriginRef` serializes and sorts as `[origin_kind, origin_id]`
+- `origin_kind` names the immediate upstream origin, not a source-system or
+  renderer label
+- when the origin is already a target-kernel subject, `origin_id` uses that
   subject's stable id
-- when the source is an external market reference, `source_id` uses the
+- when the origin is an external market reference, `origin_id` uses the
   stage-owned stable market key rather than renderer-local prose
+
+Frozen `origin_kind` vocabulary:
+
+- `claim`
+- `evidence_observation`
+- `market_reference`
+- `economic_leg`
+- `checkpoint_assertion`
+- `adjustment_basis`
 
 ## Accounting Reference Tuples
 
@@ -82,21 +90,6 @@ Frozen `commodity_kind` vocabulary:
 - `instrument`
 - `currency`
 - `synthetic_unit`
-
-`OriginRef` identifies the immediate kernel origin for one posting.
-
-Rules:
-
-- `OriginRef` serializes and sorts as `[origin_kind, origin_id]`
-- `origin_kind` identifies the immediate accounting origin, not a provider or
-  renderer label
-- `PostingRecord.origin_ref` uses `OriginRef`
-
-Frozen `origin_kind` vocabulary:
-
-- `economic_leg`
-- `checkpoint_assertion`
-- `adjustment_basis`
 
 ## Tax Policy Identity
 

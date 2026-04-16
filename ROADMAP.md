@@ -68,7 +68,7 @@ Must freeze:
   `statement_document` and `statement_balance_row`
 - `ClaimSet` claim-scope, bundle, and bundle-decision model
 - critical-path `ClaimRecord` field tables, `observation_refs`, and
-  the compatibility-sidecar boundary for retained legacy hint fields
+  the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
 - shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
   `ReviewExplanation`, `ReadinessRecord`, `ReadinessSummary`,
@@ -78,8 +78,8 @@ Must freeze:
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `dataset_id`
 - target naming rules that distinguish concepts, refs, ids, records,
-  projections, and sidecars without baking bridge-era qualifiers into
-  target names
+  projections, and sidecars without baking bridge-era qualifiers or
+  source-specific crypto nouns into shared target names
 - authoritative persistence model, partition scopes, sidecar rules, and
   default filesystem placement
 - migration authority rules, compatibility projections, reader cutovers, and
@@ -92,7 +92,7 @@ Deliver:
 - aligned owner pages for target products, ontology, support records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
-- one bounded first upstream slice and one bounded first downstream slice
+- one current first upstream slice and one current first downstream slice
 - explicit package ownership for `domain/` and `application/`
 - explicit fast-path rule that reducers read kernels, not explanation sidecars
 - frozen critical-path field tables and product-id rules that later writing
@@ -107,6 +107,8 @@ Exit criteria:
   identity resolves, and later-stage blockers can attach to truthful
   accounting or tax subjects without collapsing to dataset-only scope
 - no target id or helper id bakes bridge-era naming into target identity
+- no canonical target contract keeps source-specific crypto nouns such as
+  `wallet` when a repo-owned domain noun already owns that seam
 - no bridge artifact is left without an authority and retirement rule
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
@@ -130,7 +132,7 @@ Deliver:
 - capture-scoped `EvidenceSet` emission keyed by `evidence_set_id`
 - deterministic selected, superseded, and blocked evidence membership
 - typed evidence observations that survive beyond intake heuristics, including
-  frozen first-slice field tables for `statement_document` and
+  field tables frozen for the current first slice for `statement_document` and
   `statement_balance_row`
 - bridge compatibility projection for `translation_input_plan.json`
 
@@ -153,7 +155,7 @@ Deliver:
 - source-local `ClaimSet` emission keyed by `claim_set_id`
 - explicit claim scopes, mutually exclusive bundles, and
   bundle-decision records
-- frozen first-slice claim fields plus `observation_refs`
+- claim fields frozen for the current first slice plus `observation_refs`
 - shared support records and sidecars attached to claim scopes where needed
 - declared compatibility projections for `EconomicActivityDraft` and
   `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
@@ -248,7 +250,7 @@ Exit criteria:
 
 Goal:
 
-- build policy-ready tax determinants and policy-owned outputs from accepted
+- build policy-ready tax inputs and policy-owned outputs from accepted
   upstream truth
 
 Deliver:
@@ -396,7 +398,7 @@ Rules:
 - add replay coverage for target kernels and compatibility projections
 - add reconciliation parity and checkpoint continuity tests
 - add journal validation coverage
-- add tax policy coverage with explicit unsupported-determinant reporting
+- add tax policy coverage with explicit unsupported-tax-input reporting
 - keep end-to-end smoke workflows for each major slice before removing older
   transition paths
 

@@ -73,7 +73,7 @@ Trust and ownership rules:
   tax
 - checkpoint truth is accepted state with explicit acceptance basis
 - accounting expands and validates accepted truth; it does not repair truth
-- tax inputs assemble determinants from reconciled economics plus accepted
+- tax inputs assemble policy-ready tax inputs from reconciled economics plus accepted
   checkpoint truth
 - selected tax policies decide treatment in `TaxOutputs`; they do not decide
   source meaning, reconciliation truth, checkpoint truth, or accounting truth
@@ -158,8 +158,8 @@ Forward-looking persistence rules:
 | --- | --- |
 | `EvidenceSet` | capture-scoped |
 | `ClaimSet` | capture-scoped |
-| `EconomicFacts` | assembled-source-scoped |
-| `ReconciliationState` | continuity-segment-scoped under one source scope |
+| `EconomicFacts` | claim-lineage-scoped |
+| `ReconciliationState` | continuity-segment-scoped |
 | `Checkpoint` | checkpoint-set-scoped |
 | `Journal` | journal-scoped under one checkpoint scope |
 | `TaxInputs` | tax-input-set-scoped |
@@ -171,6 +171,9 @@ Rules:
 - one persisted partition owns one product id aligned with that partition
 - partition boundaries are chosen by the dimensions the owning stage actually
   reduces over
+- migration-era workspace paths may still group later products under a
+  source-scoped directory tree, but that filesystem placement does not make
+  source identity part of downstream product naming or stable-id recipes
 - target products may expose derived reporting projections across several
   partitions, but those projections do not replace the authoritative partition
   kernels
@@ -191,19 +194,26 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/normalized/captures/<capture_uid>/evidence_set.json`
 - `working/normalized/captures/<capture_uid>/claim_set.json`
 - `working/normalized/captures/<capture_uid>/support/gaps.json`
+- `working/normalized/captures/<capture_uid>/support/gap_explanations.json`
 - `working/normalized/captures/<capture_uid>/support/reviews.json`
+- `working/normalized/captures/<capture_uid>/support/review_explanations.json`
 - `working/normalized/captures/<capture_uid>/support/readiness.json`
+- `working/normalized/captures/<capture_uid>/support/readiness_summaries.json`
 - `working/normalized/sources/<source>/economic_facts.json`
 - `working/normalized/sources/<source>/bridge/facts.csv`
 - `working/normalized/sources/<source>/bridge/balance_snapshots.csv`
 - `working/normalized/sources/<source>/bridge/balance_references.csv`
 - `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/reconciliation_state.json`
 - `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gaps.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gap_explanations.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/reviews.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/review_explanations.json`
 - `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness.json`
-- `outputs/checkpoints/<checkpoint_label>/checkpoint.json`
-- `outputs/checkpoints/<checkpoint_label>/journal.json`
-- `outputs/checkpoints/<checkpoint_label>/tax_inputs.json`
-- `outputs/checkpoints/<checkpoint_label>/tax_outputs/<tax_policy_id>/<tax_year>.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness_summaries.json`
+- `outputs/checkpoints/<checkpoint_set_id>/checkpoint.json`
+- `outputs/checkpoints/<checkpoint_set_id>/journal.json`
+- `outputs/checkpoints/<checkpoint_set_id>/tax_inputs.json`
+- `outputs/checkpoints/<checkpoint_set_id>/tax_outputs/<tax_policy_id>/<tax_year>.json`
 
 Rules:
 
@@ -290,7 +300,7 @@ Required partition keys:
 | Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `claim_scope_id` |
 | Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_proposal_id` |
 | Checkpoint and accounting | `checkpoint_set_id`, `journal_id`, `checkpoint_assertion_id`, `entry_id` |
-| Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `determinant_id`, `basis_transition_id` |
+| Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `tax_input_id`, `basis_transition_id` |
 
 Rules:
 
@@ -348,7 +358,7 @@ or tax, ask:
 - does the design keep one authoritative kernel per scope partition
 - can unmigrated consumers survive on compatibility projections alone
 - can migrated consumers read target products without bridge lookups
-- is every hot-path determinant present in the kernel rather than in a sidecar
+- is every hot-path field present in the kernel rather than in a sidecar
 - can the stage replay deterministically from its upstream authorities
 
 If the answer to any of these is no, the design is not ready.

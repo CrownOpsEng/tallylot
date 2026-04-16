@@ -264,7 +264,7 @@ Rules:
 
 ### Bridge Fact Replay Fingerprint
 
-For first-slice replay and parity checks, compiled bridge facts use one bridge
+For replay and parity checks on the current first slice, compiled bridge facts use one bridge
 replay fingerprint contract.
 
 Rules:

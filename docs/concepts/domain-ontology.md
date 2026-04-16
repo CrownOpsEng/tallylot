@@ -58,6 +58,11 @@ Rules:
 - crypto is the current filing scope, not the ontology center
 - CoinTracking is an edge import, export, and oracle input, not a runtime
   dependency
+- source-specific crypto nouns such as `wallet`, `exchange`, `address`,
+  `token`, `chain`, and `tx_hash` may remain in adapter-local,
+  source-evidence, compatibility, or current-state surfaces, but the target
+  ontology should map those ideas to repo-owned domain nouns such as
+  `Location`, `Instrument`, `Position`, or `Contract`
 - persistence implements the model; it does not define the model
 - no wrapper lanes, compatibility shims, or legacy parallel runtime models
   should survive after a clean replacement is ready
@@ -322,18 +327,18 @@ Rules:
 
 ## First Downstream Slice Restriction
 
-The first bounded downstream slice intentionally uses a narrow `PositionRef`
+The current first downstream slice intentionally uses a narrow `PositionRef`
 surface for Coinbase-held spot balances.
 
 First-slice rule:
 
-- the first downstream slice may use only
+- this slice may use only
   `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_balance"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
 - `location_ref` must resolve to the Coinbase-held custodial spot location or
   sub-location in scope
 - `instrument_ref` must resolve to the in-scope spot asset
-- `contract_ref` stays `null` in the first downstream slice
+- `contract_ref` stays `null` in this slice
 - later slices may widen `position_key` values and contract participation,
   but they must keep the canonical tuple shape unchanged
 
@@ -388,7 +393,7 @@ Required domain ownership:
   targets, and checkpoint proposals
 - `domain/checkpoints/` for accepted checkpoint truth
 - `domain/accounting/` for journal models
-- `domain/tax/` for determinants, basis transitions, tax-policy contracts,
+- `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
   carry-forward state, and outputs
 
 Required application ownership:
@@ -398,17 +403,17 @@ Required application ownership:
   inspection, and timezone review
 - `application/evidence/` for shared statement extraction, evidence selection,
   and provenance locator handling
-- `application/claims/` for evidence-to-claim translation
-- `application/economics/` for claim compilation to economic facts
+- `application/claims/` for claim construction from evidence
+- `application/economics/` for economic compilation
 - `application/compatibility/` for bridge compatibility projections only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
-- `application/reconciliation/` for continuity, linkage, balance-target
+- `application/reconciliation/` for continuity, linkage, balance target
   evaluation, readiness reducers, and checkpoint proposals
-- `application/checkpoints/` for checkpoint evidence assembly, manual balance
+- `application/checkpoints/` for checkpoint assembly, manual balance
   submission validation, and checkpoint acceptance
 - `application/accounting/` for journal expansion, validation, and summaries
-- `application/tax/` for tax-input assembly, basis transitions, policy
+- `application/tax/` for tax input construction, basis transitions, policy
   selection, and tax-output rendering
 - `application/outputs/` for downstream renderer orchestration
 - `application/workspace/` for workspace resolution and initialization

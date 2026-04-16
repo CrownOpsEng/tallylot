@@ -82,7 +82,7 @@ aligned and frozen.
 
 ### 2. First Upstream Slice
 
-Land the bounded
+Land the current first upstream
 [`EvidenceSet -> ClaimSet`](../reference/first-slice-contract.md) slice.
 
 Required posture:
@@ -94,7 +94,7 @@ Required posture:
 
 ### 3. First Downstream Slice
 
-Land the bounded
+Land the current first downstream
 [`EconomicFacts -> ReconciliationState -> Checkpoint`](../reference/first-downstream-slice-contract.md)
 slice.
 
@@ -109,7 +109,7 @@ Required posture:
 
 ### 4. Reader Cutovers
 
-After the bounded slices land, migrate readers one consumer surface at a time:
+After those slices land, migrate readers one consumer surface at a time:
 
 - evidence and claim readers move to target kernels first
 - reconciliation and checkpoint readers move next

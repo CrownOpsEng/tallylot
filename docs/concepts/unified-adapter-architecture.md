@@ -72,7 +72,7 @@ Shared runtime owns cross-provider workflow:
 - evidence selection and candidate comparison
 - stable ordering and fingerprints
 - shared issue, review, and readiness conventions
-- claim compilation into economic truth
+- economic compilation
 - bridge compatibility projection
 - replay and parity verification
 - projection writing and output packaging
@@ -99,7 +99,7 @@ Use a small set of purpose-defined facets rather than one giant contract.
 
 | Facet | Purpose |
 | --- | --- |
-| `ProbeFacet` | Recognize evidence and describe route, kind, or confidence hints. |
+| `DiscoveryFacet` | Discover evidence and describe route, kind, or confidence hints. |
 | `EvidenceFacet` | Read selected evidence and emit `EvidenceSet`-aligned outputs. |
 | `StatementFacet` | Recognize and parse statement documents plus statement-specific evidence detail. |
 | `ClaimFacet` | Emit source-local claim meaning that maps into `ClaimSet`. |
@@ -127,11 +127,11 @@ adapter-local shell choreography.
 ## Migration Posture
 
 The unified adapter redesign remains deferred until the filing-critical path and
-bounded first slices are stable.
+current first slices are stable.
 
 Rules during the current migration window:
 
-- first-slice adapter work must emit target products through the canonical
+- adapter work for the current first slice must emit target products through the canonical
   owner pages, not adapter-local alternate schemas
 - adapters may emit declared compatibility sidecars for retained legacy
   draft-or-fact reproduction during migration, but canonical target kernels
@@ -139,7 +139,7 @@ Rules during the current migration window:
 - adapter docs may describe how adapters participate in `EvidenceSet`,
   `ClaimSet`, and compatibility projections, but they may not redefine those
   products
-- the first bounded slice must not depend on a repo-wide facet migration
+- the current first slice must not depend on a repo-wide facet migration
 - `SourceTranslationBatch` remains honest current-state truth until its bounded
   replacement slice lands
 

@@ -106,7 +106,7 @@ Shared rules:
   stem names one target record family owned on this page, the field uses that
   record family's stable id or ordered stable-id list
 - helper tuple refs such as `SubjectRef`, `BasisPoolRef`,
-  `ValuationSourceRef`, `AccountRef`, `CommodityRef`, and `OriginRef` remain
+  `AccountRef`, `CommodityRef`, and `OriginRef` remain
   owned by their helper pages and are called out explicitly where used
 
 ### Composite Tuple Rules
@@ -139,7 +139,7 @@ Shared rules:
   downstream-required references needed for replay and reducers
 - sidecars hold provenance detail, explanation, reviews, comparison traces,
   policy notes, and other non-kernel detail
-- sidecars must not become the only copy of determinant state or business
+- sidecars must not become the only copy of required state or business
   meaning
 - any later rehydration path must join through stable ids emitted by the
   kernel
@@ -151,7 +151,7 @@ Shared rules:
   [Gaps And Readiness](gaps-and-readiness.md)
 - `dataset_id` is derived from the emitted kernel fingerprint after canonical
   fingerprinting; it is not part of kernel metadata or fingerprint inputs
-- `dataset_id` is the product-level attachment surface for readiness,
+- `dataset_id` is the product-scope attachment id for readiness,
   comparison, and other shared sidecars when no narrower truthful scope exists
 - `dataset_id` is not a substitute for a narrower record id or stage-owned
   scope such as `selection_id`, `claim_scope_id`, `continuity_segment_id`,
@@ -197,7 +197,7 @@ Product metadata:
 - `evidence_set_id`
 - `schema_version`
 - `selection_fingerprint`
-- `manifest_fingerprint`
+- `capture_manifest_fingerprint`
 
 Owns:
 
@@ -219,7 +219,7 @@ Record families:
   - `kind`
   - `locator`
   - `status`
-  - `manifest_fingerprint`
+  - `capture_manifest_fingerprint`
 - `EvidenceObservationRecord`
   - `evidence_set_id`
   - `member_id`
@@ -244,7 +244,7 @@ Cardinality:
   `selection_id`
 - zero or more `EvidenceObservationRecord` rows may belong to one `member_id`
 
-Envelope or sidecar content may include:
+Sidecar content may include:
 
 - document metadata
 - statement row detail
@@ -266,13 +266,13 @@ Controlled vocabularies:
 ### First-Slice Critical-Path Observation Kinds
 
 The `EvidenceObservationRecord` shell above is required for every observation.
-For the first bounded slice, these kind-specific kernel fields are also
+For the current first slice, these kind-specific kernel fields are also
 required:
 
 | `kind` | Kind-owned kernel fields |
 | --- | --- |
 | `statement_document` | `statement_kind`, `document_effective_at`, `document_effective_precision`, `statement_as_of_at`, `statement_as_of_precision` |
-| `statement_balance_row` | `account_label`, `wallet_label`, `balance_kind`, `asset_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
+| `statement_balance_row` | `account_label`, `location_label`, `balance_kind`, `instrument_symbol`, `quantity`, `observed_at`, `precision`, `notes`, `staked_quantity_text`, `value_amount_text`, `value_currency`, `price_amount_text`, `price_currency` |
 
 Rules:
 
@@ -288,10 +288,14 @@ Rules:
 - `statement_balance_row.observed_at` and `precision` lift
   the current statement-row as-of value and
   precision directly
-- `statement_balance_row` label, quantity, notes, and valuation-text
+- `statement_balance_row` account and location labels, quantity, notes, and
+  valuation-text
   fields lift the current statement-row contract directly; `pdf_file` and
   `raw_row_ref` stay in provenance and observation keys rather than
   duplicated business fields
+- `statement_balance_row.location_label` preserves the source-provided
+  lower-scope label, such as a source sub-location name, without
+  freezing the source noun into the canonical target field list
 - `statement_document` may leave the shell `observed_at` and
   `precision` empty when the meaningful document times are
   instead expressed through the kind-owned document-effective or
@@ -299,7 +303,7 @@ Rules:
 - do not add a generic `observation_payload` blob to stand in for a kind
   table
 - no new observation kind may be implemented until this page or the owning
-  bounded slice page defines its kernel field table explicitly
+  slice page defines its kernel field table explicitly
 
 Stable ids:
 
@@ -382,8 +386,8 @@ Product metadata:
 Owns:
 
 - source-local assertions derived from evidence
-- explicit claim scope and mutually exclusive claim bundles
-- bundle decisions over claim scopes
+- explicit scopes and mutually exclusive bundles
+- bundle decisions over scopes
 
 Record families:
 
@@ -405,14 +409,14 @@ Record families:
   - `claim_scope_id`
   - `bundle_id`
   - `key`
-  - `claim_scope_key`
+  - `scope_key`
   - `claim_refs`
 - `BundleDecisionRecord`
   - `claim_set_id`
   - `claim_scope_id`
   - `decision_id`
   - `outcome`
-  - `accepted_bundle_id`
+  - `accepted_bundle_ref`
   - `rejected_bundle_refs`
   - `deferred_bundle_refs`
   - `basis`
@@ -458,7 +462,7 @@ bounded slice, these kind-specific kernel fields are also required:
 | `ActivityClaim` | `source_activity_kind`, `location_claim_ref`, `activity_leg_specs` |
 | `BalanceClaim` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
 | `InstrumentIdentityClaim` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
-| `LocationClaim` | `location_ref`, `account_label`, `wallet_label` |
+| `LocationClaim` | `location_ref`, `account_label`, `location_label` |
 | `BeneficialOwnerClaim` | `beneficial_owner_ref` |
 | `ValuationClaim` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
@@ -472,14 +476,15 @@ bounded slice, these kind-specific kernel fields are also required:
 - `subtype`
 - `attributed_to_slot`
 
-First-slice linkage rules:
+Current first slice linkage rules:
 
 - `ActivityClaim.source_activity_kind` is the owning field for the current
-  source-local activity type used by the bounded slice
+  source-local activity kind used by the current first slice
 - `activity_leg_specs` lift ordered leg meaning from the current
   `EconomicLegDraft` contract, including sign, instrument identity claims,
   optional subtype, optional attributed-leg linkage, and optional location
-- retail activity claims use `member_refs` plus the first-slice scope
+- retail activity claims use `member_refs` plus the scope used in the current
+  first slice
   key `[retail_member_id, raw_row_ref]`; they do not require a retail-row
   observation kind in this pass
 - statement-derived claims use both `member_refs` and
@@ -488,8 +493,12 @@ First-slice linkage rules:
   `observation_refs` and may also include the paired
   `statement_document` observation id for the same statement document
 - `ValuationClaim` is defined now but emits zero rows by default in
-  the first bounded slice until a later owner-doc pass locks numeric
+  the current first slice until a later owner-doc pass locks numeric
   statement valuation inputs
+- `LocationClaim.location_label` follows the same target-contract rule as
+  `statement_balance_row.location_label`: preserve the source-provided
+  lower-scope label, but keep the canonical target noun aligned to
+  `Location`
 
 ### Derived Compatibility Sidecars
 
@@ -503,30 +512,32 @@ Rules:
   `economic_kind`, `projection_hint`, `accounting_intent_hint`,
   `tax_treatment_hint`, `description`, `tx_hash_or_null`,
   `operation_group_id_or_null`, `confidence`, and `status`
-- `provider_operation_key` is satisfied by
+- legacy `provider_operation_key` is satisfied by
   `ActivityClaim.source_activity_kind` and must not be duplicated into a
   compatibility sidecar field
 - review markers map to shared support records and sidecars rather than
   claim-kernel fields or compatibility sidecars that masquerade as claim
   meaning
-- adapter-local extras may survive only as envelope or compatibility-sidecar
+- adapter-local extras may survive only as non-kernel or compatibility sidecar
   detail and never as `ClaimSet` kernel meaning
 - do not add a generic `claim_payload` blob to stand in for a kind table
 - no non-critical claim kind may be implemented until this page or the
-  owning bounded slice page defines its kernel field table explicitly
+  owning slice page defines its kernel field table explicitly
 
 Stable ids:
 
 - `claim_set_id` identifies one source-local claim emission over one evidence
   set
-- `claim_scope_id` identifies one source-local claim scope that
+- `claim_scope_id` identifies one source-local scope that
   may admit one or more mutually exclusive bundles
+- `scope_key` is the stage-owned stable discriminator for one source-local
+  scope within one claim set
 - `bundle_id` identifies one mutually exclusive claim bundle
 - `claim_id` identifies one source-local claim under one bundle
-- `decision_id` identifies one bundle-decision record for one
-  claim scope
+- `decision_id` identifies one bundle decision record for one
+  scope
 - `claim_set_id` uses component array `[evidence_set_id, emitter_id]`
-- `claim_scope_id` uses component array `[claim_set_id, claim_scope_key]`
+- `claim_scope_id` uses component array `[claim_set_id, scope_key]`
 - `bundle_id` uses component array
   `[claim_scope_id, key]`
 - `claim_id` uses component array `[bundle_id, kind, key]`
@@ -562,7 +573,7 @@ Fingerprint inputs:
 Must guarantee:
 
 - source-local meaning only
-- explicit claim-scope and bundle structure
+- explicit scope and bundle structure
 - preserved ambiguity where one safe final interpretation is unavailable
 - claim-stage gaps and reviews may attach to `claim_scope_id` when
   no narrower truthful subject has resolved yet
@@ -584,8 +595,8 @@ Handoff to `EconomicFacts`:
 
 - `ClaimSet` hands off source-local assertions, mutually exclusive bundles, and
   bundle decisions
-- the compiler decides which bundle can become accepted economic truth and
-  which scopes remain blocked, deferred, or superseded
+- the economic stage decides which bundle can become accepted economic truth
+  and which scopes remain blocked, deferred, or superseded
 
 ## `EconomicFacts`
 
@@ -632,7 +643,7 @@ Record families:
   - `valuation_ref`
 - `ValuationRecord`
   - `valuation_id`
-  - `source_ref`
+  - `origin_ref`
   - `purpose`
   - `amount`
   - `currency`
@@ -674,13 +685,13 @@ Stable ids:
 - `valuation_id` identifies one valuation record used by one or more accepted
   events or legs
 - `economic_facts_id` uses component array `[claim_set_refs]`
-- `source_ref` uses `ValuationSourceRef` from
+- `origin_ref` uses `OriginRef` from
   [Target Ids And Refs](../reference/target-ids-and-refs.md)
-- `event_id` uses component array `[bundle_id, event_index]`
-- `leg_id` uses component array `[event_id, role, subject_ref, leg_index]`
+- `event_id` uses component array `[bundle_id, event_slot]`
+- `leg_id` uses component array `[event_id, role, subject_ref, leg_slot]`
 - `valuation_id` uses component array
-  `[source_ref, purpose, amount, currency, valued_at, precision]`
-- `event_index` and `leg_index` are zero-based canonical positions in declared
+  `[origin_ref, purpose, amount, currency, valued_at, precision]`
+- `event_slot` and `leg_slot` are zero-based canonical positions in declared
   event and leg order
 - `decision_id` may be referenced for audit, but it does not define
   event identity
@@ -713,7 +724,7 @@ Must guarantee:
 - event identity is driven by the selected claim bundle, not by compilation
   bookkeeping noise
 - event, leg, and valuation records carry the computation-critical
-  determinants needed for later reconciliation, checkpointing, accounting, and
+  fields needed for later reconciliation, checkpointing, accounting, and
   tax
 - corrections preserve supersession lineage instead of mutating accepted
   economic truth in place
@@ -761,7 +772,6 @@ Record families:
 
 - `ContinuitySegmentRecord`
   - `continuity_segment_id`
-  - `source_slug`
   - `subject_ref`
   - `segment_start_at`
   - `segment_end_at`
@@ -817,7 +827,7 @@ Controlled vocabularies:
   - `blocked`
   - `superseded`
 
-Envelope or sidecar content may include:
+Sidecar content may include:
 
 - corroboration sidecars
 - continuity explanation
@@ -844,9 +854,7 @@ Stable ids:
 - `reconciliation_state_id` uses component array
   `[economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id` uses component array
-  `[source_slug, subject_ref, segment_start_at, segment_end_at]`
-- `source_slug` uses the shared source slug for the assembled source scope that
-  owns the continuity window
+  `[subject_ref, segment_start_at, segment_end_at]`
 - `event_link_id` uses component array
   `[continuity_segment_id, kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
@@ -861,7 +869,7 @@ Stable ids:
 Ordering:
 
 - `ContinuitySegmentRecord` rows sort by
-  `[checkpoint_date, source_slug, subject_ref, continuity_segment_id]`
+  `[checkpoint_date, subject_ref, continuity_segment_id]`
 - `EventLinkRecord` rows sort by
   `[continuity_segment_id, kind, left_event_ref, right_event_ref, event_link_id]`
 - `BalanceTargetRecord` rows sort by
@@ -898,7 +906,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside dataset-level summaries
+- bury missing evidence inside dataset readiness summaries
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:
@@ -966,7 +974,7 @@ Controlled vocabularies:
 - `CheckpointAssertionRecord.support_kind`:
   - `document_balance`
   - `source_balance`
-  - `wallet_balance`
+  - `location_balance`
   - `inventory_evidence`
   - `operator_assertion`
 - `continuity_kind`:
@@ -975,7 +983,7 @@ Controlled vocabularies:
   - `opening_rollforward`
   - `partial_rollforward`
 
-Envelope or sidecar content may include:
+Sidecar content may include:
 
 - supporting evidence refs
 - supporting provenance detail
@@ -1022,9 +1030,9 @@ Lineage rule:
 
 - `proposal_refs` uses ordered `checkpoint_proposal_id` values
   when reconciliation-owned proposals support the accepted assertion
-- product-level `reconciliation_state_refs` remain the broader upstream
+- product-scope `reconciliation_state_refs` remain the broader upstream
   partition lineage; assertion-level proposal refs point only at the accepted
-  proposal path when that narrower lineage exists
+  proposal lineage when that narrower lineage exists
 
 Fingerprint inputs:
 
@@ -1126,7 +1134,7 @@ Controlled vocabularies:
   - `passed`
   - `blocked`
 
-Envelope or sidecar content may include:
+Sidecar content may include:
 
 - posting explanation
 - validation notes
@@ -1184,7 +1192,7 @@ Must guarantee:
 - deterministic posting expansion
 - explicit validation
 - explicit unsupported accounting mapping
-- posting determinants required for validation remain part of the kernel
+- posting fields required for validation remain part of the kernel
 
 Must not:
 
@@ -1214,14 +1222,14 @@ Product metadata:
 
 Owns:
 
-- tax determinants derived from reconciled economics plus accepted checkpoint
+- tax inputs derived from reconciled economics plus accepted checkpoint
   truth
 - explicit tax-owned blockers where upstream truth is still not tax-complete
 
 Record families:
 
-- `TaxDeterminantRecord`
-  - `determinant_id`
+- `TaxInputRecord`
+  - `tax_input_id`
   - `kind`
   - `tax_year`
   - `basis_pool_ref`
@@ -1238,13 +1246,13 @@ Record families:
 - `BasisTransitionRecord`
   - `basis_transition_id`
   - `basis_pool_ref`
-  - `from_determinant_ref`
-  - `to_determinant_ref`
+  - `from_tax_input_ref`
+  - `to_tax_input_ref`
   - `kind`
 
 Controlled vocabularies:
 
-- `TaxDeterminantRecord.kind`:
+- `TaxInputRecord.kind`:
   - `acquisition`
   - `disposition`
   - `income`
@@ -1263,7 +1271,7 @@ Controlled vocabularies:
   - `pool_close`
   - `carry_forward`
 
-Envelope or sidecar content may include:
+Sidecar content may include:
 
 - tax-relevant valuation detail
 - supporting ownership and counterparty detail
@@ -1273,25 +1281,25 @@ Envelope or sidecar content may include:
 Stable ids:
 
 - `tax_inputs_id` identifies one emitted `TaxInputs` kernel
-- `determinant_id` identifies one tax determinant
+- `tax_input_id` identifies one tax input record
 - `basis_transition_id` identifies one basis or pool transition
 - `tax_inputs_id` uses component array
   `[checkpoint_ref, economic_facts_refs]`
-- `determinant_id` uses component array
+- `tax_input_id` uses component array
   `[tax_year, kind, basis_pool_ref, beneficial_owner_ref, instrument_ref, effective_at, quantity, direction, event_refs, assertion_refs]`
 - `basis_transition_id` uses component array
-  `[basis_pool_ref, kind, from_determinant_ref, to_determinant_ref]`
+  `[basis_pool_ref, kind, from_tax_input_ref, to_tax_input_ref]`
 
 Ordering:
 
-- `TaxDeterminantRecord` rows sort by tuple
-  `[tax_year, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_key, kind, effective_at, determinant_id]`
+- `TaxInputRecord` rows sort by tuple
+  `[tax_year, basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_key, kind, effective_at, tax_input_id]`
 - `BasisTransitionRecord` rows sort by
   `[basis_pool_ref.tax_policy_id, basis_pool_ref.jurisdiction_or_regime, basis_pool_ref.beneficial_owner_ref, basis_pool_ref.pool_key, kind, basis_transition_id]`
 
 Serialization:
 
-- serialize each tax-input record family as its own ordered array
+- serialize each tax input record family as its own ordered array
 - persist product metadata once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
@@ -1300,12 +1308,12 @@ Serialization:
 Fingerprint inputs:
 
 - product metadata
-- canonical `TaxDeterminantRecord` rows
+- canonical `TaxInputRecord` rows
 - canonical `BasisTransitionRecord` rows
 
 Must guarantee:
 
-- jurisdiction-neutral determinants
+- jurisdiction-neutral tax inputs
 - explicit basis-affecting state changes
 - explicit tax-owned blockers where upstream truth is not tax-complete
 - tax-incomplete items stay explicit instead of being upgraded into guessed
@@ -1321,7 +1329,7 @@ Must not:
 
 Handoff to `TaxOutputs`:
 
-- `TaxInputs` provides the determinant surface that selected policies operate
+- `TaxInputs` provides the tax input surface that selected policies operate
   on
 - the policy layer decides treatment and output shape, not the upstream claim,
   economic, reconciliation, or checkpoint layers
@@ -1361,10 +1369,10 @@ Record families:
   - `basis_pool_ref`
   - `next_tax_year`
   - `fingerprint`
-- `UnsupportedDeterminantRecord`
-  - `unsupported_determinant_id`
+- `UnsupportedTaxInputRecord`
+  - `unsupported_tax_input_id`
   - `tax_output_id`
-  - `determinant_ref`
+  - `tax_input_ref`
   - `blocking_gap_refs`
 
 Controlled vocabularies:
@@ -1374,19 +1382,19 @@ Controlled vocabularies:
   - `income`
   - `expense`
   - `carry_forward`
-  - `unsupported_determinant`
+  - `unsupported_input`
 
-Envelope or sidecar content may include:
+Sidecar content may include:
 
 - policy-specific summaries
 - schedules and forms
 - carry-forward explanation
-- unsupported-determinant notes
+- unsupported tax input notes
 
 Product-root cardinality:
 
 - one `TaxOutputs` kernel may contain many `TaxOutputRecord`,
-  `CarryForwardRecord`, and `UnsupportedDeterminantRecord` rows
+  `CarryForwardRecord`, and `UnsupportedTaxInputRecord` rows
 - one emitted `TaxOutputs` kernel must contain exactly one `tax_policy_id` and one
   `tax_year`
 
@@ -1395,15 +1403,15 @@ Stable ids:
 - `tax_outputs_id` identifies one emitted `TaxOutputs` kernel
 - `tax_output_id` identifies one policy-owned output emission
 - `carry_forward_id` identifies one carry-forward state record
-- `unsupported_determinant_id` identifies one persisted unsupported-determinant
+- `unsupported_tax_input_id` identifies one persisted unsupported tax input
   record
 - `tax_outputs_id` uses component array `[tax_inputs_ref, tax_policy_id, tax_year]`
 - `tax_output_id` uses component array
   `[tax_policy_id, kind, tax_year, basis_pool_refs]`
 - `carry_forward_id` uses component array
   `[tax_output_id, basis_pool_ref, next_tax_year]`
-- `unsupported_determinant_id` uses component array
-  `[tax_output_id, determinant_ref]`
+- `unsupported_tax_input_id` uses component array
+  `[tax_output_id, tax_input_ref]`
 
 Ordering:
 
@@ -1411,8 +1419,8 @@ Ordering:
   `[tax_policy_id, tax_year, kind, tax_output_id]`
 - `CarryForwardRecord` rows sort by
   `[tax_output_id, next_tax_year, basis_pool_ref, carry_forward_id]`
-- `UnsupportedDeterminantRecord` rows sort by
-  `[tax_output_id, determinant_ref, unsupported_determinant_id]`
+- `UnsupportedTaxInputRecord` rows sort by
+  `[tax_output_id, tax_input_ref, unsupported_tax_input_id]`
 
 Serialization:
 
@@ -1427,13 +1435,13 @@ Fingerprint inputs:
 - product metadata
 - canonical `TaxOutputRecord` rows
 - canonical `CarryForwardRecord` rows
-- canonical `UnsupportedDeterminantRecord` rows
+- canonical `UnsupportedTaxInputRecord` rows
 
 Must guarantee:
 
 - outputs are derived from `TaxInputs` through selected tax policies
 - policy selection is explicit
-- unsupported determinants stay explicit instead of being silently omitted
+- unsupported tax inputs stay explicit instead of being silently omitted
 
 Must not:
 
@@ -1449,10 +1457,10 @@ The pipeline products rely on shared supporting contracts defined elsewhere:
   runtime truth
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) for the primary
   current-to-target transformation rules and migration authority matrix
-- [First Slice Contract](../reference/first-slice-contract.md) for the bounded
-  Coinbase-first replay and parity contract
+- [First Slice Contract](../reference/first-slice-contract.md) for the current
+  first replay and parity contract
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
-  for the first bounded `EconomicFacts -> ReconciliationState -> Checkpoint`
+  for the current first `EconomicFacts -> ReconciliationState -> Checkpoint`
   contract
 - [Domain Ontology](domain-ontology.md) for entity seams, refs,
   `AssertionValue`, and package ownership

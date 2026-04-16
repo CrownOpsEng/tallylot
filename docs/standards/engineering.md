@@ -210,6 +210,13 @@ Current application of this rule:
   `gap_id` or `ReadinessRecord` plus `readiness_id` over longer names that
   repeat context the record family already supplies, unless a real sibling
   family would make the shorter stem ambiguous.
+- Apply the same rule to child-local fields, refs, and helper names. When the
+  owning product or record already supplies the parent context, prefer the
+  shortest truthful child noun such as `selection_id`, `proposal_refs`, or
+  `assertion_ids` over longer forms that restate the parent stem.
+- Do not shorten a child name when that child must travel outside the owning
+  family and the shorter noun would become ambiguous across stages or products.
+  Keep the longer owning stem only when that broader ambiguity is real.
 - When a record or product owns one primary as-of time, prefer `as_of_at`.
   Add a longer prefix only when the same record carries multiple as-of fields
   or one field is explicitly naming another concept's as-of time.
@@ -323,7 +330,7 @@ Current application of this rule:
   `*_discriminator` when the field simply holds the stable key for that parent
   scope.
 - For reusable ref tuples that serialize or flatten across many products, keep
-  explicit slot names such as `subject_kind`, `source_kind`, `policy_key`, or
+  explicit slot names such as `subject_kind`, `origin_kind`, `policy_key`, or
   `position_key` when bare `kind` or `key` would become ambiguous outside the
   owning type declaration.
 - When one record or nested entry carries one primary precision or slot field,
@@ -346,12 +353,20 @@ Current application of this rule:
   the stem when the shorter noun would be generic across stages. Prefer
   `EventLinkRecord` or `EntryCheckRecord` over ambiguous cross-stage names such
   as `LinkRecord` or `ValidationRecord`.
+- Use generic shared nouns only for intentionally repo-owned cross-stage seams.
+  Names such as `SubjectRef` or `OriginRef` are allowed only when the
+  abstraction itself is the owned contract. Everywhere else, prefer the
+  narrowest truthful concept name over a broader shared label.
+- Do not fork parallel helper-ref families when one shared tuple already owns
+  the same meaning. Reuse repo-owned seams such as `OriginRef` instead of
+  minting stage-prefixed variants for the same `[origin_kind, origin_id]`
+  shape.
 - Prefer the base noun when a field already stores the locator or ref itself.
   Avoid extra suffixes such as `_identity` when `locator` or
-  `source_ref` already says what the value holds.
+  `origin_ref` already says what the value holds.
 - For compatibility-only material that is not a target concept, name it by
   boundary and role rather than promoting it to a pseudo-domain type.
-  Prefer `bridge annotation detail`, `output note sidecar`, or
+  Prefer `bridge annotation sidecar detail`, `output annotation sidecar`, or
   `compatibility sidecar` over introducing a new canonical-seeming type name in
   forward-looking docs or code.
 - Name the held thing separately from its identity seam or persistence shell:
@@ -363,6 +378,26 @@ Current application of this rule:
   second.
 - New domain and application names should avoid crypto-exclusive language
   unless the concept is genuinely adapter-local or asset-class-specific.
+- In forward-looking target-layer names, keep source or asset-class nouns such
+  as `wallet`, `exchange`, `address`, `token`, `lot`, `chain`, and `tx_hash`
+  on source-evidence, adapter-local, compatibility, or current-state surfaces
+  unless the target concept is genuinely that specific. Prefer repo-owned
+  canonical nouns such as `Location`, `Instrument`, `Position`, `Contract`,
+  `Subject`, or `Transfer` when those are the broader end-state seams.
+- Once the pipeline moves past source-local products such as `EvidenceSet` and
+  `ClaimSet`, do not keep provider or source-system nouns in later product
+  record names, helper refs, stable ids, or partition labels unless those
+  nouns are themselves the persisted concept. Prefer lineage-, origin-, or
+  subject-owned names over carry-through source labels in downstream kernels.
+- When a canonical target contract must preserve a source-provided label,
+  preserve the value without freezing the source noun into the field name.
+  Prefer target-aligned names such as `location_label` over
+  source-specific names such as `wallet_label` when `Location` already owns
+  the shared boundary.
+- Prefer product-aligned nouns over abstract process jargon when the product
+  already owns the boundary. For example, `TaxInputRecord` is clearer than a
+  more abstract tax-record noun when the record is the kernel row inside
+  `TaxInputs`.
 - Do not bake migration qualifiers such as `bridge`, `legacy`, `current`, or
   `compat` into canonical target-layer concepts, helper ids, or product ids
   unless the name is intentionally current-state or adapter-local.
@@ -381,14 +416,15 @@ Current application of this rule:
   `compatibility/` is clearer than `bridge_compatibility/` unless another
   compatibility boundary would make the shorter name ambiguous.
 
-### Five-View Naming Audit
+### Five-View Naming And Congruency Audit
 
 Run this audit before freezing or renaming any forward-looking product, record
 family, ref, id, package, or file name.
 
 1. Concept view:
-   - does the name say what the thing is in domain terms, not just when it is
-     used in the workflow
+   - does the name say what the thing is in end-state domain terms, not just
+     when it is used in the workflow
+   - would the name still read correctly if the source were not crypto-specific
 2. Shape view:
    - does the noun match the held shape exactly: concept, id, ref, record,
      summary, sidecar, projection, file, package, observation kind, or
@@ -401,8 +437,8 @@ family, ref, id, package, or file name.
      without relying on directory context alone, and do local discriminators
      use keys rather than anchors or other abstract stand-ins
 5. Migration view:
-   - are bridge, current, legacy, compat, oracle, and output qualifiers kept
-     only on intentionally non-canonical surfaces
+   - are bridge, current, legacy, compat, oracle, output, and source-specific
+     qualifiers or nouns kept only on intentionally non-canonical surfaces
 
 When one canonical target name changes, update every owner page, bounded-slice
 reference, roadmap phase, helper reference, and control-plane routing page that

@@ -1,6 +1,6 @@
 ---
 title: "Adapter Delivery Plan"
-summary: "Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and bounded first slices are stable."
+summary: "Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and current first slices are stable."
 doc_type: status
 audience: human
 owner: repo
@@ -23,7 +23,7 @@ filing-critical window or in the later unified-adapter redesign.
 The repo uses a filing-first adapter strategy:
 
 - harden the current adapter path where it directly reduces filing risk
-- defer the broad unified adapter redesign until the filing path and bounded
+- defer the broad unified adapter redesign until the filing path and current
   first slices are stable
 - allow only the adapter prep work that the contract-lock pass and first slices
   actually need
@@ -50,18 +50,20 @@ Not allowed now:
 
 ### `prep`
 
-Narrow work that Phase 0 and the first bounded slices need before broad
+Narrow work that Phase 0 and the current first slices need before broad
 adapter redesign begins.
 
 Allowed prep:
 
-- bridge-to-target mapping needed for the first slice
+- bridge-to-target mapping needed for the current first slice
 - adapter participation in `EvidenceSet` and `ClaimSet` emission
-- shared determinism and verification helpers that remove first-slice drift
+- shared determinism and verification helpers that remove drift in the current
+  first slice
 
 Required prep rule:
 
-- first-slice adapter work must emit target products through the owner pages,
+- adapter work for the current first slice must emit target products through
+  the owner pages,
   not adapter-local alternate schemas
 - retained legacy hints needed for current drafts or facts may survive only in
   declared compatibility sidecars, not in `EvidenceSet` or
@@ -70,7 +72,7 @@ Required prep rule:
 ### `roadmap`
 
 Broader unified-manifest and multi-facet migration after the filing path is
-stable and the first bounded slices have proven the contract set.
+stable and the current first slices have proven the contract set.
 
 ## Priority Tiers
 
@@ -116,7 +118,8 @@ Exit criteria for the filing window:
 
 ## Shared-Foundation Prep
 
-Prep work is allowed only when it materially reduces first-slice drift.
+Prep work is allowed only when it materially reduces drift in the current
+first slice.
 
 Examples:
 
@@ -139,7 +142,7 @@ The broader unified adapter redesign stays deferred until:
 
 - the filing path is stable enough to trust
 - the contract-lock owner pages are frozen
-- the first upstream and downstream bounded slices have landed cleanly
+- the current first upstream and current first downstream slices have landed cleanly
 
 At that point, use
 [Unified Adapter Architecture](../concepts/unified-adapter-architecture.md) as
