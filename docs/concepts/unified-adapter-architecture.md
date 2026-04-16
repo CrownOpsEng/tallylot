@@ -27,7 +27,7 @@ Owner-page precedence:
 
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md) owns target product
   kernels, ids, ordering, and fingerprints
-- [Domain Ontology](domain-ontology.md) owns entity and ref seams
+- [Domain Ontology](domain-ontology.md) owns identity seams and ref recipes
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) owns migration
   cutovers and compatibility projections
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)

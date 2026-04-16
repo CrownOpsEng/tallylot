@@ -9,7 +9,7 @@ nav_order: 40
 ---
 
 Use this document to lock the current layered classification vocabulary on the
-fact-path bridge before deeper claim, checkpoint, accounting, and tax work
+fact-path bridge before deeper claim, checkpoint, journal, and tax work
 lands.
 
 This page owns the current bridge classification vocabulary only.

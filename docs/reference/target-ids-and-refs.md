@@ -25,7 +25,8 @@ Use the owner pages first:
   stable-id format, target product ids, upstream product refs, target product
   kernels, and shared status vocabularies
 - [Domain Ontology](../concepts/domain-ontology.md) for `AssertionValue`,
-  `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain ref seams
+  `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain refs plus
+  identity seams
 - [Gaps And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
   shared support attachments, and `product_scope_id`
 
@@ -73,18 +74,20 @@ Frozen `origin_kind` vocabulary:
 - `checkpoint_assertion`
 - `basis_adjustment`
 
-## Accounting Refs
+## Posting Refs
 
-`AccountRef` identifies one accounting account.
+`AccountRef` identifies one chart account.
 
 Rules:
 
+- `PostingRecord.account_ref` uses `AccountRef`
 - `AccountRef` serializes and sorts as `[chart_id, account_code]`
 
 `CommodityRef` identifies one posting commodity.
 
 Rules:
 
+- `PostingRecord.commodity_ref` uses `CommodityRef`
 - `CommodityRef` serializes and sorts as `[commodity_kind, commodity_id]`
 
 Frozen `commodity_kind` vocabulary:

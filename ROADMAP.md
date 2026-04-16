@@ -25,8 +25,8 @@ center.
 
 These anchors drive sequencing and acceptance criteria:
 
-- reconciliation remains the trust gate before checkpoint adoption, accounting,
-  and tax
+- reconciliation remains the trust gate before checkpoint adoption, journal
+  emission, and tax
 - checkpoint truth is accepted state with explicit acceptance basis
 - primary evidence and evidence-backed checkpoints remain first-class
 - raw-evidence derivation is the supported meaning-parity path
@@ -66,14 +66,14 @@ Must freeze:
   `selection_fingerprint` identity churn
 - critical-path `EvidenceObservationRecord` field tables for
   `statement_document` and `statement_balance_row`
-- `ClaimSet` claim-scope, claim-bundle, and bundle-decision model
+- `ClaimSet` claim-scope, claim-bundle, and claim-bundle-decision model
 - critical-path `ClaimRecord` field tables, `observation_refs`, and
   the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
 - shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
   `ReviewExplanation`, `ReadinessRecord`, `ReadinessRollupRecord`,
   `SubjectRef`, truthful `claim_scope_id` and `balance_target_id`
-  attachments, and the downstream shared-subject seams needed for accounting
+  attachments, and the downstream shared-subject seams needed for journal
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `product_scope_id`
@@ -84,6 +84,11 @@ Must freeze:
   keep product-id component order aligned to product-header order, keep
   canonical shared-support rollups stage- and domain-oriented, and prefer
   direct kind values such as `instrument` over pseudo-type labels
+- package-root naming that keeps `journal` aligned across stage vocabulary and
+  package ownership, uses singular concept roots such as `assertion/`, avoids
+  umbrella roots such as `entities/` when the identity families are already
+  known, and keeps shared support roots split into concrete nested families
+  such as `gap/`, `review/`, and `readiness/`
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
 - migration authority rules, compatibility projections, reader cutovers, and
@@ -109,7 +114,7 @@ Exit criteria:
 - no cross-stage support record or sidecar masquerades as a claim kind
 - claim-stage blockers can attach to `claim_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
-  accounting or tax subjects without collapsing to product-scope attachment only
+  journal or tax subjects without collapsing to product-scope attachment only
 - no target id or helper id bakes bridge-era naming into target identity
 - no canonical target contract keeps source-specific crypto nouns such as
   `wallet` when a repo-owned domain noun already owns that seam
@@ -124,7 +129,7 @@ Exit criteria:
   than left implicit
 - implementation placement is mechanical rather than interpretive
 - the first upstream and downstream slices can be implemented without inventing
-  ids, bundles, values, or reader cutovers
+  ids, claim bundles, values, or reader cutovers
 
 ## Phase 1. Land `EvidenceSet`
 
@@ -160,7 +165,7 @@ Deliver:
 
 - evidence-local `ClaimSet` emission keyed by `claim_set_id`
 - explicit claim scopes, mutually exclusive claim bundles, and
-  bundle-decision records
+  claim-bundle-decision records
 - claim fields frozen for the current first upstream slice plus
   `observation_refs`
 - shared support records and sidecars attached to claim scopes where needed
@@ -241,17 +246,17 @@ Exit criteria:
 
 Goal:
 
-- make accounting expansion and validation a first-class downstream stage
+- make journal expansion and validation a first-class downstream stage
 
 Deliver:
 
 - `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
-- accounting-owned blockers and validation rules
+- journal-owned blockers and validation rules
 - rendering orchestration over accepted upstream truth
 
 Exit criteria:
 
-- accounting validates accepted truth without becoming a truth-repair layer
+- `Journal` validates accepted truth without becoming a truth-repair layer
 
 ## Phase 7. Land `TaxInputs` And `TaxOutputs`
 

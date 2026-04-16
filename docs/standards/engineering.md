@@ -96,12 +96,23 @@ Default to one responsibility per module.
 When a capability grows, split by stable boundaries:
 
 - `domain/`: separate models, value objects, and typed aliases by concept.
+  Forward-looking target work should keep identity families split under
+  roots such as `domain/instrument/`, `domain/location/`,
+  `domain/ownership/`, `domain/counterparty/`, `domain/contract/`,
+  `domain/position/`, `domain/evidence/`, `domain/claim/`,
+  `domain/reconciliation/`, `domain/checkpoint/`, `domain/journal/`, and
+  `domain/tax/` rather than recreating umbrella roots such as
+  `domain/entities/`.
 - `application/`: organize by bounded capability packages such as
-  `application/intake/`, `application/profiling/`, `application/normalization/`,
-  `application/checkpoint/`, and `application/rendering/`. Keep request and
-  response contracts in capability-local `contracts.py` files and keep
-  orchestration entry points in explicitly named use-case modules such as
-  `build_profile.py`, `normalize_source.py`, or `render_export.py`.
+  `application/intake/`, `application/profiling/`, `application/evidence/`,
+  `application/claim/`, `application/economics/`,
+  `application/compatibility/`, `application/normalization/`,
+  `application/reconciliation/`, `application/readiness/`,
+  `application/checkpoint/`, `application/journal/`, `application/tax/`, and
+  `application/rendering/`. Keep request and response contracts in
+  capability-local `contracts.py` files and keep orchestration entry points in
+  explicitly named use-case modules such as `build_profile.py`,
+  `normalize_source.py`, or `render_export.py`.
 - `interfaces/`: keep command parsing and command execution thin; move real work
   into application use cases.
 - `adapters/`: move larger adapters to package-style modules with an
@@ -158,6 +169,12 @@ Current application of this rule:
   planned-item models, review assembly, and report rendering.
 - Normalization window and derived-balance helpers belong under
   `application/normalization/` rather than as nearby flat siblings.
+- Forward-looking cross-stage support reducers and readiness reporting belong
+  under `application/readiness/` rather than being buried under
+  `application/reconciliation/`.
+- Forward-looking journal expansion and validation belong under
+  `application/journal/` rather than under a broader `accounting/` umbrella or
+  as extra checkpoint-side helpers.
 - Rendering belongs under `application/rendering/`; CoinTracking is one
   output adapter, not an application-center compatibility lane.
 - Dev-only oracle tooling must live outside `src/tallylot/`.
@@ -192,6 +209,26 @@ Current application of this rule:
   `application/claim/` and `domain/claim/` stay aligned with `ClaimSet`,
   `claim_scope_id`, `claim_bundle_id`, and `claim_id` better than a pluralized
   `claims/` package stem.
+- Natural domain-noun package roots such as `economics/`, `profiling/`, and
+  `rendering/` are allowed when the shorter adjective form would be less clear.
+  Treat those as narrow exceptions, not permission for loose plural package
+  names.
+- Prefer explicit identity-family package roots over umbrella containers once
+  the owned families are already known. Use roots such as `instrument/`,
+  `location/`, `ownership/`, `counterparty/`, `contract/`, `position/`,
+  `assertion/`, and `journal/` instead of broader labels such as `entities/`,
+  `assertions/`, or `accounting/` when the repo already owns the narrower
+  boundary.
+- Use `journal` for the end-state downstream stage, package, and
+  product-adjacent family noun. Reserve `accounting` for broader prose,
+  external schemas, or current bridge hints such as `AccountingIntentHint`.
+- When a broad shared root is genuinely needed, keep the immediate children
+  concrete and mirrored. `support/` is acceptable only when it is split into
+  families such as `gap/`, `review/`, and `readiness/` rather than flattened
+  into one catch-all boundary.
+- When cross-stage support logic needs its own application boundary, give it
+  the family noun directly, such as `application/readiness/`, rather than
+  burying it under a neighboring stage package.
 - Follow the same naming approach for modules, functions, classes, and commands:
   choose concise descriptive names over decorative jargon.
 - Keep shape and casing aligned by role:
@@ -235,7 +272,7 @@ Current application of this rule:
 - Avoid abstract boundary labels such as `core` or `main` for forward-looking
   package, product, or concept names when the owning stage, layer, or domain
   boundary is already known. Prefer the explicit owner such as `domain`,
-  `reconciliation`, `checkpoint`, `accounting`, or `tax`.
+  `reconciliation`, `checkpoint`, `journal`, or `tax`.
 - Keep record-family stems and id stems aligned. Prefer `GapRecord` plus
   `gap_id` or `ReadinessRecord` plus `readiness_id` over longer names that
   repeat context the record family already supplies, unless a real sibling
@@ -528,7 +565,8 @@ Current application of this rule:
 - Prefer product-aligned nouns over abstract process jargon when the product
   already owns the boundary. For example, `TaxInputRecord` is clearer than a
   more abstract tax-record noun when the record is the kernel row inside
-  `TaxInputs`.
+  `TaxInputs`, and `JournalEntryRecord` is clearer than an alternate
+  `AccountingEntryRecord` once `Journal` is the owned product family.
 - In forward-looking target persistence, authoritative directory stems should
   follow the owning product or support family. Keep source- or checkpoint-local
   directory stems only for current-state, compatibility, or genuinely

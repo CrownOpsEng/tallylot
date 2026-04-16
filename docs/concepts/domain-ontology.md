@@ -1,6 +1,6 @@
 ---
 title: "Domain Ontology"
-summary: "Owning concept page for the target economic ontology, entity and ref seams, package ownership, and bridge-versus-target modeling rules."
+summary: "Owning concept page for the target economic ontology, identity seams, ref recipes, package ownership, and bridge-versus-target modeling rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,7 +9,7 @@ nav_order: 35
 ---
 
 Use this page when shaping the target domain model. This document owns the
-target ontology, entity seams, ref recipes, and target package ownership.
+target ontology, identity seams, ref recipes, and target package ownership.
 
 Current bridge note:
 
@@ -70,7 +70,7 @@ Rules:
   ready
 - tests and parity must be preserved or strengthened through refactors
 
-## Entity And Ref Seams
+## Identity And Ref Seams
 
 The target model uses explicit ref seams rather than one generic identity pool.
 
@@ -131,12 +131,12 @@ Rules:
   preserve that explicitly rather than hiding it behind a generic transfer
   label
 - unresolved ownership transitions should remain visible to reconciliation,
-  checkpoint, accounting, or tax as appropriate
+  checkpoint, journal, or tax as appropriate
 
 ## `AssertionValue`
 
 `AssertionValue` is the shared value union reused by reconciliation targets,
-accepted checkpoints, accounting reuse, and downstream tax reasoning.
+accepted checkpoints, journal reuse, and downstream tax reasoning.
 
 Variants:
 
@@ -207,9 +207,9 @@ Shared vocabulary:
 Rules:
 
 - valuation belongs in the economic model when it changes checkpoint,
-  accounting, or tax behavior
+  journal, or tax behavior
 - valuation purpose must be explicit enough to distinguish economic,
-  checkpoint, accounting, tax, and market-reference jobs
+  checkpoint, journal, tax, and market-reference jobs
 - valuation should not be hidden only inside renderer detail or one-off policy
   sidecars
 - missing or uncertain valuation should remain explicit when downstream stages
@@ -246,7 +246,7 @@ Modeling rules:
 - model accepted economic meaning as `EconomicEvent` plus `EconomicLeg`
 - keep settlement status, supersession lineage, and lifecycle events explicit instead of
   flattening them into activity labels
-- keep valuation first-class when it changes downstream accounting,
+- keep valuation first-class when it changes downstream journal,
   checkpoint, or tax behavior
 - let ownership and counterparty state remain explicit where known
 
@@ -371,6 +371,13 @@ Bridge-specific classification rules live in
 - distinguish concept, ref, and record names explicitly:
   `BasisPool` is a concept, `BasisPoolRef` is an identity seam, and
   `*Record` names belong to persisted kernels
+- keep `journal` aligned across the end-state stage vocabulary, package roots,
+  and product-adjacent prose; reserve `accounting` for broader prose or
+  bridge-local hint families
+- avoid umbrella package roots such as `entities/` once the owned identity
+  families are already known
+- keep singular concept families on singular package stems such as
+  `assertion/`
 - do not bake bridge, legacy, current, or compatibility qualifiers into
   target-layer concept names or helper ids unless the name is intentionally
   current-state or adapter-local
@@ -383,18 +390,22 @@ The target package layout follows stage ownership and is not advisory.
 
 Required domain ownership:
 
-- `domain/entities/` for entity models, refs, and stable identity seams
+- `domain/instrument/`, `domain/location/`, `domain/ownership/`,
+  `domain/counterparty/`, `domain/contract/`, and `domain/position/` for core
+  identity concepts, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
-- `domain/claim/` for claims, claim scopes, bundles, and bundle decisions
+- `domain/claim/` for claims, claim scopes, claim bundles, and
+  claim-bundle decisions
 - `domain/economics/` for events, legs, valuations, settlement status, and
   lifecycle events
-- `domain/assertions/` for `AssertionValue` and its variants
-- `domain/support/` for gap, review, and readiness models plus `SubjectRef`
+- `domain/assertion/` for `AssertionValue` and its variants
+- `domain/support/` as the shared root for nested `gap/`, `review/`, and
+  `readiness/` families plus `SubjectRef`
 - `domain/reconciliation/` for continuity segments, event links, balance
   targets, and checkpoint proposal records
 - `domain/checkpoint/` for accepted checkpoint truth
-- `domain/accounting/` for journal models
+- `domain/journal/` for journal models
 - `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
   carry-forward records, and outputs
 
@@ -411,10 +422,12 @@ Required application ownership:
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
-  evaluation, readiness reducers, and checkpoint proposal records
+  evaluation, and checkpoint proposal records
+- `application/readiness/` for cross-stage gap, review, and readiness
+  reduction plus reporting
 - `application/checkpoint/` for checkpoint assembly, manual balance
   submission validation, and checkpoint acceptance
-- `application/accounting/` for journal expansion, validation, and reporting
+- `application/journal/` for journal expansion, validation, and reporting
 - `application/tax/` for tax input construction, basis transitions, policy
   selection, and tax-output generation
 - `application/rendering/` for downstream rendering orchestration
