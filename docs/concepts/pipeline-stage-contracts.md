@@ -487,7 +487,7 @@ bounded slice, these kind-specific kernel fields are also required:
 `leg_specs` entry shape:
 
 - `slot`
-- `leg_kind`
+- `role`
 - `quantity`
 - `instrument_claim_refs`
 - `location_claim_ref`
@@ -500,7 +500,9 @@ First upstream slice linkage rules:
   the first upstream slice
 - `leg_specs` lift ordered leg meaning from the current
   `EconomicLegDraft` contract, including sign, instrument claims,
-  optional subtype, optional attributed-leg linkage, and optional location
+  optional subtype, optional attributed-leg linkage, and optional location,
+  while keeping the later `EconomicLegRecord.role` stem aligned across the
+  family
 - retail claims with `kind = activity` use `member_refs` plus the
   first upstream slice scope key `[retail_member_id, raw_row_ref]`; they do
   not require a retail-row observation kind in this pass
@@ -614,7 +616,7 @@ Handoff to `EconomicFacts`:
 
 - `ClaimSet` hands off evidence-local assertions, mutually exclusive claim
   bundles and claim-bundle decisions
-- the economic stage decides which claim bundle can become accepted economic truth
+- the economics stage decides which claim bundle can become accepted economic truth
   and which scopes remain blocked, deferred, or superseded
 
 ## `EconomicFacts`
@@ -955,7 +957,8 @@ Owns:
 
 - accepted `CheckpointAssertionRecord` rows
 - adopted opening state when intentionally used
-- acceptance basis, trust level, and continuity into accepted checkpoint state
+- acceptance basis, trust level, and continuity inside accepted checkpoint
+  truth
 
 Record families:
 
@@ -980,7 +983,7 @@ Controlled vocabularies:
 
 - `CheckpointAssertionRecord.kind`:
   - `position_quantity`
-  - `cash_quantity`
+  - `cash_amount`
   - `basis_amount`
   - `owner_state`
   - `location_state`
@@ -1001,7 +1004,7 @@ Controlled vocabularies:
   - `inventory_observation`
   - `manual_assertion`
 - `continuity_kind`:
-  - `direct_observation`
+  - `observed_continuity`
   - `reconciled_rollforward`
   - `opening_rollforward`
   - `partial_rollforward`
@@ -1083,7 +1086,7 @@ Must guarantee:
 - evidence-backed corroboration remains preferred
 - manual assertions do not silently become filing-ready checkpoint truth
 - adopted opening state remains explicit instead of masquerading as direct
-  observation
+  observed continuity
 
 Must not:
 
@@ -1107,8 +1110,8 @@ Product header:
 
 - `journal_id`
 - `schema_version`
-- `economic_facts_refs`
 - `checkpoint_ref`
+- `economic_facts_refs`
 
 Owns:
 
@@ -1181,7 +1184,7 @@ Stable ids:
   `JournalUnitRef`, and `OriginRef` from
   [Target Ids And Refs](../reference/target-ids-and-refs.md)
 - `journal_id` uses component array
-  `[economic_facts_refs, checkpoint_ref]`
+  `[checkpoint_ref, economic_facts_refs]`
 - `entry_id` uses component array
   `[journal_id, kind, effective_at, event_refs, assertion_refs]`
 - `posting_id` uses component array
@@ -1241,8 +1244,8 @@ Product header:
 
 - `tax_inputs_id`
 - `schema_version`
-- `economic_facts_refs`
 - `checkpoint_ref`
+- `economic_facts_refs`
 
 Owns:
 
@@ -1309,7 +1312,7 @@ Stable ids:
 - `tax_input_id` identifies one tax input record
 - `basis_transition_id` identifies one basis or pool transition
 - `tax_inputs_id` uses component array
-  `[economic_facts_refs, checkpoint_ref]`
+  `[checkpoint_ref, economic_facts_refs]`
 - `tax_input_id` uses component array
   `[tax_year, kind, basis_pool_ref, beneficial_owner_ref, instrument_ref, effective_at, quantity, direction, event_refs, assertion_refs]`
 - `basis_transition_id` uses component array
@@ -1356,7 +1359,7 @@ Handoff to `TaxOutputs`:
 
 - `TaxInputs` provides the tax input product that selected policies operate on
 - the policy layer decides treatment and output shape, not the upstream claim,
-  economic, reconciliation, or checkpoint layers
+  economics, reconciliation, or checkpoint layers
 
 ## `TaxOutputs`
 

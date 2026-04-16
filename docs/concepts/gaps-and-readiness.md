@@ -158,7 +158,7 @@ Shared stage vocabulary:
 
 - `evidence`
 - `claim`
-- `economic`
+- `economics`
 - `reconciliation`
 - `checkpoint`
 - `journal`
@@ -168,6 +168,8 @@ Rules:
 
 - `owner_stage` and `blocking_stages` use this vocabulary
 - readiness records and rollups use this vocabulary
+- keep stage labels on repo-owned noun forms that match the target package and
+  ownership docs
 - do not use alternate labels such as `semantic` once target-stage products
   are emitted
 
