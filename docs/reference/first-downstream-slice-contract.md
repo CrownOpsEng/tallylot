@@ -162,7 +162,7 @@ Not allowed in this slice:
 - checkpoint proposal ids that include raw evidence-ref lists as identity
   components
 
-## Bridge Compatibility Projections
+## Bridge Compatibility Views
 
 For subjects in this slice, the authoritative products after the slice are:
 
@@ -199,7 +199,7 @@ This slice allows only:
   - `analysis_ready`
   - `filing_ready`
 - `basis`:
-  - `document_evidence`
+  - `document_support`
   - `reconciled_continuity`
 - `support_kind`:
   - `document_observation`
@@ -209,12 +209,17 @@ This slice allows only:
 
 Not allowed in this slice:
 
-- `manual_assertion`
-- `adopted_opening`
-- `reported_observation`
-- `location_observation`
-- `inventory_observation`
-- `partial_rollforward`
+- `basis` values:
+  - `reported_support`
+  - `manual_support`
+  - `adopted_opening`
+- `support_kind` values:
+  - `reported_observation`
+  - `location_observation`
+  - `inventory_observation`
+  - `manual_assertion`
+- `continuity_kind` values:
+  - `partial_rollforward`
 
 ## Parity Gates
 

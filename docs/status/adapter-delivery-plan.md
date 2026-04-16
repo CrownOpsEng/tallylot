@@ -127,7 +127,7 @@ Examples:
 - declared bridge-to-target mapping for planner files and statement
   evidence
 - shared verifiers for `EvidenceSet`, `ClaimSet`, and declared compatibility
-  projections
+  views
 - shared comparison helpers that prove bridge outputs are reproducible from the
   authoritative target kernels
 

@@ -28,8 +28,8 @@ Current runtime note:
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- product-scope `ReadinessRollupRecord` rows are derived from subject-level or
-  scope-level truth, not stored as the only truth
+- product-scope readiness rollups are derived from subject-level or scope-level
+  truth, not stored as the only truth
 - gap, review, and readiness records plus sidecars help stages interoperate
   without erasing stage ownership
 
@@ -129,7 +129,7 @@ Rules:
 ### `product_scope_id`
 
 `product_scope_id` is defined once for target gap, review, readiness, rollup,
-projection, and sidecar attachments.
+view, and sidecar attachments.
 
 Rules:
 
@@ -500,7 +500,7 @@ Rules:
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before claim commitment
 - reducers work from subject readiness plus gaps, not from hand-built
-  `ReadinessRollupRecord` rows
+  readiness rollup rows
 - a subject may be ready for one stage and blocked for another
 - readiness points to blocking gap ids rather than hiding blockers in
   explanation text
@@ -568,19 +568,18 @@ Fingerprint inputs:
 
 Rules:
 
-- `ReadinessRollupRecord` rows are derived rollup records, not the only stored
-  truth
+- readiness rollup rows are derived rollup records, not the only stored truth
 - `partial` requires at least one resolved assertion plus at least one open
   blocking gap id
 - if no required assertion has resolved yet, status is `blocked`, not
   `partial`
 - if no blocker applies, status is `ready`, not `partial`
-- product-scope `ReadinessRollupRecord` rows remain reproducible from ordered
-  readiness and gap records without manual status editing
+- product-scope readiness rollups remain reproducible from ordered readiness
+  and gap records without manual status editing
 - canonical rollup kinds stay stage- and domain-oriented rather than grouping
   by source identity
 - source-grouped views belong in operator views or compatibility
-  projections rather than in `ReadinessRollupRecord.rollup_kind`
+  views rather than in `ReadinessRollupRecord.rollup_kind`
 - stages use only the dimensions they actually own or can derive safely
 
 ## Bridge Mapping From Issue And Review Records

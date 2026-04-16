@@ -433,8 +433,8 @@ Required application ownership:
   evaluation, and checkpoint proposal records
 - `application/readiness/` for cross-stage gap, review, and readiness
   reduction plus readiness rollups and operator views
-- `application/checkpoint/` for `Checkpoint` acceptance, manual balance
-  submission validation, and opening-state adoption
+- `application/checkpoint/` for `Checkpoint` acceptance, manual assertion
+  intake, and opening-state adoption
 - `application/journal/` for journal expansion, entry checks, and journal
   views
 - `application/tax/` for `TaxInputs` construction, basis transitions, policy

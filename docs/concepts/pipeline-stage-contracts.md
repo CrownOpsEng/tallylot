@@ -50,7 +50,7 @@ Shared rules:
 
 - every output preserves stable ids and enough upstream linkage for later audit
 - later stages may add stage-owned sidecars, rollups, and reporting
-  projections, but must not
+  views, but must not
   silently rewrite upstream product meaning to make their own outputs look tidy
 - if a stage cannot support a required decision, it emits explicit blockers,
   unresolved records, or deferred records rather than inventing a fallback
@@ -191,7 +191,7 @@ Use these bounded record-local vocabularies across target kernels:
   - `blocked`
 - `JournalEntryRecord.status`:
   - `expanded`
-  - `validated`
+  - `checked`
   - `blocked`
 - `TaxOutputRecord.status`:
   - `ready`
@@ -929,7 +929,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside product-scope `ReadinessRollupRecord` rows
+- bury missing evidence inside product-scope readiness rollups
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:
@@ -989,11 +989,11 @@ Controlled vocabularies:
   - `analysis_ready`
   - `reference_ready`
 - `CheckpointAssertionRecord.basis`:
-  - `document_evidence`
-  - `reported_observation`
+  - `document_support`
+  - `reported_support`
   - `reconciled_continuity`
   - `adopted_opening`
-  - `manual_assertion`
+  - `manual_support`
 - `CheckpointAssertionRecord.support_kind`:
   - `document_observation`
   - `reported_observation`
@@ -1065,10 +1065,10 @@ Fingerprint inputs:
 Minimum admissibility rules:
 
 - `filing_ready` requires:
-  - `basis` other than `manual_assertion`
+  - `basis` other than `manual_support`
   - `support_kind` other than `manual_assertion`
   - `continuity_kind` other than `partial_rollforward`
-- `analysis_ready` may use `manual_assertion` or `partial_rollforward`, but
+- `analysis_ready` may use `manual_support` or `partial_rollforward`, but
   the lower-trust basis stays explicit in the accepted checkpoint record
 - `reference_ready` is required when accepted checkpoint truth is suitable only
   for reference use because it relies solely on manual assertion without
@@ -1291,9 +1291,9 @@ Controlled vocabularies:
   - `decrease`
   - `neutral`
 - `BasisTransitionRecord.kind`:
-  - `open`
+  - `opening`
   - `adjustment`
-  - `close`
+  - `closing`
   - `carry_forward`
 
 Sidecar content may include:

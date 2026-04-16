@@ -36,7 +36,7 @@ These anchors drive sequencing and acceptance criteria:
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - current bridge names remain current-state truth until later implementation
   slices replace them
-- CoinTracking remains an edge projection and oracle surface, not the runtime
+- CoinTracking remains an edge adapter and oracle surface, not the runtime
   ledger model
 
 ## Transition Rules
@@ -101,8 +101,10 @@ Must freeze:
   `cash_quantity`, `basis_amount`, `owner_state`, and `location_state`
 - checkpoint acceptance vocabulary that keeps `basis`, `support_kind`, and
   `continuity_kind` on distinct semantic axes, using reason labels such as
-  `reconciled_continuity` and observation or continuity-shape labels such as
-  `document_observation` and `reconciled_rollforward`
+  `document_support`, `reported_support`, `manual_support`, and
+  `reconciled_continuity`, observation-shape labels such as
+  `document_observation`, `reported_observation`, and `manual_assertion`, and
+  continuity-shape labels such as `reconciled_rollforward`
 - package-root naming that keeps `journal` aligned across stage vocabulary and
   package ownership, uses singular concept roots such as `assertion/`, avoids
   umbrella roots such as `entities/` when the identity families are already
