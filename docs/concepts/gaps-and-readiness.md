@@ -259,7 +259,7 @@ Rules:
 - `GapRecord` is the shared blocking truth
 - it stays compact enough for reducers, indexing, and hot-path references
 - it must not absorb large explanatory text blobs
-- `owner_stage` identifies who owns the gap semantics
+- `owner_stage` identifies who owns the gap meaning
 - `blocking_stages` identifies who is blocked by the unresolved condition
 - stages may add stage-local subtyping later, but they must not redefine the
   shared support contracts out of existence
@@ -588,7 +588,7 @@ The live bridge still emits `IssueRecord` and `NormalizationReviewRecord`.
 Mapping rules:
 
 - a blocking `IssueRecord` maps to one `GapRecord` plus one `GapExplanation`
-  when owner stage, blocking stages, scope, and blocker semantics align
+  when owner stage, blocking stages, scope, and blocker meaning align
 - `IssueRecord.kind`, `severity`, `context_timestamp`, and typed provenance are
   gap inputs, not free text to reinterpret later
 - `NormalizationReviewRecord` maps to one `ReviewRecord` plus one

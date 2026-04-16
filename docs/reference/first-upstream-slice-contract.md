@@ -29,7 +29,7 @@ This slice is:
 - bounded `EvidenceSet` emission for that slice
 - bounded `ClaimSet` emission for that slice
 - continued compatibility with current `translation_input_plan.json`,
-  `EconomicActivityDraft`, `SourceTranslationBatch`, compiled
+  `EconomicActivityDraft`, `SourceTranslationBatch`,
   `TransactionFact`, `balance_references.csv`, and `cointracking_csv`
 
 The slice is not:
@@ -204,7 +204,7 @@ Required derived compatibility projections:
   sidecars keyed by `claim_id` or `claim_bundle_id`
 - `SourceTranslationBatch` derived from `ClaimSet` plus declared
   compatibility sidecars and shared support sidecars
-- compiled `TransactionFact` rows preserved for current bridge consumers
+- derived `TransactionFact` rows preserved for current bridge consumers
 - `balance_references.csv` preserved for current downstream compatibility
 - `cointracking_csv` preserved through the active bridge/output path
 
@@ -285,7 +285,7 @@ Unchanged evidence must preserve all of the following:
 - `translation_input_plan.json` content
 - `EconomicActivityDraft` ordering and content for evidence in this slice
 - `SourceTranslationBatch` content for evidence in this slice
-- compiled `TransactionFact` ordering and semantics for evidence in this slice
+- derived `TransactionFact` ordering and meaning for evidence in this slice
 - `balance_references.csv` content for evidence in this slice
 - `cointracking_csv` row ordering and field values for supported projections
 
@@ -299,7 +299,7 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical `translation_input_plan.json` content
 - identical `EconomicActivityDraft` content for evidence in this slice
 - identical `SourceTranslationBatch` content for evidence in this slice
-- identical derived bridge fact fingerprints for evidence in this slice
+- identical derived `TransactionFact` fingerprints for evidence in this slice
 - identical `balance_references.csv` content for evidence in this slice
 - identical `cointracking_csv` output for supported bridge facts
 
@@ -318,7 +318,7 @@ Not allowed:
 - quantity drift
 - `translation_input_plan.json`, `EconomicActivityDraft`, or
   `SourceTranslationBatch` drift on unchanged evidence in this slice
-- derived bridge fact drift on unchanged evidence in this slice
+- derived `TransactionFact` drift on unchanged evidence in this slice
 - `balance_references.csv` or `cointracking_csv` drift on unchanged evidence in
   this slice
 

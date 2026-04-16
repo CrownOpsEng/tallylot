@@ -71,7 +71,7 @@ Trust and ownership rules:
 - economic facts assert only economic truth the system can prove safely
 - reconciliation is the trust gate before checkpoint adoption, downstream
   journal emission, and tax
-- checkpoint truth is accepted state with explicit acceptance basis
+- checkpoint truth is accepted checkpoint state with explicit acceptance basis
 - `Journal` expands accepted truth and runs entry checks; it does not repair
   truth
 - `TaxInputs` assemble policy-ready inputs from reconciled economics plus
@@ -177,9 +177,9 @@ Forward-looking persistence rules:
 | `EconomicFacts` | claim-set-lineage-scoped |
 | `ReconciliationState` | continuity-segment-scoped |
 | `Checkpoint` | checkpoint-scoped |
-| `Journal` | checkpoint-lineage-scoped |
-| `TaxInputs` | checkpoint-lineage-scoped |
-| `TaxOutputs` | tax-policy-year-scoped |
+| `Journal` | checkpoint-economic-lineage-scoped |
+| `TaxInputs` | checkpoint-economic-lineage-scoped |
+| `TaxOutputs` | tax-input-policy-year-scoped |
 
 Rules:
 
@@ -187,9 +187,12 @@ Rules:
 - one persisted partition owns one product id aligned with that partition
 - partition boundaries are chosen by the dimensions the owning stage actually
   reduces over
-- `Journal` and `TaxInputs` stay checkpoint-lineage-scoped because both product
-  ids hash the accepted checkpoint ref plus the ordered upstream
+- `Journal` and `TaxInputs` stay checkpoint-economic-lineage-scoped because
+  both product ids hash the accepted checkpoint ref plus the ordered upstream
   `economic_facts_refs`
+- `TaxOutputs` stays tax-input-policy-year-scoped because its product id hashes
+  the authoritative `tax_inputs_ref` plus the selected `tax_policy_id` and
+  `tax_year`
 - migration-era workspace paths may still group later products under a
   source-scoped directory tree, but that filesystem placement does not make
   source identity part of downstream product naming or stable-id recipes
@@ -202,7 +205,7 @@ Rules:
 - one persisted `Checkpoint` kernel owns one checkpoint record
 - one persisted `Journal` kernel owns one journal emission root
 - one persisted `TaxInputs` kernel owns one tax-input emission root
-- one persisted `TaxOutputs` kernel owns one tax-policy-year output root
+- one persisted `TaxOutputs` kernel owns one tax-input-policy-year output root
 - readers use product ids or narrower record ids for authoritative product lookup;
   `product_scope_id` remains for shared support attachment and reporting only
 
@@ -319,7 +322,7 @@ Required partition keys:
 | Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `claim_scope_id` |
 | Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_proposal_id` |
 | Checkpoint and journal | `checkpoint_id`, `journal_id`, `checkpoint_assertion_id`, `entry_id` |
-| Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `tax_input_id`, `basis_transition_id` |
+| Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `tax_input_id`, `basis_transition_id`, `tax_output_id`, `tax_carry_forward_id`, `tax_unsupported_input_id` |
 
 Rules:
 
@@ -333,8 +336,9 @@ Rules:
   explicit upstream refs; they must not treat `product_scope_id` as the
   product-join
   key
-- tax reducers may read one tax year plus explicitly referenced carry-forward
-  basis-pool state; they must not recompute unrelated years by default
+- tax reducers may read one tax year plus explicitly referenced tax
+  carry-forward records for the relevant basis pools; they must not recompute
+  unrelated years by default
 - unbounded pairwise candidate comparison outside one deterministic selection
   group is not allowed
 - full-history rescans per target are not allowed when a bounded partition or

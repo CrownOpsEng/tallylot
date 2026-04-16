@@ -296,6 +296,10 @@ Current application of this rule:
   Prefer `EvidenceSelectionRecord` and `ClaimBundleDecisionRecord` over
   `SelectionRecord` or `BundleDecisionRecord` when the shorter record family
   would not reveal its owner cleanly across docs or code.
+- Apply the same rule to downstream stage families whose local noun would stay
+  generic outside the product. Prefer `TaxCarryForwardRecord` and
+  `TaxUnsupportedInputRecord` over bare `CarryForwardRecord` or
+  `UnsupportedInputRecord`.
 - Apply the same rule to child-local fields, refs, and helper names. When the
   owning product or record already supplies the parent context, prefer the
   shortest truthful child noun such as `selection_id`, `proposal_refs`, or
@@ -313,6 +317,10 @@ Current application of this rule:
   Prefer names such as `claim_bundle_id`, `claim_bundle_decision_id`, and
   `entry_check_id` over shorter forms such as `bundle_id`,
   `bundle_decision_id`, or `check_id` once those ids cross stage boundaries.
+- When the record-family stem needs the owning stage noun to stay clear, keep
+  that same stem on descendant ids and persisted basenames. Prefer
+  `tax_carry_forward_id` and `tax_carry_forward_records.json` alongside
+  `TaxCarryForwardRecord`.
 - When a record or product owns one primary as-of time, prefer `as_of`.
   Add a longer prefix only when the same record carries multiple as-of fields
   or one field is explicitly naming another concept's as-of time.
@@ -365,6 +373,14 @@ Current application of this rule:
   from that root record.
 - For shared support attachment over one emitted product kernel, prefer the
   explicit `product_scope_id` over generic names such as `dataset_id`.
+- Name partition scopes after the actual stable dimensions the product id
+  reduces over. If `TaxOutputs` depends on tax-input lineage plus policy and
+  year, prefer `tax-input-policy-year-scoped` over a shorter label that hides
+  lineage.
+- Apply that same rule to mixed-upstream products. If `Journal` or `TaxInputs`
+  depend on accepted checkpoint lineage plus ordered `economic_facts_refs`,
+  prefer `checkpoint-economic-lineage-scoped` over a shorter label such as
+  `checkpoint-lineage-scoped`.
 - When prose or helper formulas need the canonical lower-snake-case emitted
   product token, prefer `product_slug` over `product_name` so the stable token
   reads in parallel with `source_slug` and does not sound like display prose.
@@ -384,6 +400,10 @@ Current application of this rule:
   writers cut over. Reserve `artifact` for current-state file families,
   oracle/reference bundles, or mixed packages where the stored shape itself is
   the point.
+- In forward-looking migration docs, describe non-authoritative bridge outputs
+  as derived compatibility projections or compatibility sidecars. Reserve
+  bridge-era process verbs such as `compiled` for live bridge implementation
+  surfaces only.
 - Reserve `surface` for migration, runtime-boundary, or application-boundary
   prose. For domain concepts, tuple refs, or record-family shapes, prefer
   nouns such as `state`, `shape`, `record family`, or `identity seam` over the
@@ -444,8 +464,8 @@ Current application of this rule:
 - When one emitted product already gives a persisted concept its own sibling
   record family, do not repeat that sibling family as a `kind` value inside a
   different record family. Prefer distinct output-group kinds over values that
-  merely restate sibling families such as carry-forward or unsupported-input
-  records.
+  merely restate sibling families such as tax carry-forward or tax
+  unsupported-input records.
 - Keep all members of one bounded vocabulary on the same semantic axis. Use
   trust or readiness tiers for `trust_level`, support shapes for
   `support_kind`, and acceptance reasons for `basis` instead of mixing those
@@ -566,7 +586,7 @@ Current application of this rule:
   `BasisTransitionRecord` is a kernel row family.
 - When prose is naming one persisted emitted family rather than the broader
   concept, use the record-family noun. Prefer `checkpoint proposal records`,
-  `readiness records`, or `carry-forward records` over looser prose such as
+  `readiness records`, or `tax carry-forward records` over looser prose such as
   `proposals`, `readiness`, or `carry-forward state` when the stored shape is
   the point.
 - Prefer specific names such as `csv_parser.py`, `balance_mapper.py`, or

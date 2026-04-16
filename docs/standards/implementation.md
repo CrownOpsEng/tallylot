@@ -486,6 +486,8 @@ Pause feature work and fix the structure first when:
 - a feature already owns a package but new helpers are being left beside it as
   flat sibling modules
 - CoinTracking-specific semantics are drifting into the core domain
+- bridge-era, provider, or asset-class nouns are drifting into forward-looking
+  domain, application, id, ref, record, or directory names
 - an oracle-only artifact is being treated like a required runtime input
 - a quick patch would hide unsupported behavior instead of surfacing it
 

@@ -64,7 +64,7 @@ Reader-side examples:
 
 Writer-side examples:
 
-- mapping accepted upstream truth into output-specific row models
+- mapping accepted upstream products into output-specific row models
 - applying target-specific formatting and validation rules
 
 Shared runtime owns cross-adapter workflow:
@@ -103,7 +103,7 @@ Use a small set of purpose-defined facets rather than one giant contract.
 | `EvidenceFacet` | Read selected evidence and emit `EvidenceSet`-aligned outputs. |
 | `StatementFacet` | Recognize and parse statement documents plus statement-specific evidence detail. |
 | `ClaimFacet` | Emit evidence-local claim meaning that maps into `ClaimSet`. |
-| `RenderFacet` | Emit rendered files or external packages from accepted upstream truth. |
+| `RenderFacet` | Emit rendered files or external packages from accepted upstream products. |
 
 Portfolio behavior is not a separate species. It is evidence-reading behavior
 that emits position or balance meaning instead of activity-heavy claim sets.
