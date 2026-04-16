@@ -161,7 +161,7 @@ Current application of this rule:
 
 - `application/intake/` is the correct top-level feature package for intake.
 - `application/profiling/` is the correct top-level feature package for source
-  profiling workflows and profile artifact helpers.
+  profiling workflows and profile file helpers.
 - `intake/packages/`, `intake/archive/`, `intake/file_facts/`, and
   `intake/routing/` are the correct nested packages for the intake subdomains
   that now own their own models, rules, and entry points.

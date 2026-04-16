@@ -393,9 +393,9 @@ Rules:
 ### Oracle Lane
 
 - keep CoinTracking report readers and comparison tooling under `tools/oracles/`
-- use oracle artifacts for regression, black-box comparison, and historical
-  review only
-- never let oracle files become hidden production dependencies
+- use oracle comparison packages for regression, black-box comparison, and
+  historical review only
+- never let oracle packages or files become hidden production dependencies
 
 ### Adapter Completion
 

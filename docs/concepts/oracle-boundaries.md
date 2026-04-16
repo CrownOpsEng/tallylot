@@ -36,10 +36,10 @@ depending on any one portfolio tracker.
 | Class | Examples | Allowed To Establish Runtime Truth | Required In Normal Workflow | Notes |
 | ---- | ---- | ---- | ---- | ---- |
 | Primary evidence | platform exports, custody exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
-| Checkpoint evidence | balance statements, location snapshots, evidence-backed checkpoint packages | Yes | Yes | First-class reconciliation input |
+| Checkpoint evidence | balance statements, location snapshots, accepted opening-state packages | Yes | Yes | First-class reconciliation input |
 | Adapter-format inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
 | Oracle support packages | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry journal exports | No | No | Development and validation only; never production runtime inputs |
-| Derived outputs | CoinTracking export projection, double-entry journal export, `TaxOutputs` package, checkpoint packages | No | No | Produced by the system |
+| Derived outputs | CoinTracking export projection, double-entry journal export, `TaxOutputs` package, `Checkpoint` kernels plus support files | No | No | Produced by the system |
 
 ## Normal Runtime Workflow
 
