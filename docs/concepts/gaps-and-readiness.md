@@ -17,7 +17,8 @@ Current runtime note:
 - the live runtime still uses stage-specific issue and review outputs such as
   `IssueRecord` and `NormalizationReviewRecord`
 - those current surfaces remain current-state truth
-- this page defines the target shared support model for later implementation
+- this page defines the target shared support contracts for later
+  implementation
   slices
 
 ## Design Rules
@@ -112,7 +113,7 @@ Rules:
 - `selection_id` identifies one deterministic evidence-selection
   decision boundary
 - `claim_scope_id` identifies one claim-stage meaning decision
-  boundary before claim-bundle selection or subject resolution is final
+  boundary before claim-bundle decisions or subject resolution are final
 - `continuity_segment_id` identifies one bounded reconciliation window
 - `balance_target_id` identifies one reconciliation-owned balance assertion
   target when one exact target is the truthful blocker or review scope
@@ -261,7 +262,7 @@ Rules:
 - `owner_stage` identifies who owns the gap semantics
 - `blocking_stages` identifies who is blocked by the unresolved condition
 - stages may add stage-local subtyping later, but they must not redefine the
-  shared support model out of existence
+  shared support contracts out of existence
 - non-subject scopes must still use stable ids rather than prose labels
 - `resolved` and `superseded` gaps remain valid persisted history; they are not
   deleted in place
@@ -565,7 +566,8 @@ Fingerprint inputs:
 
 Rules:
 
-- `ReadinessRollupRecord` rows are derived output, not the only stored truth
+- `ReadinessRollupRecord` rows are derived rollup records, not the only stored
+  truth
 - `partial` requires at least one resolved assertion plus at least one open
   blocking gap id
 - if no required assertion has resolved yet, status is `blocked`, not
@@ -652,6 +654,6 @@ Performance implication:
 - current `IssueRecord` and `NormalizationReviewRecord` remain live bridge
   outputs today
 - later implementation may map current bridge issues and reviews into the
-  target support model where stage ownership and meaning line up
+  shared support contracts where stage ownership and meaning line up
 - current-state docs keep current issue and review names where accuracy
   requires them

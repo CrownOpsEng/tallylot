@@ -74,7 +74,7 @@ Frozen `origin_kind` vocabulary:
 - `checkpoint_assertion`
 - `basis_adjustment`
 
-## Journal Posting Refs
+## Journal Helper Refs
 
 `JournalAccountRef` identifies one chart account.
 
@@ -83,12 +83,12 @@ Rules:
 - `PostingRecord.account_ref` uses `JournalAccountRef`
 - `JournalAccountRef` serializes and sorts as `[chart_id, account_code]`
 
-`PostingUnitRef` identifies one posting unit.
+`JournalUnitRef` identifies one journal unit.
 
 Rules:
 
-- `PostingRecord.unit_ref` uses `PostingUnitRef`
-- `PostingUnitRef` serializes and sorts as `[unit_kind, unit_id]`
+- `PostingRecord.unit_ref` uses `JournalUnitRef`
+- `JournalUnitRef` serializes and sorts as `[unit_kind, unit_id]`
 
 Frozen `unit_kind` vocabulary:
 

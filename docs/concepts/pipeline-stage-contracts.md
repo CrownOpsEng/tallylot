@@ -15,7 +15,7 @@ Current runtime note:
 
 - the live runtime still centers on `EconomicActivityDraft`,
   `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`
-- those bridge products remain current-state truth until later implementation
+- those bridge surfaces remain current-state truth until later implementation
   slices replace them
 - this page defines the target stage contracts, not the claim that the current
   code already implements them
@@ -113,7 +113,7 @@ Shared rules:
   stem names one target record family owned on this page, the field uses that
   record family's stable id or ordered stable-id list
 - helper tuple refs such as `SubjectRef`, `BasisPoolRef`,
-  `JournalAccountRef`, `PostingUnitRef`, and `OriginRef` remain
+  `JournalAccountRef`, `JournalUnitRef`, and `OriginRef` remain
   owned by their helper pages and are called out explicitly where used
 
 ### Composite Tuple Rules
@@ -430,7 +430,7 @@ Record families:
 - `ClaimBundleDecisionRecord`
   - `claim_set_id`
   - `claim_scope_id`
-  - `bundle_decision_id`
+  - `claim_bundle_decision_id`
   - `outcome`
   - `accepted_bundle_ref`
   - `rejected_bundle_refs`
@@ -549,8 +549,8 @@ Stable ids:
   scope within one claim set
 - `claim_bundle_id` identifies one mutually exclusive claim bundle
 - `claim_id` identifies one evidence-local claim under one claim bundle
-- `bundle_decision_id` identifies one claim-bundle-decision record for one
-  claim scope
+- `claim_bundle_decision_id` identifies one claim-bundle-decision record for
+  one claim scope
 - `claim_set_id` uses component array `[evidence_set_id, emitter_id]`
 - downstream products keep claim lineage through `claim_set_ref` or
   `claim_set_refs`; they do not copy `source_slug`, `adapter_id`, or
@@ -559,7 +559,7 @@ Stable ids:
 - `claim_bundle_id` uses component array
   `[claim_scope_id, key]`
 - `claim_id` uses component array `[claim_bundle_id, kind, key]`
-- `bundle_decision_id` uses component array `[claim_scope_id]`
+- `claim_bundle_decision_id` uses component array `[claim_scope_id]`
 
 Ordering:
 
@@ -568,7 +568,7 @@ Ordering:
 - `ClaimBundleRecord` rows sort by
   `[claim_scope_id, key, claim_bundle_id]`
 - `ClaimBundleDecisionRecord` rows sort by
-  `[claim_scope_id, bundle_decision_id]`
+  `[claim_scope_id, claim_bundle_decision_id]`
 
 Serialization:
 
@@ -638,7 +638,7 @@ Record families:
 - `EconomicEventRecord`
   - `event_id`
   - `claim_bundle_id`
-  - `bundle_decision_id`
+  - `claim_bundle_decision_id`
   - `kind`
   - `effective_at`
   - `recorded_at`
@@ -709,8 +709,8 @@ Stable ids:
   `[origin_ref, purpose, amount, currency, valued_at, precision]`
 - `event_slot` and `leg_slot` are zero-based canonical positions in declared
   event and leg order
-- `bundle_decision_id` may be referenced for audit, but it does not define
-  event identity
+- `claim_bundle_decision_id` may be referenced for audit, but it does not
+  define event identity
 
 Ordering:
 
@@ -916,7 +916,7 @@ Must guarantee:
 
 - explicit completeness decisions
 - explicit continuity decisions
-- explicit missing-leg and missing-evidence surfaces
+- explicit missing-leg and missing-evidence gaps
 - reconciliation-stage gaps and reviews may attach to `balance_target_id` when
   one exact target is the truthful blocker or review scope
 - preservation of partial truth when the whole window is not yet clean
@@ -1108,7 +1108,7 @@ Product header:
 Owns:
 
 - journal entry and posting expansion
-- journal validation results
+- journal entry-check results
 - journal-owned gaps
 
 Record families:
@@ -1156,13 +1156,13 @@ Controlled vocabularies:
 Sidecar content may include:
 
 - posting explanation
-- validation notes
+- entry-check notes
 - renderer-facing annotations
 - journal-owned gap sidecars
 
 Product-root cardinality:
 
-- one `Journal` kernel may contain many entries, postings, and validations
+- one `Journal` kernel may contain many entries, postings, and entry checks
 - one emitted `Journal` kernel must contain exactly one distinct `journal_id`
 
 Stable ids:
@@ -1173,7 +1173,7 @@ Stable ids:
 - `posting_id` identifies one posting under one journal entry
 - `entry_check_id` identifies one journal entry check result
 - `account_ref`, `unit_ref`, and `origin_ref` use `JournalAccountRef`,
-  `PostingUnitRef`, and `OriginRef` from
+  `JournalUnitRef`, and `OriginRef` from
   [Target Ids And Refs](../reference/target-ids-and-refs.md)
 - `journal_id` uses component array
   `[economic_facts_refs, checkpoint_ref]`
@@ -1209,19 +1209,19 @@ Fingerprint inputs:
 Must guarantee:
 
 - deterministic posting expansion
-- explicit validation
+- explicit entry checks
 - explicit unsupported journal mapping
-- posting fields required for validation remain part of the kernel
+- posting fields required for entry checks remain part of the kernel
 
 Must not:
 
 - become a truth repair layer
-- hide postings or validation blockers in sidecars only
+- hide postings or entry-check blockers in sidecars only
 - claim to operate without accepted `EconomicFacts` and `Checkpoint` inputs
 
 Handoff to downstream renderers:
 
-- `Journal` provides journal-owned postings, validation results, and
+- `Journal` provides journal-owned postings, entry-check results, and
   journal-owned blockers
 - renderer-specific row shapes stay at output boundaries rather than becoming
   part of the shared journal contract
@@ -1230,7 +1230,7 @@ Handoff to downstream renderers:
 
 Purpose:
 
-- policy-ready, jurisdiction-neutral tax input surface
+- policy-ready, jurisdiction-neutral tax inputs
 
 Product header:
 
@@ -1348,8 +1348,7 @@ Must not:
 
 Handoff to `TaxOutputs`:
 
-- `TaxInputs` provides the tax input surface that selected policies operate
-  on
+- `TaxInputs` provides the tax input product that selected policies operate on
 - the policy layer decides treatment and output shape, not the upstream claim,
   economic, reconciliation, or checkpoint layers
 

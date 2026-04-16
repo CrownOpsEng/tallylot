@@ -278,7 +278,7 @@ Unchanged evidence must preserve all of the following:
 
 - selected, superseded, and blocked evidence membership
 - `selection_id`, `member_id`, and `observation_id`
-- `claim_id`, `claim_bundle_id`, and `bundle_decision_id`
+- `claim_id`, `claim_bundle_id`, and `claim_bundle_decision_id`
 - claim ordering and bundle ordering
 - timestamps and temporal precision
 - quantities and sign

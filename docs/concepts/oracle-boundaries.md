@@ -39,7 +39,7 @@ depending on any one portfolio tracker.
 | Checkpoint evidence | balance statements, location snapshots, accepted opening-state packages | Yes | Yes | First-class reconciliation input |
 | Adapter-format inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
 | Oracle support packages | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry journal exports | No | No | Development and validation only; never production runtime inputs |
-| Derived outputs | CoinTracking export projection, double-entry journal export, `TaxOutputs` package, `Checkpoint` kernels plus support files | No | No | Produced by the system |
+| Derived outputs | CoinTracking export projection, double-entry journal export, `TaxOutputs` package, `Checkpoint` kernels plus support sidecars | No | No | Produced by the system |
 
 ## Normal Runtime Workflow
 
@@ -49,8 +49,8 @@ The normal filing-capable workflow is:
 2. Select evidence and emit evidence-local claims.
 3. Compile accepted economics.
 4. Reconcile continuity, transfers, and balance targets.
-5. Accept or validate checkpoints.
-6. Render a double-entry journal.
+5. Accept checkpoints.
+6. Emit a journal and run its entry checks.
 7. Build `TaxInputs` from reconciled economics plus accepted checkpoint truth.
 8. Apply selected tax policies to emit `TaxOutputs`.
 
@@ -147,7 +147,7 @@ existence.
 - Keep tax policy operating on `TaxInputs` built from reconciled economics and
   accepted checkpoint truth only.
 - Keep journal rendering operating on reconciled economics, accepted checkpoint
-  truth, and journal validation rules only.
+  truth, and journal entry-check rules only.
 
 ## Failure Test
 
