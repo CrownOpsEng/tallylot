@@ -210,9 +210,19 @@ Current application of this rule:
   `gap_id` or `ReadinessRecord` plus `readiness_id` over longer names that
   repeat context the record family already supplies, unless a real sibling
   family would make the shorter stem ambiguous.
-- Fingerprints are scalar values, not refs. Use `*_fingerprint` for stored
-  fingerprints and reserve `*_ref` for product ids, record ids, tuple refs, or
-  other explicit pointer shapes.
+- When a record or product owns one primary as-of time, prefer `as_of_at`.
+  Add a longer prefix only when the same record carries multiple as-of fields
+  or one field is explicitly naming another concept's as-of time.
+- When a record owns one obvious child-id or child-ref family, prefer the
+  child noun directly, such as `assertion_ids`, `proposal_refs`, or
+  `target_refs`, over repeating the full stage or product stem.
+- For stage-owned product-emission identities, prefer `emitter_id` and
+  `emitter_key` over the more abstract `producer_id` and `producer_key`.
+- Fingerprints are scalar values, not refs. Use `fingerprint` when a record or
+  product owns one primary fingerprint. Use `*_fingerprint` when the
+  fingerprint belongs to another concept or when multiple fingerprint fields
+  coexist. Reserve `*_ref` for product ids, record ids, tuple refs, or other
+  explicit pointer shapes.
 - Product ids default to `<product>_id`. If that would collide with a
   root-record id in the same product, use `<product>_set_id`
   rather than process labels such as `*_run_id`, `*_batch_id`, or `*_job_id`
@@ -230,6 +240,9 @@ Current application of this rule:
   sibling concept inside the same record. Reserve `family` for prose grouping
   of related record types, adapters, or artifact lines rather than for kernel
   field names.
+- Prefer `kind` over `class` for controlled-vocabulary fields unless the
+  contract is naming an established external taxonomy or genuinely modeling a
+  class hierarchy.
 - For canonical textual source identifiers, prefer `source_slug` over bare
   `source`. Reserve bare `source` for prose, for grouping dimensions whose
   enclosing field already states the role, or for source-scoped provider
@@ -262,6 +275,10 @@ Current application of this rule:
   Avoid more abstract labels such as `*_anchor` or redundant labels such as
   `*_discriminator` when the field simply holds the stable key for that parent
   scope.
+- For reusable ref tuples that serialize or flatten across many products, keep
+  explicit slot names such as `subject_kind`, `source_kind`, `policy_key`, or
+  `position_key` when bare `kind` or `key` would become ambiguous outside the
+  owning type declaration.
 - Inside aggregate summary records, use `rollup_kind` and `rollup_key` for the
   grouping dimensions so `summary` remains the record shape, not a second
   generic field prefix.

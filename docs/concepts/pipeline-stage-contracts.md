@@ -75,7 +75,7 @@ Shared rules:
 
 - every stable id defined on this page uses the format
   `<kind>:<sha256(lowercase-hex)>`
-- the hash input is one canonical UTF-8 JSON array of ordered components
+- the hash input is one UTF-8 JSON array in declared component order
 - component arrays use the owning product's canonical scalar forms exactly as
   emitted; do not add hidden trimming, lowercasing, or resorting outside the
   declared tuple rules
@@ -122,7 +122,7 @@ Shared rules:
 ### Temporal Scalar Rule
 
 - where a field or id recipe uses a temporal scalar such as `effective_at`,
-  `target_as_of_at`, `asserted_as_of_at`, or `valued_at`, the
+  `as_of_at`, or `valued_at`, the
   canonical serialized form must preserve whether the meaning is date-scoped
   or timestamp-scoped
 - stages may carry an additional precision field when that stage needs it
@@ -233,7 +233,7 @@ Record families:
   - `evidence_set_id`
   - `selection_id`
   - `key`
-  - `selection_fingerprint`
+  - `fingerprint`
   - `basis`
   - `blocking_gap_refs`
 
@@ -377,7 +377,7 @@ Product metadata:
 - `claim_set_id`
 - `schema_version`
 - `evidence_set_ref`
-- `claim_producer_id`
+- `claim_emitter_id`
 
 Owns:
 
@@ -525,7 +525,7 @@ Stable ids:
 - `claim_id` identifies one source-local claim under one bundle
 - `bundle_decision_id` identifies one bundle-decision record for one
   interpretation scope
-- `claim_set_id` uses component array `[evidence_set_id, claim_producer_id]`
+- `claim_set_id` uses component array `[evidence_set_id, claim_emitter_id]`
 - `interpretation_scope_id` uses component array `[claim_set_id, scope_key]`
 - `bundle_id` uses component array
   `[interpretation_scope_id, key]`
@@ -779,7 +779,7 @@ Record families:
   - `continuity_segment_id`
   - `subject_ref`
   - `kind`
-  - `target_as_of_at`
+  - `as_of_at`
   - `expected_value`
   - `observed_value`
   - `status`
@@ -789,7 +789,7 @@ Record families:
   - `subject_ref`
   - `checkpoint_date`
   - `status`
-  - `balance_target_refs`
+  - `target_refs`
   - `evidence_refs`
 
 Controlled vocabularies:
@@ -850,9 +850,9 @@ Stable ids:
 - `event_link_id` uses component array
   `[continuity_segment_id, kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
-  `[continuity_segment_id, subject_ref, kind, target_as_of_at, expected_value_fingerprint]`
+  `[continuity_segment_id, subject_ref, kind, as_of_at, expected_value_fingerprint]`
 - `checkpoint_proposal_id` uses component array
-  `[continuity_segment_id, subject_ref, checkpoint_date, balance_target_refs]`
+  `[continuity_segment_id, subject_ref, checkpoint_date, target_refs]`
 - `expected_value_fingerprint` is the canonical fingerprint of the
   `AssertionValue` carried in `expected_value`
 - `evidence_refs` provide audit support, but they are not part of proposal
@@ -865,7 +865,7 @@ Ordering:
 - `EventLinkRecord` rows sort by
   `[continuity_segment_id, kind, left_event_ref, right_event_ref, event_link_id]`
 - `BalanceTargetRecord` rows sort by
-  `[continuity_segment_id, subject_ref, target_as_of_at, balance_target_id]`
+  `[continuity_segment_id, subject_ref, as_of_at, balance_target_id]`
 - `CheckpointProposalRecord` rows sort by
   `[checkpoint_date, subject_ref, continuity_segment_id, checkpoint_proposal_id]`
 
@@ -875,7 +875,7 @@ Serialization:
 - persist product metadata once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
-- sort `balance_target_refs` and `evidence_refs` lexicographically
+- sort `target_refs` and `evidence_refs` lexicographically
 
 Fingerprint inputs:
 
@@ -918,7 +918,7 @@ Product metadata:
 - `checkpoint_set_id`
 - `schema_version`
 - `reconciliation_state_refs`
-- `asserted_as_of_at`
+- `as_of_at`
 
 Owns:
 
@@ -930,20 +930,20 @@ Record families:
 
 - `CheckpointRecord`
   - `checkpoint_id`
-  - `asserted_as_of_at`
-  - `checkpoint_assertion_ids`
+  - `as_of_at`
+  - `assertion_ids`
 - `CheckpointAssertionRecord`
   - `checkpoint_assertion_id`
   - `checkpoint_id`
   - `subject_ref`
   - `kind`
-  - `asserted_as_of_at`
+  - `as_of_at`
   - `accepted_value`
   - `trust_level`
   - `basis`
-  - `evidence_class`
+  - `support_kind`
   - `continuity_proof`
-- `checkpoint_proposal_refs`
+- `proposal_refs`
 
 Controlled vocabularies:
 
@@ -959,11 +959,11 @@ Controlled vocabularies:
   - `operator_only`
 - `CheckpointAssertionRecord.basis`:
   - `source_document`
-  - `source_system_balance`
+  - `platform_balance`
   - `reconciled_continuity`
   - `adopted_opening_state`
   - `operator_assertion`
-- `evidence_class`:
+- `CheckpointAssertionRecord.support_kind`:
   - `statement_balance`
   - `platform_balance`
   - `wallet_snapshot`
@@ -996,19 +996,19 @@ Stable ids:
 - `checkpoint_assertion_id` identifies one accepted checkpoint truth record for
   one subject and one as-of point
 - `checkpoint_set_id` uses component array
-  `[reconciliation_state_refs, asserted_as_of_at]`
+  `[reconciliation_state_refs, as_of_at]`
 - `checkpoint_id` uses component array
-  `[asserted_as_of_at, checkpoint_assertion_ids]`
+  `[as_of_at, assertion_ids]`
 - `checkpoint_assertion_id` uses component array
-  `[kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
+  `[kind, as_of_at, subject_ref, accepted_value_fingerprint]`
 - `accepted_value_fingerprint` is the canonical fingerprint of one
   `AssertionValue` variant from [Domain Ontology](domain-ontology.md)
 
 Ordering:
 
-- `CheckpointRecord` rows sort by `[asserted_as_of_at, checkpoint_id]`
+- `CheckpointRecord` rows sort by `[as_of_at, checkpoint_id]`
 - `CheckpointAssertionRecord` rows sort by tuple
-  `[asserted_as_of_at, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
+  `[as_of_at, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
 
 Serialization:
 
@@ -1016,11 +1016,11 @@ Serialization:
 - persist product metadata once per emitted kernel
 - use stable object-key ordering
 - preserve the declared order above
-- sort `checkpoint_proposal_refs` lexicographically
+- sort `proposal_refs` lexicographically
 
 Lineage rule:
 
-- `checkpoint_proposal_refs` uses ordered `checkpoint_proposal_id` values
+- `proposal_refs` uses ordered `checkpoint_proposal_id` values
   when reconciliation-owned proposals support the accepted assertion
 - product-level `reconciliation_state_refs` remain the broader upstream
   partition lineage; assertion-level proposal refs point only at the accepted
@@ -1036,12 +1036,12 @@ Minimum admissibility rules:
 
 - `filing_ready` requires:
   - `basis` other than `operator_assertion`
-  - `evidence_class` other than `operator_assertion`
+  - `support_kind` other than `operator_assertion`
   - `continuity_proof` other than `partial_continuity`
 - `analysis_ready` may use `operator_assertion` or `partial_continuity`, but
   the lower-trust basis stays explicit in the accepted checkpoint record
 - `operator_only` is required when accepted checkpoint truth relies solely on
-  operator assertion without a source-backed evidence class
+  operator assertion without source-backed support
 - `adopted_opening_state` remains a distinct acceptance basis and must preserve
   provenance plus the continuity proof used to roll it into accepted state
 
@@ -1360,7 +1360,7 @@ Record families:
   - `tax_output_id`
   - `basis_pool_ref`
   - `next_tax_year`
-  - `carry_forward_fingerprint`
+  - `fingerprint`
 - `UnsupportedDeterminantRecord`
   - `unsupported_determinant_id`
   - `tax_output_id`

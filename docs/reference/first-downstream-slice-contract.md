@@ -86,7 +86,7 @@ In-scope product metadata fields:
 - `ReconciliationState` carries `reconciliation_state_id`,
   `schema_version`, and `economic_facts_ref`
 - `Checkpoint` carries `checkpoint_set_id`, `schema_version`,
-  `reconciliation_state_refs`, and `asserted_as_of_at`
+  `reconciliation_state_refs`, and `as_of_at`
 
 Compilation-input rules:
 
@@ -142,10 +142,10 @@ Slice-specific rules:
 - `valuation_id = [valuation_source_ref, valuation_purpose, amount, currency, valued_at, valued_precision]`
 - `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
 - `continuity_segment_id = [source_slug, subject_ref, segment_start_at, segment_end_at]`
-- `balance_target_id = [continuity_segment_id, subject_ref, kind, target_as_of_at, expected_value_fingerprint]`
-- `checkpoint_proposal_id = [continuity_segment_id, subject_ref, checkpoint_date, balance_target_refs]`
-- `checkpoint_set_id = [reconciliation_state_refs, asserted_as_of_at]`
-- `checkpoint_assertion_id = [kind, asserted_as_of_at, subject_ref, accepted_value_fingerprint]`
+- `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of_at, expected_value_fingerprint]`
+- `checkpoint_proposal_id = [continuity_segment_id, subject_ref, checkpoint_date, target_refs]`
+- `checkpoint_set_id = [reconciliation_state_refs, as_of_at]`
+- `checkpoint_assertion_id = [kind, as_of_at, subject_ref, accepted_value_fingerprint]`
 
 Not allowed in this slice:
 
@@ -193,7 +193,7 @@ The first downstream slice allows only:
 - `basis`:
   - `source_document`
   - `reconciled_continuity`
-- `evidence_class`:
+- `support_kind`:
   - `statement_balance`
 - `continuity_proof`:
   - `direct_observation`

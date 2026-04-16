@@ -152,7 +152,7 @@ Variant rules:
   scalar type to stand in for quantity, money, ownership, and location truth
 - assertion ids and fingerprints must treat the value variant and its canonical
   content as semantically relevant
-- the canonical `AssertionValue` fingerprint uses one canonical UTF-8 JSON array
+- the `AssertionValue` fingerprint uses one UTF-8 JSON array
   `[assertion_value_kind, value_content]`
 
 ## `CheckpointAssertion`

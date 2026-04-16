@@ -218,7 +218,7 @@ Goal:
 Deliver:
 
 - `CheckpointRecord` and `CheckpointAssertionRecord`
-- explicit trust level, acceptance basis, evidence class, and continuity proof
+- explicit trust level, acceptance basis, support kind, and continuity proof
 - direct `AssertionValue` accepted truth
 - bridge compatibility projection for `balance_references.csv`
 

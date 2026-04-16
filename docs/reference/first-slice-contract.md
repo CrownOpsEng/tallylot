@@ -160,7 +160,7 @@ Slice cardinality rules:
 - one or more `EvidenceMemberRecord` rows may belong to one
   `selection_id`
 - zero or more `EvidenceObservationRecord` rows may belong to one `member_id`
-- one `ClaimSet` is emitted per `[evidence_set_id, claim_producer_id]`
+- one `ClaimSet` is emitted per `[evidence_set_id, claim_emitter_id]`
 - one `interpretation_scope_id` exists per source-local claim scope
 - one or more `ClaimBundleRecord` rows may exist per `interpretation_scope_id`
 - one `BundleDecisionRecord` exists per `interpretation_scope_id`
@@ -222,7 +222,7 @@ This slice only freezes the admissible keys and bounded vocabularies.
 
 Slice-specific identity rules:
 
-- `claim_producer_id` is the shared producer id over
+- `claim_emitter_id` is the shared emitter id over
   `[source_slug, adapter_id, "claim-compiler"]`
 - `source_slug` uses the shared source slug across source-local
   products

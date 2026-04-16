@@ -144,7 +144,7 @@ Forward-looking persistence rules:
   never raw kernel fingerprints
 - product sidecars persist separately from kernels and are keyed by
   `dataset_id` or narrower truthful record ids
-- canonical target basenames use the owning product or support role directly
+- target basenames use the owning product or support role directly
   rather than generic names or bridge-era qualifiers
 - writes are replace-whole-partition operations, not append-in-place mutation
   of accepted truth
