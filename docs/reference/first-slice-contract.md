@@ -100,7 +100,7 @@ This slice may emit only this subset of `ClaimRecord.kind` values:
 | --- | --- |
 | `activity` | evidence-local activity assertion derived from selected Coinbase retail rows |
 | `balance` | quantity-backed balance claim derived from recognized statement rows |
-| `instrument_identity` | instrument identity assertion tied to one activity or statement observation |
+| `instrument` | instrument assertion tied to one activity or statement observation |
 | `location` | assertion about the in-scope custodial location or sub-location |
 | `beneficial_owner` | assertion for the beneficial owner needed by downstream position identity |
 | `valuation` | canonically defined now but zero-row by default in this slice |
@@ -121,7 +121,7 @@ Frozen kind-specific claim fields:
 | --- | --- |
 | `activity` | `activity_label`, `location_claim_ref`, `leg_specs` |
 | `balance` | `location_claim_ref`, `instrument_claim_refs`, `balance_kind`, `quantity`, `observed_at`, `precision` |
-| `instrument_identity` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
+| `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
 | `location` | `location_ref`, `account_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
 | `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
@@ -171,13 +171,13 @@ Slice cardinality rules:
 - one `claim_scope_id` exists per evidence-local scope
 - one or more `ClaimBundleRecord` rows may exist per `claim_scope_id`
 - one `BundleDecisionRecord` exists per `claim_scope_id`
-- one or more `ClaimRecord` rows may exist per `bundle_id`
+- one or more `ClaimRecord` rows may exist per `claim_bundle_id`
 
 Ownership rules:
 
 - `SelectionRecord` owns selection basis and blocking-gap refs only
 - `EvidenceMemberRecord` owns selected, superseded, or blocked membership
-- `BundleDecisionRecord` remains claim-owned and records bundle selection,
+- `BundleDecisionRecord` remains claim-owned and records claim-bundle selection,
   deferral, blocking, or supersession only
 - claim-stage gaps and reviews may attach to `claim_scope_id` when
   no narrower truthful subject has resolved yet
@@ -198,7 +198,7 @@ Required derived compatibility projections:
 
 - `translation_input_plan.json` derived from `EvidenceSet`
 - `EconomicActivityDraft` derived from `ClaimSet` plus declared compatibility
-  sidecars keyed by `claim_id` or `bundle_id`
+  sidecars keyed by `claim_id` or `claim_bundle_id`
 - `SourceTranslationBatch` derived from `ClaimSet` plus declared
   compatibility sidecars and shared support sidecars
 - compiled `TransactionFact` rows preserved for current bridge consumers
@@ -231,8 +231,7 @@ Slice-specific identity rules:
 
 - `emitter_id` is the shared emitter id over
   `[source_slug, adapter_id, "claim"]`
-- `source_slug` uses the shared source slug across evidence-local
-  products
+- `source_slug` stays the same across evidence-local products
 - `evidence_set_id` intentionally changes when `selection_fingerprint`
   changes, because the authoritative capture-level evidence emission changed
 - `locator` for `coinbase_retail_export` is
@@ -273,7 +272,7 @@ Unchanged evidence must preserve all of the following:
 
 - selected, superseded, and blocked evidence membership
 - `selection_id`, `member_id`, and `observation_id`
-- `claim_id`, `bundle_id`, and `decision_id`
+- `claim_id`, `claim_bundle_id`, and `bundle_decision_id`
 - claim ordering and bundle ordering
 - timestamps and temporal precision
 - quantities and sign

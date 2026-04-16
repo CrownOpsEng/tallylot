@@ -80,9 +80,9 @@ Rules:
 - when `SubjectRef` is needed for downstream attachment, the subject kind for
   this slice is `position`, pointing at the stable `PositionRef` identity
 
-## Product Header And Downstream Inputs
+## Kernel Header And Compilation Inputs
 
-Product header fields in this slice:
+Kernel header fields in this slice:
 
 - `EconomicFacts` carries `economic_facts_id`, `schema_version`, and
   `claim_set_refs`
@@ -91,12 +91,12 @@ Product header fields in this slice:
 - `Checkpoint` carries `checkpoint_id`, `schema_version`,
   `reconciliation_state_refs`, and `as_of`
 
-Downstream-input rules:
+Compilation-input rules:
 
-- downstream product construction consumes authoritative `ClaimBundleRecord`,
+- downstream compilation consumes authoritative `ClaimBundleRecord`,
   `ClaimRecord`, `BundleDecisionRecord`, and `observation_refs`
   from authoritative `ClaimSet` kernels
-- downstream product construction must not depend on `EconomicActivityDraft`,
+- downstream compilation must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
 - upstream `*_ref` header fields store target product ids, never
   `product_scope_id`

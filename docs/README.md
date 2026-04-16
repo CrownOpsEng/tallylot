@@ -45,7 +45,7 @@ Agent-specific routing and repo execution rules live in
 <!-- docs-maintenance:start concepts -->
 - [Architecture Overview](concepts/architecture-overview.md): High-level map of the current bridge, the target pipeline, and the focused pages that own each major contract.
 - [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for trust gates, persistence rules, performance rules, and filing-critical rollout from the current bridge toward the target pipeline.
-- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Primary concept page for the live bridge contracts, bridge artifacts, and current schema rules.
+- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Owning concept page for the live bridge contracts, bridge surfaces, and current schema rules.
 - [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Single authority for how live bridge surfaces cut over to target products during migration, including writer ownership, reader cutovers, and retirement gates.
 - [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries.
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts.

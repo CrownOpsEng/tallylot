@@ -28,8 +28,9 @@ The target runtime pipeline is:
 
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
-The owner pages freeze product ids, critical-path kernel field tables, and the
-compatibility sidecar boundary for retained legacy projections.
+The owner pages freeze product ids, product headers, critical-path kernel field
+tables, and the compatibility sidecar boundary for retained legacy
+projections.
 
 ## Layer Shape
 
@@ -49,11 +50,11 @@ Use these pages as the primary owners:
 
 | Page | Owns |
 | --- | --- |
-| [Current Bridge Contracts](current-bridge-contracts.md) | live bridge truth and bridge artifact rules |
+| [Current Bridge Contracts](current-bridge-contracts.md) | live bridge truth and bridge surface rules |
 | [Bridge To Target Mapping](bridge-to-target-mapping.md) | authoritative writer rules, compatibility projections, and reader cutovers |
 | [Pipeline Stage Contracts](pipeline-stage-contracts.md) | target product kernels, ids, ordering, and handoff rules |
 | [Domain Ontology](domain-ontology.md) | entity seams, ref recipes, and package ownership |
-| [Gaps And Readiness](gaps-and-readiness.md) | blockers, reviews, readiness, and `SubjectRef` |
+| [Gaps And Readiness](gaps-and-readiness.md) | gap, review, and readiness contracts plus `SubjectRef` |
 | [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) | trust gates, persistence, partitioning, and fast-path rules |
 | [First Slice Contract](../reference/first-slice-contract.md) | current first upstream `EvidenceSet -> ClaimSet` slice |
 | [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | current first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |

@@ -1,6 +1,6 @@
 ---
 title: "Current Bridge Contracts"
-summary: "Primary concept page for the live bridge contracts, bridge artifacts, and current schema rules."
+summary: "Owning concept page for the live bridge contracts, bridge surfaces, and current schema rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,7 +9,8 @@ nav_order: 22
 ---
 
 Use this page when you need the current runtime truth for the bridge that
-exists today. This document owns the live bridge contracts and artifact rules.
+exists today. This document owns the live bridge contracts and bridge-surface
+rules.
 
 The current bridge is real runtime behavior, not a historical footnote. It is
 the active implementation boundary until later bounded increments replace it. At the
@@ -54,7 +55,7 @@ That bridge is:
 - schema-version mismatch is resolved by regeneration, not compatibility
   wrappers
 
-## Current Bridge Contracts
+## Bridge Contract Surfaces
 
 ### `TransactionFact`
 

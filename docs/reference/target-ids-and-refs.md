@@ -27,12 +27,12 @@ Use the owner pages first:
 - [Domain Ontology](../concepts/domain-ontology.md) for `AssertionValue`,
   `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain ref seams
 - [Gaps And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
-  shared support attachments, and `kernel_scope_id`
+  shared support attachments, and `product_scope_id`
 
 This page keeps only reusable target ids and ref tuples that are not primary
 owner concepts elsewhere.
 
-## Emitter Identity
+## Emitter Id
 
 `emitter_id` identifies the shared claim emitter that emitted one `ClaimSet`.
 
@@ -41,15 +41,14 @@ Rules:
 - `ClaimSet.emitter_id` uses the stable-id format owned by
   [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
 - the component array is `[source_slug, adapter_id, emitter_key]`
-- `source_slug` uses the shared source slug across evidence-local
-  products
+- `source_slug` stays the same across evidence-local products
 - `emitter_id` is evidence-local only; later products keep lineage through
   `claim_set_ref` or `claim_set_refs` rather than carrying `source_slug`,
   `adapter_id`, or `emitter_id` forward
 - `emitter_key` must be kebab-case
 - the current first slice `emitter_key` is `claim`
 
-## Origin Identity
+## Origin Ref
 
 `OriginRef` identifies the immediate upstream origin for one emitted kernel
 record.
@@ -60,8 +59,8 @@ Rules:
 - `OriginRef` serializes and sorts as `[origin_kind, origin_id]`
 - `origin_kind` names the immediate upstream origin, not a source-system or
   renderer label
-- when the origin is already a target-kernel subject, `origin_id` uses that
-  subject's stable id
+- when the origin is already a target-product record or subject, `origin_id`
+  uses that stable id
 - when the origin is an external market reference, `origin_id` uses the
   stage-owned stable market key rather than renderer-local prose
 
@@ -74,7 +73,7 @@ Frozen `origin_kind` vocabulary:
 - `checkpoint_assertion`
 - `basis_adjustment`
 
-## Accounting Reference Tuples
+## Accounting Refs
 
 `AccountRef` identifies one accounting account.
 
@@ -94,7 +93,7 @@ Frozen `commodity_kind` vocabulary:
 - `currency`
 - `synthetic_unit`
 
-## Tax Policy Identity
+## Tax Policy Id
 
 `TaxPolicyId` identifies one selected tax policy.
 
@@ -107,6 +106,6 @@ Rules:
 
 ## Reminder
 
-Do not implement target product ids, upstream product refs, `kernel_scope_id`,
+Do not implement target product ids, upstream product refs, `product_scope_id`,
 `AssertionValue`, `SubjectRef`, or target product kernel structure from this
 page. Those contracts live on their owner pages.

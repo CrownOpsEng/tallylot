@@ -30,7 +30,7 @@ These anchors drive sequencing and acceptance criteria:
 - checkpoint truth is accepted state with explicit acceptance basis
 - primary evidence and evidence-backed checkpoints remain first-class
 - raw-evidence derivation is the supported meaning-parity path
-- capture identity is metadata, not path
+- capture identity is `capture_uid`, not path
 - typed provenance stays a runtime model and is flattened only at artifact
   boundaries
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
@@ -66,9 +66,9 @@ Must freeze:
   `selection_fingerprint` identity churn
 - critical-path `EvidenceObservationRecord` field tables for
   `statement_document` and `statement_balance_row`
-- `ClaimSet` claim-scope, bundle, and bundle-decision model
+- `ClaimSet` claim-scope, claim-bundle, and bundle-decision model
 - critical-path `ClaimRecord` field tables, `observation_refs`, and
-  the compatibility-sidecar boundary for retained legacy hint fields
+  the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
 - shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
   `ReviewExplanation`, `ReadinessRecord`, `ReadinessRollupRecord`,
@@ -76,10 +76,14 @@ Must freeze:
   attachments, and the downstream shared-subject seams needed for accounting
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
-  refs use product ids rather than `kernel_scope_id`
+  refs use product ids rather than `product_scope_id`
 - target naming rules that distinguish concepts, refs, ids, records,
-  projections, and sidecars without baking bridge-era qualifiers or
-  source-specific crypto nouns into shared target names
+  projections, rollups, reports, and sidecars without baking bridge-era
+  qualifiers or source-specific crypto nouns into shared target names, and
+  that keep stage-local ids explicit once they cross into downstream products,
+  keep product-id component order aligned to product-header order, keep
+  canonical shared-support rollups stage- and domain-oriented, and prefer
+  direct kind values such as `instrument` over pseudo-type labels
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
 - migration authority rules, compatibility projections, reader cutovers, and
@@ -92,7 +96,7 @@ Deliver:
 - aligned owner pages for target products, ontology, support records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
-- one bounded first upstream slice and one bounded first downstream slice
+- one current first upstream slice and one current first downstream slice
 - explicit package ownership for `domain/` and `application/`
 - explicit fast-path rule that reducers read kernels, not explanation sidecars
 - frozen critical-path field tables and product-id rules that later writing
@@ -105,13 +109,16 @@ Exit criteria:
 - no cross-stage support record or sidecar masquerades as a claim kind
 - claim-stage blockers can attach to `claim_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
-  accounting or tax subjects without collapsing to kernel-scope attachment only
+  accounting or tax subjects without collapsing to product-scope attachment only
 - no target id or helper id bakes bridge-era naming into target identity
-- no bridge artifact is left without an authority and retirement rule
+- no canonical target contract keeps source-specific crypto nouns such as
+  `wallet` when a repo-owned domain noun already owns that seam
+- no bridge surface is left without an authority and retirement rule
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
   field table
-- no target product metadata ref uses `kernel_scope_id` where a product id
+- no target product ref in a product header uses `product_scope_id` where a
+  product id
   exists
 - non-critical observation and claim kinds are explicitly deferred rather
   than left implicit
@@ -131,14 +138,14 @@ Deliver:
 - capture-scoped `EvidenceSet` emission keyed by `evidence_set_id`
 - deterministic selected, superseded, and blocked evidence membership
 - typed evidence observations that survive beyond intake heuristics, including
-  frozen first-slice field tables for `statement_document` and
+  field tables frozen for the current first slice for `statement_document` and
   `statement_balance_row`
 - bridge compatibility projection for `translation_input_plan.json`
 
 Exit criteria:
 
-- the runtime can explain why every selected source artifact won and why every
-  superseded or blocked artifact did not
+- the runtime can explain why every selected evidence member won and why every
+  superseded or blocked member did not
 - evidence selection becomes authoritative through `EvidenceSet` for the
   in-scope slice
 
@@ -152,9 +159,9 @@ Goal:
 Deliver:
 
 - evidence-local `ClaimSet` emission keyed by `claim_set_id`
-- explicit claim scopes, mutually exclusive bundles, and
+- explicit claim scopes, mutually exclusive claim bundles, and
   bundle-decision records
-- frozen first-slice claim fields plus `observation_refs`
+- claim fields frozen for the current first slice plus `observation_refs`
 - shared support records and sidecars attached to claim scopes where needed
 - declared compatibility projections for `EconomicActivityDraft` and
   `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
@@ -164,7 +171,7 @@ Exit criteria:
 
 - ambiguous source meaning can remain explicit without being forced into final
   economic meaning
-- claim bundle decisions remain claim-owned and do not carry economic
+- claim-bundle decisions remain claim-owned and do not carry economic
   truth
 
 ## Phase 3. Land `EconomicFacts`
@@ -179,7 +186,7 @@ Deliver:
 - `EconomicFacts` kernels keyed by `economic_facts_id` over ordered
   `claim_set_refs`
 - `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
-- bundle-based event identity
+- claim-bundle event identity
 - bridge compatibility projection for `TransactionFact`
 - parity coverage for the first claim-to-economic slice
 
@@ -193,7 +200,7 @@ Exit criteria:
 
 Goal:
 
-- move continuity, linkage, completeness, and checkpoint proposals onto an
+- move continuity, linkage, completeness, and checkpoint proposal records onto an
   explicit reconciliation product
 
 Deliver:
@@ -249,14 +256,14 @@ Exit criteria:
 
 Goal:
 
-- build policy-ready tax determinants and policy-owned outputs from accepted
+- build policy-ready tax inputs and policy-owned outputs from accepted
   upstream truth
 
 Deliver:
 
 - `TaxInputs` contracts
 - selected tax-policy execution over those inputs
-- year partitioning and carry-forward state
+- year partitioning and carry-forward records
 - filing-critical policy outputs derived from accepted runtime truth rather than
   CoinTracking tax reports
 
@@ -358,7 +365,7 @@ Rules:
   repeatedly joining provenance, review, or renderer detail
 - derived snapshots and reusable state should be introduced where replay cost
   becomes material
-- tax work should support tax-year partitioning and carry-forward reuse instead
+- tax work should support tax-year partitioning and carry-forward record reuse instead
   of recomputing full acquisition history for every output row
 
 ## Guardrails
@@ -397,7 +404,7 @@ Rules:
 - add replay coverage for target kernels and compatibility projections
 - add reconciliation parity and checkpoint continuity tests
 - add journal validation coverage
-- add tax policy coverage with explicit unsupported-determinant reporting
+- add tax policy coverage with explicit unsupported-input records
 - keep end-to-end smoke workflows for each major slice before removing older
   transition paths
 
