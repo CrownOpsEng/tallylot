@@ -81,11 +81,15 @@ Must freeze:
   projections, rollups, reports, and sidecars without baking bridge-era
   qualifiers or source-specific crypto nouns into shared target names, and
   that keep stage-local ids explicit once they cross into downstream products,
+  keep stage-owned helper-ref families mirrored across sibling refs,
   keep product-id component order aligned to product-header order, keep
   canonical shared-support rollups stage- and domain-oriented, use target-owned
   label pairs such as `location_group_label` and `location_label` when
   preserving source-provided location labels, and prefer direct kind values
   such as `instrument` over pseudo-type labels
+- child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
+  `checkpoint_proposal_id`, `JournalAccountRef`, and `JournalUnitRef` as the
+  canonical downstream stems instead of shorter or mixed-family alternates
 - package-root naming that keeps `journal` aligned across stage vocabulary and
   package ownership, uses singular concept roots such as `assertion/`, avoids
   umbrella roots such as `entities/` when the identity families are already
@@ -223,7 +227,7 @@ Deliver:
 Exit criteria:
 
 - reconciliation is expressed as explicit continuity and completeness decisions
-- exact balance assertions are one reconciliation surface, not the whole
+- exact balance assertions are one reconciliation concern, not the whole
   product
 
 ## Phase 5. Land `Checkpoint`
@@ -249,17 +253,18 @@ Exit criteria:
 
 Goal:
 
-- make journal expansion and validation a first-class downstream stage
+- make journal expansion and entry checks a first-class downstream stage
 
 Deliver:
 
 - `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
-- journal-owned blockers and validation rules
+- journal-owned blockers and entry-check rules
 - rendering orchestration over accepted upstream truth
 
 Exit criteria:
 
-- `Journal` validates accepted truth without becoming a truth-repair layer
+- `Journal` runs entry checks over accepted truth without becoming a
+  truth-repair layer
 
 ## Phase 7. Land `TaxInputs` And `TaxOutputs`
 
@@ -412,7 +417,7 @@ Rules:
 - expand projection parity tests
 - add replay coverage for target kernels and compatibility projections
 - add reconciliation parity and checkpoint continuity tests
-- add journal validation coverage
+- add journal entry-check coverage
 - add tax policy coverage with explicit unsupported-input records
 - keep end-to-end smoke workflows for each major slice before removing older
   transition paths

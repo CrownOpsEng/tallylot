@@ -9,8 +9,8 @@ nav_order: 10
 ---
 
 TallyLot is a typed Python package and CLI for evidence intake,
-reconciliation, checkpoint assembly, journal validation, rendering, and
-tax-oriented work.
+reconciliation, checkpoint assembly, journal entry checks, rendering, and
+tax computation.
 
 ## Runtime Posture
 

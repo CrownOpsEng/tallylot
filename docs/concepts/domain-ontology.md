@@ -100,7 +100,7 @@ Rules:
 - `contract_key` is the stage-owned stable discriminator for one contract
   instance
 - `position_key` is the stage-owned stable discriminator for one economic
-  exposure or holding surface
+  exposure or holding state
 
 ### `ContractRef` Versus `PositionRef`
 
@@ -330,7 +330,7 @@ Rules:
 ## First Downstream Slice Restriction
 
 The first downstream slice intentionally uses a narrow `PositionRef`
-surface for the current custodial balance slice.
+identity shape for the current custodial balance slice.
 
 Slice rule:
 
@@ -427,7 +427,7 @@ Required application ownership:
   reduction plus reporting
 - `application/checkpoint/` for checkpoint assembly, manual balance
   submission validation, and checkpoint acceptance
-- `application/journal/` for journal expansion, validation, and reporting
+- `application/journal/` for journal expansion, entry checks, and reporting
 - `application/tax/` for tax input construction, basis transitions, policy
   selection, and tax-output generation
 - `application/rendering/` for downstream rendering orchestration

@@ -123,7 +123,7 @@ Ownership rules:
 
 - `event_id` is derived from the selected claim bundle, not from
   adjudication bookkeeping
-- `bundle_decision_id` may be referenced for audit, but it does not define
+- `claim_bundle_decision_id` may be referenced for audit, but it does not define
   event identity
 - `BalanceTargetRecord` carries direct `AssertionValue` fields and must not
   point to undefined value refs or sidecars for hot-path meaning
@@ -156,7 +156,7 @@ Slice-specific rules:
 
 Not allowed in this slice:
 
-- event identity based on `bundle_decision_id` or rejected-bundle lists
+- event identity based on `claim_bundle_decision_id` or rejected-bundle lists
 - `expected_value_ref`
 - `observed_value_ref`
 - checkpoint proposal ids that include raw evidence-ref lists as identity

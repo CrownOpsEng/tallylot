@@ -230,8 +230,12 @@ Current application of this rule:
   domain identity family, keep the stage noun on the helper type and keep the
   field name concise inside the owning record. Prefer
   `JournalAccountRef` with `PostingRecord.account_ref` and
-  `PostingUnitRef` with `PostingRecord.unit_ref` over broader helper types such
+  `JournalUnitRef` with `PostingRecord.unit_ref` over broader helper types such
   as `AccountRef` or `CommodityRef`.
+- When sibling helper refs belong to the same stage-owned family, mirror the
+  family stem across the whole sibling set. Prefer `JournalAccountRef` and
+  `JournalUnitRef` over mixed stems that alternate between a stage-owned noun
+  and one child-record noun.
 - When a broad shared root is genuinely needed, keep the immediate children
   concrete and mirrored. `support/` is acceptable only when it is split into
   families such as `gap/`, `review/`, and `readiness/` rather than flattened
@@ -306,9 +310,9 @@ Current application of this rule:
   Keep the longer owning stem only when that broader ambiguity is real.
 - When one stage's child id becomes a stable downstream dependency, keep enough
   of the owning family noun to stay unambiguous outside that source stage.
-  Prefer names such as `claim_bundle_id`, `bundle_decision_id`, and
-  `entry_check_id` over bare `bundle_id`, `decision_id`, or `check_id` once
-  those ids cross stage boundaries.
+  Prefer names such as `claim_bundle_id`, `claim_bundle_decision_id`, and
+  `entry_check_id` over shorter forms such as `bundle_id`,
+  `bundle_decision_id`, or `check_id` once those ids cross stage boundaries.
 - When a record or product owns one primary as-of time, prefer `as_of`.
   Add a longer prefix only when the same record carries multiple as-of fields
   or one field is explicitly naming another concept's as-of time.
@@ -380,6 +384,10 @@ Current application of this rule:
   writers cut over. Reserve `artifact` for current-state file families,
   oracle/reference bundles, or mixed packages where the stored shape itself is
   the point.
+- Reserve `surface` for migration, runtime-boundary, or application-boundary
+  prose. For domain concepts, tuple refs, or record-family shapes, prefer
+  nouns such as `state`, `shape`, `record family`, or `identity seam` over the
+  looser `surface`.
 - Prefer `kind` for a record's own primary one-of or variant field, and use
   `*_kind` when the field classifies another concept, a nested structure, or a
   sibling concept inside the same record. Reserve `family` for prose grouping
@@ -517,6 +525,16 @@ Current application of this rule:
   the stem when the shorter noun would be generic across stages. Prefer
   `EventLinkRecord` or `EntryCheckRecord` over ambiguous cross-stage names such
   as `LinkRecord` or `ValidationRecord`.
+- When owner docs or bounded-slice refs describe a stored record family in
+  prose, reuse the stored family noun instead of swapping to a looser nearby
+  synonym. Prefer `entry checks`, `checkpoint proposals`, and `readiness
+  rollups` when those are the persisted families, and reserve broader prose
+  such as `validation`, `proposal`, or `summary` for the surrounding stage
+  behavior rather than for the stored shape itself.
+- When a stage owns a dedicated check record family, prefer that family noun in
+  forward-looking prose for stage-owned persisted outputs and sidecars.
+  Reserve broader `validation` wording for human review, workflow posture, or
+  adapter-edge rules rather than for the canonical target check family.
 - In target controlled vocabularies, keep the stage noun and held-thing noun
   aligned once the target stage owns the boundary. Prefer
   `economic_measurement`, `checkpoint_measurement`, `journal_measurement`, and
@@ -568,6 +586,10 @@ Current application of this rule:
   record names, helper refs, stable ids, or partition labels unless those
   nouns are themselves the persisted concept. Prefer lineage-, origin-, or
   subject-owned names over carry-through source labels in downstream kernels.
+- When a forward-looking owner page needs a provider-scoped or slice-scoped
+  exception, keep that provider noun in the scope paragraph, example, or
+  bounded-slice section rather than in canonical target record names, helper
+  refs, stable ids, or directory stems.
 - Derived reports and compatibility projections may still group by
   `source_slug` where operators need that reporting lens, but that dimension
   must not leak into downstream product ids, record ids, authoritative

@@ -35,7 +35,7 @@ The system must:
 - use the `2023-08-05` CoinTracking export set as a historical oracle, not a
   hard checkpoint
 - compute forward tax state for `2023` to `2025`
-- render a deterministic double-entry journal and require it to validate
+- emit a deterministic journal and require its entry checks to pass
 - surface unsupported or ambiguous truth as explicit gaps, reviews, and later
   stage blockers
 - preserve one interface-neutral application surface so future CLI, HTTP, API,
@@ -72,9 +72,10 @@ Trust and ownership rules:
 - reconciliation is the trust gate before checkpoint adoption, downstream
   journal emission, and tax
 - checkpoint truth is accepted state with explicit acceptance basis
-- `Journal` expands and validates accepted truth; it does not repair truth
-- tax inputs assemble policy-ready tax inputs from reconciled economics plus accepted
-  checkpoint truth
+- `Journal` expands accepted truth and runs entry checks; it does not repair
+  truth
+- `TaxInputs` assemble policy-ready inputs from reconciled economics plus
+  accepted checkpoint truth
 - selected tax policies decide treatment in `TaxOutputs`; they do not decide
   source meaning, reconciliation truth, checkpoint truth, or journal outcomes
 
@@ -157,6 +158,10 @@ Forward-looking persistence rules:
   projections rather than as shared support record or rollup families
 - target basenames use the owning product or support role directly
   rather than generic names or bridge-era qualifiers
+- stable ids and helper refs keep the owning family stem once they cross
+  product or stage boundaries; prefer names such as
+  `claim_bundle_decision_id`, `checkpoint_proposal_id`, `JournalAccountRef`,
+  and `JournalUnitRef` over shorter or mixed-family alternates
 - writes are replace-whole-partition operations, not append-in-place mutation
   of accepted truth
 - persisted kernels are immutable snapshots for one declared partition scope
@@ -258,7 +263,7 @@ Inner-loop calculations for:
 
 - reconciliation
 - checkpoint continuity
-- journal validation
+- journal entry checks
 - tax computation
 
 must operate on compact typed kernel records only.
@@ -346,7 +351,7 @@ Typical sidecar or cache surfaces include:
 - claim-scope decision explanations
 - reconciliation continuity explanations
 - checkpoint acceptance reports
-- journal validation reports
+- journal entry-check reports
 - tax carry-forward record indexes
 
 Rules:
