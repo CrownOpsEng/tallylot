@@ -455,7 +455,7 @@ Canonical `ClaimRecord.kind` values:
 - `beneficial_owner`
 - `counterparty`
 - `statement_document`
-- `contract_term`
+- `contract`
 - `valuation`
 
 Controlled vocabularies:
@@ -531,7 +531,8 @@ Rules:
 - legacy `provider_operation_key` is satisfied by
   `activity_label` on claims with `kind = activity` and must not be duplicated into a
   compatibility sidecar field
-- review markers map to shared support records and sidecars rather than
+- review markers map to shared gap/review/readiness records and sidecars
+  rather than
   claim-kernel fields or compatibility sidecars that masquerade as claim
   meaning
 - adapter-local extras may survive only as non-kernel or compatibility sidecar
@@ -978,9 +979,9 @@ Controlled vocabularies:
 - `CheckpointAssertionRecord.kind`:
   - `position_quantity`
   - `cash_quantity`
-  - `basis_value`
-  - `ownership`
-  - `location`
+  - `basis_amount`
+  - `owner_state`
+  - `location_state`
 - `trust_level`:
   - `filing_ready`
   - `analysis_ready`
@@ -1098,7 +1099,7 @@ Handoff to `Journal` and `TaxInputs`:
 
 Purpose:
 
-- journal expansion and validation over accepted truth
+- journal expansion and entry checks over accepted truth
 
 Product header:
 
@@ -1471,7 +1472,8 @@ Must not:
 
 ## Shared Contract References
 
-The pipeline products rely on shared support contracts defined elsewhere:
+The pipeline products rely on shared gap/review/readiness contracts defined
+elsewhere:
 
 - [Current Bridge Contracts](current-bridge-contracts.md) for the live bridge
   runtime truth

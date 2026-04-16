@@ -177,7 +177,7 @@ Required derived compatibility projections:
   reproduction still needs them
 - `balance_snapshots.csv` derived from `ReconciliationState`
 - `balance_references.csv` derived from `ReconciliationState`, `Checkpoint`,
-  and declared support sidecars
+  and declared reconciliation/checkpoint sidecars
 - balance inspect/check/summarize outputs preserved through the active bridge
   compatibility surface until that application layer is repointed
 - `cointracking_csv` preserved through the active output compatibility path
