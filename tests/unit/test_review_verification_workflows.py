@@ -21,6 +21,7 @@ def test_pr_review_workflow_uses_draft_aware_planner_gated_atomic_jobs() -> None
         "pr-metadata:",
         "docs-maintenance:",
         "markdownlint:",
+        "target-naming:",
         "actionlint:",
         "ruff:",
         "mypy:",
@@ -46,6 +47,7 @@ def test_pr_review_workflow_uses_draft_aware_planner_gated_atomic_jobs() -> None
     ):
         assert job_name in workflow_text
     assert "tools.run_ci_parity_checks" not in workflow_text
+    assert "tools.run_review_check --check-id target-naming" in workflow_text
     assert "tools.run_review_check --check-id pytest-full" in workflow_text
     assert "needs.build.result == 'success'" in workflow_text
     assert "needs.pytest-full.result == 'success'" in workflow_text
@@ -72,6 +74,8 @@ def test_main_ci_workflow_uses_planner_gated_atomic_jobs() -> None:
         "contains(fromJSON(needs.plan-main-ci.outputs.selected_checks)" in workflow_text
     )
     assert "tools.run_ci_parity_checks" not in workflow_text
+    assert "target-naming:" in workflow_text
+    assert "tools.run_review_check --check-id target-naming" in workflow_text
     assert "tools.run_review_check --check-id ci-tooling" in workflow_text
     assert "tools.evaluate_review_results" in workflow_text
     main_ci_needs = workflow_text.split("  main-ci-result:\n", maxsplit=1)[1].split(

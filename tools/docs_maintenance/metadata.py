@@ -9,6 +9,10 @@ from urllib.parse import urlparse
 
 import yaml
 
+from repo_support.target_naming import (
+    validate_summary_style as validate_target_summary_style,
+)
+
 from .links import heading_anchors
 from .state import relative_path, repo_root
 
@@ -22,38 +26,6 @@ REQUIRED_FRONTMATTER_FIELDS = (
 )
 ALLOWED_DOC_TYPES = {"concept", "guide", "reference", "standard", "status"}
 ALLOWED_AUDIENCES = {"human", "agent", "both"}
-DISALLOWED_SUMMARY_PHRASES = (
-    "human-facing entrypoint",
-    "owning concept page",
-    "owning contract",
-    "helper reference",
-    "single authority",
-    "design anchor",
-    "implementation anchor",
-    "forward design",
-    "owner pages",
-    "primary owners",
-    "authoritative owners",
-)
-FORWARD_LOOKING_PROVIDER_OR_CUSTODY_NOUNS = (
-    "coinbase",
-    "binance",
-    "wealthsimple",
-    "crypto.com",
-    "shakepay",
-    "ledger live",
-    "ronin",
-    "gtrade",
-    "cointracking",
-    "custodial",
-)
-LOCAL_PROVIDER_SUMMARY_ALLOWLIST = {
-    "docs/status/current-state.md",
-    "docs/concepts/current-bridge-contracts.md",
-    "docs/concepts/transaction-classification.md",
-    "docs/concepts/oracle-boundaries.md",
-    "docs/reference/cointracking-oracle-artifacts.md",
-}
 NAV_ORDER_ALLOWED_PREFIXES = (
     "docs/concepts/",
     "docs/guides/",
@@ -168,32 +140,14 @@ def expected_audience(path: Path) -> str | None:
     return None
 
 
-def _allows_local_provider_summary(relative: str) -> bool:
-    return relative in LOCAL_PROVIDER_SUMMARY_ALLOWLIST or relative.startswith(
-        "docs/workspace/"
-    )
-
-
 def validate_summary_style(path: Path, summary: str) -> None:
     relative = relative_path(path)
     if not relative.startswith("docs/"):
         return
 
-    lowered_summary = summary.lower()
-    for phrase in DISALLOWED_SUMMARY_PHRASES:
-        if phrase in lowered_summary:
-            raise ValueError(
-                f"{path} must use a content-first summary and avoid banned summary phrase {phrase!r}"
-            )
-
-    if _allows_local_provider_summary(relative):
-        return
-
-    for noun in FORWARD_LOOKING_PROVIDER_OR_CUSTODY_NOUNS:
-        if noun in lowered_summary:
-            raise ValueError(
-                f"{path} must keep provider and custody nouns out of forward-looking summaries; found {noun!r}"
-            )
+    error = validate_target_summary_style(relative, summary)
+    if error is not None:
+        raise ValueError(error)
 
 
 def validate_frontmatter(path: Path, frontmatter: dict[str, object]) -> None:

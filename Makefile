@@ -16,7 +16,7 @@ TOOL ?=
 	pr-review pr-review-full audit-delivery-guardrails audit-pr-review \
 	test-stress coverage-hotspots benchmark-tests benchmark-quality \
 	sync-pyright-config precommit markdownlint ruff mypy pyright pylint pytest \
-	actionlint cli oracle tool validate-commit-message scaffold-adapter \
+	actionlint naming-check cli oracle tool validate-commit-message scaffold-adapter \
 	refresh-adapter-goldens validate-workspace-replay
 
 help:
@@ -40,6 +40,7 @@ help:
 		'Docs:' \
 		'  make docs-sync                        Refresh docs-maintenance generated content.' \
 		'  make docs-check                       Verify docs-maintenance output is current.' \
+		'  make naming-check                    Verify forward-looking target naming is aligned.' \
 		'' \
 		'Verification:' \
 		'  make quality [ARGS="..."]            Run the default local quality gates.' \
@@ -142,6 +143,9 @@ pytest:
 
 actionlint:
 	actionlint $(ARGS)
+
+naming-check:
+	python -m tools.target_naming check $(ARGS)
 
 cli:
 	tallylot $(ARGS)

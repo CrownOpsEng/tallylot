@@ -62,6 +62,14 @@ def test_run_pr_review_checks_runs_expected_plan(
                     stdout="",
                     stderr="",
                 ),
+                CheckResult(
+                    check_id="target-naming",
+                    status="passed",
+                    returncode=0,
+                    elapsed=0.0,
+                    stdout="",
+                    stderr="",
+                ),
             )
         )
 

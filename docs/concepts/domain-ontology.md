@@ -330,14 +330,14 @@ Rules:
 ## First Downstream Slice Restriction
 
 The first downstream slice intentionally uses a narrow `PositionRef`
-identity shape for the current bounded balance slice.
+identity shape for the current held-balance slice.
 
 Slice rule:
 
 - this slice may use only
   `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "held_position"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
-- `location_ref` must resolve to the in-scope custodial location or
+- `location_ref` must resolve to the in-scope held location or
   sub-location
 - `instrument_ref` must resolve to the in-scope instrument
 - `contract_ref` stays `null` in this slice

@@ -94,6 +94,7 @@ Control-plane files include:
 - `.claude/commands/**`
 - `repo_support/local_autofix.py`
 - `repo_support/quality_gates.py`
+- `repo_support/target_naming/**`
 - `repo_support/review_verification/**`
 - `tools/install_git_hooks.py`
 - `tools/pre_commit_hook.py`
@@ -105,6 +106,8 @@ Control-plane files include:
 - `tools/message_standards.py`
 - `tools/run_review_check.py`
 - `tools/run_pr_review_checks.py`
+- `tools/target_naming.py`
+- `tools/target_naming_catalog.yaml`
 - `tools/validate_commit_message.py`
 - `tools/validate_pr_metadata.py`
 - `tools/run_quality_gates.py`
@@ -130,6 +133,7 @@ Encode the repo's delivery rules in versioned artifacts:
 - issue forms and chooser config
 - hook installers and hook guards
 - CI workflows
+- target naming catalogs and deterministic naming checkers
 - contract tests that pin the standards
 - templates that match the validators
 
@@ -184,6 +188,8 @@ Verification selection is deterministic and atomic:
 - `tools.audit_pr_review` reports changed paths, grouped file groups, review
   domains, the selected verification mode, selected checks, suppressed checks,
   and any unmapped paths
+- forward-looking naming changes on enforced target surfaces select the
+  blocking `target-naming` check
 - pull-request CI is draft-aware:
   - draft and in-progress pull requests always run the always-visible PR metadata checks `commit-messages` and `pr-metadata`, then select the remaining atomic checks from the changed diff
   - once the pull request is no longer draft, `pr-review` switches to the full

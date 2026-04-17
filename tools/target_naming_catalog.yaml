@@ -1,0 +1,707 @@
+version: 1
+surfaces:
+  include:
+    paths:
+      - ROADMAP.md
+      - docs/README.md
+      - docs/standards/engineering.md
+      - docs/concepts/architecture-overview.md
+      - docs/concepts/bridge-to-target-mapping.md
+      - docs/concepts/domain-ontology.md
+      - docs/concepts/gaps-and-readiness.md
+      - docs/concepts/oracle-boundaries.md
+      - docs/concepts/pipeline-stage-contracts.md
+      - docs/concepts/reconciliation-tax-architecture.md
+      - docs/concepts/unified-adapter-architecture.md
+      - docs/reference/first-upstream-slice-contract.md
+      - docs/reference/first-downstream-slice-contract.md
+      - docs/reference/target-ids-and-refs.md
+      - docs/reference/target-persistence-reference.md
+      - docs/status/migration-sequence.md
+      - docs/status/adapter-delivery-plan.md
+    prefixes: []
+  exclude:
+    paths:
+      - docs/status/current-state.md
+      - docs/concepts/current-bridge-contracts.md
+      - docs/reference/baseline-validation-contract.md
+      - docs/reference/canadian-crypto-tax-guide.md
+      - docs/reference/cointracking-oracle-artifacts.md
+      - docs/reference/export-checklist.md
+      - docs/reference/location-inventory-artifacts.md
+      - docs/reference/manual-balance-submission-artifacts.md
+      - docs/reference/repository-history.md
+      - docs/reference/tax-source-map.md
+      - docs/reference/timezone-validation-artifacts.md
+    prefixes:
+      - docs/workspace/
+families:
+  products:
+    - name: EvidenceSet
+      id: evidence_set_id
+    - name: ClaimSet
+      id: claim_set_id
+    - name: EconomicFacts
+      id: economic_facts_id
+    - name: ReconciliationState
+      id: reconciliation_state_id
+    - name: Checkpoint
+      id: checkpoint_id
+    - name: Journal
+      id: journal_id
+    - name: TaxInputs
+      id: tax_inputs_id
+    - name: TaxOutputs
+      id: tax_outputs_id
+  records:
+    - stem: claim_bundle_decision
+      record: ClaimBundleDecisionRecord
+      id: claim_bundle_decision_id
+      refs: []
+      required_in:
+        - docs/concepts/pipeline-stage-contracts.md
+        - docs/reference/first-upstream-slice-contract.md
+    - stem: checkpoint_proposal
+      record: CheckpointProposalRecord
+      id: checkpoint_proposal_id
+      refs:
+        - superseding_proposal_ref
+      required_in:
+        - docs/concepts/pipeline-stage-contracts.md
+        - docs/reference/first-downstream-slice-contract.md
+    - stem: readiness_rollup
+      record: ReadinessRollupRecord
+      id: readiness_rollup_id
+      refs: []
+      required_in:
+        - docs/concepts/gaps-and-readiness.md
+    - stem: tax_carry_forward
+      record: TaxCarryForwardRecord
+      id: tax_carry_forward_id
+      refs: []
+      required_in:
+        - docs/concepts/pipeline-stage-contracts.md
+    - stem: tax_unsupported_input
+      record: TaxUnsupportedInputRecord
+      id: tax_unsupported_input_id
+      refs: []
+      required_in:
+        - docs/concepts/pipeline-stage-contracts.md
+  paths:
+    package_stems:
+      - application/claim/
+      - application/checkpoint/
+      - application/compatibility/
+      - application/economics/
+      - application/evidence/
+      - application/intake/
+      - application/journal/
+      - application/normalization/
+      - application/profiling/
+      - application/readiness/
+      - application/reconciliation/
+      - application/rendering/
+      - application/tax/
+      - application/workspace/
+      - domain/assertion/
+      - domain/claim/
+      - domain/checkpoint/
+      - domain/contract/
+      - domain/counterparty/
+      - domain/economics/
+      - domain/evidence/
+      - domain/instrument/
+      - domain/journal/
+      - domain/location/
+      - domain/ownership/
+      - domain/position/
+      - domain/reconciliation/
+      - domain/support/
+      - domain/tax/
+    directory_stems:
+      - compatibility/
+      - support/gap/
+      - support/review/
+      - support/readiness/
+      - working/products/evidence_sets/
+      - working/products/claim_sets/
+      - working/products/economic_facts/
+      - working/products/reconciliation_states/
+      - working/products/checkpoints/
+      - working/products/journals/
+      - working/products/tax_inputs/
+      - working/products/tax_outputs/
+    sidecar_paths:
+      - support/gap/gap_records.json
+      - support/gap/gap_explanations.json
+      - support/review/review_records.json
+      - support/review/review_explanations.json
+      - support/readiness/readiness_records.json
+      - support/readiness/readiness_rollup_records.json
+  vocabularies:
+    values:
+      basis:
+        - document_support
+        - reported_support
+        - reconciled_continuity
+        - adopted_opening
+        - manual_support
+      support_shape:
+        - document_observation
+        - reported_observation
+        - location_observation
+        - inventory_observation
+        - manual_assertion
+      continuity_kind:
+        - observed_continuity
+        - reconciled_rollforward
+        - opening_rollforward
+        - partial_rollforward
+      balance_target_observation_status:
+        - observed
+        - unobserved
+      balance_target_comparison_outcome:
+        - matched
+        - mismatched
+      continuity_segment_status:
+        - complete
+        - partial
+      checkpoint_proposal_status:
+        - ready
+        - partial
+        - blocked
+      journal_entry_status:
+        - expanded
+        - blocked
+      entry_check_status:
+        - passed
+        - blocked
+      tax_output_status:
+        - ready
+        - partial
+      valuation_purpose:
+        - economic_measurement
+        - checkpoint_measurement
+        - journal_measurement
+        - tax_measurement
+        - market_measurement
+      origin_kind:
+        - claim
+        - evidence_observation
+        - market_reference
+        - economic_leg
+        - checkpoint_assertion
+        - basis_adjustment
+    paired_axes:
+      - [basis, support_shape, continuity_kind]
+    checks:
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: basis
+        label: CheckpointAssertionRecord.basis
+        block_type: nested_list
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: support_shape
+        label: CheckpointAssertionRecord.support_shape
+        block_type: nested_list
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: continuity_kind
+        label: continuity_kind
+        block_type: nested_list
+      - path: docs/reference/first-downstream-slice-contract.md
+        vocabulary: basis
+        label: basis
+        block_type: nested_list
+        expected_values:
+          - document_support
+          - reconciled_continuity
+      - path: docs/reference/first-downstream-slice-contract.md
+        vocabulary: support_shape
+        label: support_shape
+        block_type: nested_list
+        expected_values:
+          - document_observation
+      - path: docs/reference/first-downstream-slice-contract.md
+        vocabulary: continuity_kind
+        label: continuity_kind
+        block_type: nested_list
+        expected_values:
+          - observed_continuity
+          - reconciled_rollforward
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: continuity_segment_status
+        label: ContinuitySegmentRecord.status
+        block_type: nested_list
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: balance_target_observation_status
+        label: BalanceTargetRecord.observation_status
+        block_type: nested_list
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: balance_target_comparison_outcome
+        label: BalanceTargetRecord.comparison_outcome
+        block_type: nested_list
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: checkpoint_proposal_status
+        label: CheckpointProposalRecord.status
+        block_type: nested_list
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: journal_entry_status
+        label: JournalEntryRecord.status
+        block_type: nested_list
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: entry_check_status
+        label: EntryCheckRecord.status
+        block_type: nested_list
+      - path: docs/concepts/pipeline-stage-contracts.md
+        vocabulary: tax_output_status
+        label: TaxOutputRecord.status
+        block_type: nested_list
+      - path: docs/reference/first-downstream-slice-contract.md
+        vocabulary: continuity_segment_status
+        label: ContinuitySegmentRecord.status
+        block_type: nested_list
+      - path: docs/reference/first-downstream-slice-contract.md
+        vocabulary: balance_target_observation_status
+        label: BalanceTargetRecord.observation_status
+        block_type: nested_list
+      - path: docs/reference/first-downstream-slice-contract.md
+        vocabulary: balance_target_comparison_outcome
+        label: BalanceTargetRecord.comparison_outcome
+        block_type: nested_list
+      - path: docs/reference/first-downstream-slice-contract.md
+        vocabulary: checkpoint_proposal_status
+        label: CheckpointProposalRecord.status
+        block_type: nested_list
+      - path: docs/concepts/domain-ontology.md
+        vocabulary: valuation_purpose
+        label: ValuationPurpose
+        block_type: heading_shared_vocabulary
+tokens:
+  pascal:
+    - AccountRef
+    - AccountingEntryRecord
+    - AssertionValue
+    - BalanceTargetRecord
+    - BasisPool
+    - BasisPoolRef
+    - BasisTransitionRecord
+    - BeneficialOwnerRef
+    - BundleDecisionRecord
+    - CarryForwardRecord
+    - CheckpointAssertion
+    - CheckpointAssertionRecord
+    - CheckpointProposalRecord
+    - CheckpointRecord
+    - ClaimBundleDecisionRecord
+    - ClaimBundleRecord
+    - ClaimFacet
+    - ClaimRecord
+    - ClaimSet
+    - CommodityRef
+    - ContinuitySegmentRecord
+    - ContractRef
+    - CounterpartyRef
+    - DiscoveryFacet
+    - EconomicEvent
+    - EconomicEventRecord
+    - EconomicFacts
+    - EconomicLeg
+    - EconomicLegRecord
+    - EntryCheckRecord
+    - EventLinkRecord
+    - EvidenceFacet
+    - EvidenceMemberRecord
+    - EvidenceObservationRecord
+    - EvidenceSelectionRecord
+    - EvidenceSet
+    - GapRecord
+    - InstrumentRef
+    - IssueRecord
+    - Journal
+    - JournalAccountRef
+    - JournalEntryRecord
+    - JournalUnitRef
+    - LegalOwnerRef
+    - LifecycleEvent
+    - LinkRecord
+    - LocationRef
+    - LocationValue
+    - MoneyValue
+    - NormalizationReviewRecord
+    - OriginRef
+    - OutputFacet
+    - OwnerValue
+    - PositionRef
+    - PostingRecord
+    - QuantityValue
+    - ReadinessRecord
+    - ReadinessRollupRecord
+    - ReadinessStatus
+    - ReconciliationState
+    - RenderFacet
+    - RenderingFacet
+    - ReviewRecord
+    - RollupRecord
+    - SelectionRecord
+    - SettlementStatus
+    - StatementFacet
+    - SubjectRef
+    - TaxCarryForwardRecord
+    - TaxInputRecord
+    - TaxInputs
+    - TaxOutputRecord
+    - TaxOutputs
+    - TaxPolicyId
+    - TaxUnsupportedInputRecord
+    - ThingId
+    - ThingRecord
+    - ThingRef
+    - UnsupportedInputRecord
+    - ValidationRecord
+    - ValuationPurpose
+    - ValuationRecord
+  snake:
+    - accepted_bundle_ref
+    - account_label
+    - account_ref
+    - activity_label
+    - adapter_id
+    - assertion_refs
+    - assertion_value_kind
+    - balance_kind
+    - balance_target_id
+    - basis_pool_ref
+    - basis_pool_refs
+    - basis_transition_id
+    - basis_transition_ref
+    - beneficial_owner_id
+    - beneficial_owner_ref
+    - blocking_gap_refs
+    - bundle_decision_id
+    - bundle_id
+    - chart_id
+    - check_id
+    - checkpoint_assertion_id
+    - checkpoint_id
+    - checkpoint_proposal_id
+    - checkpoint_ref
+    - claim_bundle_decision_id
+    - claim_bundle_id
+    - claim_emitter_id
+    - claim_id
+    - claim_refs
+    - claim_scope_id
+    - claim_set_id
+    - claim_set_ref
+    - claim_set_refs
+    - comparison_outcome
+    - continuity_kind
+    - continuity_segment_id
+    - contract_kind
+    - contract_ref
+    - counterparty_id
+    - counterparty_ref
+    - dataset_id
+    - deferred_bundle_refs
+    - document_member_id
+    - economic_facts_id
+    - economic_facts_ref
+    - economic_facts_refs
+    - economic_kind
+    - emitter_id
+    - entry_check_id
+    - entry_id
+    - event_id
+    - event_link_id
+    - event_refs
+    - evidence_refs
+    - evidence_set_id
+    - evidence_set_ref
+    - expected_value_ref
+    - from_tax_input_ref
+    - gap_id
+    - gap_kind
+    - input_kind
+    - instrument_claim_refs
+    - instrument_id
+    - instrument_kind
+    - instrument_ref
+    - journal_id
+    - left_event_ref
+    - leg_id
+    - legal_owner_id
+    - legal_owner_ref
+    - location_claim_ref
+    - location_group_label
+    - location_id
+    - location_label
+    - location_ref
+    - measure_kind
+    - member_id
+    - member_refs
+    - observation_id
+    - observation_refs
+    - observation_status
+    - observed_value_ref
+    - origin_id
+    - origin_kind
+    - origin_ref
+    - posting_id
+    - producer_id
+    - product_scope_id
+    - product_slug
+    - proposal_refs
+    - provenance_refs
+    - raw_member_ref
+    - raw_row_ref
+    - readiness_id
+    - readiness_rollup_id
+    - reconciliation_state_id
+    - reconciliation_state_refs
+    - rejected_bundle_refs
+    - retail_member_id
+    - review_id
+    - review_kind
+    - right_event_ref
+    - rollup_kind
+    - scope_id
+    - scope_kind
+    - selection_id
+    - settlement_status
+    - source_slug
+    - statement_kind
+    - subject_id
+    - subject_kind
+    - subject_ref
+    - supersedes_event_id
+    - superseding_proposal_ref
+    - support_shape
+    - target_refs
+    - tax_carry_forward_id
+    - tax_input_id
+    - tax_input_ref
+    - tax_inputs_id
+    - tax_inputs_ref
+    - tax_output_id
+    - tax_outputs_id
+    - tax_policy_id
+    - tax_unsupported_input_id
+    - thing_id
+    - thing_ref
+    - thing_refs
+    - to_tax_input_ref
+    - unit_id
+    - unit_kind
+    - unit_ref
+    - valuation_id
+    - valuation_ref
+    - wallet_label
+phrases:
+  canonical:
+    - compatibility view
+    - compatibility sidecar
+    - entry check
+    - readiness rollup
+    - product header
+aliases:
+  banned:
+    - term: Human-facing entrypoint
+      replacement: content-first summary
+      finding_class: role-first-summary
+      summary_only: true
+      paths:
+        - docs/README.md
+      path_prefixes: []
+    - term: Owning concept page
+      replacement: content-first summary
+      finding_class: role-first-summary
+      summary_only: true
+      paths: []
+      path_prefixes: []
+    - term: Owning contract
+      replacement: content-first summary
+      finding_class: role-first-summary
+      summary_only: true
+      paths: []
+      path_prefixes: []
+    - term: Helper reference
+      replacement: content-first summary
+      finding_class: role-first-summary
+      summary_only: true
+      paths: []
+      path_prefixes: []
+    - term: Single authority
+      replacement: content-first summary
+      finding_class: role-first-summary
+      summary_only: true
+      paths: []
+      path_prefixes: []
+    - term: Design anchor
+      replacement: content-first summary
+      finding_class: role-first-summary
+      summary_only: true
+      paths: []
+      path_prefixes: []
+    - term: Implementation anchor
+      replacement: content-first summary
+      finding_class: role-first-summary
+      summary_only: true
+      paths: []
+      path_prefixes: []
+    - term: Forward design
+      replacement: content-first summary
+      finding_class: role-first-summary
+      summary_only: true
+      paths: []
+      path_prefixes: []
+    - term: owner pages
+      replacement: detailed contract pages
+      finding_class: governance-first-intro
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: primary owners
+      replacement: primary contract pages
+      finding_class: governance-first-intro
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: authoritative owners
+      replacement: detailed contract pages
+      finding_class: governance-first-intro
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: This document owns
+      replacement: This page defines
+      finding_class: governance-first-intro
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: does not re-own
+      replacement: does not redefine
+      finding_class: governance-first-intro
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: compatibility projection
+      replacement: compatibility view
+      finding_class: banned-alias
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: compatibility projections
+      replacement: compatibility views
+      finding_class: banned-alias
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: coinbase_retail_export
+      replacement: retail_activity_export_file
+      finding_class: provider-prefixed-kind
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: coinbase_statement_document
+      replacement: statement_document_file
+      finding_class: provider-prefixed-kind
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: custodial_position
+      replacement: held_position
+      finding_class: provider-custody-key
+      summary_only: false
+      paths: []
+      path_prefixes: []
+    - term: support_kind
+      replacement: support_shape
+      finding_class: support-axis-collision
+      summary_only: false
+      paths:
+        - docs/concepts/pipeline-stage-contracts.md
+        - docs/reference/first-downstream-slice-contract.md
+        - docs/standards/engineering.md
+        - ROADMAP.md
+      path_prefixes: []
+    - term: pending_check
+      replacement: expanded
+      finding_class: mixed-status-axis
+      summary_only: false
+      paths:
+        - docs/concepts/pipeline-stage-contracts.md
+        - docs/standards/engineering.md
+      path_prefixes: []
+    - term: checked
+      replacement: expanded or passed
+      finding_class: mixed-status-axis
+      summary_only: false
+      paths:
+        - docs/concepts/pipeline-stage-contracts.md
+      path_prefixes: []
+    - term: missing_observation
+      replacement: observation_status = unobserved
+      finding_class: mixed-status-axis
+      summary_only: false
+      paths:
+        - docs/concepts/pipeline-stage-contracts.md
+      path_prefixes: []
+    - term: market_reference
+      replacement: market_measurement
+      finding_class: purpose-axis-mix
+      summary_only: false
+      paths:
+        - docs/concepts/domain-ontology.md
+      path_prefixes: []
+    - term: BalanceTargetRecord.status
+      replacement: BalanceTargetRecord.observation_status and BalanceTargetRecord.comparison_outcome
+      finding_class: mixed-status-axis
+      summary_only: false
+      paths:
+        - docs/concepts/pipeline-stage-contracts.md
+        - docs/reference/first-downstream-slice-contract.md
+      path_prefixes: []
+exceptions:
+  - name: evidence-local-compatibility-fields
+    paths:
+      - docs/concepts/bridge-to-target-mapping.md
+      - docs/standards/engineering.md
+      - docs/concepts/pipeline-stage-contracts.md
+      - docs/reference/first-upstream-slice-contract.md
+      - docs/reference/target-ids-and-refs.md
+    path_prefixes: []
+    allowed_terms:
+      - source_slug
+      - activity_label
+      - provider_operation_key
+      - projection_hint
+      - accounting_intent_hint
+      - tax_treatment_hint
+      - tx_hash_or_null
+      - operation_group_id_or_null
+      - market_reference
+  - name: provider-slice-terms
+    paths:
+      - docs/reference/first-upstream-slice-contract.md
+      - docs/reference/first-downstream-slice-contract.md
+    path_prefixes: []
+    allowed_terms:
+      - Coinbase
+      - custodial
+  - name: edge-oracle-terms
+    paths:
+      - ROADMAP.md
+      - docs/README.md
+      - docs/standards/engineering.md
+      - docs/concepts/domain-ontology.md
+      - docs/concepts/oracle-boundaries.md
+      - docs/concepts/reconciliation-tax-architecture.md
+      - docs/status/adapter-delivery-plan.md
+    path_prefixes: []
+    allowed_terms:
+      - CoinTracking
+  - name: engineering-anti-examples
+    paths:
+      - docs/standards/engineering.md
+    path_prefixes: []
+    allowed_terms:
+      - domain/entities/

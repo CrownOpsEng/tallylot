@@ -46,6 +46,7 @@ CONTROL_PLANE_EXACT_PATHS = (
     ".vscode/settings.json",
     ".github/pull_request_template.md",
     ".github/CODEOWNERS",
+    "tools/target_naming_catalog.yaml",
 )
 CONTROL_PLANE_PREFIXES = (
     ".agents/skills/",
@@ -116,7 +117,7 @@ def is_control_plane_text(path: str) -> bool:
 def is_repo_code_or_tooling(path: str) -> bool:
     return (
         path in REPO_CODE_OR_TOOLING_EXACT_PATHS
-        or path.startswith(("src/", "tests/", "repo_support/"))
+        or path.startswith(("src/", "tests/", "repo_support/", "yaml/"))
         or path.startswith("tools/")
         and path.endswith(".py")
     )

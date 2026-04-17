@@ -123,6 +123,9 @@ Must freeze:
 - migration authority rules, compatibility views, reader cutovers, and
   retirement gates
 - package ownership and layer placement for shared functionality
+- catalog-first target naming governance with one machine-readable naming
+  authority and a blocking `target-naming` check on enforced forward-looking
+  docs
 - explicit no-invention rules for non-critical observation and claim kinds
 
 Deliver:

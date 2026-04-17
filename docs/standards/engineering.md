@@ -796,6 +796,29 @@ bounded-slice reference, roadmap phase, contract reference, and control-plane
 routing page that uses that family in the same patch. Do not leave competing
 target names alive in parallel.
 
+### Catalog-First Target Naming Governance
+
+`tools/target_naming_catalog.yaml` is the operational authority for
+forward-looking end-state naming on the enforced target surfaces.
+
+Rules:
+
+- update the catalog before introducing or renaming a canonical target term
+- update every affected detailed contract page, bounded-slice reference,
+  roadmap surface, and standards surface in the same patch
+- keep frontmatter summaries and generated `docs/README.md` blurbs
+  content-first; do not lead with page-role or authority-first labels that
+  foreground governance instead of the held contract
+- keep provider, custody, and other source-local nouns out of forward-looking
+  titles and summaries unless the summary is intentionally local to a bounded
+  slice
+- run `python -m tools.target_naming check` or `make naming-check` before
+  landing a naming change
+- use `python -m tools.target_naming report --json` when a PR, script, or
+  future dashboard needs machine-readable findings
+- treat the blocking `target-naming` review check as the repo-native guard
+  against new undocumented target names or renamed families
+
 ## Refactor-First Hotspots
 
 Split these modules before adding materially new behavior:

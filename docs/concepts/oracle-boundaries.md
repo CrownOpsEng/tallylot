@@ -118,7 +118,7 @@ they do not satisfy filing-ready checkpoint requirements by themselves.
 
 A valid checkpoint may be built from:
 
-- custodial balance evidence
+- held-balance evidence
 - location balance evidence
 - statement evidence
 - evidence-backed inventory proofs

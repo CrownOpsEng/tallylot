@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Literal
 
+from repo_support.target_naming import is_target_naming_sensitive_path
+
 from .catalog import (
     CHECK_ORDER,
     CHECK_SPECS,
@@ -22,6 +24,7 @@ FULL_PR_CHECK_IDS = (
     "pr-metadata",
     "docs-maintenance",
     "markdownlint",
+    "target-naming",
     "actionlint",
     "ruff",
     "mypy",
@@ -164,6 +167,8 @@ def _path_targeted_check_ids(path: str) -> tuple[str, ...]:
         ".github/workflows/pr-review.yml",
     }:
         targeted.append("run-pr-review-checks")
+    if is_target_naming_sensitive_path(path):
+        targeted.append("target-naming")
     if (
         path.startswith(".github/actions/")
         or path.startswith(".github/workflows/")

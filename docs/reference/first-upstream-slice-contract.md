@@ -274,7 +274,7 @@ Bundle rule:
 
 ## Parity Gates
 
-Retained compatibility projections are part of the slice parity bar. Kernel
+Retained compatibility views are part of the slice parity bar. Kernel
 parity alone is not sufficient while these legacy readers remain active.
 
 Unchanged evidence must preserve all of the following:

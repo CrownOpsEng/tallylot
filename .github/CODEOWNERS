@@ -11,6 +11,7 @@ docs/standards/** @CrownOpsEng
 .claude/commands/** @CrownOpsEng
 repo_support/local_autofix.py @CrownOpsEng
 repo_support/quality_gates.py @CrownOpsEng
+repo_support/target_naming/** @CrownOpsEng
 repo_support/review_verification/** @CrownOpsEng
 tools/install_git_hooks.py @CrownOpsEng
 tools/pre_commit_hook.py @CrownOpsEng
@@ -22,6 +23,8 @@ tools/evaluate_review_results.py @CrownOpsEng
 tools/message_standards.py @CrownOpsEng
 tools/run_review_check.py @CrownOpsEng
 tools/run_pr_review_checks.py @CrownOpsEng
+tools/target_naming.py @CrownOpsEng
+tools/target_naming_catalog.yaml @CrownOpsEng
 tools/validate_commit_message.py @CrownOpsEng
 tools/validate_pr_metadata.py @CrownOpsEng
 tools/run_quality_gates.py @CrownOpsEng
