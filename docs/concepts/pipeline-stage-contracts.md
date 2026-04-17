@@ -1,6 +1,6 @@
 ---
 title: "Pipeline Stage Contracts"
-summary: "Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries."
+summary: "Target pipeline product contracts, stage responsibilities, handoff guarantees, and downstream decision boundaries."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,7 +9,7 @@ nav_order: 25
 ---
 
 Use this page when defining the target pipeline products or deciding which
-stage owns a decision. This document owns the target stage contracts.
+stage owns a decision. This page defines the target stage contracts.
 
 Current runtime note:
 
@@ -188,15 +188,12 @@ Use these bounded record-local vocabularies across target kernels:
 - `ContinuitySegmentRecord.status`:
   - `complete`
   - `partial`
-  - `blocked`
 - `JournalEntryRecord.status`:
   - `expanded`
-  - `checked`
   - `blocked`
 - `TaxOutputRecord.status`:
   - `ready`
   - `partial`
-  - `blocked`
 
 ## `EvidenceSet`
 
@@ -274,6 +271,10 @@ Controlled vocabularies:
   - `duplicate`
   - `ambiguous_overlap`
   - `upstream_gap`
+
+`EvidenceSelectionRecord.basis` intentionally groups positive selection
+reasons and unresolved selection conditions because the record captures one
+deterministic evidence-selection decision boundary.
 
 ### First-Slice Critical-Path Observation Kinds
 
@@ -470,6 +471,10 @@ Controlled vocabularies:
   - `policy_deferred`
   - `superseded_by_later_claims`
 
+`ClaimBundleDecisionRecord.basis` intentionally groups acceptance reasons,
+insufficiency conditions, and defer/supersession outcomes because the record
+captures one claim-bundle decision boundary rather than one pure reason axis.
+
 ### First-Slice Critical-Path Claim Kinds
 
 The `ClaimRecord` shell above is required for every claim. For the first
@@ -531,6 +536,9 @@ Rules:
   `economic_kind`, `projection_hint`, `accounting_intent_hint`,
   `tax_treatment_hint`, `description`, `tx_hash_or_null`,
   `operation_group_id_or_null`, `confidence`, and `status`
+- `activity_label` is retained only as an evidence-local first-upstream-slice
+  field that preserves bridge compatibility; it must not become downstream
+  canonical target naming
 - legacy `provider_operation_key` is satisfied by
   `activity_label` on claims with `kind = activity` and must not be duplicated into a
   compatibility sidecar field
@@ -813,13 +821,15 @@ Record families:
   - `as_of`
   - `expected_value`
   - `observed_value`
-  - `status`
+  - `observation_status`
+  - `comparison_outcome`
 - `CheckpointProposalRecord`
   - `checkpoint_proposal_id`
   - `continuity_segment_id`
   - `subject_ref`
   - `as_of`
   - `status`
+  - `superseding_proposal_ref`
   - `target_refs`
   - `evidence_refs`
 
@@ -837,16 +847,33 @@ Controlled vocabularies:
   - `exact_balance`
   - `range_balance`
   - `boundary_balance`
-- `BalanceTargetRecord.status`:
+- `BalanceTargetRecord.observation_status`:
+  - `observed`
+  - `unobserved`
+- `BalanceTargetRecord.comparison_outcome`:
   - `matched`
   - `mismatched`
-  - `missing_observation`
-  - `blocked`
 - `CheckpointProposalRecord.status`:
   - `ready`
   - `partial`
   - `blocked`
-  - `superseded`
+
+Reconciliation rules:
+
+- `ContinuitySegmentRecord.status` tracks completeness only; blocker posture
+  stays on reconciliation-owned gaps and readiness attached to
+  `continuity_segment_id`
+- `BalanceTargetRecord.observation_status` tracks whether one authoritative
+  observed value exists for the target
+- `BalanceTargetRecord.comparison_outcome` is nullable and is set only when
+  `observation_status = observed`
+- open blocker posture for balance targets stays on reconciliation-owned gaps
+  and readiness attached to `balance_target_id`, not on balance-target state
+  fields
+- `CheckpointProposalRecord.status` tracks current proposal posture only
+- `CheckpointProposalRecord.superseding_proposal_ref` points at a later
+  `checkpoint_proposal_id` only when a proposal has been superseded, and that
+  ref is never part of proposal identity
 
 Sidecar content may include:
 
@@ -976,8 +1003,11 @@ Record families:
   - `accepted_value`
   - `trust_level`
   - `basis`
-  - `support_kind`
+  - `support_shape`
   - `continuity_kind`
+
+`CheckpointRecord` stays simple because one `Checkpoint` kernel owns one
+natural accepted root record.
 
 Controlled vocabularies:
 
@@ -997,7 +1027,7 @@ Controlled vocabularies:
   - `reconciled_continuity`
   - `adopted_opening`
   - `manual_support`
-- `CheckpointAssertionRecord.support_kind`:
+- `CheckpointAssertionRecord.support_shape`:
   - `document_observation`
   - `reported_observation`
   - `location_observation`
@@ -1008,6 +1038,13 @@ Controlled vocabularies:
   - `reconciled_rollforward`
   - `opening_rollforward`
   - `partial_rollforward`
+
+`trust_level` names checkpoint acceptance confidence tiers inside one accepted
+assertion. It is not the shared `ReadinessStatus` model from
+[Gaps And Readiness](gaps-and-readiness.md).
+
+`trust_level` is a checkpoint trust-tier vocabulary. It is not a reuse of
+`ReadinessStatus`.
 
 Sidecar content may include:
 
@@ -1069,7 +1106,7 @@ Minimum admissibility rules:
 
 - `filing_ready` requires:
   - `basis` other than `manual_support`
-  - `support_kind` other than `manual_assertion`
+  - `support_shape` other than `manual_assertion`
   - `continuity_kind` other than `partial_rollforward`
 - `analysis_ready` may use `manual_support` or `partial_rollforward`, but
   the lower-trust basis stays explicit in the accepted checkpoint record
@@ -1144,12 +1181,18 @@ Record families:
   - `status`
   - `blocking_gap_refs`
 
+`PostingRecord` stays short because `Posting` is itself the owned journal
+concept rather than a generic helper row.
+
 Controlled vocabularies:
 
 - `JournalEntryRecord.kind`:
   - `event`
   - `opening`
   - `adjustment`
+- `JournalEntryRecord.status`:
+  - `expanded`
+  - `blocked`
 - `side`:
   - `debit`
   - `credit`
@@ -1160,6 +1203,9 @@ Controlled vocabularies:
 - `EntryCheckRecord.status`:
   - `passed`
   - `blocked`
+
+`JournalEntryRecord.status` covers entry expansion only. Entry checking remains
+on `EntryCheckRecord.status`.
 
 Sidecar content may include:
 
@@ -1299,6 +1345,9 @@ Controlled vocabularies:
   - `closing`
   - `carry_forward`
 
+`TaxInputRecord.kind` intentionally groups the tax-relevant input shapes that a
+policy must process rather than one narrower event-only taxonomy.
+
 Sidecar content may include:
 
 - tax-relevant valuation detail
@@ -1409,8 +1458,14 @@ Controlled vocabularies:
   - `policy_summary`
   - `supporting_schedule`
   - `filing_form`
+- `TaxOutputRecord.status`:
+  - `ready`
+  - `partial`
 
-Sidecar content may include:
+`TaxOutputRecord.status` tracks output readiness only. Blocking tax posture
+stays on `TaxUnsupportedInputRecord` plus tax-owned gaps.
+
+Sidecar content:
 
 - rendered policy content
 - filing notes and limitations

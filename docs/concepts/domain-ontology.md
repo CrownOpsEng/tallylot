@@ -1,6 +1,6 @@
 ---
 title: "Domain Ontology"
-summary: "Owning concept page for the target economic ontology, identity seams, ref recipes, package ownership, and bridge-versus-target modeling rules."
+summary: "Target economic ontology, identity seams, ref recipes, package ownership, and bridge-versus-target modeling rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -8,7 +8,7 @@ status: active
 nav_order: 35
 ---
 
-Use this page when shaping the target domain model. This document owns the
+Use this page when shaping the target domain model. This page defines the
 target ontology, identity seams, ref recipes, and target package ownership.
 
 Current bridge note:
@@ -17,7 +17,7 @@ Current bridge note:
   layered bridge classifications, and fact-leg policies
 - those bridge contracts remain current-state runtime truth
 - this page defines the target ontology that later implementation increments
-  should grow toward
+  should implement directly
 
 ## Target Business Concepts
 
@@ -202,14 +202,14 @@ Shared vocabulary:
 - `checkpoint_measurement`
 - `journal_measurement`
 - `tax_measurement`
-- `market_reference`
+- `market_measurement`
 
 Rules:
 
 - valuation belongs in the economic model when it changes checkpoint,
   journal, or tax behavior
 - valuation purpose must be explicit enough to distinguish economic,
-  checkpoint, journal, tax, and market-reference jobs
+  checkpoint, journal, tax, and market-measurement jobs
 - valuation should not be hidden only inside renderer detail or one-off policy
   sidecars
 - missing or uncertain valuation should remain explicit when downstream stages
@@ -330,12 +330,12 @@ Rules:
 ## First Downstream Slice Restriction
 
 The first downstream slice intentionally uses a narrow `PositionRef`
-identity shape for the current custodial balance slice.
+identity shape for the current bounded balance slice.
 
 Slice rule:
 
 - this slice may use only
-  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_position"]`
+  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "held_position"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
 - `location_ref` must resolve to the in-scope custodial location or
   sub-location
@@ -380,7 +380,7 @@ Bridge-specific classification rules live in
 - prefer explicit family names such as `gap`, `review`, and `readiness` in
   forward-looking prose when those are the owned sidecars; reserve generic
   `support` for the intentional shared root or bounded field names such as
-  `support_kind`
+  `support_shape`
 - avoid umbrella package roots such as `entities/` once the owned identity
   families are already known
 - keep singular concept families on singular package stems such as
@@ -436,6 +436,12 @@ Required application ownership:
   evaluation, and checkpoint proposal records
 - `application/readiness/` for cross-stage gap, review, and readiness
   reduction plus readiness rollups and operator views
+
+`domain/support/` stays generic only because it is the shared root for the
+nested `gap/`, `review/`, and `readiness/` families plus `SubjectRef`.
+`application/compatibility/` is migration-only and must not become a durable
+application center.
+
 - `application/checkpoint/` for `Checkpoint` acceptance, manual assertion
   intake, and opening-state adoption
 - `application/journal/` for journal expansion, entry checks, and journal

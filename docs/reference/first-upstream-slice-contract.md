@@ -1,6 +1,6 @@
 ---
 title: "First Upstream Slice Contract"
-summary: "Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, scoped to Coinbase retail and statement evidence, including cardinality, ids, replay gates, and bridge compatibility views."
+summary: "Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
@@ -45,15 +45,15 @@ This slice may emit only these evidence member kinds:
 
 | Evidence member kind | Meaning |
 | --- | --- |
-| `coinbase_retail_export` | one Coinbase retail CSV member under deterministic retail-export selection |
-| `coinbase_statement_document` | one recognized Coinbase statement PDF document under per-document selection |
+| `retail_activity_export_file` | one selected retail activity export file under deterministic retail-export selection |
+| `statement_document_file` | one selected statement PDF document under per-document selection |
 
 This slice may emit only these observation kinds:
 
 | Observation kind | Meaning | Owning member kind |
 | --- | --- | --- |
-| `statement_document` | recognized statement document detail preserved under the selected document member | `coinbase_statement_document` |
-| `statement_balance_row` | one parsed statement quantity row keyed to the owning statement document and row key | `coinbase_statement_document` |
+| `statement_document` | recognized statement document detail preserved under the selected document member | `statement_document_file` |
+| `statement_balance_row` | one parsed statement quantity row keyed to the owning statement document and row key | `statement_document_file` |
 
 Frozen kind-specific observation fields:
 
@@ -89,7 +89,7 @@ This slice uses only these selection keys:
 
 | `key` | Meaning |
 | --- | --- |
-| `["coinbase_retail_export"]` | deterministic decision boundary for Coinbase retail export selection |
+| `["retail_activity_export_file"]` | deterministic decision boundary for the retail activity export selection |
 | `["statement_document", locator]` | deterministic inclusion decision for one recognized statement document |
 
 `translation_input_candidates.json` remains planning-sidecar content only. It
@@ -101,10 +101,10 @@ This slice may emit only this subset of `ClaimRecord.kind` values:
 
 | Claim kind | Meaning in the slice |
 | --- | --- |
-| `activity` | evidence-local activity assertion derived from selected Coinbase retail rows |
+| `activity` | evidence-local activity assertion derived from selected retail activity rows |
 | `balance` | quantity-backed balance claim derived from recognized statement rows |
 | `instrument` | instrument assertion tied to one activity or statement observation |
-| `location` | assertion about the in-scope custodial location or sub-location |
+| `location` | assertion about the in-scope location or sub-location |
 | `beneficial_owner` | assertion for the beneficial owner needed by downstream position identity |
 | `valuation` | canonically defined now but zero-row by default in this slice |
 
@@ -141,8 +141,8 @@ Frozen kind-specific claim fields:
 
 Claim-field and linkage rules:
 
-- `activity` claims own the current Coinbase retail `activity_label` in this
-  slice
+- `activity_label` is retained only for this slice's evidence-local bridge
+  compatibility and must not become downstream canonical target naming
 - `leg_specs` lift ordered leg meaning from the current draft-leg
   contract, including sign, subtype, optional attributed-leg linkage, and
   optional location, while keeping the downstream `EconomicLegRecord.role`
@@ -236,20 +236,22 @@ Slice-specific identity rules:
 - `emitter_id` is the shared emitter id over
   `[source_slug, adapter_id, "claim"]`
 - `source_slug` stays the same across evidence-local products
+- `source_slug` is evidence-local only; it must not become a downstream product
+  id component, authoritative directory stem, or later target-kernel field
 - `evidence_set_id` intentionally changes when `selection_fingerprint`
   changes, because the authoritative capture-level evidence emission changed
-- `locator` for `coinbase_retail_export` is
+- `locator` for `retail_activity_export_file` is
   `[raw_file, raw_member_ref]`
-- `locator` for `coinbase_statement_document` is
+- `locator` for `statement_document_file` is
   `[raw_file, raw_member_ref]`
 - `key` for `statement_document` is `["document"]`
 - `key` for `statement_balance_row` is `[row_key]`
 - `retail_member_id` means the `member_id` of the selected
-  `coinbase_retail_export` member
+  `retail_activity_export_file` member
 - `document_member_id` means the `member_id` of the selected
-  `coinbase_statement_document` member
+  `statement_document_file` member
 - `raw_row_ref` means the stable retail-row reference preserved by the current
-  Coinbase retail bridge inputs for one selected CSV row
+  retail bridge inputs for one selected CSV row
 - `row_key` means the stable statement-row key preserved on the
   `statement_balance_row` observation
 
@@ -272,7 +274,7 @@ Bundle rule:
 
 ## Parity Gates
 
-Retained compatibility views are part of the slice parity bar. Kernel
+Retained compatibility projections are part of the slice parity bar. Kernel
 parity alone is not sufficient while these legacy readers remain active.
 
 Unchanged evidence must preserve all of the following:

@@ -158,6 +158,95 @@ def test_commit_standards_require_explicit_lint_amend_reverification() -> None:
     assert "git show HEAD:<path>" in text
 
 
+def test_human_docs_retire_role_first_naming_phrases() -> None:
+    forbidden = (
+        "human-facing entrypoint",
+        "owning concept page",
+        "owning contract",
+        "helper reference",
+        "single authority",
+        "design anchor",
+        "implementation anchor",
+        "owner pages",
+        "primary owners",
+        "authoritative owners",
+    )
+    paths = (repo_root() / "ROADMAP.md", *sorted(docs_root().rglob("*.md")))
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8").lower()
+        for needle in forbidden:
+            assert needle not in text, (
+                f"{path} still uses retired role-first naming phrase {needle!r}"
+            )
+
+
+def test_human_docs_retire_selected_target_tokens() -> None:
+    forbidden = (
+        "coinbase_retail_export",
+        "coinbase_statement_document",
+        "custodial_position",
+        "support_kind",
+        "missing_observation",
+    )
+    paths = (repo_root() / "ROADMAP.md", *sorted(docs_root().rglob("*.md")))
+
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for needle in forbidden:
+            assert needle not in text, (
+                f"{path} still uses retired target token {needle!r}"
+            )
+
+
+def test_target_docs_use_market_measurement_while_origin_ref_keeps_market_reference() -> (
+    None
+):
+    domain_text = (docs_root() / "concepts" / "domain-ontology.md").read_text(
+        encoding="utf-8"
+    )
+    ids_text = (docs_root() / "reference" / "target-ids-and-refs.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "`market_measurement`" in domain_text
+    assert "`market_reference`" not in domain_text
+    assert "`market_reference`" in ids_text
+
+
+def test_target_docs_use_support_shape_and_retire_checked_journal_value() -> None:
+    pipeline_text = (
+        docs_root() / "concepts" / "pipeline-stage-contracts.md"
+    ).read_text(encoding="utf-8")
+    roadmap_text = (repo_root() / "ROADMAP.md").read_text(encoding="utf-8")
+
+    assert "support_shape" in pipeline_text
+    assert "support_shape" in roadmap_text
+    assert "`checked`" not in pipeline_text
+    assert "Prefer `checked` over" not in (
+        docs_root() / "standards" / "engineering.md"
+    ).read_text(encoding="utf-8")
+
+
+def test_target_docs_use_neutral_upstream_kind_tokens_and_position_key_example() -> (
+    None
+):
+    upstream_text = (
+        docs_root() / "reference" / "first-upstream-slice-contract.md"
+    ).read_text(encoding="utf-8")
+    downstream_text = (
+        docs_root() / "reference" / "first-downstream-slice-contract.md"
+    ).read_text(encoding="utf-8")
+    ontology_text = (docs_root() / "concepts" / "domain-ontology.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "retail_activity_export_file" in upstream_text
+    assert "statement_document_file" in upstream_text
+    assert "held_position" in downstream_text
+    assert "held_position" in ontology_text
+
+
 def test_commit_standards_require_scoped_subjects() -> None:
     text = (docs_root() / "standards" / "commits.md").read_text(encoding="utf-8")
 

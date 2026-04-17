@@ -1,6 +1,6 @@
 ---
 title: "Target Persistence Reference"
-summary: "Helper reference that points to the owner pages for target persistence, partition scopes, and bounded-slice compatibility expectations."
+summary: "Target persistence, partition-scope, and compatibility placement reference."
 doc_type: reference
 audience: human
 owner: repo
@@ -14,12 +14,12 @@ related:
   - ROADMAP.md
 ---
 
-Use this page as a helper reference when you need target persistence
-guidance. It does not define a second persistence contract.
+Use this page when you need target persistence guidance. It does not define a
+second persistence contract.
 
 ## Precedence
 
-Use these pages as the authoritative owners:
+Use these contract pages first:
 
 - [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) for
   target product kernels, record families, ids, and fingerprints
@@ -39,7 +39,7 @@ When persisting target products:
   migration-era source or checkpoint containers
 - keep product ids in the product header and keep those product ids distinct from
   `product_scope_id`
-- keep partition-scope labels aligned to the owner pages' stage-owned scope
+- keep partition-scope labels aligned to the contract pages' stage-owned scope
   names instead of inventing alternate helper vocabulary here
 - keep bridge CSVs and bridge draft or batch surfaces as compatibility
   views only once a target product is authoritative for that scope
@@ -52,9 +52,13 @@ When persisting target products:
   `support/review/review_records.json`,
   `support/readiness/readiness_records.json`, and
   `support/readiness/readiness_rollup_records.json`
+- `support/` stays generic only because it splits immediately into the
+  persisted `gap/`, `review/`, and `readiness/` families; unrelated sidecars
+  do not belong there
 - treat caches and indexes as regenerable accelerators, not as business truth
 
 ## Reminder
 
 Do not implement target persistence from this page alone. The authoritative
-placement, product-id, and storage rules live on the owner pages listed above.
+placement, product-id, and storage rules live on the contract pages listed
+above.

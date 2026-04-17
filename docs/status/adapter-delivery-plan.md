@@ -64,7 +64,7 @@ Allowed prep:
 Required prep rule:
 
 - adapter work for the first upstream slice must emit target products
-  through the owner pages, not adapter-local alternate schemas
+  through the target contract pages, not adapter-local alternate schemas
 - retained legacy hints needed for current drafts or facts may survive only in
   declared compatibility sidecars, not in `EvidenceSet` or
   `ClaimSet` fields
@@ -143,9 +143,9 @@ Prep work must not:
 The broader unified adapter redesign stays deferred until:
 
 - the filing path is stable enough to trust
-- the contract-lock owner pages are frozen
+- the contract-lock pages are frozen
 - the first upstream and first downstream slices have landed cleanly
 
 At that point, use
 [Unified Adapter Architecture](../concepts/unified-adapter-architecture.md) as
-the design anchor for broader manifest and facet work.
+the contract page for broader manifest and facet work.

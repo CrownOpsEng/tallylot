@@ -1,6 +1,6 @@
 ---
 title: "Architecture Overview"
-summary: "High-level map of the current bridge, the target pipeline, and the focused pages that own each major contract."
+summary: "High-level map of the current bridge, the target runtime pipeline, and the primary contract pages."
 doc_type: concept
 audience: human
 owner: repo
@@ -28,8 +28,8 @@ The target runtime pipeline is:
 
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
-The owner pages freeze product ids, product headers, critical-path kernel field
-tables, and the compatibility sidecar boundary for retained legacy
+The primary contract pages freeze product ids, product headers, critical-path
+kernel field tables, and the compatibility sidecar boundary for retained legacy
 hint fields.
 
 ## Layer Shape
@@ -44,9 +44,9 @@ hint fields.
 Raw evidence and live workspace files remain in the external workspace, not
 in the repo.
 
-## Contract Map
+## Primary Contract Pages
 
-Use these pages as the primary owners:
+These pages define the primary current-state and forward-looking contracts:
 
 | Page | Owns |
 | --- | --- |
@@ -61,7 +61,7 @@ Use these pages as the primary owners:
 | [ROADMAP.md](../../ROADMAP.md) | sequencing, gating, and rollout phases |
 | [Current State](../status/current-state.md) | implemented runtime truth and live package layout |
 
-Non-owning helper references remain under
+Supporting id, ref, persistence, and workspace references remain under
 `docs/reference/`.
 
 ## Read Next

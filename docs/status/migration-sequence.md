@@ -9,8 +9,8 @@ nav_order: 20
 ---
 
 Use this page to sequence implementation increments without a big-bang refactor.
-This document keeps migration rules, cutover expectations, and retirement gates
-in one place. It does not re-own target product contracts or recreate roadmap
+This page keeps migration rules, cutover expectations, and retirement gates in
+one place. It does not redefine target product contracts or recreate roadmap
 phase detail.
 
 ## Roadmap Ownership
@@ -77,7 +77,7 @@ Before broad implementation, freeze:
 - bridge-to-target cutover rules on
   [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md)
 
-Broad parallel implementation must not begin before those owner pages are
+Broad parallel implementation must not begin before those contract pages are
 aligned and frozen.
 
 ### 2. First Upstream Slice

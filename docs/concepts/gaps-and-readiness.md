@@ -1,6 +1,6 @@
 ---
 title: "Gaps And Readiness"
-summary: "Owning concept page for the target gap model, review model, readiness model, sidecar rules, and shared `SubjectRef` contracts."
+summary: "Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,7 +9,7 @@ nav_order: 45
 ---
 
 Use this page when defining shared gap, review, readiness, or generic
-subject-reference contracts. This document owns the target cross-stage gap,
+subject-reference contracts. This page defines the target cross-stage gap,
 review, and readiness model.
 
 Current runtime note:
@@ -134,6 +134,8 @@ view, and sidecar attachments.
 Rules:
 
 - `product_scope_id` is `<product_slug>:<kernel_fingerprint>`
+- `scope` is the right noun here because this id names a shared attachment
+  boundary over one emitted kernel, not the product identity itself
 - `product_slug` uses the lower-snake-case target product stem
 - `kernel_fingerprint` is the canonical product fingerprint owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
@@ -176,6 +178,9 @@ Rules:
 ## Gap Model
 
 The target shared gap model splits compact blocking truth from explanation.
+`GapRecord`, `ReviewRecord`, and `ReadinessRecord` stay short because each one
+names the shared cross-stage business concept directly rather than a local
+helper wrapper.
 
 ### `GapRecord`
 

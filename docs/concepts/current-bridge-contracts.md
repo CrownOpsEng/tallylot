@@ -1,6 +1,6 @@
 ---
 title: "Current Bridge Contracts"
-summary: "Owning concept page for the live bridge contracts, bridge surfaces, and current schema rules."
+summary: "Live bridge contracts, bridge surfaces, and current schema rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,7 +9,7 @@ nav_order: 22
 ---
 
 Use this page when you need the current runtime truth for the bridge that
-exists today. This document owns the live bridge contracts and bridge-surface
+exists today. This page defines the live bridge contracts and bridge-surface
 rules.
 
 The current bridge is real runtime behavior, not a historical footnote. It is

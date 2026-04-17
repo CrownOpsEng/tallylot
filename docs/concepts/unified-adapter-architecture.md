@@ -1,6 +1,6 @@
 ---
 title: "Unified Adapter Architecture"
-summary: "Forward design for the future adapter manifest, facets, and verification model without re-owning target product contracts."
+summary: "Future adapter manifest, facet, and verification model for the target runtime pipeline."
 doc_type: concept
 audience: human
 owner: repo
@@ -16,23 +16,23 @@ related:
   - docs/concepts/reconciliation-tax-architecture.md
 ---
 
-Read this document before shaping large adapter-design work. Use it as the
-forward design anchor for manifests, facets, and deterministic verification.
-This page does not own target product record families, ids, fingerprints, or
-taxonomy details. Those stay with the owner pages.
+Read this document before shaping large adapter-design work. Use it for the
+future manifest, facet, and deterministic verification model. This page does
+not define target product record families, ids, fingerprints, or taxonomy
+details. Those stay on the contract pages listed below.
 
 ## Scope And Precedence
 
-Owner-page precedence:
+Contract-page precedence:
 
-- [Pipeline Stage Contracts](pipeline-stage-contracts.md) owns target product
+- [Pipeline Stage Contracts](pipeline-stage-contracts.md) defines target product
   kernels, ids, ordering, and fingerprints
-- [Domain Ontology](domain-ontology.md) owns identity seams and ref recipes
-- [Bridge To Target Mapping](bridge-to-target-mapping.md) owns migration
+- [Domain Ontology](domain-ontology.md) defines identity seams and ref recipes
+- [Bridge To Target Mapping](bridge-to-target-mapping.md) defines migration
   cutovers and compatibility views
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)
-  owns persistence, partitioning, and fast-path rules
-- this page owns only adapter responsibilities, manifest direction, facet
+  defines persistence, partitioning, and fast-path rules
+- this page defines only adapter responsibilities, manifest direction, facet
   design, and adapter verification posture
 
 ## Design Direction
@@ -138,7 +138,8 @@ the first upstream slice and first downstream slice are stable.
 Rules during the current migration window:
 
 - adapter work for the first upstream slice must emit target products
-  through the canonical owner pages, not adapter-local alternate schemas
+  through the canonical target contract pages, not adapter-local alternate
+  schemas
 - adapters may emit declared compatibility sidecars for retained legacy
   draft-or-fact reproduction during migration, but canonical target kernels
   stay limited to target meaning
