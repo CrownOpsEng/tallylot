@@ -72,9 +72,9 @@ Before broad implementation, freeze:
 - ontology and ref seams on
   [Domain Ontology](../concepts/domain-ontology.md)
 - shared gap, review, and readiness contracts plus `SubjectRef` rules on
-  [Gaps And Readiness](../concepts/gaps-and-readiness.md)
+  [Gap, Review, And Readiness](../concepts/gaps-and-readiness.md)
 - persistence, partitioning, and fast-path rules on
-  [Reconciliation And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
+  [Reconciliation, Checkpoint, Journal, And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
 - bridge-to-target cutover rules on
   [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md)
 

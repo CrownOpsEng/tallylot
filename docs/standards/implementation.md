@@ -274,6 +274,10 @@ Expected behavior:
   follow-up patch into the owning non-pushed checkpoint when that avoids a
   low-value micro-commit, and update the amended commit message so its
   `Why:`, `What:`, and `Checks:` sections still describe the final content
+- before creating or amending a commit, reread
+  `docs/standards/commits.md` in the current task and use the installed commit
+  template plus `.git/COMMIT_EDITMSG` whenever the message includes backticks,
+  quotes, or other shell-sensitive text
 - do not use repeated amend cycles to grow one broad checkpoint that should be
   split into separate commits with clearer review and rollback boundaries
 - for large but separable scopes, create multiple bounded checkpoint commits

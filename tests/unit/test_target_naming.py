@@ -48,6 +48,10 @@ def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
                 "allow_anti_examples": False,
             },
         },
+        "title_expectations": {
+            "docs/example.md": "Example",
+            "docs/matrix.md": "Matrix",
+        },
         "tooling_paths": [],
         "canonical_families": {
             "products": [],
@@ -114,7 +118,7 @@ def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
                 "path": "docs/matrix.md",
                 "required_columns": [
                     "Current bridge surface",
-                    "Target authoritative product",
+                    "Target authoritative product(s)",
                     "Derived compatibility view",
                     "Derived compatibility sidecar",
                     "Current readers",
@@ -280,6 +284,72 @@ def test_audit_reports_missing_naming_scope_for_repo_docs(tmp_path: Path) -> Non
     ]
 
 
+def test_audit_reports_title_drift(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Wrong"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming()
+
+    assert [finding.rule_id for finding in findings] == ["title.canonical"]
+
+
+def test_audit_checks_locality_exceptions_inside_table_cells(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Field |
+            | --- |
+            | `activity_label` |
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming()
+
+    assert [finding.rule_id for finding in findings] == [
+        "locality.field.exception_restatement"
+    ]
+
+
 def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     catalog = load_target_naming_catalog()
 
@@ -290,6 +360,20 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     }
     assert catalog.scope_profiles["forward_target"].enforce_target_naming is True
     assert catalog.scope_profiles["repo_policy"].allow_anti_examples is True
+    assert (
+        catalog.title_expectations["docs/concepts/gaps-and-readiness.md"]
+        == "Gap, Review, And Readiness"
+    )
+    assert (
+        catalog.title_expectations["docs/concepts/reconciliation-tax-architecture.md"]
+        == "Reconciliation, Checkpoint, Journal, And Tax Architecture"
+    )
+    record_names = {record["record"] for record in catalog.canonical_families.records}
+    assert "EvidenceObservationRecord" in record_names
+    assert "ClaimBundleRecord" in record_names
+    assert "ValuationRecord" in record_names
+    assert "JournalEntryRecord" in record_names
+    assert "GapRecord" in record_names
     assert "tools/target_naming.py" in catalog.tooling_paths
     assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
 

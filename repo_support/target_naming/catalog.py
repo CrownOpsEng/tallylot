@@ -121,6 +121,7 @@ class TargetNamingCatalog:
     version: int
     root_file_scopes: dict[str, NamingScope]
     scope_profiles: dict[NamingScope, ScopeProfile]
+    title_expectations: dict[str, str]
     tooling_paths: tuple[str, ...]
     canonical_families: CanonicalFamilySet
     canonical_tokens: CanonicalTokenSet
@@ -190,6 +191,7 @@ def is_target_naming_tooling_path(
 def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
     root_file_scopes_loaded = _mapping_value(loaded, "root_file_scopes")
     scope_profiles_loaded = _mapping_value(loaded, "scope_profiles")
+    title_expectations_loaded = _mapping_value(loaded, "title_expectations")
     canonical_families_loaded = _mapping_value(loaded, "canonical_families")
     canonical_tokens_loaded = _mapping_value(loaded, "canonical_tokens")
     vocabularies_loaded = _mapping_value(loaded, "vocabularies")
@@ -207,6 +209,7 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
             )
             for key, value in _mapping_mapping(scope_profiles_loaded).items()
         },
+        title_expectations=_string_mapping(title_expectations_loaded),
         tooling_paths=_string_tuple(_sequence_value(loaded, "tooling_paths")),
         canonical_families=CanonicalFamilySet(
             products=tuple(

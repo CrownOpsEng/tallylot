@@ -20,6 +20,7 @@ from .rules.summary import (
     summary_findings,
     validate_summary_text as validate_summary_text_rules,
 )
+from .rules.title import title_findings
 from .rules.vocabulary import vocabulary_findings
 
 
@@ -86,6 +87,29 @@ def validate_summary_style(
     return validate_summary_text_rules(path, summary, scope=scope, catalog=loaded)
 
 
+def validate_title_style(
+    path: str,
+    title: str,
+    *,
+    scope: str | None,
+    catalog: TargetNamingCatalog | None = None,
+) -> tuple[NamingFinding, ...]:
+    loaded = catalog or load_target_naming_catalog()
+    document = DocumentModel(
+        path=path,
+        scope=cast(NamingScope | None, scope),
+        frontmatter={"title": title},
+        title=title,
+        summary=None,
+        raw_text="",
+        headings=(),
+        text_blocks=(),
+        markers=(),
+        tables=(),
+    )
+    return title_findings(document, loaded)
+
+
 def is_target_naming_sensitive_path(
     path: str,
     *,
@@ -126,6 +150,7 @@ def _document_findings(
 ) -> tuple[NamingFinding, ...]:
     profile = catalog.scope_profiles[cast(NamingScope, document.scope)]
     findings: list[NamingFinding] = []
+    findings.extend(title_findings(document, catalog))
     findings.extend(structure_findings(document, catalog))
     findings.extend(summary_findings(document, catalog))
     findings.extend(body_phrase_findings(document, catalog, profile))

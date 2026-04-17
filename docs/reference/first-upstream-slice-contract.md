@@ -78,6 +78,7 @@ Observation-field rules:
 - there is no retail-row observation kind in this pass
 - `statement_document.statement_kind` uses the recognized statement-adapter kind
   for the selected document member
+- `statement_document.statement_kind` is frozen to `coinbase` in this slice
 - `statement_document.statement_as_of` and `document_effective_at` lift the
   current parsed statement times, and the paired `*_precision` fields follow
   the repo-wide temporal
@@ -85,6 +86,8 @@ Observation-field rules:
 - `statement_balance_row` lifts location-group and location labels, balance
   kind, instrument, quantity, as-of time, and optional note or valuation text
   directly from the current statement-row contract
+- `statement_balance_row.balance_kind` is frozen to `asset_balance` or
+  `cash_closing_balance` in this slice
 - `location_group_label` preserves the higher-scope source-provided grouping
   label, such as an account or custody container name, without freezing that
   source noun into the canonical target field list
@@ -138,7 +141,7 @@ Frozen kind-specific claim fields:
 | `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
 | `location` | `location_ref`, `location_group_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
-| `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
+| `valuation` | `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
 `leg_specs` entry shape:
 
@@ -154,6 +157,11 @@ Claim-field and linkage rules:
 
 - `activity_label` is retained only for this slice's evidence-local bridge
   compatibility and must not become downstream canonical target naming
+- `balance_kind` stays a slice-local bounded field and is frozen to
+  `asset_balance` or `cash_closing_balance` in this slice
+- `instrument_kind` uses the shared `InstrumentKind` vocabulary owned by
+  [Domain Ontology](../concepts/domain-ontology.md) and is frozen to
+  `crypto` or `fiat` in this slice
 - `leg_specs` lift ordered leg meaning from the current draft-leg
   contract, including sign, subtype, optional attributed-leg linkage, and
   optional location, while keeping the downstream `EconomicLegRecord.role`
@@ -166,6 +174,8 @@ Claim-field and linkage rules:
   include the paired `statement_document` observation id
 - `valuation` claims remain zero-row by default until a later owner-page pass
   freezes numeric statement valuation inputs
+- valuation-measure taxonomy remains intentionally deferred; this slice does
+  not freeze or emit a placeholder valuation-measure field
 - `location` claims use `location_group_label` and `location_label` under the
   same target-contract rules as `statement_balance_row`: preserve the
   source-provided higher-scope and lower-scope labels, but keep the canonical

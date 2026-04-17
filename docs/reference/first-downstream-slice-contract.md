@@ -84,7 +84,8 @@ Rules:
 - one continuity segment covers one `PositionRef`; do not mix positions into one
   segment
 - when `SubjectRef` is needed for downstream attachment, the subject kind for
-  this slice is `position`, pointing at the stable `PositionRef` identity
+  this slice is `position`, and `subject_key` carries the canonical
+  `PositionRef` tuple rather than a scalar record id
 
 ## Product Header And Downstream Inputs
 

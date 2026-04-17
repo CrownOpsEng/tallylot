@@ -1,6 +1,6 @@
 ---
-title: "Reconciliation And Tax Architecture"
-summary: "Trust gates, persistence rules, performance constraints, and filing-critical rollout for the target runtime pipeline."
+title: "Reconciliation, Checkpoint, Journal, And Tax Architecture"
+summary: "Reconciliation, checkpoint, journal, and tax trust gates, persistence rules, and filing-critical rollout for the target runtime pipeline."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,9 +9,10 @@ naming_scope: forward_target
 nav_order: 20
 ---
 
-This page defines the trust gates, persistence model, and rollout posture for
-evolving the repo away from tracker-dependent historical workflows and into an
-independent reconciliation, checkpoint, journal, and tax runtime.
+This page defines the reconciliation, checkpoint, journal, and tax trust
+gates, persistence model, and rollout posture for evolving the repo away from
+tracker-dependent historical workflows and into an independent downstream
+runtime.
 
 Use it when making structural decisions that affect persistence,
 reconciliation, checkpoint, journal, or tax computation.
@@ -56,7 +57,7 @@ Use these pages for the detailed neighboring contracts:
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
-- [Gaps And Readiness](gaps-and-readiness.md)
+- [Gap, Review, And Readiness](gaps-and-readiness.md)
 - [Engineering Standards](../standards/engineering.md)
 - [Transaction Classification](transaction-classification.md)
 - [Oracle Boundaries](oracle-boundaries.md)

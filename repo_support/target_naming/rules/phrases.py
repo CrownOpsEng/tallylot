@@ -29,6 +29,7 @@ def body_phrase_findings(
             document, block, "Anti-example"
         ):
             continue
+        findings.extend(_phrase_findings_for_block(document, block, catalog))
         findings.extend(_alias_findings_for_block(document, block, catalog))
     return tuple(findings)
 
@@ -39,8 +40,11 @@ def _phrase_findings_for_block(
     catalog: TargetNamingCatalog,
 ) -> tuple[NamingFinding, ...]:
     findings: list[NamingFinding] = []
+    contexts = {"body"} if block.kind != "inline_code" else {"inline_code", "body"}
     for rule in catalog.banned_phrases:
-        if "body" not in rule.contexts or document.scope not in rule.allowed_scopes:
+        if not contexts.intersection(rule.contexts):
+            continue
+        if document.scope not in rule.allowed_scopes:
             continue
         if rule.paths and document.path not in rule.paths:
             continue

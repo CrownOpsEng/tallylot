@@ -24,7 +24,7 @@ Use these contract pages first:
 
 - [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) for
   target product kernels, record families, ids, and fingerprints
-- [Reconciliation And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
   for persistence model, partition scopes, default filesystem placement,
   sidecars, replace rules, caches, and indexes
 - [First Upstream Slice Contract](first-upstream-slice-contract.md) and

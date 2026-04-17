@@ -223,6 +223,9 @@ Current application of this rule:
   short names such as `EvidenceFacet`, `ClaimFacet`, and `RenderFacet`, do not
   mix in a longer alternate or a different boundary noun for one sibling unless
   the whole family intentionally changes style.
+- `StatementFacet` is the one sanctioned content-specific exception in that
+  facet family because statement parsing is a distinct document boundary rather
+  than a generic downstream stage.
 - Keep the repo's `render` versus `rendering` split intentional. Use `render`
   for executable surfaces such as CLI verbs, facets, and operation modules, and
   use `rendering` for the bounded package or orchestration surface such as
@@ -304,6 +307,8 @@ Current application of this rule:
 - Reserve suffixes precisely:
   - `Ref` for canonical identity tuples or stable pointers
   - `Id` and `*_id` for stable identifiers only
+  - `Key` and `*_key` when one slot may hold either a stable id or a canonical
+    ref tuple
   - `Record` for persisted record families
   - `Explanation` for explanatory sidecars keyed to one kernel or support record
   - `View` for compatibility outputs or other reshaped reader-facing surfaces
@@ -500,11 +505,20 @@ Current application of this rule:
   that would be ambiguous without the prefix. When the stage already supplies
   that locality, prefer the shorter held-thing noun such as `activity_label`,
   `location_label`, or `statement_kind` over `source_local_*`.
+- `statement_kind` and `balance_kind` are locality-preserving bounded field
+  names, not shared downstream vocabulary families. Keep them only where the
+  owning evidence or slice contract explicitly freezes that locality.
 - When a contract page freezes an allowed locality exception such as
   `source_slug`, `activity_label`, `provider_operation_key`, or
   `AccountingIntentHint`, restate that locality at the owning field table or
   immediately adjacent prose rather than leaving the exception only in this
   standards page.
+- No valuation-measure field name is frozen in this repo yet. Do not add one to
+  forward-looking claim or record tables until a real shared valuation measure
+  taxonomy exists.
+- `SubjectRef` serializes as `[subject_kind, subject_key]`. Use `subject_key`
+  because the second slot may hold either a stable record id or a canonical ref
+  tuple such as `PositionRef`.
 - When a record owns one primary lifecycle, decision, or resolution field,
   prefer plain `status`, `basis`, or `outcome` over repeating the record stem.
   Add a prefix only when the field describes another concept's status or basis
@@ -524,7 +538,7 @@ Current application of this rule:
   Prefer concept names such as `SettlementStatus` when the concept is a
   bounded status family rather than a broader state bundle.
 - When a record owns one primary classification, role, or intent field,
-  prefer plain `kind`, `role`, `side`, `purpose`, or `measure_kind` over
+  prefer plain `kind`, `role`, `side`, or `purpose` over
   repeating the record stem. Add a longer prefix only when the same record
   carries multiple fields of that family or the field describes another
   concept's role or purpose.
@@ -546,6 +560,9 @@ Current application of this rule:
   trust or readiness tiers for `trust_level`, support shapes for
   `support_shape`, and acceptance reasons for `basis` instead of mixing those
   dimensions inside one field family.
+- Apply that same rule to claim-bundle decisions. `ClaimBundleDecisionRecord`
+  keeps posture on `outcome` and reason on `basis`; do not mix defer or
+  supersession posture back into the `basis` vocabulary.
 - When adjacent vocabularies live on different semantic axes, do not reuse one
   slice-local label across all of them if that would blur reason, support
   shape, and continuity shape. Prefer reason labels such as
@@ -744,8 +761,8 @@ Current application of this rule:
 - Prefer product-aligned nouns over abstract process jargon when the product
   already owns the boundary. For example, `TaxInputRecord` is clearer than a
   more abstract tax-record noun when the record is the kernel row inside
-  `TaxInputs`, and `JournalEntryRecord` is clearer than an alternate
-  `AccountingEntryRecord` once `Journal` is the owned product family.
+  `TaxInputs`, and `JournalEntryRecord` is clearer than a more abstract
+  accounting-entry noun once `Journal` is the owned product family.
 - In forward-looking workflow prose, use the emitted product name once the
   contract page already freezes that boundary. Prefer phrases such as
   `build EconomicFacts`, `build ReconciliationState`, or `emit TaxOutputs`

@@ -80,7 +80,7 @@ Must freeze:
 - shared gap, review, and readiness records and sidecars:
   `GapRecord`, `GapExplanation`, `ReviewRecord`,
   `ReviewExplanation`, `ReadinessRecord`, `ReadinessRollupRecord`,
-  `SubjectRef`, truthful `claim_scope_id` and `balance_target_id`
+  `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id` and `balance_target_id`
   attachments, and the downstream shared-subject seams needed for journal
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
@@ -103,6 +103,11 @@ Must freeze:
 - child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
   `checkpoint_proposal_id`, `JournalAccountRef`, and `JournalUnitRef` as the
   canonical downstream stems instead of shorter or mixed-family alternates
+- claim-bundle decision naming that keeps `outcome` on the posture axis and
+  freezes `ClaimBundleDecisionRecord.basis` to reason-only values such as
+  `single_bundle`, `insufficient_identity`, `insufficient_temporal_precision`,
+  `conflicting_claims`, `upstream_gap`, `policy_decision_required`, and
+  `later_bundle_selected`
 - balance-target naming that splits observation presence from comparison
   outcome instead of overloading one status field
 - checkpoint-proposal naming that keeps proposal posture on `status` and models
@@ -132,9 +137,12 @@ Must freeze:
   retirement gates
 - package ownership and layer placement for shared functionality
 - catalog-first target naming governance with one machine-readable naming
-  authority and a blocking `target-naming` check on enforced forward-looking
-  docs
+  authority, exact title expectations for enforced forward-looking docs, full
+  canonical record-family coverage, and a blocking `target-naming` check on
+  enforced forward-looking docs
 - explicit no-invention rules for non-critical observation and claim kinds
+- no placeholder valuation-measure field family until a real shared taxonomy
+  exists
 
 Deliver:
 

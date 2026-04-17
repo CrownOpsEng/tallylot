@@ -129,7 +129,7 @@ Shared rules:
 
 ### Composite Tuple Rules
 
-- `SubjectRef` serializes and sorts as `[subject_kind, subject_id]`
+- `SubjectRef` serializes and sorts as `[subject_kind, subject_key]`
 - `BasisPoolRef` serializes and sorts as
   `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_key]`
 - when one stable-id recipe, ordering rule, or fingerprint input includes a
@@ -168,7 +168,7 @@ Shared rules:
 
 - every target product has one canonical kernel fingerprint
 - the shared `product_scope_id` contract is owned by
-  [Gaps And Readiness](gaps-and-readiness.md)
+  [Gap, Review, And Readiness](gaps-and-readiness.md)
 - `product_scope_id` is derived from the emitted kernel fingerprint after
   canonical fingerprinting; it is not part of the product header or fingerprint
   inputs
@@ -302,6 +302,9 @@ Rules:
 - the kind-specific fields above are kernel meaning, not sidecar detail
 - `statement_document.statement_kind` uses the recognized statement-adapter
   kind for the selected document member
+- `statement_kind` and `balance_kind` stay evidence-local bounded field names;
+  they preserve adapter or statement classification without becoming shared
+  downstream vocabularies
 - `statement_document.statement_as_of` lifts the current parsed statement
   as-of time and `statement_as_of_precision` follows the
   repo-wide temporal precision contract for that value
@@ -478,12 +481,14 @@ Controlled vocabularies:
   - `insufficient_temporal_precision`
   - `conflicting_claims`
   - `upstream_gap`
-  - `policy_deferred`
-  - `superseded_by_later_claims`
+  - `policy_decision_required`
+  - `later_bundle_selected`
 
-`ClaimBundleDecisionRecord.basis` intentionally groups acceptance reasons,
-insufficiency conditions, and defer/supersession outcomes because the record
-captures one claim-bundle decision boundary rather than one pure reason axis.
+`ClaimBundleDecisionRecord.basis` is a pure reason axis. `outcome` owns
+acceptance, blocking, deferral, and supersession posture, while `basis` names
+why that posture was chosen. Use `policy_decision_required` with
+`outcome = deferred` and `later_bundle_selected` with
+`outcome = superseded`.
 
 ### First-Slice Critical-Path Claim Kinds
 
@@ -497,7 +502,7 @@ bounded slice, these kind-specific kernel fields are also required:
 | `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
 | `location` | `location_ref`, `location_group_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
-| `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
+| `valuation` | `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
 `leg_specs` entry shape:
 
@@ -513,11 +518,16 @@ First upstream slice linkage rules:
 
 - `activity` claims own the current evidence-local `activity_label` used by
   the first upstream slice
+- `instrument_kind` uses the shared `InstrumentKind` vocabulary owned by
+  [Domain Ontology](domain-ontology.md)
 - `leg_specs` lift ordered leg meaning from the current
   `EconomicLegDraft` contract, including sign, instrument claims,
   optional subtype, optional attributed-leg linkage, and optional location,
   while keeping the later `EconomicLegRecord.role` stem aligned across the
   family
+- valuation-measure taxonomy is intentionally deferred until one shared
+  cross-stage vocabulary is frozen; do not add a placeholder valuation-measure
+  field before then
 - retail claims with `kind = activity` use `member_refs` plus the
   first upstream slice scope key `[retail_member_id, raw_row_ref]`; they do
   not require a retail-row observation kind in this pass
@@ -1051,7 +1061,7 @@ Controlled vocabularies:
 
 `trust_level` names checkpoint acceptance confidence tiers inside one accepted
 assertion. It is not the shared `ReadinessStatus` model from
-[Gaps And Readiness](gaps-and-readiness.md).
+[Gap, Review, And Readiness](gaps-and-readiness.md).
 
 `trust_level` is a checkpoint trust-tier vocabulary. It is not a reuse of
 `ReadinessStatus`.
@@ -1087,7 +1097,7 @@ Ordering:
 
 - `CheckpointRecord` rows sort by `[as_of, checkpoint_id]`
 - `CheckpointAssertionRecord` rows sort by tuple
-  `[as_of, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
+  `[as_of, subject_ref.subject_kind, subject_ref.subject_key, checkpoint_assertion_id]`
 
 Serialization:
 
@@ -1556,8 +1566,8 @@ elsewhere:
   contract
 - [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership
-- [Gaps And Readiness](gaps-and-readiness.md) for `GapRecord`,
+- [Gap, Review, And Readiness](gaps-and-readiness.md) for `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
   `ReadinessRecord`, `ReadinessRollupRecord`, and `SubjectRef`
-- [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) for
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) for
   persistence rules, partitioning rules, and fast-path expectations

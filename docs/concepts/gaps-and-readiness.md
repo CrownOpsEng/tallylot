@@ -1,5 +1,5 @@
 ---
-title: "Gaps And Readiness"
+title: "Gap, Review, And Readiness"
 summary: "Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline."
 doc_type: concept
 audience: human
@@ -10,20 +10,8 @@ nav_order: 45
 ---
 
 Use this page when defining shared gap, review, readiness, or `SubjectRef`
-contracts. This page defines the target cross-stage gap, review, and readiness
-model.
-
-**Current runtime note:** The live runtime still uses stage-specific issue and
-review outputs such as `IssueRecord` and `NormalizationReviewRecord`. Those
-current surfaces remain current-state truth while this page defines the target
-gap, review, and readiness contracts for later implementation slices.
-
-- the live runtime still uses stage-specific issue and review outputs such as
-  `IssueRecord` and `NormalizationReviewRecord`
-- those current surfaces remain current-state truth
-- this page defines the target gap, review, and readiness contracts for later
-  implementation
-  slices
+contracts. This page defines the target cross-stage gap, review, readiness,
+and generic subject-attachment model.
 
 ## Design Rules
 
@@ -59,7 +47,7 @@ Use `SubjectRef` only for shared infrastructure that needs a generic pointer.
 Minimum fields:
 
 - `subject_kind`
-- `subject_id`
+- `subject_key`
 
 Supported `subject_kind` values for shared infrastructure:
 
@@ -95,8 +83,10 @@ Rules:
 - use `Contract` and `Position` explicitly in business logic and modeling
 - use `SubjectRef` only where shared infrastructure needs a generic pointer
 - do not use `SubjectRef` as an excuse to stop modeling the true concept
+- `subject_key` may hold either one stable record id or one canonical ref tuple,
+  depending on the `subject_kind`
 - `SubjectRef` serializes, sorts, and fingerprints as
-  `[subject_kind, subject_id]`
+  `[subject_kind, subject_key]`
 
 ## Non-Subject Scope Ids
 
@@ -490,7 +480,7 @@ Stable ids:
 
 Ordering:
 
-- sort by tuple `[stage, subject_ref.subject_kind, subject_ref.subject_id]`
+- sort by tuple `[stage, subject_ref.subject_kind, subject_ref.subject_key]`
 - sort `blocking_gap_ids` lexicographically
 
 Serialization:
@@ -595,6 +585,10 @@ Rules:
 
 ## Bridge Mapping From Issue And Review Records
 
+**Compatibility-only locality:** This section names current bridge records only
+to define how those compatibility-local surfaces map into the target gap and
+review families. They do not become target-domain family names.
+
 The live bridge still emits `IssueRecord` and `NormalizationReviewRecord`.
 
 Mapping rules:
@@ -664,6 +658,10 @@ Performance implication:
   only
 
 ## Current-To-Target Boundary
+
+**Compatibility-only locality:** These current bridge family names stay here
+only to document the migration boundary. They do not remain canonical target
+vocabulary after cutover.
 
 - current `IssueRecord` and `NormalizationReviewRecord` remain live bridge
   outputs today

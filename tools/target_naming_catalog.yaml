@@ -28,6 +28,23 @@ scope_profiles:
     enforce_target_naming: false
     allow_anti_examples: false
 
+title_expectations:
+  docs/README.md: Documentation
+  docs/concepts/architecture-overview.md: Architecture Overview
+  docs/concepts/bridge-to-target-mapping.md: Bridge To Target Mapping
+  docs/concepts/domain-ontology.md: Domain Ontology
+  docs/concepts/gaps-and-readiness.md: Gap, Review, And Readiness
+  docs/concepts/oracle-boundaries.md: Oracle Boundaries
+  docs/concepts/pipeline-stage-contracts.md: Pipeline Stage Contracts
+  docs/concepts/reconciliation-tax-architecture.md: Reconciliation, Checkpoint, Journal, And Tax Architecture
+  docs/concepts/unified-adapter-architecture.md: Unified Adapter Architecture
+  docs/reference/first-downstream-slice-contract.md: First Downstream Slice Contract
+  docs/reference/first-upstream-slice-contract.md: First Upstream Slice Contract
+  docs/reference/target-ids-and-refs.md: Target Ids And Refs
+  docs/reference/target-persistence-reference.md: Target Persistence Reference
+  docs/status/adapter-delivery-plan.md: Adapter Delivery Plan
+  docs/status/migration-sequence.md: Migration Sequence
+
 tooling_paths:
   - Makefile
   - repo_support/quality_gates.py
@@ -74,18 +91,106 @@ canonical_families:
     - name: TaxOutputs
       id: tax_outputs_id
   records:
+    - stem: evidence_member
+      record: EvidenceMemberRecord
+      id: member_id
+      refs: []
+    - stem: evidence_observation
+      record: EvidenceObservationRecord
+      id: observation_id
+      refs: []
+    - stem: evidence_selection
+      record: EvidenceSelectionRecord
+      id: selection_id
+      refs: []
+    - stem: claim
+      record: ClaimRecord
+      id: claim_id
+      refs: []
+    - stem: claim_bundle
+      record: ClaimBundleRecord
+      id: claim_bundle_id
+      refs: []
     - stem: claim_bundle_decision
       record: ClaimBundleDecisionRecord
       id: claim_bundle_decision_id
+      refs: []
+    - stem: economic_event
+      record: EconomicEventRecord
+      id: event_id
+      refs: []
+    - stem: economic_leg
+      record: EconomicLegRecord
+      id: leg_id
+      refs: []
+    - stem: valuation
+      record: ValuationRecord
+      id: valuation_id
+      refs: []
+    - stem: continuity_segment
+      record: ContinuitySegmentRecord
+      id: continuity_segment_id
+      refs: []
+    - stem: event_link
+      record: EventLinkRecord
+      id: event_link_id
+      refs: []
+    - stem: balance_target
+      record: BalanceTargetRecord
+      id: balance_target_id
       refs: []
     - stem: checkpoint_proposal
       record: CheckpointProposalRecord
       id: checkpoint_proposal_id
       refs:
         - superseding_proposal_ref
+    - stem: checkpoint
+      record: CheckpointRecord
+      id: checkpoint_id
+      refs: []
+    - stem: checkpoint_assertion
+      record: CheckpointAssertionRecord
+      id: checkpoint_assertion_id
+      refs: []
+    - stem: journal_entry
+      record: JournalEntryRecord
+      id: entry_id
+      refs: []
+    - stem: posting
+      record: PostingRecord
+      id: posting_id
+      refs: []
+    - stem: entry_check
+      record: EntryCheckRecord
+      id: entry_check_id
+      refs: []
+    - stem: tax_input
+      record: TaxInputRecord
+      id: tax_input_id
+      refs: []
+    - stem: basis_transition
+      record: BasisTransitionRecord
+      id: basis_transition_id
+      refs: []
+    - stem: tax_output
+      record: TaxOutputRecord
+      id: tax_output_id
+      refs: []
     - stem: readiness_rollup
       record: ReadinessRollupRecord
       id: readiness_rollup_id
+      refs: []
+    - stem: gap
+      record: GapRecord
+      id: gap_id
+      refs: []
+    - stem: review
+      record: ReviewRecord
+      id: review_id
+      refs: []
+    - stem: readiness
+      record: ReadinessRecord
+      id: readiness_id
       refs: []
     - stem: tax_carry_forward
       record: TaxCarryForwardRecord
@@ -148,7 +253,6 @@ canonical_families:
 
 canonical_tokens:
   pascal:
-    - AccountingEntryRecord
     - AssertionValue
     - BalanceTargetRecord
     - BasisPool
@@ -165,10 +269,11 @@ canonical_tokens:
     - EconomicLegRecord
     - EntryCheckRecord
     - EvidenceMemberRecord
+    - EvidenceObservationRecord
     - EvidenceSelectionRecord
+    - EventLinkRecord
     - GapExplanation
     - GapRecord
-    - IssueRecord
     - JournalAccountRef
     - JournalEntryRecord
     - JournalUnitRef
@@ -177,6 +282,7 @@ canonical_tokens:
     - PostingRecord
     - ReadinessRecord
     - ReadinessRollupRecord
+    - ClaimBundleRecord
     - ReviewExplanation
     - ReviewRecord
     - SubjectRef
@@ -185,12 +291,14 @@ canonical_tokens:
     - TaxOutputRecord
     - TaxPolicyId
     - TaxUnsupportedInputRecord
+    - ValuationRecord
     - ValuationPurpose
   snake:
-    - accounting_intent_hint
-    - activity_label
     - balance_target_id
+    - basis_transition_id
+    - claim_bundle_id
     - claim_bundle_decision_id
+    - claim_id
     - checkpoint_assertion_id
     - checkpoint_id
     - checkpoint_proposal_id
@@ -200,21 +308,27 @@ canonical_tokens:
     - economic_facts_id
     - economic_facts_ref
     - emitter_id
+    - event_id
+    - event_link_id
     - entry_check_id
     - entry_id
     - evidence_set_id
     - gap_id
     - journal_id
+    - leg_id
+    - member_id
     - observation_status
+    - observation_id
     - origin_kind
+    - posting_id
     - product_scope_id
     - product_slug
-    - provider_operation_key
     - readiness_id
     - readiness_rollup_id
     - reconciliation_state_id
     - review_id
-    - source_slug
+    - selection_id
+    - subject_key
     - support_shape
     - superseding_proposal_ref
     - tax_carry_forward_id
@@ -223,8 +337,8 @@ canonical_tokens:
     - tax_output_id
     - tax_outputs_id
     - tax_policy_id
-    - tax_treatment_hint
     - tax_unsupported_input_id
+    - valuation_id
   phrases:
     - compatibility view
     - compatibility sidecar
@@ -240,6 +354,14 @@ vocabularies:
       - reconciled_continuity
       - adopted_opening
       - manual_support
+    claim_bundle_decision_basis:
+      - single_bundle
+      - insufficient_identity
+      - insufficient_temporal_precision
+      - conflicting_claims
+      - upstream_gap
+      - policy_decision_required
+      - later_bundle_selected
     support_shape:
       - document_observation
       - reported_observation
@@ -279,6 +401,12 @@ vocabularies:
       - journal_measurement
       - tax_measurement
       - market_measurement
+    instrument_kind:
+      - unknown
+      - crypto
+      - fiat
+      - equity
+      - derivative
     origin_kind:
       - claim
       - evidence_observation
@@ -289,6 +417,11 @@ vocabularies:
   paired_axes:
     - [basis, support_shape, continuity_kind]
   checks:
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: claim_bundle_decision_basis
+      label: ClaimBundleDecisionRecord.basis
+      block_type: nested_list
+      expected_values: []
     - path: docs/concepts/pipeline-stage-contracts.md
       vocabulary: basis
       label: CheckpointAssertionRecord.basis
@@ -382,6 +515,11 @@ vocabularies:
     - path: docs/concepts/domain-ontology.md
       vocabulary: valuation_purpose
       label: ValuationPurpose
+      block_type: heading_shared_vocabulary
+      expected_values: []
+    - path: docs/concepts/domain-ontology.md
+      vocabulary: instrument_kind
+      label: InstrumentKind
       block_type: heading_shared_vocabulary
       expected_values: []
 
@@ -531,6 +669,11 @@ banned_phrases:
     contexts: [body]
     allowed_scopes: [forward_target, repo_policy]
     paths: []
+  - rule_id: body.undefined_measure_kind
+    term: measure_kind
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
 
 retired_aliases:
   - rule_id: body.compatibility_view_term
@@ -620,12 +763,40 @@ retired_aliases:
       - docs/concepts/pipeline-stage-contracts.md
       - docs/reference/first-downstream-slice-contract.md
     allowed_paths: []
+  - rule_id: body.subject_ref_slot
+    term: subject_id
+    replacement: subject_key
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: vocab.axis.claim_bundle_decision_basis
+    term: policy_deferred
+    replacement: policy_decision_required
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: vocab.axis.claim_bundle_decision_basis
+    term: superseded_by_later_claims
+    replacement: later_bundle_selected
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.journal_entry_record_name
+    term: AccountingEntryRecord
+    replacement: JournalEntryRecord
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
 
 matrix_specs:
   - path: docs/concepts/bridge-to-target-mapping.md
     required_columns:
       - Current bridge surface
-      - Target authoritative product
+      - Target authoritative product(s)
       - Derived compatibility view
       - Derived compatibility sidecar
       - Current readers
@@ -646,6 +817,10 @@ matrix_specs:
       - current bridge balance reducers
       - current bridge balance-reference path
       - bridge/output compatibility sidecars
+      - target products
+      - target product plus shared gap/review/readiness records
+      - issue compatibility view
+      - review compatibility view
 
 exceptions:
   - exception_id: locality.bridge_fields
@@ -735,6 +910,22 @@ exceptions:
     required_marker: Migration-only root rationale
     required_rationale: true
     notes: application/compatibility is migration-only and must be labeled as such.
+  - exception_id: locality.compatibility_bridge_surfaces
+    allowed_scopes: [forward_target, repo_policy]
+    allowed_paths:
+      - docs/concepts/bridge-to-target-mapping.md
+      - docs/concepts/gaps-and-readiness.md
+    allowed_section_labels: []
+    allowed_terms:
+      - IssueRecord
+      - NormalizationReviewRecord
+      - exceptions.csv
+      - normalization_reviews.csv
+      - fact_annotations.json
+      - location_annotations.json
+    required_marker: Compatibility-only locality
+    required_rationale: true
+    notes: Bridge-only diagnostic records and retained files must stay fenced as compatibility-local surfaces.
 
 required_markers:
   - Slice-only example

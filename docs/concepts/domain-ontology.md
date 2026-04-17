@@ -38,6 +38,7 @@ The target model should use these concepts explicitly:
 - `LifecycleEvent`
 - `AssertionValue`
 - `CheckpointAssertion`
+- `JournalEntry`
 - `Posting`
 - `BasisPool`
 
@@ -120,7 +121,7 @@ Implications:
   distinction matters
 - shared infrastructure may point at them generically only through the
   `SubjectRef` rules owned by
-  [Gaps And Readiness](gaps-and-readiness.md)
+  [Gap, Review, And Readiness](gaps-and-readiness.md)
 - the same shared-infrastructure rule applies when generic attachment is needed
   for `Instrument`, `Location`, ownership identities, counterparties, or
   `CheckpointAssertion`
@@ -218,6 +219,32 @@ Rules:
   sidecars
 - missing or uncertain valuation should remain explicit when downstream stages
   still need to reason about it
+
+## Instrument Classification
+
+`InstrumentKind` is the shared bounded instrument-classification vocabulary for
+target identity and claim contracts.
+
+### `InstrumentKind`
+
+Shared vocabulary:
+
+- `unknown`
+- `crypto`
+- `fiat`
+- `equity`
+- `derivative`
+
+Rules:
+
+- `instrument_kind` uses this shared vocabulary when claim or identity
+  contracts need a bounded instrument classification
+- keep the vocabulary neutral and broad enough to survive beyond the current
+  crypto filing scope
+- do not mint competing end-state `instrument_class`, `asset_class`, or
+  `instrument_type` families for the same concept
+- narrower market, venue, or adapter-specific detail belongs in other fields
+  such as identifier scheme, venue, or compatibility-local metadata
 
 ## Temporal Semantics
 
@@ -451,6 +478,8 @@ Required application ownership:
 
 `domain/support/` stays generic only because it is the shared root for the
 nested `gap/`, `review/`, and `readiness/` families plus `SubjectRef`.
+No unrelated family may be added under `domain/support/` without a separate
+standards decision.
 `application/compatibility/` is migration-only and must not become a durable
 application center.
 

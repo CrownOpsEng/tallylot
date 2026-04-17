@@ -31,7 +31,7 @@ Contract-page precedence:
 - [Domain Ontology](domain-ontology.md) defines identity seams and ref recipes
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) defines migration
   cutovers and compatibility views
-- [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md)
   defines persistence, partitioning, and fast-path rules
 - this page defines only adapter responsibilities, manifest direction, facet
   design, and adapter verification posture
@@ -114,6 +114,10 @@ such as `RenderingFacet` or one unrelated boundary noun such as `OutputFacet`
 into the same facet family when the shorter repo term is already established.
 The repo keeps `RenderFacet` at the executable facet boundary while the broader
 application package remains `application/rendering/`.
+
+`StatementFacet` is the one sanctioned content-specific exception in this
+family because statement recognition and statement-row parsing are a distinct
+document boundary, not a generic downstream stage.
 
 ## Deterministic Verification Model
 

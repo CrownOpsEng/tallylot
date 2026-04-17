@@ -33,7 +33,7 @@ Use the detailed contract pages first:
 - [Domain Ontology](../concepts/domain-ontology.md) for `AssertionValue`,
   `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain refs plus
   identity seams
-- [Gaps And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
+- [Gap, Review, And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
   shared gap/review/readiness attachments, and `product_scope_id`
 
 This page keeps only reusable target ids and ref tuples that are not defined as

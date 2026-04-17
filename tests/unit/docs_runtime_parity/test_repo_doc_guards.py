@@ -247,6 +247,84 @@ def test_target_docs_use_neutral_upstream_kind_tokens_and_position_key_example()
     assert "held_position" in ontology_text
 
 
+def test_forward_target_docs_use_subject_key_and_no_placeholder_measure_field() -> None:
+    governed_paths = (
+        docs_root() / "concepts" / "gaps-and-readiness.md",
+        docs_root() / "concepts" / "pipeline-stage-contracts.md",
+        docs_root() / "reference" / "first-downstream-slice-contract.md",
+        docs_root() / "reference" / "first-upstream-slice-contract.md",
+        docs_root() / "standards" / "engineering.md",
+        repo_root() / "ROADMAP.md",
+    )
+
+    for path in governed_paths:
+        text = path.read_text(encoding="utf-8")
+        assert "subject_id" not in text, f"{path} still uses subject_id"
+        assert "measure_kind" not in text, f"{path} still uses measure_kind"
+
+
+def test_forward_target_docs_freeze_new_titles_and_reference_grouping() -> None:
+    docs_home = (docs_root() / "README.md").read_text(encoding="utf-8")
+    gaps_text = (docs_root() / "concepts" / "gaps-and-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    recon_text = (
+        docs_root() / "concepts" / "reconciliation-tax-architecture.md"
+    ).read_text(encoding="utf-8")
+
+    assert 'title: "Gap, Review, And Readiness"' in gaps_text
+    assert (
+        'title: "Reconciliation, Checkpoint, Journal, And Tax Architecture"'
+        in recon_text
+    )
+    assert "### Target References" in docs_home
+    assert "### Current-State And Oracle References" in docs_home
+    assert docs_home.index("[First Upstream Slice Contract]") < docs_home.index(
+        "### Current-State And Oracle References"
+    )
+    assert docs_home.index("[CoinTracking Oracle Artifacts]") > docs_home.index(
+        "### Current-State And Oracle References"
+    )
+
+
+def test_bridge_record_names_stay_inside_compatibility_local_sections() -> None:
+    gaps_text = (docs_root() / "concepts" / "gaps-and-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    bridge_text = (docs_root() / "concepts" / "bridge-to-target-mapping.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "**Compatibility-only locality:**" in gaps_text
+    assert "**Compatibility-only locality:**" in bridge_text
+    assert "IssueRecord" in gaps_text
+    assert "NormalizationReviewRecord" in gaps_text
+    assert "IssueRecord" in bridge_text
+    assert "NormalizationReviewRecord" in bridge_text
+
+
+def test_target_docs_freeze_instrument_kind_and_claim_bundle_decision_basis() -> None:
+    ontology_text = (docs_root() / "concepts" / "domain-ontology.md").read_text(
+        encoding="utf-8"
+    )
+    pipeline_text = (
+        docs_root() / "concepts" / "pipeline-stage-contracts.md"
+    ).read_text(encoding="utf-8")
+
+    for value in ("unknown", "crypto", "fiat", "equity", "derivative"):
+        assert f"- `{value}`" in ontology_text
+    for value in (
+        "single_bundle",
+        "insufficient_identity",
+        "insufficient_temporal_precision",
+        "conflicting_claims",
+        "upstream_gap",
+        "policy_decision_required",
+        "later_bundle_selected",
+    ):
+        assert f"- `{value}`" in pipeline_text
+
+
 def test_commit_standards_require_scoped_subjects() -> None:
     text = (docs_root() / "standards" / "commits.md").read_text(encoding="utf-8")
 

@@ -15,6 +15,7 @@ from repo_support.target_naming import (
     load_target_naming_catalog,
     resolve_naming_scope,
     validate_summary_style as validate_target_summary_style,
+    validate_title_style as validate_target_title_style,
 )
 
 from .links import heading_anchors
@@ -221,7 +222,15 @@ def _validate_summary_status_and_last_reviewed(
     relative: str,
     naming_scope: str | None,
 ) -> None:
-    frontmatter_text(frontmatter, "title", path)
+    title = frontmatter_text(frontmatter, "title", path)
+    title_findings = validate_target_title_style(
+        relative,
+        title,
+        scope=naming_scope,
+        catalog=load_target_naming_catalog(),
+    )
+    if title_findings:
+        raise ValueError(title_findings[0].message)
     summary = frontmatter_text(frontmatter, "summary", path)
     findings = validate_target_summary_style(
         relative,

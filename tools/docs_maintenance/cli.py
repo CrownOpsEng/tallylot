@@ -146,6 +146,29 @@ def render_section(documents: list[Document]) -> str:
     return "\n".join(lines)
 
 
+def render_reference_section(documents: list[Document]) -> str:
+    target_documents = [
+        document
+        for document in documents
+        if document.frontmatter.get("naming_scope") == "forward_target"
+    ]
+    non_target_documents = [
+        document
+        for document in documents
+        if document.frontmatter.get("naming_scope") != "forward_target"
+    ]
+    parts = [
+        "### Target References",
+        "",
+        render_section(target_documents),
+        "",
+        "### Current-State And Oracle References",
+        "",
+        render_section(non_target_documents),
+    ]
+    return "\n".join(parts)
+
+
 def validate_nav_order_uniqueness(documents: list[Document]) -> None:
     for section in SYNCED_SECTIONS:
         used: dict[int, str] = {}
@@ -204,9 +227,12 @@ def sync_docs_homepage(documents: list[Document], *, check: bool) -> bool:
     original = docs_readme.read_text(encoding="utf-8")
     updated = original
     for marker in SYNCED_SECTIONS:
-        updated = replace_marker_block(
-            updated, marker, render_section(section_documents(documents, marker))
+        replacement = (
+            render_reference_section(section_documents(documents, marker))
+            if marker == "reference"
+            else render_section(section_documents(documents, marker))
         )
+        updated = replace_marker_block(updated, marker, replacement)
 
     if updated == original:
         return False

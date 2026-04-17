@@ -38,7 +38,7 @@ Use these pages for neighboring contracts:
   product kernels, ids, ordering, serialization, and fingerprints for
   `EvidenceSet`, `ClaimSet`, `EconomicFacts`, `ReconciliationState`,
   `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
-- [Gaps And Readiness](gaps-and-readiness.md) defines `GapRecord`,
+- [Gap, Review, And Readiness](gaps-and-readiness.md) defines `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
   `ReadinessRecord`, `ReadinessRollupRecord`, and `SubjectRef`.
 - this page defines how bridge surfaces move to target products without
@@ -78,6 +78,9 @@ Compatibility rule:
   but they may not invent meaning that is absent from the authoritative target
   product
 
+**Compatibility-only locality:** The retained bridge view and file names in the
+rules below stay compatibility-local during migration.
+
 No-dual-center rule:
 
 - `SourceTranslationBatch`, `TransactionFact`, `balance_snapshots.csv`, and
@@ -92,7 +95,11 @@ Every implementation slice must name the authoritative writer and active reader
 for each affected surface before code lands. Use this matrix as the default
 cutover contract.
 
-| Current bridge surface | Target authoritative product | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+**Compatibility-only locality:** The matrix below names current bridge files,
+views, and records only to define migration cutovers. Those surfaces remain
+compatibility-local and do not become canonical target-domain family names.
+
+| Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `translation_input_candidates.json` | `EvidenceSet` | `none` | `none` | normalization review tools and planner inspection flows | evidence review flows that read `EvidenceSet` directly | selected, superseded, and blocked membership are preserved with stable `selection_id` and `member_id` outcomes | retire once no active review flow requires the file |
 | `translation_input_plan.json` | `EvidenceSet` | `translation_input_plan.json` | `none` | translation entry points that still expect a plan file | evidence consumers and `ClaimSet` construction that read `EvidenceSet` directly | one authoritative `EvidenceSet` exists for the capture and reproduces the same selected, superseded, and blocked decisions | retire when no in-scope reader requires the plan file and parity is enforced on `EvidenceSet` instead |
@@ -100,16 +107,25 @@ cutover contract.
 | `SourceTranslationBatch` | `ClaimSet` | `SourceTranslationBatch` | declared claim compatibility sidecars plus shared gap/review/readiness sidecars | current normalization application surface and bridge interop flows | target application paths in `application/claim/` and later `application/economics/` | in-scope readers can be pointed to `ClaimSet` or a declared compatibility view without meaning loss, and no retained batch-only field remains undefined | retire when no active runtime path reads the batch as its primary claim surface |
 | `TransactionFact` and `facts.csv` | `EconomicFacts` | `TransactionFact` and `facts.csv` | declared upstream claim compatibility sidecars when legacy hint reproduction still needs them | balance builders, output renderers, oracle comparison flows | reconciliation, checkpoint, journal, and tax paths that read `EconomicFacts` | accepted `EconomicEventRecord` and `EconomicLegRecord` parity is proven and current bridge facts are reproducible from `EconomicFacts` plus declared upstream compatibility sidecars | retire when no runtime reader depends on `TransactionFact` as economic authority |
 | `balance_snapshots.csv` | `ReconciliationState` | `balance_snapshots.csv` | `none` | balance inspect/check/summarize and downstream review workflows | reconciliation readers and later checkpoint-acceptance flows that read `ReconciliationState` | continuity segments and balance targets exist for the in-scope subjects and reproduce current snapshot results | retire when active balance surfaces read `ReconciliationState` directly |
-| `balance_references.csv` | `Checkpoint` and `ReconciliationState` | `balance_references.csv` | declared reconciliation/checkpoint compatibility sidecars | balance inspect/check/summarize and current checkpoint-reference workflows | checkpoint-acceptance flows and reconciliation readers that consume authoritative reconciliation and checkpoint records plus declared sidecars directly | direct `AssertionValue` fields, checkpoint proposal records, and `CheckpointAssertionRecord` rows reproduce the current reference content for in-scope subjects | retire when no active surface consumes the CSV as its authoritative reference input |
-| `exceptions.csv` and `IssueRecord` outputs | target product plus shared gap/review/readiness records | issue compatibility view | `GapExplanation` | operator review and current normalization diagnostics | gap/review/readiness reducers and readiness views | the owning target stage preserves blocker scope, severity, materiality, and stage ownership | retire per stage when that stage emits target-native gaps for the same scope |
-| `normalization_reviews.csv` and `NormalizationReviewRecord` outputs | target product plus shared gap/review/readiness records | review compatibility view | `ReviewExplanation` | operator review and current normalization diagnostics | target review and readiness views | advisory review scope and provenance are preserved without turning reviews into blockers | retire per stage when that stage emits target-native reviews for the same scope |
-| `fact_annotations.json` and `location_annotations.json` | target products | `none` | derived annotation sidecars keyed to target ids or bridge view ids | current bridge renderers and comparison tooling | target-aware output and comparison flows that no longer require annotation sidecar detail embedded in claim surfaces | no target meaning depends on annotation sidecar detail and bridge/output consumers can read derived sidecars instead | retire when the affected renderer or comparison flow no longer depends on the annotation file |
+| `balance_references.csv` | `ReconciliationState` and `Checkpoint` | `balance_references.csv` | declared reconciliation/checkpoint compatibility sidecars | balance inspect/check/summarize and current checkpoint-reference workflows | checkpoint-acceptance flows and reconciliation readers that consume authoritative reconciliation and checkpoint records plus declared sidecars directly | direct `AssertionValue` fields, checkpoint proposal records, and `CheckpointAssertionRecord` rows reproduce the current reference content for in-scope subjects | retire when no active surface consumes the CSV as its authoritative reference input |
+| `exceptions.csv` and `IssueRecord` outputs | owning target product plus `GapRecord` and `GapExplanation` | `exceptions.csv` | `GapExplanation` | operator review and current normalization diagnostics | gap/review/readiness reducers and readiness views | the owning target stage preserves blocker scope, severity, materiality, and stage ownership | retire per stage when that stage emits target-native gaps for the same scope |
+| `normalization_reviews.csv` and `NormalizationReviewRecord` outputs | owning target product plus `ReviewRecord` and `ReviewExplanation` | `normalization_reviews.csv` | `ReviewExplanation` | operator review and current normalization diagnostics | target review and readiness views | advisory review scope and provenance are preserved without turning reviews into blockers | retire per stage when that stage emits target-native reviews for the same scope |
 
 Planner review traces and statement-parse debugging outputs remain real local
 workflow artifacts, but they do not appear as canonical matrix rows until the
 repo declares them as stable file, view, or sidecar families.
 
+If current renderers or comparison flows still need annotation material such as
+`fact_annotations.json` or `location_annotations.json`, keep that detail in
+derived compatibility sidecars keyed to target ids or bridge-view ids. Those
+files remain compatibility-local and do not appear as canonical target matrix
+families.
+
 ## Compatibility Sidecars And Gap/Review Mapping
+
+**Compatibility-only locality:** This section names bridge records and files
+only to preserve truthful migration mappings for active compatibility
+surfaces.
 
 Bridge-only annotations and diagnostics keep their meaning only as compatibility
 surfaces during migration.
@@ -142,6 +158,9 @@ Diagnostic mapping rules:
 - gap, review, and readiness records and sidecars never become claim kinds
 
 ## Current First Slice Rules
+
+**Compatibility-only locality:** These retained filenames stay here only to
+document the active compatibility window for the first bounded slices.
 
 The first upstream slice and first downstream slice use this page as their
 migration authority.
