@@ -101,7 +101,7 @@ Shared rules:
   `economic_facts_id`, `reconciliation_state_id`, `checkpoint_id`,
   `journal_id`, `tax_inputs_id`, and `tax_outputs_id`
 - upstream product refs use product ids only; they never use
-  `product_scope_id` or a raw kernel fingerprint
+  `kernel_scope_id` or a raw kernel fingerprint
 - use singular `*_ref` for one upstream product id and plural `*_refs` for an
   ordered product-id list
 - ordered header fields such as `claim_set_refs`,
@@ -111,7 +111,7 @@ Shared rules:
 - when a product id hashes ordered upstream header refs, keep the component
   array in the same canonical order as the header fields unless this page
   explicitly declares a stronger reason to differ
-- `product_scope_id` remains a derived gap/review/readiness and reporting
+- `kernel_scope_id` remains a derived gap/review/readiness and reporting
   attachment only;
   it is not a product id or upstream product ref
 
@@ -164,18 +164,18 @@ Shared rules:
 - any later rehydration path must join through stable ids emitted by the
   kernel
 
-### Product-Scope Id And Sidecar Attachment
+### Kernel-Scope Id And Sidecar Attachment
 
 - every target product has one canonical kernel fingerprint
-- the shared `product_scope_id` contract is owned by
+- the shared `kernel_scope_id` contract is owned by
   [Gap, Review, And Readiness](gaps-and-readiness.md)
-- `product_scope_id` is derived from the emitted kernel fingerprint after
+- `kernel_scope_id` is derived from the emitted kernel fingerprint after
   canonical fingerprinting; it is not part of the product header or fingerprint
   inputs
-- `product_scope_id` is the product-scope attachment id for gap, review,
+- `kernel_scope_id` is the kernel-scope attachment id for gap, review,
   readiness, comparison, and other declared shared sidecars when no narrower
   truthful scope exists
-- `product_scope_id` is not a substitute for a narrower record id or stage-owned
+- `kernel_scope_id` is not a substitute for a narrower record id or stage-owned
   scope such as `selection_id`, `claim_scope_id`, `continuity_segment_id`,
   `balance_target_id`, or `checkpoint_proposal_id`
 
@@ -978,7 +978,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside product-scope readiness rollups
+- bury missing evidence inside kernel-scope readiness rollups
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:

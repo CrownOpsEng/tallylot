@@ -33,7 +33,7 @@ Use these contract pages first:
 
 ## Persistence Rules
 
-**Exception rationale:** `support/` stays in this page only as the shared
+**Exception rationale:** `assessment/` stays in this page only as the shared
 persistence root for the nested `gap/`, `review/`, and `readiness/` sidecar
 families. It is not a generic sidecar bucket.
 
@@ -43,21 +43,21 @@ When persisting target products:
 - keep authoritative kernels under product-owned directories rather than
   migration-era source or checkpoint containers
 - keep product ids in the product header and keep those product ids distinct from
-  `product_scope_id`
+  `kernel_scope_id`
 - keep partition-scope labels aligned to the contract pages' stage-owned scope
   names instead of inventing alternate helper vocabulary here
 - keep bridge CSVs and bridge draft or batch surfaces as compatibility
   views only once a target product is authoritative for that scope
 - keep provenance, explanations, reviews, comparison traces, and other
   non-kernel detail in sidecars
-- keep source-grouped views as operator views or compatibility
+- keep source-grouped views as assessment views or compatibility
   views rather than as canonical readiness rollups
-- keep support family directories and basenames aligned to the stored
-  families, for example `support/gap/gap_records.json`,
-  `support/review/review_records.json`,
-  `support/readiness/readiness_records.json`, and
-  `support/readiness/readiness_rollup_records.json`
-- `support/` stays generic only because it splits immediately into the
+- keep assessment family directories and basenames aligned to the stored
+  families, for example `assessment/gap/gap_records.json`,
+  `assessment/review/review_records.json`,
+  `assessment/readiness/readiness_records.json`, and
+  `assessment/readiness/readiness_rollup_records.json`
+- `assessment/` stays generic only because it splits immediately into the
   persisted `gap/`, `review/`, and `readiness/` families; unrelated sidecars
   do not belong there
 - treat caches and indexes as regenerable accelerators, not as business truth

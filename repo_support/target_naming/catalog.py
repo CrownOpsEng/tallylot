@@ -111,7 +111,7 @@ class ExceptionRule:
     allowed_paths: tuple[str, ...]
     allowed_section_labels: tuple[str, ...]
     allowed_terms: tuple[str, ...]
-    required_marker: MarkerLabel
+    required_marker: MarkerLabel | None
     required_rationale: bool
     notes: str
 
@@ -131,6 +131,7 @@ class TargetNamingCatalog:
     matrix_specs: tuple[MatrixSpec, ...]
     exceptions: tuple[ExceptionRule, ...]
     required_markers: tuple[MarkerLabel, ...]
+    reference_group_headings: tuple[str, ...] = ()
 
     @property
     def canonical_token_set(self) -> frozenset[str]:
@@ -300,9 +301,9 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
                     _sequence_value(item, "allowed_section_labels")
                 ),
                 allowed_terms=_string_tuple(_sequence_value(item, "allowed_terms")),
-                required_marker=cast(
-                    MarkerLabel, _string_value(item, "required_marker")
-                ),
+                required_marker=cast(MarkerLabel, item["required_marker"])
+                if isinstance(item.get("required_marker"), str)
+                else None,
                 required_rationale=_bool_value(item, "required_rationale"),
                 notes=_string_value(item, "notes"),
             )
@@ -311,6 +312,9 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
         required_markers=tuple(
             cast(MarkerLabel, value)
             for value in _string_tuple(_sequence_value(loaded, "required_markers"))
+        ),
+        reference_group_headings=_string_tuple(
+            _sequence_value(loaded, "reference_group_headings")
         ),
     )
 
@@ -364,7 +368,10 @@ def _validate_required_markers(catalog: TargetNamingCatalog) -> tuple[str, ...]:
 def _validate_exceptions(catalog: TargetNamingCatalog) -> tuple[str, ...]:
     errors: list[str] = []
     for exception in catalog.exceptions:
-        if exception.required_marker not in catalog.required_markers:
+        if (
+            exception.required_marker is not None
+            and exception.required_marker not in catalog.required_markers
+        ):
             errors.append(
                 f"exception {exception.exception_id} uses undeclared marker "
                 f"{exception.required_marker!r}"

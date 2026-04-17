@@ -331,7 +331,7 @@ def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
     assert {document.path for document in documents} == set(paths)
 
 
-def test_render_reference_section_groups_target_and_non_target_docs() -> None:
+def test_render_reference_section_groups_target_current_state_and_oracle_docs() -> None:
     documents = docs_maintenance.cli.section_documents(
         docs_maintenance.validate_documents(), "reference"
     )
@@ -339,12 +339,16 @@ def test_render_reference_section_groups_target_and_non_target_docs() -> None:
     rendered = docs_maintenance.cli.render_reference_section(documents)
 
     assert rendered.startswith("### Target References\n")
-    assert "\n\n### Current-State And Oracle References\n" in rendered
+    assert "\n\n### Current-State References\n" in rendered
+    assert "\n\n### Oracle References\n" in rendered
     assert rendered.index("[First Upstream Slice Contract]") < rendered.index(
-        "### Current-State And Oracle References"
+        "### Current-State References"
+    )
+    assert rendered.index("[Manual Balance Submission Packages]") > rendered.index(
+        "### Current-State References"
     )
     assert rendered.index("[CoinTracking Oracle Artifacts]") > rendered.index(
-        "### Current-State And Oracle References"
+        "### Oracle References"
     )
 
 

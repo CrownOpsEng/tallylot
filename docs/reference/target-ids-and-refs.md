@@ -34,7 +34,7 @@ Use the detailed contract pages first:
   `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain refs plus
   identity seams
 - [Gap, Review, And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
-  shared gap/review/readiness attachments, and `product_scope_id`
+  shared gap/review/readiness attachments, and `kernel_scope_id`
 
 This page keeps only reusable target ids and ref tuples that are not defined as
 the primary contract content elsewhere.
@@ -118,6 +118,6 @@ Rules:
 
 ## Reminder
 
-Do not implement target product ids, upstream product refs, `product_scope_id`,
+Do not implement target product ids, upstream product refs, `kernel_scope_id`,
 `AssertionValue`, `SubjectRef`, or target product kernel structure from this
 page. Those contracts live on their primary contract pages.

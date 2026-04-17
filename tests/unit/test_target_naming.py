@@ -52,6 +52,11 @@ def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
             "docs/example.md": "Example",
             "docs/matrix.md": "Matrix",
         },
+        "reference_group_headings": [
+            "### Target References",
+            "### Current-State References",
+            "### Oracle References",
+        ],
         "tooling_paths": [],
         "canonical_families": {
             "products": [],
@@ -144,7 +149,16 @@ def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
                 "required_marker": "Locality rule",
                 "required_rationale": True,
                 "notes": "Bridge-local field names must stay explicitly labeled.",
-            }
+            },
+            {
+                "exception_id": "locality.instrument_kind",
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "allowed_paths": ["docs/example.md"],
+                "allowed_section_labels": ["InstrumentKind"],
+                "allowed_terms": ["crypto"],
+                "required_rationale": False,
+                "notes": "Bounded instrument vocabulary may keep crypto in its own section.",
+            },
         ],
         "required_markers": [
             "Slice-only example",
@@ -212,6 +226,7 @@ def test_audit_finds_phrase_alias_vocabulary_locality_and_structure_drift(
     assert {finding.rule_id for finding in findings} == {
         "body.compatibility_view_term",
         "body.no_slice_role_jargon",
+        "family.path.canonical",
         "locality.field.exception_restatement",
         "structure.flat_support_path",
         "vocab.axis.basis",
@@ -255,6 +270,42 @@ def test_audit_allows_marked_locality_exception(tmp_path: Path) -> None:
     assert findings == ()
 
 
+def test_audit_allows_unmarked_allowed_section_locality_term(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            ### InstrumentKind
+
+            Shared vocabulary:
+
+            - `crypto`
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming()
+
+    assert findings == ()
+
+
 def test_audit_reports_missing_naming_scope_for_repo_docs(tmp_path: Path) -> None:
     _write_catalog(tmp_path)
     _write_doc(
@@ -282,6 +333,68 @@ def test_audit_reports_missing_naming_scope_for_repo_docs(tmp_path: Path) -> Non
     assert [finding.rule_id for finding in findings] == [
         "structure.missing_naming_scope"
     ]
+
+
+def test_audit_reports_capitalized_retired_alias_in_body(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            This page still uses Compatibility projection.
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/example.md",))
+
+    assert [finding.rule_id for finding in findings] == ["body.compatibility_view_term"]
+
+
+def test_audit_reports_capitalized_retired_alias_in_summary(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Compatibility projection remains in the summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/example.md",))
+
+    assert [finding.rule_id for finding in findings] == ["body.compatibility_view_term"]
 
 
 def test_audit_reports_title_drift(tmp_path: Path) -> None:
@@ -312,6 +425,40 @@ def test_audit_reports_title_drift(tmp_path: Path) -> None:
         findings = audit_target_naming()
 
     assert [finding.rule_id for finding in findings] == ["title.canonical"]
+
+
+def test_locality_rule_ignores_terms_without_applicable_scope_rule(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/standards.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: standard
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: repo_policy
+            ---
+
+            Paragraph with wallet wording.
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/standards.md",))
+
+    assert findings == ()
 
 
 def test_audit_checks_locality_exceptions_inside_table_cells(tmp_path: Path) -> None:
@@ -350,6 +497,40 @@ def test_audit_checks_locality_exceptions_inside_table_cells(tmp_path: Path) -> 
     ]
 
 
+def test_audit_reports_docs_home_reference_group_drift(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/README.md",
+        dedent(
+            """\
+            ---
+            title: "Docs"
+            summary: "Clean summary."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            ### Target References
+
+            - Example
+
+            ### Current-State And Oracle References
+
+            - Example
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/README.md",))
+
+    assert {finding.rule_id for finding in findings} == {"docs_home.reference_groups"}
+
+
 def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     catalog = load_target_naming_catalog()
 
@@ -367,6 +548,11 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     assert (
         catalog.title_expectations["docs/concepts/reconciliation-tax-architecture.md"]
         == "Reconciliation, Checkpoint, Journal, And Tax Architecture"
+    )
+    assert catalog.reference_group_headings == (
+        "### Target References",
+        "### Current-State References",
+        "### Oracle References",
     )
     record_names = {record["record"] for record in catalog.canonical_families.records}
     assert "EvidenceObservationRecord" in record_names

@@ -13,6 +13,8 @@ from .model import AuditReport, DocumentModel, NamingFinding, NamingScope
 from .parser import parse_document
 from .scope import resolve_naming_scope, scope_requires_target_naming
 from .rules.locality import locality_findings
+from .rules.docs_home import docs_home_findings
+from .rules.family_paths import family_path_findings
 from .rules.matrix import matrix_findings
 from .rules.phrases import body_phrase_findings
 from .rules.structure import structure_findings
@@ -156,6 +158,8 @@ def _document_findings(
     findings.extend(body_phrase_findings(document, catalog, profile))
     findings.extend(vocabulary_findings(document, catalog))
     findings.extend(matrix_findings(document, catalog))
+    findings.extend(family_path_findings(document, catalog))
+    findings.extend(docs_home_findings(document, catalog))
     findings.extend(locality_findings(document, catalog))
     return tuple(findings)
 

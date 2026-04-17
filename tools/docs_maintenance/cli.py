@@ -152,19 +152,29 @@ def render_reference_section(documents: list[Document]) -> str:
         for document in documents
         if document.frontmatter.get("naming_scope") == "forward_target"
     ]
-    non_target_documents = [
+    current_state_documents = [
         document
         for document in documents
-        if document.frontmatter.get("naming_scope") != "forward_target"
+        if document.frontmatter.get("naming_scope")
+        in {"current_state", "bridge_local", "adapter_local"}
+    ]
+    oracle_documents = [
+        document
+        for document in documents
+        if document.frontmatter.get("naming_scope") == "oracle_local"
     ]
     parts = [
         "### Target References",
         "",
         render_section(target_documents),
         "",
-        "### Current-State And Oracle References",
+        "### Current-State References",
         "",
-        render_section(non_target_documents),
+        render_section(current_state_documents),
+        "",
+        "### Oracle References",
+        "",
+        render_section(oracle_documents),
     ]
     return "\n".join(parts)
 

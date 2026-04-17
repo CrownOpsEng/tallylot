@@ -45,6 +45,11 @@ title_expectations:
   docs/status/adapter-delivery-plan.md: Adapter Delivery Plan
   docs/status/migration-sequence.md: Migration Sequence
 
+reference_group_headings:
+  - "### Target References"
+  - "### Current-State References"
+  - "### Oracle References"
+
 tooling_paths:
   - Makefile
   - repo_support/quality_gates.py
@@ -203,6 +208,7 @@ canonical_families:
   package_paths:
     - application/claim/
     - application/checkpoint/
+    - application/assessment/
     - application/compatibility/
     - application/economics/
     - application/evidence/
@@ -210,11 +216,11 @@ canonical_families:
     - application/journal/
     - application/normalization/
     - application/profiling/
-    - application/readiness/
     - application/reconciliation/
     - application/rendering/
     - application/tax/
     - application/workspace/
+    - domain/assessment/
     - domain/assertion/
     - domain/claim/
     - domain/checkpoint/
@@ -228,13 +234,12 @@ canonical_families:
     - domain/ownership/
     - domain/position/
     - domain/reconciliation/
-    - domain/support/
     - domain/tax/
   directory_paths:
+    - assessment/gap/
+    - assessment/review/
+    - assessment/readiness/
     - compatibility/
-    - support/gap/
-    - support/review/
-    - support/readiness/
     - working/products/evidence_sets/
     - working/products/claim_sets/
     - working/products/economic_facts/
@@ -244,12 +249,12 @@ canonical_families:
     - working/products/tax_inputs/
     - working/products/tax_outputs/
   sidecar_paths:
-    - support/gap/gap_records.json
-    - support/gap/gap_explanations.json
-    - support/review/review_records.json
-    - support/review/review_explanations.json
-    - support/readiness/readiness_records.json
-    - support/readiness/readiness_rollup_records.json
+    - assessment/gap/gap_records.json
+    - assessment/gap/gap_explanations.json
+    - assessment/review/review_records.json
+    - assessment/review/review_explanations.json
+    - assessment/readiness/readiness_records.json
+    - assessment/readiness/readiness_rollup_records.json
 
 canonical_tokens:
   pascal:
@@ -321,7 +326,8 @@ canonical_tokens:
     - observation_id
     - origin_kind
     - posting_id
-    - product_scope_id
+    - kernel_scope
+    - kernel_scope_id
     - product_slug
     - readiness_id
     - readiness_rollup_id
@@ -340,6 +346,7 @@ canonical_tokens:
     - tax_unsupported_input_id
     - valuation_id
   phrases:
+    - assessment view
     - compatibility view
     - compatibility sidecar
     - entry check
@@ -674,6 +681,21 @@ banned_phrases:
     contexts: [body, inline_code, summary]
     allowed_scopes: [forward_target, repo_policy]
     paths: []
+  - rule_id: body.abstract_container_name
+    term: emission root
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.abstract_container_name
+    term: output root
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.abstract_container_name
+    term: root truth container
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target]
+    paths: []
 
 retired_aliases:
   - rule_id: body.compatibility_view_term
@@ -791,6 +813,70 @@ retired_aliases:
     allowed_scopes: [forward_target, repo_policy]
     paths: []
     allowed_paths: []
+  - rule_id: body.kernel_scope_name
+    term: product_scope_id
+    replacement: kernel_scope_id
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.kernel_scope_name
+    term: product_scope
+    replacement: kernel_scope
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.shared_family_root
+    term: domain/support/
+    replacement: domain/assessment/
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.shared_family_root
+    term: application/readiness/
+    replacement: application/assessment/
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.assessment_view_term
+    term: operator view
+    replacement: assessment view
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.assessment_view_term
+    term: operator views
+    replacement: assessment views
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.partition_scope_name
+    term: checkpoint-economic-lineage-scoped
+    replacement: checkpoint-economic-facts-lineage-scoped
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.partition_scope_name
+    term: tax-input-policy-year-scoped
+    replacement: tax-inputs-policy-year-scoped
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.docs_home_reference_group
+    term: Current-State And Oracle References
+    replacement: Current-State References / Oracle References
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths:
+      - docs/README.md
+    allowed_paths: []
 
 matrix_specs:
   - path: docs/concepts/bridge-to-target-mapping.md
@@ -884,7 +970,7 @@ exceptions:
     required_marker: Current runtime note
     required_rationale: true
     notes: CoinTracking remains current-state or oracle-local truth only.
-  - exception_id: locality.support_root
+  - exception_id: locality.assessment_root
     allowed_scopes: [forward_target, repo_policy]
     allowed_paths:
       - ROADMAP.md
@@ -894,11 +980,11 @@ exceptions:
       - docs/standards/engineering.md
     allowed_section_labels: []
     allowed_terms:
-      - support/
-      - domain/support/
+      - assessment/
+      - domain/assessment/
     required_marker: Exception rationale
     required_rationale: true
-    notes: Shared support roots are allowed only with explicit rationale.
+    notes: Shared assessment roots are allowed only with explicit rationale.
   - exception_id: locality.compatibility_root
     allowed_scopes: [forward_target, repo_policy]
     allowed_paths:
@@ -910,6 +996,23 @@ exceptions:
     required_marker: Migration-only root rationale
     required_rationale: true
     notes: application/compatibility is migration-only and must be labeled as such.
+  - exception_id: locality.source_provider_crypto_terms
+    allowed_scopes: [forward_target]
+    allowed_paths:
+      - ROADMAP.md
+      - docs/README.md
+      - docs/concepts/domain-ontology.md
+      - docs/concepts/oracle-boundaries.md
+      - docs/reference/first-upstream-slice-contract.md
+    allowed_section_labels: []
+    allowed_terms:
+      - wallet
+      - exchange
+      - address
+      - tx_hash
+      - crypto
+    required_rationale: false
+    notes: Source- or crypto-specific terms stay confined to declared bounded exceptions.
   - exception_id: locality.compatibility_bridge_surfaces
     allowed_scopes: [forward_target, repo_policy]
     allowed_paths:

@@ -148,17 +148,17 @@ Forward-looking persistence rules:
 
 - target product kernels persist as JSON documents
 - every persisted kernel carries its declared product id in its product header
-- product ids are distinct from `product_scope_id`
-- upstream `*_ref` fields in the product header store product ids, never `product_scope_id`
+- product ids are distinct from `kernel_scope_id`
+- upstream `*_ref` fields in the product header store product ids, never `kernel_scope_id`
   and
   never raw kernel fingerprints
 - when a product id hashes ordered upstream header refs, the component array
   stays in the same canonical order as those header fields unless the owner
   page documents a stronger reason to differ
 - product sidecars persist separately from kernels and are keyed by
-  `product_scope_id` or narrower truthful record ids
+  `kernel_scope_id` or narrower truthful record ids
 - canonical readiness rollups stay stage- and domain-oriented;
-  source-grouped views stay as operator views or
+  source-grouped views stay as assessment views or
   compatibility views rather than as gap, review, or readiness record
   families or readiness rollups
 - target basenames use the owning product or sidecar family directly
@@ -182,9 +182,9 @@ Forward-looking persistence rules:
 | `EconomicFacts` | claim-set-lineage-scoped |
 | `ReconciliationState` | continuity-segment-scoped |
 | `Checkpoint` | checkpoint-scoped |
-| `Journal` | checkpoint-economic-lineage-scoped |
-| `TaxInputs` | checkpoint-economic-lineage-scoped |
-| `TaxOutputs` | tax-input-policy-year-scoped |
+| `Journal` | checkpoint-economic-facts-lineage-scoped |
+| `TaxInputs` | checkpoint-economic-facts-lineage-scoped |
+| `TaxOutputs` | tax-inputs-policy-year-scoped |
 
 Rules:
 
@@ -192,10 +192,10 @@ Rules:
 - one persisted partition owns one product id aligned with that partition
 - partition boundaries are chosen by the dimensions the owning stage actually
   reduces over
-- `Journal` and `TaxInputs` stay checkpoint-economic-lineage-scoped because
+- `Journal` and `TaxInputs` stay checkpoint-economic-facts-lineage-scoped because
   both product ids hash the accepted `checkpoint_ref` plus the ordered
   upstream `economic_facts_refs`
-- `TaxOutputs` stays tax-input-policy-year-scoped because its product id hashes
+- `TaxOutputs` stays tax-inputs-policy-year-scoped because its product id hashes
   the authoritative `tax_inputs_ref` plus the selected `tax_policy_id` and
   `tax_year`
 - migration-era workspace paths may still group later products under a
@@ -206,13 +206,13 @@ Rules:
   kernels
 - `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
   product kernel per declared partition
-- one persisted `ReconciliationState` kernel owns one continuity-segment root
+- one persisted `ReconciliationState` kernel owns one continuity segment kernel
 - one persisted `Checkpoint` kernel owns one checkpoint record
-- one persisted `Journal` kernel owns one journal emission root
-- one persisted `TaxInputs` kernel owns one tax-input emission root
-- one persisted `TaxOutputs` kernel owns one tax-input-policy-year output root
+- one persisted `Journal` kernel owns one journal kernel
+- one persisted `TaxInputs` kernel owns one tax input kernel
+- one persisted `TaxOutputs` kernel owns one tax output kernel
 - readers use product ids or narrower record ids for authoritative product
-  lookup; `product_scope_id` remains for shared reporting plus
+  lookup; `kernel_scope_id` remains for shared reporting plus
   gap/review/readiness attachment only
 
 ### Default Filesystem Placement
@@ -229,13 +229,13 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
 - stage-owned gap, review, and readiness sidecars live beside the
   authoritative kernel in that
-  same product directory under `support/gap/`, `support/review/`, and
-  `support/readiness/`, using `support/gap/gap_records.json`,
-  `support/gap/gap_explanations.json`,
-  `support/review/review_records.json`,
-  `support/review/review_explanations.json`,
-  `support/readiness/readiness_records.json`, and
-  `support/readiness/readiness_rollup_records.json`
+  same product directory under `assessment/gap/`, `assessment/review/`, and
+  `assessment/readiness/`, using `assessment/gap/gap_records.json`,
+  `assessment/gap/gap_explanations.json`,
+  `assessment/review/review_records.json`,
+  `assessment/review/review_explanations.json`,
+  `assessment/readiness/readiness_records.json`, and
+  `assessment/readiness/readiness_rollup_records.json`
 - compatibility views live under the authoritative product they depend on,
   for example:
   - `working/products/economic_facts/<economic_facts_id>/compatibility/facts.csv`
@@ -343,7 +343,7 @@ Rules:
   upstream references; they must not rescan unrelated full-history partitions
   per balance target
 - checkpoint reducers may read the declared `checkpoint_id` inputs plus
-  explicit upstream refs; they must not treat `product_scope_id` as the
+  explicit upstream refs; they must not treat `kernel_scope_id` as the
   product-join
   key
 - tax reducers may read one tax year plus explicitly referenced tax
@@ -371,7 +371,7 @@ Typical sidecar or cache surfaces include:
 Rules:
 
 - sidecars are never the sole copy of business meaning
-- sidecars may be keyed by `product_scope_id` or narrower truthful record ids,
+- sidecars may be keyed by `kernel_scope_id` or narrower truthful record ids,
   but
   they do not replace product ids for authoritative product lookup
 - caches are always regenerable from authoritative kernels and upstream refs

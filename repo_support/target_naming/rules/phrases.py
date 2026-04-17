@@ -79,7 +79,7 @@ def _alias_findings_for_block(
             continue
         if not contexts.intersection(rule.contexts):
             continue
-        column = find_phrase_column(block.text, rule.term, case_sensitive=True)
+        column = find_phrase_column(block.text, rule.term, case_sensitive=False)
         if column is None:
             continue
         findings.append(

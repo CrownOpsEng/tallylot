@@ -46,7 +46,7 @@ def summary_findings(
         ):
             continue
         column = find_phrase_column(
-            document.summary, alias_rule.term, case_sensitive=True
+            document.summary, alias_rule.term, case_sensitive=False
         )
         if column is None:
             continue

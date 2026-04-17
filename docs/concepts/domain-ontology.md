@@ -430,7 +430,7 @@ Bridge-specific classification rules live in
 
 The target package layout follows stage ownership and is not advisory.
 
-**Exception rationale:** `domain/support/` stays in this page only as the
+**Exception rationale:** `domain/assessment/` stays in this page only as the
 shared root for the nested `gap/`, `review/`, and `readiness/` families plus
 `SubjectRef`. It is not a generic support catch-all.
 
@@ -450,7 +450,7 @@ Required domain ownership:
 - `domain/economics/` for events, legs, valuations, settlement status, and
   lifecycle events
 - `domain/assertion/` for `AssertionValue` and its variants
-- `domain/support/` as the shared root for nested `gap/`, `review/`, and
+- `domain/assessment/` as the shared root for nested `gap/`, `review/`, and
   `readiness/` families plus `SubjectRef`
 - `domain/reconciliation/` for continuity segments, event links, balance
   targets, and checkpoint proposal records
@@ -473,12 +473,12 @@ Required application ownership:
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
   evaluation, and checkpoint proposal records
-- `application/readiness/` for cross-stage gap, review, and readiness
-  reduction plus readiness rollups and operator views
+- `application/assessment/` for cross-stage gap, review, and readiness
+  reduction plus readiness rollups and assessment views
 
-`domain/support/` stays generic only because it is the shared root for the
+`domain/assessment/` stays generic only because it is the shared root for the
 nested `gap/`, `review/`, and `readiness/` families plus `SubjectRef`.
-No unrelated family may be added under `domain/support/` without a separate
+No unrelated family may be added under `domain/assessment/` without a separate
 standards decision.
 `application/compatibility/` is migration-only and must not become a durable
 application center.

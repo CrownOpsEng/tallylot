@@ -58,6 +58,14 @@ def _surface_findings(
     for term, rules in rules_by_term.items():
         if _term_column(text, term) is None:
             continue
+        applicable_rules = [
+            rule
+            for rule in rules
+            if document.scope in rule.allowed_scopes
+            and (document.path in rule.allowed_paths or not rule.allowed_paths)
+        ]
+        if not applicable_rules:
+            continue
         if any(
             _term_allowed(
                 document,
@@ -65,7 +73,7 @@ def _surface_findings(
                 section_path=section_path,
                 rule=rule,
             )
-            for rule in rules
+            for rule in applicable_rules
         ):
             continue
         findings.append(
@@ -73,7 +81,7 @@ def _surface_findings(
                 document,
                 span=span,
                 term=term,
-                rule=_matching_rule(document, rules),
+                rule=_matching_rule(document, applicable_rules),
             )
         )
     return tuple(findings)
@@ -86,20 +94,19 @@ def _term_allowed(
     section_path: tuple[str, ...],
     rule: ExceptionRule,
 ) -> bool:
-    if document.scope not in rule.allowed_scopes:
-        return False
-    if rule.allowed_paths and document.path not in rule.allowed_paths:
-        return False
-    if rule.allowed_section_labels and not set(
+    scope_allowed = document.scope in rule.allowed_scopes
+    path_allowed = not rule.allowed_paths or document.path in rule.allowed_paths
+    section_allowed = not rule.allowed_section_labels or set(
         rule.allowed_section_labels
-    ).intersection(section_path):
+    ).intersection(section_path)
+    if not (scope_allowed and path_allowed and section_allowed):
         return False
-    marker = _marker_covering(document, span, rule.required_marker)
-    if marker is None:
-        return False
-    if not rule.required_rationale:
+    if rule.required_marker is None:
         return True
-    return _marker_has_rationale(marker)
+    marker = _marker_covering(document, span, rule.required_marker)
+    return marker is not None and (
+        not rule.required_rationale or _marker_has_rationale(marker)
+    )
 
 
 def _marker_covering(
@@ -145,14 +152,18 @@ def _build_locality_finding(
     term: str,
     rule: ExceptionRule,
 ) -> NamingFinding:
+    if rule.required_marker is None:
+        message = f"{term!r} is allowed only in a declared governed path or section"
+    else:
+        message = (
+            f"{term!r} requires the marker "
+            f"**{rule.required_marker}:** in an allowed governed block"
+        )
     return build_finding(
         rule_id=_locality_rule_id(rule),
         document=document,
         span=span,
-        message=(
-            f"{term!r} requires the marker "
-            f"**{rule.required_marker}:** in an allowed governed block"
-        ),
+        message=message,
         suggestion=_locality_suggestion(rule),
         exception_id=rule.exception_id,
     )
@@ -161,12 +172,16 @@ def _build_locality_finding(
 def _locality_rule_id(rule: ExceptionRule) -> str:
     if rule.required_marker in {"Exception rationale", "Migration-only root rationale"}:
         return "locality.root.exception_rationale"
+    if rule.required_marker is None:
+        return "locality.section.exception"
     if rule.required_marker == "Slice-only example":
         return "locality.example.slice_only"
     return "locality.field.exception_restatement"
 
 
 def _locality_suggestion(rule: ExceptionRule) -> str:
+    if rule.required_marker is None:
+        return "keep the term only inside an allowed governed path or section"
     return (
         f"keep the term only inside an allowed block labeled "
         f"**{rule.required_marker}:** and include the required rationale"

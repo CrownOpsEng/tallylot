@@ -73,9 +73,9 @@ below when you need the detailed procedure for one stage of the workflow.
 
 ## Reference Material
 
-**Current runtime note:** The CoinTracking reference below is kept only for the
-current oracle-local comparison workflow. It does not define canonical target
-naming.
+**Current runtime note:** The oracle references below are kept only for
+current oracle-local comparison and tax-reference workflows. They do not define
+canonical target naming.
 
 <!-- docs-maintenance:start reference -->
 ### Target References
@@ -85,17 +85,20 @@ naming.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Reusable target ids and ref tuples that are shared across target contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Target persistence, partition-scope, and compatibility placement reference.
 
-### Current-State And Oracle References
+### Current-State References
 
-- [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
 - [Location Inventory Outputs](reference/location-inventory-artifacts.md): Reference for location inventory outputs and evidence rows.
 - [Timezone Validation Outputs](reference/timezone-validation-artifacts.md): Reference for timezone provenance outputs and validation issues.
+- [Manual Balance Submission Packages](reference/manual-balance-submission-artifacts.md): Reference for scaffolded manual balance submission packages and their balance outputs.
+- [Repository History](reference/repository-history.md): Reference note for the public baseline sequence and where ordinary forward development begins.
+
+### Oracle References
+
+- [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
 - [Canadian Crypto Tax Guide](reference/canadian-crypto-tax-guide.md): Working CRA-aligned tax reference for the repo's Canadian crypto workflow.
 - [Tax Source Map](reference/tax-source-map.md): Targeted routing from repo tax questions to CRA-aligned reference sources.
 - [CoinTracking Oracle Artifacts](reference/cointracking-oracle-artifacts.md): Repo-safe reference for CoinTracking artifact families used only for development and validation.
-- [Manual Balance Submission Packages](reference/manual-balance-submission-artifacts.md): Reference for scaffolded manual balance submission packages and their balance outputs.
-- [Repository History](reference/repository-history.md): Reference note for the public baseline sequence and where ordinary forward development begins.
 <!-- docs-maintenance:end reference -->
 
 ## Workspace Guidance

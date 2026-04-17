@@ -51,7 +51,8 @@ def structure_findings(
                     span=block.span,
                     message=f"flat support path {match.group(0)!r} is not allowed",
                     suggestion=(
-                        "use support/gap/, support/review/, or support/readiness/ "
+                        "use assessment/gap/, assessment/review/, or "
+                        "assessment/readiness/ "
                         "with a mirrored family basename"
                     ),
                 )

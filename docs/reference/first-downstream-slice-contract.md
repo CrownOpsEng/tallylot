@@ -106,7 +106,7 @@ Downstream-input rules:
 - downstream product construction must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
 - upstream `*_ref` header fields store target product ids, never
-  `product_scope_id`
+  `kernel_scope_id`
   and never raw kernel fingerprints
 
 ## Kernel Cardinality And Ownership

@@ -24,9 +24,9 @@ until later slices replace it, but it is not the long-term architecture center.
 current adapter-edge and oracle-comparison boundaries, not canonical target
 naming.
 
-**Exception rationale:** `support/` stays in this roadmap only as the shared
+**Exception rationale:** `assessment/` stays in this roadmap only as the shared
 root for the nested `gap/`, `review/`, and `readiness/` families. It is not a
-generic support bucket.
+generic assessment bucket.
 
 ## Planning Anchors
 
@@ -84,7 +84,7 @@ Must freeze:
   attachments, and the downstream shared-subject seams needed for journal
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
-  refs use product ids rather than `product_scope_id`
+  refs use product ids rather than `kernel_scope_id`
 - target naming rules that distinguish concepts, refs, ids, records,
   views, rollups, reports, and sidecars without baking bridge-era
   qualifiers or source-specific crypto nouns into shared target names, and
@@ -128,7 +128,7 @@ Must freeze:
   package ownership, and stage prose, uses singular concept roots such as
   `assertion/`, avoids umbrella roots such as `entities/` when the identity
   families are already known, keeps gap/review/readiness roots explicit when
-  the docs mean those families directly, and keeps the shared `support/` root
+  the docs mean those families directly, and keeps the shared `assessment/` root
   split into concrete nested families
   such as `gap/`, `review/`, and `readiness/`
 - authoritative persistence model, product-owned directory stems, partition
@@ -163,7 +163,7 @@ Exit criteria:
 - no cross-stage support record or sidecar masquerades as a claim kind
 - claim-stage blockers can attach to `claim_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
-  journal or tax subjects without collapsing to product-scope attachment only
+  journal or tax subjects without collapsing to kernel-scope attachment only
 - no target id or helper id bakes bridge-era naming into target identity
 - no canonical target contract keeps source-specific crypto nouns such as
   `wallet` when a repo-owned domain noun already owns that seam
@@ -171,7 +171,7 @@ Exit criteria:
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
   field table
-- no target product ref in a product header uses `product_scope_id` where a
+- no target product ref in a product header uses `kernel_scope_id` where a
   product id
   exists
 - non-critical observation and claim kinds are explicitly deferred rather
