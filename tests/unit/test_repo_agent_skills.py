@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeGuard
 
 import yaml
 
@@ -121,6 +123,31 @@ EXPECTED_SKILLS = {
 }
 
 
+def _string_key_dict(value: Mapping[object, object]) -> dict[str, object]:
+    return {str(key): item for key, item in value.items() if isinstance(key, str)}
+
+
+def _is_object_mapping(value: object) -> TypeGuard[Mapping[object, object]]:
+    return isinstance(value, Mapping)
+
+
+def _load_yaml_mapping(path: Path) -> dict[str, object]:
+    loaded: object = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert _is_object_mapping(loaded), f"{path} must contain a YAML mapping"
+    return _string_key_dict(loaded)
+
+
+def _nested_yaml_mapping(
+    data: dict[str, object],
+    key: str,
+    *,
+    skill_name: str,
+) -> dict[str, object]:
+    nested = data.get(key)
+    assert _is_object_mapping(nested), f"{skill_name} {key} metadata is missing"
+    return _string_key_dict(nested)
+
+
 def _skill_root(skill_name: str) -> Path:
     return repo_root() / ".agents" / "skills" / skill_name
 
@@ -156,7 +183,13 @@ def test_repo_local_skill_metadata_and_bodies_are_lightweight() -> None:
         for fragment in expected.required_fragments:
             assert fragment in skill_text, f"{skill_name} is missing {fragment}"
 
-        metadata = yaml.safe_load(metadata_path.read_text(encoding="utf-8"))
-        assert metadata["interface"]["display_name"] == expected.display_name
-        assert f"${skill_name}" in metadata["interface"]["default_prompt"]
-        assert metadata["policy"]["allow_implicit_invocation"] is True
+        metadata = _load_yaml_mapping(metadata_path)
+        typed_interface = _nested_yaml_mapping(
+            metadata, "interface", skill_name=skill_name
+        )
+        typed_policy = _nested_yaml_mapping(metadata, "policy", skill_name=skill_name)
+        assert typed_interface["display_name"] == expected.display_name
+        default_prompt = typed_interface.get("default_prompt")
+        assert isinstance(default_prompt, str)
+        assert f"${skill_name}" in default_prompt
+        assert typed_policy["allow_implicit_invocation"] is True

@@ -391,7 +391,10 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "tools/benchmark_quality_gates.py" in guardrails_text
     assert "repo_support/local_autofix.py" in guardrails_text
     assert "repo_support/review_verification/**" in guardrails_text
+    assert "repo_support/target_naming/**" in guardrails_text
     assert "tools/evaluate_review_results.py" in guardrails_text
+    assert "tools/target_naming.py" in guardrails_text
+    assert "tools/target_naming_catalog.yaml" in guardrails_text
     assert "`markdown` skill" in guardrails_text
     assert "human docs, agent" in guardrails_text
     assert "standards/delivery-guardrails.md" in docs_index_text
@@ -420,6 +423,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "audit local CODEOWNERS coverage and live GitHub delivery" in roadmap_text
     assert "settings together without broad context loading" in roadmap_text
     assert "repo-native PR review routing" in roadmap_text
+    assert "catalog-first target naming governance" in roadmap_text
     assert "benchmark-backed" in roadmap_text
     assert "one opaque parity shell" in roadmap_text
     assert (
@@ -526,6 +530,7 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
         ".claude/commands/**",
         "repo_support/local_autofix.py",
         "repo_support/quality_gates.py",
+        "repo_support/target_naming/**",
         "repo_support/review_verification/**",
         "tools/install_git_hooks.py",
         "tools/pre_commit_hook.py",
@@ -537,6 +542,8 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
         "tools/message_standards.py",
         "tools/run_review_check.py",
         "tools/run_pr_review_checks.py",
+        "tools/target_naming.py",
+        "tools/target_naming_catalog.yaml",
         "tools/validate_commit_message.py",
         "tools/validate_pr_metadata.py",
         "tools/run_quality_gates.py",
@@ -872,6 +879,7 @@ def test_makefile_uses_home_relative_external_env_path() -> None:
     for target in (
         "install-hooks:",
         "docs-check:",
+        "naming-check:",
         "quality:",
         "quality-full:",
         "pr-review-full:",

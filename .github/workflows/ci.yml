@@ -123,6 +123,19 @@ jobs:
       - name: Run markdownlint
         run: uv run python -m tools.run_review_check --check-id markdownlint --trigger push_main
 
+  target-naming:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'target-naming') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run target naming check
+        run: uv run python -m tools.run_review_check --check-id target-naming --trigger push_main
+
   actionlint:
     needs: plan-main-ci
     if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'actionlint') }}
@@ -432,6 +445,7 @@ jobs:
       - plan-main-ci
       - docs-maintenance
       - markdownlint
+      - target-naming
       - actionlint
       - ruff
       - mypy

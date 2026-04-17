@@ -140,6 +140,19 @@ jobs:
       - name: Run markdownlint
         run: uv run python -m tools.run_review_check --check-id markdownlint --trigger pull_request
 
+  target-naming:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'target-naming') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run target naming check
+        run: uv run python -m tools.run_review_check --check-id target-naming --trigger pull_request
+
   actionlint:
     needs: plan-pr-review
     if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'actionlint') }}
@@ -459,6 +472,7 @@ jobs:
       - pr-metadata
       - docs-maintenance
       - markdownlint
+      - target-naming
       - actionlint
       - ruff
       - mypy

@@ -59,6 +59,7 @@ TARGETED_SUBSET_TEST_IDS = (
 )
 QUALITY_CHECK_IDS = (
     "markdownlint",
+    "target-naming",
     "actionlint",
     "ruff",
     "mypy",
@@ -71,6 +72,7 @@ CHECK_ORDER = (
     "pr-metadata",
     "docs-maintenance",
     "markdownlint",
+    "target-naming",
     "actionlint",
     "ruff",
     "mypy",
@@ -145,6 +147,12 @@ CHECK_SPECS = {
             job_name="Markdown lint",
             command=("pre-commit", "run", "markdownlint", "--all-files"),
             tags=("quality", "docs"),
+        ),
+        _spec(
+            "target-naming",
+            job_name="Target naming",
+            command=("python", "-m", "tools.target_naming", "check"),
+            tags=("docs", "review-tooling"),
         ),
         _spec(
             "actionlint",

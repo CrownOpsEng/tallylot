@@ -119,6 +119,7 @@ def test_ci_workflow_diff_selects_targeted_ci_checks() -> None:
 
     assert plan.surface_report.surface_groups == ("ci_or_release",)
     assert plan.selected_check_ids == (
+        "target-naming",
         "actionlint",
         "delivery-guardrails-audit",
         "ci-tooling",
@@ -143,6 +144,21 @@ def test_pull_request_docs_only_diff_stays_change_sensitive() -> None:
     )
 
 
+def test_forward_looking_target_doc_diff_selects_target_naming() -> None:
+    plan = build_verification_plan(
+        paths=("docs/concepts/pipeline-stage-contracts.md",),
+        trigger="local",
+        mode="planned",
+    )
+
+    assert plan.surface_report.surface_groups == ("human_docs",)
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "markdownlint",
+        "target-naming",
+    )
+
+
 def test_pull_request_mode_can_still_force_full_suite() -> None:
     plan = build_verification_plan(
         paths=("docs/guides/source-intake.md",),
@@ -156,6 +172,7 @@ def test_pull_request_mode_can_still_force_full_suite() -> None:
         "pr-metadata",
         "docs-maintenance",
         "markdownlint",
+        "target-naming",
         "actionlint",
         "ruff",
         "mypy",
