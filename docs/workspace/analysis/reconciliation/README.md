@@ -5,6 +5,7 @@ doc_type: reference
 audience: both
 owner: repo
 status: active
+naming_scope: workspace_reference
 ---
 
 This folder stores durable reconciliation and oracle comparison outputs.

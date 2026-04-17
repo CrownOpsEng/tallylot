@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 20
 ---
 
@@ -14,6 +15,9 @@ independent reconciliation, checkpoint, journal, and tax runtime.
 
 Use it when making structural decisions that affect persistence,
 reconciliation, checkpoint, journal, or tax computation.
+
+**Current runtime note:** CoinTracking references in this page describe current
+output-adapter or oracle-only boundaries, not canonical target naming.
 
 ## Current Runtime Note
 
@@ -200,7 +204,7 @@ Rules:
   partitions, but those views do not replace the authoritative partition
   kernels
 - `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
-  whole-product kernel per declared partition
+  product kernel per declared partition
 - one persisted `ReconciliationState` kernel owns one continuity-segment root
 - one persisted `Checkpoint` kernel owns one checkpoint record
 - one persisted `Journal` kernel owns one journal emission root

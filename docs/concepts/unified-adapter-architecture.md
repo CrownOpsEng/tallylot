@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 60
 related:
   - ROADMAP.md

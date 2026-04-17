@@ -5,14 +5,18 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 45
 ---
 
-Use this page when defining shared gap, review, readiness, or generic
-subject-reference contracts. This page defines the target cross-stage gap,
-review, and readiness model.
+Use this page when defining shared gap, review, readiness, or `SubjectRef`
+contracts. This page defines the target cross-stage gap, review, and readiness
+model.
 
-Current runtime note:
+**Current runtime note:** The live runtime still uses stage-specific issue and
+review outputs such as `IssueRecord` and `NormalizationReviewRecord`. Those
+current surfaces remain current-state truth while this page defines the target
+gap, review, and readiness contracts for later implementation slices.
 
 - the live runtime still uses stage-specific issue and review outputs such as
   `IssueRecord` and `NormalizationReviewRecord`

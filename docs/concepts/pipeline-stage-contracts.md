@@ -5,13 +5,17 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 25
 ---
 
 Use this page when defining the target pipeline products or deciding which
 stage owns a decision. This page defines the target stage contracts.
 
-Current runtime note:
+**Current runtime note:** The live runtime still centers on bridge surfaces
+such as `EconomicActivityDraft`, `TransactionFact`, `balance_snapshots.csv`,
+and `balance_references.csv`. This page defines the target stage contracts, not
+the claim that the current code already implements them.
 
 - the live runtime still centers on `EconomicActivityDraft`,
   `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`
@@ -19,6 +23,12 @@ Current runtime note:
   slices replace them
 - this page defines the target stage contracts, not the claim that the current
   code already implements them
+
+**Locality rule:** This page restates bridge-local fields such as `source_slug`,
+`activity_label`, `provider_operation_key`, and the current `*_hint`
+compatibility fields only where the contract freezes evidence-local or derived
+compatibility boundaries. Those names stay outside later canonical target
+kernels.
 
 The target runtime pipeline is:
 
@@ -1538,7 +1548,7 @@ elsewhere:
 - [Current Bridge Contracts](current-bridge-contracts.md) for the live bridge
   runtime truth
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) for the primary
-  current-to-target transformation rules and migration authority matrix
+  cutover rules and migration authority matrix
 - [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md)
   for the first upstream replay and parity contract
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)

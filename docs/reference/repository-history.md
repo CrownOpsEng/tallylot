@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: current_state
 ---
 
 The direct root commit and pull requests `#1` through `#30` establish the

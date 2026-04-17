@@ -10,6 +10,8 @@ import pytest
 from repo_support import paths as repo_paths
 from tools import docs_maintenance
 
+SOURCE_CATALOG_PATH = repo_paths.repo_root() / "tools" / "target_naming_catalog.yaml"
+
 
 def repo_root() -> Path:
     return repo_paths.repo_root()
@@ -47,6 +49,12 @@ def override_active_roots(
         raise AssertionError(
             f"docs root must resolve under the repo root: {resolved_docs_root}"
         )
+    target_catalog = root / "tools" / "target_naming_catalog.yaml"
+    target_catalog.parent.mkdir(parents=True, exist_ok=True)
+    target_catalog.write_text(
+        SOURCE_CATALOG_PATH.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
     repo_paths._set_repo_root(root)
 
 
@@ -65,6 +73,7 @@ def test_parse_frontmatter_supports_optional_fields() -> None:
         audience: human
         owner: repo
         status: active
+        naming_scope: forward_target
         last_reviewed: "2026-04-01"
         related:
           - docs/reference/export-checklist.md
@@ -96,6 +105,7 @@ def test_parse_frontmatter_rejects_missing_related_target() -> None:
         audience: human
         owner: repo
         status: active
+        naming_scope: forward_target
         related:
           - docs/does-not-exist.md
         ---
@@ -123,6 +133,7 @@ def test_parse_frontmatter_rejects_missing_related_anchor() -> None:
         audience: human
         owner: repo
         status: active
+        naming_scope: forward_target
         related:
           - docs/guides/operator-quickstart.md#missing-anchor
         ---
@@ -148,6 +159,7 @@ def test_parse_frontmatter_supports_nav_order() -> None:
         audience: human
         owner: repo
         status: active
+        naming_scope: current_state
         nav_order: 20
         ---
 
@@ -172,6 +184,7 @@ def test_parse_frontmatter_rejects_invalid_nav_order() -> None:
         audience: human
         owner: repo
         status: active
+        naming_scope: current_state
         nav_order: "first"
         ---
 
@@ -215,6 +228,7 @@ def test_validate_frontmatter_rejects_role_first_summary_phrase() -> None:
         audience: human
         owner: repo
         status: active
+        naming_scope: forward_target
         ---
 
         Example body.
@@ -225,7 +239,7 @@ def test_validate_frontmatter_rejects_role_first_summary_phrase() -> None:
 
     with pytest.raises(
         ValueError,
-        match="must use a content-first summary and avoid banned summary phrase",
+        match=r"summary must not use 'Owning concept page'",
     ):
         docs_maintenance.validate_frontmatter(path, frontmatter)
 
@@ -243,6 +257,7 @@ def test_validate_frontmatter_rejects_provider_nouns_in_forward_looking_summary(
         audience: human
         owner: repo
         status: active
+        naming_scope: forward_target
         ---
 
         Example body.
@@ -253,7 +268,7 @@ def test_validate_frontmatter_rejects_provider_nouns_in_forward_looking_summary(
 
     with pytest.raises(
         ValueError,
-        match="must keep provider and custody nouns out of forward-looking summaries",
+        match=r"summary must not use 'Coinbase'",
     ):
         docs_maintenance.validate_frontmatter(path, frontmatter)
 
@@ -269,6 +284,7 @@ def test_validate_frontmatter_allows_provider_nouns_in_local_oracle_summary() ->
         audience: human
         owner: repo
         status: active
+        naming_scope: oracle_local
         ---
 
         Example body.
@@ -395,6 +411,7 @@ def test_sync_check_ignores_plain_text_mentions_of_retired_paths(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             ---
 
             ## Concepts
@@ -435,6 +452,7 @@ def test_sync_check_ignores_plain_text_mentions_of_retired_paths(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             nav_order: 10
             ---
 
@@ -533,6 +551,7 @@ def test_sync_check_rejects_retired_markdown_link_targets(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             ---
 
             ## Concepts
@@ -573,6 +592,7 @@ def test_sync_check_rejects_retired_markdown_link_targets(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             nav_order: 10
             ---
 
@@ -612,6 +632,7 @@ def test_sync_check_rejects_retired_related_targets(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             ---
 
             ## Concepts
@@ -652,6 +673,7 @@ def test_sync_check_rejects_retired_related_targets(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             nav_order: 10
             related:
               - docs/file-map.md
@@ -978,6 +1000,7 @@ def test_scaffold_sync_managed_doc_accepts_nav_order(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             ---
 
             ## Concepts
@@ -1092,6 +1115,7 @@ def test_scaffold_sync_managed_doc_escapes_yaml_sensitive_fields(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             ---
 
             ## Concepts
@@ -1197,6 +1221,7 @@ def test_validate_documents_rejects_duplicate_nav_order(
                 audience: human
                 owner: repo
                 status: active
+                naming_scope: current_state
                 nav_order: 10
                 ---
 
@@ -1229,6 +1254,7 @@ def test_validate_documents_accepts_related_targets_in_active_repo_root(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             ---
 
             ## Target Section
@@ -1246,6 +1272,7 @@ def test_validate_documents_accepts_related_targets_in_active_repo_root(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             related:
               - docs/reference/target.md#target-section
             ---
@@ -1283,6 +1310,7 @@ def test_scaffold_rejects_duplicate_nav_order_and_rolls_back(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             ---
 
             ## Concepts
@@ -1482,6 +1510,7 @@ def test_sync_check_rejects_bare_uv_examples(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             ---
 
             ## Concepts
@@ -1524,6 +1553,7 @@ def test_sync_check_rejects_bare_uv_examples(
             audience: human
             owner: repo
             status: active
+            naming_scope: forward_target
             nav_order: 10
             ---
 

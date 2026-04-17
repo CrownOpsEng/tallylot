@@ -61,6 +61,7 @@ def test_control_plane_doc_diff_selects_targeted_control_plane_checks() -> None:
     assert plan.selected_check_ids == (
         "docs-maintenance",
         "markdownlint",
+        "target-naming",
         "standards-guards",
         "pr-metadata-validator",
         "commit-message-validator",

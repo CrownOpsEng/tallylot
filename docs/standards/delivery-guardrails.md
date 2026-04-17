@@ -5,6 +5,7 @@ doc_type: standard
 audience: human
 owner: repo
 status: active
+naming_scope: repo_policy
 nav_order: 40
 ---
 

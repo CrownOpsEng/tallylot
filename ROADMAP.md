@@ -20,6 +20,14 @@ This roadmap tracks the implementation program from the current bridge toward
 the target runtime pipeline. The current bridge remains the live runtime seam
 until later slices replace it, but it is not the long-term architecture center.
 
+**Current runtime note:** CoinTracking references in this roadmap describe the
+current adapter-edge and oracle-comparison boundaries, not canonical target
+naming.
+
+**Exception rationale:** `support/` stays in this roadmap only as the shared
+root for the nested `gap/`, `review/`, and `readiness/` families. It is not a
+generic support bucket.
+
 ## Planning Anchors
 
 These anchors drive sequencing and acceptance criteria:

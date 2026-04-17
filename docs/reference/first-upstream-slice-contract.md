@@ -1,10 +1,11 @@
 ---
 title: "First Upstream Slice Contract"
-summary: "Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views."
+summary: "Contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 15
 related:
   - docs/concepts/bridge-to-target-mapping.md
@@ -17,7 +18,17 @@ related:
 
 Use this page when implementing or reviewing the first upstream slice.
 This document freezes scope, cardinality, ids, parity, replay, and allowed
-drift for the first upstream `EvidenceSet -> ClaimSet` landing path.
+drift for the first upstream `EvidenceSet -> ClaimSet` slice.
+
+**Slice-only example:** This slice still uses Coinbase retail exports and
+recognized Coinbase statements only as bounded examples for the first upstream
+parity contract. Those provider names are slice-local examples, not canonical
+target naming.
+
+**Locality rule:** This slice retains evidence-local and compatibility-local
+bridge fields such as `source_slug`, `activity_label`,
+`provider_operation_key`, and the current `*_hint` fields only where the
+contract must preserve bridge parity or derived compatibility views.
 
 ## Slice Scope
 

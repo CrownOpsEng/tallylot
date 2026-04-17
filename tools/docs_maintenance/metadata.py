@@ -10,6 +10,10 @@ from urllib.parse import urlparse
 import yaml
 
 from repo_support.target_naming import (
+    SUPPORTED_NAMING_SCOPES,
+    default_naming_scope_for_path,
+    load_target_naming_catalog,
+    resolve_naming_scope,
     validate_summary_style as validate_target_summary_style,
 )
 
@@ -145,17 +149,137 @@ def validate_summary_style(path: Path, summary: str) -> None:
     if not relative.startswith("docs/"):
         return
 
-    error = validate_target_summary_style(relative, summary)
-    if error is not None:
-        raise ValueError(error)
+    frontmatter = parse_frontmatter(path.read_text(encoding="utf-8"), path)
+    resolution = resolve_naming_scope(
+        relative,
+        frontmatter=frontmatter,
+        root_file_scopes=load_target_naming_catalog().root_file_scopes,
+    )
+    findings = validate_target_summary_style(
+        relative,
+        summary,
+        scope=resolution.scope,
+        catalog=load_target_naming_catalog(),
+    )
+    if findings:
+        raise ValueError(findings[0].message)
+
+
+def _validate_required_frontmatter_fields(
+    path: Path,
+    frontmatter: dict[str, object],
+    *,
+    relative: str,
+) -> None:
+    required_fields = REQUIRED_FRONTMATTER_FIELDS + (
+        ("naming_scope",) if relative.startswith("docs/") else ()
+    )
+    missing = [field for field in required_fields if field not in frontmatter]
+    if missing:
+        raise ValueError(f"{path} is missing frontmatter fields: {', '.join(missing)}")
+
+
+def _validate_expected_doc_type_and_audience(
+    path: Path,
+    *,
+    doc_type: str,
+    audience: str,
+) -> None:
+    doc_type_expectation = expected_doc_type(path)
+    if doc_type_expectation is not None and doc_type != doc_type_expectation:
+        raise ValueError(f"{path} must use doc_type: {doc_type_expectation}")
+
+    audience_expectation = expected_audience(path)
+    if audience_expectation is not None and audience != audience_expectation:
+        raise ValueError(f"{path} must use audience: {audience_expectation}")
+
+
+def _validate_naming_scope(
+    path: Path,
+    frontmatter: dict[str, object],
+    *,
+    relative: str,
+) -> str | None:
+    if not relative.startswith("docs/"):
+        return None
+
+    naming_scope = frontmatter_text(frontmatter, "naming_scope", path)
+    if naming_scope not in SUPPORTED_NAMING_SCOPES:
+        raise ValueError(
+            f"{path} must use naming_scope from: {', '.join(sorted(SUPPORTED_NAMING_SCOPES))}"
+        )
+    expected_scope = default_naming_scope_for_path(relative)
+    if expected_scope is not None and naming_scope != expected_scope:
+        raise ValueError(f"{path} must use naming_scope: {expected_scope}")
+    return naming_scope
+
+
+def _validate_summary_status_and_last_reviewed(
+    path: Path,
+    frontmatter: dict[str, object],
+    *,
+    relative: str,
+    naming_scope: str | None,
+) -> None:
+    frontmatter_text(frontmatter, "title", path)
+    summary = frontmatter_text(frontmatter, "summary", path)
+    findings = validate_target_summary_style(
+        relative,
+        summary,
+        scope=naming_scope,
+        catalog=load_target_naming_catalog(),
+    )
+    if findings:
+        raise ValueError(findings[0].message)
+    frontmatter_text(frontmatter, "status", path)
+
+    last_reviewed = frontmatter.get("last_reviewed")
+    if last_reviewed is not None and (
+        not isinstance(last_reviewed, str) or not last_reviewed.strip()
+    ):
+        raise ValueError(f"{path} must use a non-empty string for last_reviewed")
+
+
+def _validate_nav_order(
+    path: Path, frontmatter: dict[str, object], *, relative: str
+) -> None:
+    nav_order = frontmatter.get("nav_order")
+    allows_nav_order = any(
+        relative.startswith(prefix) for prefix in NAV_ORDER_ALLOWED_PREFIXES
+    )
+    invalid_nav_order = nav_order is not None and (
+        not allows_nav_order
+        or isinstance(nav_order, bool)
+        or not isinstance(nav_order, int)
+    )
+    if not invalid_nav_order:
+        return
+    if not allows_nav_order:
+        raise ValueError(
+            f"{path} must not use nav_order outside sync-managed human docs"
+        )
+    raise ValueError(f"{path} must use an integer for nav_order")
+
+
+def _validate_related(path: Path, frontmatter: dict[str, object]) -> None:
+    related = frontmatter.get("related")
+    related_items = (
+        cast(list[object] | None, related) if isinstance(related, list) else None
+    )
+    if related is not None and (
+        related_items is None
+        or not all(isinstance(item, str) and item.strip() for item in related_items)
+    ):
+        raise ValueError(f"{path} must use a list of non-empty strings for related")
+    if related_items is None:
+        return
+    for item in cast(list[str], related_items):
+        validate_related_target(path, item)
 
 
 def validate_frontmatter(path: Path, frontmatter: dict[str, object]) -> None:
-    missing = [
-        field for field in REQUIRED_FRONTMATTER_FIELDS if field not in frontmatter
-    ]
-    if missing:
-        raise ValueError(f"{path} is missing frontmatter fields: {', '.join(missing)}")
+    relative = relative_path(path)
+    _validate_required_frontmatter_fields(path, frontmatter, relative=relative)
 
     doc_type = frontmatter_text(frontmatter, "doc_type", path)
     if doc_type not in ALLOWED_DOC_TYPES:
@@ -168,51 +292,13 @@ def validate_frontmatter(path: Path, frontmatter: dict[str, object]) -> None:
     if frontmatter_text(frontmatter, "owner", path) != "repo":
         raise ValueError(f"{path} must use owner: repo")
 
-    doc_type_expectation = expected_doc_type(path)
-    if doc_type_expectation is not None and doc_type != doc_type_expectation:
-        raise ValueError(f"{path} must use doc_type: {doc_type_expectation}")
-
-    audience_expectation = expected_audience(path)
-    if audience_expectation is not None and audience != audience_expectation:
-        raise ValueError(f"{path} must use audience: {audience_expectation}")
-
-    frontmatter_text(frontmatter, "title", path)
-    summary = frontmatter_text(frontmatter, "summary", path)
-    validate_summary_style(path, summary)
-    frontmatter_text(frontmatter, "status", path)
-
-    last_reviewed = frontmatter.get("last_reviewed")
-    if last_reviewed is not None and (
-        not isinstance(last_reviewed, str) or not last_reviewed.strip()
-    ):
-        raise ValueError(f"{path} must use a non-empty string for last_reviewed")
-
-    nav_order = frontmatter.get("nav_order")
-    relative = relative_path(path)
-    allows_nav_order = any(
-        relative.startswith(prefix) for prefix in NAV_ORDER_ALLOWED_PREFIXES
+    _validate_expected_doc_type_and_audience(path, doc_type=doc_type, audience=audience)
+    naming_scope = _validate_naming_scope(path, frontmatter, relative=relative)
+    _validate_summary_status_and_last_reviewed(
+        path,
+        frontmatter,
+        relative=relative,
+        naming_scope=naming_scope,
     )
-    invalid_nav_order = nav_order is not None and (
-        not allows_nav_order
-        or isinstance(nav_order, bool)
-        or not isinstance(nav_order, int)
-    )
-    if invalid_nav_order:
-        if not allows_nav_order:
-            raise ValueError(
-                f"{path} must not use nav_order outside sync-managed human docs"
-            )
-        raise ValueError(f"{path} must use an integer for nav_order")
-
-    related = frontmatter.get("related")
-    related_items = (
-        cast(list[object] | None, related) if isinstance(related, list) else None
-    )
-    if related is not None and (
-        related_items is None
-        or not all(isinstance(item, str) and item.strip() for item in related_items)
-    ):
-        raise ValueError(f"{path} must use a list of non-empty strings for related")
-    if related_items is not None:
-        for item in cast(list[str], related_items):
-            validate_related_target(path, item)
+    _validate_nav_order(path, frontmatter, relative=relative)
+    _validate_related(path, frontmatter)

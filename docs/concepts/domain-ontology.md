@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 35
 ---
 
@@ -47,6 +48,9 @@ report happens to collapse them operationally.
 ## Generic Model Requirements
 
 The target model should remain:
+
+**Current runtime note:** CoinTracking references in this page describe current
+adapter-edge or oracle-local truth, not canonical target naming.
 
 - instrument-agnostic
 - source-agnostic
@@ -398,6 +402,14 @@ Bridge-specific classification rules live in
 ## Required Package Ownership
 
 The target package layout follows stage ownership and is not advisory.
+
+**Exception rationale:** `domain/support/` stays in this page only as the
+shared root for the nested `gap/`, `review/`, and `readiness/` families plus
+`SubjectRef`. It is not a generic support catch-all.
+
+**Migration-only root rationale:** `application/compatibility/` remains a
+bridge-only migration root for derived compatibility views until those readers
+cut over.
 
 Required domain ownership:
 

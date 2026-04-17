@@ -209,6 +209,9 @@ Workspace resolution order:
 
 ## Current Build Direction
 
+**Current runtime note:** CoinTracking references in this section describe the
+current compatibility and oracle boundaries, not canonical target naming.
+
 - Treat `docs/concepts/reconciliation-tax-architecture.md` as the
   implementation anchor for reconciliation, checkpoint, journal, and tax
   computation.

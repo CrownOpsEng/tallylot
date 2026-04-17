@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 ---
 
 The TallyLot docs cover the typed runtime, operator workflows, workspace
@@ -72,10 +73,14 @@ below when you need the detailed procedure for one stage of the workflow.
 
 ## Reference Material
 
+**Current runtime note:** The CoinTracking reference below is kept only for the
+current oracle-local comparison workflow. It does not define canonical target
+naming.
+
 <!-- docs-maintenance:start reference -->
 - [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
-- [First Upstream Slice Contract](reference/first-upstream-slice-contract.md): Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views.
-- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views.
+- [First Upstream Slice Contract](reference/first-upstream-slice-contract.md): Contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views.
+- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Reusable target ids and ref tuples that are shared across target contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Target persistence, partition-scope, and compatibility placement reference.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.

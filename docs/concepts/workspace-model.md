@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: workspace_reference
 nav_order: 50
 ---
 

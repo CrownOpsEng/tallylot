@@ -5,6 +5,7 @@ doc_type: status
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 30
 related:
   - ROADMAP.md

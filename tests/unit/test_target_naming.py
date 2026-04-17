@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from textwrap import dedent
 
 import pytest
 import yaml
@@ -13,116 +14,142 @@ from repo_support.target_naming import (
 )
 
 
-def _write_catalog(
-    root: Path,
-    *,
-    include_paths: list[str] | None = None,
-    include_prefixes: list[str] | None = None,
-    exclude_paths: list[str] | None = None,
-    overlap_axes: bool = False,
-) -> None:
+def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
     catalog: dict[str, object] = {
-        "version": 1,
-        "surfaces": {
-            "include": {
-                "paths": include_paths or ["docs/example.md"],
-                "prefixes": include_prefixes or [],
+        "version": 2,
+        "root_file_scopes": {},
+        "scope_profiles": {
+            "forward_target": {
+                "enforce_target_naming": True,
+                "allow_anti_examples": False,
             },
-            "exclude": {"paths": exclude_paths or [], "prefixes": []},
+            "repo_policy": {
+                "enforce_target_naming": True,
+                "allow_anti_examples": True,
+            },
+            "current_state": {
+                "enforce_target_naming": False,
+                "allow_anti_examples": False,
+            },
+            "bridge_local": {
+                "enforce_target_naming": False,
+                "allow_anti_examples": False,
+            },
+            "oracle_local": {
+                "enforce_target_naming": False,
+                "allow_anti_examples": False,
+            },
+            "adapter_local": {
+                "enforce_target_naming": False,
+                "allow_anti_examples": False,
+            },
+            "workspace_reference": {
+                "enforce_target_naming": False,
+                "allow_anti_examples": False,
+            },
         },
-        "families": {
-            "products": [{"name": "Checkpoint", "id": "checkpoint_id"}],
-            "records": [
+        "tooling_paths": [],
+        "canonical_families": {
+            "products": [],
+            "records": [],
+            "package_paths": [],
+            "directory_paths": [],
+            "sidecar_paths": [],
+        },
+        "canonical_tokens": {
+            "pascal": [],
+            "snake": [],
+            "phrases": [],
+        },
+        "vocabularies": {
+            "values": {
+                "basis": ["document_support", "manual_support"],
+                "support_shape": (
+                    ["document_support", "manual_assertion"]
+                    if overlap_axes
+                    else ["document_observation", "manual_assertion"]
+                ),
+                "continuity_kind": ["observed_continuity"],
+            },
+            "paired_axes": [["basis", "support_shape", "continuity_kind"]],
+            "checks": [
                 {
-                    "stem": "checkpoint_proposal",
-                    "record": "CheckpointProposalRecord",
-                    "id": "checkpoint_proposal_id",
-                    "refs": ["superseding_proposal_ref"],
-                    "required_in": ["docs/example.md"],
+                    "path": "docs/example.md",
+                    "vocabulary": "basis",
+                    "label": "basis",
+                    "block_type": "nested_list",
+                    "expected_values": [],
                 }
             ],
-            "paths": {
-                "package_stems": ["application/checkpoint/"],
-                "directory_stems": ["working/products/checkpoints/"],
-                "sidecar_paths": ["support/gap/gap_records.json"],
+        },
+        "banned_phrases": [
+            {
+                "rule_id": "summary.content_first",
+                "term": "Owning concept page",
+                "contexts": ["summary"],
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "paths": [],
             },
-            "vocabularies": {
-                "values": {
-                    "basis": ["document_support", "manual_support"],
-                    "support_shape": (
-                        ["document_support", "manual_assertion"]
-                        if overlap_axes
-                        else ["document_observation", "manual_assertion"]
-                    ),
-                    "continuity_kind": [
-                        "observed_continuity",
-                        "reconciled_rollforward",
-                    ],
-                    "balance_target_observation_status": [
-                        "observed",
-                        "unobserved",
-                    ],
-                    "balance_target_comparison_outcome": [
-                        "matched",
-                        "mismatched",
-                    ],
-                    "journal_entry_status": [
-                        "expanded",
-                        "blocked",
-                    ],
-                    "entry_check_status": [
-                        "passed",
-                        "blocked",
-                    ],
-                    "tax_output_status": [
-                        "ready",
-                        "partial",
-                    ],
-                    "checkpoint_proposal_status": [
-                        "ready",
-                        "partial",
-                        "blocked",
-                    ],
-                    "valuation_purpose": [
-                        "economic_measurement",
-                        "market_measurement",
-                    ],
-                    "origin_kind": [
-                        "claim",
-                        "market_reference",
-                    ],
-                },
-                "paired_axes": [["basis", "support_shape", "continuity_kind"]],
-                "checks": [
-                    {
-                        "path": "docs/example.md",
-                        "vocabulary": "basis",
-                        "label": "basis",
-                        "block_type": "nested_list",
-                    }
+            {
+                "rule_id": "body.no_slice_role_jargon",
+                "term": "bounded contract",
+                "contexts": ["body"],
+                "allowed_scopes": ["forward_target"],
+                "paths": [],
+            },
+        ],
+        "retired_aliases": [
+            {
+                "rule_id": "body.compatibility_view_term",
+                "term": "compatibility projection",
+                "replacement": "compatibility view",
+                "contexts": ["body", "inline_code", "summary"],
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "paths": [],
+                "allowed_paths": [],
+            }
+        ],
+        "matrix_specs": [
+            {
+                "path": "docs/matrix.md",
+                "required_columns": [
+                    "Current bridge surface",
+                    "Target authoritative product",
+                    "Derived compatibility view",
+                    "Derived compatibility sidecar",
+                    "Current readers",
+                    "Target readers after cutover",
+                    "Cutover gate",
+                    "Retirement gate",
                 ],
-            },
-        },
-        "phrases": {"canonical": ["compatibility view", "entry check"]},
-        "aliases": {
-            "banned": [
-                {
-                    "term": "compatibility projection",
-                    "replacement": "compatibility view",
-                    "finding_class": "banned-alias",
-                    "summary_only": False,
-                    "paths": [],
-                    "path_prefixes": [],
-                }
-            ]
-        },
+                "allowed_shape_nouns": [
+                    "compatibility view",
+                    "compatibility sidecar",
+                    "none",
+                ],
+                "banned_fragments": ["view or sidecar"],
+            }
+        ],
         "exceptions": [
             {
-                "name": "bridge-local",
-                "paths": ["docs/example.md"],
-                "path_prefixes": [],
+                "exception_id": "locality.bridge_fields",
+                "allowed_scopes": ["forward_target", "repo_policy"],
+                "allowed_paths": ["docs/example.md"],
+                "allowed_section_labels": [],
                 "allowed_terms": ["activity_label"],
+                "required_marker": "Locality rule",
+                "required_rationale": True,
+                "notes": "Bridge-local field names must stay explicitly labeled.",
             }
+        ],
+        "required_markers": [
+            "Slice-only example",
+            "Compatibility-only locality",
+            "Current runtime note",
+            "Anti-example",
+            "Exception rationale",
+            "Migration-only root rationale",
+            "Locality rule",
         ],
     }
     target_path = root / "tools" / "target_naming_catalog.yaml"
@@ -136,28 +163,8 @@ def _write_doc(root: Path, relative_path: str, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def test_catalog_validation_rejects_surface_overlap(tmp_path: Path) -> None:
-    _write_catalog(tmp_path, exclude_paths=["docs/example.md"])
-    _write_doc(
-        tmp_path,
-        "docs/example.md",
-        '---\ntitle: "Example"\nsummary: "Clean summary."\ndoc_type: concept\naudience: human\nowner: repo\nstatus: active\n---\n',
-    )
-
-    with (
-        override_repo_root(tmp_path),
-        pytest.raises(ValueError, match="surface include/exclude overlap"),
-    ):
-        load_target_naming_catalog()
-
-
 def test_catalog_validation_rejects_paired_axis_overlap(tmp_path: Path) -> None:
     _write_catalog(tmp_path, overlap_axes=True)
-    _write_doc(
-        tmp_path,
-        "docs/example.md",
-        '---\ntitle: "Example"\nsummary: "Clean summary."\ndoc_type: concept\naudience: human\nowner: repo\nstatus: active\n---\n',
-    )
 
     with (
         override_repo_root(tmp_path),
@@ -166,61 +173,76 @@ def test_catalog_validation_rejects_paired_axis_overlap(tmp_path: Path) -> None:
         load_target_naming_catalog()
 
 
-def test_audit_finds_banned_alias_unknown_identifier_family_mismatch_and_flat_support_path(
+def test_audit_finds_phrase_alias_vocabulary_locality_and_structure_drift(
     tmp_path: Path,
 ) -> None:
     _write_catalog(tmp_path)
     _write_doc(
         tmp_path,
         "docs/example.md",
-        """---
-title: "Example"
-summary: "Clean summary."
-doc_type: concept
-audience: human
-owner: repo
-status: active
----
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
 
-- `basis`:
-  - `document_support`
-  - `manual_support`
+            - `basis`:
+              - `document_support`
+              - `manual_assertion`
 
-Use `compatibility projection`, `CheckpointProposalRecord`, `unknown_id`, and `support/gap_records.json`.
-""",
+            This bounded contract still relies on compatibility projection,
+            bridge-local `activity_label`, and `support/other/detail.json`.
+            """
+        ),
     )
 
     with override_repo_root(tmp_path):
         findings = audit_target_naming()
 
-    assert {finding.finding_class for finding in findings} == {
-        "banned-alias",
-        "unknown-target-identifier",
-        "record-family-mismatch",
-        "flat-support-path",
+    assert {finding.rule_id for finding in findings} == {
+        "body.compatibility_view_term",
+        "body.no_slice_role_jargon",
+        "locality.field.exception_restatement",
+        "structure.flat_support_path",
+        "vocab.axis.basis",
     }
 
 
-def test_audit_allows_path_scoped_exception(tmp_path: Path) -> None:
+def test_audit_allows_marked_locality_exception(tmp_path: Path) -> None:
     _write_catalog(tmp_path)
     _write_doc(
         tmp_path,
         "docs/example.md",
-        """---
-title: "Example"
-summary: "Clean summary."
-doc_type: concept
-audience: human
-owner: repo
-status: active
----
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
 
-- `basis`:
-  - `document_support`
-  - `manual_support`
+            ## Bridge Fields
 
-Allowed exception: `activity_label`.
-""",
+            **Locality rule:** Retain `activity_label` only for this bridge-local
+            compatibility note.
+
+            Later prose may restate `activity_label` inside the same governed section.
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
     )
 
     with override_repo_root(tmp_path):
@@ -229,68 +251,47 @@ Allowed exception: `activity_label`.
     assert findings == ()
 
 
-def test_audit_finds_vocabulary_drift(tmp_path: Path) -> None:
+def test_audit_reports_missing_naming_scope_for_repo_docs(tmp_path: Path) -> None:
     _write_catalog(tmp_path)
     _write_doc(
         tmp_path,
         "docs/example.md",
-        """---
-title: "Example"
-summary: "Clean summary."
-doc_type: concept
-audience: human
-owner: repo
-status: active
----
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            ---
 
-- `basis`:
-  - `document_support`
-  - `manual_assertion`
-""",
+            Example body.
+            """
+        ),
     )
 
     with override_repo_root(tmp_path):
-        findings = audit_target_naming()
+        findings = audit_target_naming(paths=("docs/example.md",))
 
-    assert [finding.finding_class for finding in findings] == ["vocabulary-drift"]
+    assert [finding.rule_id for finding in findings] == [
+        "structure.missing_naming_scope"
+    ]
 
 
-def test_real_repo_catalog_covers_expected_surfaces() -> None:
+def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     catalog = load_target_naming_catalog()
 
-    assert catalog.surfaces.include.paths == (
-        "ROADMAP.md",
-        "docs/README.md",
-        "docs/standards/engineering.md",
-        "docs/concepts/architecture-overview.md",
-        "docs/concepts/bridge-to-target-mapping.md",
-        "docs/concepts/domain-ontology.md",
-        "docs/concepts/gaps-and-readiness.md",
-        "docs/concepts/oracle-boundaries.md",
-        "docs/concepts/pipeline-stage-contracts.md",
-        "docs/concepts/reconciliation-tax-architecture.md",
-        "docs/concepts/unified-adapter-architecture.md",
-        "docs/reference/first-upstream-slice-contract.md",
-        "docs/reference/first-downstream-slice-contract.md",
-        "docs/reference/target-ids-and-refs.md",
-        "docs/reference/target-persistence-reference.md",
-        "docs/status/migration-sequence.md",
-        "docs/status/adapter-delivery-plan.md",
-    )
-    assert catalog.surfaces.exclude.paths == (
-        "docs/status/current-state.md",
-        "docs/concepts/current-bridge-contracts.md",
-        "docs/reference/baseline-validation-contract.md",
-        "docs/reference/canadian-crypto-tax-guide.md",
-        "docs/reference/cointracking-oracle-artifacts.md",
-        "docs/reference/export-checklist.md",
-        "docs/reference/location-inventory-artifacts.md",
-        "docs/reference/manual-balance-submission-artifacts.md",
-        "docs/reference/repository-history.md",
-        "docs/reference/tax-source-map.md",
-        "docs/reference/timezone-validation-artifacts.md",
-    )
-    assert catalog.surfaces.exclude.prefixes == ("docs/workspace/",)
+    assert catalog.root_file_scopes == {
+        "ROADMAP.md": "forward_target",
+        "AGENTS.md": "repo_policy",
+        "CHANGELOG.md": "repo_policy",
+    }
+    assert catalog.scope_profiles["forward_target"].enforce_target_naming is True
+    assert catalog.scope_profiles["repo_policy"].allow_anti_examples is True
+    assert "tools/target_naming.py" in catalog.tooling_paths
+    assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
 
 
 def test_target_naming_sensitive_path_helper_covers_docs_and_control_plane() -> None:
@@ -298,5 +299,7 @@ def test_target_naming_sensitive_path_helper_covers_docs_and_control_plane() -> 
         is_target_naming_sensitive_path("docs/concepts/pipeline-stage-contracts.md")
         is True
     )
+    assert is_target_naming_sensitive_path("docs/standards/engineering.md") is True
+    assert is_target_naming_sensitive_path("AGENTS.md") is True
     assert is_target_naming_sensitive_path("tools/target_naming_catalog.yaml") is True
     assert is_target_naming_sensitive_path("docs/guides/source-intake.md") is False

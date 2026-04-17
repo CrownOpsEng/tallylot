@@ -237,7 +237,12 @@ def test_run_staged_verification_uses_planned_checks_for_docs_only(
         == 0
     )
     assert seen_plans == [("docs-maintenance", "markdownlint")]
-    assert seen_contexts == [CheckExecutionContext(trigger="local")]
+    assert seen_contexts == [
+        CheckExecutionContext(
+            trigger="local",
+            changed_paths=("docs/guides/source-intake.md",),
+        )
+    ]
 
 
 def test_run_staged_verification_adds_target_naming_for_forward_looking_docs(
@@ -295,7 +300,12 @@ def test_run_staged_verification_adds_target_naming_for_forward_looking_docs(
         == 0
     )
     assert seen_plans == [("docs-maintenance", "markdownlint", "target-naming")]
-    assert seen_contexts == [CheckExecutionContext(trigger="local")]
+    assert seen_contexts == [
+        CheckExecutionContext(
+            trigger="local",
+            changed_paths=("docs/concepts/pipeline-stage-contracts.md",),
+        )
+    ]
 
 
 def test_install_hook_template_execs_repo_pre_commit_wrapper() -> None:

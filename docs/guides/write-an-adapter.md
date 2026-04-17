@@ -5,6 +5,7 @@ doc_type: guide
 audience: human
 owner: repo
 status: active
+naming_scope: adapter_local
 nav_order: 60
 ---
 

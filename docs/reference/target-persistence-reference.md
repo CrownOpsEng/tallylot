@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 18
 related:
   - docs/concepts/pipeline-stage-contracts.md
@@ -31,6 +32,10 @@ Use these contract pages first:
   bounded-slice persistence and compatibility expectations
 
 ## Persistence Rules
+
+**Exception rationale:** `support/` stays in this page only as the shared
+persistence root for the nested `gap/`, `review/`, and `readiness/` sidecar
+families. It is not a generic sidecar bucket.
 
 When persisting target products:
 

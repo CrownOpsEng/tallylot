@@ -5,11 +5,29 @@ doc_type: standard
 audience: human
 owner: repo
 status: active
+naming_scope: repo_policy
 nav_order: 10
 ---
 
 Use this document for code-focused decisions only: placement, typing,
 modularization, and naming.
+
+**Current runtime note:** CoinTracking references in this standard describe
+current output-adapter or oracle-local edges, not canonical target naming.
+
+**Exception rationale:** When this standard names `support/` or
+`domain/support/`, it is calling out the intentional shared root for the
+nested `gap/`, `review/`, and `readiness/` families rather than endorsing a
+generic catch-all boundary.
+
+**Migration-only root rationale:** When this standard names
+`application/compatibility/`, it is pointing to the bridge-only migration root
+for derived compatibility views, not a durable application center.
+
+**Locality rule:** When this standard names `source_slug`, `activity_label`, or
+`provider_operation_key`, it is restating allowed bridge-local or
+reporting-local terms so later contracts keep those exceptions explicit instead
+of promoting them into downstream canonical naming.
 
 ## Layer Placement
 
@@ -825,7 +843,6 @@ Split these modules before adding materially new behavior:
 
 - `src/tallylot/application/intake/packages/resolution.py`
 - `src/tallylot/adapters/sources/platforms/binance/adapter.py`
-- `src/tallylot/adapters/sources/platforms/coinbase/adapter.py`
 
 Preserve these shared package boundaries instead of collapsing them back
 into single modules:

@@ -5,6 +5,7 @@ doc_type: standard
 audience: human
 owner: repo
 status: active
+naming_scope: repo_policy
 nav_order: 20
 ---
 
@@ -474,6 +475,9 @@ Agents should not require repeated reminders to:
 These are the default operating standards for the repo.
 
 ## Stop-And-Fix Triggers
+
+**Current runtime note:** CoinTracking-specific semantics mentioned below
+describe current-edge drift to avoid, not canonical target naming.
 
 Pause feature work and fix the structure first when:
 

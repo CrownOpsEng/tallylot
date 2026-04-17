@@ -26,6 +26,7 @@ class CheckExecutionContext:
     head_sha: str | None = None
     pr_title: str | None = None
     pr_body: str | None = None
+    changed_paths: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -169,6 +170,8 @@ def resolve_check_command(
             "--head-sha",
             context.head_sha,
         )
+    if spec.id == "target-naming" and context.changed_paths:
+        return (*command, "--paths", *context.changed_paths)
     return command
 
 

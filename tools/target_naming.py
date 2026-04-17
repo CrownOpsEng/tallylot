@@ -3,64 +3,67 @@ from __future__ import annotations
 import argparse
 import json
 from collections.abc import Sequence
-from dataclasses import asdict
-from typing import cast
 
 from repo_support.target_naming import (
-    audit_target_naming,
-    catalog_path,
+    is_target_naming_sensitive_path,
     load_target_naming_catalog,
+    run_target_naming_audit,
 )
+from repo_support.target_naming.reporting import render_human_report, report_payload
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Check forward-looking target naming against the repo catalog."
+        description="Check forward-looking target naming against the repo policy catalog."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
-    subparsers.add_parser("check", help="Run the blocking target-naming check.")
+    check = subparsers.add_parser("check", help="Run the blocking target-naming check.")
+    check.add_argument(
+        "--paths",
+        nargs="+",
+        help="Only audit the supplied paths. Tooling paths expand to a full governed-doc sweep.",
+    )
     report = subparsers.add_parser("report", help="Emit a target-naming report.")
     report.add_argument("--json", action="store_true", help="Emit JSON output.")
+    report.add_argument(
+        "--paths",
+        nargs="+",
+        help="Only audit the supplied paths. Tooling paths expand to a full governed-doc sweep.",
+    )
     return parser
-
-
-def _report_payload() -> dict[str, object]:
-    catalog = load_target_naming_catalog()
-    findings = tuple(asdict(finding) for finding in audit_target_naming(catalog))
-    return {
-        "catalog_path": str(catalog_path()),
-        "enforced_paths": list(catalog.surfaces.include.paths),
-        "findings": findings,
-    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
-    payload = _report_payload()
-    findings = cast(list[dict[str, object]], payload["findings"])
+    catalog = load_target_naming_catalog()
+    requested_paths: tuple[str, ...] = tuple(args.paths or ())
+    report = run_target_naming_audit(paths=requested_paths or None, catalog=catalog)
     if args.command == "report":
         if args.json:
-            print(json.dumps(payload, indent=2, sort_keys=True))
+            print(json.dumps(report_payload(report), indent=2, sort_keys=True))
         else:
-            if not findings:
-                print("target naming report: no findings")
-            for item in findings:
-                print(f"{item['path']}: [{item['finding_class']}] {item['offending']}")
+            print(render_human_report(report))
         return 0
 
-    if not findings:
-        print("target naming check passed")
-        return 0
-    for item in findings:
-        replacement = item["replacement"] or "no replacement"
-        print(
-            f"{item['path']}: [{item['finding_class']}] "
-            f"{item['offending']} -> {replacement}"
-        )
-        print(f"  {item['detail']}")
-        if item["exception_rule"] is not None:
-            print(f"  exception: {item['exception_rule']}")
-    return 1
+    if requested_paths:
+        governed_requested = [
+            path
+            for path in requested_paths
+            if is_target_naming_sensitive_path(path, catalog=catalog)
+        ]
+        if governed_requested and not report.evaluated_paths:
+            print(
+                "target naming check failed closed: governed paths were supplied but "
+                "no policy evaluation was performed"
+            )
+            for path in governed_requested:
+                print(f"  - {path}")
+            return 1
+    if report.findings:
+        print(render_human_report(report))
+        return 1
+    print("target naming check passed")
+    return 0
 
 
 if __name__ == "__main__":

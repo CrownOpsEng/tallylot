@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 24
 related:
   - docs/concepts/current-bridge-contracts.md
@@ -20,6 +21,11 @@ Use this page when you need the migration rule from the live bridge into the
 target pipeline. This page defines cutover direction, authoritative writer
 rules, derived compatibility views, reader cutovers, and bridge retirement
 gates. It does not redefine live bridge truth or target product contracts.
+
+**Locality rule:** This migration page restates bridge-only fields such as
+`activity_label`, `provider_operation_key`, and the current `*_hint` families
+only to freeze compatibility boundaries. Those names stay outside canonical
+target kernels.
 
 ## Scope And Related Contract Pages
 

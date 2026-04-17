@@ -1,10 +1,11 @@
 ---
 title: "First Downstream Slice Contract"
-summary: "Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views."
+summary: "Contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 16
 related:
   - docs/reference/first-upstream-slice-contract.md
@@ -16,9 +17,14 @@ related:
 ---
 
 Use this page when implementing or reviewing the first downstream slice after
-the first upstream `EvidenceSet -> ClaimSet` landing path. This document
+the first upstream `EvidenceSet -> ClaimSet` slice. This document
 freezes scope, ids, parity, replay, and allowed drift for the first downstream
 `EconomicFacts -> ReconciliationState -> Checkpoint` increment.
+
+**Slice-only example:** This slice still uses Coinbase retail activity and
+recognized Coinbase statement examples only to pin the first downstream parity
+boundary. Those provider names are slice-local examples, not canonical target
+naming.
 
 ## Slice Scope
 

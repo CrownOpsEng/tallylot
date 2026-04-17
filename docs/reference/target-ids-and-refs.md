@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 17
 related:
   - docs/concepts/pipeline-stage-contracts.md
@@ -16,6 +17,11 @@ related:
 Use this page when a target-stage implementation needs a reusable target id or
 ref tuple that is not itself a stage contract. The detailed contract pages take
 precedence.
+
+**Locality rule:** This page restates `source_slug` and `market_reference` only
+where reusable ids or ref tuples still need evidence-local or origin-local
+compatibility language. Those terms stay local to those seams and do not become
+broader target vocabulary.
 
 ## Precedence
 
