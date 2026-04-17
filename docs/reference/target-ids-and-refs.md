@@ -1,6 +1,6 @@
 ---
 title: "Target Ids And Refs"
-summary: "Helper reference for reusable target ids and ref tuples that complement the owner pages without redefining product contracts."
+summary: "Reusable target ids and ref tuples that are shared across target contracts."
 doc_type: reference
 audience: human
 owner: repo
@@ -13,13 +13,13 @@ related:
   - ROADMAP.md
 ---
 
-Use this page as a helper reference when a target-stage implementation needs a
-reusable target id or ref tuple that is not itself a stage contract. Owner
-pages take precedence.
+Use this page when a target-stage implementation needs a reusable target id or
+ref tuple that is not itself a stage contract. The detailed contract pages take
+precedence.
 
 ## Precedence
 
-Use the owner pages first:
+Use the detailed contract pages first:
 
 - [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md) for
   stable-id format, target product ids, upstream product refs, target product
@@ -30,8 +30,8 @@ Use the owner pages first:
 - [Gaps And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
   shared gap/review/readiness attachments, and `product_scope_id`
 
-This page keeps only reusable target ids and ref tuples that are not primary
-owner concepts elsewhere.
+This page keeps only reusable target ids and ref tuples that are not defined as
+the primary contract content elsewhere.
 
 ## Emitter Id
 
@@ -74,6 +74,9 @@ Frozen `origin_kind` vocabulary:
 - `checkpoint_assertion`
 - `basis_adjustment`
 
+`OriginRef.origin_kind = market_reference` stays on the origin axis. It names
+an immediate upstream source class, not a valuation-purpose member.
+
 ## Journal Refs
 
 `JournalAccountRef` identifies one chart account.
@@ -111,4 +114,4 @@ Rules:
 
 Do not implement target product ids, upstream product refs, `product_scope_id`,
 `AssertionValue`, `SubjectRef`, or target product kernel structure from this
-page. Those contracts live on their owner pages.
+page. Those contracts live on their primary contract pages.

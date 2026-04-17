@@ -5,7 +5,7 @@ This file is the forward planning document for the repo.
 - Completed work belongs in [CHANGELOG.md](CHANGELOG.md).
 - The currently implemented runtime surface belongs in
   [`docs/status/current-state.md`](docs/status/current-state.md).
-- Detailed contract ownership lives in:
+- Detailed contract pages live in:
   - [`docs/concepts/current-bridge-contracts.md`](docs/concepts/current-bridge-contracts.md)
   - [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
   - [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
@@ -17,9 +17,8 @@ This file is the forward planning document for the repo.
   - [`docs/status/migration-sequence.md`](docs/status/migration-sequence.md)
 
 This roadmap tracks the implementation program from the current bridge toward
-the target stage-first architecture. The current bridge remains the live runtime
-seam until later slices replace it, but it is not the long-term architecture
-center.
+the target runtime pipeline. The current bridge remains the live runtime seam
+until later slices replace it, but it is not the long-term architecture center.
 
 ## Planning Anchors
 
@@ -54,10 +53,10 @@ These anchors drive sequencing and acceptance criteria:
 
 Goal:
 
-- freeze the owner pages that bounded implementation slices need
+- freeze the contract pages that bounded implementation slices need
 - remove architecture ambiguity before broad implementation begins
 
-Broad implementation must not begin until the owner pages freeze these
+Broad implementation must not begin until the contract pages freeze these
 contracts.
 
 Must freeze:
@@ -96,10 +95,14 @@ Must freeze:
 - child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
   `checkpoint_proposal_id`, `JournalAccountRef`, and `JournalUnitRef` as the
   canonical downstream stems instead of shorter or mixed-family alternates
+- balance-target naming that splits observation presence from comparison
+  outcome instead of overloading one status field
+- checkpoint-proposal naming that keeps proposal posture on `status` and models
+  supersession separately through `superseding_proposal_ref`
 - checkpoint-assertion kind naming that keeps quantity, amount, and state
   stems parallel across sibling values such as `position_quantity`,
   `cash_amount`, `basis_amount`, `owner_state`, and `location_state`
-- checkpoint acceptance vocabulary that keeps `basis`, `support_kind`, and
+- checkpoint acceptance vocabulary that keeps `basis`, `support_shape`, and
   `continuity_kind` on distinct semantic axes, using reason labels such as
   `document_support`, `reported_support`, `manual_support`, and
   `reconciled_continuity`, observation-shape labels such as
@@ -124,7 +127,7 @@ Must freeze:
 
 Deliver:
 
-- aligned owner pages for target products, ontology, gap/review/readiness
+- aligned contract pages for target products, ontology, gap/review/readiness
   records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration

@@ -204,6 +204,82 @@ def test_parse_frontmatter_wraps_yaml_errors() -> None:
         docs_maintenance.parse_frontmatter(text, path)
 
 
+def test_validate_frontmatter_rejects_role_first_summary_phrase() -> None:
+    path = repo_root() / "docs" / "concepts" / "example.md"
+    text = dedent(
+        """\
+        ---
+        title: "Example"
+        summary: "Owning concept page for the example contract."
+        doc_type: concept
+        audience: human
+        owner: repo
+        status: active
+        ---
+
+        Example body.
+        """
+    )
+
+    frontmatter = docs_maintenance.parse_frontmatter(text, path)
+
+    with pytest.raises(
+        ValueError,
+        match="must use a content-first summary and avoid banned summary phrase",
+    ):
+        docs_maintenance.validate_frontmatter(path, frontmatter)
+
+
+def test_validate_frontmatter_rejects_provider_nouns_in_forward_looking_summary() -> (
+    None
+):
+    path = repo_root() / "docs" / "reference" / "example.md"
+    text = dedent(
+        """\
+        ---
+        title: "Example"
+        summary: "Reference for the Coinbase target contract."
+        doc_type: reference
+        audience: human
+        owner: repo
+        status: active
+        ---
+
+        Example body.
+        """
+    )
+
+    frontmatter = docs_maintenance.parse_frontmatter(text, path)
+
+    with pytest.raises(
+        ValueError,
+        match="must keep provider and custody nouns out of forward-looking summaries",
+    ):
+        docs_maintenance.validate_frontmatter(path, frontmatter)
+
+
+def test_validate_frontmatter_allows_provider_nouns_in_local_oracle_summary() -> None:
+    path = repo_root() / "docs" / "reference" / "cointracking-oracle-artifacts.md"
+    text = dedent(
+        """\
+        ---
+        title: "CoinTracking Oracle Artifacts"
+        summary: "Repo-safe reference for CoinTracking artifact families used only for development and validation."
+        doc_type: reference
+        audience: human
+        owner: repo
+        status: active
+        ---
+
+        Example body.
+        """
+    )
+
+    frontmatter = docs_maintenance.parse_frontmatter(text, path)
+
+    docs_maintenance.validate_frontmatter(path, frontmatter)
+
+
 def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
     paths = (
         *sorted((repo_root() / "docs").rglob("*.md")),

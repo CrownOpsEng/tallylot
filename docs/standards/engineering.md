@@ -189,6 +189,14 @@ Current application of this rule:
 - For domain and contract surfaces, prefer the shortest accurate noun phrase.
   Cut migration, workflow, or implementation adjectives before cutting the
   owning noun that tells readers what the thing is.
+- Apply that same content-first rule to doc frontmatter summaries and sync-
+  managed docs-home blurbs. Lead with the held contract or content, not the
+  page's governance role. Avoid role-first summary phrasing that leads with a
+  page role or authority label instead of the held contract.
+- In forward-looking summaries and docs-home blurbs, keep provider and custody
+  nouns out of canonical target naming. If a page needs a provider-scoped
+  exception, keep that wording in the labeled scope paragraph or example rather
+  than in the summary or generated navigation blurb.
 - Keep one stem aligned across the whole family. If the repo chooses
   `CheckpointProposal`, keep that stem in the record family, id fields,
   ref fields, slice contracts, roadmap, and package ownership docs. Do not
@@ -218,6 +226,9 @@ Current application of this rule:
   boundary, use the same noun form across them. Prefer `economics` over
   `economic` for stage labels and shared stage vocabularies because the repo
   already owns `domain/economics/` and `application/economics/`.
+- Once the repo has chosen `economics` for the stage and package noun, reserve
+  `economic` for adjectival use inside that family rather than as a competing
+  stage, package, or product-root stem.
 - Prefer explicit identity-family package roots over umbrella containers once
   the owned families are already known. Use roots such as `instrument/`,
   `location/`, `ownership/`, `counterparty/`, `contract/`, `position/`,
@@ -252,10 +263,14 @@ Current application of this rule:
   `review`, and `readiness` over the looser umbrella `shared support` when
   those are the actual owned families. Reserve generic `support` for
   intentional roots or bounded field names such as `domain/support/`,
-  `support/`, or `support_kind`.
+  `support/`, or `support_shape`.
 - When cross-stage support logic needs its own application boundary, give it
   the family noun directly, such as `application/readiness/`, rather than
   burying it under a neighboring stage package.
+- `application/compatibility/` is acceptable only for migration-era bridge
+  compatibility views and view writers. When a page or package uses that root,
+  state directly that it is migration-only rather than a durable application
+  center.
 - Follow the same naming approach for modules, functions, classes, and commands:
   choose concise descriptive names over decorative jargon.
 - Keep shape and casing aligned by role:
@@ -386,6 +401,13 @@ Current application of this rule:
   record id naturally describe the same accepted object, prefer one shared
   `<product>_id` over inventing `<product>_set_id` only to separate metadata
   from that root record.
+- Apply that same rule to root-record family names. If one product owns one
+  natural root record, keep the simple root family stem, such as
+  `CheckpointRecord`, instead of inventing a second label only to separate the
+  product from its accepted root.
+- Shared cross-stage support families that are repo-owned concepts in their own
+  right may also stay short. Prefer `GapRecord`, `ReviewRecord`, and
+  `ReadinessRecord` over longer prefixed variants that add no new meaning.
 - For shared gap/review/readiness attachment over one emitted product kernel,
   prefer the explicit `product_scope_id` over generic names such as
   `dataset_id`.
@@ -431,6 +453,10 @@ Current application of this rule:
   prose. For domain concepts, tuple refs, or record-family shapes, prefer
   nouns such as `state`, `shape`, `record family`, or `identity seam` over the
   looser `surface`.
+- In canonical cutover matrices, use stable surface nouns or explicit file,
+  view, or sidecar family names for rows and columns. Keep planner-local,
+  debugger-local, or otherwise undeclared shapes in surrounding prose rather
+  than presenting them as canonical matrix families.
 - Prefer `kind` for a record's own primary one-of or variant field, and use
   `*_kind` when the field classifies another concept, a nested structure, or a
   sibling concept inside the same record. Reserve `family` for prose grouping
@@ -456,10 +482,19 @@ Current application of this rule:
   that would be ambiguous without the prefix. When the stage already supplies
   that locality, prefer the shorter held-thing noun such as `activity_label`,
   `location_label`, or `statement_kind` over `source_local_*`.
+- When a contract page freezes an allowed locality exception such as
+  `source_slug`, `activity_label`, `provider_operation_key`, or
+  `AccountingIntentHint`, restate that locality at the owning field table or
+  immediately adjacent prose rather than leaving the exception only in this
+  standards page.
 - When a record owns one primary lifecycle, decision, or resolution field,
   prefer plain `status`, `basis`, or `outcome` over repeating the record stem.
   Add a prefix only when the field describes another concept's status or basis
   rather than the record's own state.
+- Keep plain `status` when a record owns one primary state axis. If one record
+  is mixing comparison result, observation presence, supersession, or blocker
+  posture inside one field family, split the model into distinct fields instead
+  of papering over the problem with a longer `*_status` name.
 - Prefer `status` over `state` for bounded field vocabularies. Reserve
   `State` for named domain concepts or broader state bundles when `status`
   would underspecify the concept.
@@ -491,7 +526,7 @@ Current application of this rule:
   unsupported-input records.
 - Keep all members of one bounded vocabulary on the same semantic axis. Use
   trust or readiness tiers for `trust_level`, support shapes for
-  `support_kind`, and acceptance reasons for `basis` instead of mixing those
+  `support_shape`, and acceptance reasons for `basis` instead of mixing those
   dimensions inside one field family.
 - When adjacent vocabularies live on different semantic axes, do not reuse one
   slice-local label across all of them if that would blur reason, support
@@ -499,11 +534,11 @@ Current application of this rule:
   `document_support`, `reported_support`, `manual_support`, and
   `reconciled_continuity` in `basis`, observation-shape labels such as
   `document_observation`, `reported_observation`, and `manual_assertion` in
-  `support_kind`, and continuity-shape labels such as
+  `support_shape`, and continuity-shape labels such as
   `observed_continuity`, `reconciled_rollforward`,
   `opening_rollforward`, and `partial_rollforward` in `continuity_kind`.
 - Do not reuse a label such as `reported_observation` or `manual_assertion`
-  across both `basis` and `support_kind` just because one slice happens to
+  across both `basis` and `support_shape` just because one slice happens to
   allow both; keep the reason axis and the support-shape axis distinct.
 - For bounded `basis` or similar reason vocabularies, drop redundant suffixes
   such as `_match`, `_preferred`, or `_duplicate` when the field already
@@ -565,7 +600,7 @@ Current application of this rule:
   parallel naming field that makes `display_name` materially clearer.
 - When a product header carries an ordered set of upstream refs, keep any
   matching product-id component array in that same canonical order unless the
-  owner page documents a stronger reason to differ.
+  contract page documents a stronger reason to differ.
 - Inside aggregate rollup records, use `rollup_kind` and `rollup_key` for the
   grouping dimensions so `rollup` remains the record shape instead of becoming
   a second generic field prefix.
@@ -593,9 +628,10 @@ Current application of this rule:
 - Once `Journal` owns `EntryCheckRecord`, prefer `entry check` or
   `entry-check` wording over generic `validation` when naming target-stage
   journal records, prose, or package responsibilities.
-- Apply that same rule to controlled vocabularies. Prefer `checked` over
-  `validated` for journal-entry status values once `EntryCheckRecord` is the
-  owned check family.
+- Apply that same rule to controlled vocabularies. Keep journal-entry expansion
+  status separate from entry-check results. Prefer `expanded` or `blocked` on
+  `JournalEntryRecord.status`, and reserve `passed` or `blocked` for
+  `EntryCheckRecord.status`.
 - In target controlled vocabularies, keep the stage noun and held-thing noun
   aligned once the target stage owns the boundary. Prefer
   `economic_measurement`, `checkpoint_measurement`, `journal_measurement`, and
@@ -657,10 +693,14 @@ Current application of this rule:
   record names, helper refs, stable ids, or partition labels unless those
   nouns are themselves the persisted concept. Prefer lineage-, origin-, or
   subject-owned names over carry-through source labels in downstream kernels.
-- When a forward-looking owner page needs a provider-scoped or slice-scoped
+- When a forward-looking contract page needs a provider-scoped or slice-scoped
   exception, keep that provider noun in the scope paragraph, example, or
   bounded-slice section rather than in canonical target record names, helper
   refs, stable ids, or directory stems.
+- Apply that same locality rule to titles, frontmatter summaries, and sync-
+  managed docs-home blurbs. Forward-looking navigation copy should remain
+  provider- and custody-neutral unless the page itself is intentionally local
+  current-state, bridge-only, oracle-only, or adapter-local documentation.
 - Operator views and compatibility views may still group by
   `source_slug` where operators need that reporting lens, but that dimension
   must not leak into downstream product ids, record ids, authoritative
@@ -689,7 +729,7 @@ Current application of this rule:
   `TaxInputs`, and `JournalEntryRecord` is clearer than an alternate
   `AccountingEntryRecord` once `Journal` is the owned product family.
 - In forward-looking workflow prose, use the emitted product name once the
-  owner page already freezes that boundary. Prefer phrases such as
+  contract page already freezes that boundary. Prefer phrases such as
   `build EconomicFacts`, `build ReconciliationState`, or `emit TaxOutputs`
   over looser process wording such as `compile accepted economics`.
 - In forward-looking target persistence, authoritative directory stems should
@@ -748,13 +788,13 @@ family, ref, id, package, or file name.
    and package stems mirror each other in suffix, role naming, and vocabulary
    style?
 10. Paired-axis view: do paired fields or vocabulary families such as
-    `basis`, `support_kind`, and `continuity_kind` stay on distinct semantic
+    `basis`, `support_shape`, and `continuity_kind` stay on distinct semantic
     axes without overlapping or drifting into synonyms?
 
-When one canonical target name changes, update every owner page, bounded-slice
-reference, roadmap phase, helper reference, and control-plane routing page that
-uses that family in the same patch. Do not leave competing target names alive
-in parallel.
+When one canonical target name changes, update every primary contract page,
+bounded-slice reference, roadmap phase, contract reference, and control-plane
+routing page that uses that family in the same patch. Do not leave competing
+target names alive in parallel.
 
 ## Refactor-First Hotspots
 

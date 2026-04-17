@@ -1,6 +1,6 @@
 ---
 title: "First Downstream Slice Contract"
-summary: "Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, scoped to the Coinbase custodial path, including claim-bundle-derived event identity and bridge compatibility views."
+summary: "Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
@@ -53,9 +53,9 @@ The slice may emit only these downstream kernel families:
 | `EconomicFacts` | `EconomicEventRecord` | only `asset_movement`, `cash_movement`, `fee_or_rebate`, and `correction` event kinds |
 | `EconomicFacts` | `EconomicLegRecord` | only `holding_change`, `cash_change`, `fee`, and `rebate` leg roles |
 | `EconomicFacts` | `ValuationRecord` | zero rows by default; valuations land only when an unchanged parity slice proves they are required |
-| `ReconciliationState` | `ContinuitySegmentRecord` | one segment per Coinbase position subject in this slice and bounded time span |
+| `ReconciliationState` | `ContinuitySegmentRecord` | one segment per in-scope position subject in this slice and bounded time span |
 | `ReconciliationState` | `BalanceTargetRecord` | only `kind = exact_balance`, with direct `expected_value` and `observed_value` using `AssertionValue` |
-| `ReconciliationState` | `CheckpointProposalRecord` | only checkpoint proposal records supported by exact-balance targets and statement evidence in this slice |
+| `ReconciliationState` | `CheckpointProposalRecord` | only checkpoint proposal records supported by exact-balance targets and statement evidence in this slice, with supersession tracked by `superseding_proposal_ref` rather than a status value |
 | `Checkpoint` | `CheckpointRecord` | accepted checkpoint record for assertions in this slice only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
@@ -65,7 +65,7 @@ The slice may emit only these downstream kernel families:
 
 This slice freezes one position identity shape:
 
-- `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_position"]`
+- `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "held_position"]`
 
 Rules:
 
@@ -191,6 +191,43 @@ Compatibility rule:
   sidecars, not from `EconomicActivityDraft`, `SourceTranslationBatch`, or
   bridge facts as peer economic authorities
 
+## In-Scope Reconciliation Vocabulary
+
+This slice allows only:
+
+- `ContinuitySegmentRecord.status`:
+  - `complete`
+  - `partial`
+- `BalanceTargetRecord.observation_status`:
+  - `observed`
+  - `unobserved`
+- `BalanceTargetRecord.comparison_outcome`:
+  - `matched`
+  - `mismatched`
+- `CheckpointProposalRecord.status`:
+  - `ready`
+  - `partial`
+  - `blocked`
+
+Rules:
+
+- `BalanceTargetRecord.comparison_outcome` is set only when
+  `observation_status = observed`
+- balance-target blocker posture remains on reconciliation-owned gaps and
+  readiness attached to `balance_target_id`, not on balance-target state
+  fields
+- `CheckpointProposalRecord.superseding_proposal_ref` records proposal
+  supersession when a later proposal replaces an earlier one
+
+Not allowed in this slice:
+
+- `ContinuitySegmentRecord.status`:
+  - `blocked`
+- `BalanceTargetRecord.comparison_outcome`:
+  - `blocked`
+- `CheckpointProposalRecord.status`:
+  - `superseded`
+
 ## In-Scope Checkpoint Vocabulary
 
 This slice allows only:
@@ -201,7 +238,7 @@ This slice allows only:
 - `basis`:
   - `document_support`
   - `reconciled_continuity`
-- `support_kind`:
+- `support_shape`:
   - `document_observation`
 - `continuity_kind`:
   - `observed_continuity`
@@ -213,7 +250,7 @@ Not allowed in this slice:
   - `reported_support`
   - `manual_support`
   - `adopted_opening`
-- `support_kind` values:
+- `support_shape` values:
   - `reported_observation`
   - `location_observation`
   - `inventory_observation`
@@ -223,7 +260,7 @@ Not allowed in this slice:
 
 ## Parity Gates
 
-Retained compatibility views are part of the slice parity bar. Kernel
+Retained compatibility projections are part of the slice parity bar. Kernel
 parity alone is not sufficient while these legacy readers remain active.
 
 Unchanged inputs from the first upstream slice must preserve all of the
@@ -232,8 +269,8 @@ following:
 - accepted event ids and ordering
 - accepted leg ids, ordering, and quantities
 - `ContinuitySegmentRecord` ids and ordering
-- `BalanceTargetRecord` ids, ordering, and statuses
-- `CheckpointProposalRecord` ids, ordering, and statuses
+- `BalanceTargetRecord` ids, ordering, `observation_status`, and `comparison_outcome`
+- `CheckpointProposalRecord` ids, ordering, statuses, and supersession refs
 - `CheckpointAssertionRecord` ids, ordering, and accepted values
 - derived `TransactionFact` ordering and meaning for evidence in this slice
 - `facts.csv` content for evidence in this slice

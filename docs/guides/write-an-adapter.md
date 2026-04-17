@@ -16,9 +16,9 @@ first when deciding whether adapter work belongs in the filing-critical `now`
 track or the later contract rewrite.
 
 Read [`../concepts/unified-adapter-architecture.md`](../concepts/unified-adapter-architecture.md)
-before shaping adapter changes. That concept document is the forward design
-anchor for adapter work. This guide describes the current contract and the
-current repo-facing implementation rules.
+before shaping adapter changes. That concept document defines the future
+adapter manifest, facet, and verification model. This guide describes the
+current contract and the current repo-facing implementation rules.
 
 ## Rules
 

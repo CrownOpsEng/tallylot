@@ -1,6 +1,6 @@
 ---
 title: "Reconciliation And Tax Architecture"
-summary: "Design anchor for trust gates, persistence rules, performance rules, and filing-critical rollout from the current bridge toward the target pipeline."
+summary: "Trust gates, persistence rules, performance constraints, and filing-critical rollout for the target runtime pipeline."
 doc_type: concept
 audience: human
 owner: repo
@@ -8,13 +8,12 @@ status: active
 nav_order: 20
 ---
 
-This document is the implementation anchor for evolving the repo away from
-tracker-dependent historical workflows and into an independent reconciliation,
-checkpoint, journal, and tax runtime.
+This page defines the trust gates, persistence model, and rollout posture for
+evolving the repo away from tracker-dependent historical workflows and into an
+independent reconciliation, checkpoint, journal, and tax runtime.
 
 Use it when making structural decisions that affect persistence,
-reconciliation, checkpoint, journal, or tax computation. Treat it as a
-design contract, not as a loose idea list.
+reconciliation, checkpoint, journal, or tax computation.
 
 ## Current Runtime Note
 
@@ -38,14 +37,14 @@ The system must:
 - emit a deterministic journal and require its entry checks to pass
 - surface unsupported or ambiguous truth as explicit gaps, reviews, and later
   stage blockers
-- preserve one interface-neutral application surface so future CLI, HTTP, API,
-  and agent entrypoints can share the same typed workflows
+- preserve one typed application workflow surface so future CLI, HTTP, API, and
+  agent entrypoints can share the same workflows
 
-## Contract Owners
+## Related Contract Pages
 
-This page does not re-own every lower-level contract.
+This page does not redefine every lower-level contract.
 
-Use these pages as the detailed contract owners:
+Use these pages for the detailed neighboring contracts:
 
 - [Current Bridge Contracts](current-bridge-contracts.md)
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
