@@ -1,6 +1,8 @@
 <!-- markdownlint-disable-file MD041 MD032 -->
 <!-- Multi-checkpoint PRs must merge-commit. Single-checkpoint PRs must squash. -->
 <!-- Open PRs as draft first. Mark ready for review only after a clean hardening pass. -->
+<!-- By opening this PR, you confirm that you have read CONTRIBUTING.md and
+agree that the submission is governed by CLA.md. -->
 
 Why:
 - explain the problem or constraint this PR resolves

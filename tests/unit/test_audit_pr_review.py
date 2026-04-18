@@ -74,6 +74,16 @@ def test_repo_root_conftest_maps_to_repo_code_review_surface() -> None:
     assert plan.unmapped_paths == ()
 
 
+def test_root_licensing_docs_map_to_human_docs() -> None:
+    plan = classify_changed_paths(("CONTRIBUTING.md", "CLA.md", "LICENSE.docs"))
+
+    assert plan.surface_groups == ("human_docs",)
+    assert plan.verification_level == "docs-maintenance"
+    assert plan.requires_full_quality_gates is False
+    assert plan.requires_ci_parity is False
+    assert plan.unmapped_paths == ()
+
+
 def test_packaging_sensitive_repo_code_adds_pre_merge_packaging_verification() -> None:
     plan = classify_changed_paths(("src/tallylot/interfaces/cli/source.py",))
 
