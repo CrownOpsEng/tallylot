@@ -7,7 +7,7 @@ path.
    Shakepay statement PDFs
 2. review the extracted balance rows before using them as evidence
 3. keep the PDF-derived artifacts in supporting or reconciliation review paths;
-   do not treat them as canonical transaction imports
+   do not treat them as transaction-history imports
 
 Use `docs/guides/operator-quickstart.md` for the short surrounding workflow,
 `docs/guides/normalize-screen-stage.md` and `docs/guides/verify-a-round.md`

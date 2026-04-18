@@ -8,6 +8,12 @@ status: active
 nav_order: 10
 ---
 
+This status page uses current implementation terms where accuracy requires
+them. Forward-looking architecture and roadmap docs use the final target
+product names `EvidenceSet`, `ClaimSet`, `EconomicFacts`,
+`ReconciliationState`, `Checkpoint`, `Journal`, `TaxInputs`, and
+`TaxOutputs`.
+
 ## Current Runtime
 
 - Typed single-package architecture under `src/tallylot/`
@@ -25,6 +31,20 @@ nav_order: 10
   provider adapters remain deferred
 - Platform API expansion, SQLite, and provider-backed AI remain stubbed behind
   typed boundaries
+
+## Current Bridge To The Target Pipeline
+
+- The implemented bridge currently centers on `EconomicActivityDraft`,
+  `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`.
+- Treat that bridge as the current delivery seam, not as the final architecture
+  center.
+- The target pipeline products and stage contracts live in
+  `docs/concepts/pipeline-stage-contracts.md`; system-level trust gates and
+  rollout alignment live in
+  `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md`.
+- MVP work should extend the current bridge incrementally where it protects the
+  filing path, while landing richer pipeline products only when a concrete next
+  stage needs them.
 
 ## Current Operational Surface
 

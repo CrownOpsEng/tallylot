@@ -18,7 +18,8 @@ depending on any one portfolio tracker.
 
 ## Design Rules
 
-- The core system of record is the provider-neutral transaction fact model.
+- The current bridge centers on `TransactionFact` plus shared balance
+  artifacts, but the target pipeline extends beyond facts alone.
 - The internal core should remain asset-class-agnostic even when current
   adapters or policies are crypto-first.
 - Source evidence and source-backed checkpoints are first-class.
@@ -34,10 +35,10 @@ depending on any one portfolio tracker.
 | Class | Examples | Allowed To Create Core Facts | Required In Normal Workflow | Notes |
 | ---- | ---- | ---- | ---- | ---- |
 | Source evidence | exchange exports, wallet exports, statements, explorer exports | Yes | Yes | Primary reconstruction path |
-| Checkpoint evidence | balance statements, wallet snapshots, source-backed checkpoint packages | Yes | Yes | First-class reconciliation input |
+| Checkpoint evidence | balance statements, wallet snapshots, source-backed checkpoint artifacts | Yes | Yes | First-class reconciliation input |
 | Adapter-format inputs | CoinTracking trade imports, CoinTracking CSV shape, future tracker imports | Yes | No | Supported through adapters only |
 | Oracle support artifacts | CoinTracking tax reports, roll-forward reports, average purchase price, double-entry exports | No | No | Development and validation only; never production runtime inputs |
-| Derived outputs | CoinTracking export projection, Ledger journal, tax package, checkpoint package | No | No | Produced by the system |
+| Derived outputs | CoinTracking export projection, Ledger journal, tax outputs package, checkpoint artifacts | No | No | Produced by the system |
 
 ## Normal Runtime Workflow
 
@@ -48,11 +49,22 @@ The normal filing-capable workflow is:
 3. Reconcile transfers, balances, and reconciliation windows.
 4. Build or validate checkpoints.
 5. Render a double-entry journal.
-6. Compute tax state from reconciled facts.
-7. Emit filing artifacts.
+6. Build `TaxInputs` from reconciled economics plus accepted checkpoint truth.
+7. Apply selected tax policies to emit `TaxOutputs`.
 
 This workflow must remain valid even when no CoinTracking tax outputs are
 available.
+
+The detailed target product flow behind that workflow is:
+
+`EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
+
+Current runtime note:
+
+- today's bridge path still centers on `TransactionFact` plus shared balance
+  artifacts
+- treat that bridge as an incremental delivery seam, not as the long-term
+  endpoint of the architecture
 
 ## CoinTracking-Specific Rules
 
@@ -125,8 +137,10 @@ Those artifacts may support comparison, but not checkpoint existence.
 - Keep domain services unaware of CoinTracking report schemas.
 - Keep crypto-, FX-, and security-specific terms out of shared core abstractions
   unless the concept is inherently specific to that surface.
-- Keep tax policy operating on reconciled facts and checkpoint state only.
-- Keep journal rendering operating on facts and accounting intents only.
+- Keep tax policy operating on `TaxInputs` built from reconciled economics and
+  accepted checkpoint truth only.
+- Keep journal rendering operating on reconciled economics, accepted checkpoint
+  truth, and accounting coverage rules only.
 
 ## Failure Test
 

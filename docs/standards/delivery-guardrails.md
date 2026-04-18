@@ -109,6 +109,13 @@ Control-plane files include:
 - `tools/run_quality_gates.py`
 - `tools/verify_built_wheel.py`
 
+Current-state note:
+
+- these `repo_support/**` paths are current live control-plane surfaces today
+- later implementation may rename that dev-only shared support boundary under
+  `dev_support/`, but until that slice lands the current live paths remain the
+  enforcement truth
+
 If a repo policy depends on a platform-native control that is not enabled, call
 that out as a real enforcement gap rather than assuming documentation is
 enough.
@@ -158,8 +165,9 @@ the changed surface groups in the current PR diff:
     delivery behavior, compaction and context-loss recovery, issue and privacy
     handling
 - `repo_code_or_tooling`
-  - paths: `src/**`, Python under `tools/**`, `repo_support/**`, `tests/**`,
-    and repo-root test support such as `conftest.py`
+  - paths: `src/**`, Python under `tools/**`, current live repo-only support
+    code under `repo_support/**`, `tests/**`, and repo-root test support such
+    as `conftest.py`
   - review domains: design and ownership, correctness and behavior, complexity
     and over-engineering, tests and regression value, naming and public
     terminology, documentation and control-plane alignment
