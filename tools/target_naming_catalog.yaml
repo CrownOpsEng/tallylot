@@ -1037,6 +1037,9 @@ matrix_specs:
       - exceptions.csv and IssueRecord outputs
       - normalization_reviews.csv and NormalizationReviewRecord outputs
     required_nonempty_columns:
+      - Target authoritative product(s)
+      - Derived compatibility view
+      - Derived compatibility sidecar
       - Current readers
       - Target readers after cutover
       - Cutover gate

@@ -394,6 +394,9 @@ def test_catalog_loads_bridge_cutover_required_rows(tmp_path: Path) -> None:
                 "TransactionFact and facts.csv",
             ),
             required_nonempty_columns=(
+                "Target authoritative product(s)",
+                "Derived compatibility view",
+                "Derived compatibility sidecar",
                 "Current readers",
                 "Target readers after cutover",
                 "Cutover gate",
@@ -411,6 +414,9 @@ def test_catalog_loads_bridge_cutover_required_rows(tmp_path: Path) -> None:
         "TransactionFact and facts.csv",
     )
     assert catalog.matrix_specs[0].required_nonempty_columns == (
+        "Target authoritative product(s)",
+        "Derived compatibility view",
+        "Derived compatibility sidecar",
         "Current readers",
         "Target readers after cutover",
         "Cutover gate",
@@ -1198,6 +1204,9 @@ def _assert_blank_required_bridge_cutover_cell_finding(
         _matrix_spec(
             required_rows=("translation_input_plan.json",),
             required_nonempty_columns=(
+                "Target authoritative product(s)",
+                "Derived compatibility view",
+                "Derived compatibility sidecar",
                 "Current readers",
                 "Target readers after cutover",
                 "Cutover gate",
@@ -1248,6 +1257,26 @@ def _assert_blank_required_bridge_cutover_cell_finding(
 def test_audit_reports_blank_current_reader_cell(tmp_path: Path) -> None:
     _assert_blank_required_bridge_cutover_cell_finding(
         tmp_path, column="Current readers"
+    )
+
+
+def test_audit_reports_blank_target_authoritative_product_cell(tmp_path: Path) -> None:
+    _assert_blank_required_bridge_cutover_cell_finding(
+        tmp_path, column="Target authoritative product(s)"
+    )
+
+
+def test_audit_reports_blank_derived_compatibility_view_cell(tmp_path: Path) -> None:
+    _assert_blank_required_bridge_cutover_cell_finding(
+        tmp_path, column="Derived compatibility view"
+    )
+
+
+def test_audit_reports_blank_derived_compatibility_sidecar_cell(
+    tmp_path: Path,
+) -> None:
+    _assert_blank_required_bridge_cutover_cell_finding(
+        tmp_path, column="Derived compatibility sidecar"
     )
 
 
@@ -1572,6 +1601,9 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
         "normalization_reviews.csv and NormalizationReviewRecord outputs",
     )
     assert catalog.matrix_specs[0].required_nonempty_columns == (
+        "Target authoritative product(s)",
+        "Derived compatibility view",
+        "Derived compatibility sidecar",
         "Current readers",
         "Target readers after cutover",
         "Cutover gate",

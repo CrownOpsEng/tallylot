@@ -478,7 +478,13 @@ def test_engineering_standards_document_contract_guard_expectations() -> None:
     )
 
     assert "bridge cutover matrix inventory and row order are catalog-governed" in text
-    assert "bridge cutover matrix reader and gate cells are required" in text
+    assert (
+        "bridge cutover matrix owner, compatibility, reader, and gate cells are" in text
+    )
+    assert (
+        "bridge cutover current-reader cells must use canonical inventory labels"
+        in text
+    )
     assert (
         "forward-target contract docs must stay free of transient planning language"
         in text

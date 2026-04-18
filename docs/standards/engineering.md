@@ -888,7 +888,11 @@ Rules:
 - update every affected detailed contract page, bounded-slice reference,
   roadmap surface, and standards surface in the same patch
 - bridge cutover matrix inventory and row order are catalog-governed
-- bridge cutover matrix reader and gate cells are required
+- bridge cutover matrix owner, compatibility, reader, and gate cells are
+  required
+- bridge cutover current-reader cells must use canonical inventory labels, and
+  target-reader cells must name a concrete capability plus authoritative
+  product
 - forward-target contract docs must stay free of transient planning language
 - keep frontmatter summaries and generated `docs/README.md` blurbs
   content-first; do not lead with page-role or authority-first labels that
