@@ -31,7 +31,7 @@ persistence and migration references, and repo standards.
 - [Bridge-to-target mapping](concepts/bridge-to-target-mapping.md)
 - [Pipeline stage contracts](concepts/pipeline-stage-contracts.md)
 - [Domain ontology](concepts/domain-ontology.md)
-- [Gap, review, and readiness](concepts/gaps-and-readiness.md)
+- [Gap, review, and shared attachment](concepts/gaps-and-reviews.md)
 - [Reconciliation, checkpoint, journal, and tax architecture](concepts/reconciliation-tax-architecture.md)
 - [First upstream slice contract](reference/first-upstream-slice-contract.md)
 - [First downstream slice contract](reference/first-downstream-slice-contract.md)
@@ -52,7 +52,7 @@ Agent-specific routing and repo execution rules live in
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only comparison packages.
 - [Domain Ontology](concepts/domain-ontology.md): Target economic ontology, identity seams, ref recipes, package ownership, and bridge-versus-target modeling rules.
 - [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
-- [Gap, Review, And Readiness](concepts/gaps-and-readiness.md): Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline.
+- [Gap, Review, And Shared Attachment](concepts/gaps-and-reviews.md): Shared gap, review, sidecar, `SubjectRef`, and shared attachment contracts for the target pipeline.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
 - [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): Future adapter manifest, facet, and verification model for the target runtime pipeline.
 <!-- docs-maintenance:end concepts -->

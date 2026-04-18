@@ -114,8 +114,7 @@ Shared rules:
 - when a product id hashes ordered upstream header refs, keep the component
   array in the same canonical order as the header fields unless this page
   explicitly declares a stronger reason to differ
-- `kernel_scope_id` remains a derived gap/review/readiness and reporting
-  attachment only;
+- `kernel_scope_id` remains a derived gap/review and reporting attachment only;
   it is not a product id or upstream product ref
 
 ### Record Reference Rule
@@ -171,13 +170,13 @@ Shared rules:
 
 - every target product has one canonical kernel fingerprint
 - the shared `kernel_scope_id` contract is owned by
-  [Gap, Review, And Readiness](gaps-and-readiness.md)
+  [Gap, Review, And Shared Attachment](gaps-and-reviews.md)
 - `kernel_scope_id` is derived from the emitted kernel fingerprint after
   canonical fingerprinting; it is not part of the product header or fingerprint
   inputs
 - `kernel_scope_id` is the kernel-scope attachment id for gap, review,
-  readiness, comparison, and other declared shared sidecars when no narrower
-  truthful scope exists
+  comparison, and other declared shared sidecars when no narrower truthful
+  scope exists
 - `kernel_scope_id` is not a substitute for a narrower record id or stage-owned
   scope such as `selection_id`, `claim_scope_id`, `continuity_segment_id`,
   `balance_target_id`, or `checkpoint_proposal_id`
@@ -565,8 +564,7 @@ Rules:
 - legacy `provider_operation_key` is satisfied by
   `activity_label` on claims with `kind = activity` and must not be duplicated into a
   compatibility sidecar field
-- review markers map to shared gap/review/readiness records and sidecars
-  rather than
+- review markers map to shared gap/review records and sidecars rather than
   claim-kernel fields or compatibility sidecars that masquerade as claim
   meaning
 - adapter-local extras may survive only as non-kernel or compatibility sidecar
@@ -816,7 +814,8 @@ Owns:
 - transfer and settlement linkage
 - continuity decisions
 - balance targets and assertion outcomes
-- reconciliation-owned gaps and readiness
+- reconciliation-owned gaps plus derived readiness views over truthful local
+  scopes
 - checkpoint proposal records derived from reconciled economics plus checkpoint
   evidence
 
@@ -884,15 +883,15 @@ Controlled vocabularies:
 Reconciliation rules:
 
 - `ContinuitySegmentRecord.status` tracks completeness only; blocker posture
-  stays on reconciliation-owned gaps and readiness attached to
-  `continuity_segment_id`
+  stays on reconciliation-owned gaps plus reconciliation-owned derived
+  readiness views keyed by `continuity_segment_id`
 - `BalanceTargetRecord.observation_status` tracks whether one authoritative
   observed value exists for the target
 - `BalanceTargetRecord.comparison_outcome` is nullable and is set only when
   `observation_status = observed`
 - open blocker posture for balance targets stays on reconciliation-owned gaps
-  and readiness attached to `balance_target_id`, not on balance-target state
-  fields
+  plus reconciliation-owned derived readiness views keyed by
+  `balance_target_id`, not on balance-target state fields
 - `CheckpointProposalRecord.status` tracks current proposal posture only
 - `CheckpointProposalRecord.superseding_proposal_ref` points at a later
   `checkpoint_proposal_id` only when a proposal has been superseded, and that
@@ -904,7 +903,12 @@ Sidecar content may include:
 - continuity explanation
 - missing-leg detail
 - comparison traces
-- stage-owned gap and readiness sidecars
+- stage-owned gap sidecars
+
+Derived output surfaces may include:
+
+- reconciliation-owned readiness views keyed by truthful local scopes such as
+  `continuity_segment_id` or `balance_target_id`
 
 Product-root cardinality:
 
@@ -927,7 +931,8 @@ Stable ids:
 - `continuity_segment_id` uses component array
   `[subject_ref, segment_start_at, segment_end_at]`
 - `continuity_segment_id` is the reusable stage-local scope id for gap,
-  review, readiness attachments, and declared derived outputs;
+  review attachments, capability-owned derived readiness views, and declared
+  derived outputs;
   `reconciliation_state_id` is the emitted product id over that scope plus its
   upstream lineage
 - `event_link_id` uses component array
@@ -1063,11 +1068,11 @@ Controlled vocabularies:
   - `partial_rollforward`
 
 `trust_level` names checkpoint acceptance confidence tiers inside one accepted
-assertion. It is not the shared `ReadinessStatus` model from
-[Gap, Review, And Readiness](gaps-and-readiness.md).
+assertion. It is not a shared readiness vocabulary from
+[Gap, Review, And Shared Attachment](gaps-and-reviews.md).
 
-`trust_level` is a checkpoint trust-tier vocabulary. It is not a reuse of
-`ReadinessStatus`.
+`trust_level` is a checkpoint trust-tier vocabulary. It is not a reuse of a
+capability-owned readiness view.
 
 Sidecar content may include:
 
@@ -1487,7 +1492,8 @@ Controlled vocabularies:
   - `partial`
 
 `TaxOutputRecord.status` tracks output readiness only. Blocking tax posture
-stays on `TaxUnsupportedInputRecord` plus tax-owned gaps.
+stays on `TaxUnsupportedInputRecord` plus tax-owned gaps; it is not a shared
+readiness record.
 
 Sidecar content:
 
@@ -1495,6 +1501,35 @@ Sidecar content:
 - filing notes and limitations
 - tax carry-forward explanation
 - tax unsupported-input explanation
+
+Frozen tax-first derived output family:
+
+- optional product-local file:
+  `working/products/tax_outputs/<tax_outputs_id>/derived/tax_output_grouped_readiness.json`
+- row fields:
+  - `group_kind`
+  - `group_key`
+  - `status`
+  - `tax_output_refs`
+  - `tax_unsupported_input_refs`
+  - `blocking_gap_refs`
+
+Rules:
+
+- this file is a product-local derived output, not kernel content, shared
+  assessment output, or a compatibility sidecar
+- `group_kind` is fixed to `tax_output_kind` during the tax-first phases
+- `group_key` uses the `TaxOutputRecord.kind` vocabulary:
+  `policy_summary`, `supporting_schedule`, and `filing_form`
+- `status` is derived-only and non-editable; it is computed from
+  `TaxOutputRecord.status`, related `TaxUnsupportedInputRecord` rows, and
+  tax-owned gaps
+- `tax_output_refs`, `tax_unsupported_input_refs`, and `blocking_gap_refs`
+  sort lexicographically
+- allowed readers are filing-critical tax flows and narrow rendering flows only
+- a second grouped non-compatibility consumer, a new grouping dimension beyond
+  `tax_output_kind`, or durable grouped persistence outside this product-local
+  surface fires the roadmap trigger ladder before implementation
 
 Scope fence:
 
@@ -1563,8 +1598,8 @@ Must not:
 
 ## Shared Contract References
 
-The pipeline products rely on shared gap/review/readiness contracts defined
-elsewhere:
+The pipeline products rely on shared gap/review contracts and readiness
+locality rules defined elsewhere:
 
 - [Current Bridge Contracts](current-bridge-contracts.md) for the live bridge
   runtime truth
@@ -1577,8 +1612,8 @@ elsewhere:
   contract
 - [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership
-- [Gap, Review, And Readiness](gaps-and-readiness.md) for `GapRecord`,
-  `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
-  `ReadinessRecord`, and `SubjectRef`
+- [Gap, Review, And Shared Attachment](gaps-and-reviews.md) for `GapRecord`,
+  `GapExplanation`, `ReviewRecord`, `ReviewExplanation`, `SubjectRef`, and
+  `kernel_scope_id`
 - [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) for
   persistence rules, partitioning rules, and fast-path expectations

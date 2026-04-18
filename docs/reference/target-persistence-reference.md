@@ -34,8 +34,8 @@ Use these contract pages first:
 ## Persistence Rules
 
 **Exception rationale:** `assessment/` stays in this page only as the shared
-persistence root for the nested `gap/`, `review/`, and `readiness/` sidecar
-families. It is not a generic sidecar bucket.
+persistence root for the nested `gap/` and `review/` sidecar families. It is
+not a generic sidecar bucket.
 
 When persisting target products:
 
@@ -55,14 +55,17 @@ When persisting target products:
   activates a capability-owned read-model surface
 - keep assessment family directories and basenames aligned to the stored
   families, for example `assessment/gap/gap_records.json`,
-  `assessment/review/review_records.json`,
-  and `assessment/readiness/readiness_records.json`
+  `assessment/review/review_records.json`
 - `assessment/` stays generic only because it splits immediately into the
-  persisted `gap/`, `review/`, and `readiness/` families; unrelated sidecars
-  do not belong there
+  persisted `gap/` and `review/` families; unrelated sidecars do not belong
+  there
+- keep product-local derived outputs under `derived/` inside the owning
+  product directory when a contract explicitly allows them, for example
+  `working/products/tax_outputs/<tax_outputs_id>/derived/tax_output_grouped_readiness.json`
 - defer a general projections root such as
   `working/projections/<slice>/<projection_family>/...` until the roadmap
   trigger ladder activates broader derived read models
+- treat shared assessment outputs as declared persisted outputs
 - treat caches and indexes as regenerable accelerators, not as business truth
 
 ## Reminder

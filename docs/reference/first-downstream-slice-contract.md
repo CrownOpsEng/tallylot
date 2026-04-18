@@ -226,8 +226,8 @@ Rules:
 - `BalanceTargetRecord.comparison_outcome` is set only when
   `observation_status = observed`
 - balance-target blocker posture remains on reconciliation-owned gaps and
-  readiness attached to `balance_target_id`, not on balance-target state
-  fields
+  reconciliation-owned derived readiness views keyed by `balance_target_id`,
+  not on balance-target state fields
 - `CheckpointProposalRecord.superseding_proposal_ref` records proposal
   supersession when a later proposal replaces an earlier one
 
@@ -323,7 +323,8 @@ Not allowed:
 Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 
 - richer explanation text
-- additional non-kernel gap, review, or readiness sidecars
+- additional non-kernel gap or review sidecars
+- additional capability-owned derived readiness views
 - additional comparison detail that does not change product meaning
 
 ## Explicitly Out Of Scope

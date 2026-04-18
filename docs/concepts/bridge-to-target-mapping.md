@@ -10,7 +10,7 @@ nav_order: 24
 related:
   - docs/concepts/current-bridge-contracts.md
   - docs/concepts/pipeline-stage-contracts.md
-  - docs/concepts/gaps-and-readiness.md
+  - docs/concepts/gaps-and-reviews.md
   - docs/reference/first-upstream-slice-contract.md
   - docs/reference/first-downstream-slice-contract.md
   - docs/status/migration-sequence.md
@@ -38,9 +38,9 @@ Use these pages for neighboring contracts:
   product kernels, ids, ordering, serialization, and fingerprints for
   `EvidenceSet`, `ClaimSet`, `EconomicFacts`, `ReconciliationState`,
   `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
-- [Gap, Review, And Readiness](gaps-and-readiness.md) defines `GapRecord`,
-  `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
-  `ReadinessRecord`, and `SubjectRef`.
+- [Gap, Review, And Shared Attachment](gaps-and-reviews.md) defines
+  `GapRecord`, `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
+  `SubjectRef`, and `kernel_scope_id`.
 - this page defines how bridge surfaces move to target products without
   creating dual authorities
 
@@ -112,12 +112,15 @@ compatibility-local and do not become canonical target-domain family names.
 | `translation_input_candidates.json` | `EvidenceSet` | `none` | `none` | `source normalize planner review and translation path` | evidence review and selection inspection from `EvidenceSet` | selected, superseded, and blocked membership are preserved with stable `selection_id` and `member_id` outcomes | retire once no active evidence review or selection inspection requires the file |
 | `translation_input_plan.json` | `EvidenceSet` | `translation_input_plan.json` | `none` | `source normalize planner review and translation path` | claim construction from `EvidenceSet` | one authoritative `EvidenceSet` exists for the capture and reproduces the same selected, superseded, and blocked decisions | retire when no in-scope reader requires the plan file and parity is enforced on `EvidenceSet` instead |
 | `EconomicActivityDraft` | `ClaimSet` | `EconomicActivityDraft` | declared claim compatibility sidecars keyed by `claim_id` or `claim_bundle_id` | `source assemble bridge projection path` | economics construction from `ClaimSet` | claim field tables, `observation_refs`, claim-bundle decisions, and retained legacy claim fields are all frozen in `ClaimSet` kernels or declared compatibility sidecars | retire when no active bridge projection path still consumes drafts |
-| `SourceTranslationBatch` | `ClaimSet` | `SourceTranslationBatch` | declared claim compatibility sidecars plus shared gap/review/readiness sidecars | `source assemble bridge projection path` | economics construction from `ClaimSet` | in-scope readers can be pointed to `ClaimSet` or a declared compatibility view without meaning loss, and no retained batch-only field remains undefined | retire when no active bridge projection path reads the batch as its primary claim surface |
+| `SourceTranslationBatch` | `ClaimSet` | `SourceTranslationBatch` | declared claim compatibility sidecars | `source assemble bridge projection path` | economics construction from `ClaimSet` | in-scope readers can be pointed to `ClaimSet` or a declared compatibility view without meaning loss, and no retained batch-only field remains undefined | retire when no active bridge projection path reads the batch as its primary claim surface |
 | `TransactionFact` and `facts.csv` | `EconomicFacts` | `TransactionFact` and `facts.csv` | declared upstream claim compatibility sidecars when legacy hint reproduction still needs them | `reconciliation balances check`; `cointracking_csv rendering path`; `dev-only oracle comparison path` | `reconciliation balances check` reading compatibility output derived from `EconomicFacts`; `cointracking_csv rendering path` reading compatibility output derived from `EconomicFacts`; `dev-only oracle comparison path` reading compatibility output derived from `EconomicFacts` | accepted `EconomicEventRecord` and `EconomicLegRecord` parity is proven and current bridge facts are reproducible from `EconomicFacts` plus declared upstream compatibility sidecars | retire when no active runtime capability depends on `TransactionFact` as economic authority |
 | `balance_snapshots.csv` | `ReconciliationState` | `balance_snapshots.csv` | `none` | `reconciliation balances inspect`; `reconciliation balances check`; `reconciliation balances summarize` | `reconciliation balances inspect` reading `ReconciliationState`; `reconciliation balances check` reading `ReconciliationState`; `reconciliation balances summarize` reading `ReconciliationState` | continuity segments and balance targets exist for the in-scope subjects and reproduce current snapshot results | retire when the active balance capabilities read `ReconciliationState` directly |
 | `balance_references.csv` | `ReconciliationState` and `Checkpoint` | `balance_references.csv` | declared reconciliation/checkpoint compatibility sidecars | `reconciliation balances inspect`; `reconciliation balances check`; `reconciliation balances summarize` | checkpoint acceptance reading `ReconciliationState` plus `Checkpoint`; `reconciliation balances inspect` reading compatibility output derived from `ReconciliationState` plus `Checkpoint`; `reconciliation balances check` reading compatibility output derived from `ReconciliationState` plus `Checkpoint`; `reconciliation balances summarize` reading compatibility output derived from `ReconciliationState` plus `Checkpoint` | direct `AssertionValue` fields, checkpoint proposal records, and `CheckpointAssertionRecord` rows reproduce the current reference content for in-scope subjects | retire when no active surface consumes the CSV as its authoritative reference input |
-| `exceptions.csv` and `IssueRecord` outputs | owning target product plus `GapRecord` and `GapExplanation` | `exceptions.csv` | `GapExplanation` | `operator review diagnostics` | `operator review diagnostics` reading the owning target product plus target-native gap and readiness records | the owning target stage preserves blocker scope, severity, materiality, and stage ownership | retire per stage when that stage emits target-native gaps for the same scope |
-| `normalization_reviews.csv` and `NormalizationReviewRecord` outputs | owning target product plus `ReviewRecord` and `ReviewExplanation` | `normalization_reviews.csv` | `ReviewExplanation` | `operator review diagnostics` | `operator review diagnostics` reading the owning target product plus target-native review records | advisory review scope and provenance are preserved without turning reviews into blockers | retire per stage when that stage emits target-native reviews for the same scope |
+| `exceptions.csv` and `IssueRecord` outputs | owning target product plus `GapRecord` and `GapExplanation` | `exceptions.csv` | `none` | `operator review diagnostics` | `operator review diagnostics` reading the owning target product plus target-native gap outputs and capability-owned readiness views when needed | the owning target stage preserves blocker scope, severity, materiality, and stage ownership | retire per stage when that stage emits target-native gaps for the same scope |
+| `normalization_reviews.csv` and `NormalizationReviewRecord` outputs | owning target product plus `ReviewRecord` and `ReviewExplanation` | `normalization_reviews.csv` | `none` | `operator review diagnostics` | `operator review diagnostics` reading the owning target product plus target-native review outputs and capability-owned readiness views when needed | advisory review scope and provenance are preserved without turning reviews into blockers | retire per stage when that stage emits target-native reviews for the same scope |
+
+Shared assessment outputs named in the target-authority column stay separate
+from compatibility sidecars. They are not compatibility surfaces in disguise.
 
 Reader-label glossary:
 
@@ -182,7 +185,9 @@ Diagnostic mapping rules:
 - a bridge `NormalizationReviewRecord` maps to `ReviewRecord` plus
   `ReviewExplanation`
 - reviews remain advisory even when they share the same factual cause as a gap
-- gap, review, and readiness records and sidecars never become claim kinds
+- shared gap and review outputs never become claim kinds
+- any readiness that operators or renderers still need after cutover must stay
+  on capability-owned derived views rather than on shared assessment families
 
 ## Current First Slice Rules
 

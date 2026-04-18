@@ -11,7 +11,7 @@ related:
   - docs/concepts/bridge-to-target-mapping.md
   - docs/concepts/pipeline-stage-contracts.md
   - docs/concepts/domain-ontology.md
-  - docs/concepts/gaps-and-readiness.md
+  - docs/concepts/gaps-and-reviews.md
   - docs/status/adapter-delivery-plan.md
   - ROADMAP.md
 ---
@@ -128,8 +128,9 @@ Out of scope for this slice:
 - `statement_document`
 - `contract`
 
-Bridge or output annotation sidecar detail and gap, review, or readiness
-sidecar content are not claim kinds and are never emitted by this slice.
+Bridge or output annotation sidecar detail, shared gap/review outputs, and
+capability-owned readiness views are not claim kinds and are never emitted by
+this slice.
 
 Frozen kind-specific claim fields:
 
@@ -224,7 +225,7 @@ Required derived compatibility views:
 - `EconomicActivityDraft` derived from `ClaimSet` plus declared compatibility
   sidecars keyed by `claim_id` or `claim_bundle_id`
 - `SourceTranslationBatch` derived from `ClaimSet` plus declared
-  compatibility sidecars and shared gap/review/readiness sidecars
+  compatibility sidecars
 
 Compatibility rule:
 
@@ -236,6 +237,8 @@ Compatibility rule:
   `Checkpoint` authoritative for that scope
 - this slice must not introduce a new downstream fact builder or target-derived
   renderer path from `ClaimSet`
+- shared gap and review outputs, when the claim stage emits them, stay separate
+  from compatibility views and do not become compatibility sidecars
 
 Declared compatibility sidecar boundary:
 
@@ -341,9 +344,8 @@ Not allowed:
 Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 
 - richer explanation text
-- additional gap, review, readiness, or other sidecar detail that does not
-  change product
-  meaning
+- additional gap, review, capability-owned readiness-view, or other sidecar
+  detail that does not change product meaning
 
 ## Explicitly Out Of Scope
 

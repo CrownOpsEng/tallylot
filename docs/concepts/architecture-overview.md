@@ -41,10 +41,11 @@ output rather than as a shared application center.
 If no earlier trigger fires, the default activation point for broader
 capability-owned derived read models and projections is `Phase 10`.
 
-Gap, review, and readiness remain shared contracts plus persisted sidecar
-families. They do not imply a shared application reducer center. The owning
-application slice emits and reduces its own assessment behavior until a
-specific capability-owned derived read-model package is activated.
+Gap and review remain shared contracts plus persisted shared-assessment
+families. Readiness stays capability-owned derived behavior rather than shared
+assessment truth. The owning application slice emits and reduces its own
+assessment behavior until a specific capability-owned derived read-model
+package is activated.
 
 ## Layer Shape
 
@@ -68,7 +69,7 @@ These pages define the primary current-state and forward-looking contracts:
 | [Bridge To Target Mapping](bridge-to-target-mapping.md) | authoritative writer rules, compatibility views, and reader cutovers |
 | [Pipeline Stage Contracts](pipeline-stage-contracts.md) | target product kernels, ids, ordering, and handoff rules |
 | [Domain Ontology](domain-ontology.md) | identity seams, ref recipes, and package ownership |
-| [Gap, Review, And Readiness](gaps-and-readiness.md) | gap, review, readiness, and `SubjectRef` contracts plus compatibility-local bridge mappings |
+| [Gap, Review, And Shared Attachment](gaps-and-reviews.md) | gap, review, `SubjectRef`, and shared attachment contracts plus readiness locality rules |
 | [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) | reconciliation, checkpoint, journal, and tax trust gates plus persistence, partitioning, and fast-path rules |
 | [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md) | first upstream `EvidenceSet -> ClaimSet` slice |
 | [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |
@@ -84,6 +85,6 @@ Supporting id, ref, persistence, and workspace references remain under
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
-- [Gap, Review, And Readiness](gaps-and-readiness.md)
+- [Gap, Review, And Shared Attachment](gaps-and-reviews.md)
 - [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md)
 - [Current State](../status/current-state.md)

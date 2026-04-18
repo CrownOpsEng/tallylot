@@ -31,7 +31,7 @@ Do not use this page for:
 - competing phase numbers
 - alternate phase labels
 - duplicate product-contract definitions
-- duplicate ontology, gap/review/readiness, or persistence contracts
+- duplicate ontology, gap/review/shared-attachment, or persistence contracts
 
 ## Operating Rules
 
@@ -105,8 +105,9 @@ Before broad implementation, freeze:
   [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
 - ontology and ref seams on
   [Domain Ontology](../concepts/domain-ontology.md)
-- shared gap, review, and readiness contracts plus `SubjectRef` rules on
-  [Gap, Review, And Readiness](../concepts/gaps-and-readiness.md)
+- shared gap and review contracts plus `SubjectRef`, `kernel_scope_id`, and
+  readiness-locality rules on
+  [Gap, Review, And Shared Attachment](../concepts/gaps-and-reviews.md)
 - persistence, partitioning, and fast-path rules on
   [Reconciliation, Checkpoint, Journal, And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
 - bridge-to-target cutover rules on
@@ -246,4 +247,5 @@ surface, update these pages together:
 
 Current-state docs stay truthful to implemented behavior. Forward-looking docs
 stay detailed enough that later implementation does not need to invent ids,
-reader cutovers, storage placement, or gap/review/readiness boundaries.
+reader cutovers, storage placement, or gap/review/shared-attachment
+boundaries.

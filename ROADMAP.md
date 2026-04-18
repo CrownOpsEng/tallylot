@@ -10,7 +10,7 @@ This file is the forward planning document for the repo.
   - [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
   - [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
   - [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
-  - [`docs/concepts/gaps-and-readiness.md`](docs/concepts/gaps-and-readiness.md)
+  - [`docs/concepts/gaps-and-reviews.md`](docs/concepts/gaps-and-reviews.md)
   - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
   - [`docs/reference/first-upstream-slice-contract.md`](docs/reference/first-upstream-slice-contract.md)
   - [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
@@ -25,8 +25,8 @@ current adapter-edge and oracle-comparison boundaries, not canonical target
 naming.
 
 **Exception rationale:** `assessment/` stays in this roadmap only as the shared
-contract and sidecar root for the nested `gap/`, `review/`, and `readiness/`
-families. It is not a generic application center.
+contract and sidecar root for the nested `gap/` and `review/` families. It is
+not a generic application center.
 
 ## Planning Anchors
 
@@ -91,12 +91,12 @@ Must freeze:
 - critical-path `ClaimRecord` field tables, `observation_refs`, and
   the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
-- shared gap, review, and readiness records and sidecars:
+- shared gap and review records and sidecars:
   `GapRecord`, `GapExplanation`, `ReviewRecord`,
-  `ReviewExplanation`, `ReadinessRecord`,
-  `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id` and `balance_target_id`
-  attachments, and the downstream shared-subject seams needed for journal
-  and tax records
+  `ReviewExplanation`, capability-owned readiness-view locality rules,
+  `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id` and
+  `balance_target_id` attachments, and the downstream shared-subject seams
+  needed for journal and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `kernel_scope_id`
 - short-first canonical stable ids, catalog-declared owner-local short slots,
@@ -126,20 +126,20 @@ Must freeze:
   package ownership, keeps `economics` aligned across stage vocabulary,
   package ownership, and stage prose, uses singular concept roots such as
   `assertion/`, avoids umbrella roots such as `entities/` when the identity
-  families are already known, keeps gap/review/readiness roots explicit when
-  the docs mean those families directly, and keeps the shared `assessment/` root
-  split into concrete nested families
-  such as `gap/`, `review/`, and `readiness/` while keeping assessment
-  behavior in the owning application slice
+  families are already known, keeps gap/review roots explicit when the docs
+  mean those shared families directly, and keeps the shared `assessment/` root
+  split into concrete nested families such as `gap/` and `review/` while
+  keeping readiness views and other assessment behavior in the owning
+  application slice
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
 - migration authority rules, compatibility views, reader cutovers, and
   retirement gates
 - package ownership and layer placement that keep shared assessment contracts in
   `domain/assessment/`, keep the persisted `assessment/gap/`,
-  `assessment/review/`, and `assessment/readiness/` families as storage rules
-  only, and retire shared application assessment behavior until a specific
-  capability-owned derived read-model package is activated
+  `assessment/review/` families as storage rules only, and retire shared
+  application assessment behavior until a specific capability-owned derived
+  read-model package is activated
 - defer broader grouped readiness, reporting, portfolio, visualization, and
   investigation architecture until the trigger ladder below fires, allowing
   only filing-critical product-local derived outputs, narrow rendering outputs,
@@ -153,7 +153,7 @@ Must freeze:
 
 Deliver:
 
-- aligned contract pages for target products, ontology, gap/review/readiness
+- aligned contract pages for target products, ontology, gap/review
   records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
@@ -180,7 +180,7 @@ Owner docs that must align before broad implementation begins:
 - `docs/concepts/bridge-to-target-mapping.md`
 - `docs/concepts/pipeline-stage-contracts.md`
 - `docs/concepts/domain-ontology.md`
-- `docs/concepts/gaps-and-readiness.md`
+- `docs/concepts/gaps-and-reviews.md`
 - `docs/concepts/reconciliation-tax-architecture.md`
 - `docs/reference/first-upstream-slice-contract.md`
 - `docs/reference/first-downstream-slice-contract.md`
@@ -342,8 +342,8 @@ Deliver:
   claim-bundle-decision records
 - claim fields frozen for the first upstream slice plus
   `observation_refs`
-- shared gap, review, and readiness records and sidecars attached to claim
-  scopes where needed
+- shared gap and review outputs attached to claim scopes where needed, with any
+  readiness views staying local to the claim-owning capability
 - declared compatibility views for `EconomicActivityDraft` and
   `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
   kernels
