@@ -282,8 +282,7 @@ Current application of this rule:
   `assessment/readiness/readiness_records.json` over one flat
   `assessment/` directory full of unrelated sidecar families.
 - In forward-looking prose, prefer explicit family names such as `gap`,
-  `review`, and `readiness` over the looser umbrella `shared assessment`
-  when
+  `review`, and `readiness` over the looser umbrella `shared assessment` when
   those are the actual owned families. Reserve generic `assessment` for
   intentional roots or bounded field names such as `domain/assessment/`,
   `assessment/`, or `support_shape`.
@@ -361,7 +360,10 @@ Current application of this rule:
 Stable-id namespaces are catalog-governed, not review-time judgment.
 
 - canonical stable ids are the catalog-declared reusable id families
+- canonical stable ids use the shortest truthful cross-boundary family noun
 - local id slots are owner-local aliases declared in the catalog
+- local slots exist only when the canonical stable id keeps extra owner context
+  that an owner-local field or array component does not need
 - canonical is the default namespace on governed docs
 - only catalog-declared local-short zones may use local slots
 - local slots are required in declared local-short zones

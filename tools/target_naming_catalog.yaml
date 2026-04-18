@@ -548,7 +548,7 @@ vocabularies:
     origin_kind:
       - claim
       - evidence_observation
-      - market_reference
+      - market_input
       - economic_leg
       - checkpoint_assertion
       - basis_adjustment
@@ -1061,16 +1061,6 @@ exceptions:
     required_marker: Locality rule
     required_rationale: true
     notes: Bridge and evidence-local compatibility fields must be restated where they appear.
-  - exception_id: locality.origin_kind_market_reference
-    allowed_scopes: [forward_target, repo_policy]
-    allowed_paths:
-      - docs/reference/target-ids-and-refs.md
-    allowed_section_labels: []
-    allowed_terms:
-      - market_reference
-    required_marker: Locality rule
-    required_rationale: true
-    notes: OriginRef keeps market_reference on the origin axis only.
   - exception_id: example.provider_slice_terms
     allowed_scopes: [forward_target]
     allowed_paths:

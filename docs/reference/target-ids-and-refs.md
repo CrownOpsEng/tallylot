@@ -18,7 +18,7 @@ Use this page when a target-stage implementation needs a reusable target id or
 ref tuple that is not itself a stage contract. The detailed contract pages take
 precedence.
 
-**Locality rule:** This page restates `source_slug` and `market_reference` only
+**Locality rule:** This page restates `source_slug` and `market_input` only
 where reusable ids or ref tuples still need evidence-local or origin-local
 compatibility language. Those terms stay local to those seams and do not become
 broader target vocabulary.
@@ -78,20 +78,20 @@ Rules:
   renderer label
 - when the origin is already a target-product record or subject, `origin_id`
   uses that stable id
-- when the origin is an external market reference, `origin_id` uses the
+- when the origin is an external market input, `origin_id` uses the
   stage-owned stable market key rather than renderer-local prose
 
 Frozen `origin_kind` vocabulary:
 
 - `claim`
 - `evidence_observation`
-- `market_reference`
+- `market_input`
 - `economic_leg`
 - `checkpoint_assertion`
 - `basis_adjustment`
 
-`OriginRef.origin_kind = market_reference` stays on the origin axis. It names
-an immediate upstream source class, not a valuation-purpose member.
+`OriginRef.origin_kind = market_input` stays on the origin axis. It names an
+immediate upstream source class, not a valuation-purpose member.
 
 ## Journal Refs
 

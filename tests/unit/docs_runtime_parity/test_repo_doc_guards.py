@@ -199,7 +199,7 @@ def test_human_docs_retire_selected_target_tokens() -> None:
             )
 
 
-def test_target_docs_use_market_measurement_while_origin_ref_keeps_market_reference() -> (
+def test_target_docs_use_market_measurement_while_origin_ref_keeps_market_input() -> (
     None
 ):
     domain_text = (docs_root() / "concepts" / "domain-ontology.md").read_text(
@@ -211,7 +211,7 @@ def test_target_docs_use_market_measurement_while_origin_ref_keeps_market_refere
 
     assert "`market_measurement`" in domain_text
     assert "`market_reference`" not in domain_text
-    assert "`market_reference`" in ids_text
+    assert "`market_input`" in ids_text
 
 
 def test_target_docs_use_support_shape_and_retire_checked_journal_value() -> None:
