@@ -439,8 +439,8 @@ Rules:
 
 ## Readiness Model
 
-Readiness is subject-first, stage-specific, and reducible into canonical
-rollups plus assessment views.
+Readiness is subject-first, stage-specific, and reducible into derived grouped
+outputs plus assessment views.
 
 ### `ReadinessStatus`
 
@@ -500,88 +500,32 @@ Rules:
 - subject readiness is the base truth
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before claim commitment
-- reducers work from subject readiness plus gaps, not from hand-built
-  readiness rollup rows
+- reducers work from subject readiness plus gaps, not from hand-built grouped
+  readiness rows
 - a subject may be ready for one stage and blocked for another
 - readiness points to blocking gap ids rather than hiding blockers in
   explanation text
 
-### `ReadinessRollupRecord`
+### Grouped Readiness Before Derived Read-Model Activation
 
-Purpose:
-
-- derived readiness rollup over subject readiness
-
-Fields:
-
-- `readiness_rollup_id`
-- `stage`
-- `rollup_kind`
-- `rollup_key`
-- `status`
-- `blocking_gap_ids`
-- `ready_count`
-- `partial_count`
-- `blocked_count`
-- `not_applicable_count`
-
-Controlled `rollup_kind` vocabulary:
-
-- `location`
-- `instrument`
-- `continuity_segment`
-- `as_of`
-- `tax_year`
-- `kernel_scope`
-
-Rollup-key rules:
-
-- `location` uses one `location_id`
-- `instrument` uses one `instrument_id`
-- `continuity_segment` uses one `continuity_segment_id`
-- `as_of` uses one canonical `YYYY-MM-DD` date string
-- `tax_year` uses one integer tax year
-- `kernel_scope` uses one `kernel_scope_id`
-
-Stable ids:
-
-- `readiness_rollup_id` identifies one derived readiness rollup record
-- `readiness_rollup_id` uses component array
-  `[stage, rollup_kind, rollup_key]`
-
-Ordering:
-
-- sort by tuple `[stage, rollup_kind, rollup_key]`
-- sort `blocking_gap_ids` lexicographically
-
-Serialization:
-
-- serialize readiness rollup records only
-- use stable object-key ordering
-- preserve the declared readiness rollup order above
-
-Fingerprint inputs:
-
-- readiness rollup records in canonical order
-- `schema_version`
-- sorted `blocking_gap_ids`
-- the ordered `ReadinessRecord` ids that fed the rollup
+Grouped readiness is derived behavior, not a shared canonical record family.
 
 Rules:
 
-- readiness rollup rows are derived rollup records, not the only stored truth
-- `partial` requires at least one resolved assertion plus at least one open
-  blocking gap id
-- if no required assertion has resolved yet, status is `blocked`, not
-  `partial`
-- if no blocker applies, status is `ready`, not `partial`
-- kernel-scope readiness rollups remain reproducible from ordered readiness
-  and gap records without manual status editing
-- canonical rollup kinds stay stage- and domain-oriented rather than grouping
-  by source identity
-- source-grouped views belong in assessment views or compatibility
-  views rather than in `ReadinessRollupRecord.rollup_kind`
-- stages use only the dimensions they actually own or can derive safely
+- shared readiness truth stays on ordered `ReadinessRecord` rows plus their
+  linked gap ids
+- before the roadmap trigger ladder activates broader derived read models,
+  grouped readiness may exist only as:
+  - tax-output-local derived output
+  - narrow rendering-derived output
+  - migration compatibility-local derived output
+- grouped readiness must remain reproducible from ordered readiness and gap
+  records without manual status editing
+- source-grouped or operator-facing views remain assessment views or
+  compatibility views rather than canonical readiness record families
+- once a grouped consumer requires a broader derived read-model surface, that
+  grouped behavior moves into the owning capability instead of restoring a
+  shared readiness rollup family
 
 ## Bridge Mapping From Issue And Review Records
 

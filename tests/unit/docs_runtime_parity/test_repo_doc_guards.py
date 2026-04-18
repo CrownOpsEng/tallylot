@@ -322,11 +322,13 @@ def test_forward_target_docs_use_assessment_paths_and_partition_labels() -> None
     )
 
     assert "assessment/gap/gap_records.json" in recon_text
-    assert "assessment/readiness/readiness_rollup_records.json" in recon_text
+    assert "assessment/readiness/readiness_records.json" in recon_text
+    assert "assessment/readiness/readiness_rollup_records.json" not in recon_text
     assert "checkpoint-economic-facts-lineage-scoped" in recon_text
     assert "tax-inputs-policy-year-scoped" in recon_text
     assert "checkpoint-economic-lineage-scoped" not in recon_text
     assert "tax-input-policy-year-scoped" not in recon_text
+    assert "tax-output-local derived output" in gaps_text
     assert "`kernel_scope`" in gaps_text
     assert "`product_scope`" not in gaps_text
 

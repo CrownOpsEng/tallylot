@@ -82,6 +82,10 @@ Trust and ownership rules:
   accepted checkpoint truth
 - selected tax policies decide treatment in `TaxOutputs`; they do not decide
   source meaning, reconciliation truth, checkpoint truth, or journal outcomes
+- `TaxOutputs` may own tax-policy output content needed for the active tax path,
+  but that exception does not make it the long-term home of general reporting,
+  dashboards, portfolio views, visualization datasets, or investigation
+  workflows
 
 ## Source, Output, Oracle, And Persistence Boundaries
 
@@ -157,10 +161,10 @@ Forward-looking persistence rules:
   page documents a stronger reason to differ
 - product sidecars persist separately from kernels and are keyed by
   `kernel_scope_id` or narrower truthful record ids
-- canonical readiness rollups stay stage- and domain-oriented;
-  source-grouped views stay as assessment views or
-  compatibility views rather than as gap, review, or readiness record
-  families or readiness rollups
+- grouped readiness remains derived behavior over shared readiness records;
+  source-grouped or operator-facing views stay as assessment views or
+  compatibility views rather than as canonical gap, review, or readiness
+  record families
 - target basenames use the owning product or sidecar family directly
   rather than generic names or bridge-era qualifiers
 - stable ids and helper refs keep the owning family stem once they cross
@@ -201,9 +205,10 @@ Rules:
 - migration-era workspace paths may still group later products under a
   source-scoped directory tree, but that filesystem placement does not make
   source identity part of downstream product naming or stable-id recipes
-- target products may expose derived reporting views across several
-  partitions, but those views do not replace the authoritative partition
-  kernels
+- during the tax-first phases, target products may expose only product-local
+  derived outputs, narrow rendering outputs, or compatibility views; broader
+  derived read models and projections activate only when the roadmap trigger
+  ladder fires
 - `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
   product kernel per declared partition
 - one persisted `ReconciliationState` kernel owns one continuity segment kernel
@@ -234,13 +239,15 @@ Use these paths in forward-looking docs and later implementation work:
   `assessment/gap/gap_explanations.json`,
   `assessment/review/review_records.json`,
   `assessment/review/review_explanations.json`,
-  `assessment/readiness/readiness_records.json`, and
-  `assessment/readiness/readiness_rollup_records.json`
+  and `assessment/readiness/readiness_records.json`
 - compatibility views live under the authoritative product they depend on,
   for example:
   - `working/products/economic_facts/<economic_facts_id>/compatibility/facts.csv`
   - `working/products/reconciliation_states/<reconciliation_state_id>/compatibility/balance_snapshots.csv`
   - `working/products/checkpoints/<checkpoint_id>/compatibility/balance_references.csv`
+- a general projections root under
+  `working/projections/<slice>/<projection_family>/...` is deferred until the
+  roadmap trigger ladder activates broader derived read models
 
 Rules:
 

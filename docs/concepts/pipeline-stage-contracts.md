@@ -59,9 +59,12 @@ Every stage contract answers four questions:
 Shared rules:
 
 - every output preserves stable ids and enough upstream linkage for later audit
-- later stages may add stage-owned sidecars, rollups, and reporting
-  views, but must not
-  silently rewrite upstream product meaning to make their own outputs look tidy
+- later stages may add stage-owned sidecars and active-slice derived outputs,
+  but must not silently rewrite upstream product meaning to make their own
+  outputs look tidy
+- broader derived read models and projections activate only when the roadmap
+  trigger ladder requires them; they are not first-class target product
+  families during the tax-first phases
 - if a stage cannot support a required decision, it emits explicit blockers,
   unresolved records, or deferred records rather than inventing a fallback
 - replay and parity gates operate on kernels first and inspect sidecars
@@ -1450,6 +1453,7 @@ Owns:
   records
 - tax-policy explanations, limitations, and rendered output content
 - tax-owned blockers that survive policy execution
+- the tax-output-local grouped content needed for the active tax path only
 
 Record families:
 
@@ -1491,6 +1495,13 @@ Sidecar content:
 - filing notes and limitations
 - tax carry-forward explanation
 - tax unsupported-input explanation
+
+Scope fence:
+
+- `TaxOutputs` owns tax-policy output content for the active tax path
+- `TaxOutputs` does not become the long-term home of general reporting,
+  dashboards, portfolio views, visualization datasets, or investigation
+  workflows
 
 Product-root cardinality:
 
@@ -1568,6 +1579,6 @@ elsewhere:
   `AssertionValue`, and package ownership
 - [Gap, Review, And Readiness](gaps-and-readiness.md) for `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
-  `ReadinessRecord`, `ReadinessRollupRecord`, and `SubjectRef`
+  `ReadinessRecord`, and `SubjectRef`
 - [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) for
   persistence rules, partitioning rules, and fast-path expectations
