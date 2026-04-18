@@ -178,6 +178,8 @@ Merge method rules:
 - do not squash PRs with multiple authored commits
 - do not create a merge commit for a single-commit PR unless the user
   explicitly requests a one-off repair in the current thread
+- once a PR is ready and its merge method plus merge metadata are correct,
+  prefer enabling auto-merge over waiting for a later manual merge click
 - when merging a PR with multiple authored commits, override GitHub's default merge subject
   with a deterministic subject that keeps the PR number visible instead of
   producing `Merge pull request ...`

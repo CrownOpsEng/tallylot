@@ -47,6 +47,8 @@ when the higher-layer control is available.
 - pull requests open as draft by default
 - a PR becomes ready for review only after the full issue-finding hardening
   loop yields no new meaningful findings
+- once a PR is ready and its merge method, subject, and body are correct,
+  auto-merge is the default protected-branch handoff
 - direct pushes to `main` are forbidden except for an explicit one-time repair
   requested in the current thread
 - a merged `main` commit must not be rewritten when the original PR record
@@ -69,6 +71,8 @@ Prefer GitHub controls that reject bad actions before they land:
 - required status checks pinned to their responsible app, not only named by context
 - required reviews
 - blocked force pushes on protected branches
+- repository auto-merge enabled when the repo wants GitHub to complete the
+  protected-branch handoff after checks pass
 - stale-review dismissal or last-push review requirements when the repo wants
   post-push re-approval
 - CODEOWNERS or equivalent reviewer routing for control-plane files

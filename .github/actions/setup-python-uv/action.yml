@@ -1,6 +1,12 @@
 name: Setup Python and uv
 description: Setup Python 3.12, restore the uv cache, and sync repo dependencies.
 
+inputs:
+  include-ci-group:
+    description: Include CI-only dependency tooling during sync.
+    required: false
+    default: "false"
+
 runs:
   using: composite
   steps:
@@ -19,7 +25,12 @@ runs:
         echo "$PROJECT_ENVIRONMENT/bin" >> "$GITHUB_PATH"
     - name: Sync dependencies
       shell: bash
-      run: uv sync --python 3.12 --frozen
+      run: |
+        SYNC_ARGS=(--python 3.12 --frozen)
+        if [ "${{ inputs.include-ci-group }}" != "true" ]; then
+          SYNC_ARGS+=(--no-group ci)
+        fi
+        uv sync "${SYNC_ARGS[@]}"
     - name: Prune uv cache
       shell: bash
       run: uv cache prune --ci

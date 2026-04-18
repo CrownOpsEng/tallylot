@@ -52,6 +52,10 @@ def test_pr_review_workflow_uses_draft_aware_planner_gated_atomic_jobs() -> None
     assert "needs.build.result == 'success'" in workflow_text
     assert "needs.pytest-full.result == 'success'" in workflow_text
     assert "tools.evaluate_review_results" in workflow_text
+    actionlint_job = workflow_text.split("  actionlint:\n", maxsplit=1)[1].split(
+        "  ruff:\n", maxsplit=1
+    )[0]
+    assert 'include-ci-group: "true"' in actionlint_job
     assert "  pr-review:\n    if: ${{ always() }}\n    needs:\n" in workflow_text
     pr_review_needs = workflow_text.split("  pr-review:\n", maxsplit=1)[1].split(
         "    runs-on:", maxsplit=1
@@ -78,6 +82,10 @@ def test_main_ci_workflow_uses_planner_gated_atomic_jobs() -> None:
     assert "tools.run_review_check --check-id target-naming" in workflow_text
     assert "tools.run_review_check --check-id ci-tooling" in workflow_text
     assert "tools.evaluate_review_results" in workflow_text
+    actionlint_job = workflow_text.split("  actionlint:\n", maxsplit=1)[1].split(
+        "  ruff:\n", maxsplit=1
+    )[0]
+    assert 'include-ci-group: "true"' in actionlint_job
     main_ci_needs = workflow_text.split("  main-ci-result:\n", maxsplit=1)[1].split(
         "    runs-on:", maxsplit=1
     )[0]
@@ -96,12 +104,17 @@ def test_setup_action_pins_external_actions_and_uv_version() -> None:
     assert "astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9" in action_text
     assert 'version: "0.9.20"' in action_text
     assert "enable-cache: true" in action_text
+    assert "include-ci-group:" in action_text
+    assert 'default: "false"' in action_text
     assert 'PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"' in action_text
     assert (
         'echo "UV_PROJECT_ENVIRONMENT=$PROJECT_ENVIRONMENT" >> "$GITHUB_ENV"'
         in action_text
     )
     assert 'echo "$PROJECT_ENVIRONMENT/bin" >> "$GITHUB_PATH"' in action_text
+    assert "SYNC_ARGS=(--python 3.12 --frozen)" in action_text
+    assert "SYNC_ARGS+=(--no-group ci)" in action_text
+    assert 'uv sync "${SYNC_ARGS[@]}"' in action_text
     assert "uv cache prune --ci" in action_text
 
 
