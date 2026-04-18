@@ -6,6 +6,7 @@ from pathlib import Path
 
 from repo_support.paths import repo_root
 from repo_support.pytest_commands import build_fast_pytest_command
+from repo_support.review_verification import check_spec
 
 QUALITY_GATE_ORDER = (
     "markdownlint",
@@ -33,24 +34,22 @@ class QualityPhase:
 
 
 def available_quality_gates(*, full_tests: bool) -> dict[str, QualityGate]:
-    pytest_command = (
-        ("uv", "run", "pytest") if full_tests else build_fast_pytest_command()
-    )
+    pytest_command = ("pytest",) if full_tests else build_fast_pytest_command()
     return {
         "markdownlint": QualityGate(
             name="markdownlint",
-            command=("uv", "run", "pre-commit", "run", "markdownlint", "--all-files"),
+            command=check_spec("markdownlint").command,
         ),
         "actionlint": QualityGate(
             name="actionlint",
-            command=("uv", "run", "actionlint", "-color"),
+            command=check_spec("actionlint").command,
         ),
-        "ruff": QualityGate(name="ruff", command=("uv", "run", "ruff", "check", ".")),
-        "mypy": QualityGate(name="mypy", command=("uv", "run", "mypy")),
-        "pyright": QualityGate(name="pyright", command=("uv", "run", "pyright")),
+        "ruff": QualityGate(name="ruff", command=check_spec("ruff").command),
+        "mypy": QualityGate(name="mypy", command=check_spec("mypy").command),
+        "pyright": QualityGate(name="pyright", command=check_spec("pyright").command),
         "pylint": QualityGate(
             name="pylint",
-            command=("uv", "run", "python", "-m", "tools.run_pylint"),
+            command=check_spec("pylint").command,
         ),
         "pytest": QualityGate(
             name="pytest",
@@ -66,12 +65,13 @@ def quality_phase_plan(
     schedule: str,
     selected_gate_names: Iterable[str] | None = None,
 ) -> tuple[QualityPhase, ...]:
+    _ = full_tests
     if schedule not in QUALITY_SCHEDULES:
         raise ValueError(f"unsupported quality schedule: {schedule}")
 
     resolved_schedule = schedule
     if schedule == "auto":
-        resolved_schedule = "all-at-once" if full_tests else "phased"
+        resolved_schedule = "all-at-once"
 
     phases: tuple[QualityPhase, ...]
     if resolved_schedule == "all-at-once":

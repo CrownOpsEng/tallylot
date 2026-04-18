@@ -23,7 +23,7 @@ surface and follows the repo's documentation metadata rules.
 Use the repo-local workflow for the active surface on that reload path and pair
 it with the `markdown` skill when the task edits Markdown or docs surfaces.
 When the task changes GitHub-side delivery controls, run
-`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_delivery_guardrails`
+`make audit-delivery-guardrails`
 before and after the change so the local CODEOWNERS state and the live remote
 branch protection state are audited together.
 
@@ -91,17 +91,23 @@ Control-plane files include:
 - `AGENTS.md`
 - `docs/standards/**`
 - `.claude/commands/**`
+- `repo_support/local_autofix.py`
+- `repo_support/quality_gates.py`
+- `repo_support/review_verification/**`
 - `tools/install_git_hooks.py`
 - `tools/pre_commit_hook.py`
+- `tools/pre_push_hook.py`
 - `tools/audit_delivery_guardrails.py`
 - `tools/audit_pr_review.py`
 - `tools/benchmark_quality_gates.py`
+- `tools/evaluate_review_results.py`
 - `tools/message_standards.py`
+- `tools/run_review_check.py`
 - `tools/run_pr_review_checks.py`
 - `tools/validate_commit_message.py`
 - `tools/validate_pr_metadata.py`
 - `tools/run_quality_gates.py`
-- `tools/run_ci_parity_checks.py`
+- `tools/verify_built_wheel.py`
 
 If a repo policy depends on a platform-native control that is not enabled, call
 that out as a real enforcement gap rather than assuming documentation is
@@ -159,22 +165,31 @@ the changed surface groups in the current PR diff:
     terminology, documentation and control-plane alignment
 - `ci_or_release`
   - paths: `.github/actions/**`, `.github/workflows/**`, and the repo's
-    parity-sensitive delivery tooling and config surfaces
+    delivery planner, workflow helpers, and workflow-sensitive config surfaces
   - review domains: workflow correctness, delivery enforcement, metadata parity
 
-When more than one surface group is present:
+Verification selection is deterministic and atomic:
 
 - review domains are the union across every applicable surface group
-- the strongest broad verification family wins:
-  - `docs-maintenance`
-  - `control-plane-targeted`
-  - `quality-gates-full`
-  - `ci-parity`
-- when `ci-parity` wins for a mixed repo-code and CI diff, do not also run a
-  duplicate `quality-gates-full` pass; `ci-parity` already includes the full
-  quality, build, and wheel parity path
-- surface-specific targeted checks still apply when the touched path declares
-  them, even when a stronger broad runner is also required
+- `tools.audit_pr_review` reports changed paths, grouped surfaces, review
+  domains, the selected verification mode, selected checks, suppressed checks,
+  and any unmapped paths
+- pull-request CI is draft-aware:
+  - draft and in-progress pull requests always run the always-visible PR metadata checks `commit-messages` and `pr-metadata`, then select the remaining atomic checks from the changed diff
+  - once the pull request is no longer draft, `pr-review` switches to the full
+    non-duplicated blocking suite before merge
+  - it still runs `coverage-hotspots` as a non-blocking informative report
+    whenever the selected plan includes `pytest-full` and that lane succeeds
+- post-merge `main` CI, manual CI, and local planned runs also stay
+  change-sensitive and select only the atomic checks needed for the diff
+- the repo-installed `pre-commit` hook follows the same local planned
+  selection model for staged paths instead of hard-running a fixed Python
+  scanner bundle on every commit
+- when `pytest-full` is selected, it suppresses the narrower targeted pytest
+  subset checks so the same test evidence is not rerun under multiple wrappers;
+  the planner suppresses the narrower targeted pytest subset checks
+- `tools.run_quality_gates` is quality-only convenience tooling and does not
+  decide PR or CI verification selection
 
 Each PR review pass should:
 
@@ -230,13 +245,24 @@ push-to-mainline CI.
 
 - the `commit-messages` PR status validates the branch commit-message range and
   PR metadata on pull requests only
-- the `pr-review` PR status runs `tools.run_pr_review_checks` against the PR
-  diff and applies the repo's change-sensitive review verification matrix
+- the `pr-metadata` PR status validates the pull request title, body, and
+  checkpoint linkage as its own visible required status
+- the repo-installed `pre-push` hook mirrors `tools.validate_pr_metadata`
+  against the current open pull request before push when `gh pr view` can
+  resolve PR metadata for the branch
+- the `plan-pr-review` workflow job audits the diff with
+  `tools.audit_pr_review`, publishes the selected checks for transparency, and
+  keeps the human review surface routing visible while choosing planned mode
+  for draft PRs and full mode for non-draft PRs
+- the `pr-review` PR status aggregates the selected blocking checks for draft
+  PR plans and the full non-duplicated blocking suite for non-draft PRs; it
+  uses explicit per-check jobs instead of one opaque umbrella runner so every
+  required check stays visible in GitHub Actions
 - required PR-only statuses must stay pinned to the GitHub Actions app through
   branch-protection check app IDs, not only by status context name
-- push/mainline CI keeps the shared quality and parity path for landed changes
-  through explicit lint, type, pylint, test, and build jobs rather than one
-  opaque umbrella status, but it does not replace the PR-only review audit
+- push/mainline CI reuses the same atomic check catalog and deterministic
+  planner for landed changes, but stays change-sensitive and is not a branch
+  protection requirement
 - `pr-review` is not a local commit-hook requirement
 
 ## Required Delivery Audit
@@ -257,8 +283,8 @@ Before calling delivery complete, verify and report:
 - whether the final remote branch tip still matches the reviewed PR record
 - whether review requirements are truly enforced or explicitly deferred because
   the repo currently has only one single review-capable collaborator
-- whether PR-only CI enforcement required both `commit-messages` and
-  `pr-review` for mergeable pull requests
+- whether PR-only CI enforcement required `commit-messages`, `pr-metadata`,
+  and `pr-review` for mergeable pull requests
 - whether required PR-only statuses were pinned to the owning GitHub Actions
   app instead of relying on unpinned status-context names alone
 

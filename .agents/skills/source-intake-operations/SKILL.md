@@ -17,17 +17,17 @@ Use this skill for source intake and normalization workflow execution.
    - `docs/guides/source-intake.md`
    - `.claude/commands/source-intake.md`
 2. Use the runtime CLI, not ad hoc loops:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake plan`
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source intake apply`
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source manifest`
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source profile`
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize`
+   - `make cli ARGS='source intake plan'`
+   - `make cli ARGS='source intake apply'`
+   - `make cli ARGS='source manifest'`
+   - `make cli ARGS='source profile'`
+   - `make cli ARGS='source normalize'`
    - When the incoming evidence needs a stable source label, seed
      `analysis/issues/source_inventory.csv` and an explicit
      `analysis/issues/source_label_map.csv` row first; the planner uses the
      incoming directory name as the capture scope.
    - When you need to verify a rebuilt workspace, use
-     `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_workspace_replay`
+     `make validate-workspace-replay`
      against a reference workspace and a clean candidate workspace so replay
      parity stays explicit.
 3. Review the emitted plan, profile, normalization, and issue artifacts before

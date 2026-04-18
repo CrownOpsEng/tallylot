@@ -11,7 +11,7 @@ from tools.validate_commit_message import (
 )
 
 
-def test_commit_message_without_scope_is_valid() -> None:
+def test_commit_message_without_scope_is_rejected() -> None:
     message = """\
 docs: route agents to narrow standards
 
@@ -22,12 +22,16 @@ What:
 - point agents to the narrowest applicable standards doc
 
 Checks:
-- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+- make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
 """
 
     errors = _validate_commit_message_text(message)
 
-    assert not errors
+    assert errors == (
+        "subject must match `type(scope): imperative summary` "
+        "using one of: feat, fix, refactor, docs, test, chore, build, ci, "
+        "perf, revert",
+    )
 
 
 def test_commit_message_with_scope_is_valid() -> None:
@@ -41,7 +45,7 @@ What:
 - move structured CSV parsing into bounded helpers
 
 Checks:
-- uv run pytest tests/unit/test_commit_message_validator.py
+- make pytest ARGS='tests/unit/test_commit_message_validator.py'
 """
 
     errors = _validate_commit_message_text(message)
@@ -61,7 +65,7 @@ What:
 - update docs
 
 Checks:
-- uv run pytest
+- make pytest
 
 BREAKING CHANGE: verification compare is now verification diff
 """
@@ -75,16 +79,15 @@ def test_merge_commit_message_requires_conventional_subject() -> None:
     errors = _validate_commit_message_text("Merge branch 'feature/refactor'\n")
 
     assert errors == (
-        "subject must match `type(scope): imperative summary` or "
-        "`type: imperative summary` using one of: feat, fix, refactor, docs, "
-        "test, chore, build, ci, perf, revert",
+        "subject must match `type(scope): imperative summary` using one of: "
+        "feat, fix, refactor, docs, test, chore, build, ci, perf, revert",
         "commit message body is required with `Why:`, `What:`, `Checks:` sections",
     )
 
 
 def test_squash_merge_commit_message_with_included_checkpoints_is_valid() -> None:
     message = """\
-refactor: source verification and routing (#11)
+refactor(workflows): source verification and routing (#11)
 
 Why:
 - Closes #44: preserve the review record on main
@@ -150,9 +153,9 @@ supporting standards around the new concepts, guides, reference,
 standards, and status model
 
 Checks:
-- `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest
+- `make pytest ARGS='
 tests/unit/test_docs_maintenance.py
-tests/unit/docs_runtime_parity -q --no-cov`
+tests/unit/docs_runtime_parity -q --no-cov'`
 
 Included checkpoints:
 - `docs(roadmap): clarify planning and state docs`
@@ -175,14 +178,13 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
     assert errors == (
-        "subject must match `type(scope): imperative summary` or "
-        "`type: imperative summary` using one of: feat, fix, refactor, docs, "
-        "test, chore, build, ci, perf, revert",
+        "subject must match `type(scope): imperative summary` using one of: "
+        "feat, fix, refactor, docs, test, chore, build, ci, perf, revert",
     )
 
 
@@ -198,14 +200,13 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
     assert errors == (
-        "subject must match `type(scope): imperative summary` or "
-        "`type: imperative summary` using one of: feat, fix, refactor, docs, "
-        "test, chore, build, ci, perf, revert",
+        "subject must match `type(scope): imperative summary` using one of: "
+        "feat, fix, refactor, docs, test, chore, build, ci, perf, revert",
     )
 
 
@@ -221,7 +222,7 @@ What:
 - split the parser
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -231,7 +232,7 @@ Checks:
 def test_trailing_period_is_rejected() -> None:
     errors = _validate_commit_message_text(
         """\
-docs: update commit guidance.
+docs(commits): update commit guidance.
 
 Why:
 - tighten docs
@@ -240,7 +241,7 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -250,7 +251,7 @@ Checks:
 def test_generic_commit_summary_is_rejected() -> None:
     errors = _validate_commit_message_text(
         """\
-docs: cleanup
+docs(commits): cleanup
 
 Why:
 - tighten docs
@@ -259,7 +260,7 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
@@ -282,19 +283,20 @@ What:
 - rewrite the standard
 
 Checks:
-- uv run pytest
+- make pytest
 """
     )
 
     assert errors == (
-        "subject must match `type(scope): imperative summary` or "
-        "`type: imperative summary` using one of: feat, fix, refactor, docs, "
-        "test, chore, build, ci, perf, revert",
+        "subject must match `type(scope): imperative summary` using one of: "
+        "feat, fix, refactor, docs, test, chore, build, ci, perf, revert",
     )
 
 
 def test_missing_structured_body_is_rejected() -> None:
-    errors = _validate_commit_message_text("docs: route agents to narrow standards\n")
+    errors = _validate_commit_message_text(
+        "docs(routing): route agents to narrow standards\n"
+    )
 
     assert errors == (
         "commit message body is required with `Why:`, `What:`, `Checks:` sections",
@@ -304,7 +306,7 @@ def test_missing_structured_body_is_rejected() -> None:
 def test_authored_commit_message_rejects_included_checkpoints_section() -> None:
     errors = _validate_commit_message_text(
         """\
-docs: route agents to narrow standards
+docs(routing): route agents to narrow standards
 
 Why:
 - keep routing guidance explicit
@@ -313,23 +315,23 @@ What:
 - point agents to the narrowest applicable standards doc
 
 Checks:
-- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+- make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
 
 Included checkpoints:
-- `docs: route agents to narrow standards`
+- `docs(routing): route agents to narrow standards`
 """
     )
 
     assert errors == (
         "unsupported structured label: Included checkpoints:",
-        "unexpected trailing content: - `docs: route agents to narrow standards`",
+        "unexpected trailing content: - `docs(routing): route agents to narrow standards`",
     )
 
 
 def test_authored_commit_message_rejects_issue_closing_keywords() -> None:
     errors = _validate_commit_message_text(
         """\
-docs: route agents to narrow standards
+docs(routing): route agents to narrow standards
 
 Why:
 - Closes #44: keep routing guidance explicit
@@ -338,7 +340,7 @@ What:
 - point agents to the narrowest applicable standards doc
 
 Checks:
-- uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
+- make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
 """
     )
 
@@ -383,12 +385,12 @@ def test_load_commit_messages_from_range_falls_back_for_rewritten_history(
                 command,
                 0,
                 stdout=(
-                    "docs: codify pull request merge policy (#35)\n\n"
+                    "docs(commits): codify pull request merge policy (#35)\n\n"
                     "Why:\n- keep history clean\n\n"
                     "What:\n- rewrite the commit record\n\n"
-                    "Checks:\n- uv run pytest\n\n"
+                    "Checks:\n- make pytest\n\n"
                     "Included checkpoints:\n"
-                    "- `docs: codify pull request merge policy`\n"
+                    "- `docs(commits): codify pull request merge policy`\n"
                 ),
                 stderr="",
             )

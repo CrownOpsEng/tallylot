@@ -16,9 +16,9 @@ round preparation.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source normalize \
+make cli ARGS='source normalize \
   --source <source> \
-  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>
+  --raw-dir <workspace>/evidence/raw/source/<source>/<capture_label>'
 ```
 
 `source normalize` requires the exact materialized capture root under
@@ -55,9 +55,9 @@ reference raw evidence.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot source assemble \
+make cli ARGS='source assemble \
   --source <source> \
-  --workspace-root <workspace>
+  --workspace-root <workspace>'
 ```
 
 Review the assembled source dataset under
@@ -73,8 +73,7 @@ operator-owned files in place.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission \
-  --source <source>
+make cli ARGS='checkpoint scaffold-balance-submission --source <source>'
 ```
 
 Fill the submission package under
@@ -82,8 +81,7 @@ Fill the submission package under
 run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances \
-  --source <source>
+make cli ARGS='checkpoint submit-balances --source <source>'
 ```
 
 Review:
@@ -105,9 +103,9 @@ but source-local balance checks still work without it.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances check \
+make cli ARGS='reconciliation balances check \
   --input-root <workspace>/working/normalized/sources \
-  --output-root <workspace>/analysis/reconciliation/<source>
+  --output-root <workspace>/analysis/reconciliation/<source>'
 ```
 
 `<workspace>/working/normalized/sources/` is the assembled reconciliation
@@ -132,10 +130,10 @@ Continue only after reviewing any emitted reconciliation issues.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot output render file \
+make cli ARGS='output render file \
   --output-adapter cointracking_csv \
   --facts <workspace>/working/normalized/sources/<source>/facts.csv \
-  --output <workspace>/working/normalized/sources/<source>/cointracking_candidate.csv
+  --output <workspace>/working/normalized/sources/<source>/cointracking_candidate.csv'
 ```
 
 Render a candidate only when the round needs an external output artifact such
@@ -146,10 +144,10 @@ as `cointracking_candidate.csv`.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen \
+make oracle ARGS='batch screen \
   --candidate <workspace>/working/normalized/sources/<source>/cointracking_candidate.csv \
   --baseline-export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
-  --output-dir <workspace>/working/import_batches/<source>
+  --output-dir <workspace>/working/import_batches/<source>'
 ```
 
 Review:
@@ -161,12 +159,12 @@ Stop when `stage_summary.json` reports `passed: false`.
 
 ## Stage The Candidate
 
-Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch stage`
+Run `make oracle ARGS='batch stage'`
 only after the candidate passes the screen.
 
 ## Diff When Needed
 
-Run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli source diff`
+Run `make oracle ARGS='source diff'`
 when the candidate or reference slice needs a deterministic row comparison
 before import.
 

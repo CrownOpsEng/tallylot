@@ -18,6 +18,7 @@ def test_pylint_targets_split_repo_code_from_tests() -> None:
             sys.executable,
             "-m",
             "pylint",
+            "--persistent=n",
             f"--ignore-paths={_ADAPTER_TEST_IGNORE_PATHS}",
             "src",
             "tools",
@@ -27,10 +28,11 @@ def test_pylint_targets_split_repo_code_from_tests() -> None:
         ),
     )
     assert targets[1].name == "tests"
-    assert targets[1].command[:5] == (
+    assert targets[1].command[:6] == (
         sys.executable,
         "-m",
         "pylint",
+        "--persistent=n",
         "--rcfile=.pylintrc-tests",
         "tests",
     )
@@ -57,6 +59,7 @@ def test_pylint_targets_include_colocated_adapter_tests(tmp_path: Path) -> None:
         sys.executable,
         "-m",
         "pylint",
+        "--persistent=n",
         "--rcfile=.pylintrc-tests",
         "tests",
         "src/tallylot/adapters/sources/wallets/demo/tests",

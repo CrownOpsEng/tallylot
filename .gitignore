@@ -58,6 +58,7 @@ venv.bak/
 __pypackages__/
 .uv-env
 .uv-venv
+.pyrightconfig.local.json
 
 # Editors and notebooks
 .idea/

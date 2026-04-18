@@ -12,9 +12,9 @@ checks, or summarize reconciliation status across one source or many.
    source still needs the manual submission path, start with
    `.claude/commands/balance-submission-operations.md`.
 3. For direct operator-style execution, use the runtime CLI:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances inspect`
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances check`
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot reconciliation balances summarize`
+   - `make cli ARGS='reconciliation balances inspect'`
+   - `make cli ARGS='reconciliation balances check'`
+   - `make cli ARGS='reconciliation balances summarize'`
    - `check` runs offline by default; add `--hydrate-missing-references` only
      when provider hydration is intended.
 4. For agent execution, use the repo-local skill runner at

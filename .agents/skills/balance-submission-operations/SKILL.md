@@ -27,8 +27,8 @@ Use this skill for the manual balance submission path.
 ## Preferred Execution
 
 - For direct operator parity, use:
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission`
-  - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances`
+  - `make cli ARGS='checkpoint scaffold-balance-submission'`
+  - `make cli ARGS='checkpoint submit-balances'`
 - For agent execution, prefer:
   - `python3 .agents/skills/balance-submission-operations/scripts/balance_submission_operations.py run ...`
 

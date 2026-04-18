@@ -4,8 +4,8 @@ import json
 
 from pytest import CaptureFixture, MonkeyPatch
 
-from repo_support.pr_review import classify_changed_paths
 import tools.audit_pr_review as audit_pr_review
+from repo_support.review_verification import build_verification_plan
 
 
 def _docs_changed_paths(
@@ -22,136 +22,168 @@ def _unmapped_changed_paths(
     return ("notes/todo.md",)
 
 
-def test_docs_only_diff_maps_to_human_docs() -> None:
-    plan = classify_changed_paths(("docs/guides/source-intake.md",))
+def test_docs_only_diff_maps_to_docs_checks() -> None:
+    plan = build_verification_plan(
+        paths=("docs/guides/source-intake.md",),
+        trigger="local",
+        mode="planned",
+    )
 
-    assert plan.surface_groups == ("human_docs",)
-    assert plan.verification_level == "docs-maintenance"
-    assert plan.requires_full_quality_gates is False
-    assert plan.requires_ci_parity is False
-    assert plan.requires_pre_merge_packaging_verification is False
-    assert plan.requires_test_stress_checks is False
-    assert plan.requires_coverage_hotspot_report is False
-    assert [check.name for check in plan.targeted_checks] == ["docs-maintenance"]
-    assert plan.unmapped_paths == ()
+    assert plan.surface_report.surface_groups == ("human_docs",)
+    assert plan.selected_check_ids == ("docs-maintenance", "markdownlint")
+    assert plan.nonblocking_check_ids == ()
+    assert plan.surface_report.unmapped_paths == ()
 
 
-def test_control_plane_diff_maps_to_targeted_review_surface() -> None:
-    plan = classify_changed_paths((".agents/skills/pr-review/SKILL.md",))
+def test_control_plane_diff_selects_docs_and_skill_checks() -> None:
+    plan = build_verification_plan(
+        paths=(".agents/skills/pr-review/SKILL.md",),
+        trigger="local",
+        mode="planned",
+    )
 
-    assert plan.surface_groups == ("control_plane_text",)
-    assert plan.verification_level == "control-plane-targeted"
-    assert plan.requires_full_quality_gates is False
-    assert plan.requires_ci_parity is False
-    assert [check.name for check in plan.targeted_checks] == [
+    assert plan.surface_report.surface_groups == ("control_plane_text",)
+    assert plan.selected_check_ids == (
         "docs-maintenance",
+        "markdownlint",
         "repo-agent-skills",
-    ]
-
-
-def test_repo_code_diff_maps_to_full_quality_gates() -> None:
-    plan = classify_changed_paths(
-        ("src/tallylot/application/normalization/normalize_source.py",)
     )
 
-    assert plan.surface_groups == ("repo_code_or_tooling",)
-    assert plan.verification_level == "quality-gates-full"
-    assert plan.requires_full_quality_gates is True
-    assert plan.requires_ci_parity is False
-    assert plan.requires_pre_merge_packaging_verification is False
-    assert plan.requires_test_stress_checks is True
-    assert plan.requires_coverage_hotspot_report is True
-    assert "design and ownership" in plan.review_domains
+
+def test_control_plane_doc_diff_selects_targeted_control_plane_checks() -> None:
+    plan = build_verification_plan(
+        paths=("docs/standards/commits.md",),
+        trigger="local",
+        mode="planned",
+    )
+
+    assert plan.surface_report.surface_groups == ("control_plane_text",)
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "markdownlint",
+        "standards-guards",
+        "pr-metadata-validator",
+        "commit-message-validator",
+    )
 
 
-def test_repo_root_conftest_maps_to_repo_code_review_surface() -> None:
-    plan = classify_changed_paths(("conftest.py",))
+def test_repo_code_diff_selects_full_quality_suite() -> None:
+    plan = build_verification_plan(
+        paths=("src/tallylot/application/normalization/normalize_source.py",),
+        trigger="push_main",
+        mode="planned",
+    )
 
-    assert plan.surface_groups == ("repo_code_or_tooling",)
-    assert plan.verification_level == "quality-gates-full"
-    assert plan.requires_full_quality_gates is True
-    assert plan.requires_test_stress_checks is True
-    assert plan.unmapped_paths == ()
-
-
-def test_root_licensing_docs_map_to_human_docs() -> None:
-    plan = classify_changed_paths(("CONTRIBUTING.md", "CLA.md", "LICENSE.docs"))
-
-    assert plan.surface_groups == ("human_docs",)
-    assert plan.verification_level == "docs-maintenance"
-    assert plan.requires_full_quality_gates is False
-    assert plan.requires_ci_parity is False
-    assert plan.unmapped_paths == ()
-
-
-def test_packaging_sensitive_repo_code_adds_pre_merge_packaging_verification() -> None:
-    plan = classify_changed_paths(("src/tallylot/interfaces/cli/source.py",))
-
-    assert plan.surface_groups == ("repo_code_or_tooling",)
-    assert plan.verification_level == "quality-gates-full"
-    assert plan.requires_full_quality_gates is True
-    assert plan.requires_pre_merge_packaging_verification is True
-    assert plan.requires_test_stress_checks is True
-    assert plan.requires_coverage_hotspot_report is True
+    assert plan.surface_report.surface_groups == ("repo_code_or_tooling",)
+    assert plan.selected_check_ids == (
+        "ruff",
+        "mypy",
+        "pyright",
+        "pylint",
+        "pytest-full",
+        "test-stress-checks",
+        "coverage-hotspots",
+    )
+    assert plan.blocking_check_ids[-1] == "test-stress-checks"
+    assert plan.nonblocking_check_ids == ("coverage-hotspots",)
 
 
-def test_ci_workflow_diff_maps_to_ci_parity() -> None:
-    plan = classify_changed_paths((".github/workflows/pr-review.yml",))
+def test_packaging_sensitive_repo_code_adds_build_and_verify() -> None:
+    plan = build_verification_plan(
+        paths=("src/tallylot/interfaces/cli/source.py",),
+        trigger="push_main",
+        mode="planned",
+    )
 
-    assert plan.surface_groups == ("ci_or_release",)
-    assert plan.verification_level == "ci-parity"
-    assert plan.requires_full_quality_gates is False
-    assert plan.requires_ci_parity is True
-    assert plan.requires_pre_merge_packaging_verification is False
-    assert plan.requires_test_stress_checks is True
-    assert plan.requires_coverage_hotspot_report is False
-    assert [check.name for check in plan.targeted_checks] == [
+    assert "build" in plan.selected_check_ids
+    assert "verify-wheel" in plan.selected_check_ids
+
+
+def test_ci_workflow_diff_selects_targeted_ci_checks() -> None:
+    plan = build_verification_plan(
+        paths=(".github/workflows/ci.yml",),
+        trigger="push_main",
+        mode="planned",
+    )
+
+    assert plan.surface_report.surface_groups == ("ci_or_release",)
+    assert plan.selected_check_ids == (
+        "actionlint",
         "delivery-guardrails-audit",
-        "run-pr-review-checks",
-    ]
-
-
-def test_github_action_diff_maps_to_ci_parity() -> None:
-    plan = classify_changed_paths((".github/actions/setup-python-uv/action.yml",))
-
-    assert plan.surface_groups == ("ci_or_release",)
-    assert plan.verification_level == "ci-parity"
-    assert plan.requires_ci_parity is True
-    assert plan.requires_test_stress_checks is True
-    assert [check.name for check in plan.targeted_checks] == ["ci-parity-tooling"]
-
-
-def test_pylint_config_diff_maps_to_ci_parity() -> None:
-    plan = classify_changed_paths((".pylintrc",))
-
-    assert plan.surface_groups == ("ci_or_release",)
-    assert plan.verification_level == "ci-parity"
-    assert plan.requires_ci_parity is True
-    assert plan.requires_test_stress_checks is True
-    assert plan.unmapped_paths == ()
-
-
-def test_mixed_diff_uses_strongest_verification_level() -> None:
-    plan = classify_changed_paths(
-        (
-            "docs/guides/source-intake.md",
-            "src/tallylot/application/normalization/normalize_source.py",
-        )
+        "ci-tooling",
+        "build",
+        "verify-wheel",
     )
 
-    assert plan.surface_groups == ("human_docs", "repo_code_or_tooling")
-    assert plan.verification_level == "quality-gates-full"
-    assert plan.requires_full_quality_gates is True
-    assert plan.requires_test_stress_checks is True
-    assert plan.requires_coverage_hotspot_report is True
-    assert [check.name for check in plan.targeted_checks] == ["docs-maintenance"]
+
+def test_pull_request_docs_only_diff_stays_change_sensitive() -> None:
+    plan = build_verification_plan(
+        paths=("docs/guides/source-intake.md",),
+        trigger="pull_request",
+        mode="planned",
+    )
+
+    assert plan.mode == "planned"
+    assert plan.selected_check_ids == (
+        "commit-messages",
+        "pr-metadata",
+        "docs-maintenance",
+        "markdownlint",
+    )
+
+
+def test_pull_request_mode_can_still_force_full_suite() -> None:
+    plan = build_verification_plan(
+        paths=("docs/guides/source-intake.md",),
+        trigger="pull_request",
+        mode="full",
+    )
+
+    assert plan.mode == "full"
+    assert plan.selected_check_ids == (
+        "commit-messages",
+        "pr-metadata",
+        "docs-maintenance",
+        "markdownlint",
+        "actionlint",
+        "ruff",
+        "mypy",
+        "pyright",
+        "pylint",
+        "pytest-full",
+        "test-stress-checks",
+        "build",
+        "verify-wheel",
+        "coverage-hotspots",
+    )
+
+
+def test_full_quality_selection_suppresses_targeted_subset_tests() -> None:
+    plan = build_verification_plan(
+        paths=(
+            ".github/workflows/ci.yml",
+            "repo_support/review_verification/policy.py",
+        ),
+        trigger="push_main",
+        mode="planned",
+    )
+
+    suppressed_ids = {check.check_id for check in plan.suppressed_checks}
+    assert "ci-tooling" in suppressed_ids
+    assert "audit-pr-review" in suppressed_ids
+    assert "run-pr-review-checks" in suppressed_ids
+    assert "pytest-full" in plan.selected_check_ids
 
 
 def test_unmapped_paths_are_reported() -> None:
-    plan = classify_changed_paths(("notes/todo.md",))
+    plan = build_verification_plan(
+        paths=("notes/todo.md",),
+        trigger="local",
+        mode="planned",
+    )
 
-    assert plan.surface_groups == ()
-    assert plan.unmapped_paths == ("notes/todo.md",)
+    assert plan.surface_report.surface_groups == ()
+    assert plan.surface_report.unmapped_paths == ("notes/todo.md",)
 
 
 def test_audit_pr_review_can_emit_json(
@@ -163,8 +195,8 @@ def test_audit_pr_review_can_emit_json(
 
     report = json.loads(capsys.readouterr().out)
     assert report["surface_groups"] == ["human_docs"]
-    assert report["verification_level"] == "docs-maintenance"
-    assert report["requires_pre_merge_packaging_verification"] is False
+    assert report["mode"] == "planned"
+    assert report["selected_checks"] == ["docs-maintenance", "markdownlint"]
     assert report["manual_red_team_review_required"] is True
 
 
@@ -186,5 +218,5 @@ def test_audit_pr_review_emits_red_team_review_reminder(
 
     output = capsys.readouterr().out
     assert "manual red-team review: required" in output
+    assert "selected verification mode: planned" in output
     assert "mandatory red-team repair loop" in output
-    assert "next issue-finding pass" in output

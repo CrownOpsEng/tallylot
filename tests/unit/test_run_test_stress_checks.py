@@ -17,8 +17,6 @@ def test_stress_steps_match_repo_policy() -> None:
         "e2e-seed-a",
     ]
     assert steps[0].command == (
-        "uv",
-        "run",
         "pytest",
         "-n",
         "4",
@@ -30,8 +28,6 @@ def test_stress_steps_match_repo_policy() -> None:
         "1729",
     )
     assert steps[0].serial_fallback_command == (
-        "uv",
-        "run",
         "pytest",
         "-m",
         "unit and not slow",
@@ -41,8 +37,6 @@ def test_stress_steps_match_repo_policy() -> None:
         "1729",
     )
     assert steps[2].command == (
-        "uv",
-        "run",
         "pytest",
         "-m",
         "contract",
@@ -53,7 +47,7 @@ def test_stress_steps_match_repo_policy() -> None:
     )
 
 
-def test_stress_runner_short_circuits_on_first_failure(
+def test_stress_runner_aggregates_failures_by_default(
     monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]
 ) -> None:
     commands_seen: list[tuple[str, ...]] = []
@@ -73,13 +67,15 @@ def test_stress_runner_short_circuits_on_first_failure(
     monkeypatch.setattr(subprocess, "run", fake_run)
 
     assert stress_checks.main([]) == 1
-    assert commands_seen == [stress_checks._stress_steps()[0].command]
+    assert commands_seen == [step.command for step in stress_checks._stress_steps()]
     output = capsys.readouterr().out
     assert "--randomly-seed 1729" in output
     assert "serial fallback" in output
 
 
-def test_stress_runner_stops_after_later_failure(monkeypatch: MonkeyPatch) -> None:
+def test_stress_runner_fail_fast_stops_after_first_failure(
+    monkeypatch: MonkeyPatch,
+) -> None:
     commands_seen: list[tuple[str, ...]] = []
 
     def fake_run(
@@ -97,7 +93,7 @@ def test_stress_runner_stops_after_later_failure(monkeypatch: MonkeyPatch) -> No
 
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    assert stress_checks.main([]) == 1
+    assert stress_checks.main(["--fail-fast"]) == 1
     assert commands_seen == [
         stress_checks._stress_steps()[0].command,
         stress_checks._stress_steps()[1].command,

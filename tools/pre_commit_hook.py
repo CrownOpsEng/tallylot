@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-import os
 import shlex
 import subprocess
 import sys
 from pathlib import Path
+
+from repo_support.review_verification import (
+    CheckExecutionContext,
+    build_verification_plan,
+    run_plan,
+)
 
 PYTHON_SUFFIXES = {".py", ".pyi"}
 _COMMIT_MSG_HOOK_NEEDLES = (
@@ -34,10 +39,6 @@ def _git_path(path: str) -> Path:
     return Path(result.stdout.strip())
 
 
-def _hook_dir_path() -> Path:
-    return _git_path("hooks")
-
-
 def _commit_msg_hook_path() -> Path:
     return _git_path("hooks/commit-msg")
 
@@ -64,29 +65,41 @@ def _log_command(command: list[str]) -> None:
     print(f"+ {shlex.join(command)}", file=sys.stderr)
 
 
-def _run_pre_commit() -> int:
-    env = os.environ.copy()
-    command = [
-        sys.executable,
-        "-m",
-        "pre_commit",
-        "hook-impl",
-        "--config=.pre-commit-config.yaml",
-        "--hook-type=pre-commit",
-        "--hook-dir",
-        str(_hook_dir_path().resolve()),
-        "--",
-    ]
-    return _run_command(command, env=env)
+def _run_staged_verification(paths: tuple[str, ...]) -> int:
+    if not paths:
+        print("no staged paths detected for selective verification", file=sys.stderr)
+        return 0
+
+    plan = build_verification_plan(paths=paths, trigger="local", mode="planned")
+    if plan.surface_report.unmapped_paths:
+        print(
+            "staged-path verification failed: staged files are not mapped to "
+            "repo review surfaces",
+            file=sys.stderr,
+        )
+        for path in plan.surface_report.unmapped_paths:
+            print(f"  - {path}", file=sys.stderr)
+        return 1
+
+    print(
+        "running staged selective verification for "
+        + ", ".join(plan.selected_check_ids or ("no checks",)),
+        file=sys.stderr,
+    )
+    summary = run_plan(
+        plan,
+        context=CheckExecutionContext(trigger="local"),
+        fail_fast=True,
+        parallel=True,
+    )
+    return 1 if summary.has_blocking_failures else 0
 
 
 def _require_commit_message_hook() -> int:
     hook_path = _commit_msg_hook_path()
     if not hook_path.is_file():
         print(
-            "repo commit-msg hook is not installed; run "
-            '`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
-            "uv run python -m tools.install_git_hooks`",
+            "repo commit-msg hook is not installed; run `make install-hooks`",
             file=sys.stderr,
         )
         return 1
@@ -96,9 +109,7 @@ def _require_commit_message_hook() -> int:
         return 0
 
     print(
-        "repo commit-msg hook is stale or invalid; run "
-        '`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" '
-        "uv run python -m tools.install_git_hooks`",
+        "repo commit-msg hook is stale or invalid; run `make install-hooks`",
         file=sys.stderr,
     )
     return 1
@@ -137,7 +148,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     if format_status != 0:
         return format_status
-    return _run_pre_commit()
+    staged_paths = _git_paths("diff", "--cached", "--name-only", "--diff-filter=ACMR")
+    return _run_staged_verification(staged_paths)
 
 
 if __name__ == "__main__":

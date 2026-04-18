@@ -20,9 +20,9 @@ nav_order: 10
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli baseline validate \
+make oracle ARGS='baseline validate \
   --export-dir <workspace>/evidence/raw/portfolio/cointracking/2023-08-05_full_export \
-  --output-dir <workspace>/analysis/reconciliation
+  --output-dir <workspace>/analysis/reconciliation'
 ```
 
 Artifacts:

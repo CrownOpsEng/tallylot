@@ -382,13 +382,16 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "ready for review" in guardrails_text
     assert "evidence-backed findings" in guardrails_text
     assert "duplicate or superseded label" in guardrails_text
-    assert "tools.audit_delivery_guardrails" in guardrails_text
+    assert "make audit-delivery-guardrails" in guardrails_text
     assert "single review-capable collaborator" in guardrails_text
     assert ".github/actions/**" in guardrails_text
     assert ".github/ISSUE_TEMPLATE/**" in guardrails_text
     assert "docs/status/current-state.md" in guardrails_text
     assert "tools/docs_maintenance/cli.py" in guardrails_text
     assert "tools/benchmark_quality_gates.py" in guardrails_text
+    assert "repo_support/local_autofix.py" in guardrails_text
+    assert "repo_support/review_verification/**" in guardrails_text
+    assert "tools/evaluate_review_results.py" in guardrails_text
     assert "`markdown` skill" in guardrails_text
     assert "human docs, agent" in guardrails_text
     assert "standards/delivery-guardrails.md" in docs_index_text
@@ -434,13 +437,15 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "`control_plane_text`" in guardrails_text
     assert "`repo_code_or_tooling`" in guardrails_text
     assert "`ci_or_release`" in guardrails_text
-    assert "surface-specific targeted checks still apply" in guardrails_text
-    assert "duplicate `quality-gates-full` pass" in guardrails_text
+    assert "selected verification mode" in guardrails_text
+    assert "always-visible PR metadata checks" in guardrails_text
+    assert "full non-duplicated blocking suite" in guardrails_text
+    assert "suppresses the narrower targeted pytest subset checks" in guardrails_text
     assert (
         "every applicable changed surface group has been revisited" in guardrails_text
     )
     assert "issue-finding with open outcome" in guardrails_text
-    assert "tools.audit_pr_review" in hardening_route_text
+    assert "make audit-pr-review" in hardening_route_text
     assert "tools.run_pr_review_checks" in hardening_route_text
     assert (
         "green runner never replaces the mandatory red-team repair" in guardrails_text
@@ -502,8 +507,8 @@ def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() ->
     assert "create a bounded checkpoint commit" in hardening_route_text
     assert "relevant delivery guidance or skills" in hardening_route_text
     assert "updating the PR state" in hardening_route_text
-    assert "tools.audit_pr_review" in hardening_route_text
-    assert "tools.run_pr_review_checks" in hardening_route_text
+    assert "make audit-pr-review" in hardening_route_text
+    assert "make pr-review" in hardening_route_text
 
 
 def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> None:
@@ -521,17 +526,23 @@ def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> No
         "AGENTS.md",
         "docs/standards/**",
         ".claude/commands/**",
+        "repo_support/local_autofix.py",
+        "repo_support/quality_gates.py",
+        "repo_support/review_verification/**",
         "tools/install_git_hooks.py",
         "tools/pre_commit_hook.py",
+        "tools/pre_push_hook.py",
         "tools/audit_delivery_guardrails.py",
         "tools/audit_pr_review.py",
         "tools/benchmark_quality_gates.py",
+        "tools/evaluate_review_results.py",
         "tools/message_standards.py",
+        "tools/run_review_check.py",
         "tools/run_pr_review_checks.py",
         "tools/validate_commit_message.py",
         "tools/validate_pr_metadata.py",
         "tools/run_quality_gates.py",
-        "tools/run_ci_parity_checks.py",
+        "tools/verify_built_wheel.py",
     )
 
     for entry in required_entries:
@@ -853,3 +864,32 @@ def test_transaction_classification_matrix_describes_runtime_projection_values()
     assert "enum members such as `ProjectionHint.TRADE`" in matrix_text
     assert "stored/runtime values such as `trade`" in matrix_text
     assert "renderer labels such as `Trade`" in matrix_text
+
+
+def test_makefile_uses_home_relative_external_env_path() -> None:
+    makefile_text = (repo_root() / "Makefile").read_text(encoding="utf-8")
+
+    assert "PROJECT_ENV ?= $(HOME)/.venvs/tallylot-py312" in makefile_text
+    assert "export PATH := $(PROJECT_BIN):$(PATH)" in makefile_text
+    for target in (
+        "install-hooks:",
+        "docs-check:",
+        "quality:",
+        "quality-full:",
+        "pr-review-full:",
+        "cli:",
+        "oracle:",
+        "tool:",
+    ):
+        assert target in makefile_text
+
+
+def test_workspace_vscode_terminal_path_uses_home_relative_external_env_bin() -> None:
+    settings = json.loads(
+        (repo_root() / ".vscode" / "settings.json").read_text(encoding="utf-8")
+    )
+
+    assert (
+        settings["terminal.integrated.env.linux"]["PATH"]
+        == "${env:HOME}/.venvs/tallylot-py312/bin:${env:PATH}"
+    )

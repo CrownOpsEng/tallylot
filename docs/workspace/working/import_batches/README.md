@@ -16,5 +16,5 @@ Every file here should have:
 
 - an upstream raw source export
 - a reviewed normalization path
-- a passing `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli batch screen` result saved beside the candidate
+- a passing `make oracle ARGS='batch screen'` result saved beside the candidate
 - a matching entry in the round log before import

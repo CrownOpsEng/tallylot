@@ -21,11 +21,10 @@ This document complements:
 
 ## Repo-Native Tooling To Use
 
-This repo uses the external uv environment at
-`$HOME/.venvs/tallylot-py312`. The repo-root `.venv` file is a sentinel,
-not a virtualenv directory. Use
-`UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv ...` for repo
-commands so `uv` does not create a workspace-local environment.
+This repo uses the external environment at `$(HOME)/.venvs/tallylot-py312`.
+Use the root `Makefile` as the standard local command surface. It prepends the
+external environment's `bin/` directory to `PATH`, which keeps repo commands
+machine-neutral and sandbox-safe without inline environment prefixes.
 
 Prefer the repo's built-in tooling before inventing local workflows:
 
@@ -33,48 +32,50 @@ Prefer the repo's built-in tooling before inventing local workflows:
   skill or MCP server is available, then fall back to CLI checks when the
   snapshot is stale, missing, or incomplete
 - bootstrap each clone with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks`
+  `make install-hooks`
   so the shared external environment is synced to the current checkout before
-  hook installation; rerun that command if
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot ...`
+  hook installation; rerun that command if `make cli ARGS='...'`
   resolves a stale editable checkout after repo relocation or history rebuilds
 - run broad verification with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates`
-- run full verification before closing substantial work with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests`
-  The repo keeps the fast gate on the phased schedule, the fast pytest slice
-  on 4 workers by default, and the full gate on serial full-suite coverage.
+  `make quality`
+- run the explicit full-suite override only when it is intentionally needed with
+  `make quality-full`
+  The repo starts the standard quality gates together by default, keeps the
+  fast pytest slice on 4 workers by default, and reserves phased scheduling as
+  an explicit alternate mode for comparison or debugging.
   Override the fast worker count only through
   `TALLYLOT_FAST_PYTEST_WORKERS`; use `0` to force serial.
-- mirror GitHub Actions locally when changing workflow, packaging, or release
-  behavior with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks`
+- local verification runners may apply safe autofixes to staged Python and
+  Markdown files before validation so style-only drift is repaired locally,
+  while CI stays read-only and reports any remaining issues directly
+- run the broad review suite locally when changing workflow, packaging, or
+  release behavior with
+  `make pr-review-full`
 - audit local CODEOWNERS coverage and live GitHub branch-protection settings
   together when changing delivery policy, branch protection, or CI guardrails
   with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_delivery_guardrails`
+  `make audit-delivery-guardrails`
 - audit PR review surface coverage with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.audit_pr_review`
-  and run the required review checks for the current diff with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_pr_review_checks`
+  `make audit-pr-review` and run the required review checks for the current
+  diff with `make pr-review`
 - run the blocking flake and order-sensitivity lane with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_test_stress_checks`
+  `make test-stress`
 - report coverage hotspots from a recent full-suite run with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.report_coverage_hotspots`
+  `make coverage-hotspots`
 - scaffold new adapters with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.scaffold_adapter ...`
+  `make scaffold-adapter ARGS='...'`
 - refresh generated pyright test-private execution environments with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.sync_pyright_config`
+  `make sync-pyright-config`
   when adapter-local `tests/` packages are added or removed outside the
   scaffold tool; `tools.run_quality_gates` also refreshes that generated config
   and fails immediately when it had to update the file, so review and commit
   `pyrightconfig.tests.json` before rerunning
 - refresh adapter golden fixtures with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.refresh_adapter_goldens ...`
+  `make refresh-adapter-goldens ARGS='...'`
 - benchmark test-slice changes with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_tests`
+  `make benchmark-tests`
 - benchmark quality-gate scheduling changes with
-  `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.benchmark_quality_gates`
+  `make benchmark-quality`
 
 Do not replace these with ad hoc shell habits when the repo already has a
 supported path.
@@ -100,10 +101,14 @@ generated file, commit that change and rerun the gates.
 
 When repo-native tooling and tests need shared support:
 
-- keep production/runtime concerns out of `tools/` and `repo_support/`
-- keep shared repo-only support in `repo_support/`, not in ad hoc duplicated
-  test helpers or tool-local path constants
+- keep production/runtime concerns out of `tools/` and the current live
+  `repo_support/` surface
+- keep shared repo-only support in the current live `repo_support/` package,
+  not in ad hoc duplicated test helpers or tool-local path constants
 - keep `tools/` focused on entry points and task-specific dev modules
+- shape forward-looking repo-only support work toward a later rename and split
+  under `dev_support/`; do not expand `repo_support/` as if it were the desired
+  long-term boundary
 
 ## Default Coding Posture
 
@@ -180,11 +185,13 @@ Avoid generic sinks:
 
 For repo-native tooling and test support:
 
-- use `repo_support/` only for narrow shared seams that are reused by multiple
-  repo-native surfaces
+- use the current live `repo_support/` package only for narrow shared seams
+  that are reused by multiple repo-native surfaces
 - do not create generic `repo_support/helpers.py` or `repo_support/utils.py`
 - if only one tool owns the logic, keep it local to that tool instead of
   promoting it into `repo_support/`
+- later implementation should rename and split this dev-only support surface
+  under `dev_support/` instead of treating `repo_support/` as the final name
 
 Shared components must stay owned by one layer and one concept.
 
@@ -265,8 +272,9 @@ Expected behavior:
   stays attached to the PR record and becomes the squash commit on `main` for
   the single-checkpoint exception
 - keep PR, commit, and doc language neutral and direct: `Why:` should state the
-  problem or constraint, `What:` should state the concrete repo change, and
-  neither section should use rhetorical or promotional wording
+  motivating repo problem, trigger, constraint, or risk that makes the patch
+  necessary now; `What:` should state the concrete repo change; and neither
+  section should use rhetorical or promotional wording
 - before merging a PR or rewriting mainline history, verify whether the pull
   request record must stay attached to the landing commit; if yes, do not
   rewrite that merge commit after merge
@@ -343,43 +351,44 @@ is:
 
 - do not call work done with only local reasoning
 - verify the changed behavior at the smallest useful level first
-- then run `tools.run_quality_gates --full-tests` before closing the task
-- escalate to `tools.run_ci_parity_checks` only when the change touches CI,
-  packaging, release, or other workflow surfaces where exact GitHub Actions
-  parity matters
+- then run `tools.run_quality_gates` before closing the task
+- escalate to `tools.run_pr_review_checks --mode full` when the change touches
+  CI, packaging, release, or other workflow surfaces where the local pass
+  should mirror the final non-draft PR suite before handoff
+- avoid `tools.run_quality_gates --full-tests` unless you explicitly need the
+  full-suite override rather than the standard agent path
 - do not run `tools.run_quality_gates --full-tests` again immediately before
-  `tools.run_ci_parity_checks`; the parity runner already includes it
-- use `tools.run_fast_pytest` or the hook-owned pre-commit path for the fast
-  checkpoint loop; do not duplicate the fast pytest CLI contract in new
-  wrappers or config entries
+  `tools.run_pr_review_checks --mode full`; the full PR-review runner already
+  includes it
+- use `tools.run_fast_pytest` for an explicit fast pytest loop when you need
+  one; the hook-owned pre-commit path now follows the staged-path planned
+  verifier selection instead of a fixed pytest bundle
 
-For PR review and repair loops, choose verification by changed surface:
+For PR review and repair loops, use `tools.audit_pr_review` to classify the
+changed surface groups and use `tools.run_pr_review_checks` as the shared
+verification entrypoint:
 
-- `human_docs`: run `tools.docs_maintenance sync --check`
-- `control_plane_text`: run docs maintenance plus the targeted policy tests
-  declared by `tools.run_pr_review_checks`
-- `repo_code_or_tooling`: run `tools.run_quality_gates --full-tests`, then the
-  blocking stress lane, and let PR routing add pre-merge packaging validation
-  for packaging-sensitive repo-code diffs
-- `ci_or_release`: run `tools.run_ci_parity_checks`; the PR route also keeps
-  the blocking stress lane on for these diffs
-- mixed `repo_code_or_tooling` plus `ci_or_release`: let `ci-parity` win as
-  the broad runner because it already includes the full quality, build, and
-  wheel parity path; keep the surface-specific targeted checks and the stress
-  lane, but do not duplicate `tools.run_quality_gates --full-tests`
+- draft pull-request CI always runs `commit-messages` and `pr-metadata`, then
+  selects the remaining checks from the changed diff
+- non-draft pull-request CI switches to the full non-duplicated blocking suite
+  plus the non-blocking coverage hotspot report lane
+- post-merge and manual CI stay change-sensitive and select only the atomic
+  checks needed for the landed diff
+- local planned runs follow the same change-sensitive selection policy as
+  post-merge and draft pull-request CI
+- local `tools.run_pr_review_checks --mode full` is the explicit broad-review
+  override that mirrors the final non-draft PR suite for CI, packaging,
+  release, or other workflow-sensitive changes
+- `tools.run_quality_gates` remains a quality-only convenience runner and does
+  not decide PR or CI verification selection
 
 Coverage hotspot reports are informative review output only. Use them to pick
 the next hardening target after a full-suite run; do not treat them as a
 replacement for correctness tests or the existing repo-wide coverage gate.
 
-When more than one surface group is present, the strongest broad verification
-family wins, but any declared surface-specific targeted checks still apply for
-touched control-plane paths. Coverage hotspots stay informative even when the
-rest of the PR review route is blocking.
-
 If you are changing commit-time or suite-selection policy, keep the hook path
-limited to bounded checkpoint checks and use the shared quality or parity
-runners as the single broad verification source. Benchmark with
+limited to bounded checkpoint checks and use the shared quality runner or the
+full PR-review runner as the single broad verification source. Benchmark with
 `tools.benchmark_tests` and `tools.benchmark_quality_gates` when you are
 proposing a different test slice or quality-gate schedule, and do not expand
 the hook path into a second full-suite verification pass.

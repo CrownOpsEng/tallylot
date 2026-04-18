@@ -16,10 +16,10 @@ in the external verification tool.
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli round scaffold \
+make oracle ARGS='round scaffold \
   --round-id <round_id> \
   --phase <phase> \
-  --source <source>
+  --source <source>'
 ```
 
 ## Execute The Manual Step
@@ -35,10 +35,10 @@ UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.orac
 Run:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.oracles.cli verification compare \
+make oracle ARGS='verification compare \
   --previous-dir <prior_verification_dir> \
   --current-dir <workspace>/working/verification/<round_id> \
-  --output-dir <workspace>/working/verification/<round_id>/comparison
+  --output-dir <workspace>/working/verification/<round_id>/comparison'
 ```
 
 Review the comparison package before moving on.

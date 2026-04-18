@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 from repo_support.pytest_commands import build_fast_pytest_command
-from tools.uv_environment import repo_uv_environment
 
 FAST_STRESS_WORKERS = 4
 PRIMARY_RANDOM_SEED = 1729
@@ -32,7 +32,7 @@ def _marker_pytest_command(
     if marker_expression == "unit and not slow":
         command = list(build_fast_pytest_command(workers=workers))
     else:
-        command = ["uv", "run", "pytest"]
+        command = ["pytest"]
         if workers > 0:
             command.extend(("-n", str(workers)))
         command.extend(("-m", marker_expression, "--no-cov", "-q"))
@@ -99,6 +99,10 @@ def _stress_steps() -> tuple[StressStep, ...]:
     )
 
 
+def _parse_args(argv: Sequence[str] | None = None) -> tuple[bool]:
+    return ("--fail-fast" in tuple(argv or ()),)
+
+
 def _print_reproduction(step: StressStep) -> None:
     print("[repro] rerun the failing stress step:", flush=True)
     print(f"[repro] {' '.join(step.command)}", flush=True)
@@ -118,7 +122,7 @@ def _run_step(step: StressStep) -> int:
         capture_output=True,
         text=True,
         check=False,
-        env=repo_uv_environment(),
+        env=os.environ.copy(),
     )
     elapsed = time.perf_counter() - started
     print(f"[{step.name}] exit={result.returncode} elapsed={elapsed:.2f}s", flush=True)
@@ -132,11 +136,16 @@ def _run_step(step: StressStep) -> int:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    del argv
+    (fail_fast,) = _parse_args(argv)
+    failed = False
     for step in _stress_steps():
-        if _run_step(step) != 0:
+        returncode = _run_step(step)
+        if returncode == 0:
+            continue
+        failed = True
+        if fail_fast:
             return 1
-    return 0
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

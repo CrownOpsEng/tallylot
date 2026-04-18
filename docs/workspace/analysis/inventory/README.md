@@ -39,9 +39,9 @@ They replace ad hoc source-level path assumptions.
 Refresh with:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint rebuild-location-inventory \
+make cli ARGS='checkpoint rebuild-location-inventory \
   --normalized-root <workspace>/working/normalized \
-  --output <workspace>/analysis/inventory/location_inventory.csv
+  --output <workspace>/analysis/inventory/location_inventory.csv'
 ```
 
 Do not hand-edit the generated outputs. Fix the upstream normalized inputs and

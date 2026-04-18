@@ -4,18 +4,22 @@ description: Setup Python 3.12, restore the uv cache, and sync repo dependencies
 runs:
   using: composite
   steps:
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
       with:
         python-version: "3.12"
-    - uses: actions/cache@v5
+    - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9
       with:
-        path: ~/.cache/uv
-        key: uv-${{ runner.os }}-py312-${{ hashFiles('uv.lock') }}
-        restore-keys: |
-          uv-${{ runner.os }}-py312-
-    - name: Install uv
+        version: "0.9.20"
+        enable-cache: true
+    - name: Export repo project environment
       shell: bash
-      run: python -m pip install uv
+      run: |
+        PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312"
+        echo "UV_PROJECT_ENVIRONMENT=$PROJECT_ENVIRONMENT" >> "$GITHUB_ENV"
+        echo "$PROJECT_ENVIRONMENT/bin" >> "$GITHUB_PATH"
     - name: Sync dependencies
       shell: bash
       run: uv sync --python 3.12 --frozen
+    - name: Prune uv cache
+      shell: bash
+      run: uv cache prune --ci

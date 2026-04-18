@@ -10,8 +10,8 @@ reconciliation inputs.
    - `docs/workspace/working/supporting_artifacts/README.md`
    - `docs/workspace/analysis/reconciliation/README.md`
 2. For direct operator-style execution, use:
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint scaffold-balance-submission`
-   - `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run tallylot checkpoint submit-balances`
+   - `make cli ARGS='checkpoint scaffold-balance-submission'`
+   - `make cli ARGS='checkpoint submit-balances'`
 3. For agent execution, use
    `.agents/skills/balance-submission-operations/scripts/balance_submission_operations.py`
    instead of ad hoc shell loops or one-off Python snippets.

@@ -26,12 +26,6 @@ Use this format for the first line:
 type(scope): imperative summary
 ```
 
-The scope is optional:
-
-```text
-type: imperative summary
-```
-
 Allowed types:
 
 - `feat`
@@ -48,7 +42,7 @@ Allowed types:
 Subject rules:
 
 - lowercase type
-- optional lowercase kebab-case scope
+- required lowercase kebab-case scope
 - non-empty imperative summary
 - summary names a concrete repo surface or behavior
 - maximum 72 characters for the full subject line
@@ -68,13 +62,29 @@ Preferred body sections:
 
 Write `Why:` and `What:` directly:
 
-- `Why:` states the problem, constraint, or risk the change addresses
-- `Why:` should answer why the patch is needed in repo terms, not restate
-  the implementation steps or branch choreography
+- `Why:` states the motivating repo problem, trigger, constraint, or risk that
+  makes this commit necessary now
+- `Why:` should answer the question "Why is this commit being made?" in repo
+  terms, not restate the implementation steps, rename list, or branch
+  choreography
+- `Why:` should still make sense if `What:` is hidden; if it only paraphrases
+  the diff, rewrite it
+- `Why:` should name the consequence of leaving the repo unchanged when that
+  consequence is material: ambiguity, broken behavior, drift, blocked follow-on
+  work, policy mismatch, or review risk
 - `What:` states the behavior, structure, or contract changed in this patch
-- do not use `Why:` to restate the implementation
+- do not use `Why:` to restate the implementation, rename list, or document
+  inventory
 - do not use `What:` to repeat generic intent without naming the concrete
   repo change
+
+Bad `Why:` bullets are diff summaries such as:
+
+- `rename ReadinessSummaryRecord`
+- `update naming docs`
+- `refactor commit wording`
+
+Those belong in `What:`, not `Why:`.
 
 Example:
 
@@ -82,15 +92,16 @@ Example:
 refactor(adapters): split structured CSV mapping
 
 Why:
-- reduce adapter bloat and isolate row parsing rules
+- the adapter mixed translation, row parsing, and file-family concerns in one
+  hotspot, which made follow-on changes harder to review and harder to test
 
 What:
 - move row parsing into adapter-local helpers
 - keep ADAPTER discovery entry point unchanged
 
 Checks:
-- UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run markdownlint --all-files
-- UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
+- make precommit ARGS='run markdownlint --all-files'
+- make quality
 ```
 
 Standard footers are allowed, including `BREAKING CHANGE:`.
@@ -188,7 +199,8 @@ Preferred PR body template:
 
 ```text
 Why:
-- state the problem or constraint this PR resolves
+- state the motivating problem, trigger, or risk this PR resolves and why the
+  PR is needed now
 
 What:
 - state the engineering changes that matter for review
@@ -254,21 +266,22 @@ Install the repo hooks and commit template in each clone before doing stable
 work:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.install_git_hooks
+make install-hooks
 ```
 
 The installed `pre-commit` hook is intentionally narrow. It formats safe
-staged Python files with Ruff before commit creation and skips auto-restaging
+staged Python files with Ruff before commit creation, skips auto-restaging
 for partially staged Python files so unrelated unstaged hunks are not
-accidentally committed. It also refuses to run when the sibling `commit-msg`
-validator hook is missing or stale, so clone-local hook drift cannot silently
-bypass commit-message validation.
+accidentally committed, and then runs the repo's change-sensitive planned
+verification selection against the staged paths. It also refuses to run when
+the sibling `commit-msg` validator hook is missing or stale, so clone-local
+hook drift cannot silently bypass commit-message validation.
 
 Validate messages directly when needed:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_commit_message .git/COMMIT_EDITMSG
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.validate_commit_message --rev-range HEAD~3..HEAD
+make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
+make validate-commit-message ARGS='--rev-range HEAD~3..HEAD'
 ```
 
 When structured commit messages or PR bodies include backticks, quotes, or
@@ -277,64 +290,68 @@ other shell-sensitive text, use file/stdin authoring forms rather than inline
 
 ## Commit-Time Verification Policy
 
-Commit-time hooks should enforce the bounded local safety checks we expect on
-every checkpoint commit without rerunning the full repo-wide verification
-matrix. Keep the hook path limited to safe staged Ruff autofixes plus the
-commit-time checks that protect every commit:
+Commit-time hooks should enforce bounded local safety checks without rerunning
+the full repo-wide verification matrix. Keep the hook path limited to safe
+staged Ruff autofixes plus the staged-path checks selected by the repo's
+planned verification policy, along with commit-message validation.
 
-- `markdownlint`
-- `mypy`
-- `pyright`
-- `pytest -m "unit and not slow" --no-cov -q`
-- commit-message validation
+In practice that means:
 
-Full verification still means running:
+- docs-only staged changes run docs-maintenance and markdownlint
+- control-plane or workflow changes run the targeted guard tests selected by
+  the planner
+- production-code changes may still escalate to the broader Python quality
+  suite when the planner marks that surface as relevant
+- commit-message validation stays in the separate `commit-msg` hook
+
+Standard final verification still means running:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
+make quality
 ```
 
-Do not also run `UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pre-commit run --all-files` in addition to the
-shared quality-gate or CI-parity runners unless you are validating hook
+Do not also run `make precommit ARGS='run --all-files'` in addition to the
+shared quality-gate or PR-review runners unless you are validating hook
 behavior itself.
 
 For explicit local verification outside the hook path, the repo also ships a
 parallel quality-gate runner:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_quality_gates --full-tests
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks
+make quality
+make quality-full
+make pr-review-full
 ```
 
-Use `tools.run_quality_gates --full-tests` as the default final local
-verification command. Use `tools.run_ci_parity_checks` only when changing CI,
-packaging, release, or other workflow surfaces where exact local parity with
-GitHub Actions is worth the extra time. Add `--include-commit-messages` when
-you also want the parity run to validate the current branch commit-message
-range before running the full quality and build path. Add `--pr-title` plus
-`--pr-body-file` when you also want the parity run to validate the current
-branch PR title, body, and `Included checkpoints:` list against the branch
-history.
-Do not run `tools.run_quality_gates --full-tests` immediately before
-`tools.run_ci_parity_checks`; the parity runner already includes the full
-quality gate pass.
+Use `tools.run_quality_gates` as the default final local
+verification command. Use `tools.run_pr_review_checks --mode full` when
+changing CI, packaging, release, or other workflow surfaces where the local
+verification pass should mirror the final non-draft PR suite before handoff.
+Add `--pr-title`
+plus `--pr-body-file` when you also want the full review run to validate the
+current branch PR title, body, and `Included checkpoints:` list against the
+branch history. Treat `tools.run_quality_gates --full-tests` as an explicit
+full-suite escape hatch rather than the normal agent close-out path, and avoid
+it unless there is a specific reason to use the override. Do not run
+`tools.run_quality_gates --full-tests`
+immediately before `tools.run_pr_review_checks --mode full`; the full
+PR-review runner already includes the full quality gate pass plus the extra
+workflow-sensitive lanes. Both local runners may apply safe autofixes to
+staged Python and Markdown files before validation; CI remains read-only.
 
 Example:
 
 ```bash
 gh pr view <pr-number> --json title,body --jq '.title' > /tmp/pr-title.txt
 gh pr view <pr-number> --json title,body --jq '.body' > /tmp/pr-body.md
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run python -m tools.run_ci_parity_checks \
-  --include-commit-messages \
-  --pr-title "$(cat /tmp/pr-title.txt)" \
-  --pr-body-file /tmp/pr-body.md
+make tool TOOL=run_pr_review_checks ARGS='--mode full --pr-title "$$(cat /tmp/pr-title.txt)" --pr-body-file /tmp/pr-body.md'
 ```
 
-`pylint`, full-repo `ruff`, and the full `pytest` suite belong to the shared
-quality and CI-parity runners rather than the commit-time hook path. The fast
-hook checks should stay narrower than the full parity matrix so the same broad
-suite is not rerun twice inside one explicit verification pass.
+`pylint`, full-repo `ruff`, and the full `pytest` suite still belong primarily
+to the shared quality and PR-review runners. The commit-time hook should stay
+change-sensitive so docs-only and similarly narrow slices do not rerun
+irrelevant Python scanners, even though some staged code or workflow surfaces
+may still escalate to broader checks.
 
 Do not describe `mypy` or `pyright` as covering `pylint` findings. Type checks
 and lint checks catch different failure classes and must be reported
@@ -344,8 +361,8 @@ After a lint-driven amend on a touched file, rerun the narrow checks against
 that exact file before treating the checkpoint as closed:
 
 ```bash
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pylint <touched-file>
-UV_PROJECT_ENVIRONMENT="$HOME/.venvs/tallylot-py312" uv run pytest -q --no-cov <touched-test-file>
+make pylint ARGS='<touched-file>'
+make pytest ARGS='-q --no-cov <touched-test-file>'
 git show HEAD:<path>
 ```
 

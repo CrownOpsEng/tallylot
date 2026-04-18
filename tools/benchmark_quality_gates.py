@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from statistics import median
 
-from tools.uv_environment import repo_uv_environment
+from repo_support.uv_environment import repo_uv_environment
 
 
 @dataclass(frozen=True)
@@ -61,7 +61,7 @@ class BenchmarkSummary:
 STRATEGIES = (
     BenchmarkStrategy(
         name="fast-current",
-        description="Current fast-gate baseline with all checks started together.",
+        description="Default fast-gate schedule with all checks started together.",
         command=(
             "uv",
             "run",
@@ -74,12 +74,20 @@ STRATEGIES = (
     ),
     BenchmarkStrategy(
         name="fast-optimized",
-        description="Repo-benchmarked fast-gate schedule.",
-        command=("uv", "run", "python", "-m", "tools.run_quality_gates"),
+        description="Alternative phased fast-gate schedule for comparison.",
+        command=(
+            "uv",
+            "run",
+            "python",
+            "-m",
+            "tools.run_quality_gates",
+            "--schedule",
+            "phased",
+        ),
     ),
     BenchmarkStrategy(
         name="full-current",
-        description="Current full-gate baseline with all checks started together.",
+        description="Default full-gate schedule with all checks started together.",
         command=(
             "uv",
             "run",

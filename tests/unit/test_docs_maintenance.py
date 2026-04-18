@@ -1289,7 +1289,10 @@ def test_validate_uv_examples_rejects_bare_uv_examples(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="markdown surfaces contain bare uv examples"):
+    with pytest.raises(
+        ValueError,
+        match="markdown surfaces contain local uv command examples; use `make ...` instead",
+    ):
         docs_maintenance.validate_uv_examples([page])
 
 

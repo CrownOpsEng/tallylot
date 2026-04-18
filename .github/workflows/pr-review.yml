@@ -9,19 +9,66 @@ on:
       - edited
       - ready_for_review
 
-permissions:
-  contents: read
-
 concurrency:
   group: pr-review-${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  commit-messages:
+  plan-pr-review:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      selected_checks: ${{ steps.plan.outputs.selected_checks }}
+      nonblocking_checks: ${{ steps.plan.outputs.nonblocking_checks }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-python-uv
+      - id: plan
+        name: Plan PR review checks
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+        run: |
+          MODE=planned
+          if [ "$PR_DRAFT" != "true" ]; then
+            MODE=full
+          fi
+          uv run python -m tools.audit_pr_review \
+            --trigger pull_request \
+            --mode "$MODE" \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA" \
+            --json > plan.json
+          cat plan.json
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          payload = json.loads(Path("plan.json").read_text(encoding="utf-8"))
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as handle:
+              handle.write(
+                  f"selected_checks={json.dumps(payload['selected_checks'])}\n"
+              )
+              handle.write(
+                  f"nonblocking_checks={json.dumps(payload['nonblocking_checks'])}\n"
+              )
+          PY
+
+  commit-messages:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'commit-messages') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-python-uv
@@ -29,36 +76,423 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: uv run python -m tools.validate_commit_message --rev-range "$BASE_SHA..$HEAD_SHA"
-      - name: Validate PR metadata
+        run: |
+          uv run python -m tools.run_review_check \
+            --check-id commit-messages \
+            --trigger pull_request \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA"
+
+  pr-metadata:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'pr-metadata') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-python-uv
+      - name: Write PR body
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n' "$PR_BODY" > pr-body.md
+      - name: Validate pull request metadata
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          uv run python -m tools.run_review_check \
+            --check-id pr-metadata \
+            --trigger pull_request \
+            --base-sha "$BASE_SHA" \
+            --head-sha "$HEAD_SHA" \
+            --pr-title "$PR_TITLE" \
+            --pr-body-file pr-body.md
+
+  docs-maintenance:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'docs-maintenance') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run docs maintenance
+        run: uv run python -m tools.run_review_check --check-id docs-maintenance --trigger pull_request
+
+  markdownlint:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'markdownlint') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run markdownlint
+        run: uv run python -m tools.run_review_check --check-id markdownlint --trigger pull_request
+
+  actionlint:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'actionlint') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run actionlint
+        run: uv run python -m tools.run_review_check --check-id actionlint --trigger pull_request
+
+  ruff:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'ruff') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run ruff
+        run: uv run python -m tools.run_review_check --check-id ruff --trigger pull_request
+
+  mypy:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'mypy') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run mypy
+        run: uv run python -m tools.run_review_check --check-id mypy --trigger pull_request
+
+  pyright:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'pyright') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run pyright
+        run: uv run python -m tools.run_review_check --check-id pyright --trigger pull_request
+
+  pylint:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'pylint') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run pylint
+        run: uv run python -m tools.run_review_check --check-id pylint --trigger pull_request
+
+  repo-agent-skills:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'repo-agent-skills') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run repo agent skills tooling tests
+        run: uv run python -m tools.run_review_check --check-id repo-agent-skills --trigger pull_request
+
+  standards-guards:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'standards-guards') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run standards guards
+        run: uv run python -m tools.run_review_check --check-id standards-guards --trigger pull_request
+
+  docs-runtime-parity:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'docs-runtime-parity') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run docs runtime parity tests
+        run: uv run python -m tools.run_review_check --check-id docs-runtime-parity --trigger pull_request
+
+  delivery-guardrails-audit:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'delivery-guardrails-audit') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run delivery guardrails audit tests
+        run: uv run python -m tools.run_review_check --check-id delivery-guardrails-audit --trigger pull_request
+
+  pr-metadata-validator:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'pr-metadata-validator') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run PR metadata validator tooling tests
+        run: uv run python -m tools.run_review_check --check-id pr-metadata-validator --trigger pull_request
+
+  commit-message-validator:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'commit-message-validator') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run commit message validator tooling tests
+        run: uv run python -m tools.run_review_check --check-id commit-message-validator --trigger pull_request
+
+  pre-commit-hook-tooling:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'pre-commit-hook-tooling') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run pre-commit hook tooling tests
+        run: uv run python -m tools.run_review_check --check-id pre-commit-hook-tooling --trigger pull_request
+
+  quality-gates-tooling:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'quality-gates-tooling') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run quality gates tooling tests
+        run: uv run python -m tools.run_review_check --check-id quality-gates-tooling --trigger pull_request
+
+  audit-pr-review:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'audit-pr-review') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run PR review audit tooling tests
+        run: uv run python -m tools.run_review_check --check-id audit-pr-review --trigger pull_request
+
+  run-pr-review-checks:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'run-pr-review-checks') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run PR review check runner tooling tests
+        run: uv run python -m tools.run_review_check --check-id run-pr-review-checks --trigger pull_request
+
+  ci-tooling:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'ci-tooling') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run workflow contract tooling tests
+        run: uv run python -m tools.run_review_check --check-id ci-tooling --trigger pull_request
+
+  pytest-full:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'pytest-full') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run full pytest suite
+        run: uv run python -m tools.run_review_check --check-id pytest-full --trigger pull_request
+      - if: ${{ success() }}
+        name: Upload coverage data
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: coverage-data
+          path: .coverage
+          include-hidden-files: true
+
+  test-stress-checks:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'test-stress-checks') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run stress checks
+        run: uv run python -m tools.run_review_check --check-id test-stress-checks --trigger pull_request
+
+  build:
+    needs: plan-pr-review
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'build') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Build distribution
+        run: uv run python -m tools.run_review_check --check-id build --trigger pull_request
+      - if: ${{ success() }}
+        name: Upload built wheel
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: dist-artifacts
+          path: dist
+
+  verify-wheel:
+    needs:
+      - plan-pr-review
+      - build
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'verify-wheel') && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Download built wheel
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: dist-artifacts
+          path: dist
+      - name: Verify built wheel
+        run: uv run python -m tools.run_review_check --check-id verify-wheel --trigger pull_request
+
+  coverage-hotspots:
+    needs:
+      - plan-pr-review
+      - pytest-full
+    if: ${{ contains(fromJSON(needs.plan-pr-review.outputs.selected_checks), 'coverage-hotspots') && needs.pytest-full.result == 'success' }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-python-uv
+      - name: Download coverage data
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: coverage-data
+          path: .
+      - name: Report coverage hotspots
+        env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          uv run python -m tools.validate_pr_metadata \
-            --title "$PR_TITLE" \
-            --body "$PR_BODY" \
+          uv run python -m tools.run_review_check \
+            --check-id coverage-hotspots \
+            --trigger pull_request \
             --base-sha "$BASE_SHA" \
             --head-sha "$HEAD_SHA"
 
   pr-review:
-    needs: commit-messages
+    if: ${{ always() }}
+    needs:
+      - plan-pr-review
+      - commit-messages
+      - pr-metadata
+      - docs-maintenance
+      - markdownlint
+      - actionlint
+      - ruff
+      - mypy
+      - pyright
+      - pylint
+      - repo-agent-skills
+      - standards-guards
+      - docs-runtime-parity
+      - delivery-guardrails-audit
+      - pr-metadata-validator
+      - commit-message-validator
+      - pre-commit-hook-tooling
+      - quality-gates-tooling
+      - audit-pr-review
+      - run-pr-review-checks
+      - ci-tooling
+      - pytest-full
+      - test-stress-checks
+      - build
+      - verify-wheel
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: ./.github/actions/setup-python-uv
-      - name: Audit PR review plan
+      - name: Evaluate PR review results
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: uv run python -m tools.audit_pr_review --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA"
-      - name: Run PR review checks
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: uv run python -m tools.run_pr_review_checks --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA"
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          SELECTED_CHECKS: ${{ needs.plan-pr-review.outputs.selected_checks }}
+          NONBLOCKING_CHECKS: ${{ needs.plan-pr-review.outputs.nonblocking_checks }}
+        run: |
+          uv run python -m tools.evaluate_review_results \
+            --selected-checks-json "$SELECTED_CHECKS" \
+            --nonblocking-checks-json "$NONBLOCKING_CHECKS" \
+            --needs-json "$NEEDS_JSON"
