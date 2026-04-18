@@ -188,7 +188,7 @@ Kernel fields:
 - `owner_stage`
 - `blocking_stages`
 - `scope_kind`
-- `scope_id`
+- `scope_ref`
 - `subject_ref`
 - `gap_kind`
 - `gap_key`
@@ -232,8 +232,8 @@ Stable ids:
 - `gap_id` uses component array
   `[owner_stage, scope_kind, scope_key, gap_kind, gap_key]`
 - `scope_key` uses the `SubjectRef` tuple when `scope_kind` is `subject`
-- `scope_key` uses `scope_id` when `scope_kind` is not `subject`
-- `scope_id` is required when `scope_kind` is not `subject`
+- `scope_key` uses `scope_ref` when `scope_kind` is not `subject`
+- `scope_ref` is required when `scope_kind` is not `subject`
 - `subject_ref` is required when `scope_kind` is `subject`
 - `gap_key` is the stage-owned stable discriminator for one blocking
   condition inside the declared scope
@@ -241,8 +241,8 @@ Stable ids:
 Ordering:
 
 - sort by tuple
-  `[owner_stage, scope_kind, subject_ref, scope_id, gap_kind, gap_id]`
-- use JSON `null` ordering for inactive `subject_ref` and `scope_id` fields
+  `[owner_stage, scope_kind, subject_ref, scope_ref, gap_kind, gap_id]`
+- use JSON `null` ordering for inactive `subject_ref` and `scope_ref` fields
 
 Serialization:
 
@@ -331,7 +331,7 @@ Kernel fields:
 - `review_id`
 - `owner_stage`
 - `scope_kind`
-- `scope_id`
+- `scope_ref`
 - `subject_ref`
 - `review_kind`
 - `review_key`
@@ -365,7 +365,7 @@ Stable ids:
 - `review_id` uses component array
   `[owner_stage, scope_kind, scope_key, review_kind, review_key]`
 - `scope_key` uses the `SubjectRef` tuple when `scope_kind` is `subject`
-- `scope_key` uses `scope_id` when `scope_kind` is not `subject`
+- `scope_key` uses `scope_ref` when `scope_kind` is not `subject`
 - `review_kind` is the owner-stage stable advisory label for one review family
 - `review_key` is the owner-stage stable discriminator for one advisory
   observation inside the declared scope
@@ -373,8 +373,8 @@ Stable ids:
 Ordering:
 
 - sort by tuple
-  `[owner_stage, scope_kind, subject_ref, scope_id, review_kind, review_id]`
-- use JSON `null` ordering for inactive `subject_ref` and `scope_id` fields
+  `[owner_stage, scope_kind, subject_ref, scope_ref, review_kind, review_id]`
+- use JSON `null` ordering for inactive `subject_ref` and `scope_ref` fields
 - sort `gap_ids` lexicographically
 
 Serialization:

@@ -151,13 +151,13 @@ Slice-specific rules:
 - `event_id = [claim_bundle_id, event_slot]`
 - `leg_id = [event_id, role, subject_ref, leg_slot]`
 - `valuation_id = [origin_ref, purpose, amount, currency, valued_at, precision]`
-- `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
+- `reconciliation_state_id = [economic_facts_ref, segment_id]`
 - `continuity_segment_id = [subject_ref, segment_start_at, segment_end_at]`
 - `continuity_segment_id` remains the reusable reconciliation scope id, while
   `reconciliation_state_id` is the emitted product id over that scope plus its
   upstream lineage
-- `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
-- `checkpoint_proposal_id = [continuity_segment_id, subject_ref, as_of, target_refs]`
+- `balance_target_id = [segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
+- `checkpoint_proposal_id = [segment_id, subject_ref, as_of, target_refs]`
 - `checkpoint_id = [reconciliation_state_refs, as_of]`
 - `checkpoint_assertion_id = [kind, as_of, subject_ref, accepted_value_fingerprint]`
 

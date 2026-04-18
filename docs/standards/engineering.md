@@ -355,23 +355,27 @@ Current application of this rule:
   generic outside the product. Prefer `TaxCarryForwardRecord` and
   `TaxUnsupportedInputRecord` over bare `CarryForwardRecord` or
   `UnsupportedInputRecord`.
-- Apply the same rule to child-local fields, refs, and helper names. When the
-  owning product or record already supplies the parent context, prefer the
-  shortest truthful child noun such as `selection_id`, `proposal_refs`, or
-  `assertion_ids` over longer forms that restate the parent stem.
+
+### Stable Id Namespaces
+
+Stable-id namespaces are catalog-governed, not review-time judgment.
+
+- canonical stable ids are the catalog-declared reusable id families
+- local id slots are owner-local aliases declared in the catalog
+- canonical is the default namespace on governed docs
+- only catalog-declared local-short zones may use local slots
+- local slots are required in declared local-short zones
+- canonical ids are required everywhere else
+- do not decide between canonical ids and local slots based on genericity,
+  ambiguity, or what feels local
+- add new local slots only in patches that update the catalog and the affected
+  owner-page examples together
+
 - Keep scope families parallel from the id to the matching kind value. If the
   stable id is `claim_scope_id`, `checkpoint_proposal_id`, or
   `kernel_scope_id`, the matching `scope_kind` or `rollup_kind` value should
   be `claim_scope`, `checkpoint_proposal`, or `kernel_scope`, not a competing
   alternate stem.
-- Do not shorten a child name when that child must travel outside the owning
-  family and the shorter noun would become ambiguous across stages or products.
-  Keep the longer owning stem only when that broader ambiguity is real.
-- When one stage's child id becomes a stable downstream dependency, keep enough
-  of the owning family noun to stay unambiguous outside that source stage.
-  Prefer names such as `claim_bundle_id`, `claim_bundle_decision_id`, and
-  `entry_check_id` over shorter forms such as `bundle_id`,
-  `bundle_decision_id`, or `check_id` once those ids cross stage boundaries.
 - When the record-family stem needs the owning stage noun to stay clear, keep
   that same stem on descendant ids and persisted basenames. Prefer
   `tax_carry_forward_id` and `tax_carry_forward_records.json` alongside
@@ -847,7 +851,10 @@ forward-looking end-state naming on the enforced target surfaces.
 
 Rules:
 
-- update the catalog before introducing or renaming a canonical target term
+- the catalog owns canonical stable ids, local id slots, and identifier
+  boundary contexts
+- update the catalog before introducing or renaming a canonical target term,
+  adding a local id slot, or changing an identifier boundary context
 - declare mirrored directory families once under
   `canonical_families.directory_families` and derive their directory and
   sidecar paths from that grouped family definition instead of hand-maintaining

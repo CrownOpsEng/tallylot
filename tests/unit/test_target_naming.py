@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from textwrap import dedent
 
@@ -8,13 +9,21 @@ import yaml
 
 from repo_support.paths import override_repo_root
 from repo_support.target_naming import (
+    NamingFinding,
     audit_target_naming,
     is_target_naming_sensitive_path,
     load_target_naming_catalog,
 )
 
 
-def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
+def _write_catalog(
+    root: Path,
+    *,
+    overlap_axes: bool = False,
+    local_id_slots: Sequence[Mapping[str, object]] = (),
+    identifier_context_rules: Sequence[Mapping[str, object]] = (),
+    extra_title_expectations: Mapping[str, str] | None = None,
+) -> None:
     catalog: dict[str, object] = {
         "version": 2,
         "root_file_scopes": {},
@@ -51,6 +60,7 @@ def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
         "title_expectations": {
             "docs/example.md": "Example",
             "docs/matrix.md": "Matrix",
+            **(extra_title_expectations or {}),
         },
         "reference_group_headings": [
             "### Target References",
@@ -121,9 +131,26 @@ def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
         },
         "canonical_tokens": {
             "pascal": [],
-            "snake": [],
+            "snake": [
+                "balance_target_id",
+                "checkpoint_assertion_id",
+                "checkpoint_id",
+                "checkpoint_proposal_id",
+                "claim_bundle_decision_id",
+                "claim_bundle_id",
+                "claim_scope_id",
+                "emitter_id",
+                "entry_check_id",
+                "entry_id",
+                "event_id",
+                "member_id",
+                "observation_id",
+                "selection_id",
+            ],
             "phrases": [],
         },
+        "local_id_slots": list(local_id_slots),
+        "identifier_context_rules": list(identifier_context_rules),
         "vocabularies": {
             "values": {
                 "basis": ["document_support", "manual_support"],
@@ -235,6 +262,71 @@ def _write_doc(root: Path, relative_path: str, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
+def _local_slot(canonical_id: str, slot: str) -> dict[str, object]:
+    return {"canonical_id": canonical_id, "slot": slot}
+
+
+def _identifier_context_rule(
+    *,
+    surface_kind: str,
+    canonical_ids: Sequence[str],
+    path: str = "docs/example.md",
+    section_path: Sequence[str] = ("ClaimSet",),
+    region_label: str = "Record families",
+    mode: str = "local_short",
+) -> dict[str, object]:
+    return {
+        "path": path,
+        "section_path": list(section_path),
+        "region_label": region_label,
+        "surface_kind": surface_kind,
+        "mode": mode,
+        "canonical_ids": list(canonical_ids),
+    }
+
+
+def _audit_example_doc(
+    tmp_path: Path,
+    *,
+    body: str,
+    scope: str = "forward_target",
+    local_id_slots: Sequence[Mapping[str, object]] = (),
+    identifier_context_rules: Sequence[Mapping[str, object]] = (),
+) -> tuple[NamingFinding, ...]:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=local_id_slots,
+        identifier_context_rules=identifier_context_rules,
+    )
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        "\n".join(
+            [
+                "---",
+                'title: "Example"',
+                'summary: "Clean summary."',
+                "doc_type: concept",
+                "audience: human",
+                "owner: repo",
+                "status: active",
+                f"naming_scope: {scope}",
+                "---",
+                "",
+                dedent(body).strip(),
+                "",
+                "- `basis`:",
+                "  - `document_support`",
+                "  - `manual_support`",
+                "",
+            ]
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        return audit_target_naming(paths=("docs/example.md",))
+
+
 def test_catalog_validation_rejects_paired_axis_overlap(tmp_path: Path) -> None:
     _write_catalog(tmp_path, overlap_axes=True)
 
@@ -320,6 +412,165 @@ def test_catalog_validation_rejects_product_directory_family_drift(
                 "working/products directory families must cover every canonical "
                 "product stem"
             ),
+        ),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_loads_valid_local_id_slots(tmp_path: Path) -> None:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+    )
+
+    with override_repo_root(tmp_path):
+        catalog = load_target_naming_catalog()
+
+    assert catalog.local_id_slots[0].canonical_id == "claim_scope_id"
+    assert catalog.local_id_slots[0].slot == "scope_id"
+
+
+def test_catalog_validation_rejects_duplicate_local_id_slot(tmp_path: Path) -> None:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=[
+            _local_slot("claim_scope_id", "scope_id"),
+            _local_slot("claim_bundle_id", "scope_id"),
+        ],
+    )
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(ValueError, match="duplicate local id slot"),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_validation_rejects_duplicate_canonical_slot_mapping(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=[
+            _local_slot("claim_scope_id", "scope_id"),
+            _local_slot("claim_scope_id", "scope_alias_id"),
+        ],
+    )
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(
+            ValueError,
+            match="canonical stable id must map to at most one local slot",
+        ),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_validation_rejects_local_slot_equal_to_canonical_id(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "claim_scope_id")],
+    )
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(
+            ValueError,
+            match="local id slot must differ from canonical stable id",
+        ),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_validation_rejects_local_slot_reusing_canonical_token(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "member_id")],
+    )
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(
+            ValueError,
+            match="local id slot must not reuse a canonical stable id token",
+        ),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_validation_rejects_identifier_context_unknown_canonical_id(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="field_slot",
+                canonical_ids=("checkpoint_assertion_id",),
+            )
+        ],
+    )
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(
+            ValueError,
+            match="identifier context rule references undeclared canonical id",
+        ),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_validation_rejects_invalid_identifier_namespace_mode(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="field_slot",
+                canonical_ids=("claim_scope_id",),
+                mode="localish",
+            )
+        ],
+    )
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(
+            ValueError,
+            match="unsupported identifier namespace mode",
+        ),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_validation_rejects_invalid_identifier_surface_kind(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="field_name",
+                canonical_ids=("claim_scope_id",),
+            )
+        ],
+    )
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(
+            ValueError,
+            match="unsupported identifier surface kind",
         ),
     ):
         load_target_naming_catalog()
@@ -764,6 +1015,243 @@ def test_audit_reports_docs_home_reference_group_drift(tmp_path: Path) -> None:
     assert {finding.rule_id for finding in findings} == {"docs_home.reference_groups"}
 
 
+def test_identifier_namespace_requires_canonical_ids_by_default(
+    tmp_path: Path,
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        scope="repo_policy",
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        body="""
+        ## Naming Rules
+
+        - `scope_id`
+        """,
+    )
+
+    assert [finding.rule_id for finding in findings] == [
+        "identifier.namespace.canonical_required"
+    ]
+
+
+def test_identifier_namespace_allows_canonical_ids_by_default(tmp_path: Path) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        scope="repo_policy",
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        body="""
+        ## Naming Rules
+
+        - `claim_scope_id`
+        """,
+    )
+
+    assert findings == ()
+
+
+def test_identifier_namespace_requires_local_short_field_slots(
+    tmp_path: Path,
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="field_slot",
+                canonical_ids=("claim_scope_id",),
+            )
+        ],
+        body="""
+        ## ClaimSet
+
+        Record families:
+
+        - `claim_scope_id`
+        """,
+    )
+
+    assert [finding.rule_id for finding in findings] == [
+        "identifier.namespace.local_short_required"
+    ]
+
+
+def test_identifier_namespace_allows_local_short_field_slots(tmp_path: Path) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="field_slot",
+                canonical_ids=("claim_scope_id",),
+            )
+        ],
+        body="""
+        ## ClaimSet
+
+        Record families:
+
+        - `scope_id`
+        """,
+    )
+
+    assert findings == ()
+
+
+def test_identifier_namespace_requires_local_short_array_components(
+    tmp_path: Path,
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="array_component",
+                canonical_ids=("claim_scope_id",),
+                region_label="Stable ids",
+            )
+        ],
+        body="""
+        ## ClaimSet
+
+        Stable ids:
+
+        - `[claim_scope_id, key]`
+        """,
+    )
+
+    assert [finding.rule_id for finding in findings] == [
+        "identifier.namespace.local_short_required"
+    ]
+
+
+def test_identifier_namespace_allows_local_short_array_components(
+    tmp_path: Path,
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="array_component",
+                canonical_ids=("claim_scope_id",),
+                region_label="Stable ids",
+            )
+        ],
+        body="""
+        ## ClaimSet
+
+        Stable ids:
+
+        - `[scope_id, key]`
+        """,
+    )
+
+    assert findings == ()
+
+
+def test_identifier_namespace_mixes_canonical_and_local_short_regions(
+    tmp_path: Path,
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="array_component",
+                canonical_ids=("claim_scope_id",),
+                region_label="Stable ids",
+            )
+        ],
+        body="""
+        ## ClaimSet
+
+        Stable ids:
+
+        - `[scope_id, key]`
+
+        Cardinality:
+
+        - `scope_id`
+        """,
+    )
+
+    assert [finding.rule_id for finding in findings] == [
+        "identifier.namespace.canonical_required"
+    ]
+
+
+def test_identifier_namespace_ignores_canonical_ids_without_local_slots(
+    tmp_path: Path,
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        local_id_slots=[_local_slot("claim_scope_id", "scope_id")],
+        body="""
+        ## Naming Rules
+
+        - `member_id`
+        - `selection_id`
+        - `event_id`
+        - `entry_id`
+        - `emitter_id`
+        """,
+    )
+
+    assert findings == ()
+
+
+def test_identifier_namespace_checks_qualified_field_suffixes(
+    tmp_path: Path,
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        local_id_slots=[_local_slot("checkpoint_assertion_id", "assertion_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="qualified_field_suffix",
+                canonical_ids=("checkpoint_assertion_id",),
+                section_path=("Checkpoint",),
+            )
+        ],
+        body="""
+        ## Checkpoint
+
+        Record families:
+
+        - `CheckpointAssertionRecord.checkpoint_assertion_id`
+        """,
+    )
+
+    assert [finding.rule_id for finding in findings] == [
+        "identifier.namespace.local_short_required"
+    ]
+
+
+def test_identifier_namespace_allows_local_short_qualified_field_suffixes(
+    tmp_path: Path,
+) -> None:
+    findings = _audit_example_doc(
+        tmp_path,
+        local_id_slots=[_local_slot("checkpoint_assertion_id", "assertion_id")],
+        identifier_context_rules=[
+            _identifier_context_rule(
+                surface_kind="qualified_field_suffix",
+                canonical_ids=("checkpoint_assertion_id",),
+                section_path=("Checkpoint",),
+            )
+        ],
+        body="""
+        ## Checkpoint
+
+        Record families:
+
+        - `CheckpointAssertionRecord.assertion_id`
+        """,
+    )
+
+    assert findings == ()
+
+
 def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     catalog = load_target_naming_catalog()
 
@@ -809,6 +1297,20 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
         "### Current-State References",
         "### Oracle References",
     )
+    assert catalog.local_id_slot_by_canonical_id == {
+        "claim_scope_id": "scope_id",
+        "claim_bundle_id": "bundle_id",
+        "claim_bundle_decision_id": "decision_id",
+        "continuity_segment_id": "segment_id",
+        "balance_target_id": "target_id",
+        "checkpoint_proposal_id": "proposal_id",
+        "checkpoint_assertion_id": "assertion_id",
+        "entry_check_id": "check_id",
+    }
+    assert (
+        catalog.identifier_context_rules[0].path
+        == "docs/concepts/pipeline-stage-contracts.md"
+    )
     record_names = {record.record for record in catalog.canonical_families.records}
     assert "EvidenceObservationRecord" in record_names
     assert "ClaimBundleRecord" in record_names
@@ -817,6 +1319,20 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     assert "GapRecord" in record_names
     assert "tools/target_naming.py" in catalog.tooling_paths
     assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "docs/standards/engineering.md",
+        "docs/reference/target-ids-and-refs.md",
+        "docs/concepts/pipeline-stage-contracts.md",
+        "docs/reference/first-downstream-slice-contract.md",
+        "ROADMAP.md",
+    ],
+)
+def test_real_repo_identifier_namespace_audit_passes(path: str) -> None:
+    assert audit_target_naming(paths=(path,)) == ()
 
 
 def test_target_naming_sensitive_path_helper_covers_docs_and_control_plane() -> None:

@@ -39,6 +39,16 @@ Use the detailed contract pages first:
 This page keeps only reusable target ids and ref tuples that are not defined as
 the primary contract content elsewhere.
 
+## Identifier Namespaces
+
+This page documents canonical reusable ids and refs only.
+
+- local id slots are not reusable id families
+- owner-local slot forms belong only on the matching contract pages and slice mirrors where
+  the catalog explicitly allows them
+- if a canonical id is already short, it has no paired local alias unless the
+  catalog declares one
+
 ## Emitter Id
 
 `emitter_id` identifies the shared claim emitter that emitted one `ClaimSet`.

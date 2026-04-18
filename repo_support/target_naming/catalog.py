@@ -30,6 +30,16 @@ from .families import (
     load_canonical_families,
     validate_canonical_families,
 )
+from .identifier_namespace_catalog import (
+    IdentifierContextRule,
+    IdentifierNamespaceMode,
+    IdentifierSurfaceKind,
+    LocalIdSlot,
+    build_identifier_context_rules,
+    build_local_id_slots,
+    validate_identifier_context_rules,
+    validate_local_id_slots,
+)
 from .model import MarkerLabel, NamingScope
 
 SUPPORTED_REQUIRED_MARKERS: frozenset[MarkerLabel] = frozenset(
@@ -124,6 +134,8 @@ class TargetNamingCatalog:
     tooling_paths: tuple[str, ...]
     canonical_families: CanonicalFamilySet
     canonical_tokens: CanonicalTokenSet
+    local_id_slots: tuple[LocalIdSlot, ...]
+    identifier_context_rules: tuple[IdentifierContextRule, ...]
     vocabularies: VocabularyCatalog
     banned_phrases: tuple[PhraseRule, ...]
     retired_aliases: tuple[AliasRule, ...]
@@ -150,6 +162,20 @@ class TargetNamingCatalog:
             tokens.update(values)
         return frozenset(tokens)
 
+    @property
+    def canonical_stable_id_set(self) -> frozenset[str]:
+        return frozenset(
+            token for token in self.canonical_tokens.snake if token.endswith("_id")
+        )
+
+    @property
+    def local_id_slot_by_canonical_id(self) -> dict[str, str]:
+        return {slot.canonical_id: slot.slot for slot in self.local_id_slots}
+
+    @property
+    def local_id_slot_by_slot(self) -> dict[str, str]:
+        return {slot.slot: slot.canonical_id for slot in self.local_id_slots}
+
 
 def catalog_path() -> Path:
     return repo_root() / "tools" / "target_naming_catalog.yaml"
@@ -174,6 +200,8 @@ def validate_target_naming_catalog(catalog: TargetNamingCatalog) -> tuple[str, .
     errors.extend(_validate_required_markers(catalog))
     errors.extend(_validate_exceptions(catalog))
     errors.extend(_validate_paired_axes(catalog))
+    errors.extend(validate_local_id_slots(catalog))
+    errors.extend(validate_identifier_context_rules(catalog))
     errors.extend(_validate_rule_contexts(catalog))
     return tuple(errors)
 
@@ -218,6 +246,8 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
             snake=_string_tuple(_sequence_value(canonical_tokens_loaded, "snake")),
             phrases=_string_tuple(_sequence_value(canonical_tokens_loaded, "phrases")),
         ),
+        local_id_slots=build_local_id_slots(loaded),
+        identifier_context_rules=build_identifier_context_rules(loaded),
         vocabularies=_build_vocabulary_catalog(vocabularies_loaded),
         banned_phrases=tuple(
             PhraseRule(
@@ -394,7 +424,11 @@ __all__ = [
     "DirectoryFamily",
     "DirectoryFamilyGroup",
     "ExceptionRule",
+    "IdentifierContextRule",
+    "IdentifierNamespaceMode",
+    "IdentifierSurfaceKind",
     "MatrixSpec",
+    "LocalIdSlot",
     "PhraseRule",
     "ProductFamily",
     "RecordFamily",

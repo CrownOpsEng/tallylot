@@ -425,8 +425,8 @@ Record families:
 
 - `ClaimRecord`
   - `claim_set_id`
-  - `claim_scope_id`
-  - `claim_bundle_id`
+  - `scope_id`
+  - `bundle_id`
   - `claim_id`
   - `kind`
   - `status`
@@ -438,15 +438,15 @@ Record families:
   - `provenance_refs`
 - `ClaimBundleRecord`
   - `claim_set_id`
-  - `claim_scope_id`
-  - `claim_bundle_id`
+  - `scope_id`
+  - `bundle_id`
   - `key`
   - `scope_key`
   - `claim_refs`
 - `ClaimBundleDecisionRecord`
   - `claim_set_id`
-  - `claim_scope_id`
-  - `claim_bundle_decision_id`
+  - `scope_id`
+  - `decision_id`
   - `outcome`
   - `accepted_bundle_ref`
   - `rejected_bundle_refs`
@@ -590,18 +590,18 @@ Stable ids:
   `emitter_id` into later product ids
 - `claim_scope_id` uses component array `[claim_set_id, scope_key]`
 - `claim_bundle_id` uses component array
-  `[claim_scope_id, key]`
-- `claim_id` uses component array `[claim_bundle_id, kind, key]`
-- `claim_bundle_decision_id` uses component array `[claim_scope_id]`
+  `[scope_id, key]`
+- `claim_id` uses component array `[bundle_id, kind, key]`
+- `claim_bundle_decision_id` uses component array `[scope_id]`
 
 Ordering:
 
 - `ClaimRecord` rows sort by tuple
-  `[claim_bundle_id, kind, effective_at, precision, claim_id]`
+  `[bundle_id, kind, effective_at, precision, claim_id]`
 - `ClaimBundleRecord` rows sort by
-  `[claim_scope_id, key, claim_bundle_id]`
+  `[scope_id, key, bundle_id]`
 - `ClaimBundleDecisionRecord` rows sort by
-  `[claim_scope_id, claim_bundle_decision_id]`
+  `[scope_id, decision_id]`
 
 Serialization:
 
@@ -820,7 +820,7 @@ Owns:
 Record families:
 
 - `ContinuitySegmentRecord`
-  - `continuity_segment_id`
+  - `segment_id`
   - `subject_ref`
   - `segment_start_at`
   - `segment_end_at`
@@ -828,14 +828,14 @@ Record families:
   - `as_of`
 - `EventLinkRecord`
   - `event_link_id`
-  - `continuity_segment_id`
+  - `segment_id`
   - `kind`
   - `left_event_ref`
   - `right_event_ref`
   - `status`
 - `BalanceTargetRecord`
-  - `balance_target_id`
-  - `continuity_segment_id`
+  - `target_id`
+  - `segment_id`
   - `subject_ref`
   - `kind`
   - `as_of`
@@ -844,8 +844,8 @@ Record families:
   - `observation_status`
   - `comparison_outcome`
 - `CheckpointProposalRecord`
-  - `checkpoint_proposal_id`
-  - `continuity_segment_id`
+  - `proposal_id`
+  - `segment_id`
   - `subject_ref`
   - `as_of`
   - `status`
@@ -920,7 +920,7 @@ Stable ids:
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
   proposal record
 - `reconciliation_state_id` uses component array
-  `[economic_facts_ref, continuity_segment_id]`
+  `[economic_facts_ref, segment_id]`
 - `continuity_segment_id` uses component array
   `[subject_ref, segment_start_at, segment_end_at]`
 - `continuity_segment_id` is the reusable stage-local scope id for gap,
@@ -928,11 +928,11 @@ Stable ids:
   `reconciliation_state_id` is the emitted product id over that scope plus its
   upstream lineage
 - `event_link_id` uses component array
-  `[continuity_segment_id, kind, left_event_ref, right_event_ref]`
+  `[segment_id, kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
-  `[continuity_segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
+  `[segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
 - `checkpoint_proposal_id` uses component array
-  `[continuity_segment_id, subject_ref, as_of, target_refs]`
+  `[segment_id, subject_ref, as_of, target_refs]`
 - `expected_value_fingerprint` is the canonical fingerprint of the
   `AssertionValue` carried in `expected_value`
 - `evidence_refs` provide audit traceability, but they are not part of
@@ -941,13 +941,13 @@ Stable ids:
 Ordering:
 
 - `ContinuitySegmentRecord` rows sort by
-  `[as_of, subject_ref, continuity_segment_id]`
+  `[as_of, subject_ref, segment_id]`
 - `EventLinkRecord` rows sort by
-  `[continuity_segment_id, kind, left_event_ref, right_event_ref, event_link_id]`
+  `[segment_id, kind, left_event_ref, right_event_ref, event_link_id]`
 - `BalanceTargetRecord` rows sort by
-  `[continuity_segment_id, subject_ref, as_of, balance_target_id]`
+  `[segment_id, subject_ref, as_of, target_id]`
 - `CheckpointProposalRecord` rows sort by
-  `[as_of, subject_ref, continuity_segment_id, checkpoint_proposal_id]`
+  `[as_of, subject_ref, segment_id, proposal_id]`
 
 Serialization:
 
@@ -1015,7 +1015,7 @@ Record families:
   - `assertion_ids`
   - `proposal_refs`
 - `CheckpointAssertionRecord`
-  - `checkpoint_assertion_id`
+  - `assertion_id`
   - `checkpoint_id`
   - `subject_ref`
   - `kind`
@@ -1097,7 +1097,7 @@ Ordering:
 
 - `CheckpointRecord` rows sort by `[as_of, checkpoint_id]`
 - `CheckpointAssertionRecord` rows sort by tuple
-  `[as_of, subject_ref.subject_kind, subject_ref.subject_key, checkpoint_assertion_id]`
+  `[as_of, subject_ref.subject_kind, subject_ref.subject_key, assertion_id]`
 
 Serialization:
 
@@ -1195,7 +1195,7 @@ Record families:
   - `side`
   - `origin_ref`
 - `EntryCheckRecord`
-  - `entry_check_id`
+  - `check_id`
   - `entry_id`
   - `kind`
   - `status`
@@ -1262,7 +1262,7 @@ Ordering:
 - `JournalEntryRecord` rows sort by `[effective_at, kind, entry_id]`
 - `PostingRecord` rows sort by
   `[entry_id, side, account_ref, unit_ref, origin_ref, posting_id]`
-- `EntryCheckRecord` rows sort by `[entry_id, kind, entry_check_id]`
+- `EntryCheckRecord` rows sort by `[entry_id, kind, check_id]`
 
 Serialization:
 

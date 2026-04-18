@@ -56,6 +56,9 @@ These anchors drive sequencing and acceptance criteria:
   center
 - do not rename live bridge symbols or repo-only support packages as a docs-only
   side effect
+- freeze short-first canonical stable ids, catalog-declared owner-local short
+  slots, and deterministic boundary checks that require local slots only on
+  declared owner-local surfaces and canonical ids everywhere else
 
 ## Phase 0. Contract Lock And Bounded-Slice Prep
 
@@ -85,24 +88,9 @@ Must freeze:
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `kernel_scope_id`
-- target naming rules that distinguish concepts, refs, ids, records,
-  views, rollups, reports, and sidecars without baking bridge-era
-  qualifiers or source-specific crypto nouns into shared target names, and
-  that keep stage-local ids explicit once they cross into downstream products,
-  keep stage-owned helper-ref families mirrored across sibling refs,
-  keep product-id component order aligned to product-header order, keep
-  canonical readiness rollups stage- and domain-oriented, use target-owned
-  label pairs such as `location_group_label` and `location_label` when
-  preserving source-provided location labels, keep generic downstream record
-  families stage-owned with names such as `TaxCarryForwardRecord` and
-  `TaxUnsupportedInputRecord`, keep partition-scope labels aligned to the
-  actual identity dimensions they reduce over, describe non-authoritative
-  bridge outputs as derived compatibility views rather than bridge-era
-  compile steps, and prefer direct kind values such as `instrument` over
-  pseudo-type labels
-- child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
-  `checkpoint_proposal_id`, `JournalAccountRef`, and `JournalUnitRef` as the
-  canonical downstream stems instead of shorter or mixed-family alternates
+- short-first canonical stable ids, catalog-declared owner-local short slots,
+  and deterministic boundary checks that require local slots only on declared
+  owner-local surfaces and canonical ids everywhere else
 - claim-bundle decision naming that keeps `outcome` on the posture axis and
   freezes `ClaimBundleDecisionRecord.basis` to reason-only values such as
   `single_bundle`, `insufficient_identity`, `insufficient_temporal_precision`,
@@ -137,9 +125,8 @@ Must freeze:
   retirement gates
 - package ownership and layer placement for shared functionality
 - catalog-first target naming governance with one machine-readable naming
-  authority, exact title expectations for enforced forward-looking docs, full
-  canonical record-family coverage, and a blocking `target-naming` check on
-  enforced forward-looking docs
+  authority and a blocking `target-naming` check on enforced forward-looking
+  docs
 - explicit no-invention rules for non-critical observation and claim kinds
 - no placeholder valuation-measure field family until a real shared taxonomy
   exists
