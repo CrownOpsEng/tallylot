@@ -125,8 +125,8 @@ When a capability grows, split by stable boundaries:
   `application/intake/`, `application/profiling/`, `application/evidence/`,
   `application/claim/`, `application/economics/`,
   `application/compatibility/`, `application/normalization/`,
-  `application/reconciliation/`, `application/assessment/`,
-  `application/checkpoint/`, `application/journal/`, `application/tax/`, and
+  `application/reconciliation/`, `application/checkpoint/`,
+  `application/journal/`, `application/tax/`, and
   `application/rendering/`. Keep request and response contracts in
   capability-local `contracts.py` files and keep orchestration entry points in
   explicitly named use-case modules such as `build_profile.py`,
@@ -187,16 +187,34 @@ Current application of this rule:
   planned-item models, review assembly, and report rendering.
 - Normalization window and derived-balance helpers belong under
   `application/normalization/` rather than as nearby flat siblings.
-- Forward-looking cross-stage gap, review, and readiness reducers plus
-  readiness rollups and assessment views belong under
-  `application/assessment/` rather than being buried under
-  `application/reconciliation/`.
+- Shared gap, review, and readiness contracts belong under `domain/assessment/`
+  while the owning application slice keeps its own assessment behavior.
 - Forward-looking journal expansion and entry checks belong under
   `application/journal/` rather than under a broader `accounting/` umbrella or
   as extra checkpoint-side helpers.
 - Rendering belongs under `application/rendering/`; CoinTracking is one
   output adapter, not an application-center compatibility lane.
 - Dev-only oracle tooling must live outside `src/tallylot/`.
+
+### Tax-First Derived Output Exception
+
+During the active tax-first path, grouped consumer-facing output logic may stay
+inside `application/tax/` or `application/rendering/` only when it is
+exclusively needed for:
+
+- active filing outputs
+- current renderer surfaces
+- current compatibility surfaces
+
+Extraction is mandatory before implementation when any of these are true:
+
+- a second grouped non-compatibility consumer appears
+- a grouped non-authoritative surface needs durable persistence outside tax
+  outputs or compatibility
+- a feature clearly belongs to reporting, portfolio, visualization, or
+  investigation
+- grouped output logic would otherwise be copied into a second stage package or
+  consumer
 
 ## Naming Rules
 
@@ -286,9 +304,9 @@ Current application of this rule:
   those are the actual owned families. Reserve generic `assessment` for
   intentional roots or bounded field names such as `domain/assessment/`,
   `assessment/`, or `support_shape`.
-- When cross-stage support logic needs its own application boundary, give it
-  the family noun directly, such as `application/assessment/`, rather than
-  burying it under a neighboring stage package.
+- When grouped support logic outgrows stage-local ownership, extract it to the
+  specific capability-owned derived read-model package rather than to a shared
+  application sink.
 - `application/compatibility/` is acceptable only for migration-era bridge
   compatibility views and view writers. When a page or package uses that root,
   state directly that it is migration-only rather than a durable application
@@ -467,10 +485,8 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   `readiness/`, then make basenames mirror the stored record or explanation
   family. Prefer `assessment/gap/gap_records.json`,
   `assessment/review/review_records.json`,
-  `assessment/readiness/readiness_records.json`, and
-  `assessment/readiness/readiness_rollup_records.json` over one flat
-  assessment directory or shorter plurals that need directory context to
-  reveal shape.
+  and `assessment/readiness/readiness_records.json` over one flat assessment
+  directory or shorter plurals that need directory context to reveal shape.
 - In forward-looking docs and code, reserve `artifact` for current-state bridge
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `view`,

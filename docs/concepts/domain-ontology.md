@@ -473,9 +473,6 @@ Required application ownership:
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
   evaluation, and checkpoint proposal records
-- `application/assessment/` for cross-stage gap, review, and readiness
-  reduction plus readiness rollups and assessment views
-
 `domain/assessment/` stays generic only because it is the shared root for the
 nested `gap/`, `review/`, and `readiness/` families plus `SubjectRef`.
 No unrelated family may be added under `domain/assessment/` without a separate
@@ -491,6 +488,29 @@ application center.
   selection, and `TaxOutputs` generation
 - `application/rendering/` for downstream rendering orchestration
 - `application/workspace/` for workspace resolution and initialization
+
+Assessment behavior stays in the owning application slice. Shared
+`domain/assessment/` contracts and persisted `assessment/gap/`,
+`assessment/review/`, and `assessment/readiness/` sidecars do not create a
+shared application assessment center.
+
+### Reserved Future Capability Families
+
+Reserve these future application families conceptually, but not as required
+package ownership yet:
+
+- a reporting family for cross-stage or cross-product reporting
+- a portfolio family for holdings and portfolio views
+- a visualization family for charts, dashboards, and visualization datasets
+- an investigation family for drill-down and investigation workflows that are
+  not compatibility-only
+
+Rules:
+
+- these families are reserved in prose only until the roadmap trigger ladder
+  requires one of them
+- do not introduce a generic read-side sink while waiting for a trigger
+- do not pre-create all reserved families when only one capability is needed
 
 Boundary rules:
 
