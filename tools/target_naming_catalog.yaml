@@ -1026,6 +1026,21 @@ matrix_specs:
       - compatibility view
       - compatibility sidecar
       - none
+    required_rows:
+      - translation_input_candidates.json
+      - translation_input_plan.json
+      - EconomicActivityDraft
+      - SourceTranslationBatch
+      - TransactionFact and facts.csv
+      - balance_snapshots.csv
+      - balance_references.csv
+      - exceptions.csv and IssueRecord outputs
+      - normalization_reviews.csv and NormalizationReviewRecord outputs
+    required_nonempty_columns:
+      - Current readers
+      - Target readers after cutover
+      - Cutover gate
+      - Retirement gate
     banned_fragments:
       - view or sidecar
       - optional planner review view

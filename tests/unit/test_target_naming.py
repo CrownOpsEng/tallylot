@@ -198,6 +198,8 @@ def _write_catalog(
                     "compatibility sidecar",
                     "none",
                 ],
+                "required_rows": [],
+                "required_nonempty_columns": [],
                 "banned_fragments": ["view or sidecar"],
             }
         ],
@@ -263,6 +265,35 @@ def _identifier_context_rule(
         "surface_kind": surface_kind,
         "mode": mode,
         "canonical_ids": list(canonical_ids),
+    }
+
+
+def _matrix_spec(
+    *,
+    path: str = "docs/matrix.md",
+    required_rows: Sequence[str] = (),
+    required_nonempty_columns: Sequence[str] = (),
+) -> dict[str, object]:
+    return {
+        "path": path,
+        "required_columns": [
+            "Current bridge surface",
+            "Target authoritative product(s)",
+            "Derived compatibility view",
+            "Derived compatibility sidecar",
+            "Current readers",
+            "Target readers after cutover",
+            "Cutover gate",
+            "Retirement gate",
+        ],
+        "allowed_shape_nouns": [
+            "compatibility view",
+            "compatibility sidecar",
+            "none",
+        ],
+        "banned_fragments": ["view or sidecar"],
+        "required_rows": list(required_rows),
+        "required_nonempty_columns": list(required_nonempty_columns),
     }
 
 
@@ -350,6 +381,41 @@ def test_catalog_validation_rejects_directory_sidecar_family_drift(
         pytest.raises(ValueError, match="directory family sidecar must stay grouped"),
     ):
         load_target_naming_catalog()
+
+
+def test_catalog_loads_bridge_cutover_required_rows(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=(
+                "translation_input_plan.json",
+                "TransactionFact and facts.csv",
+            ),
+            required_nonempty_columns=(
+                "Current readers",
+                "Target readers after cutover",
+                "Cutover gate",
+                "Retirement gate",
+            ),
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+
+    with override_repo_root(tmp_path):
+        catalog = load_target_naming_catalog()
+
+    assert catalog.matrix_specs[0].required_rows == (
+        "translation_input_plan.json",
+        "TransactionFact and facts.csv",
+    )
+    assert catalog.matrix_specs[0].required_nonempty_columns == (
+        "Current readers",
+        "Target readers after cutover",
+        "Cutover gate",
+        "Retirement gate",
+    )
 
 
 def test_catalog_validation_rejects_unknown_record_directory_family_stem(
@@ -996,6 +1062,249 @@ def test_audit_reports_docs_home_reference_group_drift(tmp_path: Path) -> None:
     assert {finding.rule_id for finding in findings} == {"docs_home.reference_groups"}
 
 
+def test_audit_reports_missing_bridge_cutover_row(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=(
+                "translation_input_plan.json",
+                "TransactionFact and facts.csv",
+            )
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | EvidenceSet | compatibility view | none | planner | target planner | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.required_inventory"
+    ]
+
+
+def test_audit_reports_extra_bridge_cutover_row(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(required_rows=("translation_input_plan.json",))
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | EvidenceSet | compatibility view | none | planner | target planner | deterministic output | reader retired |
+            | unexpected_surface.json | EvidenceSet | compatibility view | none | planner | target planner | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.required_inventory"
+    ]
+
+
+def test_audit_reports_out_of_order_bridge_cutover_row(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=(
+                "translation_input_plan.json",
+                "TransactionFact and facts.csv",
+            )
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | TransactionFact and facts.csv | EconomicFacts | compatibility view | none | balances | target balances | parity proven | authority retired |
+            | translation_input_plan.json | EvidenceSet | compatibility view | none | planner | target planner | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.required_inventory"
+    ]
+
+
+def _assert_blank_required_bridge_cutover_cell_finding(
+    tmp_path: Path, *, column: str
+) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=("translation_input_plan.json",),
+            required_nonempty_columns=(
+                "Current readers",
+                "Target readers after cutover",
+                "Cutover gate",
+                "Retirement gate",
+            ),
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    row_values = {
+        "Current bridge surface": "translation_input_plan.json",
+        "Target authoritative product(s)": "EvidenceSet",
+        "Derived compatibility view": "compatibility view",
+        "Derived compatibility sidecar": "none",
+        "Current readers": "planner",
+        "Target readers after cutover": "target planner",
+        "Cutover gate": "deterministic output",
+        "Retirement gate": "reader retired",
+    }
+    row_values[column] = ""
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            f"""\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | {row_values["Current bridge surface"]} | {row_values["Target authoritative product(s)"]} | {row_values["Derived compatibility view"]} | {row_values["Derived compatibility sidecar"]} | {row_values["Current readers"]} | {row_values["Target readers after cutover"]} | {row_values["Cutover gate"]} | {row_values["Retirement gate"]} |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == ["matrix.rows.required_cell"]
+
+
+def test_audit_reports_blank_current_reader_cell(tmp_path: Path) -> None:
+    _assert_blank_required_bridge_cutover_cell_finding(
+        tmp_path, column="Current readers"
+    )
+
+
+def test_audit_reports_blank_target_reader_cell(tmp_path: Path) -> None:
+    _assert_blank_required_bridge_cutover_cell_finding(
+        tmp_path, column="Target readers after cutover"
+    )
+
+
+def test_audit_reports_blank_cutover_gate_cell(tmp_path: Path) -> None:
+    _assert_blank_required_bridge_cutover_cell_finding(tmp_path, column="Cutover gate")
+
+
+def test_audit_reports_blank_retirement_gate_cell(tmp_path: Path) -> None:
+    _assert_blank_required_bridge_cutover_cell_finding(
+        tmp_path, column="Retirement gate"
+    )
+
+
+def test_audit_allows_only_canonical_compatibility_shape_terms_in_matrix(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(required_rows=("translation_input_plan.json",))
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | EvidenceSet | compatibility projection | none | planner | target planner | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == ["matrix.rows.canonical_shapes"]
+
+
 def test_identifier_namespace_requires_canonical_ids_by_default(
     tmp_path: Path,
 ) -> None:
@@ -1250,6 +1559,23 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     assert (
         catalog.title_expectations["docs/concepts/reconciliation-tax-architecture.md"]
         == "Reconciliation, Checkpoint, Journal, And Tax Architecture"
+    )
+    assert catalog.matrix_specs[0].required_rows == (
+        "translation_input_candidates.json",
+        "translation_input_plan.json",
+        "EconomicActivityDraft",
+        "SourceTranslationBatch",
+        "TransactionFact and facts.csv",
+        "balance_snapshots.csv",
+        "balance_references.csv",
+        "exceptions.csv and IssueRecord outputs",
+        "normalization_reviews.csv and NormalizationReviewRecord outputs",
+    )
+    assert catalog.matrix_specs[0].required_nonempty_columns == (
+        "Current readers",
+        "Target readers after cutover",
+        "Cutover gate",
+        "Retirement gate",
     )
     assert catalog.canonical_families.directory_paths == (
         "compatibility/",

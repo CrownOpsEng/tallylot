@@ -111,6 +111,8 @@ class MatrixSpec:
     required_columns: tuple[str, ...]
     allowed_shape_nouns: tuple[str, ...]
     banned_fragments: tuple[str, ...]
+    required_rows: tuple[str, ...]
+    required_nonempty_columns: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -203,6 +205,7 @@ def validate_target_naming_catalog(catalog: TargetNamingCatalog) -> tuple[str, .
     errors.extend(validate_local_id_slots(catalog))
     errors.extend(validate_identifier_context_rules(catalog))
     errors.extend(_validate_rule_contexts(catalog))
+    errors.extend(_validate_matrix_specs(catalog))
     return tuple(errors)
 
 
@@ -288,6 +291,10 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
                 ),
                 banned_fragments=_string_tuple(
                     _sequence_value(item, "banned_fragments")
+                ),
+                required_rows=_string_tuple(_sequence_value(item, "required_rows")),
+                required_nonempty_columns=_string_tuple(
+                    _sequence_value(item, "required_nonempty_columns")
                 ),
             )
             for item in _mapping_sequence_value(loaded, "matrix_specs")
@@ -414,6 +421,23 @@ def _validate_rule_contexts(catalog: TargetNamingCatalog) -> tuple[str, ...]:
     for alias in catalog.retired_aliases:
         if not alias.contexts:
             errors.append(f"retired alias {alias.term!r} must declare contexts")
+    return tuple(errors)
+
+
+def _validate_matrix_specs(catalog: TargetNamingCatalog) -> tuple[str, ...]:
+    errors: list[str] = []
+    for spec in catalog.matrix_specs:
+        if len(set(spec.required_columns)) != len(spec.required_columns):
+            errors.append("matrix spec required_columns must not contain duplicates")
+        if len(set(spec.required_rows)) != len(spec.required_rows):
+            errors.append("matrix spec required_rows must not contain duplicates")
+        known_columns = set(spec.required_columns)
+        for column in spec.required_nonempty_columns:
+            if column not in known_columns:
+                errors.append(
+                    "matrix spec required_nonempty_columns must be declared in "
+                    "required_columns"
+                )
     return tuple(errors)
 
 
