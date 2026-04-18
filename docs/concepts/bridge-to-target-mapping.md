@@ -40,7 +40,7 @@ Use these pages for neighboring contracts:
   `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
 - [Gap, Review, And Readiness](gaps-and-readiness.md) defines `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
-  `ReadinessRecord`, `ReadinessRollupRecord`, and `SubjectRef`.
+  `ReadinessRecord`, and `SubjectRef`.
 - this page defines how bridge surfaces move to target products without
   creating dual authorities
 
@@ -88,6 +88,9 @@ No-dual-center rule:
   migration
 - none of those surfaces may remain a second architecture center once the
   corresponding target product is authoritative for that scope
+- broader grouped consumers stay on authoritative kernels, compatibility views,
+  or tax-output-local and rendering-local derived outputs until the roadmap
+  trigger ladder requires a dedicated capability-owned derived read-model slice
 
 ## Cutover Matrix
 

@@ -25,8 +25,8 @@ current adapter-edge and oracle-comparison boundaries, not canonical target
 naming.
 
 **Exception rationale:** `assessment/` stays in this roadmap only as the shared
-root for the nested `gap/`, `review/`, and `readiness/` families. It is not a
-generic assessment bucket.
+contract and sidecar root for the nested `gap/`, `review/`, and `readiness/`
+families. It is not a generic application center.
 
 ## Planning Anchors
 
@@ -45,6 +45,10 @@ These anchors drive sequencing and acceptance criteria:
   slices replace them
 - CoinTracking remains an edge adapter and oracle surface, not the runtime
   ledger model
+- broader grouped and query surfaces remain deferred until the trigger ladder
+  below fires
+- filing-critical `TaxOutputs` and narrow rendering outputs may keep derived
+  grouped output logic only for the active tax-first window
 
 ## Transition Rules
 
@@ -54,6 +58,10 @@ These anchors drive sequencing and acceptance criteria:
 - preserve current bridge truth while establishing target product ownership
 - do not let bridge compatibility views become a second architecture
   center
+- do not let shared grouped readiness or shared application assessment behavior
+  harden into the long-term architecture
+- keep broader derived read models and projections deferred until the trigger
+  ladder fires, then activate them as capability-owned application surfaces
 - do not rename live bridge symbols or repo-only support packages as a docs-only
   side effect
 - freeze short-first canonical stable ids, catalog-declared owner-local short
@@ -82,7 +90,7 @@ Must freeze:
 - `AssertionValue`, `PositionRef`, and `ContractRef`
 - shared gap, review, and readiness records and sidecars:
   `GapRecord`, `GapExplanation`, `ReviewRecord`,
-  `ReviewExplanation`, `ReadinessRecord`, `ReadinessRollupRecord`,
+  `ReviewExplanation`, `ReadinessRecord`,
   `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id` and `balance_target_id`
   attachments, and the downstream shared-subject seams needed for journal
   and tax records
@@ -118,12 +126,21 @@ Must freeze:
   families are already known, keeps gap/review/readiness roots explicit when
   the docs mean those families directly, and keeps the shared `assessment/` root
   split into concrete nested families
-  such as `gap/`, `review/`, and `readiness/`
+  such as `gap/`, `review/`, and `readiness/` while keeping assessment
+  behavior in the owning application slice
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
 - migration authority rules, compatibility views, reader cutovers, and
   retirement gates
-- package ownership and layer placement for shared functionality
+- package ownership and layer placement that keep shared assessment contracts in
+  `domain/assessment/`, keep the persisted `assessment/gap/`,
+  `assessment/review/`, and `assessment/readiness/` families as storage rules
+  only, and retire shared application assessment behavior until a specific
+  capability-owned derived read-model package is activated
+- defer broader grouped readiness, reporting, portfolio, visualization, and
+  investigation architecture until the trigger ladder below fires, allowing
+  only filing-critical product-local derived outputs, narrow rendering outputs,
+  or migration compatibility views before then
 - catalog-first target naming governance with one machine-readable naming
   authority and a blocking `target-naming` check on enforced forward-looking
   docs
@@ -139,6 +156,9 @@ Deliver:
 - explicit cutover matrix for bridge-to-target migration
 - one first upstream slice and one first downstream slice
 - explicit package ownership for `domain/` and `application/`
+- explicit defer-until-trigger rules for broader derived read models and
+  projections so the tax-first path does not have to invent long-term
+  read-model ownership early
 - explicit fast-path rule that reducers read kernels, not explanation sidecars
 - frozen critical-path field tables and product-id rules that later writing
   work can merge without deciding new structure
@@ -164,9 +184,93 @@ Exit criteria:
 - non-critical observation and claim kinds are explicitly deferred rather
   than left implicit
 - implementation placement is mechanical rather than interpretive
+- `TaxOutputs` can land without requiring a separate read-side architecture
+  first
+- no shared application assessment center or shared grouped-readiness family is
+  left as the default home for later grouped consumers
 - the first upstream slice and first downstream slice can be implemented
   without inventing
   ids, claim bundles, values, or reader cutovers
+
+## Deferred Read-Model Activation Triggers
+
+The tax-first window keeps the staged pipeline authoritative and defers
+capability-owned derived read models and projections until one of the triggers
+below fires.
+
+### Trigger A. Second Grouped Non-Compatibility Consumer
+
+Fire before implementation if the repo is about to add any grouped consumer
+beyond filing-critical `TaxOutputs`, existing narrow rendering behavior, or
+migration compatibility views.
+
+Examples:
+
+- operator-facing grouped readiness summary
+- non-tax grouped report
+- grouped dashboard dataset
+- holdings or portfolio summary
+
+Response:
+
+- introduce `docs/concepts/query-projection-architecture.md`
+- make the triggered slice first-class in architecture overview, ontology,
+  standards, and naming governance
+- do not ship the new grouped consumer inside a stage package first
+
+### Trigger B. First Persisted Derived Grouped Surface Outside Tax Outputs Or Compatibility
+
+Fire before implementation if a grouped non-authoritative surface needs durable
+persistence and is not a compatibility view or a product-local tax-output
+surface.
+
+Response:
+
+- introduce a non-authoritative projection root under
+  `working/projections/<slice>/<projection_family>/...`
+- define projection identity as slice-local and derived from authoritative refs
+  plus slice parameters
+- keep projections explicitly non-canonical and regenerable
+
+### Trigger C. First Feature That Clearly Belongs To A Reserved Family
+
+Fire before implementation when one of these appears:
+
+- cross-stage or cross-product reporting
+- portfolio tracking or holdings views
+- charts, dashboards, or visualization datasets
+- investigation or drill-down workflows that are not compatibility-only
+
+Response:
+
+- create only the specific needed package:
+  the reporting capability package, portfolio capability package,
+  visualization capability package, or investigation capability package
+- do not pre-create all reserved families
+
+### Trigger D. Copy Pressure Across Stage Packages
+
+Fire before implementation if grouped output logic would otherwise be copied
+into a second stage package or second consumer.
+
+Response:
+
+- extract to the correct capability-owned derived read-model package in the
+  same slice as the new feature
+- do not ship the duplicate first and clean it up later
+
+### Trigger E. Automatic Activation At Post-Filing Expansion
+
+If none of the earlier triggers fire first, activate the broader derived
+read-model and projection architecture at the start of `Phase 10`.
+
+Response:
+
+- add `docs/concepts/query-projection-architecture.md`
+- add the needed package families to naming governance
+- add projection persistence rules
+- update architecture overview and standards to make the capability-owned
+  derived read side explicit
 
 ## Phase 1. Land `EvidenceSet`
 
@@ -290,7 +394,8 @@ Deliver:
 
 - `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
 - journal-owned blockers and entry-check rules
-- rendering orchestration over accepted upstream products
+- rendering orchestration over accepted upstream products that stays narrow and
+  downstream-facing
 
 Exit criteria:
 
@@ -310,14 +415,20 @@ Deliver:
 - selected tax-policy execution over those inputs
 - year partitioning and tax carry-forward records
 - explicit tax unsupported-input records where policy execution cannot proceed
-- filing-critical policy outputs derived from accepted upstream products rather than
-  CoinTracking tax reports
+- filing-critical policy outputs derived from accepted upstream products rather
+  than CoinTracking tax reports
+- `TaxOutputs` ownership of `policy_summary`, `supporting_schedule`,
+  `filing_form`, policy explanations, limitations, and rendered policy content
+  for the tax-first path
 
 Exit criteria:
 
 - `2023` to `2025` outputs can be produced from reconciled economics and
   accepted checkpoint truth without treating CoinTracking tax reports as the
   ledger
+- `TaxOutputs` remains a narrow tax-output exception rather than the permanent
+  home of general reporting, dashboards, portfolio views, visualization
+  datasets, or investigation workflows
 
 ## Phase 8. Repo-Only Support Reset
 
@@ -378,6 +489,8 @@ Deliver:
 - provider-backed AI implementations with explicit audit trails
 - additional productized source and output adapters beyond the current
   high-value evidence sources
+- broader capability-owned derived read models and projections if no earlier
+  trigger already activated them
 
 Exit criteria:
 
@@ -420,6 +533,9 @@ Rules:
   explicit
 - keep unsupported or deferred behavior explicit through blockers instead of
   low-confidence partial support
+- keep derived grouped outputs inside `application/tax/`,
+  `application/rendering/`, or compatibility views only while they remain
+  exclusive to the tax-first path
 - do not reintroduce wrapper lanes, migration shims, or dual active runtime
   models once a bounded replacement is ready
 - when work affects architecture, schema, or sequencing, update this file

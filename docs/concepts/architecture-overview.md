@@ -33,6 +33,17 @@ The primary contract pages freeze product ids, product headers, critical-path
 kernel field tables, and the compatibility sidecar boundary for retained legacy
 hint fields.
 
+Broader consumer-facing grouped or query surfaces remain intentionally deferred
+until the trigger ladder in [ROADMAP.md](../../ROADMAP.md) fires. Through the
+tax-first phases, grouped outputs may remain only as tax-output-local derived
+content, narrow rendering-derived content, or compatibility-local derived
+output rather than as a shared application center.
+
+Gap, review, and readiness remain shared contracts plus persisted sidecar
+families. They do not imply a shared application reducer center. The owning
+application slice emits and reduces its own assessment behavior until a
+specific capability-owned derived read-model package is activated.
+
 ## Layer Shape
 
 - `domain/` owns business models, refs, enums, and value objects
