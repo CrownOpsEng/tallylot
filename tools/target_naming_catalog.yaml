@@ -181,10 +181,6 @@ canonical_families:
       record: TaxOutputRecord
       id: tax_output_id
       refs: []
-    - stem: readiness_rollup
-      record: ReadinessRollupRecord
-      id: readiness_rollup_id
-      refs: []
     - stem: gap
       record: GapRecord
       id: gap_id
@@ -208,7 +204,6 @@ canonical_families:
   package_paths:
     - application/claim/
     - application/checkpoint/
-    - application/assessment/
     - application/compatibility/
     - application/economics/
     - application/evidence/
@@ -251,7 +246,6 @@ canonical_families:
         - stem: readiness
           sidecars:
             - readiness_records.json
-            - readiness_rollup_records.json
     - root: working/products
       families:
         - stem: evidence_sets
@@ -293,7 +287,6 @@ canonical_tokens:
     - PositionRef
     - PostingRecord
     - ReadinessRecord
-    - ReadinessRollupRecord
     - ClaimBundleRecord
     - ReviewExplanation
     - ReviewRecord
@@ -967,7 +960,14 @@ retired_aliases:
     allowed_paths: []
   - rule_id: body.shared_family_root
     term: application/readiness/
-    replacement: application/assessment/
+    replacement: owning application slice
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.shared_family_root
+    term: application/assessment/
+    replacement: owning application slice
     contexts: [body, inline_code, summary]
     allowed_scopes: [forward_target, repo_policy]
     paths: []

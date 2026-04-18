@@ -308,6 +308,9 @@ def test_forward_target_docs_use_kernel_scope_and_assessment_roots() -> None:
         assert "kernel_scope_id" in text, f"{path} must use kernel_scope_id"
         assert "product_scope_id" not in text, f"{path} still uses product_scope_id"
         assert "domain/support/" not in text, f"{path} still uses domain/support/"
+        assert "application/assessment/" not in text, (
+            f"{path} still uses application/assessment/"
+        )
         assert "application/readiness/" not in text, (
             f"{path} still uses application/readiness/"
         )

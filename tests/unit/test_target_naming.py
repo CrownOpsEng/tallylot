@@ -87,12 +87,6 @@ def _write_catalog(
                     "id": "readiness_id",
                     "refs": [],
                 },
-                {
-                    "stem": "readiness_rollup",
-                    "record": "ReadinessRollupRecord",
-                    "id": "readiness_rollup_id",
-                    "refs": [],
-                },
             ],
             "package_paths": ["application/claim/", "domain/assessment/"],
             "standalone_directory_paths": ["compatibility/"],
@@ -113,10 +107,7 @@ def _write_catalog(
                         },
                         {
                             "stem": "readiness",
-                            "sidecars": [
-                                "readiness_records.json",
-                                "readiness_rollup_records.json",
-                            ],
+                            "sidecars": ["readiness_records.json"],
                         },
                     ],
                 },
@@ -1290,7 +1281,6 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
         "assessment/review/review_records.json",
         "assessment/review/review_explanations.json",
         "assessment/readiness/readiness_records.json",
-        "assessment/readiness/readiness_rollup_records.json",
     )
     assert catalog.reference_group_headings == (
         "### Target References",
@@ -1317,6 +1307,13 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     assert "ValuationRecord" in record_names
     assert "JournalEntryRecord" in record_names
     assert "GapRecord" in record_names
+    assert "ReadinessRollupRecord" not in record_names
+    assert "application/assessment/" not in catalog.canonical_families.package_paths
+    retired_aliases = {
+        alias.term: alias.replacement for alias in catalog.retired_aliases
+    }
+    assert retired_aliases["application/readiness/"] == "owning application slice"
+    assert retired_aliases["application/assessment/"] == "owning application slice"
     assert "tools/target_naming.py" in catalog.tooling_paths
     assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
 
