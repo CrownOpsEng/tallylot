@@ -5,6 +5,7 @@ doc_type: reference
 audience: both
 owner: repo
 status: active
+naming_scope: workspace_reference
 ---
 
 Store portfolio-system exports here. The current historical baseline and most

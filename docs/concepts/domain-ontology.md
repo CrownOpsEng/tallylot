@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 35
 ---
 
@@ -37,6 +38,7 @@ The target model should use these concepts explicitly:
 - `LifecycleEvent`
 - `AssertionValue`
 - `CheckpointAssertion`
+- `JournalEntry`
 - `Posting`
 - `BasisPool`
 
@@ -47,6 +49,9 @@ report happens to collapse them operationally.
 ## Generic Model Requirements
 
 The target model should remain:
+
+**Current runtime note:** CoinTracking references in this page describe current
+adapter-edge or oracle-local truth, not canonical target naming.
 
 - instrument-agnostic
 - source-agnostic
@@ -116,7 +121,7 @@ Implications:
   distinction matters
 - shared infrastructure may point at them generically only through the
   `SubjectRef` rules owned by
-  [Gaps And Readiness](gaps-and-readiness.md)
+  [Gap, Review, And Readiness](gaps-and-readiness.md)
 - the same shared-infrastructure rule applies when generic attachment is needed
   for `Instrument`, `Location`, ownership identities, counterparties, or
   `CheckpointAssertion`
@@ -214,6 +219,32 @@ Rules:
   sidecars
 - missing or uncertain valuation should remain explicit when downstream stages
   still need to reason about it
+
+## Instrument Classification
+
+`InstrumentKind` is the shared bounded instrument-classification vocabulary for
+target identity and claim contracts.
+
+### `InstrumentKind`
+
+Shared vocabulary:
+
+- `unknown`
+- `crypto`
+- `fiat`
+- `equity`
+- `derivative`
+
+Rules:
+
+- `instrument_kind` uses this shared vocabulary when claim or identity
+  contracts need a bounded instrument classification
+- keep the vocabulary neutral and broad enough to survive beyond the current
+  crypto filing scope
+- do not mint competing end-state `instrument_class`, `asset_class`, or
+  `instrument_type` families for the same concept
+- narrower market, venue, or adapter-specific detail belongs in other fields
+  such as identifier scheme, venue, or compatibility-local metadata
 
 ## Temporal Semantics
 
@@ -330,14 +361,14 @@ Rules:
 ## First Downstream Slice Restriction
 
 The first downstream slice intentionally uses a narrow `PositionRef`
-identity shape for the current bounded balance slice.
+identity shape for the current held-balance slice.
 
 Slice rule:
 
 - this slice may use only
   `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "held_position"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
-- `location_ref` must resolve to the in-scope custodial location or
+- `location_ref` must resolve to the in-scope held location or
   sub-location
 - `instrument_ref` must resolve to the in-scope instrument
 - `contract_ref` stays `null` in this slice
@@ -399,6 +430,14 @@ Bridge-specific classification rules live in
 
 The target package layout follows stage ownership and is not advisory.
 
+**Exception rationale:** `domain/assessment/` stays in this page only as the
+shared root for the nested `gap/`, `review/`, and `readiness/` families plus
+`SubjectRef`. It is not a generic support catch-all.
+
+**Migration-only root rationale:** `application/compatibility/` remains a
+bridge-only migration root for derived compatibility views until those readers
+cut over.
+
 Required domain ownership:
 
 - `domain/instrument/`, `domain/location/`, `domain/ownership/`,
@@ -411,7 +450,7 @@ Required domain ownership:
 - `domain/economics/` for events, legs, valuations, settlement status, and
   lifecycle events
 - `domain/assertion/` for `AssertionValue` and its variants
-- `domain/support/` as the shared root for nested `gap/`, `review/`, and
+- `domain/assessment/` as the shared root for nested `gap/`, `review/`, and
   `readiness/` families plus `SubjectRef`
 - `domain/reconciliation/` for continuity segments, event links, balance
   targets, and checkpoint proposal records
@@ -434,11 +473,13 @@ Required application ownership:
   while the live bridge still exists
 - `application/reconciliation/` for continuity, linkage, balance target
   evaluation, and checkpoint proposal records
-- `application/readiness/` for cross-stage gap, review, and readiness
-  reduction plus readiness rollups and operator views
+- `application/assessment/` for cross-stage gap, review, and readiness
+  reduction plus readiness rollups and assessment views
 
-`domain/support/` stays generic only because it is the shared root for the
+`domain/assessment/` stays generic only because it is the shared root for the
 nested `gap/`, `review/`, and `readiness/` families plus `SubjectRef`.
+No unrelated family may be added under `domain/assessment/` without a separate
+standards decision.
 `application/compatibility/` is migration-only and must not become a durable
 application center.
 

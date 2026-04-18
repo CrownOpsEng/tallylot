@@ -1,25 +1,17 @@
 ---
-title: "Gaps And Readiness"
+title: "Gap, Review, And Readiness"
 summary: "Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline."
 doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 45
 ---
 
-Use this page when defining shared gap, review, readiness, or generic
-subject-reference contracts. This page defines the target cross-stage gap,
-review, and readiness model.
-
-Current runtime note:
-
-- the live runtime still uses stage-specific issue and review outputs such as
-  `IssueRecord` and `NormalizationReviewRecord`
-- those current surfaces remain current-state truth
-- this page defines the target gap, review, and readiness contracts for later
-  implementation
-  slices
+Use this page when defining shared gap, review, readiness, or `SubjectRef`
+contracts. This page defines the target cross-stage gap, review, readiness,
+and generic subject-attachment model.
 
 ## Design Rules
 
@@ -28,7 +20,7 @@ Current runtime note:
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- product-scope readiness rollups are derived from subject-level or scope-level
+- kernel-scope readiness rollups are derived from subject-level or scope-level
   truth, not stored as the only truth
 - gap, review, and readiness records plus sidecars help stages interoperate
   without erasing stage ownership
@@ -55,7 +47,7 @@ Use `SubjectRef` only for shared infrastructure that needs a generic pointer.
 Minimum fields:
 
 - `subject_kind`
-- `subject_id`
+- `subject_key`
 
 Supported `subject_kind` values for shared infrastructure:
 
@@ -91,8 +83,10 @@ Rules:
 - use `Contract` and `Position` explicitly in business logic and modeling
 - use `SubjectRef` only where shared infrastructure needs a generic pointer
 - do not use `SubjectRef` as an excuse to stop modeling the true concept
+- `subject_key` may hold either one stable record id or one canonical ref tuple,
+  depending on the `subject_kind`
 - `SubjectRef` serializes, sorts, and fingerprints as
-  `[subject_kind, subject_id]`
+  `[subject_kind, subject_key]`
 
 ## Non-Subject Scope Ids
 
@@ -105,7 +99,7 @@ Required scope ids:
 - `continuity_segment_id`
 - `balance_target_id`
 - `checkpoint_proposal_id`
-- `product_scope_id`
+- `kernel_scope_id`
 
 Rules:
 
@@ -119,42 +113,42 @@ Rules:
   target when one exact target is the truthful blocker or review scope
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
   proposal record before acceptance
-- `product_scope_id` identifies one shared gap/review/readiness attachment
+- `kernel_scope_id` identifies one shared gap/review/readiness attachment
   scope over one canonical product kernel and is not a substitute for a
   narrower scope
-- do not attach a gap or review to `product_scope` when `subject`,
+- do not attach a gap or review to `kernel_scope` when `subject`,
   `selection`, `claim_scope`, `continuity_segment`,
   `balance_target`, or `checkpoint_proposal` would be truthful
 
-### `product_scope_id`
+### `kernel_scope_id`
 
-`product_scope_id` is defined once for target gap, review, readiness, rollup,
-view, and sidecar attachments.
+`kernel_scope_id` is defined once for target gap, review, readiness, rollup,
+assessment-view, and sidecar attachments.
 
 Rules:
 
-- `product_scope_id` is `<product_slug>:<kernel_fingerprint>`
+- `kernel_scope_id` is `<product_slug>:<kernel_fingerprint>`
 - `scope` is the right noun here because this id names a shared attachment
   boundary over one emitted kernel, not the product identity itself
 - `product_slug` uses the lower-snake-case target product stem
 - `kernel_fingerprint` is the canonical product fingerprint owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
-- `product_scope_id` is derived after canonical kernel fingerprinting and is not
+- `kernel_scope_id` is derived after canonical kernel fingerprinting and is not
   a product header field or a fingerprint input itself
-- `product_scope_id` is never a target product id, never an upstream product
+- `kernel_scope_id` is never a target product id, never an upstream product
   ref, and never the primary reader key when one product id or narrower record
   id exists
-- `product_scope_id` is used only for shared operator views plus gap/review/
+- `kernel_scope_id` is used only for shared assessment views plus gap/review/
   readiness sidecar attachment when no narrower truthful subject or scope
   exists
-- `product_scope_id` must not replace `selection_id`,
+- `kernel_scope_id` must not replace `selection_id`,
   `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
   `checkpoint_proposal_id`, or one record id when those are truthful
 
 ## Shared Stage Vocabulary
 
 Use one stage vocabulary across gap records, review records, readiness
-records, checkpoint-stage reuse, and downstream operator views.
+records, checkpoint-stage reuse, and downstream assessment views.
 
 Shared stage vocabulary:
 
@@ -194,7 +188,7 @@ Kernel fields:
 - `owner_stage`
 - `blocking_stages`
 - `scope_kind`
-- `scope_id`
+- `scope_ref`
 - `subject_ref`
 - `gap_kind`
 - `gap_key`
@@ -211,7 +205,7 @@ Controlled vocabularies:
   - `continuity_segment`
   - `balance_target`
   - `checkpoint_proposal`
-  - `product_scope`
+  - `kernel_scope`
 - `gap_kind`:
   - `missing_evidence`
   - `unresolved_identity`
@@ -238,8 +232,8 @@ Stable ids:
 - `gap_id` uses component array
   `[owner_stage, scope_kind, scope_key, gap_kind, gap_key]`
 - `scope_key` uses the `SubjectRef` tuple when `scope_kind` is `subject`
-- `scope_key` uses `scope_id` when `scope_kind` is not `subject`
-- `scope_id` is required when `scope_kind` is not `subject`
+- `scope_key` uses `scope_ref` when `scope_kind` is not `subject`
+- `scope_ref` is required when `scope_kind` is not `subject`
 - `subject_ref` is required when `scope_kind` is `subject`
 - `gap_key` is the stage-owned stable discriminator for one blocking
   condition inside the declared scope
@@ -247,8 +241,8 @@ Stable ids:
 Ordering:
 
 - sort by tuple
-  `[owner_stage, scope_kind, subject_ref, scope_id, gap_kind, gap_id]`
-- use JSON `null` ordering for inactive `subject_ref` and `scope_id` fields
+  `[owner_stage, scope_kind, subject_ref, scope_ref, gap_kind, gap_id]`
+- use JSON `null` ordering for inactive `subject_ref` and `scope_ref` fields
 
 Serialization:
 
@@ -337,7 +331,7 @@ Kernel fields:
 - `review_id`
 - `owner_stage`
 - `scope_kind`
-- `scope_id`
+- `scope_ref`
 - `subject_ref`
 - `review_kind`
 - `review_key`
@@ -354,7 +348,7 @@ Controlled vocabularies:
   - `continuity_segment`
   - `balance_target`
   - `checkpoint_proposal`
-  - `product_scope`
+  - `kernel_scope`
 - `status`:
   - `open`
   - `acknowledged`
@@ -371,7 +365,7 @@ Stable ids:
 - `review_id` uses component array
   `[owner_stage, scope_kind, scope_key, review_kind, review_key]`
 - `scope_key` uses the `SubjectRef` tuple when `scope_kind` is `subject`
-- `scope_key` uses `scope_id` when `scope_kind` is not `subject`
+- `scope_key` uses `scope_ref` when `scope_kind` is not `subject`
 - `review_kind` is the owner-stage stable advisory label for one review family
 - `review_key` is the owner-stage stable discriminator for one advisory
   observation inside the declared scope
@@ -379,8 +373,8 @@ Stable ids:
 Ordering:
 
 - sort by tuple
-  `[owner_stage, scope_kind, subject_ref, scope_id, review_kind, review_id]`
-- use JSON `null` ordering for inactive `subject_ref` and `scope_id` fields
+  `[owner_stage, scope_kind, subject_ref, scope_ref, review_kind, review_id]`
+- use JSON `null` ordering for inactive `subject_ref` and `scope_ref` fields
 - sort `gap_ids` lexicographically
 
 Serialization:
@@ -446,7 +440,7 @@ Rules:
 ## Readiness Model
 
 Readiness is subject-first, stage-specific, and reducible into canonical
-rollups plus operator views.
+rollups plus assessment views.
 
 ### `ReadinessStatus`
 
@@ -486,7 +480,7 @@ Stable ids:
 
 Ordering:
 
-- sort by tuple `[stage, subject_ref.subject_kind, subject_ref.subject_id]`
+- sort by tuple `[stage, subject_ref.subject_kind, subject_ref.subject_key]`
 - sort `blocking_gap_ids` lexicographically
 
 Serialization:
@@ -538,7 +532,7 @@ Controlled `rollup_kind` vocabulary:
 - `continuity_segment`
 - `as_of`
 - `tax_year`
-- `product_scope`
+- `kernel_scope`
 
 Rollup-key rules:
 
@@ -547,7 +541,7 @@ Rollup-key rules:
 - `continuity_segment` uses one `continuity_segment_id`
 - `as_of` uses one canonical `YYYY-MM-DD` date string
 - `tax_year` uses one integer tax year
-- `product_scope` uses one `product_scope_id`
+- `kernel_scope` uses one `kernel_scope_id`
 
 Stable ids:
 
@@ -581,15 +575,19 @@ Rules:
 - if no required assertion has resolved yet, status is `blocked`, not
   `partial`
 - if no blocker applies, status is `ready`, not `partial`
-- product-scope readiness rollups remain reproducible from ordered readiness
+- kernel-scope readiness rollups remain reproducible from ordered readiness
   and gap records without manual status editing
 - canonical rollup kinds stay stage- and domain-oriented rather than grouping
   by source identity
-- source-grouped views belong in operator views or compatibility
+- source-grouped views belong in assessment views or compatibility
   views rather than in `ReadinessRollupRecord.rollup_kind`
 - stages use only the dimensions they actually own or can derive safely
 
 ## Bridge Mapping From Issue And Review Records
+
+**Compatibility-only locality:** This section names current bridge records only
+to define how those compatibility-local surfaces map into the target gap and
+review families. They do not become target-domain family names.
 
 The live bridge still emits `IssueRecord` and `NormalizationReviewRecord`.
 
@@ -614,7 +612,7 @@ Meaning:
 
 - one stage owns one meaning surface
 - downstream stages reference upstream records by stable ids or product ids
-- `product_scope_id` is allowed only for shared operator views and sidecar
+- `kernel_scope_id` is allowed only for shared assessment views and sidecar
   attachment
   when no narrower truthful product id, scope id, or record id exists
 - downstream stages add stage-owned outputs only
@@ -656,10 +654,14 @@ Performance implication:
 - repeated full detail copies increase read amplification, join cost, and drift
   risk
 - the correct shape is stable ids or product ids plus stage-owned deltas, with
-  `product_scope_id` reserved for shared operator views or sidecar attachment
+  `kernel_scope_id` reserved for shared assessment views or sidecar attachment
   only
 
 ## Current-To-Target Boundary
+
+**Compatibility-only locality:** These current bridge family names stay here
+only to document the migration boundary. They do not remain canonical target
+vocabulary after cutover.
 
 - current `IssueRecord` and `NormalizationReviewRecord` remain live bridge
   outputs today

@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: oracle_local
 nav_order: 50
 ---
 

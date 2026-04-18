@@ -5,6 +5,7 @@ doc_type: reference
 audience: both
 owner: repo
 status: active
+naming_scope: workspace_reference
 ---
 
 Place the next approved import batch for a single source here.

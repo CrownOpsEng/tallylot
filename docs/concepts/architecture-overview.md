@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 10
 ---
 
@@ -54,8 +55,8 @@ These pages define the primary current-state and forward-looking contracts:
 | [Bridge To Target Mapping](bridge-to-target-mapping.md) | authoritative writer rules, compatibility views, and reader cutovers |
 | [Pipeline Stage Contracts](pipeline-stage-contracts.md) | target product kernels, ids, ordering, and handoff rules |
 | [Domain Ontology](domain-ontology.md) | identity seams, ref recipes, and package ownership |
-| [Gaps And Readiness](gaps-and-readiness.md) | gap, review, and readiness contracts plus `SubjectRef` |
-| [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) | trust gates, persistence, partitioning, and fast-path rules |
+| [Gap, Review, And Readiness](gaps-and-readiness.md) | gap, review, readiness, and `SubjectRef` contracts plus compatibility-local bridge mappings |
+| [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) | reconciliation, checkpoint, journal, and tax trust gates plus persistence, partitioning, and fast-path rules |
 | [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md) | first upstream `EvidenceSet -> ClaimSet` slice |
 | [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |
 | [ROADMAP.md](../../ROADMAP.md) | sequencing, gating, and rollout phases |
@@ -70,6 +71,6 @@ Supporting id, ref, persistence, and workspace references remain under
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
-- [Gaps And Readiness](gaps-and-readiness.md)
-- [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)
+- [Gap, Review, And Readiness](gaps-and-readiness.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md)
 - [Current State](../status/current-state.md)

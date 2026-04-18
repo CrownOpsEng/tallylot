@@ -5,6 +5,7 @@ doc_type: reference
 audience: both
 owner: repo
 status: active
+naming_scope: workspace_reference
 ---
 
 Store untouched external source evidence here. This branch is only for exchange, wallet, explorer, bot, and other upstream-system exports.

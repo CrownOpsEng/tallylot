@@ -17,7 +17,7 @@ When repairing or extending an adapter:
    bridge, and use final target names only for the forward state
 5. keep ambiguous data explicit as issues or review records
 6. keep output rendering and source normalization concerns separated
-7. do not imply that adapters own reconciliation, checkpoint, accounting, or
+7. do not imply that adapters own reconciliation, checkpoint, journal, or
    tax decisions
 8. do not delete adapter tests or silently weaken fixture coverage without
    explicit human approval

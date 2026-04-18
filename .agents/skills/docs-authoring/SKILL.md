@@ -33,7 +33,11 @@ proactive follow-up issue handling.
    scratch workflow bookkeeping.
 6. Validate docs changes with:
    - `make docs-check`
-7. If the change also affects repo control-plane behavior, finish with the
+7. When the change touches forward-looking target docs, titles, summaries, or
+   sync-managed docs-home blurbs, reload `docs/standards/engineering.md` and
+   run:
+   - `make naming-check`
+8. If the change also affects repo control-plane behavior, finish with the
    repo's broader quality gates before checkpointing.
 
 ## Focus

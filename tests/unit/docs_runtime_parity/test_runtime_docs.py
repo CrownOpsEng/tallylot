@@ -177,7 +177,7 @@ def test_first_upstream_slice_contract_pins_all_retained_compatibility_surfaces(
         "`translation_input_plan.json` content",
         "`EconomicActivityDraft` ordering and content for evidence in this slice",
         "`SourceTranslationBatch` content for evidence in this slice",
-        "Retained compatibility projections are part of the slice parity bar.",
+        "Retained compatibility views are part of the slice parity bar.",
         "legacy readers remain active.",
     ):
         assert needle in text
@@ -191,7 +191,7 @@ def test_first_downstream_slice_contract_pins_fact_csv_projection_parity() -> No
     for needle in (
         "`TransactionFact` and `facts.csv` derived from `EconomicFacts`",
         "`facts.csv` content for evidence in this slice",
-        "Retained compatibility projections are part of the slice parity bar.",
+        "Retained compatibility views are part of the slice parity bar.",
         "legacy readers remain active.",
     ):
         assert needle in text

@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 ---
 
 The TallyLot docs cover the typed runtime, operator workflows, workspace
@@ -30,8 +31,8 @@ persistence and migration references, and repo standards.
 - [Bridge-to-target mapping](concepts/bridge-to-target-mapping.md)
 - [Pipeline stage contracts](concepts/pipeline-stage-contracts.md)
 - [Domain ontology](concepts/domain-ontology.md)
-- [Gaps and readiness](concepts/gaps-and-readiness.md)
-- [Reconciliation and tax architecture](concepts/reconciliation-tax-architecture.md)
+- [Gap, review, and readiness](concepts/gaps-and-readiness.md)
+- [Reconciliation, checkpoint, journal, and tax architecture](concepts/reconciliation-tax-architecture.md)
 - [First upstream slice contract](reference/first-upstream-slice-contract.md)
 - [First downstream slice contract](reference/first-downstream-slice-contract.md)
 - [Engineering standards](standards/engineering.md)
@@ -44,14 +45,14 @@ Agent-specific routing and repo execution rules live in
 
 <!-- docs-maintenance:start concepts -->
 - [Architecture Overview](concepts/architecture-overview.md): High-level map of the current bridge, the target runtime pipeline, and the primary contract pages.
-- [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Trust gates, persistence rules, performance constraints, and filing-critical rollout for the target runtime pipeline.
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](concepts/reconciliation-tax-architecture.md): Reconciliation, checkpoint, journal, and tax trust gates, persistence rules, and filing-critical rollout for the target runtime pipeline.
 - [Current Bridge Contracts](concepts/current-bridge-contracts.md): Live bridge contracts, bridge surfaces, and current schema rules.
 - [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Migration cutover rules for moving live bridge surfaces to target products, compatibility views, and retirement gates.
 - [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Target pipeline product contracts, stage responsibilities, handoff guarantees, and downstream decision boundaries.
 - [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only comparison packages.
 - [Domain Ontology](concepts/domain-ontology.md): Target economic ontology, identity seams, ref recipes, package ownership, and bridge-versus-target modeling rules.
 - [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
-- [Gaps And Readiness](concepts/gaps-and-readiness.md): Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline.
+- [Gap, Review, And Readiness](concepts/gaps-and-readiness.md): Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
 - [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): Future adapter manifest, facet, and verification model for the target runtime pipeline.
 <!-- docs-maintenance:end concepts -->
@@ -72,20 +73,32 @@ below when you need the detailed procedure for one stage of the workflow.
 
 ## Reference Material
 
+**Current runtime note:** The oracle references below are kept only for
+current oracle-local comparison and tax-reference workflows. They do not define
+canonical target naming.
+
 <!-- docs-maintenance:start reference -->
-- [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
-- [First Upstream Slice Contract](reference/first-upstream-slice-contract.md): Bounded contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views.
-- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views.
+### Target References
+
+- [First Upstream Slice Contract](reference/first-upstream-slice-contract.md): Contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views.
+- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Reusable target ids and ref tuples that are shared across target contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Target persistence, partition-scope, and compatibility placement reference.
+
+### Current-State References
+
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
 - [Location Inventory Outputs](reference/location-inventory-artifacts.md): Reference for location inventory outputs and evidence rows.
 - [Timezone Validation Outputs](reference/timezone-validation-artifacts.md): Reference for timezone provenance outputs and validation issues.
+- [Manual Balance Submission Packages](reference/manual-balance-submission-artifacts.md): Reference for scaffolded manual balance submission packages and their balance outputs.
+- [Repository History](reference/repository-history.md): Reference note for the public baseline sequence and where ordinary forward development begins.
+
+### Oracle References
+
+- [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
 - [Canadian Crypto Tax Guide](reference/canadian-crypto-tax-guide.md): Working CRA-aligned tax reference for the repo's Canadian crypto workflow.
 - [Tax Source Map](reference/tax-source-map.md): Targeted routing from repo tax questions to CRA-aligned reference sources.
 - [CoinTracking Oracle Artifacts](reference/cointracking-oracle-artifacts.md): Repo-safe reference for CoinTracking artifact families used only for development and validation.
-- [Manual Balance Submission Packages](reference/manual-balance-submission-artifacts.md): Reference for scaffolded manual balance submission packages and their balance outputs.
-- [Repository History](reference/repository-history.md): Reference note for the public baseline sequence and where ordinary forward development begins.
 <!-- docs-maintenance:end reference -->
 
 ## Workspace Guidance

@@ -5,6 +5,7 @@ doc_type: reference
 audience: both
 owner: repo
 status: active
+naming_scope: workspace_reference
 related:
   - docs/reference/manual-balance-submission-artifacts.md
   - docs/workspace/working/supporting_artifacts/README.md

@@ -133,12 +133,15 @@ def test_missing_codeowners_entries_reports_missing_patterns() -> None:
     assert ".gitmessage.txt" in missing
     assert "repo_support/local_autofix.py" in missing
     assert "repo_support/quality_gates.py" in missing
+    assert "repo_support/target_naming/**" in missing
     assert "repo_support/review_verification/**" in missing
     assert "tools/benchmark_quality_gates.py" in missing
     assert "tools/evaluate_review_results.py" in missing
     assert "tools/message_standards.py" in missing
     assert "tools/run_review_check.py" in missing
     assert "tools/run_pr_review_checks.py" in missing
+    assert "tools/target_naming.py" in missing
+    assert "tools/target_naming_catalog.yaml" in missing
     assert "tools/verify_built_wheel.py" in missing
 
 

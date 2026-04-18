@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: current_state
 nav_order: 80
 related:
   - docs/guides/normalize-screen-stage.md

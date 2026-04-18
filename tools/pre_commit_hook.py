@@ -88,7 +88,7 @@ def _run_staged_verification(paths: tuple[str, ...]) -> int:
     )
     summary = run_plan(
         plan,
-        context=CheckExecutionContext(trigger="local"),
+        context=CheckExecutionContext(trigger="local", changed_paths=paths),
         fail_fast=True,
         parallel=True,
     )

@@ -5,6 +5,7 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 30
 ---
 
@@ -12,6 +13,9 @@ Use this document to keep the next architecture phase platform-agnostic. It
 defines which inputs are normal runtime truth surfaces, which ones are
 optional adapter-format inputs or outputs, and which ones remain
 oracle-only comparison packages.
+
+**Current runtime note:** CoinTracking references in this page describe
+current adapter-edge and oracle-only boundaries, not canonical target naming.
 
 The goal is simple: the system must be able to reconstruct, reconcile, journal,
 and compute tax state from primary evidence and intentional checkpoints without
@@ -62,7 +66,7 @@ The detailed target product flow behind that workflow is:
 
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
-Current runtime note:
+Current bridge note:
 
 - today's bridge path still centers on `TransactionFact` plus shared balance
   files
@@ -118,7 +122,7 @@ they do not satisfy filing-ready checkpoint requirements by themselves.
 
 A valid checkpoint may be built from:
 
-- custodial balance evidence
+- held-balance evidence
 - location balance evidence
 - statement evidence
 - evidence-backed inventory proofs

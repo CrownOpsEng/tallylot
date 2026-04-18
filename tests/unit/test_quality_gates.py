@@ -41,11 +41,15 @@ def test_quality_gates_default_to_all_at_once_for_full_tests() -> None:
 def test_quality_gates_can_select_named_gates() -> None:
     parse_args = getattr(tools.run_quality_gates, "_parse_args")
     run_request = _run_request(
-        parse_args(("--gate", "markdownlint", "--gate", "pytest"))
+        parse_args(
+            ("--gate", "markdownlint", "--gate", "target-naming", "--gate", "pytest")
+        )
     )
 
     assert _phase_plan(run_request) == (
-        QualityPhase(name="all-at-once", gate_names=("markdownlint", "pytest")),
+        QualityPhase(
+            name="all-at-once", gate_names=("markdownlint", "target-naming", "pytest")
+        ),
     )
 
 
@@ -196,13 +200,15 @@ def test_run_phase_executes_gates_concurrently(
     available_gates = available_quality_gates(full_tests=False)
 
     phase_result = tools.run_quality_gates._run_phase(
-        QualityPhase(name="parallel-check", gate_names=("markdownlint", "ruff")),
+        QualityPhase(
+            name="parallel-check", gate_names=("markdownlint", "target-naming")
+        ),
         available_gates=available_gates,
     )
 
     assert tuple(
         gate_result.gate.name for gate_result in phase_result.gate_results
-    ) == ("markdownlint", "ruff")
+    ) == ("markdownlint", "target-naming")
 
 
 def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> None:

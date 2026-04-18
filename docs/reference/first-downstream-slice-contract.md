@@ -1,10 +1,11 @@
 ---
 title: "First Downstream Slice Contract"
-summary: "Bounded contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views."
+summary: "Contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 16
 related:
   - docs/reference/first-upstream-slice-contract.md
@@ -16,9 +17,14 @@ related:
 ---
 
 Use this page when implementing or reviewing the first downstream slice after
-the first upstream `EvidenceSet -> ClaimSet` landing path. This document
+the first upstream `EvidenceSet -> ClaimSet` slice. This document
 freezes scope, ids, parity, replay, and allowed drift for the first downstream
 `EconomicFacts -> ReconciliationState -> Checkpoint` increment.
+
+**Slice-only example:** This slice still uses Coinbase retail activity and
+recognized Coinbase statement examples only to pin the first downstream parity
+boundary. Those provider names are slice-local examples, not canonical target
+naming.
 
 ## Slice Scope
 
@@ -78,7 +84,8 @@ Rules:
 - one continuity segment covers one `PositionRef`; do not mix positions into one
   segment
 - when `SubjectRef` is needed for downstream attachment, the subject kind for
-  this slice is `position`, pointing at the stable `PositionRef` identity
+  this slice is `position`, and `subject_key` carries the canonical
+  `PositionRef` tuple rather than a scalar record id
 
 ## Product Header And Downstream Inputs
 
@@ -99,7 +106,7 @@ Downstream-input rules:
 - downstream product construction must not depend on `EconomicActivityDraft`,
   `SourceTranslationBatch`, or undeclared bridge hints as peer meaning inputs
 - upstream `*_ref` header fields store target product ids, never
-  `product_scope_id`
+  `kernel_scope_id`
   and never raw kernel fingerprints
 
 ## Kernel Cardinality And Ownership
@@ -144,13 +151,13 @@ Slice-specific rules:
 - `event_id = [claim_bundle_id, event_slot]`
 - `leg_id = [event_id, role, subject_ref, leg_slot]`
 - `valuation_id = [origin_ref, purpose, amount, currency, valued_at, precision]`
-- `reconciliation_state_id = [economic_facts_ref, continuity_segment_id]`
+- `reconciliation_state_id = [economic_facts_ref, segment_id]`
 - `continuity_segment_id = [subject_ref, segment_start_at, segment_end_at]`
 - `continuity_segment_id` remains the reusable reconciliation scope id, while
   `reconciliation_state_id` is the emitted product id over that scope plus its
   upstream lineage
-- `balance_target_id = [continuity_segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
-- `checkpoint_proposal_id = [continuity_segment_id, subject_ref, as_of, target_refs]`
+- `balance_target_id = [segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
+- `checkpoint_proposal_id = [segment_id, subject_ref, as_of, target_refs]`
 - `checkpoint_id = [reconciliation_state_refs, as_of]`
 - `checkpoint_assertion_id = [kind, as_of, subject_ref, accepted_value_fingerprint]`
 
@@ -260,7 +267,7 @@ Not allowed in this slice:
 
 ## Parity Gates
 
-Retained compatibility projections are part of the slice parity bar. Kernel
+Retained compatibility views are part of the slice parity bar. Kernel
 parity alone is not sufficient while these legacy readers remain active.
 
 Unchanged inputs from the first upstream slice must preserve all of the

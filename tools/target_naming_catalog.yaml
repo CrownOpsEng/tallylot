@@ -1,0 +1,1161 @@
+version: 2
+
+root_file_scopes:
+  ROADMAP.md: forward_target
+  AGENTS.md: repo_policy
+  CHANGELOG.md: repo_policy
+
+scope_profiles:
+  forward_target:
+    enforce_target_naming: true
+    allow_anti_examples: false
+  repo_policy:
+    enforce_target_naming: true
+    allow_anti_examples: true
+  current_state:
+    enforce_target_naming: false
+    allow_anti_examples: false
+  bridge_local:
+    enforce_target_naming: false
+    allow_anti_examples: false
+  oracle_local:
+    enforce_target_naming: false
+    allow_anti_examples: false
+  adapter_local:
+    enforce_target_naming: false
+    allow_anti_examples: false
+  workspace_reference:
+    enforce_target_naming: false
+    allow_anti_examples: false
+
+title_expectations:
+  docs/README.md: Documentation
+  docs/concepts/architecture-overview.md: Architecture Overview
+  docs/concepts/bridge-to-target-mapping.md: Bridge To Target Mapping
+  docs/concepts/domain-ontology.md: Domain Ontology
+  docs/concepts/gaps-and-readiness.md: Gap, Review, And Readiness
+  docs/concepts/oracle-boundaries.md: Oracle Boundaries
+  docs/concepts/pipeline-stage-contracts.md: Pipeline Stage Contracts
+  docs/concepts/reconciliation-tax-architecture.md: Reconciliation, Checkpoint, Journal, And Tax Architecture
+  docs/concepts/unified-adapter-architecture.md: Unified Adapter Architecture
+  docs/reference/first-downstream-slice-contract.md: First Downstream Slice Contract
+  docs/reference/first-upstream-slice-contract.md: First Upstream Slice Contract
+  docs/reference/target-ids-and-refs.md: Target Ids And Refs
+  docs/reference/target-persistence-reference.md: Target Persistence Reference
+  docs/status/adapter-delivery-plan.md: Adapter Delivery Plan
+  docs/status/migration-sequence.md: Migration Sequence
+
+reference_group_headings:
+  - "### Target References"
+  - "### Current-State References"
+  - "### Oracle References"
+
+tooling_paths:
+  - Makefile
+  - repo_support/quality_gates.py
+  - repo_support/review_verification/catalog.py
+  - repo_support/review_verification/executor.py
+  - repo_support/review_verification/policy.py
+  - repo_support/review_verification/surfaces.py
+  - tools/audit_delivery_guardrails.py
+  - tools/docs_maintenance/cli.py
+  - tools/docs_maintenance/metadata.py
+  - tools/target_naming.py
+  - tools/target_naming_catalog.yaml
+  - .github/CODEOWNERS
+  - .github/workflows/ci.yml
+  - .github/workflows/pr-review.yml
+  - tests/contract/test_standards_guards.py
+  - tests/unit/docs_runtime_parity/test_repo_doc_guards.py
+  - tests/unit/test_audit_pr_review.py
+  - tests/unit/test_delivery_guardrails_audit.py
+  - tests/unit/test_docs_maintenance.py
+  - tests/unit/test_pre_commit_hook.py
+  - tests/unit/test_quality_gates.py
+  - tests/unit/test_review_verification_workflows.py
+  - tests/unit/test_run_pr_review_checks.py
+  - tests/unit/test_target_naming.py
+  - tests/unit/test_target_naming_parser.py
+
+canonical_families:
+  products:
+    - name: EvidenceSet
+      id: evidence_set_id
+    - name: ClaimSet
+      id: claim_set_id
+    - name: EconomicFacts
+      id: economic_facts_id
+    - name: ReconciliationState
+      id: reconciliation_state_id
+    - name: Checkpoint
+      id: checkpoint_id
+    - name: Journal
+      id: journal_id
+    - name: TaxInputs
+      id: tax_inputs_id
+    - name: TaxOutputs
+      id: tax_outputs_id
+  records:
+    - stem: evidence_member
+      record: EvidenceMemberRecord
+      id: member_id
+      refs: []
+    - stem: evidence_observation
+      record: EvidenceObservationRecord
+      id: observation_id
+      refs: []
+    - stem: evidence_selection
+      record: EvidenceSelectionRecord
+      id: selection_id
+      refs: []
+    - stem: claim
+      record: ClaimRecord
+      id: claim_id
+      refs: []
+    - stem: claim_bundle
+      record: ClaimBundleRecord
+      id: claim_bundle_id
+      refs: []
+    - stem: claim_bundle_decision
+      record: ClaimBundleDecisionRecord
+      id: claim_bundle_decision_id
+      refs: []
+    - stem: economic_event
+      record: EconomicEventRecord
+      id: event_id
+      refs: []
+    - stem: economic_leg
+      record: EconomicLegRecord
+      id: leg_id
+      refs: []
+    - stem: valuation
+      record: ValuationRecord
+      id: valuation_id
+      refs: []
+    - stem: continuity_segment
+      record: ContinuitySegmentRecord
+      id: continuity_segment_id
+      refs: []
+    - stem: event_link
+      record: EventLinkRecord
+      id: event_link_id
+      refs: []
+    - stem: balance_target
+      record: BalanceTargetRecord
+      id: balance_target_id
+      refs: []
+    - stem: checkpoint_proposal
+      record: CheckpointProposalRecord
+      id: checkpoint_proposal_id
+      refs:
+        - superseding_proposal_ref
+    - stem: checkpoint
+      record: CheckpointRecord
+      id: checkpoint_id
+      refs: []
+    - stem: checkpoint_assertion
+      record: CheckpointAssertionRecord
+      id: checkpoint_assertion_id
+      refs: []
+    - stem: journal_entry
+      record: JournalEntryRecord
+      id: entry_id
+      refs: []
+    - stem: posting
+      record: PostingRecord
+      id: posting_id
+      refs: []
+    - stem: entry_check
+      record: EntryCheckRecord
+      id: entry_check_id
+      refs: []
+    - stem: tax_input
+      record: TaxInputRecord
+      id: tax_input_id
+      refs: []
+    - stem: basis_transition
+      record: BasisTransitionRecord
+      id: basis_transition_id
+      refs: []
+    - stem: tax_output
+      record: TaxOutputRecord
+      id: tax_output_id
+      refs: []
+    - stem: readiness_rollup
+      record: ReadinessRollupRecord
+      id: readiness_rollup_id
+      refs: []
+    - stem: gap
+      record: GapRecord
+      id: gap_id
+      refs: []
+    - stem: review
+      record: ReviewRecord
+      id: review_id
+      refs: []
+    - stem: readiness
+      record: ReadinessRecord
+      id: readiness_id
+      refs: []
+    - stem: tax_carry_forward
+      record: TaxCarryForwardRecord
+      id: tax_carry_forward_id
+      refs: []
+    - stem: tax_unsupported_input
+      record: TaxUnsupportedInputRecord
+      id: tax_unsupported_input_id
+      refs: []
+  package_paths:
+    - application/claim/
+    - application/checkpoint/
+    - application/assessment/
+    - application/compatibility/
+    - application/economics/
+    - application/evidence/
+    - application/intake/
+    - application/journal/
+    - application/normalization/
+    - application/profiling/
+    - application/reconciliation/
+    - application/rendering/
+    - application/tax/
+    - application/workspace/
+    - domain/assessment/
+    - domain/assertion/
+    - domain/claim/
+    - domain/checkpoint/
+    - domain/contract/
+    - domain/counterparty/
+    - domain/economics/
+    - domain/evidence/
+    - domain/instrument/
+    - domain/journal/
+    - domain/location/
+    - domain/ownership/
+    - domain/position/
+    - domain/reconciliation/
+    - domain/tax/
+  standalone_directory_paths:
+    - compatibility/
+  directory_families:
+    - root: assessment
+      families:
+        - stem: gap
+          sidecars:
+            - gap_records.json
+            - gap_explanations.json
+        - stem: review
+          sidecars:
+            - review_records.json
+            - review_explanations.json
+        - stem: readiness
+          sidecars:
+            - readiness_records.json
+            - readiness_rollup_records.json
+    - root: working/products
+      families:
+        - stem: evidence_sets
+        - stem: claim_sets
+        - stem: economic_facts
+        - stem: reconciliation_states
+        - stem: checkpoints
+        - stem: journals
+        - stem: tax_inputs
+        - stem: tax_outputs
+
+canonical_tokens:
+  pascal:
+    - AssertionValue
+    - BalanceTargetRecord
+    - BasisPool
+    - BasisPoolRef
+    - BasisTransitionRecord
+    - BeneficialOwnerRef
+    - CheckpointAssertionRecord
+    - CheckpointProposalRecord
+    - CheckpointRecord
+    - ClaimBundleDecisionRecord
+    - ClaimRecord
+    - ContinuitySegmentRecord
+    - EconomicEventRecord
+    - EconomicLegRecord
+    - EntryCheckRecord
+    - EvidenceMemberRecord
+    - EvidenceObservationRecord
+    - EvidenceSelectionRecord
+    - EventLinkRecord
+    - GapExplanation
+    - GapRecord
+    - JournalAccountRef
+    - JournalEntryRecord
+    - JournalUnitRef
+    - OriginRef
+    - PositionRef
+    - PostingRecord
+    - ReadinessRecord
+    - ReadinessRollupRecord
+    - ClaimBundleRecord
+    - ReviewExplanation
+    - ReviewRecord
+    - SubjectRef
+    - TaxCarryForwardRecord
+    - TaxInputRecord
+    - TaxOutputRecord
+    - TaxPolicyId
+    - TaxUnsupportedInputRecord
+    - ValuationRecord
+    - ValuationPurpose
+  snake:
+    - balance_target_id
+    - basis_transition_id
+    - claim_bundle_id
+    - claim_bundle_decision_id
+    - claim_id
+    - checkpoint_assertion_id
+    - checkpoint_id
+    - checkpoint_proposal_id
+    - comparison_outcome
+    - claim_scope_id
+    - continuity_kind
+    - continuity_segment_id
+    - economic_facts_id
+    - economic_facts_ref
+    - emitter_id
+    - event_id
+    - event_link_id
+    - entry_check_id
+    - entry_id
+    - evidence_set_id
+    - gap_id
+    - journal_id
+    - leg_id
+    - member_id
+    - observation_status
+    - observation_id
+    - origin_kind
+    - posting_id
+    - kernel_scope
+    - kernel_scope_id
+    - product_slug
+    - readiness_id
+    - readiness_rollup_id
+    - reconciliation_state_id
+    - review_id
+    - selection_id
+    - subject_key
+    - support_shape
+    - superseding_proposal_ref
+    - tax_carry_forward_id
+    - tax_input_id
+    - tax_inputs_id
+    - tax_output_id
+    - tax_outputs_id
+    - tax_policy_id
+    - tax_unsupported_input_id
+    - valuation_id
+  phrases:
+    - assessment view
+    - compatibility view
+    - compatibility sidecar
+    - entry check
+    - product header
+    - readiness rollup
+
+local_id_slots:
+  - canonical_id: claim_scope_id
+    slot: scope_id
+  - canonical_id: claim_bundle_id
+    slot: bundle_id
+  - canonical_id: claim_bundle_decision_id
+    slot: decision_id
+  - canonical_id: continuity_segment_id
+    slot: segment_id
+  - canonical_id: balance_target_id
+    slot: target_id
+  - canonical_id: checkpoint_proposal_id
+    slot: proposal_id
+  - canonical_id: checkpoint_assertion_id
+    slot: assertion_id
+  - canonical_id: entry_check_id
+    slot: check_id
+
+identifier_context_rules:
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - ClaimSet
+    region_label: Record families
+    surface_kind: field_slot
+    mode: local_short
+    canonical_ids:
+      - claim_scope_id
+      - claim_bundle_id
+      - claim_bundle_decision_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - ClaimSet
+    region_label: Stable ids
+    surface_kind: array_component
+    mode: local_short
+    canonical_ids:
+      - claim_scope_id
+      - claim_bundle_id
+      - claim_bundle_decision_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - ClaimSet
+    region_label: Ordering
+    surface_kind: array_component
+    mode: local_short
+    canonical_ids:
+      - claim_scope_id
+      - claim_bundle_id
+      - claim_bundle_decision_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - ReconciliationState
+    region_label: Record families
+    surface_kind: field_slot
+    mode: local_short
+    canonical_ids:
+      - continuity_segment_id
+      - balance_target_id
+      - checkpoint_proposal_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - ReconciliationState
+    region_label: Stable ids
+    surface_kind: array_component
+    mode: local_short
+    canonical_ids:
+      - continuity_segment_id
+      - balance_target_id
+      - checkpoint_proposal_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - ReconciliationState
+    region_label: Ordering
+    surface_kind: array_component
+    mode: local_short
+    canonical_ids:
+      - continuity_segment_id
+      - balance_target_id
+      - checkpoint_proposal_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - Checkpoint
+    region_label: Record families
+    surface_kind: field_slot
+    mode: local_short
+    canonical_ids:
+      - checkpoint_assertion_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - Checkpoint
+    region_label: Ordering
+    surface_kind: array_component
+    mode: local_short
+    canonical_ids:
+      - checkpoint_assertion_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - Journal
+    region_label: Record families
+    surface_kind: field_slot
+    mode: local_short
+    canonical_ids:
+      - entry_check_id
+  - path: docs/concepts/pipeline-stage-contracts.md
+    section_path:
+      - Journal
+    region_label: Ordering
+    surface_kind: array_component
+    mode: local_short
+    canonical_ids:
+      - entry_check_id
+  - path: docs/reference/first-downstream-slice-contract.md
+    section_path:
+      - Id And Fingerprint Rules
+    region_label: Slice-specific rules
+    surface_kind: array_component
+    mode: local_short
+    canonical_ids:
+      - continuity_segment_id
+      - balance_target_id
+      - checkpoint_proposal_id
+      - checkpoint_assertion_id
+
+vocabularies:
+  values:
+    basis:
+      - document_support
+      - reported_support
+      - reconciled_continuity
+      - adopted_opening
+      - manual_support
+    claim_bundle_decision_basis:
+      - single_bundle
+      - insufficient_identity
+      - insufficient_temporal_precision
+      - conflicting_claims
+      - upstream_gap
+      - policy_decision_required
+      - later_bundle_selected
+    support_shape:
+      - document_observation
+      - reported_observation
+      - location_observation
+      - inventory_observation
+      - manual_assertion
+    continuity_kind:
+      - observed_continuity
+      - reconciled_rollforward
+      - opening_rollforward
+      - partial_rollforward
+    balance_target_observation_status:
+      - observed
+      - unobserved
+    balance_target_comparison_outcome:
+      - matched
+      - mismatched
+    continuity_segment_status:
+      - complete
+      - partial
+    checkpoint_proposal_status:
+      - ready
+      - partial
+      - blocked
+    journal_entry_status:
+      - expanded
+      - blocked
+    entry_check_status:
+      - passed
+      - blocked
+    tax_output_status:
+      - ready
+      - partial
+    valuation_purpose:
+      - economic_measurement
+      - checkpoint_measurement
+      - journal_measurement
+      - tax_measurement
+      - market_measurement
+    instrument_kind:
+      - unknown
+      - crypto
+      - fiat
+      - equity
+      - derivative
+    origin_kind:
+      - claim
+      - evidence_observation
+      - market_input
+      - economic_leg
+      - checkpoint_assertion
+      - basis_adjustment
+  paired_axes:
+    - [basis, support_shape, continuity_kind]
+  checks:
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: claim_bundle_decision_basis
+      label: ClaimBundleDecisionRecord.basis
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: basis
+      label: CheckpointAssertionRecord.basis
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: support_shape
+      label: CheckpointAssertionRecord.support_shape
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: continuity_kind
+      label: continuity_kind
+      block_type: nested_list
+      expected_values: []
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: basis
+      label: basis
+      block_type: nested_list
+      expected_values:
+        - document_support
+        - reconciled_continuity
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: support_shape
+      label: support_shape
+      block_type: nested_list
+      expected_values:
+        - document_observation
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: continuity_kind
+      label: continuity_kind
+      block_type: nested_list
+      expected_values:
+        - observed_continuity
+        - reconciled_rollforward
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: continuity_segment_status
+      label: ContinuitySegmentRecord.status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: balance_target_observation_status
+      label: BalanceTargetRecord.observation_status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: balance_target_comparison_outcome
+      label: BalanceTargetRecord.comparison_outcome
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: checkpoint_proposal_status
+      label: CheckpointProposalRecord.status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: journal_entry_status
+      label: JournalEntryRecord.status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: entry_check_status
+      label: EntryCheckRecord.status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: tax_output_status
+      label: TaxOutputRecord.status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: continuity_segment_status
+      label: ContinuitySegmentRecord.status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: balance_target_observation_status
+      label: BalanceTargetRecord.observation_status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: balance_target_comparison_outcome
+      label: BalanceTargetRecord.comparison_outcome
+      block_type: nested_list
+      expected_values: []
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: checkpoint_proposal_status
+      label: CheckpointProposalRecord.status
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/domain-ontology.md
+      vocabulary: valuation_purpose
+      label: ValuationPurpose
+      block_type: heading_shared_vocabulary
+      expected_values: []
+    - path: docs/concepts/domain-ontology.md
+      vocabulary: instrument_kind
+      label: InstrumentKind
+      block_type: heading_shared_vocabulary
+      expected_values: []
+
+banned_phrases:
+  - rule_id: summary.content_first
+    term: Human-facing entrypoint
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.content_first
+    term: Owning concept page
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.content_first
+    term: Owning contract
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.content_first
+    term: Helper reference
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.content_first
+    term: Single authority
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.content_first
+    term: Design anchor
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.content_first
+    term: Implementation anchor
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.content_first
+    term: Forward design
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: Coinbase
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: Binance
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: Wealthsimple
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: Crypto.com
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: Shakepay
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: Ledger Live
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: Ronin
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: GTrade
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: CoinTracking
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: summary.no_provider_locality
+    term: custodial
+    contexts: [summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.no_role_first_governance
+    term: owner pages
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.no_role_first_governance
+    term: primary owners
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.no_role_first_governance
+    term: authoritative owners
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.no_role_first_governance
+    term: This document owns
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.no_role_first_governance
+    term: does not re-own
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.no_slice_role_jargon
+    term: bounded contract
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_slice_role_jargon
+    term: landing path
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_slice_role_jargon
+    term: subject-reference contracts
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_whole_product_jargon
+    term: whole-product kernel
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.no_migration_jargon
+    term: current-to-target transformation rules
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.no_stage_first_architecture
+    term: target stage-first architecture
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.undefined_measure_kind
+    term: measure_kind
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+  - rule_id: body.abstract_container_name
+    term: emission root
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.abstract_container_name
+    term: output root
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.abstract_container_name
+    term: root truth container
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target]
+    paths: []
+
+retired_aliases:
+  - rule_id: body.compatibility_view_term
+    term: compatibility projection
+    replacement: compatibility view
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.compatibility_view_term
+    term: compatibility projections
+    replacement: compatibility views
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.provider_prefixed_kind
+    term: coinbase_retail_export
+    replacement: retail_activity_export_file
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.provider_prefixed_kind
+    term: coinbase_statement_document
+    replacement: statement_document_file
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.provider_custody_key
+    term: custodial_position
+    replacement: held_position
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.support_shape_term
+    term: support_kind
+    replacement: support_shape
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: vocab.axis.journal_entry
+    term: pending_check
+    replacement: expanded
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target, repo_policy]
+    paths:
+      - docs/concepts/pipeline-stage-contracts.md
+      - docs/standards/engineering.md
+    allowed_paths: []
+  - rule_id: vocab.axis.journal_entry
+    term: checked
+    replacement: expanded or passed
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target, repo_policy]
+    paths:
+      - docs/concepts/pipeline-stage-contracts.md
+      - docs/standards/engineering.md
+    allowed_paths: []
+  - rule_id: vocab.axis.balance_target
+    term: missing_observation
+    replacement: observation_status = unobserved
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target, repo_policy]
+    paths:
+      - docs/concepts/pipeline-stage-contracts.md
+      - docs/reference/first-downstream-slice-contract.md
+    allowed_paths: []
+  - rule_id: vocab.axis.valuation_purpose
+    term: market_reference
+    replacement: market_measurement
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target, repo_policy]
+    paths:
+      - docs/concepts/domain-ontology.md
+    allowed_paths:
+      - docs/reference/target-ids-and-refs.md
+  - rule_id: vocab.axis.balance_target
+    term: BalanceTargetRecord.status
+    replacement: BalanceTargetRecord.observation_status and BalanceTargetRecord.comparison_outcome
+    contexts: [body, inline_code]
+    allowed_scopes: [forward_target, repo_policy]
+    paths:
+      - docs/concepts/pipeline-stage-contracts.md
+      - docs/reference/first-downstream-slice-contract.md
+    allowed_paths: []
+  - rule_id: body.subject_ref_slot
+    term: subject_id
+    replacement: subject_key
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: vocab.axis.claim_bundle_decision_basis
+    term: policy_deferred
+    replacement: policy_decision_required
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: vocab.axis.claim_bundle_decision_basis
+    term: superseded_by_later_claims
+    replacement: later_bundle_selected
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.journal_entry_record_name
+    term: AccountingEntryRecord
+    replacement: JournalEntryRecord
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.kernel_scope_name
+    term: product_scope_id
+    replacement: kernel_scope_id
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.kernel_scope_name
+    term: product_scope
+    replacement: kernel_scope
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.shared_family_root
+    term: domain/support/
+    replacement: domain/assessment/
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.shared_family_root
+    term: application/readiness/
+    replacement: application/assessment/
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.assessment_view_term
+    term: operator view
+    replacement: assessment view
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.assessment_view_term
+    term: operator views
+    replacement: assessment views
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.partition_scope_name
+    term: checkpoint-economic-lineage-scoped
+    replacement: checkpoint-economic-facts-lineage-scoped
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.partition_scope_name
+    term: tax-input-policy-year-scoped
+    replacement: tax-inputs-policy-year-scoped
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.docs_home_reference_group
+    term: Current-State And Oracle References
+    replacement: Current-State References / Oracle References
+    contexts: [body]
+    allowed_scopes: [forward_target, repo_policy]
+    paths:
+      - docs/README.md
+    allowed_paths: []
+
+matrix_specs:
+  - path: docs/concepts/bridge-to-target-mapping.md
+    required_columns:
+      - Current bridge surface
+      - Target authoritative product(s)
+      - Derived compatibility view
+      - Derived compatibility sidecar
+      - Current readers
+      - Target readers after cutover
+      - Cutover gate
+      - Retirement gate
+    allowed_shape_nouns:
+      - compatibility view
+      - compatibility sidecar
+      - none
+    banned_fragments:
+      - view or sidecar
+      - optional planner review view
+      - planning sidecar
+      - statement-facing compatibility sidecar
+      - recognized statement parse outputs and balance rows
+      - source translation boundary
+      - current bridge balance reducers
+      - current bridge balance-reference path
+      - bridge/output compatibility sidecars
+      - target products
+      - target product plus shared gap/review/readiness records
+      - issue compatibility view
+      - review compatibility view
+
+exceptions:
+  - exception_id: locality.bridge_fields
+    allowed_scopes: [forward_target, repo_policy]
+    allowed_paths:
+      - docs/concepts/pipeline-stage-contracts.md
+      - docs/reference/first-upstream-slice-contract.md
+      - docs/reference/target-ids-and-refs.md
+      - docs/concepts/bridge-to-target-mapping.md
+      - docs/standards/engineering.md
+    allowed_section_labels: []
+    allowed_terms:
+      - source_slug
+      - activity_label
+      - provider_operation_key
+      - accounting_intent_hint
+      - projection_hint
+      - tax_treatment_hint
+      - tx_hash_or_null
+      - operation_group_id_or_null
+    required_marker: Locality rule
+    required_rationale: true
+    notes: Bridge and evidence-local compatibility fields must be restated where they appear.
+  - exception_id: example.provider_slice_terms
+    allowed_scopes: [forward_target]
+    allowed_paths:
+      - docs/reference/first-upstream-slice-contract.md
+      - docs/reference/first-downstream-slice-contract.md
+    allowed_section_labels: []
+    allowed_terms:
+      - Coinbase
+      - custodial
+    required_marker: Slice-only example
+    required_rationale: true
+    notes: Provider and custody terms are slice-bounded examples only.
+  - exception_id: locality.current_runtime_cointracking
+    allowed_scopes: [forward_target, repo_policy]
+    allowed_paths:
+      - AGENTS.md
+      - ROADMAP.md
+      - docs/README.md
+      - docs/concepts/domain-ontology.md
+      - docs/concepts/oracle-boundaries.md
+      - docs/concepts/reconciliation-tax-architecture.md
+      - docs/status/adapter-delivery-plan.md
+      - docs/standards/engineering.md
+      - docs/standards/implementation.md
+    allowed_section_labels: []
+    allowed_terms:
+      - CoinTracking
+    required_marker: Current runtime note
+    required_rationale: true
+    notes: CoinTracking remains current-state or oracle-local truth only.
+  - exception_id: locality.assessment_root
+    allowed_scopes: [forward_target, repo_policy]
+    allowed_paths:
+      - ROADMAP.md
+      - docs/concepts/domain-ontology.md
+      - docs/concepts/reconciliation-tax-architecture.md
+      - docs/reference/target-persistence-reference.md
+      - docs/standards/engineering.md
+    allowed_section_labels: []
+    allowed_terms:
+      - assessment/
+      - domain/assessment/
+    required_marker: Exception rationale
+    required_rationale: true
+    notes: Shared assessment roots are allowed only with explicit rationale.
+  - exception_id: locality.compatibility_root
+    allowed_scopes: [forward_target, repo_policy]
+    allowed_paths:
+      - docs/concepts/domain-ontology.md
+      - docs/standards/engineering.md
+    allowed_section_labels: []
+    allowed_terms:
+      - application/compatibility/
+    required_marker: Migration-only root rationale
+    required_rationale: true
+    notes: application/compatibility is migration-only and must be labeled as such.
+  - exception_id: locality.source_provider_crypto_terms
+    allowed_scopes: [forward_target]
+    allowed_paths:
+      - ROADMAP.md
+      - docs/README.md
+      - docs/concepts/domain-ontology.md
+      - docs/concepts/oracle-boundaries.md
+      - docs/reference/first-upstream-slice-contract.md
+    allowed_section_labels: []
+    allowed_terms:
+      - wallet
+      - exchange
+      - address
+      - tx_hash
+      - crypto
+    required_rationale: false
+    notes: Source- or crypto-specific terms stay confined to declared bounded exceptions.
+  - exception_id: locality.compatibility_bridge_surfaces
+    allowed_scopes: [forward_target, repo_policy]
+    allowed_paths:
+      - docs/concepts/bridge-to-target-mapping.md
+      - docs/concepts/gaps-and-readiness.md
+    allowed_section_labels: []
+    allowed_terms:
+      - IssueRecord
+      - NormalizationReviewRecord
+      - exceptions.csv
+      - normalization_reviews.csv
+      - fact_annotations.json
+      - location_annotations.json
+    required_marker: Compatibility-only locality
+    required_rationale: true
+    notes: Bridge-only diagnostic records and retained files must stay fenced as compatibility-local surfaces.
+
+required_markers:
+  - Slice-only example
+  - Compatibility-only locality
+  - Current runtime note
+  - Anti-example
+  - Exception rationale
+  - Migration-only root rationale
+  - Locality rule

@@ -5,6 +5,7 @@ doc_type: reference
 audience: both
 owner: repo
 status: active
+naming_scope: workspace_reference
 ---
 
 Place the frozen `2025-12-31` checkpoint here when that milestone is

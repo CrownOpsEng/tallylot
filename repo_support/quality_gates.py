@@ -10,6 +10,7 @@ from repo_support.review_verification import check_spec
 
 QUALITY_GATE_ORDER = (
     "markdownlint",
+    "target-naming",
     "actionlint",
     "ruff",
     "mypy",
@@ -39,6 +40,10 @@ def available_quality_gates(*, full_tests: bool) -> dict[str, QualityGate]:
         "markdownlint": QualityGate(
             name="markdownlint",
             command=check_spec("markdownlint").command,
+        ),
+        "target-naming": QualityGate(
+            name="target-naming",
+            command=check_spec("target-naming").command,
         ),
         "actionlint": QualityGate(
             name="actionlint",
@@ -80,7 +85,13 @@ def quality_phase_plan(
         phases = (
             QualityPhase(
                 name="quick-static",
-                gate_names=("markdownlint", "actionlint", "ruff", "mypy"),
+                gate_names=(
+                    "markdownlint",
+                    "target-naming",
+                    "actionlint",
+                    "ruff",
+                    "mypy",
+                ),
             ),
             QualityPhase(
                 name="heavy-static",

@@ -5,13 +5,17 @@ doc_type: concept
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 25
 ---
 
 Use this page when defining the target pipeline products or deciding which
 stage owns a decision. This page defines the target stage contracts.
 
-Current runtime note:
+**Current runtime note:** The live runtime still centers on bridge surfaces
+such as `EconomicActivityDraft`, `TransactionFact`, `balance_snapshots.csv`,
+and `balance_references.csv`. This page defines the target stage contracts, not
+the claim that the current code already implements them.
 
 - the live runtime still centers on `EconomicActivityDraft`,
   `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`
@@ -19,6 +23,12 @@ Current runtime note:
   slices replace them
 - this page defines the target stage contracts, not the claim that the current
   code already implements them
+
+**Locality rule:** This page restates bridge-local fields such as `source_slug`,
+`activity_label`, `provider_operation_key`, and the current `*_hint`
+compatibility fields only where the contract freezes evidence-local or derived
+compatibility boundaries. Those names stay outside later canonical target
+kernels.
 
 The target runtime pipeline is:
 
@@ -91,7 +101,7 @@ Shared rules:
   `economic_facts_id`, `reconciliation_state_id`, `checkpoint_id`,
   `journal_id`, `tax_inputs_id`, and `tax_outputs_id`
 - upstream product refs use product ids only; they never use
-  `product_scope_id` or a raw kernel fingerprint
+  `kernel_scope_id` or a raw kernel fingerprint
 - use singular `*_ref` for one upstream product id and plural `*_refs` for an
   ordered product-id list
 - ordered header fields such as `claim_set_refs`,
@@ -101,7 +111,7 @@ Shared rules:
 - when a product id hashes ordered upstream header refs, keep the component
   array in the same canonical order as the header fields unless this page
   explicitly declares a stronger reason to differ
-- `product_scope_id` remains a derived gap/review/readiness and reporting
+- `kernel_scope_id` remains a derived gap/review/readiness and reporting
   attachment only;
   it is not a product id or upstream product ref
 
@@ -119,7 +129,7 @@ Shared rules:
 
 ### Composite Tuple Rules
 
-- `SubjectRef` serializes and sorts as `[subject_kind, subject_id]`
+- `SubjectRef` serializes and sorts as `[subject_kind, subject_key]`
 - `BasisPoolRef` serializes and sorts as
   `[tax_policy_id, jurisdiction_or_regime, beneficial_owner_ref, pool_key]`
 - when one stable-id recipe, ordering rule, or fingerprint input includes a
@@ -154,18 +164,18 @@ Shared rules:
 - any later rehydration path must join through stable ids emitted by the
   kernel
 
-### Product-Scope Id And Sidecar Attachment
+### Kernel-Scope Id And Sidecar Attachment
 
 - every target product has one canonical kernel fingerprint
-- the shared `product_scope_id` contract is owned by
-  [Gaps And Readiness](gaps-and-readiness.md)
-- `product_scope_id` is derived from the emitted kernel fingerprint after
+- the shared `kernel_scope_id` contract is owned by
+  [Gap, Review, And Readiness](gaps-and-readiness.md)
+- `kernel_scope_id` is derived from the emitted kernel fingerprint after
   canonical fingerprinting; it is not part of the product header or fingerprint
   inputs
-- `product_scope_id` is the product-scope attachment id for gap, review,
+- `kernel_scope_id` is the kernel-scope attachment id for gap, review,
   readiness, comparison, and other declared shared sidecars when no narrower
   truthful scope exists
-- `product_scope_id` is not a substitute for a narrower record id or stage-owned
+- `kernel_scope_id` is not a substitute for a narrower record id or stage-owned
   scope such as `selection_id`, `claim_scope_id`, `continuity_segment_id`,
   `balance_target_id`, or `checkpoint_proposal_id`
 
@@ -292,6 +302,9 @@ Rules:
 - the kind-specific fields above are kernel meaning, not sidecar detail
 - `statement_document.statement_kind` uses the recognized statement-adapter
   kind for the selected document member
+- `statement_kind` and `balance_kind` stay evidence-local bounded field names;
+  they preserve adapter or statement classification without becoming shared
+  downstream vocabularies
 - `statement_document.statement_as_of` lifts the current parsed statement
   as-of time and `statement_as_of_precision` follows the
   repo-wide temporal precision contract for that value
@@ -412,8 +425,8 @@ Record families:
 
 - `ClaimRecord`
   - `claim_set_id`
-  - `claim_scope_id`
-  - `claim_bundle_id`
+  - `scope_id`
+  - `bundle_id`
   - `claim_id`
   - `kind`
   - `status`
@@ -425,15 +438,15 @@ Record families:
   - `provenance_refs`
 - `ClaimBundleRecord`
   - `claim_set_id`
-  - `claim_scope_id`
-  - `claim_bundle_id`
+  - `scope_id`
+  - `bundle_id`
   - `key`
   - `scope_key`
   - `claim_refs`
 - `ClaimBundleDecisionRecord`
   - `claim_set_id`
-  - `claim_scope_id`
-  - `claim_bundle_decision_id`
+  - `scope_id`
+  - `decision_id`
   - `outcome`
   - `accepted_bundle_ref`
   - `rejected_bundle_refs`
@@ -468,12 +481,14 @@ Controlled vocabularies:
   - `insufficient_temporal_precision`
   - `conflicting_claims`
   - `upstream_gap`
-  - `policy_deferred`
-  - `superseded_by_later_claims`
+  - `policy_decision_required`
+  - `later_bundle_selected`
 
-`ClaimBundleDecisionRecord.basis` intentionally groups acceptance reasons,
-insufficiency conditions, and defer/supersession outcomes because the record
-captures one claim-bundle decision boundary rather than one pure reason axis.
+`ClaimBundleDecisionRecord.basis` is a pure reason axis. `outcome` owns
+acceptance, blocking, deferral, and supersession posture, while `basis` names
+why that posture was chosen. Use `policy_decision_required` with
+`outcome = deferred` and `later_bundle_selected` with
+`outcome = superseded`.
 
 ### First-Slice Critical-Path Claim Kinds
 
@@ -487,7 +502,7 @@ bounded slice, these kind-specific kernel fields are also required:
 | `instrument` | `scheme`, `value`, `venue`, `instrument_kind`, `name`, `precision` |
 | `location` | `location_ref`, `location_group_label`, `location_label` |
 | `beneficial_owner` | `beneficial_owner_ref` |
-| `valuation` | `measure_kind`, `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
+| `valuation` | `purpose`, `amount`, `currency`, `valued_at`, `precision`, `location_claim_ref`, `instrument_claim_refs` |
 
 `leg_specs` entry shape:
 
@@ -503,11 +518,16 @@ First upstream slice linkage rules:
 
 - `activity` claims own the current evidence-local `activity_label` used by
   the first upstream slice
+- `instrument_kind` uses the shared `InstrumentKind` vocabulary owned by
+  [Domain Ontology](domain-ontology.md)
 - `leg_specs` lift ordered leg meaning from the current
   `EconomicLegDraft` contract, including sign, instrument claims,
   optional subtype, optional attributed-leg linkage, and optional location,
   while keeping the later `EconomicLegRecord.role` stem aligned across the
   family
+- valuation-measure taxonomy is intentionally deferred until one shared
+  cross-stage vocabulary is frozen; do not add a placeholder valuation-measure
+  field before then
 - retail claims with `kind = activity` use `member_refs` plus the
   first upstream slice scope key `[retail_member_id, raw_row_ref]`; they do
   not require a retail-row observation kind in this pass
@@ -570,18 +590,18 @@ Stable ids:
   `emitter_id` into later product ids
 - `claim_scope_id` uses component array `[claim_set_id, scope_key]`
 - `claim_bundle_id` uses component array
-  `[claim_scope_id, key]`
-- `claim_id` uses component array `[claim_bundle_id, kind, key]`
-- `claim_bundle_decision_id` uses component array `[claim_scope_id]`
+  `[scope_id, key]`
+- `claim_id` uses component array `[bundle_id, kind, key]`
+- `claim_bundle_decision_id` uses component array `[scope_id]`
 
 Ordering:
 
 - `ClaimRecord` rows sort by tuple
-  `[claim_bundle_id, kind, effective_at, precision, claim_id]`
+  `[bundle_id, kind, effective_at, precision, claim_id]`
 - `ClaimBundleRecord` rows sort by
-  `[claim_scope_id, key, claim_bundle_id]`
+  `[scope_id, key, bundle_id]`
 - `ClaimBundleDecisionRecord` rows sort by
-  `[claim_scope_id, claim_bundle_decision_id]`
+  `[scope_id, decision_id]`
 
 Serialization:
 
@@ -800,7 +820,7 @@ Owns:
 Record families:
 
 - `ContinuitySegmentRecord`
-  - `continuity_segment_id`
+  - `segment_id`
   - `subject_ref`
   - `segment_start_at`
   - `segment_end_at`
@@ -808,14 +828,14 @@ Record families:
   - `as_of`
 - `EventLinkRecord`
   - `event_link_id`
-  - `continuity_segment_id`
+  - `segment_id`
   - `kind`
   - `left_event_ref`
   - `right_event_ref`
   - `status`
 - `BalanceTargetRecord`
-  - `balance_target_id`
-  - `continuity_segment_id`
+  - `target_id`
+  - `segment_id`
   - `subject_ref`
   - `kind`
   - `as_of`
@@ -824,8 +844,8 @@ Record families:
   - `observation_status`
   - `comparison_outcome`
 - `CheckpointProposalRecord`
-  - `checkpoint_proposal_id`
-  - `continuity_segment_id`
+  - `proposal_id`
+  - `segment_id`
   - `subject_ref`
   - `as_of`
   - `status`
@@ -900,7 +920,7 @@ Stable ids:
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
   proposal record
 - `reconciliation_state_id` uses component array
-  `[economic_facts_ref, continuity_segment_id]`
+  `[economic_facts_ref, segment_id]`
 - `continuity_segment_id` uses component array
   `[subject_ref, segment_start_at, segment_end_at]`
 - `continuity_segment_id` is the reusable stage-local scope id for gap,
@@ -908,11 +928,11 @@ Stable ids:
   `reconciliation_state_id` is the emitted product id over that scope plus its
   upstream lineage
 - `event_link_id` uses component array
-  `[continuity_segment_id, kind, left_event_ref, right_event_ref]`
+  `[segment_id, kind, left_event_ref, right_event_ref]`
 - `balance_target_id` uses component array
-  `[continuity_segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
+  `[segment_id, subject_ref, kind, as_of, expected_value_fingerprint]`
 - `checkpoint_proposal_id` uses component array
-  `[continuity_segment_id, subject_ref, as_of, target_refs]`
+  `[segment_id, subject_ref, as_of, target_refs]`
 - `expected_value_fingerprint` is the canonical fingerprint of the
   `AssertionValue` carried in `expected_value`
 - `evidence_refs` provide audit traceability, but they are not part of
@@ -921,13 +941,13 @@ Stable ids:
 Ordering:
 
 - `ContinuitySegmentRecord` rows sort by
-  `[as_of, subject_ref, continuity_segment_id]`
+  `[as_of, subject_ref, segment_id]`
 - `EventLinkRecord` rows sort by
-  `[continuity_segment_id, kind, left_event_ref, right_event_ref, event_link_id]`
+  `[segment_id, kind, left_event_ref, right_event_ref, event_link_id]`
 - `BalanceTargetRecord` rows sort by
-  `[continuity_segment_id, subject_ref, as_of, balance_target_id]`
+  `[segment_id, subject_ref, as_of, target_id]`
 - `CheckpointProposalRecord` rows sort by
-  `[as_of, subject_ref, continuity_segment_id, checkpoint_proposal_id]`
+  `[as_of, subject_ref, segment_id, proposal_id]`
 
 Serialization:
 
@@ -958,7 +978,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside product-scope readiness rollups
+- bury missing evidence inside kernel-scope readiness rollups
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:
@@ -995,7 +1015,7 @@ Record families:
   - `assertion_ids`
   - `proposal_refs`
 - `CheckpointAssertionRecord`
-  - `checkpoint_assertion_id`
+  - `assertion_id`
   - `checkpoint_id`
   - `subject_ref`
   - `kind`
@@ -1041,7 +1061,7 @@ Controlled vocabularies:
 
 `trust_level` names checkpoint acceptance confidence tiers inside one accepted
 assertion. It is not the shared `ReadinessStatus` model from
-[Gaps And Readiness](gaps-and-readiness.md).
+[Gap, Review, And Readiness](gaps-and-readiness.md).
 
 `trust_level` is a checkpoint trust-tier vocabulary. It is not a reuse of
 `ReadinessStatus`.
@@ -1077,7 +1097,7 @@ Ordering:
 
 - `CheckpointRecord` rows sort by `[as_of, checkpoint_id]`
 - `CheckpointAssertionRecord` rows sort by tuple
-  `[as_of, subject_ref.subject_kind, subject_ref.subject_id, checkpoint_assertion_id]`
+  `[as_of, subject_ref.subject_kind, subject_ref.subject_key, assertion_id]`
 
 Serialization:
 
@@ -1175,7 +1195,7 @@ Record families:
   - `side`
   - `origin_ref`
 - `EntryCheckRecord`
-  - `entry_check_id`
+  - `check_id`
   - `entry_id`
   - `kind`
   - `status`
@@ -1242,7 +1262,7 @@ Ordering:
 - `JournalEntryRecord` rows sort by `[effective_at, kind, entry_id]`
 - `PostingRecord` rows sort by
   `[entry_id, side, account_ref, unit_ref, origin_ref, posting_id]`
-- `EntryCheckRecord` rows sort by `[entry_id, kind, entry_check_id]`
+- `EntryCheckRecord` rows sort by `[entry_id, kind, check_id]`
 
 Serialization:
 
@@ -1538,7 +1558,7 @@ elsewhere:
 - [Current Bridge Contracts](current-bridge-contracts.md) for the live bridge
   runtime truth
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) for the primary
-  current-to-target transformation rules and migration authority matrix
+  cutover rules and migration authority matrix
 - [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md)
   for the first upstream replay and parity contract
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
@@ -1546,8 +1566,8 @@ elsewhere:
   contract
 - [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership
-- [Gaps And Readiness](gaps-and-readiness.md) for `GapRecord`,
+- [Gap, Review, And Readiness](gaps-and-readiness.md) for `GapRecord`,
   `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
   `ReadinessRecord`, `ReadinessRollupRecord`, and `SubjectRef`
-- [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md) for
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) for
   persistence rules, partitioning rules, and fast-path expectations

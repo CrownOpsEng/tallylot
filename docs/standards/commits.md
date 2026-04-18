@@ -5,6 +5,7 @@ doc_type: standard
 audience: human
 owner: repo
 status: active
+naming_scope: repo_policy
 nav_order: 30
 ---
 
@@ -287,7 +288,10 @@ make validate-commit-message ARGS='--rev-range HEAD~3..HEAD'
 
 When structured commit messages or PR bodies include backticks, quotes, or
 other shell-sensitive text, use file/stdin authoring forms rather than inline
-`-m` or `--body` arguments so the metadata stays literal.
+`-m` or `--body` arguments so the metadata stays literal. In this repo, use the
+installed commit template plus `.git/COMMIT_EDITMSG` as that file-backed
+authoring path, then validate or reuse that same file rather than inventing a
+second ad hoc message path.
 
 ## Commit-Time Verification Policy
 

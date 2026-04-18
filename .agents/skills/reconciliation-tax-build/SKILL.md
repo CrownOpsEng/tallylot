@@ -1,7 +1,7 @@
 ---
 name: reconciliation-tax-build
 description: >-
-  Start tallylot's core reconciliation, checkpoint, accounting, and tax build
+  Start tallylot's core reconciliation, checkpoint, journal, and tax build
   work with the repo's narrow architecture path. Use when the task changes fact
   modeling, reconciliation rules, checkpoint assembly, journal logic, or tax
   policy behavior.
@@ -18,17 +18,23 @@ Use this skill for architecture-sensitive core workflow work.
    - `docs/concepts/oracle-boundaries.md`
    - `docs/concepts/transaction-classification.md`
    - `docs/status/migration-sequence.md`
+   - `docs/standards/engineering.md`
    - `docs/standards/implementation.md`
    - `.claude/commands/reconciliation-tax-build.md`
 2. Confirm whether the task changes facts, reconciliation, checkpoints,
-   accounting, tax policy, or oracle-only compatibility code.
+   journal, tax policy, forward-looking target naming, or oracle-only
+   compatibility code.
 3. Keep provider-neutral facts at the center and keep CoinTracking-specific
    behavior in compatibility or oracle paths.
 4. Add or update schema, invariant, reconciliation, or tax tests before
    implementing behavior.
 5. Update `ROADMAP.md` in the same checkpoint when architecture or sequencing
    decisions move.
-6. Finish with:
+6. When forward-looking target names, ids, directory families, titles, or
+   summaries change, follow the catalog-first rules in
+   `docs/standards/engineering.md` and run:
+   - `make naming-check`
+7. Finish with:
    - `make quality`
    - reserve `make quality-full`
      for the explicit full-suite override when a specific task needs it

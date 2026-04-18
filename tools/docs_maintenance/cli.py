@@ -7,8 +7,17 @@ from pathlib import Path
 from typing import cast
 
 import yaml
+from repo_support.target_naming import (
+    SUPPORTED_NAMING_SCOPES,
+    default_naming_scope_for_path,
+)
 
-from .links import markdown_target_paths, repo_markdown_paths, validate_markdown_links, validate_uv_examples
+from .links import (
+    markdown_target_paths,
+    repo_markdown_paths,
+    validate_markdown_links,
+    validate_uv_examples,
+)
 from .metadata import (
     ALLOWED_AUDIENCES,
     ALLOWED_DOC_TYPES,
@@ -33,10 +42,14 @@ RETIRED_REFERENCES = (
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Scaffold and sync repo documentation metadata.")
+    parser = argparse.ArgumentParser(
+        description="Scaffold and sync repo documentation metadata."
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    scaffold = subparsers.add_parser("scaffold", help="Create a new doc with standard frontmatter.")
+    scaffold = subparsers.add_parser(
+        "scaffold", help="Create a new doc with standard frontmatter."
+    )
     scaffold.add_argument(
         "--section",
         choices=("concepts", "guides", "reference", "standards", "status", "agents"),
@@ -48,7 +61,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Explicit repo-relative output path. Use this for docs/workspace/... mirror docs.",
     )
     scaffold.add_argument("--title", required=True, help="Document title.")
-    scaffold.add_argument("--summary", required=True, help="One-sentence document summary.")
+    scaffold.add_argument(
+        "--summary", required=True, help="One-sentence document summary."
+    )
     scaffold.add_argument(
         "--doc-type",
         choices=tuple(sorted(ALLOWED_DOC_TYPES)),
@@ -64,9 +79,20 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         help="Optional nav_order for sync-managed human docs.",
     )
+    scaffold.add_argument(
+        "--naming-scope",
+        choices=tuple(sorted(SUPPORTED_NAMING_SCOPES)),
+        help="Explicit naming_scope. Required for docs when the default is not suitable.",
+    )
 
-    sync = subparsers.add_parser("sync", help="Validate docs metadata and refresh generated docs index sections.")
-    sync.add_argument("--check", action="store_true", help="Fail instead of writing files when sync is needed.")
+    sync = subparsers.add_parser(
+        "sync", help="Validate docs metadata and refresh generated docs index sections."
+    )
+    sync.add_argument(
+        "--check",
+        action="store_true",
+        help="Fail instead of writing files when sync is needed.",
+    )
 
     return parser
 
@@ -94,7 +120,9 @@ def validate_documents() -> list[Document]:
 
 def section_documents(documents: list[Document], section: str) -> list[Document]:
     prefix = f"docs/{section}/"
-    matches = [document for document in documents if document.relative_path.startswith(prefix)]
+    matches = [
+        document for document in documents if document.relative_path.startswith(prefix)
+    ]
     return sorted(
         matches,
         key=lambda document: (
@@ -116,6 +144,39 @@ def render_section(documents: list[Document]) -> str:
         for document in documents
     ]
     return "\n".join(lines)
+
+
+def render_reference_section(documents: list[Document]) -> str:
+    target_documents = [
+        document
+        for document in documents
+        if document.frontmatter.get("naming_scope") == "forward_target"
+    ]
+    current_state_documents = [
+        document
+        for document in documents
+        if document.frontmatter.get("naming_scope")
+        in {"current_state", "bridge_local", "adapter_local"}
+    ]
+    oracle_documents = [
+        document
+        for document in documents
+        if document.frontmatter.get("naming_scope") == "oracle_local"
+    ]
+    parts = [
+        "### Target References",
+        "",
+        render_section(target_documents),
+        "",
+        "### Current-State References",
+        "",
+        render_section(current_state_documents),
+        "",
+        "### Oracle References",
+        "",
+        render_section(oracle_documents),
+    ]
+    return "\n".join(parts)
 
 
 def validate_nav_order_uniqueness(documents: list[Document]) -> None:
@@ -152,7 +213,11 @@ def replace_marker_block(text: str, marker: str, replacement: str) -> str:
 def _check_retired_references() -> None:
     for path in repo_markdown_paths():
         referenced_paths = set(markdown_target_paths(path))
-        if path.suffix == ".md" and path.exists() and relative_path(path).startswith(("docs/", "agents/")):
+        if (
+            path.suffix == ".md"
+            and path.exists()
+            and relative_path(path).startswith(("docs/", "agents/"))
+        ):
             frontmatter = parse_frontmatter(path.read_text(encoding="utf-8"), path)
             related = frontmatter.get("related")
             if isinstance(related, list):
@@ -172,7 +237,12 @@ def sync_docs_homepage(documents: list[Document], *, check: bool) -> bool:
     original = docs_readme.read_text(encoding="utf-8")
     updated = original
     for marker in SYNCED_SECTIONS:
-        updated = replace_marker_block(updated, marker, render_section(section_documents(documents, marker)))
+        replacement = (
+            render_reference_section(section_documents(documents, marker))
+            if marker == "reference"
+            else render_section(section_documents(documents, marker))
+        )
+        updated = replace_marker_block(updated, marker, replacement)
 
     if updated == original:
         return False
@@ -188,7 +258,9 @@ def default_doc_type(path: Path, section: str | None) -> str:
         return expected
     if section == "agents" or relative_path(path).startswith("agents/"):
         raise ValueError("Provide --doc-type when scaffolding agent docs")
-    raise ValueError("Provide --doc-type when the path does not map to a known docs section")
+    raise ValueError(
+        "Provide --doc-type when the path does not map to a known docs section"
+    )
 
 
 def default_audience(path: Path, section: str | None) -> str:
@@ -197,10 +269,14 @@ def default_audience(path: Path, section: str | None) -> str:
         return expected
     if section == "agents":
         return "agent"
-    raise ValueError("Provide --audience when the path does not map to a known docs section")
+    raise ValueError(
+        "Provide --audience when the path does not map to a known docs section"
+    )
 
 
-def scaffold_path(*, section: str | None, slug: str | None, path_argument: str | None) -> Path:
+def scaffold_path(
+    *, section: str | None, slug: str | None, path_argument: str | None
+) -> Path:
     if path_argument is not None:
         supplied = Path(path_argument)
         if supplied.is_absolute():
@@ -216,7 +292,11 @@ def scaffold_path(*, section: str | None, slug: str | None, path_argument: str |
             raise ValueError("--slug must be a single filename segment")
         if not SLUG_PATTERN.fullmatch(slug):
             raise ValueError("--slug must be kebab-case")
-        path = agents_root() / f"{slug}.md" if section == "agents" else docs_root() / section / f"{slug}.md"
+        path = (
+            agents_root() / f"{slug}.md"
+            if section == "agents"
+            else docs_root() / section / f"{slug}.md"
+        )
     else:
         raise ValueError("Provide either --path or both --section and --slug")
     if path.suffix != ".md":
@@ -245,7 +325,13 @@ def write_scaffold(args: argparse.Namespace) -> int:
     audience = args.audience or default_audience(path, args.section)
     relative = relative_path(path)
     nav_order_allowed = relative.startswith(
-        ("docs/concepts/", "docs/guides/", "docs/reference/", "docs/status/", "docs/standards/")
+        (
+            "docs/concepts/",
+            "docs/guides/",
+            "docs/reference/",
+            "docs/status/",
+            "docs/standards/",
+        )
     )
     if args.nav_order is not None and not nav_order_allowed:
         raise ValueError("--nav-order is only valid for sync-managed human docs")
@@ -257,6 +343,11 @@ def write_scaffold(args: argparse.Namespace) -> int:
         "owner": "repo",
         "status": "active",
     }
+    if relative.startswith("docs/"):
+        inferred_scope = args.naming_scope or default_naming_scope_for_path(relative)
+        if inferred_scope is None:
+            raise ValueError("--naming-scope is required for this docs path")
+        frontmatter_data["naming_scope"] = inferred_scope
     if args.nav_order is not None:
         frontmatter_data["nav_order"] = args.nav_order
     frontmatter = f"---\n{yaml.safe_dump(frontmatter_data, sort_keys=False)}---\n\n"
@@ -272,7 +363,9 @@ def write_scaffold(args: argparse.Namespace) -> int:
         "docs/standards/",
     )
     try:
-        validate_frontmatter(path, parse_frontmatter(path.read_text(encoding="utf-8"), path))
+        validate_frontmatter(
+            path, parse_frontmatter(path.read_text(encoding="utf-8"), path)
+        )
         if relative_path(path).startswith(sync_prefixes):
             documents = collect_documents()
             sync_docs_homepage(documents, check=False)

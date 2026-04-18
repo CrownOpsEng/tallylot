@@ -5,6 +5,7 @@ doc_type: reference
 audience: human
 owner: repo
 status: active
+naming_scope: forward_target
 nav_order: 17
 related:
   - docs/concepts/pipeline-stage-contracts.md
@@ -17,6 +18,11 @@ Use this page when a target-stage implementation needs a reusable target id or
 ref tuple that is not itself a stage contract. The detailed contract pages take
 precedence.
 
+**Locality rule:** This page restates `source_slug` and `market_input` only
+where reusable ids or ref tuples still need evidence-local or origin-local
+compatibility language. Those terms stay local to those seams and do not become
+broader target vocabulary.
+
 ## Precedence
 
 Use the detailed contract pages first:
@@ -27,11 +33,21 @@ Use the detailed contract pages first:
 - [Domain Ontology](../concepts/domain-ontology.md) for `AssertionValue`,
   `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain refs plus
   identity seams
-- [Gaps And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
-  shared gap/review/readiness attachments, and `product_scope_id`
+- [Gap, Review, And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
+  shared gap/review/readiness attachments, and `kernel_scope_id`
 
 This page keeps only reusable target ids and ref tuples that are not defined as
 the primary contract content elsewhere.
+
+## Identifier Namespaces
+
+This page documents canonical reusable ids and refs only.
+
+- local id slots are not reusable id families
+- owner-local slot forms belong only on the matching contract pages and slice mirrors where
+  the catalog explicitly allows them
+- if a canonical id is already short, it has no paired local alias unless the
+  catalog declares one
 
 ## Emitter Id
 
@@ -62,20 +78,20 @@ Rules:
   renderer label
 - when the origin is already a target-product record or subject, `origin_id`
   uses that stable id
-- when the origin is an external market reference, `origin_id` uses the
+- when the origin is an external market input, `origin_id` uses the
   stage-owned stable market key rather than renderer-local prose
 
 Frozen `origin_kind` vocabulary:
 
 - `claim`
 - `evidence_observation`
-- `market_reference`
+- `market_input`
 - `economic_leg`
 - `checkpoint_assertion`
 - `basis_adjustment`
 
-`OriginRef.origin_kind = market_reference` stays on the origin axis. It names
-an immediate upstream source class, not a valuation-purpose member.
+`OriginRef.origin_kind = market_input` stays on the origin axis. It names an
+immediate upstream source class, not a valuation-purpose member.
 
 ## Journal Refs
 
@@ -112,6 +128,6 @@ Rules:
 
 ## Reminder
 
-Do not implement target product ids, upstream product refs, `product_scope_id`,
+Do not implement target product ids, upstream product refs, `kernel_scope_id`,
 `AssertionValue`, `SubjectRef`, or target product kernel structure from this
 page. Those contracts live on their primary contract pages.

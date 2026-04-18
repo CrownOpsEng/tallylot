@@ -20,6 +20,14 @@ This roadmap tracks the implementation program from the current bridge toward
 the target runtime pipeline. The current bridge remains the live runtime seam
 until later slices replace it, but it is not the long-term architecture center.
 
+**Current runtime note:** CoinTracking references in this roadmap describe the
+current adapter-edge and oracle-comparison boundaries, not canonical target
+naming.
+
+**Exception rationale:** `assessment/` stays in this roadmap only as the shared
+root for the nested `gap/`, `review/`, and `readiness/` families. It is not a
+generic assessment bucket.
+
 ## Planning Anchors
 
 These anchors drive sequencing and acceptance criteria:
@@ -48,6 +56,9 @@ These anchors drive sequencing and acceptance criteria:
   center
 - do not rename live bridge symbols or repo-only support packages as a docs-only
   side effect
+- freeze short-first canonical stable ids, catalog-declared owner-local short
+  slots, and deterministic boundary checks that require local slots only on
+  declared owner-local surfaces and canonical ids everywhere else
 
 ## Phase 0. Contract Lock And Bounded-Slice Prep
 
@@ -72,29 +83,19 @@ Must freeze:
 - shared gap, review, and readiness records and sidecars:
   `GapRecord`, `GapExplanation`, `ReviewRecord`,
   `ReviewExplanation`, `ReadinessRecord`, `ReadinessRollupRecord`,
-  `SubjectRef`, truthful `claim_scope_id` and `balance_target_id`
+  `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id` and `balance_target_id`
   attachments, and the downstream shared-subject seams needed for journal
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
-  refs use product ids rather than `product_scope_id`
-- target naming rules that distinguish concepts, refs, ids, records,
-  views, rollups, reports, and sidecars without baking bridge-era
-  qualifiers or source-specific crypto nouns into shared target names, and
-  that keep stage-local ids explicit once they cross into downstream products,
-  keep stage-owned helper-ref families mirrored across sibling refs,
-  keep product-id component order aligned to product-header order, keep
-  canonical readiness rollups stage- and domain-oriented, use target-owned
-  label pairs such as `location_group_label` and `location_label` when
-  preserving source-provided location labels, keep generic downstream record
-  families stage-owned with names such as `TaxCarryForwardRecord` and
-  `TaxUnsupportedInputRecord`, keep partition-scope labels aligned to the
-  actual identity dimensions they reduce over, describe non-authoritative
-  bridge outputs as derived compatibility views rather than bridge-era
-  compile steps, and prefer direct kind values such as `instrument` over
-  pseudo-type labels
-- child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
-  `checkpoint_proposal_id`, `JournalAccountRef`, and `JournalUnitRef` as the
-  canonical downstream stems instead of shorter or mixed-family alternates
+  refs use product ids rather than `kernel_scope_id`
+- short-first canonical stable ids, catalog-declared owner-local short slots,
+  and deterministic boundary checks that require local slots only on declared
+  owner-local surfaces and canonical ids everywhere else
+- claim-bundle decision naming that keeps `outcome` on the posture axis and
+  freezes `ClaimBundleDecisionRecord.basis` to reason-only values such as
+  `single_bundle`, `insufficient_identity`, `insufficient_temporal_precision`,
+  `conflicting_claims`, `upstream_gap`, `policy_decision_required`, and
+  `later_bundle_selected`
 - balance-target naming that splits observation presence from comparison
   outcome instead of overloading one status field
 - checkpoint-proposal naming that keeps proposal posture on `status` and models
@@ -115,7 +116,7 @@ Must freeze:
   package ownership, and stage prose, uses singular concept roots such as
   `assertion/`, avoids umbrella roots such as `entities/` when the identity
   families are already known, keeps gap/review/readiness roots explicit when
-  the docs mean those families directly, and keeps the shared `support/` root
+  the docs mean those families directly, and keeps the shared `assessment/` root
   split into concrete nested families
   such as `gap/`, `review/`, and `readiness/`
 - authoritative persistence model, product-owned directory stems, partition
@@ -123,7 +124,12 @@ Must freeze:
 - migration authority rules, compatibility views, reader cutovers, and
   retirement gates
 - package ownership and layer placement for shared functionality
+- catalog-first target naming governance with one machine-readable naming
+  authority and a blocking `target-naming` check on enforced forward-looking
+  docs
 - explicit no-invention rules for non-critical observation and claim kinds
+- no placeholder valuation-measure field family until a real shared taxonomy
+  exists
 
 Deliver:
 
@@ -144,7 +150,7 @@ Exit criteria:
 - no cross-stage support record or sidecar masquerades as a claim kind
 - claim-stage blockers can attach to `claim_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
-  journal or tax subjects without collapsing to product-scope attachment only
+  journal or tax subjects without collapsing to kernel-scope attachment only
 - no target id or helper id bakes bridge-era naming into target identity
 - no canonical target contract keeps source-specific crypto nouns such as
   `wallet` when a repo-owned domain noun already owns that seam
@@ -152,7 +158,7 @@ Exit criteria:
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
   field table
-- no target product ref in a product header uses `product_scope_id` where a
+- no target product ref in a product header uses `kernel_scope_id` where a
   product id
   exists
 - non-critical observation and claim kinds are explicitly deferred rather

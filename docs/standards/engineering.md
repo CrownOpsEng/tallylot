@@ -5,11 +5,29 @@ doc_type: standard
 audience: human
 owner: repo
 status: active
+naming_scope: repo_policy
 nav_order: 10
 ---
 
 Use this document for code-focused decisions only: placement, typing,
 modularization, and naming.
+
+**Current runtime note:** CoinTracking references in this standard describe
+current output-adapter or oracle-local edges, not canonical target naming.
+
+**Exception rationale:** When this standard names `assessment/` or
+`domain/assessment/`, it is calling out the intentional shared root for the
+nested `gap/`, `review/`, and `readiness/` families rather than endorsing a
+generic catch-all boundary.
+
+**Migration-only root rationale:** When this standard names
+`application/compatibility/`, it is pointing to the bridge-only migration root
+for derived compatibility views, not a durable application center.
+
+**Locality rule:** When this standard names `source_slug`, `activity_label`, or
+`provider_operation_key`, it is restating allowed bridge-local or
+reporting-local terms so later contracts keep those exceptions explicit instead
+of promoting them into downstream canonical naming.
 
 ## Layer Placement
 
@@ -100,14 +118,14 @@ When a capability grows, split by stable boundaries:
   roots such as `domain/instrument/`, `domain/location/`,
   `domain/ownership/`, `domain/counterparty/`, `domain/contract/`,
   `domain/position/`, `domain/evidence/`, `domain/claim/`,
-  `domain/reconciliation/`, `domain/checkpoint/`, `domain/journal/`, and
-  `domain/tax/` rather than recreating umbrella roots such as
-  `domain/entities/`.
+  `domain/assessment/`, `domain/reconciliation/`, `domain/checkpoint/`,
+  `domain/journal/`, and `domain/tax/` rather than recreating umbrella roots.
+- **Anti-example:** Do not recreate umbrella roots such as `domain/entities/`.
 - `application/`: organize by bounded capability packages such as
   `application/intake/`, `application/profiling/`, `application/evidence/`,
   `application/claim/`, `application/economics/`,
   `application/compatibility/`, `application/normalization/`,
-  `application/reconciliation/`, `application/readiness/`,
+  `application/reconciliation/`, `application/assessment/`,
   `application/checkpoint/`, `application/journal/`, `application/tax/`, and
   `application/rendering/`. Keep request and response contracts in
   capability-local `contracts.py` files and keep orchestration entry points in
@@ -170,8 +188,8 @@ Current application of this rule:
 - Normalization window and derived-balance helpers belong under
   `application/normalization/` rather than as nearby flat siblings.
 - Forward-looking cross-stage gap, review, and readiness reducers plus
-  readiness rollups and operator views belong under
-  `application/readiness/` rather than being buried under
+  readiness rollups and assessment views belong under
+  `application/assessment/` rather than being buried under
   `application/reconciliation/`.
 - Forward-looking journal expansion and entry checks belong under
   `application/journal/` rather than under a broader `accounting/` umbrella or
@@ -205,6 +223,9 @@ Current application of this rule:
   short names such as `EvidenceFacet`, `ClaimFacet`, and `RenderFacet`, do not
   mix in a longer alternate or a different boundary noun for one sibling unless
   the whole family intentionally changes style.
+- `StatementFacet` is the one sanctioned content-specific exception in that
+  facet family because statement parsing is a distinct document boundary rather
+  than a generic downstream stage.
 - Keep the repo's `render` versus `rendering` split intentional. Use `render`
   for executable surfaces such as CLI verbs, facets, and operation modules, and
   use `rendering` for the bounded package or orchestration surface such as
@@ -253,19 +274,20 @@ Current application of this rule:
   `JournalUnitRef` over mixed stems that alternate between a stage-owned noun
   and one child-record noun.
 - When a broad shared root is genuinely needed, keep the immediate children
-  concrete and mirrored. `support/` is acceptable only when it is split into
+  concrete and mirrored. `assessment/` is acceptable only when it is split into
   families such as `gap/`, `review/`, and `readiness/` rather than flattened
   into one catch-all boundary.
 - Apply that same rule to persisted sidecar layout. Prefer paths such as
-  `support/gap/gap_records.json` and `support/readiness/readiness_records.json`
-  over one flat `support/` directory full of unrelated sidecar families.
+  `assessment/gap/gap_records.json` and
+  `assessment/readiness/readiness_records.json` over one flat
+  `assessment/` directory full of unrelated sidecar families.
 - In forward-looking prose, prefer explicit family names such as `gap`,
-  `review`, and `readiness` over the looser umbrella `shared support` when
-  those are the actual owned families. Reserve generic `support` for
-  intentional roots or bounded field names such as `domain/support/`,
-  `support/`, or `support_shape`.
+  `review`, and `readiness` over the looser umbrella `shared assessment` when
+  those are the actual owned families. Reserve generic `assessment` for
+  intentional roots or bounded field names such as `domain/assessment/`,
+  `assessment/`, or `support_shape`.
 - When cross-stage support logic needs its own application boundary, give it
-  the family noun directly, such as `application/readiness/`, rather than
+  the family noun directly, such as `application/assessment/`, rather than
   burying it under a neighboring stage package.
 - `application/compatibility/` is acceptable only for migration-era bridge
   compatibility views and view writers. When a page or package uses that root,
@@ -286,6 +308,8 @@ Current application of this rule:
 - Reserve suffixes precisely:
   - `Ref` for canonical identity tuples or stable pointers
   - `Id` and `*_id` for stable identifiers only
+  - `Key` and `*_key` when one slot may hold either a stable id or a canonical
+    ref tuple
   - `Record` for persisted record families
   - `Explanation` for explanatory sidecars keyed to one kernel or support record
   - `View` for compatibility outputs or other reshaped reader-facing surfaces
@@ -330,23 +354,30 @@ Current application of this rule:
   generic outside the product. Prefer `TaxCarryForwardRecord` and
   `TaxUnsupportedInputRecord` over bare `CarryForwardRecord` or
   `UnsupportedInputRecord`.
-- Apply the same rule to child-local fields, refs, and helper names. When the
-  owning product or record already supplies the parent context, prefer the
-  shortest truthful child noun such as `selection_id`, `proposal_refs`, or
-  `assertion_ids` over longer forms that restate the parent stem.
+
+### Stable Id Namespaces
+
+Stable-id namespaces are catalog-governed, not review-time judgment.
+
+- canonical stable ids are the catalog-declared reusable id families
+- canonical stable ids use the shortest truthful cross-boundary family noun
+- local id slots are owner-local aliases declared in the catalog
+- local slots exist only when the canonical stable id keeps extra owner context
+  that an owner-local field or array component does not need
+- canonical is the default namespace on governed docs
+- only catalog-declared local-short zones may use local slots
+- local slots are required in declared local-short zones
+- canonical ids are required everywhere else
+- do not decide between canonical ids and local slots based on genericity,
+  ambiguity, or what feels local
+- add new local slots only in patches that update the catalog and the affected
+  owner-page examples together
+
 - Keep scope families parallel from the id to the matching kind value. If the
   stable id is `claim_scope_id`, `checkpoint_proposal_id`, or
-  `product_scope_id`, the matching `scope_kind` or `rollup_kind` value should
-  be `claim_scope`, `checkpoint_proposal`, or `product_scope`, not a competing
+  `kernel_scope_id`, the matching `scope_kind` or `rollup_kind` value should
+  be `claim_scope`, `checkpoint_proposal`, or `kernel_scope`, not a competing
   alternate stem.
-- Do not shorten a child name when that child must travel outside the owning
-  family and the shorter noun would become ambiguous across stages or products.
-  Keep the longer owning stem only when that broader ambiguity is real.
-- When one stage's child id becomes a stable downstream dependency, keep enough
-  of the owning family noun to stay unambiguous outside that source stage.
-  Prefer names such as `claim_bundle_id`, `claim_bundle_decision_id`, and
-  `entry_check_id` over shorter forms such as `bundle_id`,
-  `bundle_decision_id`, or `check_id` once those ids cross stage boundaries.
 - When the record-family stem needs the owning stage noun to stay clear, keep
   that same stem on descendant ids and persisted basenames. Prefer
   `tax_carry_forward_id` and `tax_carry_forward_records.json` alongside
@@ -409,20 +440,21 @@ Current application of this rule:
   right may also stay short. Prefer `GapRecord`, `ReviewRecord`, and
   `ReadinessRecord` over longer prefixed variants that add no new meaning.
 - For shared gap/review/readiness attachment over one emitted product kernel,
-  prefer the explicit `product_scope_id` over generic names such as
+  prefer the explicit `kernel_scope_id` over generic names such as
   `dataset_id`.
 - Name partition scopes after the actual stable dimensions the product id
-  reduces over. If `TaxOutputs` depends on tax-input lineage plus policy and
-  year, prefer `tax-input-policy-year-scoped` over a shorter label that hides
+  reduces over. If `TaxOutputs` depends on `TaxInputs` lineage plus policy and
+  year, prefer `tax-inputs-policy-year-scoped` over a shorter label that hides
   lineage.
 - Apply that same rule to mixed-upstream products. If `Journal` or `TaxInputs`
   depend on accepted checkpoint lineage plus ordered `economic_facts_refs`,
-  prefer `checkpoint-economic-lineage-scoped` over a shorter label such as
-  `checkpoint-lineage-scoped`.
+  prefer `checkpoint-economic-facts-lineage-scoped` over a shorter label such
+  as `checkpoint-lineage-scoped`.
 - Keep mixed-upstream header order, id recipes, and partition labels aligned.
-  For checkpoint-economic-lineage-scoped products, prefer `checkpoint_ref`
-  before ordered `economic_facts_refs` in the product header and product-id
-  recipe so the persisted contract reads in one stable order everywhere.
+  For checkpoint-economic-facts-lineage-scoped products, prefer
+  `checkpoint_ref` before ordered `economic_facts_refs` in the product header
+  and product-id recipe so the persisted contract reads in one stable order
+  everywhere.
 - When prose or helper formulas need the canonical lower-snake-case emitted
   product token, prefer `product_slug` over `product_name` so the stable token
   reads in parallel with `source_slug` and does not sound like display prose.
@@ -430,13 +462,15 @@ Current application of this rule:
   sidecar family in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
   need directory context alone to tell what the file holds.
-- Inside `support/` directories that hold shared gap/review/readiness sidecars,
-  split the directory first into `gap/`, `review/`, and `readiness/`, then
-  make basenames mirror the stored record or explanation family. Prefer
-  `support/gap/gap_records.json`, `support/review/review_records.json`,
-  `support/readiness/readiness_records.json`, and
-  `support/readiness/readiness_rollup_records.json` over one flat support
-  directory or shorter plurals that need directory context to reveal shape.
+- Inside `assessment/` directories that hold shared gap/review/readiness
+  sidecars, split the directory first into `gap/`, `review/`, and
+  `readiness/`, then make basenames mirror the stored record or explanation
+  family. Prefer `assessment/gap/gap_records.json`,
+  `assessment/review/review_records.json`,
+  `assessment/readiness/readiness_records.json`, and
+  `assessment/readiness/readiness_rollup_records.json` over one flat
+  assessment directory or shorter plurals that need directory context to
+  reveal shape.
 - In forward-looking docs and code, reserve `artifact` for current-state bridge
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `view`,
@@ -472,21 +506,34 @@ Current application of this rule:
 - Inside canonical target rollups, use the actual grouping identifier in
   `rollup_kind` when the key is itself a canonical identifier.
 - Keep canonical target rollup families stage- and domain-oriented. If
-  operators still need source-grouped views, expose them as operator views or
+  operators still need source-grouped views, expose them as assessment views or
   compatibility views rather than as shared target `RollupRecord`
   vocabulary members.
-- When an operator view or compatibility view truly stores the shared
+- Prefer concrete held-shape nouns over abstract container prose. Do not use
+  labels such as `emission root`, `output root`, or `root truth container`
+  when the actual kernel, record family, or persisted view already names what
+  the surface holds.
+- When an assessment view or compatibility view truly stores the shared
   source slug as its grouping key, prefer `source_slug` over bare `source`.
 - In canonical target-layer evidence and claim contracts, use `source_*` only
   when the field truly stores source identity or another source-derived value
   that would be ambiguous without the prefix. When the stage already supplies
   that locality, prefer the shorter held-thing noun such as `activity_label`,
   `location_label`, or `statement_kind` over `source_local_*`.
+- `statement_kind` and `balance_kind` are locality-preserving bounded field
+  names, not shared downstream vocabulary families. Keep them only where the
+  owning evidence or slice contract explicitly freezes that locality.
 - When a contract page freezes an allowed locality exception such as
   `source_slug`, `activity_label`, `provider_operation_key`, or
   `AccountingIntentHint`, restate that locality at the owning field table or
   immediately adjacent prose rather than leaving the exception only in this
   standards page.
+- No valuation-measure field name is frozen in this repo yet. Do not add one to
+  forward-looking claim or record tables until a real shared valuation measure
+  taxonomy exists.
+- `SubjectRef` serializes as `[subject_kind, subject_key]`. Use `subject_key`
+  because the second slot may hold either a stable record id or a canonical ref
+  tuple such as `PositionRef`.
 - When a record owns one primary lifecycle, decision, or resolution field,
   prefer plain `status`, `basis`, or `outcome` over repeating the record stem.
   Add a prefix only when the field describes another concept's status or basis
@@ -506,7 +553,7 @@ Current application of this rule:
   Prefer concept names such as `SettlementStatus` when the concept is a
   bounded status family rather than a broader state bundle.
 - When a record owns one primary classification, role, or intent field,
-  prefer plain `kind`, `role`, `side`, `purpose`, or `measure_kind` over
+  prefer plain `kind`, `role`, `side`, or `purpose` over
   repeating the record stem. Add a longer prefix only when the same record
   carries multiple fields of that family or the field describes another
   concept's role or purpose.
@@ -528,6 +575,9 @@ Current application of this rule:
   trust or readiness tiers for `trust_level`, support shapes for
   `support_shape`, and acceptance reasons for `basis` instead of mixing those
   dimensions inside one field family.
+- Apply that same rule to claim-bundle decisions. `ClaimBundleDecisionRecord`
+  keeps posture on `outcome` and reason on `basis`; do not mix defer or
+  supersession posture back into the `basis` vocabulary.
 - When adjacent vocabularies live on different semantic axes, do not reuse one
   slice-local label across all of them if that would blur reason, support
   shape, and continuity shape. Prefer reason labels such as
@@ -701,7 +751,7 @@ Current application of this rule:
   managed docs-home blurbs. Forward-looking navigation copy should remain
   provider- and custody-neutral unless the page itself is intentionally local
   current-state, bridge-only, oracle-only, or adapter-local documentation.
-- Operator views and compatibility views may still group by
+- Assessment views and compatibility views may still group by
   `source_slug` where operators need that reporting lens, but that dimension
   must not leak into downstream product ids, record ids, authoritative
   directory stems, or canonical readiness-rollup vocabularies.
@@ -726,8 +776,8 @@ Current application of this rule:
 - Prefer product-aligned nouns over abstract process jargon when the product
   already owns the boundary. For example, `TaxInputRecord` is clearer than a
   more abstract tax-record noun when the record is the kernel row inside
-  `TaxInputs`, and `JournalEntryRecord` is clearer than an alternate
-  `AccountingEntryRecord` once `Journal` is the owned product family.
+  `TaxInputs`, and `JournalEntryRecord` is clearer than a more abstract
+  accounting-entry noun once `Journal` is the owned product family.
 - In forward-looking workflow prose, use the emitted product name once the
   contract page already freezes that boundary. Prefer phrases such as
   `build EconomicFacts`, `build ReconciliationState`, or `emit TaxOutputs`
@@ -796,13 +846,43 @@ bounded-slice reference, roadmap phase, contract reference, and control-plane
 routing page that uses that family in the same patch. Do not leave competing
 target names alive in parallel.
 
+### Catalog-First Target Naming Governance
+
+`tools/target_naming_catalog.yaml` is the operational authority for
+forward-looking end-state naming on the enforced target surfaces.
+
+Rules:
+
+- the catalog owns canonical stable ids, local id slots, and identifier
+  boundary contexts
+- update the catalog before introducing or renaming a canonical target term,
+  adding a local id slot, or changing an identifier boundary context
+- declare mirrored directory families once under
+  `canonical_families.directory_families` and derive their directory and
+  sidecar paths from that grouped family definition instead of hand-maintaining
+  parallel path lists
+- update every affected detailed contract page, bounded-slice reference,
+  roadmap surface, and standards surface in the same patch
+- keep frontmatter summaries and generated `docs/README.md` blurbs
+  content-first; do not lead with page-role or authority-first labels that
+  foreground governance instead of the held contract
+- keep provider, custody, and other source-local nouns out of forward-looking
+  titles and summaries unless the summary is intentionally local to a bounded
+  slice
+- run `make naming-check` before landing a naming change, or run
+  `python -m tools.target_naming check` only from the repo-managed external
+  environment when you need the module form directly
+- use `python -m tools.target_naming report --json` when a PR, script, or
+  future dashboard needs machine-readable findings
+- treat the blocking `target-naming` review check as the repo-native guard
+  against new undocumented target names or renamed families
+
 ## Refactor-First Hotspots
 
 Split these modules before adding materially new behavior:
 
 - `src/tallylot/application/intake/packages/resolution.py`
 - `src/tallylot/adapters/sources/platforms/binance/adapter.py`
-- `src/tallylot/adapters/sources/platforms/coinbase/adapter.py`
 
 Preserve these shared package boundaries instead of collapsing them back
 into single modules:
