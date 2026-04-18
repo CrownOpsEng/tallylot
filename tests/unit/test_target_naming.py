@@ -87,12 +87,6 @@ def _write_catalog(
                     "id": "readiness_id",
                     "refs": [],
                 },
-                {
-                    "stem": "readiness_rollup",
-                    "record": "ReadinessRollupRecord",
-                    "id": "readiness_rollup_id",
-                    "refs": [],
-                },
             ],
             "package_paths": ["application/claim/", "domain/assessment/"],
             "standalone_directory_paths": ["compatibility/"],
@@ -113,10 +107,7 @@ def _write_catalog(
                         },
                         {
                             "stem": "readiness",
-                            "sidecars": [
-                                "readiness_records.json",
-                                "readiness_rollup_records.json",
-                            ],
+                            "sidecars": ["readiness_records.json"],
                         },
                     ],
                 },
@@ -653,7 +644,7 @@ def test_audit_allows_marked_locality_exception(tmp_path: Path) -> None:
     with override_repo_root(tmp_path):
         findings = audit_target_naming()
 
-    assert findings == ()
+    assert not findings
 
 
 def test_audit_allows_unmarked_allowed_section_locality_term(tmp_path: Path) -> None:
@@ -689,7 +680,7 @@ def test_audit_allows_unmarked_allowed_section_locality_term(tmp_path: Path) -> 
     with override_repo_root(tmp_path):
         findings = audit_target_naming()
 
-    assert findings == ()
+    assert not findings
 
 
 def test_audit_reports_missing_naming_scope_for_repo_docs(tmp_path: Path) -> None:
@@ -844,7 +835,7 @@ def test_locality_rule_ignores_terms_without_applicable_scope_rule(
     with override_repo_root(tmp_path):
         findings = audit_target_naming(paths=("docs/standards.md",))
 
-    assert findings == ()
+    assert not findings
 
 
 def test_audit_checks_locality_exceptions_inside_table_cells(tmp_path: Path) -> None:
@@ -1046,7 +1037,7 @@ def test_identifier_namespace_allows_canonical_ids_by_default(tmp_path: Path) ->
         """,
     )
 
-    assert findings == ()
+    assert not findings
 
 
 def test_identifier_namespace_requires_local_short_field_slots(
@@ -1094,7 +1085,7 @@ def test_identifier_namespace_allows_local_short_field_slots(tmp_path: Path) -> 
         """,
     )
 
-    assert findings == ()
+    assert not findings
 
 
 def test_identifier_namespace_requires_local_short_array_components(
@@ -1146,7 +1137,7 @@ def test_identifier_namespace_allows_local_short_array_components(
         """,
     )
 
-    assert findings == ()
+    assert not findings
 
 
 def test_identifier_namespace_mixes_canonical_and_local_short_regions(
@@ -1197,7 +1188,7 @@ def test_identifier_namespace_ignores_canonical_ids_without_local_slots(
         """,
     )
 
-    assert findings == ()
+    assert not findings
 
 
 def test_identifier_namespace_checks_qualified_field_suffixes(
@@ -1249,7 +1240,7 @@ def test_identifier_namespace_allows_local_short_qualified_field_suffixes(
         """,
     )
 
-    assert findings == ()
+    assert not findings
 
 
 def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
@@ -1290,7 +1281,6 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
         "assessment/review/review_records.json",
         "assessment/review/review_explanations.json",
         "assessment/readiness/readiness_records.json",
-        "assessment/readiness/readiness_rollup_records.json",
     )
     assert catalog.reference_group_headings == (
         "### Target References",
@@ -1317,6 +1307,30 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     assert "ValuationRecord" in record_names
     assert "JournalEntryRecord" in record_names
     assert "GapRecord" in record_names
+    assert "ReadinessRollupRecord" not in record_names
+    assert "application/assessment/" not in catalog.canonical_families.package_paths
+    assert "application/reporting/" not in catalog.canonical_families.package_paths
+    assert "application/portfolio/" not in catalog.canonical_families.package_paths
+    assert "application/visualization/" not in catalog.canonical_families.package_paths
+    assert "application/investigation/" not in catalog.canonical_families.package_paths
+    assert "assessment view" not in catalog.canonical_tokens.phrases
+    assert "readiness rollup" not in catalog.canonical_tokens.phrases
+    assert "readiness_rollup_id" not in catalog.canonical_tokens.snake
+    retired_aliases = {
+        alias.term: alias.replacement for alias in catalog.retired_aliases
+    }
+    assert retired_aliases["application/readiness/"] == "owning application slice"
+    assert retired_aliases["application/assessment/"] == "owning application slice"
+    assert (
+        retired_aliases["application/query/"]
+        == "specific capability-owned derived read-model package"
+    )
+    assert (
+        retired_aliases["application/read_models/"]
+        == "specific capability-owned derived read-model package"
+    )
+    assert retired_aliases["operator view"] == "derived view"
+    assert retired_aliases["operator views"] == "derived views"
     assert "tools/target_naming.py" in catalog.tooling_paths
     assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
 
@@ -1332,7 +1346,7 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     ],
 )
 def test_real_repo_identifier_namespace_audit_passes(path: str) -> None:
-    assert audit_target_naming(paths=(path,)) == ()
+    assert not audit_target_naming(paths=(path,))
 
 
 def test_target_naming_sensitive_path_helper_covers_docs_and_control_plane() -> None:

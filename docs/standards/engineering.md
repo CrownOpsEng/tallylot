@@ -125,8 +125,8 @@ When a capability grows, split by stable boundaries:
   `application/intake/`, `application/profiling/`, `application/evidence/`,
   `application/claim/`, `application/economics/`,
   `application/compatibility/`, `application/normalization/`,
-  `application/reconciliation/`, `application/assessment/`,
-  `application/checkpoint/`, `application/journal/`, `application/tax/`, and
+  `application/reconciliation/`, `application/checkpoint/`,
+  `application/journal/`, `application/tax/`, and
   `application/rendering/`. Keep request and response contracts in
   capability-local `contracts.py` files and keep orchestration entry points in
   explicitly named use-case modules such as `build_profile.py`,
@@ -187,16 +187,39 @@ Current application of this rule:
   planned-item models, review assembly, and report rendering.
 - Normalization window and derived-balance helpers belong under
   `application/normalization/` rather than as nearby flat siblings.
-- Forward-looking cross-stage gap, review, and readiness reducers plus
-  readiness rollups and assessment views belong under
-  `application/assessment/` rather than being buried under
-  `application/reconciliation/`.
+- Shared gap, review, and readiness contracts belong under `domain/assessment/`
+  while the owning application slice keeps its own assessment behavior.
 - Forward-looking journal expansion and entry checks belong under
   `application/journal/` rather than under a broader `accounting/` umbrella or
   as extra checkpoint-side helpers.
 - Rendering belongs under `application/rendering/`; CoinTracking is one
   output adapter, not an application-center compatibility lane.
 - Dev-only oracle tooling must live outside `src/tallylot/`.
+
+### Tax-First Derived Output Exception
+
+During the active tax-first path, grouped consumer-facing output logic may stay
+inside `application/tax/` or `application/rendering/` only when it is
+exclusively needed for:
+
+- active filing outputs
+- current renderer surfaces
+- current compatibility surfaces
+
+Extraction is mandatory before implementation when any of these are true:
+
+- a second grouped non-compatibility consumer appears
+- a grouped non-authoritative surface needs durable persistence outside tax
+  outputs or compatibility
+- a feature clearly belongs to reporting, portfolio, visualization, or
+  investigation
+- grouped output logic would otherwise be copied into a second stage package or
+  consumer
+
+When extraction becomes mandatory, move that behavior into the specific
+capability package the feature needs, such as application/reporting/,
+application/portfolio/, application/visualization/, or
+application/investigation/, rather than into a generic shared sink.
 
 ## Naming Rules
 
@@ -286,9 +309,9 @@ Current application of this rule:
   those are the actual owned families. Reserve generic `assessment` for
   intentional roots or bounded field names such as `domain/assessment/`,
   `assessment/`, or `support_shape`.
-- When cross-stage support logic needs its own application boundary, give it
-  the family noun directly, such as `application/assessment/`, rather than
-  burying it under a neighboring stage package.
+- When grouped support logic outgrows stage-local ownership, extract it to the
+  specific capability-owned derived read-model package rather than to a shared
+  application sink.
 - `application/compatibility/` is acceptable only for migration-era bridge
   compatibility views and view writers. When a page or package uses that root,
   state directly that it is migration-only rather than a durable application
@@ -319,16 +342,17 @@ Current application of this rule:
   - `Summary` for reader-facing or compatibility aggregates that do not define a
     stable grouped kernel contract
   - `Sidecar` for attached non-kernel detail
-- Reserve `rollup` for canonical target-layer grouped records and their ids.
-  Reserve `summary` for current-state, presentation, or compatibility
-  aggregates that are not the canonical grouped record family. Inside
-  explanation or review sidecars, prefer concrete prose-field names such as
-  `headline`, `known_facts`, or `follow_up` over `*_summary`.
+- Reserve `rollup` for activated capability-owned grouped records and their ids
+  after the roadmap trigger ladder introduces that family. Reserve `summary`
+  for current-state, presentation, or compatibility aggregates that are not the
+  canonical grouped record family. Inside explanation or review sidecars,
+  prefer concrete prose-field names such as `headline`, `known_facts`, or
+  `follow_up` over `*_summary`.
 - Do not use bare `summary` as a target-stage controlled-vocabulary value or
   package responsibility label when a more concrete output noun would say what
   the surface holds. Prefer names such as `policy_summary`,
-  `supporting_schedule`, `filing_form`, `validation_report`, or
-  `readiness_rollup` when those are the real shapes.
+  `supporting_schedule`, `filing_form`, or `validation_report` when those are
+  the real shapes.
 - When describing the fixed top-level fields that travel with every emitted
   product kernel, prefer `product header` over the more abstract `metadata`.
   Reserve `metadata` for looser descriptive prose, not for the canonical
@@ -375,9 +399,8 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
 
 - Keep scope families parallel from the id to the matching kind value. If the
   stable id is `claim_scope_id`, `checkpoint_proposal_id`, or
-  `kernel_scope_id`, the matching `scope_kind` or `rollup_kind` value should
-  be `claim_scope`, `checkpoint_proposal`, or `kernel_scope`, not a competing
-  alternate stem.
+  `kernel_scope_id`, the matching `scope_kind` value should be `claim_scope`,
+  `checkpoint_proposal`, or `kernel_scope`, not a competing alternate stem.
 - When the record-family stem needs the owning stage noun to stay clear, keep
   that same stem on descendant ids and persisted basenames. Prefer
   `tax_carry_forward_id` and `tax_carry_forward_records.json` alongside
@@ -467,10 +490,8 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   `readiness/`, then make basenames mirror the stored record or explanation
   family. Prefer `assessment/gap/gap_records.json`,
   `assessment/review/review_records.json`,
-  `assessment/readiness/readiness_records.json`, and
-  `assessment/readiness/readiness_rollup_records.json` over one flat
-  assessment directory or shorter plurals that need directory context to
-  reveal shape.
+  and `assessment/readiness/readiness_records.json` over one flat assessment
+  directory or shorter plurals that need directory context to reveal shape.
 - In forward-looking docs and code, reserve `artifact` for current-state bridge
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `view`,
@@ -503,18 +524,19 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   `source`. Reserve bare `source` for prose, for grouping dimensions whose
   enclosing field already states the role, or for source-scoped provider
   families where the contract is not storing the slug itself.
-- Inside canonical target rollups, use the actual grouping identifier in
-  `rollup_kind` when the key is itself a canonical identifier.
-- Keep canonical target rollup families stage- and domain-oriented. If
-  operators still need source-grouped views, expose them as assessment views or
-  compatibility views rather than as shared target `RollupRecord`
-  vocabulary members.
+- Inside activated capability-owned target rollups, use the actual grouping
+  identifier in `rollup_kind` when the key is itself a canonical identifier.
+- Keep activated capability-owned rollup families stage- and domain-oriented.
+  During the tax-first path, keep source-grouped or operator-facing aggregates
+  inside compatibility views or the allowed tax-path-local derived outputs
+  rather than as shared target `RollupRecord` vocabulary members.
 - Prefer concrete held-shape nouns over abstract container prose. Do not use
   labels such as `emission root`, `output root`, or `root truth container`
   when the actual kernel, record family, or persisted view already names what
   the surface holds.
-- When an assessment view or compatibility view truly stores the shared
-  source slug as its grouping key, prefer `source_slug` over bare `source`.
+- When a compatibility view or other declared derived view truly stores the
+  shared source slug as its grouping key, prefer `source_slug` over bare
+  `source`.
 - In canonical target-layer evidence and claim contracts, use `source_*` only
   when the field truly stores source identity or another source-derived value
   that would be ambiguous without the prefix. When the stage already supplies
@@ -651,12 +673,12 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
 - When a product header carries an ordered set of upstream refs, keep any
   matching product-id component array in that same canonical order unless the
   contract page documents a stronger reason to differ.
-- Inside aggregate rollup records, use `rollup_kind` and `rollup_key` for the
-  grouping dimensions so `rollup` remains the record shape instead of becoming
-  a second generic field prefix.
-- Inside aggregate rollup records, drop repeated subject or entity nouns from
-  count fields when the rollup already establishes that context. Prefer
-  `ready_count` over `ready_subject_count`.
+- Inside activated capability-owned rollup records, use `rollup_kind` and
+  `rollup_key` for the grouping dimensions so `rollup` remains the record
+  shape instead of becoming a second generic field prefix.
+- Inside activated capability-owned rollup records, drop repeated subject or
+  entity nouns from count fields when the rollup already establishes that
+  context. Prefer `ready_count` over `ready_subject_count`.
 - Prefer `Proposal` for stage-owned pre-acceptance records that later become
   accepted truth. Reserve `Candidate` for raw search-space options or other
   unmanaged alternatives that the owning stage has not yet shaped into a
@@ -667,10 +689,11 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   as `LinkRecord` or `ValidationRecord`.
 - When owner docs or bounded-slice refs describe a stored record family in
   prose, reuse the stored family noun instead of swapping to a looser nearby
-  synonym. Prefer `entry checks`, `checkpoint proposals`, and `readiness
-  rollups` when those are the persisted families, and reserve broader prose
-  such as `validation`, `proposal`, or `summary` for the surrounding stage
-  behavior rather than for the stored shape itself.
+  synonym. Prefer `entry checks` and `checkpoint proposals` when those are the
+  persisted families, and use `rollups` only when the owner docs define an
+  activated capability-owned grouped family. Reserve broader prose such as
+  `validation`, `proposal`, or `summary` for the surrounding stage behavior
+  rather than for the stored shape itself.
 - When a stage owns a dedicated check record family, prefer that family noun in
   forward-looking prose for stage-owned persisted outputs and sidecars.
   Reserve broader `validation` wording for human review, workflow posture, or

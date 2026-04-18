@@ -20,7 +20,7 @@ and generic subject-attachment model.
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- kernel-scope readiness rollups are derived from subject-level or scope-level
+- kernel-scope grouped readiness is derived from subject-level or scope-level
   truth, not stored as the only truth
 - gap, review, and readiness records plus sidecars help stages interoperate
   without erasing stage ownership
@@ -122,8 +122,8 @@ Rules:
 
 ### `kernel_scope_id`
 
-`kernel_scope_id` is defined once for target gap, review, readiness, rollup,
-assessment-view, and sidecar attachments.
+`kernel_scope_id` is defined once for target gap, review, readiness,
+derived-output, and sidecar attachments.
 
 Rules:
 
@@ -138,8 +138,8 @@ Rules:
 - `kernel_scope_id` is never a target product id, never an upstream product
   ref, and never the primary reader key when one product id or narrower record
   id exists
-- `kernel_scope_id` is used only for shared assessment views plus gap/review/
-  readiness sidecar attachment when no narrower truthful subject or scope
+- `kernel_scope_id` is used only for gap/review/readiness sidecar attachment
+  and declared derived outputs when no narrower truthful subject or scope
   exists
 - `kernel_scope_id` must not replace `selection_id`,
   `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
@@ -148,7 +148,8 @@ Rules:
 ## Shared Stage Vocabulary
 
 Use one stage vocabulary across gap records, review records, readiness
-records, checkpoint-stage reuse, and downstream assessment views.
+records, checkpoint-stage reuse, and any later capability-owned derived
+outputs.
 
 Shared stage vocabulary:
 
@@ -163,7 +164,8 @@ Shared stage vocabulary:
 Rules:
 
 - `owner_stage` and `blocking_stages` use this vocabulary
-- readiness records and rollups use this vocabulary
+- readiness records and later capability-owned derived outputs use this
+  vocabulary
 - keep stage labels on repo-owned noun forms that match the target package and
   ownership docs
 - do not use alternate labels such as `semantic` once target-stage products
@@ -439,8 +441,8 @@ Rules:
 
 ## Readiness Model
 
-Readiness is subject-first, stage-specific, and reducible into canonical
-rollups plus assessment views.
+Readiness is subject-first, stage-specific, and reducible into derived grouped
+outputs.
 
 ### `ReadinessStatus`
 
@@ -500,88 +502,32 @@ Rules:
 - subject readiness is the base truth
 - `evidence` readiness covers deterministic evidence selection and observation
   completeness before claim commitment
-- reducers work from subject readiness plus gaps, not from hand-built
-  readiness rollup rows
+- reducers work from subject readiness plus gaps, not from hand-built grouped
+  readiness rows
 - a subject may be ready for one stage and blocked for another
 - readiness points to blocking gap ids rather than hiding blockers in
   explanation text
 
-### `ReadinessRollupRecord`
+### Grouped Readiness Before Derived Read-Model Activation
 
-Purpose:
-
-- derived readiness rollup over subject readiness
-
-Fields:
-
-- `readiness_rollup_id`
-- `stage`
-- `rollup_kind`
-- `rollup_key`
-- `status`
-- `blocking_gap_ids`
-- `ready_count`
-- `partial_count`
-- `blocked_count`
-- `not_applicable_count`
-
-Controlled `rollup_kind` vocabulary:
-
-- `location`
-- `instrument`
-- `continuity_segment`
-- `as_of`
-- `tax_year`
-- `kernel_scope`
-
-Rollup-key rules:
-
-- `location` uses one `location_id`
-- `instrument` uses one `instrument_id`
-- `continuity_segment` uses one `continuity_segment_id`
-- `as_of` uses one canonical `YYYY-MM-DD` date string
-- `tax_year` uses one integer tax year
-- `kernel_scope` uses one `kernel_scope_id`
-
-Stable ids:
-
-- `readiness_rollup_id` identifies one derived readiness rollup record
-- `readiness_rollup_id` uses component array
-  `[stage, rollup_kind, rollup_key]`
-
-Ordering:
-
-- sort by tuple `[stage, rollup_kind, rollup_key]`
-- sort `blocking_gap_ids` lexicographically
-
-Serialization:
-
-- serialize readiness rollup records only
-- use stable object-key ordering
-- preserve the declared readiness rollup order above
-
-Fingerprint inputs:
-
-- readiness rollup records in canonical order
-- `schema_version`
-- sorted `blocking_gap_ids`
-- the ordered `ReadinessRecord` ids that fed the rollup
+Grouped readiness is derived behavior, not a shared canonical record family.
 
 Rules:
 
-- readiness rollup rows are derived rollup records, not the only stored truth
-- `partial` requires at least one resolved assertion plus at least one open
-  blocking gap id
-- if no required assertion has resolved yet, status is `blocked`, not
-  `partial`
-- if no blocker applies, status is `ready`, not `partial`
-- kernel-scope readiness rollups remain reproducible from ordered readiness
-  and gap records without manual status editing
-- canonical rollup kinds stay stage- and domain-oriented rather than grouping
-  by source identity
-- source-grouped views belong in assessment views or compatibility
-  views rather than in `ReadinessRollupRecord.rollup_kind`
-- stages use only the dimensions they actually own or can derive safely
+- shared readiness truth stays on ordered `ReadinessRecord` rows plus their
+  linked gap ids
+- before the roadmap trigger ladder activates broader derived read models,
+  grouped readiness may exist only as:
+  - tax-output-local derived output
+  - narrow rendering-derived output
+  - migration compatibility-local derived output
+- grouped readiness must remain reproducible from ordered readiness and gap
+  records without manual status editing
+- do not ship source-grouped or operator-facing grouped readiness as a shared
+  forward-target surface before trigger activation
+- once a grouped consumer requires a broader derived read-model surface, that
+  grouped behavior moves into the owning capability instead of restoring a
+  shared grouped-readiness family
 
 ## Bridge Mapping From Issue And Review Records
 
@@ -612,9 +558,9 @@ Meaning:
 
 - one stage owns one meaning surface
 - downstream stages reference upstream records by stable ids or product ids
-- `kernel_scope_id` is allowed only for shared assessment views and sidecar
-  attachment
-  when no narrower truthful product id, scope id, or record id exists
+- `kernel_scope_id` is allowed only for declared derived outputs and sidecar
+  attachment when no narrower truthful product id, scope id, or record id
+  exists
 - downstream stages add stage-owned outputs only
 
 Keep these first-class:
@@ -654,8 +600,8 @@ Performance implication:
 - repeated full detail copies increase read amplification, join cost, and drift
   risk
 - the correct shape is stable ids or product ids plus stage-owned deltas, with
-  `kernel_scope_id` reserved for shared assessment views or sidecar attachment
-  only
+  `kernel_scope_id` reserved for declared derived outputs or sidecar
+  attachment only
 
 ## Current-To-Target Boundary
 

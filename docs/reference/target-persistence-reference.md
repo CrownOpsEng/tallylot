@@ -50,16 +50,19 @@ When persisting target products:
   views only once a target product is authoritative for that scope
 - keep provenance, explanations, reviews, comparison traces, and other
   non-kernel detail in sidecars
-- keep source-grouped views as assessment views or compatibility
-  views rather than as canonical readiness rollups
+- keep grouped readiness as tax-output-local, narrow rendering-local, or
+  compatibility-local derived output until the roadmap trigger ladder
+  activates a capability-owned read-model surface
 - keep assessment family directories and basenames aligned to the stored
   families, for example `assessment/gap/gap_records.json`,
   `assessment/review/review_records.json`,
-  `assessment/readiness/readiness_records.json`, and
-  `assessment/readiness/readiness_rollup_records.json`
+  and `assessment/readiness/readiness_records.json`
 - `assessment/` stays generic only because it splits immediately into the
   persisted `gap/`, `review/`, and `readiness/` families; unrelated sidecars
   do not belong there
+- defer a general projections root such as
+  `working/projections/<slice>/<projection_family>/...` until the roadmap
+  trigger ladder activates broader derived read models
 - treat caches and indexes as regenerable accelerators, not as business truth
 
 ## Reminder

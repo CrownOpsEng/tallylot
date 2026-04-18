@@ -308,8 +308,15 @@ def test_forward_target_docs_use_kernel_scope_and_assessment_roots() -> None:
         assert "kernel_scope_id" in text, f"{path} must use kernel_scope_id"
         assert "product_scope_id" not in text, f"{path} still uses product_scope_id"
         assert "domain/support/" not in text, f"{path} still uses domain/support/"
+        assert "application/assessment/" not in text, (
+            f"{path} still uses application/assessment/"
+        )
         assert "application/readiness/" not in text, (
             f"{path} still uses application/readiness/"
+        )
+        assert "application/query/" not in text, f"{path} still uses application/query/"
+        assert "application/read_models/" not in text, (
+            f"{path} still uses application/read_models/"
         )
 
 
@@ -320,15 +327,72 @@ def test_forward_target_docs_use_assessment_paths_and_partition_labels() -> None
     gaps_text = (docs_root() / "concepts" / "gaps-and-readiness.md").read_text(
         encoding="utf-8"
     )
+    persistence_text = (
+        docs_root() / "reference" / "target-persistence-reference.md"
+    ).read_text(encoding="utf-8")
 
     assert "assessment/gap/gap_records.json" in recon_text
-    assert "assessment/readiness/readiness_rollup_records.json" in recon_text
+    assert "assessment/readiness/readiness_records.json" in recon_text
+    assert "assessment/readiness/readiness_rollup_records.json" not in recon_text
     assert "checkpoint-economic-facts-lineage-scoped" in recon_text
     assert "tax-inputs-policy-year-scoped" in recon_text
     assert "checkpoint-economic-lineage-scoped" not in recon_text
     assert "tax-input-policy-year-scoped" not in recon_text
+    assert "tax-output-local derived output" in gaps_text
     assert "`kernel_scope`" in gaps_text
     assert "`product_scope`" not in gaps_text
+    assert "assessment view" not in gaps_text
+    assert "assessment views" not in gaps_text
+    assert "assessment view" not in recon_text
+    assert "assessment views" not in recon_text
+    assert "assessment view" not in persistence_text
+    assert "assessment views" not in persistence_text
+    assert "readiness rollup" not in gaps_text.lower()
+    assert "readiness rollup" not in recon_text.lower()
+    assert "readiness rollup" not in persistence_text.lower()
+
+
+def test_forward_target_docs_encode_phase_10_default_read_model_activation() -> None:
+    roadmap_text = (repo_root() / "ROADMAP.md").read_text(encoding="utf-8")
+    overview_text = (docs_root() / "concepts" / "architecture-overview.md").read_text(
+        encoding="utf-8"
+    )
+    migration_text = (docs_root() / "status" / "migration-sequence.md").read_text(
+        encoding="utf-8"
+    )
+    bridge_text = (docs_root() / "concepts" / "bridge-to-target-mapping.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Phase 10" in roadmap_text
+    assert "Phase 10" in overview_text
+    assert "Phase 10" in migration_text
+    assert "Phase 10" in bridge_text
+    assert "default activation point" in overview_text
+    assert "default activation point" in migration_text
+    assert "activation defaults to `Phase 10`" in bridge_text
+
+
+def test_forward_target_docs_reserve_specific_read_model_package_names() -> None:
+    roadmap_text = (repo_root() / "ROADMAP.md").read_text(encoding="utf-8")
+    ontology_text = (docs_root() / "concepts" / "domain-ontology.md").read_text(
+        encoding="utf-8"
+    )
+    engineering_text = (docs_root() / "standards" / "engineering.md").read_text(
+        encoding="utf-8"
+    )
+
+    reserved_paths = (
+        "application/reporting/",
+        "application/portfolio/",
+        "application/visualization/",
+        "application/investigation/",
+    )
+
+    for reserved_path in reserved_paths:
+        assert reserved_path in roadmap_text
+        assert reserved_path in ontology_text
+        assert reserved_path in engineering_text
 
 
 def test_forward_target_docs_retire_operator_views_and_abstract_container_labels() -> (

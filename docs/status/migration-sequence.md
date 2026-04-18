@@ -57,6 +57,11 @@ Migration-wide rules:
   only
 - unchanged bridge outputs must remain reproducible from the authoritative
   target kernels during the compatibility window
+- do not introduce a shared application assessment center as a migration
+  shortcut; assessment behavior stays with the owning slice
+- through the tax-first phases, broader grouped or query surfaces stay on
+  authoritative kernels, declared compatibility views, or tax-output-local and
+  rendering-local derived outputs until the roadmap trigger ladder fires
 
 The authoritative cutover matrix lives in
 [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md).
@@ -118,6 +123,9 @@ After those slices land, migrate readers one consumer surface at a time:
   explicitly repointed
 - journal and tax readers move only after their upstream products are
   authoritative and stable
+- broader grouped consumers stay on tax-output-local outputs, narrow rendering
+  outputs, or compatibility views until the roadmap trigger ladder requires a
+  dedicated derived read-model slice
 
 ### 5. Later Downstream Products
 
@@ -129,6 +137,28 @@ Rules:
 - do not let `Journal` repair economic or checkpoint truth
 - do not let tax decide source meaning, reconciliation completeness, or
   checkpoint acceptance
+
+### 6. Triggered Derived Read-Model Activation
+
+The roadmap trigger ladder is the authority for when broader derived read
+models and projections become mandatory.
+If no earlier trigger fires, the default activation point is `Phase 10`
+post-filing expansion.
+
+Before a trigger fires:
+
+- keep reader cutovers on authoritative kernels or declared compatibility views
+- do not introduce general read-model package roots or projection storage
+  families early
+- keep grouped derived outputs inside `TaxOutputs` or `application/rendering/`
+  only when they remain exclusive to the active tax-first path
+
+When a trigger fires:
+
+- create only the specific capability-owned derived read-model package the new
+  feature needs
+- keep that derived surface additive and non-authoritative beside the
+  authoritative pipeline products
 
 ## Bridge Retirement Rules
 
