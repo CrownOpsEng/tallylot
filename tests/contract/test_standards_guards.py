@@ -357,7 +357,7 @@ def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
     assert "multiple bounded checkpoint commits" in commits_text
     assert "keep each authored commit bounded" in implementation_text
     assert "split it into\n   multiple bounded checkpoint commits" in checkpoint_text
-    assert "keep every authored commit bounded to one reviewable slice" in agents_text
+    assert "keep every authored commit bounded to one reviewable change" in agents_text
 
 
 def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
@@ -406,7 +406,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     )
     assert "use the `markdown` skill if available" in agents_text
     assert (
-        "use\n  the repo-local workflow for the active surface and reload the narrow repo\n  guidance listed in this file before editing."
+        "use\n  the repo-local workflow for the active area and reload the narrow repo\n  guidance listed in this file before editing."
         in agents_text
     )
     assert "docs/standards/issues.md" in agents_text
@@ -441,9 +441,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "always-visible PR metadata checks" in guardrails_text
     assert "full non-duplicated blocking suite" in guardrails_text
     assert "suppresses the narrower targeted pytest subset checks" in guardrails_text
-    assert (
-        "every applicable changed surface group has been revisited" in guardrails_text
-    )
+    assert "every applicable changed file group has been revisited" in guardrails_text
     assert "issue-finding with open outcome" in guardrails_text
     assert "make audit-pr-review" in hardening_route_text
     assert "tools.run_pr_review_checks" in hardening_route_text
@@ -454,7 +452,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
         "green `tools.run_pr_review_checks` result as a no-findings"
         in hardening_route_text
     )
-    assert "issue-finding loop" in hardening_route_text
+    assert "review cycle" in hardening_route_text
     assert "invent findings to hit a quota" in hardening_route_text
     assert (
         "stop only after a full pass yields no new meaningful findings"
@@ -465,7 +463,7 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     assert "claiming a clean pass" not in hardening_route_text
     assert "final PR review" not in hardening_route_text
     assert (
-        "Continue steps 1 through 5 until every applicable changed surface group has"
+        "Continue steps 1 through 5 until every applicable changed file group has"
         in hardening_route_text
     )
 
@@ -497,7 +495,7 @@ def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() ->
     assert "issue-finding with open outcome" in hardening_route_text
     assert "AGENTS.md`, its task-routing table" in guardrails_text
     assert "checkpoint commits during the loop" in guardrails_text
-    assert "applicable surface groups" in guardrails_text
+    assert "applicable file groups" in guardrails_text
     assert (
         "Repair every finding from that pass before starting the next pass"
         in hardening_route_text

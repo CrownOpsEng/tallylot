@@ -12,7 +12,7 @@ Use this skill for repeatable review passes on an active branch or draft PR.
 
 ## Workflow
 
-1. Read the narrow PR review surface first:
+1. Read the narrow PR review guidance first:
    - `docs/standards/delivery-guardrails.md`
    - `docs/standards/implementation.md`
    - `docs/standards/commits.md`
@@ -20,10 +20,10 @@ Use this skill for repeatable review passes on an active branch or draft PR.
 2. Start from deterministic branch and PR facts rather than scratch notes.
 3. Use
    `make audit-pr-review`
-   to identify the applicable surface groups, review domains, and required
+   to identify the applicable file groups, review domains, and required
    verification before choosing the next issue-finding pass.
-4. Repair findings in bounded slices, rerun the required checks for the
-   repaired slice, and keep the PR draft until a full applicable-surface pass
+4. Repair findings in bounded changes, rerun the required checks for the
+   repaired change, and keep the PR draft until a full review cycle
    yields no new meaningful findings.
    Do not describe an upcoming pass as clean, final, or publish-ready; every
    pass is issue-finding with open outcome.
@@ -31,11 +31,11 @@ Use this skill for repeatable review passes on an active branch or draft PR.
    decision by itself; it is only verification evidence for the current
    red-team pass.
 5. Use `issue-workflow`, `docs-authoring`, or `implementation-workflow` when
-   the repair surface moves into those repo-local workflows.
+   the repair work moves into those repo-local workflows.
 
 ## Focus
 
-- cover every applicable changed surface group
+- cover every applicable changed file group
 - keep findings evidence-backed
 - use the strongest broad verification family without skipping declared
-  surface-specific checks
+  file-group-specific checks

@@ -30,7 +30,7 @@ implemented surface.
 - deterministic artifact generation for manifests, normalization output,
   checkpoint output, and validation packages
 - explicit issues for unsupported or ambiguous data
-- provider-neutral transaction facts as the canonical runtime model
+- provider-neutral transaction facts as the only runtime model
 - adapter-driven source and output boundaries, with mirrored workspace guidance
   under [docs/workspace/README.md](docs/workspace/README.md)
 

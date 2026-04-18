@@ -1,6 +1,6 @@
 ---
 title: "Migration Sequence"
-summary: "Incremental migration order from the current bridge toward the target stage-first pipeline with parity gates and retirement rules."
+summary: "Incremental landing and retirement rules for moving from the current bridge to the target pipeline without dual authorities."
 doc_type: status
 audience: human
 owner: repo
@@ -8,243 +8,173 @@ status: active
 nav_order: 20
 ---
 
-Use this document to implement the next phase without a big-bang refactor. The
-goal is to move from the current bridge into the target pipeline with explicit
-parity gates, clean retirement rules, and no wrapper-lane sprawl.
+Use this page to sequence implementation increments without a big-bang refactor.
+This document keeps migration rules, cutover expectations, and retirement gates
+in one place. It does not re-own target product contracts or recreate roadmap
+phase detail.
 
-## Migration Objectives
+## Roadmap Ownership
 
-- preserve current working behavior while new foundations land
-- avoid freezing the current bridge as the long-term architecture center
-- keep adapters and services shippable at every checkpoint
-- keep CoinTracking as one edge projection and oracle family, not a migration
-  anchor
-- preserve current bridge truth while establishing the target stage and
-  ontology ownership model
+[ROADMAP.md](../../ROADMAP.md) is the only numbered implementation program of
+record.
 
-## Current Bridge
+Use this page for:
 
-Current bridge truth:
+- migration landing rules
+- reader and writer cutover expectations
+- bridge retirement rules
+- parity and replay gates that must hold before one surface is retired
 
-- `EconomicActivityDraft`, `TransactionFact`, and the shared balance artifacts
-  are the live implementation seam
-- that seam is the current parity baseline
-- that seam is not the final architecture center
+Do not use this page for:
 
-Bridge naming rule:
+- competing phase numbers
+- alternate phase labels
+- duplicate product-contract definitions
+- duplicate ontology, support-model, or persistence contracts
 
-- keep current bridge names in live bridge code until later implementation
-  slices replace them
-- do not perform large bridge renames as a prerequisite for the next bounded
-  architecture slice
+## Operating Rules
 
-Current live bridge contract owner:
+Every slice must obey the following rules before code lands:
 
-- [`docs/concepts/current-bridge-contracts.md`](../concepts/current-bridge-contracts.md)
+- declare the slice scope
+- name the authoritative writer for every affected scope
+- name the authoritative reader for every affected consumer
+- declare the product ids and upstream product-ref fields used by each target
+  kernel the slice introduces
+- name the derived compatibility projection for every unmigrated reader
+- name any declared compatibility sidecars needed to preserve retained legacy
+  fields for those unmigrated readers
+- name the cutover gate and retirement gate for every affected bridge surface
 
-## Target Pipeline
+Migration-wide rules:
 
-The target architecture lands as these final products:
+- no consumer may read a bridge surface and a target product as peer
+  authorities
+- once a target product exists for an in-scope family, that target product is
+  the authoritative persisted source for that scope
+- bridge surfaces that remain in use after that point are compatibility
+  projections only
+- unchanged bridge outputs must remain reproducible from the authoritative
+  target kernels during the compatibility window
 
-1. `EvidenceSet`
-2. `ClaimSet`
-3. `EconomicFacts`
-4. `ReconciliationState`
-5. `Checkpoint`
-6. `Journal`
-7. `TaxInputs`
-8. `TaxOutputs`
+The authoritative cutover matrix lives in
+[Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md).
 
-Owning contract pages:
+## Landing Order
 
-- [`docs/concepts/current-bridge-contracts.md`](../concepts/current-bridge-contracts.md)
-- [`docs/concepts/pipeline-stage-contracts.md`](../concepts/pipeline-stage-contracts.md)
-- [`docs/concepts/domain-ontology.md`](../concepts/domain-ontology.md)
-- [`docs/concepts/gaps-and-readiness.md`](../concepts/gaps-and-readiness.md)
+### 1. Contract Lock
 
-## Shared Foundations
+Before broad implementation, freeze:
 
-These foundations are prerequisites, not later cleanup:
+- target product contracts on
+  [Pipeline Stage Contracts](../concepts/pipeline-stage-contracts.md)
+- ontology and ref seams on
+  [Domain Ontology](../concepts/domain-ontology.md)
+- shared blockers, reviews, readiness, and `SubjectRef` rules on
+  [Gaps And Readiness](../concepts/gaps-and-readiness.md)
+- persistence, partitioning, and fast-path rules on
+  [Reconciliation And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
+- bridge-to-target cutover rules on
+  [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md)
 
-- shared stage contracts
-- shared ontology and identity seams
-- shared gap and readiness model
-- shared `SubjectRef` rules
-- shared checkpoint-assertion direction
-- typed tax-policy selection seam
+Broad parallel implementation must not begin before those owner pages are
+aligned and frozen.
 
-Rules:
+### 2. First Upstream Slice
 
-- no stage should invent an incompatible blocker or readiness surface
-- no stage should use `SubjectRef` as a substitute for real domain modeling
-- no stage should restate the target contracts in a competing document when an
-  owning contract page already exists
+Land the bounded
+[`EvidenceSet -> ClaimSet`](../reference/first-slice-contract.md) slice.
 
-## Bridge-To-Target Landing Rules
+Required posture:
 
-- `EvidenceSet` formalizes deterministic evidence selection and source-local
-  observations now spread across intake, profiling, and translation-input
-  planning
-- `ClaimSet` becomes the place where `EconomicActivityDraft` responsibilities
-  can split into source-local meaning plus preserved ambiguity
-- `EconomicFacts` becomes the accepted economic truth that the current
-  `TransactionFact` bridge only approximates today
-- `ReconciliationState` and `Checkpoint` absorb the trust-gate work currently
-  expressed through bridge-era balances, links, and checkpoint scaffolding
-- `Journal`, `TaxInputs`, and `TaxOutputs` replace the remaining bridge-era
-  tendency to push accounting or tax meaning downward too early
+- `EvidenceSet` becomes authoritative for in-scope evidence selection
+- `ClaimSet` becomes authoritative for in-scope source-local semantics
+- `translation_input_plan.json`, `EconomicActivityDraft`, and
+  `SourceTranslationBatch` survive only as derived compatibility projections
 
-## Phase Order
+### 3. First Downstream Slice
 
-### Phase 0. Shared Foundations And Schema Lock
+Land the bounded
+[`EconomicFacts -> ReconciliationState -> Checkpoint`](../reference/first-downstream-slice-contract.md)
+slice.
 
-Deliver before broad code changes:
+Required posture:
 
-- aligned bridge, target, ontology, and support-model docs
-- shared provenance, gaps, readiness, checkpoint assertions, identity seams,
-  `SubjectRef`, and tax-policy selection contracts
-- clear bridge-versus-target ownership so later code slices do not re-decide
-  naming or stage boundaries
+- `EconomicFacts` becomes authoritative for in-scope accepted economic meaning
+- `ReconciliationState` becomes authoritative for in-scope continuity segments
+  and balance targets
+- `Checkpoint` becomes authoritative for in-scope accepted checkpoint truth
+- `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`
+  survive only as derived compatibility projections for unmigrated readers
 
-Rules:
+### 4. Reader Cutovers
 
-- do not start broad tax-engine work before these contracts are written down
-- do not let the bridge contract masquerade as the target ontology
+After the bounded slices land, migrate readers one consumer surface at a time:
 
-### Phase 1. Formalize `EvidenceSet`
+- evidence and claim readers move to target kernels first
+- reconciliation and checkpoint readers move next
+- balance inspect/check/summarize moves only when its application surface is
+  explicitly repointed
+- accounting and tax readers move only after their upstream products are
+  authoritative and stable
 
-Deliver:
+### 5. Later Downstream Products
 
-- deterministic selection outputs
-- explicit selected, superseded, and blocked evidence outputs
-- source-local parsed observation contracts
-
-Rules:
-
-- evidence selection remains deterministic
-- evidence does not force economic meaning
-- evidence selection reasoning must survive beyond intake-time heuristics
-
-### Phase 2. Introduce `ClaimSet`
-
-Deliver:
-
-- claim-native contracts
-- claim-owned issues and reviews
-- explicit materially unresolved meaning
-- claim-to-economic compilation seam boundaries
+Land `Journal`, `TaxInputs`, and `TaxOutputs` only after the upstream target
+products they depend on are authoritative for the relevant scope.
 
 Rules:
 
-- ambiguous rows may remain claims without being forced into final economic,
-  accounting, or tax meaning
-- adapters own source-local meaning only
-- the current bridge may remain as a bounded seam during migration, but it must
-  stop forcing final semantics too early
+- do not let accounting repair economic or checkpoint truth
+- do not let tax decide source meaning, reconciliation completeness, or
+  checkpoint acceptance
 
-### Phase 3. Land `EconomicFacts`
+## Bridge Retirement Rules
 
-Deliver:
+Retire or demote a bridge surface only when all of the following are true:
 
-- claim-to-economic compilation seam
-- target-directed economic models aligned to the target ontology
-- explicit identity, settlement, lifecycle, and valuation handling
+- the slice names one authoritative writer for the affected scope
+- every active reader has a declared target reader or derived compatibility
+  projection
+- parity and replay gates for the affected slice pass on unchanged evidence
+- current-state docs are updated if the implemented live runtime surface
+  changes
 
-Rules:
+Bridge retirement is therefore:
 
-- no wrapper lane beside the active runtime path
-- no bridge rename is required before the first target economic slice lands
-- accepted economic meaning should move away from bridge activity-label
-  centrality
+- per scope, not global
+- per reader, not just per writer
+- controlled by cutover gates, not by naming preference
 
-### Phase 4. Land `ReconciliationState`
+## Parity And Replay Gates
 
-Deliver:
+Do not retire an older path until all relevant gates pass:
 
-- explicit reconciliation completeness and continuity outputs
-- target gap and readiness adoption where the owning stage can support it
-- transfer linkage, balance targets, and checkpoint candidacy under one
-  reconciliation-owned product
+- adapter or parser contract tests for the affected slice
+- projection parity tests for every retained compatibility surface
+- target-kernel replay checks for the authoritative product
+- reconciliation or checkpoint parity where the slice reaches those stages
+- end-to-end smoke coverage for the affected workflow
 
-Rules:
+When a compatibility projection remains active, parity must prove:
 
-- reconciliation consumes accepted economic truth plus checkpoint evidence
-- exact balance assertions are one reconciliation input surface, not the whole
-  reconciliation product
+- the projection is reproducible from the authoritative target kernels
+- the projection preserves unchanged bridge behavior for unmigrated readers
+- the projection does not introduce new semantic authority outside the target
+  kernels
 
-### Phase 5. Land `Checkpoint`
+## Docs And Control-Plane Updates
 
-Deliver:
+When a migration slice changes architecture ownership or the live runtime
+surface, update these pages together:
 
-- explicit checkpoint truth and acceptance basis
-- source-backed checkpoint evidence requirements
-- trust level and adopted opening-state handling
-- checkpoint continuity reports
+- [ROADMAP.md](../../ROADMAP.md)
+- [Architecture Overview](../concepts/architecture-overview.md)
+- [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md)
+- [Current Bridge Contracts](../concepts/current-bridge-contracts.md) if live
+  bridge truth changes
+- the owning slice reference page if the bounded slice contract changes
 
-Rules:
-
-- checkpoint truth remains source-backed where filing readiness requires it
-- operator-confirmed balances may support runtime progress but do not become
-  filing-ready checkpoint truth by default
-
-### Phase 6. Land `Journal`
-
-Deliver:
-
-- internal journal model
-- posting expansion and validation
-- accounting-owned blockers
-
-Rules:
-
-- accounting validates accepted truth
-- accounting does not repair truth
-
-### Phase 7. Land `TaxInputs` And `TaxOutputs`
-
-Deliver:
-
-- `TaxInputs`
-- selected tax-policy execution
-- year-partitioned carry-forward state
-- policy-owned `TaxOutputs`
-
-Rules:
-
-- tax outputs flow from `TaxInputs` through selected tax policies
-- tax policy does not decide source meaning, reconciliation truth, or
-  checkpoint truth
-
-### Phase 8. Retire Superseded Bridge Surfaces
-
-Retire or demote bridge surfaces only after:
-
-- parity tests exist for the affected slice
-- the replacement slice has one active runtime path
-- downstream stages no longer depend on the superseded bridge-only assumptions
-- current-state docs are updated to reflect the new live truth
-
-## Parity Gates
-
-Do not remove an older path until all relevant gates pass:
-
-- adapter or parser contract tests
-- projection parity tests
-- reconciliation or checkpoint artifact parity where applicable
-- end-to-end smoke workflow for the affected slice
-- explicit docs updates so current-state truth and target-state planning remain
-  aligned
-
-## Docs And Control-Plane Migration
-
-The docs and control-plane baseline for this migration is:
-
-- target stage contracts, ontology, and gap/readiness ownership are already
-  separated into focused concept pages
-- current-state docs keep current bridge terms where accuracy requires them
-- later implementation should rename the dev-only shared repo support surface
-  from `repo_support/` to `dev_support/`, but this remains future work until
-  the corresponding implementation slice lands
-- roadmap, migration, and architecture anchors must be updated together when a
-  slice changes stage ownership, trust-gate sequencing, or shared support
-  contracts
+Current-state docs stay truthful to implemented behavior. Forward-looking docs
+stay detailed enough that later implementation does not need to invent ids,
+reader cutovers, storage placement, or support-model boundaries.

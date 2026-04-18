@@ -8,7 +8,8 @@ status: active
 ---
 
 The TallyLot docs cover the typed runtime, operator workflows, workspace
-model, artifact contracts, and repo standards.
+model, artifact contracts, repo standards, and the owner-page contracts that
+freeze product ids, critical-path kernel fields, and compatibility boundaries.
 
 ## How Docs Are Organized
 
@@ -16,7 +17,7 @@ model, artifact contracts, and repo standards.
 - Guides describe how to perform a task.
 - Reference pages define factual contracts, artifacts, and workspace semantics.
 - Standards capture repo implementation rules.
-- Status pages describe the current implemented surface and active migration
+- Status pages describe the current implemented capabilities and active migration
   state.
 
 ## Start Here
@@ -25,9 +26,13 @@ model, artifact contracts, and repo standards.
 - [Operator quickstart](guides/operator-quickstart.md)
 - [Architecture overview](concepts/architecture-overview.md)
 - [Current bridge contracts](concepts/current-bridge-contracts.md)
+- [Bridge-to-target mapping](concepts/bridge-to-target-mapping.md)
 - [Pipeline stage contracts](concepts/pipeline-stage-contracts.md)
 - [Domain ontology](concepts/domain-ontology.md)
+- [Gaps and readiness](concepts/gaps-and-readiness.md)
 - [Reconciliation and tax architecture](concepts/reconciliation-tax-architecture.md)
+- [First-slice contract](reference/first-slice-contract.md)
+- [First downstream slice contract](reference/first-downstream-slice-contract.md)
 - [Engineering standards](standards/engineering.md)
 - [Workspace model](concepts/workspace-model.md)
 
@@ -38,15 +43,16 @@ Agent-specific routing and repo execution rules live in
 
 <!-- docs-maintenance:start concepts -->
 - [Architecture Overview](concepts/architecture-overview.md): High-level map of the current bridge, the target pipeline, and the focused pages that own each major contract.
-- [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for trust gates, performance rules, tax-policy architecture, and filing-critical rollout from the current bridge toward the target pipeline.
-- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Owning concept page for the live bridge contracts, bridge artifacts, and current schema rules.
+- [Reconciliation And Tax Architecture](concepts/reconciliation-tax-architecture.md): Design anchor for trust gates, persistence rules, performance rules, and filing-critical rollout from the current bridge toward the target pipeline.
+- [Current Bridge Contracts](concepts/current-bridge-contracts.md): Primary concept page for the live bridge contracts, bridge artifacts, and current schema rules.
+- [Bridge To Target Mapping](concepts/bridge-to-target-mapping.md): Single authority for how live bridge surfaces cut over to target products during migration, including writer ownership, reader cutovers, and retirement gates.
 - [Pipeline Stage Contracts](concepts/pipeline-stage-contracts.md): Owning contract for the target pipeline products, stage responsibilities, handoff guarantees, and downstream decision boundaries.
-- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter surfaces, and oracle-only artifacts.
-- [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, identity seams, package direction, and bridge-versus-target modeling rules.
+- [Oracle Boundaries](concepts/oracle-boundaries.md): Boundary rules for normal runtime inputs, adapter inputs and outputs, and oracle-only artifacts.
+- [Domain Ontology](concepts/domain-ontology.md): Owning concept page for the target economic ontology, entity and ref seams, package direction, and bridge-versus-target modeling rules.
 - [Transaction Classification](concepts/transaction-classification.md): Bridge-only classification vocabulary for the current fact-path bridge.
-- [Gaps And Readiness](concepts/gaps-and-readiness.md): Owning concept page for the target gap model, readiness model, sidecar rules, and shared `SubjectRef` contracts.
+- [Gaps And Readiness](concepts/gaps-and-readiness.md): Owning concept page for the target gap model, review model, readiness model, sidecar rules, and shared `SubjectRef` contracts.
 - [Workspace Model](concepts/workspace-model.md): Conceptual overview of the external workspace, seeded files, and mirrored repo guidance.
-- [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): First-principles design anchor for the future unified adapter manifest, facets, adapter products, and deterministic verification model.
+- [Unified Adapter Architecture](concepts/unified-adapter-architecture.md): Forward design for the future adapter manifest, facets, and verification model without re-owning target product contracts.
 <!-- docs-maintenance:end concepts -->
 
 ## Common Tasks
@@ -67,6 +73,10 @@ below when you need the detailed procedure for one stage of the workflow.
 
 <!-- docs-maintenance:start reference -->
 - [Baseline Validation Contract](reference/baseline-validation-contract.md): Baseline oracle package, artifact list, and intent for validation output.
+- [First Slice Contract](reference/first-slice-contract.md): Bounded contract for the default Coinbase-first EvidenceSet and ClaimSet slice, including cardinality, ids, replay gates, and bridge compatibility projections.
+- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Bounded contract for the first Coinbase-first EconomicFacts, ReconciliationState, and Checkpoint slice, including selected-bundle event identity and bridge compatibility projections.
+- [Target Contract Primitives](reference/target-contract-primitives.md): Helper reference for reusable ids and tuples that complement the owner pages without redefining target product contracts.
+- [Target Product Artifacts](reference/target-product-artifacts.md): Helper reference that points to the owner pages for target persistence, partitions, and bounded slice artifact expectations.
 - [Export Checklist](reference/export-checklist.md): Verification export set and staging checklist for round-close work.
 - [Wallet Inventory Artifacts](reference/wallet-inventory-artifacts.md): Artifact contract for location inventory outputs and evidence rows.
 - [Timezone Validation Artifacts](reference/timezone-validation-artifacts.md): Artifact contract for timezone provenance outputs and validation issues.
@@ -85,17 +95,17 @@ that follows the external workspace layout.
 ## Current Status
 
 <!-- docs-maintenance:start status -->
-- [Current State](status/current-state.md): Implemented runtime capabilities, current operational surface, and deferred areas.
-- [Migration Sequence](status/migration-sequence.md): Incremental migration order from the current bridge toward the target stage-first pipeline with parity gates and retirement rules.
-- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the unified adapter contract rewrite until after filing-critical work.
+- [Current State](status/current-state.md): Implemented runtime capabilities, current operational capabilities, and deferred areas.
+- [Migration Sequence](status/migration-sequence.md): Incremental landing and retirement rules for moving from the current bridge to the target pipeline without dual authorities.
+- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and bounded first slices are stable.
 <!-- docs-maintenance:end status -->
 
 ## Standards
 
 <!-- docs-maintenance:start standards -->
 - [Engineering Standards](standards/engineering.md): Code placement, typing, modularity, and naming rules for the typed application.
-- [Implementation Working Agreement](standards/implementation.md): Execution rules for shaping, verifying, refactoring, and checkpointing repo work.
-- [Commit Standards](standards/commits.md): Conventional Commit, checkpoint, and PR body rules for stable repo history.
+- [Implementation Working Agreement](standards/implementation.md): Execution rules for shaping, verifying, refactoring, and committing repo work.
+- [Commit Standards](standards/commits.md): Conventional Commit subjects, reviewable commit boundaries, and PR body rules for stable repo history.
 - [Issue Standards](standards/issues.md): Issue scope, privacy rules, template usage, and proactive follow-up issue handling for repo work.
 - [Delivery Guardrails](standards/delivery-guardrails.md): Control hierarchy, enforcement tiers, and exception handling for repo delivery and agent-assisted Git operations.
 <!-- docs-maintenance:end standards -->

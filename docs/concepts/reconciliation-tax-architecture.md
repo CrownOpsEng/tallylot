@@ -1,6 +1,6 @@
 ---
 title: "Reconciliation And Tax Architecture"
-summary: "Design anchor for trust gates, performance rules, tax-policy architecture, and filing-critical rollout from the current bridge toward the target pipeline."
+summary: "Design anchor for trust gates, persistence rules, performance rules, and filing-critical rollout from the current bridge toward the target pipeline."
 doc_type: concept
 audience: human
 owner: repo
@@ -12,7 +12,7 @@ This document is the implementation anchor for evolving the repo away from
 tracker-dependent historical workflows and into an independent reconciliation,
 checkpoint, accounting, and tax runtime.
 
-Use it when making structural decisions that affect normalization,
+Use it when making structural decisions that affect persistence,
 reconciliation, checkpointing, journaling, or tax computation. Treat it as a
 design contract, not as a loose idea list.
 
@@ -36,42 +36,10 @@ The system must:
   hard checkpoint
 - compute forward tax state for `2023` to `2025`
 - render a deterministic double-entry journal and require it to validate
-- surface unsupported or ambiguous truth as explicit issues, reviews, and
-  later-stage blockers
+- surface unsupported or ambiguous truth as explicit gaps, reviews, and later
+  stage blockers
 - preserve one interface-neutral application surface so future CLI, HTTP, API,
   and agent entrypoints can share the same typed workflows
-
-## Active Bridge Note
-
-The current runtime bridge centers on:
-
-- `EconomicActivityDraft`
-- `TransactionFact`
-- `balance_snapshots.csv`
-- `balance_references.csv`
-
-That bridge is:
-
-- the live implementation seam
-- the current delivery path
-- the current parity baseline
-- not the final architecture center
-
-Current operational surfaces that remain part of runtime truth:
-
-- capture-scoped source profiling
-- capture-scoped normalization
-- planner-enabled normalization
-- translation input candidates, plan, and blocking issues
-- source assembly into `working/normalized/sources/<source>/`
-- shared statement extraction
-- statement-backed balance references
-- checkpoint-owned manual balance submission scaffolding and validation
-- checkpoint location inventory rebuild
-- offline-by-default balance inspection and checking
-- optional provider hydration through separate balance-provider adapters
-- replay validation
-- oracle comparison and verification workflows
 
 ## Contract Owners
 
@@ -80,6 +48,9 @@ This page does not re-own every lower-level contract.
 Use these pages as the detailed contract owners:
 
 - [Current Bridge Contracts](current-bridge-contracts.md)
+- [Bridge To Target Mapping](bridge-to-target-mapping.md)
+- [First Slice Contract](../reference/first-slice-contract.md)
+- [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gaps And Readiness](gaps-and-readiness.md)
@@ -110,8 +81,8 @@ Trust and ownership rules:
 
 ### Source Boundaries
 
-- source adapters produce source-local evidence and bridge outputs today, and
-  later source-local claims
+- source adapters produce source-local evidence today and source-local claims
+  later
 - adapters may emit only safe bridge hints and safe source-local meaning
 - adapters do not own reconciliation
 - adapters do not own checkpoint acceptance
@@ -120,7 +91,8 @@ Trust and ownership rules:
 
 ### Output Boundaries
 
-- renderers consume downstream-owned products
+- renderers consume downstream-owned products or approved compatibility
+  projections
 - renderer-specific constraints stay at the edge
 - CoinTracking row rules remain output-adapter concerns only
 
@@ -132,14 +104,6 @@ Trust and ownership rules:
 - the system must still reconstruct, reconcile, checkpoint, journal, and
   compute taxes if CoinTracking tax reports disappear
 
-### Crypto Boundaries
-
-- crypto is the current filing scope
-- crypto is not the ontology center
-- crypto-specific language belongs at adapter, policy, or output edges unless
-  fundamentally required
-- the core remains broad enough for non-crypto support later
-
 ### Persistence Boundaries
 
 - persistence implements the model
@@ -150,6 +114,111 @@ Trust and ownership rules:
 - repository ports remain the persistence seam
 - active SQLite rollout is deferred until after the filing-critical path is
   stable
+
+## Authoritative Kernels Versus Compatibility Projections
+
+The target runtime uses one authoritative persisted kernel per product scope.
+
+Rules:
+
+- target products persist as canonical JSON kernels with separate sidecars
+- once a target product becomes authoritative for an in-scope family, bridge
+  CSV artifacts for that same scope become compatibility projections only
+- compatibility projections remain valid during migration, but they are never
+  peer authorities beside the target kernel
+- consumers read one authority at a time:
+  - unmigrated consumers read the derived compatibility projection
+  - migrated consumers read the target product kernel directly
+- compatibility projections must stay reproducible from authoritative kernels
+  for the duration of the compatibility window
+
+## Authoritative Persistence Model
+
+Forward-looking persistence rules:
+
+- target product kernels persist as canonical JSON documents
+- every persisted kernel carries its declared product id in metadata
+- product ids are distinct from `dataset_id`
+- upstream `*_ref` metadata fields store product ids, never `dataset_id` and
+  never raw kernel fingerprints
+- product sidecars persist separately from kernels and are keyed by
+  `dataset_id` or narrower truthful record ids
+- writes are replace-whole-partition operations, not append-in-place mutation
+  of accepted truth
+- persisted kernels are immutable snapshots for one declared partition scope
+- sidecars are regenerable from authoritative kernels plus upstream refs
+- caches and indexes are accelerators only; they are never the authority
+
+### Default Partition Scopes
+
+| Product | Default partition scope |
+| --- | --- |
+| `EvidenceSet` | capture-scoped |
+| `ClaimSet` | capture-scoped |
+| `EconomicFacts` | assembled-source-scoped |
+| `ReconciliationState` | continuity-segment-scoped under one source scope |
+| `Checkpoint` | checkpoint-run-scoped |
+| `Journal` | checkpoint-run-scoped |
+| `TaxInputs` | tax-run-scoped |
+| `TaxOutputs` | policy-and-tax-year-scoped inside one tax run |
+
+Rules:
+
+- one persisted partition owns one canonical kernel fingerprint
+- one persisted partition owns one product id aligned with that partition
+- partition boundaries are chosen by the dimensions the owning stage actually
+  reduces over
+- target products may expose derived reporting projections across several
+  partitions, but those projections do not replace the authoritative partition
+  kernels
+- `EvidenceSet`, `ClaimSet`, and `EconomicFacts` kernels each persist one
+  whole-product kernel per declared partition
+- one persisted `ReconciliationState` kernel owns one continuity-segment root
+- one persisted `Checkpoint` kernel owns one checkpoint root
+- one persisted `Journal` kernel owns one journal emission root
+- one persisted `TaxInputs` kernel owns one tax-input emission root
+- one persisted `TaxOutputs` kernel owns one policy-and-tax-year output root
+- readers use product ids or narrower record ids for target-kernel lookup;
+  `dataset_id` remains for shared support attachment and reporting only
+
+### Default Filesystem Placement
+
+Use these paths in forward-looking docs and later implementation work:
+
+- `working/normalized/captures/<capture_uid>/evidence_set.json`
+- `working/normalized/captures/<capture_uid>/claim_set.json`
+- `working/normalized/captures/<capture_uid>/support/gaps.json`
+- `working/normalized/captures/<capture_uid>/support/reviews.json`
+- `working/normalized/captures/<capture_uid>/support/readiness.json`
+- `working/normalized/sources/<source>/economic_facts.json`
+- `working/normalized/sources/<source>/bridge/facts.csv`
+- `working/normalized/sources/<source>/bridge/balance_snapshots.csv`
+- `working/normalized/sources/<source>/bridge/balance_references.csv`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/state.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/gaps.json`
+- `working/normalized/sources/<source>/reconciliation/<continuity_segment_id>/support/readiness.json`
+- `outputs/checkpoints/<checkpoint_label>/checkpoint.json`
+- `outputs/checkpoints/<checkpoint_label>/journal.json`
+- `outputs/checkpoints/<checkpoint_label>/tax_inputs.json`
+- `outputs/checkpoints/<checkpoint_label>/tax_outputs/<policy_id>/<tax_year>.json`
+
+Rules:
+
+- the external workspace remains the runtime location for evidence and emitted
+  artifacts
+- later implementation may add indexes or caches beside these kernels, but
+  must not rename the authoritative kernel paths without updating the owner
+  docs
+- current-state docs remain accurate to the live bridge until implementation
+  lands; this section owns only the target direction
+
+### Replace Semantics
+
+- writers replace the entire owned kernel for one partition on a successful run
+- a rerun may refresh or prune stage-owned sidecars under the same partition
+- reruns must not append stale kernel rows across runs
+- later accepted truth supersedes earlier accepted truth through new records and
+  explicit lineage, not through in-place mutation of an accepted kernel record
 
 ## Performance Rules
 
@@ -165,9 +234,9 @@ Inner-loop calculations for:
 - journal validation
 - tax computation
 
-must operate on compact typed records only.
+must operate on compact typed kernel records only.
 
-Hot-path data should include:
+Required hot-path content includes:
 
 - stable ids
 - timestamps and effective times
@@ -175,6 +244,7 @@ Hot-path data should include:
 - location refs
 - instrument refs
 - signed quantities
+- direct assertion values where the stage owns them
 - explicit link ids
 - explicit state transitions
 - valuations where computation requires them
@@ -183,8 +253,8 @@ Hot-path data should include:
 The hot path should not repeatedly join in:
 
 - full provenance detail
-- review records
-- large issue text
+- reviews
+- large explanation text
 - evidence metadata blobs
 - renderer metadata
 - adapter-local annotations that do not change computation
@@ -196,9 +266,8 @@ Those belong in sidecars and explanation layers.
 Reducers must use stable ordering:
 
 - effective time when present
-- otherwise event timestamp
-- then deterministic tie-break keys such as source sequence, event id, or leg
-  id
+- otherwise the product's canonical temporal key
+- then deterministic tie-break keys such as stable ids
 
 Rules:
 
@@ -209,216 +278,74 @@ Rules:
 ### Partitioning
 
 Expensive recalculation must be partitionable by the dimensions the owning
-stage actually uses, including:
+stage actually uses.
 
-- source
-- location
-- instrument
-- subject reference where applicable
-- continuity segment where applicable
-- checkpoint date where applicable
-- tax year where applicable
+Required partition keys:
 
-Use derived reporting projections instead of forcing every stage to key every
-record by every dimension.
+| Stage family | Required partition keys |
+| --- | --- |
+| Evidence and claims | `capture_uid`, `evidence_set_id`, `selection_id`, `claim_set_id`, `interpretation_scope_id` |
+| Economic and reconciliation | `economic_facts_id`, `reconciliation_state_id`, `continuity_segment_id`, `balance_target_id`, `checkpoint_candidate_id` |
+| Checkpoint and accounting | `checkpoint_run_id`, `journal_run_id`, `checkpoint_assertion_id`, `entry_id` |
+| Tax | `tax_inputs_id`, `tax_outputs_id`, `tax_year`, `basis_pool_ref`, `determinant_id`, `basis_transition_id` |
 
-### Materialized State
+Rules:
 
-Materialized derived state is allowed where replay cost would otherwise become
-too high.
+- evidence selection comparisons stay bounded to one `selection_id`
+- claim adjudication stays bounded to one `interpretation_scope_id` at a time
+- economic reducers stay bounded to one `economic_facts_id` partition at a time
+- reconciliation reducers may read one continuity segment plus its explicit
+  upstream references; they must not rescan unrelated full-history partitions
+  per balance target
+- checkpoint reducers may read the declared `checkpoint_run_id` inputs plus
+  explicit upstream refs; they must not treat `dataset_id` as the product-join
+  key
+- tax reducers may read one tax year plus explicitly referenced carry-forward
+  basis-pool state; they must not recompute unrelated years by default
+- unbounded pairwise candidate comparison outside one deterministic selection
+  group is not allowed
+- full-history rescans per target are not allowed when a bounded partition or
+  reusable materialized state exists
 
-Typical surfaces include:
+### Sidecars, Caches, And Indexes
 
-- checkpoint state snapshots
+Sidecars and caches are allowed where replay cost would otherwise become too
+high.
+
+Typical sidecar or cache surfaces include:
+
+- evidence selection summaries
+- interpretation-scope decision summaries
 - reconciliation continuity summaries
-- position state snapshots where replay cost is material
-- tax pool and carry-forward state by tax year
-- validated posting aggregates where useful
+- checkpoint package summaries
+- journal validation summaries
+- tax carry-forward state indexes
 
-Derived state remains replaceable and does not replace source-of-truth history.
+Rules:
 
-### Reducer Design Rules
+- sidecars are never the sole copy of business meaning
+- sidecars may be keyed by `dataset_id` or narrower truthful record ids, but
+  they do not replace product ids for kernel lookup
+- caches are always regenerable from authoritative kernels and upstream refs
+- materialized indexes are allowed only when they accelerate declared product
+  kernels rather than replacing them
 
-Prefer:
+Required hot-path indexes:
 
-- linear or near-linear reducers over sorted subject streams
-- explicit link records instead of repeated inference
-- one-time normalization of ambiguous bridge data into later-stage structures
-- reuse of prior state outputs when valid
+- `subject_ref + effective_at`
+- `continuity_segment_id`
+- `checkpoint_assertion` subject and date
+- `tax_year + basis_pool_ref`
 
-Avoid:
+## Acceptance Rules
 
-- repeated global joins across the full history
-- repeated scanning of unrelated sources or years
-- repeated evidence-level parsing during later-stage calculations
-- dynamic policy dispatch inside tight per-record loops
+Before approving structural work in reconciliation, checkpointing, accounting,
+or tax, ask:
 
-### Tax Performance Rules
+- does the design keep one authoritative kernel per scope partition
+- can unmigrated consumers survive on compatibility projections alone
+- can migrated consumers read target products without bridge lookups
+- is every hot-path determinant present in the kernel rather than in a sidecar
+- can the stage replay deterministically from its upstream authorities
 
-Tax calculation should not recompute full acquisition history from scratch for
-every output row if bounded state is available.
-
-The design should support:
-
-- tax-year partitioning
-- carried-forward pool and state materialization
-- determinant grouping by subject and tax year
-- reuse of prior year-close state as next year-open state
-
-Policy selection should be resolved before execution, not as dynamic branching
-inside the hot loop.
-
-## Tax Policy Architecture
-
-Typed tax-policy selection is a foundation seam, not an afterthought.
-
-### Required Contracts
-
-- `TaxPolicyId`
-- `TaxPolicyDescriptor`
-- `TaxPolicy`
-- `TaxPolicyRegistry`
-- `ApplyTaxPoliciesRequest`
-- `ApplyTaxPoliciesResponse`
-
-### `TaxPolicyDescriptor`
-
-Must include:
-
-- stable id
-- display name
-- jurisdiction or regime code
-- supported years or periods
-- supported output families
-- version
-- limitations
-- status:
-  - `supported`
-  - `partial`
-  - `experimental`
-  - `deferred`
-
-### `TaxPolicy`
-
-Consumes:
-
-- one `TaxInputs`
-- one execution context
-
-Produces:
-
-- one `TaxOutputs`
-- tax-owned gaps
-- unsupported or deferred outputs
-
-### Selection Semantics
-
-- one run may select one or more policy ids
-- all selected policies run independently against the same input set
-- one policy's unsupported coverage does not invalidate another's results
-- unknown policy ids fail request validation immediately
-- missing explicit selection and missing configured default also fail
-  validation
-- configured defaults live only at application, config, and interface
-  boundaries
-- the core must not assume one default jurisdiction
-
-### Tax-Stage Ownership
-
-Tax policy may decide:
-
-- jurisdiction-specific treatment
-- basis rules
-- carry-forward rules
-- output structure
-
-Tax policy may not decide:
-
-- source meaning
-- economic truth
-- reconciliation truth
-- checkpoint truth
-- accounting truth
-
-### MVP Tax Scope
-
-- keep the seam general
-- implement Canada MVP first
-- prioritize the filing path for `2023`, `2024`, and `2025`
-- do not build a plugin platform
-
-## Filing-Critical Acceptance Criteria
-
-The system is filing-ready only when all of these are true:
-
-- a source-backed checkpoint exists near `2026-03-23`
-- no unresolved material reconciliation issues remain
-- no unresolved material unsupported tax items remain
-- journal validation passes for supported activity
-- the forward-computed state from the `2023-08-05` historical oracle lands on
-  the source-backed checkpoint
-- `2023`, `2024`, and `2025` outputs can be reproduced from workspace evidence
-
-## Materiality And Unsupported Cases
-
-Default materiality rules:
-
-- do not silently suppress any non-zero drift
-- log every difference
-- allow explicit immaterial waivers only in artifacts, never in code comments
-- default immaterial threshold: `<= CAD 25` per asset and `<= CAD 250`
-  aggregate
-- do not auto-waive `CAD`, `BTC`, `ETH`, or stablecoins
-
-Unsupported or ambiguous truth must produce explicit outputs and roadmap items.
-Do not guess on:
-
-- superficial loss treatment
-- capital versus business account classification
-- unsupported DeFi lifecycle cases
-- NFTs
-- bankruptcy or scam-loss workflows
-
-## External Library Policy
-
-Use directly when they are permissive and fit cleanly:
-
-- Ledger CLI as the first journal validator
-- RP2 as an architectural reference or narrow comparison source
-- `tsiemens/acb` as a scenario and formula reference
-- small MIT or Apache libraries only when the reuse is narrow and documented
-
-Use for reference only:
-
-- Beancount
-- hledger
-- GPL codebases, tests, or examples
-
-Do not:
-
-- copy GPL code into the repo
-- lightly rewrite GPL implementations and treat them as original
-- introduce heavy support libraries that fight the current typed architecture
-
-## Rollout Alignment
-
-The repo is moving from the current bridge toward the target stage contracts
-incrementally, not through a big-bang rewrite.
-
-Rollout rules:
-
-- the current bridge remains the live runtime seam until a bounded slice lands
-  a cleaner replacement
-- no dual active runtime or compatibility-wrapper lane should survive once a
-  clean replacement is ready
-- current-state docs stay accurate about live bridge terms
-- target docs stay explicit about the intended end state without claiming it is
-  already implemented
-- when work affects architecture, sequencing, or trust-gate ownership, update
-  this page together with [ROADMAP.md](../../ROADMAP.md) and
-  [Migration Sequence](../status/migration-sequence.md)
-
-The detailed implementation order lives in:
-
-- [ROADMAP.md](../../ROADMAP.md)
-- [Migration Sequence](../status/migration-sequence.md)
+If the answer to any of these is no, the design is not ready.

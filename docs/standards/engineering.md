@@ -26,7 +26,7 @@ Place code by responsibility, not by convenience:
 - `adapters/`: source and output adapters plus their adapter-local helpers.
 - `interfaces/`: thin entry points such as the CLI. Interfaces orchestrate
   services; they do not own business rules.
-- `repo_support/`: the current live shared support seam for repo-native tooling
+- `repo_support/`: the current live shared support boundary for repo-native tooling
   and repo-side tests. Keep this outside `src/tallylot/` because it is not
   production/runtime code.
 
@@ -38,9 +38,9 @@ Repo-native support boundaries:
 - `src/tallylot/` remains production/runtime code only.
 - `tools/` remains the home for repo-native entry points and task-specific
   dev-only modules.
-- `repo_support/` is the current live shared seam for repo-native tooling and
+- `repo_support/` is the current live shared support boundary for repo-native tooling and
   repo-side tests.
-- later implementation should rename that dev-only surface to `dev_support/`
+- later implementation should rename that dev-only package area to `dev_support/`
   so the boundary is explicit.
 - until that rename lands, `repo_support/` must stay narrow, typed,
   stdlib-first, and named by concept.
@@ -89,11 +89,11 @@ Default to one responsibility per module.
   `misc.py`, or another catch-all `common.py`.
 - Existing generic modules should shrink over time, not absorb more unrelated
   behavior.
-- Apply the same rule to the current live `repo_support/` surface and the later
-  target `dev_support/` surface. Shared repo-only support must be split by
-  named seam, not collected under generic support modules.
+- Apply the same rule to the current live `repo_support/` package area and the
+  later target `dev_support/` package area. Shared repo-only support must be
+  split by named boundaries, not collected under generic support modules.
 
-When a capability grows, split by stable seams:
+When a capability grows, split by stable boundaries:
 
 - `domain/`: separate models, value objects, and typed aliases by concept.
 - `application/`: organize by bounded capability packages such as
@@ -112,7 +112,7 @@ When a capability grows, split by stable seams:
   persistence, or composition-root wiring. Do not push application policy down
   here just to share code.
 - `repo_support/`: host reusable repo-only support only when it is shared by
-  multiple repo-native surfaces such as `tools/` and `tests/`. This is the
+  multiple repo-native areas such as `tools/` and `tests/`. This is the
   current live name for a later `dev_support/` target. Do not move
   production/runtime concerns here.
 
@@ -168,21 +168,70 @@ Current application of this rule:
 - Keep public names and commands simple, neutral, and ergonomic. Prefer short
   names that match the user-visible operation over long implementation labels,
   and only add qualifiers when a real naming collision or ambiguity exists.
-- Follow the same naming posture for modules, functions, classes, and commands:
+- For domain and contract surfaces, prefer the shortest accurate noun phrase.
+  Cut migration, workflow, or implementation adjectives before cutting the
+  owning noun that tells readers what the thing is.
+- Follow the same naming approach for modules, functions, classes, and commands:
   choose concise descriptive names over decorative jargon.
 - Reject verbose pattern-label suffixes such as `UseCase`, `Manager`, or
   `Handler` unless they disambiguate a real collision in the surrounding
   namespace.
+- Reserve suffixes precisely:
+  - `Ref` for canonical identity tuples or stable pointers
+  - `Id` and `*_id` for stable identifiers only
+  - `Record` for persisted kernel families
+  - `Explanation` for explanatory sidecars keyed to one kernel or support record
+  - `Projection` and `Sidecar` for derived or compatibility outputs
+- Prefer concrete owning nouns over abstract containers. Avoid names such as
+  `Core`, `Data`, `Info`, `Context`, `Payload`, or `Item` when `Record`,
+  `Explanation`, `Projection`, or the domain noun would say what the surface
+  actually holds.
+- Keep record-family stems and id stems aligned. Prefer `GapRecord` plus
+  `gap_id` or `ReadinessRecord` plus `readiness_id` over longer names that
+  repeat context the record family already supplies, unless a real sibling
+  family would make the shorter stem ambiguous.
+- Fingerprints are scalar values, not refs. Use `*_fingerprint` for stored
+  fingerprints and reserve `*_ref` for product ids, record ids, tuple refs, or
+  other explicit pointer shapes.
+- Prefer `*_kind` for canonical one-of vocab and variant fields. Reserve
+  `family` for prose grouping of related record types, adapters, or artifact
+  lines rather than for kernel field names.
+- Do not encode nullability in canonical target field names. Use the base noun
+  or ref name and state optionality in the field contract rather than in
+  suffixes that spell out nullability.
+- Do not encode canonical ordering or record-local support role in a target
+  field name when the enclosing contract already provides that meaning.
+  Drop redundant ordering prefixes and contextual support adjectives when the
+  record already establishes the relationship.
+- Prefer `*_key` for stable discriminators inside canonical ids, tuples, and
+  record-local identity seams. Avoid more abstract labels such as `*_anchor`
+  or redundant labels such as `*_discriminator` when the field simply holds
+  the stable key for that parent scope.
+- Prefer the base noun when a field already stores the locator or ref itself.
+  Avoid extra suffixes such as `_identity` when `member_locator` or
+  `valuation_source_ref` already says what the value holds.
+- For compatibility-only material that is not a target concept, name it by
+  boundary and role rather than promoting it to a pseudo-domain type.
+  Prefer `bridge annotation payload`, `output note sidecar`, or
+  `compatibility sidecar` over introducing a new canonical-seeming type name in
+  forward-looking docs or code.
+- Name the held thing separately from its identity seam or persistence shell:
+  `BasisPool` is a concept, `BasisPoolRef` is its ref, and
+  `BasisTransitionRecord` is a kernel row family.
 - Prefer specific names such as `csv_parser.py`, `balance_mapper.py`, or
   `issue_rules.py` over generic names.
 - Match package structure to the architecture first and the external provider
   second.
 - New core-domain and application names should avoid crypto-exclusive language
   unless the concept is genuinely adapter-local or asset-class-specific.
+- Do not bake migration qualifiers such as `bridge`, `legacy`, `current`, or
+  `compat` into canonical target-layer concepts, helper ids, or product ids
+  unless the name is intentionally current-state or adapter-local.
 - Under `adapters/sources/`, group packages by source kind before the provider:
   `platforms/<provider>/`, `wallets/<provider>/`, `explorers/<provider>/`,
-  `portfolio/<surface>/`, `generic/<contract>/`, or `stubs/<reserved>/`.
-- Keep naming stable across implementation, tests, and adapter metadata.
+  `portfolio/<input_kind>/`, `generic/<contract>/`, or `stubs/<reserved>/`.
+- Keep naming stable across implementation, tests, adapter metadata, and owner
+  docs.
 
 ## Refactor-First Hotspots
 
@@ -192,7 +241,7 @@ Split these modules before adding materially new behavior:
 - `src/tallylot/adapters/sources/platforms/binance/adapter.py`
 - `src/tallylot/adapters/sources/platforms/coinbase/adapter.py`
 
-Preserve these shared-surface package seams instead of collapsing them back
+Preserve these shared package boundaries instead of collapsing them back
 into single modules:
 
 - `src/tallylot/domain/transactions/`

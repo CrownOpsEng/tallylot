@@ -19,8 +19,8 @@ Use this skill for round verification workflow execution.
 2. Use the documented oracle CLI commands:
    - `make oracle ARGS='round scaffold'`
    - `make oracle ARGS='verification compare'`
-3. Review the round artifacts and comparison outputs before answering closeout
-   questions.
+3. Review the round artifacts and comparison outputs before answering final
+   review questions.
 4. Use `source diff` only when the verification path needs source-level repair
    context.
 

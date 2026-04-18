@@ -3,7 +3,7 @@
 Review these artifacts after `source normalize`:
 
 - `exceptions.csv` for blocking or unsupported rows
-- `normalization_reviews.csv` for explicit assumptions and canonicalizations
+- `normalization_reviews.csv` for explicit assumptions and normalization choices
 - `facts.csv` for the internal fact artifact set
 
 If the issue is a candidate-shape or overlap problem, render a candidate with

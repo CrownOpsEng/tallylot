@@ -16,7 +16,7 @@ proactive follow-up issue handling.
 
 ## Workflow
 
-1. Read the narrow authoring surface first:
+1. Read the narrow authoring guidance first:
    - `AGENTS.md`
    - `docs/README.md`
    - `docs/status/current-state.md`

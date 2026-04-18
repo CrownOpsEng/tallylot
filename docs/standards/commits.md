@@ -1,6 +1,6 @@
 ---
 title: "Commit Standards"
-summary: "Conventional Commit, checkpoint, and PR body rules for stable repo history."
+summary: "Conventional Commit subjects, reviewable commit boundaries, and PR body rules for stable repo history."
 doc_type: standard
 audience: human
 owner: repo
@@ -9,8 +9,8 @@ nav_order: 30
 ---
 
 Use Conventional Commits for all authored commits. Keep commit history small,
-cohesive, and checkpoint-oriented. Every authored commit must stay bounded to
-one reviewable slice. When a task spans more than one separable slice, land it
+cohesive, and reviewable. Every authored commit must stay bounded to one
+reviewable change. When a task spans more than one separable change, land it
 as multiple bounded checkpoint commits instead of one umbrella commit.
 
 Use Conventional Commit subjects and the structured body sections for merge
@@ -44,7 +44,7 @@ Subject rules:
 - lowercase type
 - required lowercase kebab-case scope
 - non-empty imperative summary
-- summary names a concrete repo surface or behavior
+- summary names a concrete repo area or behavior
 - maximum 72 characters for the full subject line
 - no trailing period
 - do not use generic summaries such as `cleanup`, `misc fixes`, or
@@ -108,12 +108,13 @@ Standard footers are allowed, including `BREAKING CHANGE:`.
 
 ## Pull Request Merge Strategy Standard
 
-`main` is a merge-commit branch by default. Preserve multi-checkpoint pull
-requests with merge commits so the reviewed checkpoint history remains visible
-in Git. Use squash merges only for the narrow single-checkpoint exception.
+`main` is a merge-commit branch by default. Preserve pull requests with
+multiple authored commits as merge commits so the reviewed commit history
+remains visible in Git. Use squash merges only for the narrow single-commit
+exception.
 
-Treat the pull request title and description as the canonical review record
-for every PR. For the single-checkpoint exception, that same metadata also
+Treat the pull request title and description as the primary review record
+for every PR. For the single-commit exception, that same metadata also
 becomes the generated squash commit that lands on `main`.
 
 Protected-branch rule:
@@ -122,7 +123,7 @@ Protected-branch rule:
 - do not push directly to `main`
 - do not use branch-protection bypass or force-push for normal delivery
 - do not rewrite a merged `main` commit when the original pull request must
-  remain attached to the landing commit; open a new pull request repair instead
+  remain attached to the merged commit; open a new pull request repair instead
 - if a protected-branch repair exception is explicitly requested, limit that
   exception to the exact repair action, verify the remote branch tip
   immediately afterward, and restore PR-only flow before continuing
@@ -131,7 +132,7 @@ PR title rules:
 
 - use the same Conventional Commit subject format required for authored commits
 - keep the title history-ready on its own because it remains the PR headline
-  and, for a single-checkpoint PR, the squash subject becomes
+  and, for a single-commit PR, the squash subject becomes
   `<pr title> (#<pr number>)`
 - do not use generic titles such as `update branch`, `cleanup`, or `misc fixes`
 
@@ -165,7 +166,7 @@ PR body rules:
   from the active PR
 - keep authored commit messages on `Why:`, `What:`, and `Checks:` without
   issue-closing keywords unless the user explicitly requests otherwise
-- for a one-commit PR, still list that single checkpoint under
+- for a one-commit PR, still list that single commit under
   `Included checkpoints:`
 
 Merge method rules:
@@ -173,23 +174,23 @@ Merge method rules:
 - if `Included checkpoints:` lists more than one commit, the PR must merge with
   a merge commit
 - if `Included checkpoints:` lists exactly one commit, the PR must squash merge
-- do not squash multi-checkpoint PRs
-- do not create a merge commit for a single-checkpoint PR unless the user
+- do not squash PRs with multiple authored commits
+- do not create a merge commit for a single-commit PR unless the user
   explicitly requests a one-off repair in the current thread
-- when merging a multi-checkpoint PR, override GitHub's default merge subject
+- when merging a PR with multiple authored commits, override GitHub's default merge subject
   with a deterministic subject that keeps the PR number visible instead of
-  landing `Merge pull request ...`
+  producing `Merge pull request ...`
 - for a merge commit, use `<pr title> (#<pr number>)` as the merge subject and
   keep the merge body in the same `Why:`, `What:`, `Checks:`,
   `Included checkpoints:` format as the PR body so the mainline commit record
   matches the reviewed PR record
 - if a repair PR supersedes an older pull request, add the repo's neutral
   duplicate/superseded label to the older PR as the primary marker before
-  closing the repair loop
+  closing the older PR
 - use a neutral comment on the older PR only when the repo has no suitable
   label or the user explicitly asks for explanatory prose
 
-For a single-checkpoint PR, the GitHub-generated squash commit on `main` may
+For a single-commit PR, the GitHub-generated squash commit on `main` may
 retain the validated `Included checkpoints:` and `Follow-ups:` sections from
 the PR body. Treat that as allowed for the generated mainline commit record,
 even though authored checkpoint commits should only use `Why:`, `What:`, and
@@ -226,8 +227,8 @@ working agreement, not optional guidance to ignore once a change is stable.
 
 A stable checkpoint means:
 
-- the commit covers one bounded reviewable slice
-- the change slice is coherent and reviewable
+- the commit covers one bounded reviewable change
+- the change is coherent and reviewable
 - the tree is internally consistent
 - relevant checks have passed
 - the commit has actually been created before the task is closed
@@ -238,10 +239,10 @@ Heuristics:
 - medium multi-part task: usually 1 to 3 commits by concern
 - larger risky refactor: split only where rollback or review value is real
 - broad but separable docs or repo-structure refactor: checkpoint each stable
-  slice instead of batching everything into one umbrella commit
+  change instead of batching everything into one umbrella commit
 
 For large scopes, the default end state is still bounded commits. Do not wait
-until the end of the branch and then collapse several reviewable slices into
+until the end of the branch and then collapse several reviewable changes into
 one authored commit just because the broader task was related.
 
 Do not batch unrelated fixes together. Do not split one bounded change into a
@@ -255,7 +256,7 @@ or fixup-based consolidation for that limited cleanup only, and update the
 amended commit message so `Why:`, `What:`, and `Checks:` remain accurate for
 the final commit content. Do not use repeated amend cycles to grow one broad
 commit that should be split into separate stable checkpoints.
-For multi-slice refactors, use designated checkpoint commits whenever the slice
+For multi-part refactors, use designated checkpoint commits whenever the change
 already leaves the tree coherent, linked, and narrow-check verified. A giant
 single-commit rewrite is only acceptable when the change cannot be reviewed or
 validated incrementally.
@@ -301,7 +302,7 @@ In practice that means:
 - control-plane or workflow changes run the targeted guard tests selected by
   the planner
 - production-code changes may still escalate to the broader Python quality
-  suite when the planner marks that surface as relevant
+  suite when the planner marks that change area as relevant
 - commit-message validation stays in the separate `commit-msg` hook
 
 Standard final verification still means running:
@@ -325,7 +326,7 @@ make pr-review-full
 
 Use `tools.run_quality_gates` as the default final local
 verification command. Use `tools.run_pr_review_checks --mode full` when
-changing CI, packaging, release, or other workflow surfaces where the local
+changing CI, packaging, release, or other workflow areas where the local
 verification pass should mirror the final non-draft PR suite before handoff.
 Add `--pr-title`
 plus `--pr-body-file` when you also want the full review run to validate the
@@ -349,8 +350,8 @@ make tool TOOL=run_pr_review_checks ARGS='--mode full --pr-title "$$(cat /tmp/pr
 
 `pylint`, full-repo `ruff`, and the full `pytest` suite still belong primarily
 to the shared quality and PR-review runners. The commit-time hook should stay
-change-sensitive so docs-only and similarly narrow slices do not rerun
-irrelevant Python scanners, even though some staged code or workflow surfaces
+change-sensitive so docs-only and similarly narrow changes do not rerun
+irrelevant Python scanners, even though some staged code or workflow areas
 may still escalate to broader checks.
 
 Do not describe `mypy` or `pyright` as covering `pylint` findings. Type checks

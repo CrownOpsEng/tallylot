@@ -176,8 +176,8 @@ def test_commit_standards_document_hybrid_pr_merge_policy() -> None:
     )
 
     assert "`main` is a merge-commit branch by default." in text
-    assert "Use squash merges only for the narrow single-checkpoint exception." in text
-    assert "do not squash multi-checkpoint PRs" in text
+    assert "Use squash merges only for the narrow single-commit" in text
+    assert "do not squash PRs with multiple authored commits" in text
     assert "non-pushed checkpoint commit may be amended" in text
     assert "single-checkpoint exception" in implementation_text
     assert "search existing open issues first" in implementation_text
