@@ -40,8 +40,7 @@ This slice is:
 - bounded `EvidenceSet` emission for that slice
 - bounded `ClaimSet` emission for that slice
 - continued compatibility with current `translation_input_plan.json`,
-  `EconomicActivityDraft`, `SourceTranslationBatch`,
-  `TransactionFact`, `balance_references.csv`, and `cointracking_csv`
+  `EconomicActivityDraft`, and `SourceTranslationBatch`
 
 The slice is not:
 
@@ -226,15 +225,17 @@ Required derived compatibility views:
   sidecars keyed by `claim_id` or `claim_bundle_id`
 - `SourceTranslationBatch` derived from `ClaimSet` plus declared
   compatibility sidecars and shared gap/review/readiness sidecars
-- derived `TransactionFact` rows preserved for current bridge consumers
-- `balance_references.csv` preserved for current downstream compatibility
-- `cointracking_csv` preserved through the active bridge/output path
 
 Compatibility rule:
 
 - bridge views remain required during the compatibility window
 - bridge views are not authoritative for target meaning in this slice once
   `EvidenceSet` and `ClaimSet` exist
+- downstream bridge outputs remain on the live bridge path until the first
+  downstream slice makes `EconomicFacts`, `ReconciliationState`, and
+  `Checkpoint` authoritative for that scope
+- this slice must not introduce a new downstream fact builder or target-derived
+  renderer path from `ClaimSet`
 
 Declared compatibility sidecar boundary:
 
@@ -309,10 +310,6 @@ Unchanged evidence must preserve all of the following:
 - `translation_input_plan.json` content
 - `EconomicActivityDraft` ordering and content for evidence in this slice
 - `SourceTranslationBatch` content for evidence in this slice
-- derived `TransactionFact` ordering and meaning for evidence in this slice
-- `balance_references.csv` content for evidence in this slice
-- `cointracking_csv` row ordering and field values for supported
-  `cointracking_csv` rows
 
 ## Replay Gates
 
@@ -324,14 +321,11 @@ The slice is replay-safe only when repeated runs on unchanged evidence preserve:
 - identical `translation_input_plan.json` content
 - identical `EconomicActivityDraft` content for evidence in this slice
 - identical `SourceTranslationBatch` content for evidence in this slice
-- identical derived `TransactionFact` fingerprints for evidence in this slice
-- identical `balance_references.csv` content for evidence in this slice
-- identical `cointracking_csv` output for supported bridge facts
 
 Replay checks must also prove that incidental input ordering changes do not
 change evidence selection, claim order, claim-bundle order,
 claim-bundle decisions, or
-rendered output.
+claim-side compatibility output.
 
 ## Allowed Drift
 
@@ -343,9 +337,6 @@ Not allowed:
 - quantity drift
 - `translation_input_plan.json`, `EconomicActivityDraft`, or
   `SourceTranslationBatch` drift on unchanged evidence in this slice
-- derived `TransactionFact` drift on unchanged evidence in this slice
-- `balance_references.csv` or `cointracking_csv` drift on unchanged evidence in
-  this slice
 
 Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 
@@ -361,6 +352,8 @@ This slice does not:
 - pin the real filing workspace adapter inventory for `2023` to `2025`
 - widen beyond Coinbase retail exports and recognized Coinbase statement
   balance observations
+- own downstream economic or balance compatibility, which remains the first
+  downstream slice's responsibility
 - define runtime `EconomicFacts`, `ReconciliationState`, `Checkpoint`,
   `Journal`, or `TaxInputs`
 - authorize broad target package scaffolding before the contract-lock pass is

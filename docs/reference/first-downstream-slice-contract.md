@@ -65,7 +65,8 @@ The slice may emit only these downstream kernel families:
 | `Checkpoint` | `CheckpointRecord` | accepted checkpoint record for assertions in this slice only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
-`EventLinkRecord` remains out of scope for this slice.
+`EventLinkRecord` remains out of scope for this slice and may land only in a
+later in-phase reconciliation increment.
 
 ## Position And Subject Restrictions
 
@@ -176,6 +177,10 @@ For subjects in this slice, the authoritative products after the slice are:
 - `EconomicFacts` for accepted economic meaning
 - `ReconciliationState` for continuity segments and balance targets
 - `Checkpoint` for accepted checkpoint truth
+
+This is the first slice where `TransactionFact`, `facts.csv`,
+`balance_snapshots.csv`, `balance_references.csv`, balance-application outputs,
+and `cointracking_csv` compatibility are derived from target products.
 
 Required derived compatibility views:
 

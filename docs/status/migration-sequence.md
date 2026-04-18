@@ -39,7 +39,8 @@ Every slice must obey the following rules before code lands:
 
 - declare the slice scope
 - name the authoritative writer for every affected scope
-- name the authoritative reader for every affected consumer
+- name the authoritative reader for every affected consumer using concrete
+  current runtime capabilities rather than generic category labels
 - declare the product id and upstream product-ref fields carried in each target
   product header the slice introduces
 - name the derived compatibility view for every unmigrated reader
@@ -59,12 +60,40 @@ Migration-wide rules:
   target kernels during the compatibility window
 - do not introduce a shared application assessment center as a migration
   shortcut; assessment behavior stays with the owning slice
+- writer-only or scaffold-only commands are not current readers unless the
+  current-state docs explicitly say they consume the persisted bridge artifact
+  after it is written
+- target readers must name a capability plus the authoritative product it reads;
+  undocumented future package roots by themselves are not sufficient reader
+  labels
 - through the tax-first phases, broader grouped or query surfaces stay on
   authoritative kernels, declared compatibility views, or tax-output-local and
   rendering-local derived outputs until the roadmap trigger ladder fires
 
 The authoritative cutover matrix lives in
 [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md).
+
+## Canonical Current-Reader Inventory
+
+Use these labels consistently in this page and in
+[Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md).
+
+- `source normalize planner review and translation path`: planner-enabled
+  normalization review and translation entry points that read
+  `translation_input_candidates.json` and `translation_input_plan.json`
+- `source assemble bridge projection path`: `source assemble` and its bridge
+  projection flow that still builds assembled source datasets from
+  `EconomicActivityDraft` and `SourceTranslationBatch`
+- `operator review diagnostics`: operator review of normalization issues and
+  reviews through `exceptions.csv`, `normalization_reviews.csv`, and related
+  current diagnostics
+- `reconciliation balances inspect`: the shared balance inspection capability
+- `reconciliation balances check`: the deterministic balance-check capability
+- `reconciliation balances summarize`: the shared balance summary capability
+- `cointracking_csv rendering path`: the current CSV rendering path that emits
+  `cointracking_csv`
+- `dev-only oracle comparison path`: the dev-only oracle comparison tools and
+  validation flows that compare current bridge outputs
 
 ## Landing Order
 
@@ -97,6 +126,9 @@ Required posture:
 - `ClaimSet` becomes authoritative for in-scope evidence-local meaning
 - `translation_input_plan.json`, `EconomicActivityDraft`, and
   `SourceTranslationBatch` survive only as derived compatibility views
+- downstream bridge outputs remain on the live bridge path until the first
+  downstream slice makes the downstream target products authoritative for that
+  scope
 
 ### 3. First Downstream Slice
 
@@ -112,6 +144,9 @@ Required posture:
 - `Checkpoint` becomes authoritative for in-scope accepted checkpoint truth
 - `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`
   survive only as derived compatibility views for unmigrated readers
+
+This first downstream slice is therefore the first slice that converts
+downstream bridge surfaces into target-derived compatibility views.
 
 ### 4. Reader Cutovers
 
@@ -137,6 +172,10 @@ Rules:
 - do not let `Journal` repair economic or checkpoint truth
 - do not let tax decide source meaning, reconciliation completeness, or
   checkpoint acceptance
+
+Phases 6 and later remain intentionally high-level in this round. They are
+out of scope for this repair and do not block immediate Phase 0 to Phase 5
+implementation once the Phase 0 gate is satisfied.
 
 ### 6. Triggered Derived Read-Model Activation
 

@@ -78,6 +78,9 @@ Goal:
 Broad implementation must not begin until the contract pages freeze these
 contracts.
 
+Before that gate is satisfied, only contract-lock alignment and bounded prep
+work are allowed. Broad implementation across Phases 1 to 5 remains blocked.
+
 Must freeze:
 
 - `EvidenceSet` record families, ids, cardinality, and intentional
@@ -162,6 +165,25 @@ Deliver:
 - explicit fast-path rule that reducers read kernels, not explanation sidecars
 - frozen critical-path field tables and product-id rules that later writing
   work can merge without deciding new structure
+- a documented completion gate that names the owner docs and concrete reader
+  inventory required before broad implementation begins
+
+### Phase 0 Completion Gate
+
+Treat this checklist as the operational gate for ending Phase 0, not as a
+claim that the repo has already satisfied it.
+
+Owner docs that must align before broad implementation begins:
+
+- `ROADMAP.md`
+- `docs/status/migration-sequence.md`
+- `docs/concepts/bridge-to-target-mapping.md`
+- `docs/concepts/pipeline-stage-contracts.md`
+- `docs/concepts/domain-ontology.md`
+- `docs/concepts/gaps-and-readiness.md`
+- `docs/concepts/reconciliation-tax-architecture.md`
+- `docs/reference/first-upstream-slice-contract.md`
+- `docs/reference/first-downstream-slice-contract.md`
 
 Exit criteria:
 
@@ -191,6 +213,17 @@ Exit criteria:
 - the first upstream slice and first downstream slice can be implemented
   without inventing
   ids, claim bundles, values, or reader cutovers
+- every active bridge surface has one authoritative target owner
+- every active bridge surface has one derived compatibility rule
+- every active bridge surface names concrete current readers and concrete
+  target readers
+- no Phase 1 or Phase 2 doc claims authority over `TransactionFact`,
+  `facts.csv`, `balance_snapshots.csv`, `balance_references.csv`, or
+  `cointracking_csv`
+- `EventLinkRecord` status is aligned between this roadmap and the first
+  downstream slice contract
+- the intentional looseness of Phases 6 and later is explicit and is
+  non-blocking for Phase 0 to Phase 5 implementation
 
 ## Deferred Read-Model Activation Triggers
 
@@ -322,6 +355,13 @@ Exit criteria:
 - claim-bundle decisions remain claim-owned and do not carry economic
   truth
 
+Transition to Phase 3:
+
+- downstream bridge outputs stay on the live bridge path until
+  `EconomicFacts` exists
+- the first downstream slice is the first slice that turns those downstream
+  bridge outputs into target-derived compatibility views
+
 ## Phase 3. Land `EconomicFacts`
 
 Goal:
@@ -353,8 +393,10 @@ Goal:
 
 Deliver:
 
-- `ContinuitySegmentRecord`, `EventLinkRecord`, `BalanceTargetRecord`, and
-  `CheckpointProposalRecord`
+- `ContinuitySegmentRecord`, `BalanceTargetRecord`, and
+  `CheckpointProposalRecord` for the first downstream slice
+- `EventLinkRecord` when a later in-phase reconciliation increment needs
+  explicit event linkage rather than inferred continuity alone
 - direct `AssertionValue` fields for expected and observed balance meaning
 - fixed subject and position identity seams for in-scope reconciliation
 - bridge compatibility view for `balance_snapshots.csv`
@@ -383,6 +425,10 @@ Exit criteria:
 - accepted checkpoint truth is explicit, not an inferred side effect
 - statement-backed checkpoint acceptance is separated cleanly from manual-only
   runtime aids
+
+Phases 6 and later remain intentionally high-level in this round. This roadmap
+repair makes Phase 0 to Phase 5 implementation decision-complete without
+defining bounded slices for later downstream products yet.
 
 ## Phase 6. Land `Journal`
 
