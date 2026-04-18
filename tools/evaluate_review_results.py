@@ -33,20 +33,65 @@ def _job_results(needs_json: str) -> Mapping[str, object]:
     return cast(Mapping[str, object], json.loads(needs_json))
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    args = _parse_args(argv)
-    selected_checks = tuple(cast(list[str], json.loads(args.selected_checks_json)))
-    nonblocking_checks = set(cast(list[str], json.loads(args.nonblocking_checks_json)))
-    needs = _job_results(args.needs_json)
+def _job_result(job_payload: object) -> str | None:
+    if not isinstance(job_payload, Mapping):
+        return None
+    job_result_payload = cast(Mapping[str, object], job_payload)
+    result_object = job_result_payload.get("result")
+    return result_object if isinstance(result_object, str) else None
 
+
+def _planner_failures(needs: Mapping[str, object]) -> tuple[str, ...]:
+    failures: list[str] = []
+    for planner_check_id in ("plan-pr-review", "plan-main-ci"):
+        planner_payload = needs.get(planner_check_id)
+        if planner_payload is None:
+            continue
+        result = _job_result(planner_payload)
+        if result == "success":
+            continue
+        failures.append(f"{planner_check_id}: result={result}")
+    return tuple(failures)
+
+
+def _parse_checks_json(
+    raw_value: str,
+    *,
+    label: str,
+    allow_blank: bool,
+) -> tuple[str, ...]:
+    if not raw_value.strip():
+        if allow_blank:
+            return ()
+        raise ValueError(f"{label}: missing workflow output")
+    try:
+        payload_object: object = json.loads(raw_value)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{label}: invalid workflow output") from exc
+    if not isinstance(payload_object, list):
+        raise ValueError(f"{label}: expected JSON array of strings")
+    payload_items = cast(list[object], payload_object)
+    payload: list[str] = []
+    for item in payload_items:
+        if not isinstance(item, str):
+            raise ValueError(f"{label}: expected JSON array of strings")
+        payload.append(item)
+    return tuple(payload)
+
+
+def _collect_check_failures(
+    *,
+    selected_checks: Sequence[str],
+    nonblocking_checks: set[str],
+    needs: Mapping[str, object],
+) -> tuple[list[str], list[str]]:
     blocking_failures: list[str] = []
     blocked_checks: list[str] = []
-
     for check_id in selected_checks:
         if check_id in {"plan-pr-review", "plan-main-ci"}:
             continue
-        job_payload = needs.get(check_id)
-        if not isinstance(job_payload, Mapping):
+        result = _job_result(needs.get(check_id))
+        if result is None:
             if check_id in nonblocking_checks:
                 print(
                     f"[non-blocking] {check_id} result=not-run-in-aggregate",
@@ -55,9 +100,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 continue
             blocking_failures.append(f"{check_id}: missing job result")
             continue
-        job_result_payload = cast(Mapping[str, object], job_payload)
-        result_object = job_result_payload.get("result")
-        result = result_object if isinstance(result_object, str) else None
         if result == "success":
             continue
         if check_id in nonblocking_checks:
@@ -65,8 +107,43 @@ def main(argv: Sequence[str] | None = None) -> int:
             continue
         if result == "skipped":
             blocked_checks.append(check_id)
-        else:
-            blocking_failures.append(f"{check_id}: result={result}")
+            continue
+        blocking_failures.append(f"{check_id}: result={result}")
+    return blocking_failures, blocked_checks
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = _parse_args(argv)
+    needs = _job_results(args.needs_json)
+    planner_failures = list(_planner_failures(needs))
+    allow_blank_outputs = bool(planner_failures)
+
+    try:
+        selected_checks = _parse_checks_json(
+            args.selected_checks_json,
+            label="selected checks",
+            allow_blank=allow_blank_outputs,
+        )
+        nonblocking_checks = set(
+            _parse_checks_json(
+                args.nonblocking_checks_json,
+                label="non-blocking checks",
+                allow_blank=allow_blank_outputs,
+            )
+        )
+    except ValueError as exc:
+        planner_failures.append(str(exc))
+        print("review verification failed:", file=sys.stderr)
+        for failure in planner_failures:
+            print(f"  - {failure}", file=sys.stderr)
+        return 1
+
+    blocking_failures, blocked_checks = _collect_check_failures(
+        selected_checks=selected_checks,
+        nonblocking_checks=nonblocking_checks,
+        needs=needs,
+    )
+    blocking_failures = planner_failures + blocking_failures
 
     if blocked_checks:
         print(

@@ -163,6 +163,8 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - uses: ./.github/actions/setup-python-uv
+        with:
+          include-ci-group: "true"
       - name: Run actionlint
         run: uv run python -m tools.run_review_check --check-id actionlint --trigger pull_request
 
