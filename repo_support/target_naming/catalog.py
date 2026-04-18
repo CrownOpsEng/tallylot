@@ -16,11 +16,19 @@ from .catalog_loader import (
     mapping_sequence as _mapping_sequence,
     mapping_sequence_value as _mapping_sequence_value,
     mapping_value as _mapping_value,
-    optional_sequence_value as _optional_sequence_value,
     sequence_value as _sequence_value,
     string_mapping as _string_mapping,
     string_tuple as _string_tuple,
     string_value as _string_value,
+)
+from .families import (
+    CanonicalFamilySet,
+    DirectoryFamily,
+    DirectoryFamilyGroup,
+    ProductFamily,
+    RecordFamily,
+    load_canonical_families,
+    validate_canonical_families,
 )
 from .model import MarkerLabel, NamingScope
 
@@ -42,15 +50,6 @@ class ScopeProfile:
     scope: NamingScope
     enforce_target_naming: bool
     allow_anti_examples: bool
-
-
-@dataclass(frozen=True)
-class CanonicalFamilySet:
-    products: tuple[dict[str, str], ...]
-    records: tuple[dict[str, object], ...]
-    package_paths: tuple[str, ...]
-    directory_paths: tuple[str, ...]
-    sidecar_paths: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -139,11 +138,11 @@ class TargetNamingCatalog:
         tokens.update(self.canonical_tokens.snake)
         tokens.update(self.canonical_tokens.phrases)
         for product in self.canonical_families.products:
-            tokens.update(product.values())
+            tokens.update((product.name, product.id))
         for record in self.canonical_families.records:
-            tokens.add(cast(str, record["record"]))
-            tokens.add(cast(str, record["id"]))
-            tokens.update(cast(tuple[str, ...], record.get("refs", ())))
+            tokens.add(record.record)
+            tokens.add(record.id)
+            tokens.update(record.refs)
         tokens.update(self.canonical_families.package_paths)
         tokens.update(self.canonical_families.directory_paths)
         tokens.update(self.canonical_families.sidecar_paths)
@@ -170,6 +169,7 @@ def load_target_naming_catalog(path: Path | None = None) -> TargetNamingCatalog:
 
 def validate_target_naming_catalog(catalog: TargetNamingCatalog) -> tuple[str, ...]:
     errors: list[str] = []
+    errors.extend(validate_canonical_families(catalog.canonical_families))
     errors.extend(_validate_scope_profiles(catalog))
     errors.extend(_validate_required_markers(catalog))
     errors.extend(_validate_exceptions(catalog))
@@ -212,34 +212,7 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
         },
         title_expectations=_string_mapping(title_expectations_loaded),
         tooling_paths=_string_tuple(_sequence_value(loaded, "tooling_paths")),
-        canonical_families=CanonicalFamilySet(
-            products=tuple(
-                _string_mapping(item)
-                for item in _mapping_sequence_value(
-                    canonical_families_loaded, "products"
-                )
-            ),
-            records=tuple(
-                {
-                    "stem": _string_value(item, "stem"),
-                    "record": _string_value(item, "record"),
-                    "id": _string_value(item, "id"),
-                    "refs": _string_tuple(_optional_sequence_value(item, "refs")),
-                }
-                for item in _mapping_sequence_value(
-                    canonical_families_loaded, "records"
-                )
-            ),
-            package_paths=_string_tuple(
-                _sequence_value(canonical_families_loaded, "package_paths")
-            ),
-            directory_paths=_string_tuple(
-                _sequence_value(canonical_families_loaded, "directory_paths")
-            ),
-            sidecar_paths=_string_tuple(
-                _sequence_value(canonical_families_loaded, "sidecar_paths")
-            ),
-        ),
+        canonical_families=load_canonical_families(canonical_families_loaded),
         canonical_tokens=CanonicalTokenSet(
             pascal=_string_tuple(_sequence_value(canonical_tokens_loaded, "pascal")),
             snake=_string_tuple(_sequence_value(canonical_tokens_loaded, "snake")),
@@ -418,9 +391,13 @@ __all__ = [
     "AliasRule",
     "CanonicalFamilySet",
     "CanonicalTokenSet",
+    "DirectoryFamily",
+    "DirectoryFamilyGroup",
     "ExceptionRule",
     "MatrixSpec",
     "PhraseRule",
+    "ProductFamily",
+    "RecordFamily",
     "ScopeProfile",
     "TargetNamingCatalog",
     "VocabularyCatalog",

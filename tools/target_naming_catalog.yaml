@@ -235,26 +235,33 @@ canonical_families:
     - domain/position/
     - domain/reconciliation/
     - domain/tax/
-  directory_paths:
-    - assessment/gap/
-    - assessment/review/
-    - assessment/readiness/
+  standalone_directory_paths:
     - compatibility/
-    - working/products/evidence_sets/
-    - working/products/claim_sets/
-    - working/products/economic_facts/
-    - working/products/reconciliation_states/
-    - working/products/checkpoints/
-    - working/products/journals/
-    - working/products/tax_inputs/
-    - working/products/tax_outputs/
-  sidecar_paths:
-    - assessment/gap/gap_records.json
-    - assessment/gap/gap_explanations.json
-    - assessment/review/review_records.json
-    - assessment/review/review_explanations.json
-    - assessment/readiness/readiness_records.json
-    - assessment/readiness/readiness_rollup_records.json
+  directory_families:
+    - root: assessment
+      families:
+        - stem: gap
+          sidecars:
+            - gap_records.json
+            - gap_explanations.json
+        - stem: review
+          sidecars:
+            - review_records.json
+            - review_explanations.json
+        - stem: readiness
+          sidecars:
+            - readiness_records.json
+            - readiness_rollup_records.json
+    - root: working/products
+      families:
+        - stem: evidence_sets
+        - stem: claim_sets
+        - stem: economic_facts
+        - stem: reconciliation_states
+        - stem: checkpoints
+        - stem: journals
+        - stem: tax_inputs
+        - stem: tax_outputs
 
 canonical_tokens:
   pascal:

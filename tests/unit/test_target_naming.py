@@ -59,11 +59,65 @@ def _write_catalog(root: Path, *, overlap_axes: bool = False) -> None:
         ],
         "tooling_paths": [],
         "canonical_families": {
-            "products": [],
-            "records": [],
-            "package_paths": [],
-            "directory_paths": [],
-            "sidecar_paths": [],
+            "products": [
+                {"name": "EvidenceSet", "id": "evidence_set_id"},
+                {"name": "ClaimSet", "id": "claim_set_id"},
+            ],
+            "records": [
+                {"stem": "gap", "record": "GapRecord", "id": "gap_id", "refs": []},
+                {
+                    "stem": "review",
+                    "record": "ReviewRecord",
+                    "id": "review_id",
+                    "refs": [],
+                },
+                {
+                    "stem": "readiness",
+                    "record": "ReadinessRecord",
+                    "id": "readiness_id",
+                    "refs": [],
+                },
+                {
+                    "stem": "readiness_rollup",
+                    "record": "ReadinessRollupRecord",
+                    "id": "readiness_rollup_id",
+                    "refs": [],
+                },
+            ],
+            "package_paths": ["application/claim/", "domain/assessment/"],
+            "standalone_directory_paths": ["compatibility/"],
+            "directory_families": [
+                {
+                    "root": "assessment",
+                    "families": [
+                        {
+                            "stem": "gap",
+                            "sidecars": ["gap_records.json", "gap_explanations.json"],
+                        },
+                        {
+                            "stem": "review",
+                            "sidecars": [
+                                "review_records.json",
+                                "review_explanations.json",
+                            ],
+                        },
+                        {
+                            "stem": "readiness",
+                            "sidecars": [
+                                "readiness_records.json",
+                                "readiness_rollup_records.json",
+                            ],
+                        },
+                    ],
+                },
+                {
+                    "root": "working/products",
+                    "families": [
+                        {"stem": "evidence_sets"},
+                        {"stem": "claim_sets"},
+                    ],
+                },
+            ],
         },
         "canonical_tokens": {
             "pascal": [],
@@ -191,6 +245,86 @@ def test_catalog_validation_rejects_paired_axis_overlap(tmp_path: Path) -> None:
         load_target_naming_catalog()
 
 
+def test_catalog_validation_rejects_directory_sidecar_family_drift(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    canonical_families = loaded["canonical_families"]
+    canonical_families["directory_families"] = [
+        {
+            "root": "assessment",
+            "families": [
+                {
+                    "stem": "gap",
+                    "sidecars": ["review_records.json"],
+                }
+            ],
+        },
+        {
+            "root": "working/products",
+            "families": [
+                {"stem": "evidence_sets"},
+                {"stem": "claim_sets"},
+            ],
+        },
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(ValueError, match="directory family sidecar must stay grouped"),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_validation_rejects_unknown_record_directory_family_stem(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    directory_families = loaded["canonical_families"]["directory_families"]
+    directory_families[0]["families"][0] = {
+        "stem": "analysis",
+        "sidecars": ["analysis_records.json"],
+    }
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(
+            ValueError,
+            match="directory family stem must name a canonical record",
+        ),
+    ):
+        load_target_naming_catalog()
+
+
+def test_catalog_validation_rejects_product_directory_family_drift(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    directory_families = loaded["canonical_families"]["directory_families"]
+    directory_families[1]["families"][0]["stem"] = "evidence_groupings"
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+
+    with (
+        override_repo_root(tmp_path),
+        pytest.raises(
+            ValueError,
+            match=(
+                "working/products directory families must cover every canonical "
+                "product stem"
+            ),
+        ),
+    ):
+        load_target_naming_catalog()
+
+
 def test_audit_finds_phrase_alias_vocabulary_locality_and_structure_drift(
     tmp_path: Path,
 ) -> None:
@@ -215,7 +349,8 @@ def test_audit_finds_phrase_alias_vocabulary_locality_and_structure_drift(
               - `manual_assertion`
 
             This bounded contract still relies on compatibility projection,
-            bridge-local `activity_label`, and `support/other/detail.json`.
+            bridge-local `activity_label`, `application/non_canonical/`,
+            and `support/other/detail.json`.
             """
         ),
     )
@@ -497,6 +632,104 @@ def test_audit_checks_locality_exceptions_inside_table_cells(tmp_path: Path) -> 
     ]
 
 
+def test_audit_reports_legacy_support_root_once(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            `support/gap/gap_records.json`
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/example.md",))
+
+    assert [finding.rule_id for finding in findings] == ["structure.flat_support_path"]
+
+
+def test_audit_checks_family_paths_in_repo_policy_docs(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/standards.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: standard
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: repo_policy
+            ---
+
+            `application/non_canonical/`
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/standards.md",))
+
+    assert [finding.rule_id for finding in findings] == ["family.path.canonical"]
+
+
+def test_audit_checks_catalog_declared_standalone_directory_paths(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/standards.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: standard
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: repo_policy
+            ---
+
+            `compatibility/non_canonical/`
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/standards.md",))
+
+    assert [finding.rule_id for finding in findings] == ["family.path.canonical"]
+
+
 def test_audit_reports_docs_home_reference_group_drift(tmp_path: Path) -> None:
     _write_catalog(tmp_path)
     _write_doc(
@@ -549,12 +782,34 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
         catalog.title_expectations["docs/concepts/reconciliation-tax-architecture.md"]
         == "Reconciliation, Checkpoint, Journal, And Tax Architecture"
     )
+    assert catalog.canonical_families.directory_paths == (
+        "compatibility/",
+        "assessment/gap/",
+        "assessment/review/",
+        "assessment/readiness/",
+        "working/products/evidence_sets/",
+        "working/products/claim_sets/",
+        "working/products/economic_facts/",
+        "working/products/reconciliation_states/",
+        "working/products/checkpoints/",
+        "working/products/journals/",
+        "working/products/tax_inputs/",
+        "working/products/tax_outputs/",
+    )
+    assert catalog.canonical_families.sidecar_paths == (
+        "assessment/gap/gap_records.json",
+        "assessment/gap/gap_explanations.json",
+        "assessment/review/review_records.json",
+        "assessment/review/review_explanations.json",
+        "assessment/readiness/readiness_records.json",
+        "assessment/readiness/readiness_rollup_records.json",
+    )
     assert catalog.reference_group_headings == (
         "### Target References",
         "### Current-State References",
         "### Oracle References",
     )
-    record_names = {record["record"] for record in catalog.canonical_families.records}
+    record_names = {record.record for record in catalog.canonical_families.records}
     assert "EvidenceObservationRecord" in record_names
     assert "ClaimBundleRecord" in record_names
     assert "ValuationRecord" in record_names

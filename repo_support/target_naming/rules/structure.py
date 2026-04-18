@@ -4,7 +4,7 @@ import re
 
 from ..catalog import TargetNamingCatalog
 from ..model import DocumentModel, NamingFinding, SourceSpan
-from ._common import build_finding
+from ._common import block_is_covered_by_marker, build_finding
 
 SUPPORT_PATH_PATTERN = re.compile(r"\bsupport/([a-z0-9_.-]+(?:/[a-z0-9_.-]+)*)\b")
 
@@ -40,16 +40,24 @@ def structure_findings(
     for block in document.text_blocks:
         if block.kind != "inline_code":
             continue
+        scope_profile = (
+            catalog.scope_profiles.get(document.scope)
+            if document.scope is not None
+            else None
+        )
+        if (
+            scope_profile is not None
+            and scope_profile.allow_anti_examples
+            and block_is_covered_by_marker(document, block, "Anti-example")
+        ):
+            continue
         for match in SUPPORT_PATH_PATTERN.finditer(block.text):
-            remainder = match.group(1)
-            if remainder.split("/")[0] in {"gap", "review", "readiness"}:
-                continue
             findings.append(
                 build_finding(
                     rule_id="structure.flat_support_path",
                     document=document,
                     span=block.span,
-                    message=f"flat support path {match.group(0)!r} is not allowed",
+                    message=f"support-root path {match.group(0)!r} is not allowed",
                     suggestion=(
                         "use assessment/gap/, assessment/review/, or "
                         "assessment/readiness/ "

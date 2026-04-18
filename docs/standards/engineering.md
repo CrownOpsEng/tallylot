@@ -119,8 +119,8 @@ When a capability grows, split by stable boundaries:
   `domain/ownership/`, `domain/counterparty/`, `domain/contract/`,
   `domain/position/`, `domain/evidence/`, `domain/claim/`,
   `domain/assessment/`, `domain/reconciliation/`, `domain/checkpoint/`,
-  `domain/journal/`, and `domain/tax/` rather than recreating umbrella roots such as
-  `domain/entities/`.
+  `domain/journal/`, and `domain/tax/` rather than recreating umbrella roots.
+- **Anti-example:** Do not recreate umbrella roots such as `domain/entities/`.
 - `application/`: organize by bounded capability packages such as
   `application/intake/`, `application/profiling/`, `application/evidence/`,
   `application/claim/`, `application/economics/`,
@@ -848,6 +848,10 @@ forward-looking end-state naming on the enforced target surfaces.
 Rules:
 
 - update the catalog before introducing or renaming a canonical target term
+- declare mirrored directory families once under
+  `canonical_families.directory_families` and derive their directory and
+  sidecar paths from that grouped family definition instead of hand-maintaining
+  parallel path lists
 - update every affected detailed contract page, bounded-slice reference,
   roadmap surface, and standards surface in the same patch
 - keep frontmatter summaries and generated `docs/README.md` blurbs
@@ -856,8 +860,9 @@ Rules:
 - keep provider, custody, and other source-local nouns out of forward-looking
   titles and summaries unless the summary is intentionally local to a bounded
   slice
-- run `python -m tools.target_naming check` or `make naming-check` before
-  landing a naming change
+- run `make naming-check` before landing a naming change, or run
+  `python -m tools.target_naming check` only from the repo-managed external
+  environment when you need the module form directly
 - use `python -m tools.target_naming report --json` when a PR, script, or
   future dashboard needs machine-readable findings
 - treat the blocking `target-naming` review check as the repo-native guard
