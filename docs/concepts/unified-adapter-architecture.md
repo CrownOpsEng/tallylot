@@ -72,7 +72,7 @@ Shared runtime owns cross-adapter workflow:
 
 - evidence selection and candidate comparison
 - stable ordering and fingerprints
-- shared issue, review, and readiness conventions
+- shared gap, review, and attachment conventions
 - `EconomicFacts` construction
 - bridge compatibility view generation
 - replay and parity verification
