@@ -499,11 +499,12 @@ shared application assessment center.
 Reserve these future application families conceptually, but not as required
 package ownership yet:
 
-- a reporting family for cross-stage or cross-product reporting
-- a portfolio family for holdings and portfolio views
-- a visualization family for charts, dashboards, and visualization datasets
-- an investigation family for drill-down and investigation workflows that are
-  not compatibility-only
+- application/reporting/ for cross-stage or cross-product reporting
+- application/portfolio/ for holdings and portfolio views
+- application/visualization/ for charts, dashboards, and visualization
+  datasets
+- application/investigation/ for drill-down and investigation workflows that
+  are not compatibility-only
 
 Rules:
 

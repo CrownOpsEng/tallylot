@@ -331,7 +331,6 @@ canonical_tokens:
     - kernel_scope_id
     - product_slug
     - readiness_id
-    - readiness_rollup_id
     - reconciliation_state_id
     - review_id
     - selection_id
@@ -347,12 +346,10 @@ canonical_tokens:
     - tax_unsupported_input_id
     - valuation_id
   phrases:
-    - assessment view
     - compatibility view
     - compatibility sidecar
     - entry check
     - product header
-    - readiness rollup
 
 local_id_slots:
   - canonical_id: claim_scope_id
@@ -972,16 +969,30 @@ retired_aliases:
     allowed_scopes: [forward_target, repo_policy]
     paths: []
     allowed_paths: []
+  - rule_id: body.shared_family_root
+    term: application/query/
+    replacement: specific capability-owned derived read-model package
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
+  - rule_id: body.shared_family_root
+    term: application/read_models/
+    replacement: specific capability-owned derived read-model package
+    contexts: [body, inline_code, summary]
+    allowed_scopes: [forward_target, repo_policy]
+    paths: []
+    allowed_paths: []
   - rule_id: body.assessment_view_term
     term: operator view
-    replacement: assessment view
+    replacement: derived view
     contexts: [body, inline_code, summary]
     allowed_scopes: [forward_target, repo_policy]
     paths: []
     allowed_paths: []
   - rule_id: body.assessment_view_term
     term: operator views
-    replacement: assessment views
+    replacement: derived views
     contexts: [body, inline_code, summary]
     allowed_scopes: [forward_target, repo_policy]
     paths: []

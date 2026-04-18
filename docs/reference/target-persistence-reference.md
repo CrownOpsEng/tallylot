@@ -50,8 +50,9 @@ When persisting target products:
   views only once a target product is authoritative for that scope
 - keep provenance, explanations, reviews, comparison traces, and other
   non-kernel detail in sidecars
-- keep grouped readiness and other source-grouped views as assessment views or
-  compatibility views rather than as canonical shared record families
+- keep grouped readiness as tax-output-local, narrow rendering-local, or
+  compatibility-local derived output until the roadmap trigger ladder
+  activates a capability-owned read-model surface
 - keep assessment family directories and basenames aligned to the stored
   families, for example `assessment/gap/gap_records.json`,
   `assessment/review/review_records.json`,

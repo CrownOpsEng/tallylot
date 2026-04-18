@@ -927,7 +927,7 @@ Stable ids:
 - `continuity_segment_id` uses component array
   `[subject_ref, segment_start_at, segment_end_at]`
 - `continuity_segment_id` is the reusable stage-local scope id for gap,
-  review, and readiness attachments plus readiness rollups;
+  review, readiness attachments, and declared derived outputs;
   `reconciliation_state_id` is the emitted product id over that scope plus its
   upstream lineage
 - `event_link_id` uses component array
@@ -981,7 +981,7 @@ Must guarantee:
 Must not:
 
 - reclassify upstream economics to make continuity easier
-- bury missing evidence inside kernel-scope readiness rollups
+- bury missing evidence inside kernel-scope grouped readiness outputs
 - use value refs that point to undefined sidecar values outside the kernel
 
 Handoff to `Checkpoint`:

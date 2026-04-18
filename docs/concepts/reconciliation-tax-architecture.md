@@ -162,9 +162,9 @@ Forward-looking persistence rules:
 - product sidecars persist separately from kernels and are keyed by
   `kernel_scope_id` or narrower truthful record ids
 - grouped readiness remains derived behavior over shared readiness records;
-  source-grouped or operator-facing views stay as assessment views or
-  compatibility views rather than as canonical gap, review, or readiness
-  record families
+  before trigger activation it may appear only as tax-output-local, narrow
+  rendering-local, or compatibility-local derived output rather than as a
+  shared gap, review, or readiness record family
 - target basenames use the owning product or sidecar family directly
   rather than generic names or bridge-era qualifiers
 - stable ids and helper refs keep the owning family stem once they cross

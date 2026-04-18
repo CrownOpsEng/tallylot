@@ -81,7 +81,7 @@ Write `Why:` and `What:` directly:
 
 Bad `Why:` bullets are diff summaries such as:
 
-- `rename ReadinessRollupRecord`
+- `rename CheckpointProposalRecord`
 - `update naming docs`
 - `refactor commit wording`
 

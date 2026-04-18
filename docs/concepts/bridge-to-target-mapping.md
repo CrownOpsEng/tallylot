@@ -90,7 +90,8 @@ No-dual-center rule:
   corresponding target product is authoritative for that scope
 - broader grouped consumers stay on authoritative kernels, compatibility views,
   or tax-output-local and rendering-local derived outputs until the roadmap
-  trigger ladder requires a dedicated capability-owned derived read-model slice
+  trigger ladder requires a dedicated capability-owned derived read-model slice;
+  if no earlier trigger fires, that activation defaults to `Phase 10`
 
 ## Cutover Matrix
 

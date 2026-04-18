@@ -20,7 +20,7 @@ and generic subject-attachment model.
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- kernel-scope readiness rollups are derived from subject-level or scope-level
+- kernel-scope grouped readiness is derived from subject-level or scope-level
   truth, not stored as the only truth
 - gap, review, and readiness records plus sidecars help stages interoperate
   without erasing stage ownership
@@ -122,8 +122,8 @@ Rules:
 
 ### `kernel_scope_id`
 
-`kernel_scope_id` is defined once for target gap, review, readiness, rollup,
-assessment-view, and sidecar attachments.
+`kernel_scope_id` is defined once for target gap, review, readiness,
+derived-output, and sidecar attachments.
 
 Rules:
 
@@ -138,8 +138,8 @@ Rules:
 - `kernel_scope_id` is never a target product id, never an upstream product
   ref, and never the primary reader key when one product id or narrower record
   id exists
-- `kernel_scope_id` is used only for shared assessment views plus gap/review/
-  readiness sidecar attachment when no narrower truthful subject or scope
+- `kernel_scope_id` is used only for gap/review/readiness sidecar attachment
+  and declared derived outputs when no narrower truthful subject or scope
   exists
 - `kernel_scope_id` must not replace `selection_id`,
   `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
@@ -148,7 +148,8 @@ Rules:
 ## Shared Stage Vocabulary
 
 Use one stage vocabulary across gap records, review records, readiness
-records, checkpoint-stage reuse, and downstream assessment views.
+records, checkpoint-stage reuse, and any later capability-owned derived
+outputs.
 
 Shared stage vocabulary:
 
@@ -163,7 +164,8 @@ Shared stage vocabulary:
 Rules:
 
 - `owner_stage` and `blocking_stages` use this vocabulary
-- readiness records and rollups use this vocabulary
+- readiness records and later capability-owned derived outputs use this
+  vocabulary
 - keep stage labels on repo-owned noun forms that match the target package and
   ownership docs
 - do not use alternate labels such as `semantic` once target-stage products
@@ -440,7 +442,7 @@ Rules:
 ## Readiness Model
 
 Readiness is subject-first, stage-specific, and reducible into derived grouped
-outputs plus assessment views.
+outputs.
 
 ### `ReadinessStatus`
 
@@ -521,11 +523,11 @@ Rules:
   - migration compatibility-local derived output
 - grouped readiness must remain reproducible from ordered readiness and gap
   records without manual status editing
-- source-grouped or operator-facing views remain assessment views or
-  compatibility views rather than canonical readiness record families
+- do not ship source-grouped or operator-facing grouped readiness as a shared
+  forward-target surface before trigger activation
 - once a grouped consumer requires a broader derived read-model surface, that
   grouped behavior moves into the owning capability instead of restoring a
-  shared readiness rollup family
+  shared grouped-readiness family
 
 ## Bridge Mapping From Issue And Review Records
 
@@ -556,9 +558,9 @@ Meaning:
 
 - one stage owns one meaning surface
 - downstream stages reference upstream records by stable ids or product ids
-- `kernel_scope_id` is allowed only for shared assessment views and sidecar
-  attachment
-  when no narrower truthful product id, scope id, or record id exists
+- `kernel_scope_id` is allowed only for declared derived outputs and sidecar
+  attachment when no narrower truthful product id, scope id, or record id
+  exists
 - downstream stages add stage-owned outputs only
 
 Keep these first-class:
@@ -598,8 +600,8 @@ Performance implication:
 - repeated full detail copies increase read amplification, join cost, and drift
   risk
 - the correct shape is stable ids or product ids plus stage-owned deltas, with
-  `kernel_scope_id` reserved for shared assessment views or sidecar attachment
-  only
+  `kernel_scope_id` reserved for declared derived outputs or sidecar
+  attachment only
 
 ## Current-To-Target Boundary
 

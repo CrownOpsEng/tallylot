@@ -244,8 +244,8 @@ Fire before implementation when one of these appears:
 Response:
 
 - create only the specific needed package:
-  the reporting capability package, portfolio capability package,
-  visualization capability package, or investigation capability package
+  application/reporting/, application/portfolio/,
+  application/visualization/, or application/investigation/
 - do not pre-create all reserved families
 
 ### Trigger D. Copy Pressure Across Stage Packages

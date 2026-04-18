@@ -142,6 +142,8 @@ Rules:
 
 The roadmap trigger ladder is the authority for when broader derived read
 models and projections become mandatory.
+If no earlier trigger fires, the default activation point is `Phase 10`
+post-filing expansion.
 
 Before a trigger fires:
 

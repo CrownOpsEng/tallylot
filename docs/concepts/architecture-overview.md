@@ -38,6 +38,8 @@ until the trigger ladder in [ROADMAP.md](../../ROADMAP.md) fires. Through the
 tax-first phases, grouped outputs may remain only as tax-output-local derived
 content, narrow rendering-derived content, or compatibility-local derived
 output rather than as a shared application center.
+If no earlier trigger fires, the default activation point for broader
+capability-owned derived read models and projections is `Phase 10`.
 
 Gap, review, and readiness remain shared contracts plus persisted sidecar
 families. They do not imply a shared application reducer center. The owning
