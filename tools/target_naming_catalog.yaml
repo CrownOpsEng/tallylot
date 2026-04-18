@@ -33,7 +33,7 @@ title_expectations:
   docs/concepts/architecture-overview.md: Architecture Overview
   docs/concepts/bridge-to-target-mapping.md: Bridge To Target Mapping
   docs/concepts/domain-ontology.md: Domain Ontology
-  docs/concepts/gaps-and-readiness.md: Gap, Review, And Readiness
+  docs/concepts/gaps-and-reviews.md: Gap, Review, And Shared Attachment
   docs/concepts/oracle-boundaries.md: Oracle Boundaries
   docs/concepts/pipeline-stage-contracts.md: Pipeline Stage Contracts
   docs/concepts/reconciliation-tax-architecture.md: Reconciliation, Checkpoint, Journal, And Tax Architecture
@@ -189,10 +189,6 @@ canonical_families:
       record: ReviewRecord
       id: review_id
       refs: []
-    - stem: readiness
-      record: ReadinessRecord
-      id: readiness_id
-      refs: []
     - stem: tax_carry_forward
       record: TaxCarryForwardRecord
       id: tax_carry_forward_id
@@ -243,9 +239,6 @@ canonical_families:
           sidecars:
             - review_records.json
             - review_explanations.json
-        - stem: readiness
-          sidecars:
-            - readiness_records.json
     - root: working/products
       families:
         - stem: evidence_sets
@@ -286,7 +279,6 @@ canonical_tokens:
     - OriginRef
     - PositionRef
     - PostingRecord
-    - ReadinessRecord
     - ClaimBundleRecord
     - ReviewExplanation
     - ReviewRecord
@@ -330,7 +322,6 @@ canonical_tokens:
     - kernel_scope
     - kernel_scope_id
     - product_slug
-    - readiness_id
     - reconciliation_state_id
     - review_id
     - selection_id
@@ -1149,7 +1140,7 @@ exceptions:
     allowed_scopes: [forward_target, repo_policy]
     allowed_paths:
       - docs/concepts/bridge-to-target-mapping.md
-      - docs/concepts/gaps-and-readiness.md
+      - docs/concepts/gaps-and-reviews.md
     allowed_section_labels: []
     allowed_terms:
       - IssueRecord

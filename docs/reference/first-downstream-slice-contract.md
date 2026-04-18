@@ -65,7 +65,8 @@ The slice may emit only these downstream kernel families:
 | `Checkpoint` | `CheckpointRecord` | accepted checkpoint record for assertions in this slice only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
-`EventLinkRecord` remains out of scope for this slice.
+`EventLinkRecord` remains out of scope for this slice and may land only in a
+later in-phase reconciliation increment.
 
 ## Position And Subject Restrictions
 
@@ -177,6 +178,10 @@ For subjects in this slice, the authoritative products after the slice are:
 - `ReconciliationState` for continuity segments and balance targets
 - `Checkpoint` for accepted checkpoint truth
 
+This is the first slice where `TransactionFact`, `facts.csv`,
+`balance_snapshots.csv`, `balance_references.csv`, balance-application outputs,
+and `cointracking_csv` compatibility are derived from target products.
+
 Required derived compatibility views:
 
 - `TransactionFact` and `facts.csv` derived from `EconomicFacts`
@@ -221,8 +226,8 @@ Rules:
 - `BalanceTargetRecord.comparison_outcome` is set only when
   `observation_status = observed`
 - balance-target blocker posture remains on reconciliation-owned gaps and
-  readiness attached to `balance_target_id`, not on balance-target state
-  fields
+  reconciliation-owned derived readiness views keyed by `balance_target_id`,
+  not on balance-target state fields
 - `CheckpointProposalRecord.superseding_proposal_ref` records proposal
   supersession when a later proposal replaces an earlier one
 
@@ -318,7 +323,8 @@ Not allowed:
 Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 
 - richer explanation text
-- additional non-kernel gap, review, or readiness sidecars
+- additional non-kernel gap or review sidecars
+- additional capability-owned derived readiness views
 - additional comparison detail that does not change product meaning
 
 ## Explicitly Out Of Scope

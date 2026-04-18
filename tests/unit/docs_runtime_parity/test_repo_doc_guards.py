@@ -249,7 +249,7 @@ def test_target_docs_use_neutral_upstream_kind_tokens_and_position_key_example()
 
 def test_forward_target_docs_use_subject_key_and_no_placeholder_measure_field() -> None:
     governed_paths = (
-        docs_root() / "concepts" / "gaps-and-readiness.md",
+        docs_root() / "concepts" / "gaps-and-reviews.md",
         docs_root() / "concepts" / "pipeline-stage-contracts.md",
         docs_root() / "reference" / "first-downstream-slice-contract.md",
         docs_root() / "reference" / "first-upstream-slice-contract.md",
@@ -265,14 +265,14 @@ def test_forward_target_docs_use_subject_key_and_no_placeholder_measure_field() 
 
 def test_forward_target_docs_freeze_new_titles_and_reference_grouping() -> None:
     docs_home = (docs_root() / "README.md").read_text(encoding="utf-8")
-    gaps_text = (docs_root() / "concepts" / "gaps-and-readiness.md").read_text(
+    gaps_text = (docs_root() / "concepts" / "gaps-and-reviews.md").read_text(
         encoding="utf-8"
     )
     recon_text = (
         docs_root() / "concepts" / "reconciliation-tax-architecture.md"
     ).read_text(encoding="utf-8")
 
-    assert 'title: "Gap, Review, And Readiness"' in gaps_text
+    assert 'title: "Gap, Review, And Shared Attachment"' in gaps_text
     assert (
         'title: "Reconciliation, Checkpoint, Journal, And Tax Architecture"'
         in recon_text
@@ -294,7 +294,7 @@ def test_forward_target_docs_freeze_new_titles_and_reference_grouping() -> None:
 def test_forward_target_docs_use_kernel_scope_and_assessment_roots() -> None:
     governed_paths = (
         repo_root() / "ROADMAP.md",
-        docs_root() / "concepts" / "gaps-and-readiness.md",
+        docs_root() / "concepts" / "gaps-and-reviews.md",
         docs_root() / "concepts" / "pipeline-stage-contracts.md",
         docs_root() / "concepts" / "reconciliation-tax-architecture.md",
         docs_root() / "reference" / "target-ids-and-refs.md",
@@ -324,7 +324,7 @@ def test_forward_target_docs_use_assessment_paths_and_partition_labels() -> None
     recon_text = (
         docs_root() / "concepts" / "reconciliation-tax-architecture.md"
     ).read_text(encoding="utf-8")
-    gaps_text = (docs_root() / "concepts" / "gaps-and-readiness.md").read_text(
+    gaps_text = (docs_root() / "concepts" / "gaps-and-reviews.md").read_text(
         encoding="utf-8"
     )
     persistence_text = (
@@ -332,13 +332,18 @@ def test_forward_target_docs_use_assessment_paths_and_partition_labels() -> None
     ).read_text(encoding="utf-8")
 
     assert "assessment/gap/gap_records.json" in recon_text
-    assert "assessment/readiness/readiness_records.json" in recon_text
+    assert "assessment/review/review_records.json" in recon_text
+    assert (
+        "working/products/tax_outputs/<tax_outputs_id>/derived/"
+        "tax_output_grouped_readiness.json" in recon_text
+    )
     assert "assessment/readiness/readiness_rollup_records.json" not in recon_text
+    assert "assessment/readiness/readiness_records.json" not in recon_text
     assert "checkpoint-economic-facts-lineage-scoped" in recon_text
     assert "tax-inputs-policy-year-scoped" in recon_text
     assert "checkpoint-economic-lineage-scoped" not in recon_text
     assert "tax-input-policy-year-scoped" not in recon_text
-    assert "tax-output-local derived output" in gaps_text
+    assert "Readiness is not a shared assessment family." in gaps_text
     assert "`kernel_scope`" in gaps_text
     assert "`product_scope`" not in gaps_text
     assert "assessment view" not in gaps_text
@@ -347,6 +352,10 @@ def test_forward_target_docs_use_assessment_paths_and_partition_labels() -> None
     assert "assessment views" not in recon_text
     assert "assessment view" not in persistence_text
     assert "assessment views" not in persistence_text
+    assert (
+        "working/products/tax_outputs/<tax_outputs_id>/derived/"
+        "tax_output_grouped_readiness.json" in persistence_text
+    )
     assert "readiness rollup" not in gaps_text.lower()
     assert "readiness rollup" not in recon_text.lower()
     assert "readiness rollup" not in persistence_text.lower()
@@ -426,7 +435,7 @@ def test_repo_human_docs_retire_operator_view_term() -> None:
 
 
 def test_bridge_record_names_stay_inside_compatibility_local_sections() -> None:
-    gaps_text = (docs_root() / "concepts" / "gaps-and-readiness.md").read_text(
+    gaps_text = (docs_root() / "concepts" / "gaps-and-reviews.md").read_text(
         encoding="utf-8"
     )
     bridge_text = (docs_root() / "concepts" / "bridge-to-target-mapping.md").read_text(

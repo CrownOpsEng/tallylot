@@ -274,12 +274,12 @@ def test_validate_frontmatter_rejects_provider_nouns_in_forward_looking_summary(
 
 
 def test_validate_frontmatter_rejects_noncanonical_forward_target_title() -> None:
-    path = repo_root() / "docs" / "concepts" / "gaps-and-readiness.md"
+    path = repo_root() / "docs" / "concepts" / "gaps-and-reviews.md"
     text = dedent(
         """\
         ---
         title: "Gaps And Readiness"
-        summary: "Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline."
+        summary: "Shared gap, review, sidecar, `SubjectRef`, and shared attachment contracts for the target pipeline."
         doc_type: concept
         audience: human
         owner: repo

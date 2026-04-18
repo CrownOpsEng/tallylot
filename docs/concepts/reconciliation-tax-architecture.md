@@ -57,7 +57,7 @@ Use these pages for the detailed neighboring contracts:
 - [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
-- [Gap, Review, And Readiness](gaps-and-readiness.md)
+- [Gap, Review, And Shared Attachment](gaps-and-reviews.md)
 - [Engineering Standards](../standards/engineering.md)
 - [Transaction Classification](transaction-classification.md)
 - [Oracle Boundaries](oracle-boundaries.md)
@@ -161,10 +161,10 @@ Forward-looking persistence rules:
   page documents a stronger reason to differ
 - product sidecars persist separately from kernels and are keyed by
   `kernel_scope_id` or narrower truthful record ids
-- grouped readiness remains derived behavior over shared readiness records;
-  before trigger activation it may appear only as tax-output-local, narrow
-  rendering-local, or compatibility-local derived output rather than as a
-  shared gap, review, or readiness record family
+- grouped readiness remains capability-owned derived behavior over local
+  records plus open gaps; before trigger activation it may appear only as
+  tax-output-local, narrow rendering-local, or compatibility-local derived
+  output rather than as a shared assessment family
 - target basenames use the owning product or sidecar family directly
   rather than generic names or bridge-era qualifiers
 - stable ids and helper refs keep the owning family stem once they cross
@@ -174,7 +174,10 @@ Forward-looking persistence rules:
 - writes are replace-whole-partition operations, not append-in-place mutation
   of accepted truth
 - persisted kernels are immutable snapshots for one declared partition scope
-- sidecars are regenerable from authoritative kernels plus upstream refs
+- derived outputs, caches, and indexes are regenerable from authoritative
+  kernels plus upstream refs
+- shared assessment records and explicit product-local detail families are
+  declared persisted outputs, not disposable accelerators
 - caches and indexes are accelerators only; they are never the authority
 
 ### Default Partition Scopes
@@ -217,8 +220,8 @@ Rules:
 - one persisted `TaxInputs` kernel owns one tax input kernel
 - one persisted `TaxOutputs` kernel owns one tax output kernel
 - readers use product ids or narrower record ids for authoritative product
-  lookup; `kernel_scope_id` remains for shared reporting plus
-  gap/review/readiness attachment only
+  lookup; `kernel_scope_id` remains for shared reporting plus gap/review
+  attachment only
 
 ### Default Filesystem Placement
 
@@ -232,14 +235,15 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/products/journals/<journal_id>/journal.json`
 - `working/products/tax_inputs/<tax_inputs_id>/tax_inputs.json`
 - `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
-- stage-owned gap, review, and readiness sidecars live beside the
-  authoritative kernel in that
-  same product directory under `assessment/gap/`, `assessment/review/`, and
-  `assessment/readiness/`, using `assessment/gap/gap_records.json`,
+- stage-owned shared assessment sidecars live beside the authoritative kernel
+  in that same product directory under `assessment/gap/` and
+  `assessment/review/`, using `assessment/gap/gap_records.json`,
   `assessment/gap/gap_explanations.json`,
-  `assessment/review/review_records.json`,
-  `assessment/review/review_explanations.json`,
-  and `assessment/readiness/readiness_records.json`
+  `assessment/review/review_records.json`, and
+  `assessment/review/review_explanations.json`
+- product-local derived outputs live under `derived/` inside the owning
+  product directory, for example:
+  - `working/products/tax_outputs/<tax_outputs_id>/derived/tax_output_grouped_readiness.json`
 - compatibility views live under the authoritative product they depend on,
   for example:
   - `working/products/economic_facts/<economic_facts_id>/compatibility/facts.csv`
@@ -361,27 +365,45 @@ Rules:
 - full-history rescans per target are not allowed when a bounded partition or
   reusable materialized state exists
 
-### Sidecars, Caches, And Indexes
+### Assessment, Product-Local Detail, Compatibility, And Derived Outputs
 
-Sidecars and caches are allowed where replay cost would otherwise become too
-high.
+The target docs use one explicit taxonomy for non-kernel persisted or rendered
+surfaces.
 
-Typical sidecar or cache surfaces include:
+Shared assessment families:
+
+- the gap family for `GapRecord` and `GapExplanation`
+- the review family for `ReviewRecord` and `ReviewExplanation`
+
+Product-local detail families:
 
 - evidence selection explanations
 - claim-scope decision explanations
 - reconciliation continuity explanations
 - checkpoint acceptance reports
 - journal entry-check reports
-- tax carry-forward record indexes
+- product-owned explanatory detail such as provenance, comparison traces,
+  annotations, or policy notes
+
+Compatibility families:
+
+- migration-only `compatibility/` views and sidecars
+
+Derived outputs, caches, and indexes:
+
+- grouped outputs such as the frozen `TaxOutputs`-local grouped readiness file
+- caches
+- indexes such as tax carry-forward record indexes
 
 Rules:
 
-- sidecars are never the sole copy of business meaning
-- sidecars may be keyed by `kernel_scope_id` or narrower truthful record ids,
-  but
-  they do not replace product ids for authoritative product lookup
-- caches are always regenerable from authoritative kernels and upstream refs
+- shared assessment outputs are declared persisted outputs and are never the
+  sole copy of product meaning
+- product-local detail families use explicit owning-product names and never
+  live under the shared assessment root
+- compatibility families stay migration-only and do not replace target product
+  lookup
+- derived outputs, caches, and indexes are the regenerable class
 - materialized indexes are allowed only when they accelerate declared product
   kernels rather than replacing them
 

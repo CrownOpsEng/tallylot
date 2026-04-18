@@ -81,12 +81,6 @@ def _write_catalog(
                     "id": "review_id",
                     "refs": [],
                 },
-                {
-                    "stem": "readiness",
-                    "record": "ReadinessRecord",
-                    "id": "readiness_id",
-                    "refs": [],
-                },
             ],
             "package_paths": ["application/claim/", "domain/assessment/"],
             "standalone_directory_paths": ["compatibility/"],
@@ -104,10 +98,6 @@ def _write_catalog(
                                 "review_records.json",
                                 "review_explanations.json",
                             ],
-                        },
-                        {
-                            "stem": "readiness",
-                            "sidecars": ["readiness_records.json"],
                         },
                     ],
                 },
@@ -1254,8 +1244,8 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     assert catalog.scope_profiles["forward_target"].enforce_target_naming is True
     assert catalog.scope_profiles["repo_policy"].allow_anti_examples is True
     assert (
-        catalog.title_expectations["docs/concepts/gaps-and-readiness.md"]
-        == "Gap, Review, And Readiness"
+        catalog.title_expectations["docs/concepts/gaps-and-reviews.md"]
+        == "Gap, Review, And Shared Attachment"
     )
     assert (
         catalog.title_expectations["docs/concepts/reconciliation-tax-architecture.md"]
@@ -1265,7 +1255,6 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
         "compatibility/",
         "assessment/gap/",
         "assessment/review/",
-        "assessment/readiness/",
         "working/products/evidence_sets/",
         "working/products/claim_sets/",
         "working/products/economic_facts/",
@@ -1280,7 +1269,6 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
         "assessment/gap/gap_explanations.json",
         "assessment/review/review_records.json",
         "assessment/review/review_explanations.json",
-        "assessment/readiness/readiness_records.json",
     )
     assert catalog.reference_group_headings == (
         "### Target References",
@@ -1307,6 +1295,7 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     assert "ValuationRecord" in record_names
     assert "JournalEntryRecord" in record_names
     assert "GapRecord" in record_names
+    assert "ReadinessRecord" not in record_names
     assert "ReadinessRollupRecord" not in record_names
     assert "application/assessment/" not in catalog.canonical_families.package_paths
     assert "application/reporting/" not in catalog.canonical_families.package_paths

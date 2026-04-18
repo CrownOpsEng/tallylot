@@ -1,6 +1,6 @@
 ---
-title: "Gap, Review, And Readiness"
-summary: "Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline."
+title: "Gap, Review, And Shared Attachment"
+summary: "Shared gap, review, sidecar, `SubjectRef`, and shared attachment contracts for the target pipeline."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,21 +9,23 @@ naming_scope: forward_target
 nav_order: 45
 ---
 
-Use this page when defining shared gap, review, readiness, or `SubjectRef`
-contracts. This page defines the target cross-stage gap, review, readiness,
-and generic subject-attachment model.
+Use this page when defining shared gap, review, `SubjectRef`, or shared
+attachment contracts. This page defines the target cross-stage gap, review,
+generic subject-attachment, and shared scope-attachment model.
 
 ## Design Rules
 
-- gap, review, and readiness records stay compact and stage-neutral
+- gap and review records stay compact and stage-neutral
 - explanation-heavy detail belongs in sidecars, not in hot-path kernels
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- kernel-scope grouped readiness is derived from subject-level or scope-level
-  truth, not stored as the only truth
-- gap, review, and readiness records plus sidecars help stages interoperate
-  without erasing stage ownership
+- readiness is a capability-owned derived view, not a shared canonical record
+  family
+- grouped readiness stays on capability-owned derived outputs, not on a shared
+  assessment family
+- shared gap and review records plus sidecars help stages interoperate without
+  erasing stage ownership
 
 ## Provenance
 
@@ -37,8 +39,8 @@ Rules:
   identity
 - capture identity stays separate from human-readable labels and filesystem
   paths
-- gap, review, and readiness records and sidecars link to provenance rather
-  than embedding large repeated evidence detail directly
+- gap and review records and sidecars link to provenance rather than embedding
+  large repeated evidence detail directly
 
 ## `SubjectRef`
 
@@ -113,17 +115,16 @@ Rules:
   target when one exact target is the truthful blocker or review scope
 - `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
   proposal record before acceptance
-- `kernel_scope_id` identifies one shared gap/review/readiness attachment
-  scope over one canonical product kernel and is not a substitute for a
-  narrower scope
+- `kernel_scope_id` identifies one shared gap/review attachment scope over one
+  canonical product kernel and is not a substitute for a narrower scope
 - do not attach a gap or review to `kernel_scope` when `subject`,
   `selection`, `claim_scope`, `continuity_segment`,
   `balance_target`, or `checkpoint_proposal` would be truthful
 
 ### `kernel_scope_id`
 
-`kernel_scope_id` is defined once for target gap, review, readiness,
-derived-output, and sidecar attachments.
+`kernel_scope_id` is defined once for target gap, review, and declared
+derived-output attachments.
 
 Rules:
 
@@ -138,18 +139,16 @@ Rules:
 - `kernel_scope_id` is never a target product id, never an upstream product
   ref, and never the primary reader key when one product id or narrower record
   id exists
-- `kernel_scope_id` is used only for gap/review/readiness sidecar attachment
-  and declared derived outputs when no narrower truthful subject or scope
-  exists
+- `kernel_scope_id` is used only for gap/review sidecar attachment and
+  declared derived outputs when no narrower truthful subject or scope exists
 - `kernel_scope_id` must not replace `selection_id`,
   `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
   `checkpoint_proposal_id`, or one record id when those are truthful
 
 ## Shared Stage Vocabulary
 
-Use one stage vocabulary across gap records, review records, readiness
-records, checkpoint-stage reuse, and any later capability-owned derived
-outputs.
+Use one stage vocabulary across gap records, review records, checkpoint-stage
+reuse, and any later capability-owned derived outputs.
 
 Shared stage vocabulary:
 
@@ -164,8 +163,7 @@ Shared stage vocabulary:
 Rules:
 
 - `owner_stage` and `blocking_stages` use this vocabulary
-- readiness records and later capability-owned derived outputs use this
-  vocabulary
+- later capability-owned derived outputs use this vocabulary
 - keep stage labels on repo-owned noun forms that match the target package and
   ownership docs
 - do not use alternate labels such as `semantic` once target-stage products
@@ -174,9 +172,8 @@ Rules:
 ## Gap Model
 
 The target shared gap model splits compact blocking truth from explanation.
-`GapRecord`, `ReviewRecord`, and `ReadinessRecord` stay short because each one
-names the shared cross-stage business concept directly rather than a local
-helper wrapper.
+`GapRecord` and `ReviewRecord` stay short because each one names the shared
+cross-stage business concept directly rather than a local helper wrapper.
 
 ### `GapRecord`
 
@@ -267,7 +264,7 @@ Rules:
 - `owner_stage` identifies who owns the gap meaning
 - `blocking_stages` identifies who is blocked by the unresolved condition
 - stages may add stage-local subtyping later, but they must not redefine the
-  gap, review, and readiness contracts out of existence
+  gap and review contracts out of existence
 - non-subject scopes must still use stable ids rather than prose labels
 - `resolved` and `superseded` gaps remain valid persisted history; they are not
   deleted in place
@@ -439,95 +436,67 @@ Rules:
 - review explanation may become richer over time without changing the advisory
   record
 
-## Readiness Model
+## Readiness Locality
 
-Readiness is subject-first, stage-specific, and reducible into derived grouped
-outputs.
-
-### `ReadinessStatus`
-
-Shared status vocabulary:
-
-- `ready`
-- `blocked`
-- `partial`
-- `not_applicable`
-
-`partial` means:
-
-- some required meanings or assertions resolved
-- at least one blocking gap still open
-- the remaining uncertainty is recorded through gap ids, not prose-only
-  explanation
-
-### `ReadinessRecord`
-
-Purpose:
-
-- stage-specific readiness for one `SubjectRef`
-
-Kernel fields:
-
-- `readiness_id`
-- `subject_ref`
-- `stage`
-- `status`
-- `blocking_gap_ids`
-
-Stable ids:
-
-- `readiness_id` identifies one readiness record for one subject and
-  one stage
-- `readiness_id` uses component array `[subject_ref, stage]`
-
-Ordering:
-
-- sort by tuple `[stage, subject_ref.subject_kind, subject_ref.subject_key]`
-- sort `blocking_gap_ids` lexicographically
-
-Serialization:
-
-- serialize readiness records only
-- use stable object-key ordering
-- preserve the declared readiness order above
-
-Fingerprint inputs:
-
-- readiness records in canonical order
-- `schema_version`
-- sorted `blocking_gap_ids`
+Readiness is not a shared assessment family.
 
 Rules:
 
-- subject readiness is the base truth
-- `evidence` readiness covers deterministic evidence selection and observation
-  completeness before claim commitment
-- reducers work from subject readiness plus gaps, not from hand-built grouped
-  readiness rows
-- a subject may be ready for one stage and blocked for another
-- readiness points to blocking gap ids rather than hiding blockers in
-  explanation text
+- readiness is always a capability-owned derived view over authoritative
+  stage-owned records plus open gaps
+- readiness views may key off truthful subject ids, stage-local scope ids such
+  as `claim_scope_id`, `continuity_segment_id`, `balance_target_id`, and
+  `checkpoint_proposal_id`, or declared product-local grouping keys when the
+  owning capability defines them
+- the tax-first path may keep the frozen `TaxOutputs`-local grouped readiness
+  output owned by
+  [Pipeline Stage Contracts](pipeline-stage-contracts.md) and
+  [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md)
+- compatibility-local or rendering-local readiness views may exist where live
+  readers need them, but they do not create a shared readiness record family
+- broader grouped readiness or durable projections outside tax-local or
+  compatibility-local surfaces require the roadmap trigger ladder to activate a
+  capability-owned derived read-model slice
 
-### Grouped Readiness Before Derived Read-Model Activation
+## Sidecar Taxonomy
 
-Grouped readiness is derived behavior, not a shared canonical record family.
+Use one explicit sidecar taxonomy across the target docs.
+
+Shared assessment families:
+
+- `assessment/gap/` for `GapRecord` and `GapExplanation`
+- `assessment/review/` for `ReviewRecord` and `ReviewExplanation`
+
+Product-local detail families:
+
+- provenance detail
+- comparison traces
+- annotations
+- policy notes and rendered policy detail
+- other product-owned explanatory detail that does not change the owning
+  product's kernel meaning
+
+Compatibility families:
+
+- migration-only `compatibility/` views and sidecars for retained bridge
+  readers
+
+Derived outputs, caches, and indexes:
+
+- non-authoritative grouped outputs
+- caches
+- indexes
 
 Rules:
 
-- shared readiness truth stays on ordered `ReadinessRecord` rows plus their
-  linked gap ids
-- before the roadmap trigger ladder activates broader derived read models,
-  grouped readiness may exist only as:
-  - tax-output-local derived output
-  - narrow rendering-derived output
-  - migration compatibility-local derived output
-- grouped readiness must remain reproducible from ordered readiness and gap
-  records without manual status editing
-- do not ship source-grouped or operator-facing grouped readiness as a shared
-  forward-target surface before trigger activation
-- once a grouped consumer requires a broader derived read-model surface, that
-  grouped behavior moves into the owning capability instead of restoring a
-  shared grouped-readiness family
+- shared assessment records and explanation families are declared persisted
+  outputs; they are not disposable accelerators
+- product-local detail families belong under explicit product-local family names
+  chosen by the owning product and never under `assessment/`
+- compatibility families stay migration-only and must not become a second
+  architecture center
+- derived outputs, caches, and indexes are the regenerable class; they remain
+  reproducible from authoritative kernels plus declared upstream refs
 
 ## Bridge Mapping From Issue And Review Records
 
@@ -546,7 +515,11 @@ Mapping rules:
 - `NormalizationReviewRecord` maps to one `ReviewRecord` plus one
   `ReviewExplanation` when owner stage, scope, and advisory meaning align
 - when one factual cause produces both a blocker and an advisory review, the
-  blocker lands in `GapRecord` and the review remains keyed sidecar detail
+  blocker lands in `GapRecord` and the review remains keyed shared-assessment
+  detail
+- if an operator or bridge consumer still needs readiness after cutover, define
+  it as a capability-owned derived view over target products plus shared gap
+  and review outputs rather than as a shared readiness record family
 - current bridge ids remain traceable when later stages adopt target-native gap
   or review ids
 
@@ -578,15 +551,23 @@ Keep these first-class:
 - postings
 - tax inputs and outputs
 
-Use sidecars only for:
+Use shared assessment families only for:
 
-- provenance
 - gaps
 - reviews
-- readiness
+
+Use product-local detail families for:
+
+- provenance
 - annotations
 - comparison traces
 - policy explanations
+
+Use derived outputs, caches, and indexes only for:
+
+- grouped readiness and other grouped views
+- caches
+- indexes
 
 Sidecars must never become:
 
@@ -612,7 +593,6 @@ vocabulary after cutover.
 - current `IssueRecord` and `NormalizationReviewRecord` remain live bridge
   outputs today
 - later implementation may map current bridge issues and reviews into the
-  shared gap/review/readiness contracts where stage ownership and meaning line
-  up
+  shared gap/review contracts where stage ownership and meaning line up
 - current-state docs keep current issue and review names where accuracy
   requires them

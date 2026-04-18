@@ -10,7 +10,7 @@ This file is the forward planning document for the repo.
   - [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
   - [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
   - [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
-  - [`docs/concepts/gaps-and-readiness.md`](docs/concepts/gaps-and-readiness.md)
+  - [`docs/concepts/gaps-and-reviews.md`](docs/concepts/gaps-and-reviews.md)
   - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
   - [`docs/reference/first-upstream-slice-contract.md`](docs/reference/first-upstream-slice-contract.md)
   - [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
@@ -25,8 +25,8 @@ current adapter-edge and oracle-comparison boundaries, not canonical target
 naming.
 
 **Exception rationale:** `assessment/` stays in this roadmap only as the shared
-contract and sidecar root for the nested `gap/`, `review/`, and `readiness/`
-families. It is not a generic application center.
+contract and sidecar root for the nested `gap/` and `review/` families. It is
+not a generic application center.
 
 ## Planning Anchors
 
@@ -78,6 +78,9 @@ Goal:
 Broad implementation must not begin until the contract pages freeze these
 contracts.
 
+Before that gate is satisfied, only contract-lock alignment and bounded prep
+work are allowed. Broad implementation across Phases 1 to 5 remains blocked.
+
 Must freeze:
 
 - `EvidenceSet` record families, ids, cardinality, and intentional
@@ -88,12 +91,12 @@ Must freeze:
 - critical-path `ClaimRecord` field tables, `observation_refs`, and
   the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
-- shared gap, review, and readiness records and sidecars:
+- shared gap and review records and sidecars:
   `GapRecord`, `GapExplanation`, `ReviewRecord`,
-  `ReviewExplanation`, `ReadinessRecord`,
-  `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id` and `balance_target_id`
-  attachments, and the downstream shared-subject seams needed for journal
-  and tax records
+  `ReviewExplanation`, capability-owned readiness-view locality rules,
+  `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id` and
+  `balance_target_id` attachments, and the downstream shared-subject seams
+  needed for journal and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
   refs use product ids rather than `kernel_scope_id`
 - short-first canonical stable ids, catalog-declared owner-local short slots,
@@ -123,20 +126,20 @@ Must freeze:
   package ownership, keeps `economics` aligned across stage vocabulary,
   package ownership, and stage prose, uses singular concept roots such as
   `assertion/`, avoids umbrella roots such as `entities/` when the identity
-  families are already known, keeps gap/review/readiness roots explicit when
-  the docs mean those families directly, and keeps the shared `assessment/` root
-  split into concrete nested families
-  such as `gap/`, `review/`, and `readiness/` while keeping assessment
-  behavior in the owning application slice
+  families are already known, keeps gap/review roots explicit when the docs
+  mean those shared families directly, and keeps the shared `assessment/` root
+  split into concrete nested families such as `gap/` and `review/` while
+  keeping readiness views and other assessment behavior in the owning
+  application slice
 - authoritative persistence model, product-owned directory stems, partition
   scopes, sidecar rules, and default filesystem placement
 - migration authority rules, compatibility views, reader cutovers, and
   retirement gates
 - package ownership and layer placement that keep shared assessment contracts in
   `domain/assessment/`, keep the persisted `assessment/gap/`,
-  `assessment/review/`, and `assessment/readiness/` families as storage rules
-  only, and retire shared application assessment behavior until a specific
-  capability-owned derived read-model package is activated
+  `assessment/review/` families as storage rules only, and retire shared
+  application assessment behavior until a specific capability-owned derived
+  read-model package is activated
 - defer broader grouped readiness, reporting, portfolio, visualization, and
   investigation architecture until the trigger ladder below fires, allowing
   only filing-critical product-local derived outputs, narrow rendering outputs,
@@ -150,7 +153,7 @@ Must freeze:
 
 Deliver:
 
-- aligned contract pages for target products, ontology, gap/review/readiness
+- aligned contract pages for target products, ontology, gap/review
   records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
@@ -162,6 +165,25 @@ Deliver:
 - explicit fast-path rule that reducers read kernels, not explanation sidecars
 - frozen critical-path field tables and product-id rules that later writing
   work can merge without deciding new structure
+- a documented completion gate that names the owner docs and concrete reader
+  inventory required before broad implementation begins
+
+### Phase 0 Completion Gate
+
+Treat this checklist as the operational gate for ending Phase 0, not as a
+claim that the repo has already satisfied it.
+
+Owner docs that must align before broad implementation begins:
+
+- `ROADMAP.md`
+- `docs/status/migration-sequence.md`
+- `docs/concepts/bridge-to-target-mapping.md`
+- `docs/concepts/pipeline-stage-contracts.md`
+- `docs/concepts/domain-ontology.md`
+- `docs/concepts/gaps-and-reviews.md`
+- `docs/concepts/reconciliation-tax-architecture.md`
+- `docs/reference/first-upstream-slice-contract.md`
+- `docs/reference/first-downstream-slice-contract.md`
 
 Exit criteria:
 
@@ -191,6 +213,17 @@ Exit criteria:
 - the first upstream slice and first downstream slice can be implemented
   without inventing
   ids, claim bundles, values, or reader cutovers
+- every active bridge surface has one authoritative target owner
+- every active bridge surface has one derived compatibility rule
+- every active bridge surface names concrete current readers and concrete
+  target readers
+- no Phase 1 or Phase 2 doc claims authority over `TransactionFact`,
+  `facts.csv`, `balance_snapshots.csv`, `balance_references.csv`, or
+  `cointracking_csv`
+- `EventLinkRecord` status is aligned between this roadmap and the first
+  downstream slice contract
+- the intentional looseness of Phases 6 and later is explicit and is
+  non-blocking for Phase 0 to Phase 5 implementation
 
 ## Deferred Read-Model Activation Triggers
 
@@ -309,8 +342,8 @@ Deliver:
   claim-bundle-decision records
 - claim fields frozen for the first upstream slice plus
   `observation_refs`
-- shared gap, review, and readiness records and sidecars attached to claim
-  scopes where needed
+- shared gap and review outputs attached to claim scopes where needed, with any
+  readiness views staying local to the claim-owning capability
 - declared compatibility views for `EconomicActivityDraft` and
   `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
   kernels
@@ -321,6 +354,13 @@ Exit criteria:
   economic meaning
 - claim-bundle decisions remain claim-owned and do not carry economic
   truth
+
+Transition to Phase 3:
+
+- downstream bridge outputs stay on the live bridge path until
+  `EconomicFacts` exists
+- the first downstream slice is the first slice that turns those downstream
+  bridge outputs into target-derived compatibility views
 
 ## Phase 3. Land `EconomicFacts`
 
@@ -353,8 +393,10 @@ Goal:
 
 Deliver:
 
-- `ContinuitySegmentRecord`, `EventLinkRecord`, `BalanceTargetRecord`, and
-  `CheckpointProposalRecord`
+- `ContinuitySegmentRecord`, `BalanceTargetRecord`, and
+  `CheckpointProposalRecord` for the first downstream slice
+- `EventLinkRecord` when a later in-phase reconciliation increment needs
+  explicit event linkage rather than inferred continuity alone
 - direct `AssertionValue` fields for expected and observed balance meaning
 - fixed subject and position identity seams for in-scope reconciliation
 - bridge compatibility view for `balance_snapshots.csv`
@@ -383,6 +425,10 @@ Exit criteria:
 - accepted checkpoint truth is explicit, not an inferred side effect
 - statement-backed checkpoint acceptance is separated cleanly from manual-only
   runtime aids
+
+Phases 6 and later remain intentionally high-level in this round. This roadmap
+repair makes Phase 0 to Phase 5 implementation decision-complete without
+defining bounded slices for later downstream products yet.
 
 ## Phase 6. Land `Journal`
 

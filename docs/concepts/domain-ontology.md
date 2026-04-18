@@ -121,7 +121,7 @@ Implications:
   distinction matters
 - shared infrastructure may point at them generically only through the
   `SubjectRef` rules owned by
-  [Gap, Review, And Readiness](gaps-and-readiness.md)
+  [Gap, Review, And Shared Attachment](gaps-and-reviews.md)
 - the same shared-infrastructure rule applies when generic attachment is needed
   for `Instrument`, `Location`, ownership identities, counterparties, or
   `CheckpointAssertion`
@@ -408,10 +408,10 @@ Bridge-specific classification rules live in
 - keep `economics` aligned across stage vocabulary, package roots, and
   product-adjacent prose; reserve `economic` for adjective use inside the
   owned product family such as `EconomicFacts`
-- prefer explicit family names such as `gap`, `review`, and `readiness` in
-  forward-looking prose when those are the owned sidecars; reserve generic
-  `support` for the intentional shared root or bounded field names such as
-  `support_shape`
+- prefer explicit family names such as `gap` and `review`, or explicit
+  capability-owned readiness-view names, in forward-looking prose when those
+  are the owned surfaces; reserve generic `support` for the intentional shared
+  root or bounded field names such as `support_shape`
 - avoid umbrella package roots such as `entities/` once the owned identity
   families are already known
 - keep singular concept families on singular package stems such as
@@ -431,8 +431,9 @@ Bridge-specific classification rules live in
 The target package layout follows stage ownership and is not advisory.
 
 **Exception rationale:** `domain/assessment/` stays in this page only as the
-shared root for the nested `gap/`, `review/`, and `readiness/` families plus
-`SubjectRef`. It is not a generic support catch-all.
+shared root for the nested `gap/` and `review/` families plus shared
+attachment constructs such as `SubjectRef`. It is not a generic support
+catch-all.
 
 **Migration-only root rationale:** `application/compatibility/` remains a
 bridge-only migration root for derived compatibility views until those readers
@@ -450,8 +451,8 @@ Required domain ownership:
 - `domain/economics/` for events, legs, valuations, settlement status, and
   lifecycle events
 - `domain/assertion/` for `AssertionValue` and its variants
-- `domain/assessment/` as the shared root for nested `gap/`, `review/`, and
-  `readiness/` families plus `SubjectRef`
+- `domain/assessment/` as the shared root for nested `gap/` and `review/`
+  families plus shared attachment constructs such as `SubjectRef`
 - `domain/reconciliation/` for continuity segments, event links, balance
   targets, and checkpoint proposal records
 - `domain/checkpoint/` for accepted checkpoint truth
@@ -474,7 +475,8 @@ Required application ownership:
 - `application/reconciliation/` for continuity, linkage, balance target
   evaluation, and checkpoint proposal records
 `domain/assessment/` stays generic only because it is the shared root for the
-nested `gap/`, `review/`, and `readiness/` families plus `SubjectRef`.
+nested `gap/` and `review/` families plus shared attachment constructs such as
+`SubjectRef`.
 No unrelated family may be added under `domain/assessment/` without a separate
 standards decision.
 `application/compatibility/` is migration-only and must not become a durable
@@ -491,7 +493,7 @@ application center.
 
 Assessment behavior stays in the owning application slice. Shared
 `domain/assessment/` contracts and persisted `assessment/gap/`,
-`assessment/review/`, and `assessment/readiness/` sidecars do not create a
+`assessment/review/` sidecars do not create a
 shared application assessment center.
 
 ### Reserved Future Capability Families

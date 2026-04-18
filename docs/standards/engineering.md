@@ -17,8 +17,8 @@ current output-adapter or oracle-local edges, not canonical target naming.
 
 **Exception rationale:** When this standard names `assessment/` or
 `domain/assessment/`, it is calling out the intentional shared root for the
-nested `gap/`, `review/`, and `readiness/` families rather than endorsing a
-generic catch-all boundary.
+nested `gap/` and `review/` families plus shared attachment constructs rather
+than endorsing a generic catch-all boundary.
 
 **Migration-only root rationale:** When this standard names
 `application/compatibility/`, it is pointing to the bridge-only migration root
@@ -187,8 +187,9 @@ Current application of this rule:
   planned-item models, review assembly, and report rendering.
 - Normalization window and derived-balance helpers belong under
   `application/normalization/` rather than as nearby flat siblings.
-- Shared gap, review, and readiness contracts belong under `domain/assessment/`
-  while the owning application slice keeps its own assessment behavior.
+- Shared gap and review contracts plus shared attachment constructs belong
+  under `domain/assessment/` while the owning application slice keeps its own
+  assessment behavior and readiness views.
 - Forward-looking journal expansion and entry checks belong under
   `application/journal/` rather than under a broader `accounting/` umbrella or
   as extra checkpoint-side helpers.
@@ -298,17 +299,17 @@ application/investigation/, rather than into a generic shared sink.
   and one child-record noun.
 - When a broad shared root is genuinely needed, keep the immediate children
   concrete and mirrored. `assessment/` is acceptable only when it is split into
-  families such as `gap/`, `review/`, and `readiness/` rather than flattened
-  into one catch-all boundary.
+  families such as `gap/` and `review/` rather than flattened into one
+  catch-all boundary.
 - Apply that same rule to persisted sidecar layout. Prefer paths such as
   `assessment/gap/gap_records.json` and
-  `assessment/readiness/readiness_records.json` over one flat
-  `assessment/` directory full of unrelated sidecar families.
+  `assessment/review/review_records.json` over one flat `assessment/`
+  directory full of unrelated sidecar families.
 - In forward-looking prose, prefer explicit family names such as `gap`,
-  `review`, and `readiness` over the looser umbrella `shared assessment` when
-  those are the actual owned families. Reserve generic `assessment` for
-  intentional roots or bounded field names such as `domain/assessment/`,
-  `assessment/`, or `support_shape`.
+  `review`, or explicit capability-owned readiness-view names over the looser
+  umbrella `shared assessment` when those are the actual owned families.
+  Reserve generic `assessment` for intentional roots or bounded field names
+  such as `domain/assessment/`, `assessment/`, or `support_shape`.
 - When grouped support logic outgrows stage-local ownership, extract it to the
   specific capability-owned derived read-model package rather than to a shared
   application sink.
@@ -366,9 +367,9 @@ application/investigation/, rather than into a generic shared sink.
   boundary is already known. Prefer the explicit owner such as `domain`,
   `reconciliation`, `checkpoint`, `journal`, or `tax`.
 - Keep record-family stems and id stems aligned. Prefer `GapRecord` plus
-  `gap_id` or `ReadinessRecord` plus `readiness_id` over longer names that
-  repeat context the record family already supplies, unless a real sibling
-  family would make the shorter stem ambiguous.
+  `gap_id` or `ReviewRecord` plus `review_id` over longer names that repeat
+  context the record family already supplies, unless a real sibling family
+  would make the shorter stem ambiguous.
 - When a record-family noun would become generic out of context, keep the
   owning concept in the record-family stem even if child ids stay short.
   Prefer `EvidenceSelectionRecord` and `ClaimBundleDecisionRecord` over
@@ -461,8 +462,9 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   product from its accepted root.
 - Shared cross-stage support families that are repo-owned concepts in their own
   right may also stay short. Prefer `GapRecord`, `ReviewRecord`, and
-  `ReadinessRecord` over longer prefixed variants that add no new meaning.
-- For shared gap/review/readiness attachment over one emitted product kernel,
+  explicit capability-owned readiness-view names over longer prefixed variants
+  that add no new meaning.
+- For shared gap/review attachment over one emitted product kernel,
   prefer the explicit `kernel_scope_id` over generic names such as
   `dataset_id`.
 - Name partition scopes after the actual stable dimensions the product id
@@ -485,13 +487,12 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   sidecar family in the filename. Avoid generic names such as `state.json`,
   `data.json`, `output.json`, or `results.json` when later call sites would
   need directory context alone to tell what the file holds.
-- Inside `assessment/` directories that hold shared gap/review/readiness
-  sidecars, split the directory first into `gap/`, `review/`, and
-  `readiness/`, then make basenames mirror the stored record or explanation
-  family. Prefer `assessment/gap/gap_records.json`,
-  `assessment/review/review_records.json`,
-  and `assessment/readiness/readiness_records.json` over one flat assessment
-  directory or shorter plurals that need directory context to reveal shape.
+- Inside `assessment/` directories that hold shared gap/review sidecars, split
+  the directory first into `gap/` and `review/`, then make basenames mirror
+  the stored record or explanation family. Prefer
+  `assessment/gap/gap_records.json` and
+  `assessment/review/review_records.json` over one flat assessment directory
+  or shorter plurals that need directory context to reveal shape.
 - In forward-looking docs and code, reserve `artifact` for current-state bridge
   outputs, oracle/reference packages, or intentionally mixed file families.
   When the storage role is known, prefer `kernel`, `sidecar`, `view`,
@@ -745,9 +746,9 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   `BasisTransitionRecord` is a kernel row family.
 - When prose is naming one persisted emitted family rather than the broader
   concept, use the record-family noun. Prefer `checkpoint proposal records`,
-  `readiness records`, or `tax carry-forward records` over looser prose such as
-  `proposals`, `readiness`, or `carry-forward state` when the stored shape is
-  the point.
+  `capability-owned readiness views`, or `tax carry-forward records` over
+  looser prose such as `proposals`, `readiness`, or `carry-forward state`
+  when the stored shape is the point.
 - Prefer specific names such as `csv_parser.py`, `balance_mapper.py`, or
   `issue_rules.py` over generic names.
 - Match package structure to the architecture first and the external provider
@@ -777,7 +778,7 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
 - Assessment views and compatibility views may still group by
   `source_slug` where operators need that reporting lens, but that dimension
   must not leak into downstream product ids, record ids, authoritative
-  directory stems, or canonical readiness-rollup vocabularies.
+  directory stems, or capability-owned readiness-view vocabularies.
 - When a canonical target contract must preserve a source-provided label,
   preserve the value without freezing the source noun into the field name.
   Prefer target-aligned names such as `location_label` over

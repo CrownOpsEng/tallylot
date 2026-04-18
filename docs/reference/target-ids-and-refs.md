@@ -10,7 +10,7 @@ nav_order: 17
 related:
   - docs/concepts/pipeline-stage-contracts.md
   - docs/concepts/domain-ontology.md
-  - docs/concepts/gaps-and-readiness.md
+  - docs/concepts/gaps-and-reviews.md
   - ROADMAP.md
 ---
 
@@ -33,8 +33,8 @@ Use the detailed contract pages first:
 - [Domain Ontology](../concepts/domain-ontology.md) for `AssertionValue`,
   `PositionRef`, `ContractRef`, `BasisPoolRef`, and other domain refs plus
   identity seams
-- [Gap, Review, And Readiness](../concepts/gaps-and-readiness.md) for `SubjectRef`,
-  shared gap/review/readiness attachments, and `kernel_scope_id`
+- [Gap, Review, And Shared Attachment](../concepts/gaps-and-reviews.md) for
+  `SubjectRef`, shared gap/review attachments, and `kernel_scope_id`
 
 This page keeps only reusable target ids and ref tuples that are not defined as
 the primary contract content elsewhere.
