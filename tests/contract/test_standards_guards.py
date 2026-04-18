@@ -472,6 +472,23 @@ def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
     )
 
 
+def test_engineering_standards_document_contract_guard_expectations() -> None:
+    text = (repo_root() / "docs" / "standards" / "engineering.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "bridge cutover matrix inventory and row order are catalog-governed" in text
+    assert "bridge cutover matrix reader and gate cells are required" in text
+    assert (
+        "forward-target contract docs must stay free of transient planning language"
+        in text
+    )
+    assert (
+        "treat the blocking `target-naming` review check as the repo-native guard"
+        in text
+    )
+
+
 def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() -> None:
     guardrails_text = (repo_root() / "docs/standards/delivery-guardrails.md").read_text(
         encoding="utf-8"

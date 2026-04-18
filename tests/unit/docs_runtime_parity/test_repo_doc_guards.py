@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from tallylot.infrastructure.workspace.layout import SEED_FILES
 
 from tests.support.docs_runtime_parity import (
@@ -9,6 +11,31 @@ from tests.support.docs_runtime_parity import (
     docs_root,
     repo_root,
 )
+
+
+def _forward_target_contract_doc_paths() -> tuple[Path, ...]:
+    return (
+        repo_root() / "ROADMAP.md",
+        docs_root() / "status" / "migration-sequence.md",
+        docs_root() / "concepts" / "bridge-to-target-mapping.md",
+        docs_root() / "concepts" / "pipeline-stage-contracts.md",
+        docs_root() / "concepts" / "domain-ontology.md",
+        docs_root() / "concepts" / "gaps-and-reviews.md",
+        docs_root() / "concepts" / "reconciliation-tax-architecture.md",
+        docs_root() / "reference" / "first-upstream-slice-contract.md",
+        docs_root() / "reference" / "first-downstream-slice-contract.md",
+        docs_root() / "concepts" / "architecture-overview.md",
+        docs_root() / "reference" / "target-ids-and-refs.md",
+        docs_root() / "reference" / "target-persistence-reference.md",
+        docs_root() / "status" / "adapter-delivery-plan.md",
+        docs_root() / "concepts" / "oracle-boundaries.md",
+        docs_root() / "concepts" / "unified-adapter-architecture.md",
+        docs_root() / "concepts" / "transaction-classification.md",
+    )
+
+
+def _joined(*parts: str) -> str:
+    return "".join(parts)
 
 
 def test_docs_do_not_reference_retired_service_or_model_buckets() -> None:
@@ -507,9 +534,47 @@ def test_implementation_anchor_references_use_explicit_doc_paths() -> None:
 
     for path in paths:
         text = path.read_text(encoding="utf-8")
-        assert "implementation plan" not in text.lower(), (
+        assert _joined("implementation", " plan") not in text.lower(), (
             f"{path} still uses vague implementation-plan wording"
         )
+
+
+def test_forward_target_contract_docs_do_not_use_transient_process_terms() -> None:
+    forbidden = (
+        _joined("implementation", " plan"),
+        _joined("execution", " plan"),
+        _joined("phase", " log"),
+        _joined("review", " ledger"),
+        _joined("execution", " ledger"),
+        _joined("phase", " ledger"),
+        _joined("handoff", " prose"),
+        _joined("temporary", " bookkeeping"),
+        _joined("temporary", " process bookkeeping"),
+        _joined("compaction", " aids"),
+    )
+
+    for path in _forward_target_contract_doc_paths():
+        text = path.read_text(encoding="utf-8").lower()
+        for needle in forbidden:
+            assert needle not in text, (
+                f"{path} still uses transient process wording {needle!r}"
+            )
+
+
+def test_forward_target_contract_docs_do_not_use_stepwise_handoff_labels() -> None:
+    forbidden = (
+        _joined("follow", " this plan"),
+        _joined("step", " 1"),
+        _joined("step", " 2"),
+        _joined("step", " 3"),
+    )
+
+    for path in _forward_target_contract_doc_paths():
+        text = path.read_text(encoding="utf-8").lower()
+        for needle in forbidden:
+            assert needle not in text, (
+                f"{path} still uses stepwise handoff wording {needle!r}"
+            )
 
 
 def test_reference_docs_do_not_check_in_oracle_data_files() -> None:

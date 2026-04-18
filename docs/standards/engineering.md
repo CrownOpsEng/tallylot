@@ -887,6 +887,9 @@ Rules:
   parallel path lists
 - update every affected detailed contract page, bounded-slice reference,
   roadmap surface, and standards surface in the same patch
+- bridge cutover matrix inventory and row order are catalog-governed
+- bridge cutover matrix reader and gate cells are required
+- forward-target contract docs must stay free of transient planning language
 - keep frontmatter summaries and generated `docs/README.md` blurbs
   content-first; do not lead with page-role or authority-first labels that
   foreground governance instead of the held contract
