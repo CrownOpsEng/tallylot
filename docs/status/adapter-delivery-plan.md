@@ -1,6 +1,6 @@
 ---
 title: "Adapter Delivery Plan"
-summary: "Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and bounded first slices are stable."
+summary: "Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and the first upstream slice and first downstream slice are stable."
 doc_type: status
 audience: human
 owner: repo
@@ -23,10 +23,10 @@ filing-critical window or in the later unified-adapter redesign.
 The repo uses a filing-first adapter strategy:
 
 - harden the current adapter path where it directly reduces filing risk
-- defer the broad unified adapter redesign until the filing path and bounded
-  first slices are stable
-- allow only the adapter prep work that the contract-lock pass and first slices
-  actually need
+- defer the broad unified adapter redesign until the filing path and the first
+  upstream slice and first downstream slice are stable
+- allow only the adapter prep work that the contract-lock pass and the first
+  upstream slice and first downstream slice actually need
 
 ## Work Tracks
 
@@ -50,27 +50,30 @@ Not allowed now:
 
 ### `prep`
 
-Narrow work that Phase 0 and the first bounded slices need before broad
+Narrow work that Phase 0 and the first upstream slice and first downstream
+slice need before broad
 adapter redesign begins.
 
 Allowed prep:
 
-- bridge-to-target mapping needed for the first slice
-- adapter participation in canonical `EvidenceSet` and `ClaimSet` emission
-- shared determinism and verification helpers that remove first-slice drift
+- bridge-to-target mapping needed for the first upstream slice
+- adapter participation in `EvidenceSet` and `ClaimSet` emission
+- shared determinism and verification helpers that remove drift in the first
+  upstream slice
 
 Required prep rule:
 
-- first-slice adapter work must emit target products through the canonical
-  owner docs, not adapter-local alternate schemas
+- adapter work for the first upstream slice must emit target products
+  through the target contract pages, not adapter-local alternate schemas
 - retained legacy hints needed for current drafts or facts may survive only in
-  declared compatibility sidecars, not in canonical `EvidenceSet` or
+  declared compatibility sidecars, not in `EvidenceSet` or
   `ClaimSet` fields
 
 ### `roadmap`
 
 Broader unified-manifest and multi-facet migration after the filing path is
-stable and the first bounded slices have proven the contract set.
+stable and the first upstream slice and first downstream slice have proven the
+contract set.
 
 ## Priority Tiers
 
@@ -86,11 +89,11 @@ in-repo guesswork.
 ## Filing-Window Rules
 
 - prefer deterministic current behavior over ambitious interface redesign
-- prefer shared support extraction over adapter-local workflow drift
+- prefer shared adapter-foundation extraction over adapter-local workflow drift
 - prefer explicit issues and reviews over guesswork
 - do not widen the current source adapter contract during the filing window
 - do not make the unified adapter redesign a hidden prerequisite for the first
-  bounded slices
+  upstream slice and first downstream slice
 
 ## Filing-Critical Work To Do Now
 
@@ -107,7 +110,7 @@ The filing window should focus on:
 Exit criteria for the filing window:
 
 - every filing-critical source maps to one supported adapter
-- planner-enabled Tier A adapters emit stable planning artifacts before
+- planner-enabled Tier A adapters emit stable planning files before
   translation
 - unchanged filing inputs preserve expected fact, evidence, issue, and review
   behavior unless a documented product decision changes them
@@ -116,14 +119,15 @@ Exit criteria for the filing window:
 
 ## Shared-Foundation Prep
 
-Prep work is allowed only when it materially reduces first-slice drift.
+Prep work is allowed only when it materially reduces drift in the first
+upstream slice.
 
 Examples:
 
-- canonical bridge-to-target mapping for planner artifacts and statement
+- declared bridge-to-target mapping for planner files and statement
   evidence
 - shared verifiers for `EvidenceSet`, `ClaimSet`, and declared compatibility
-  projections
+  views
 - shared comparison helpers that prove bridge outputs are reproducible from the
   authoritative target kernels
 
@@ -131,16 +135,17 @@ Prep work must not:
 
 - create a second architecture center in adapter docs
 - redefine target product kernels locally
-- force repo-wide adapter migration before the bounded slices land
+- force repo-wide adapter migration before the first upstream slice and first
+  downstream slice land
 
 ## Deferred Redesign
 
 The broader unified adapter redesign stays deferred until:
 
 - the filing path is stable enough to trust
-- the contract-lock owner docs are frozen
-- the first upstream and downstream bounded slices have landed cleanly
+- the contract-lock pages are frozen
+- the first upstream and first downstream slices have landed cleanly
 
 At that point, use
 [Unified Adapter Architecture](../concepts/unified-adapter-architecture.md) as
-the design anchor for broader manifest and facet work.
+the contract page for broader manifest and facet work.

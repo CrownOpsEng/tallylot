@@ -82,7 +82,7 @@ def test_runtime_docs_pin_flattened_provenance_locator_columns() -> None:
         docs_root() / "workspace" / "working" / "normalized" / "README.md"
     ).read_text(encoding="utf-8")
     inventory_text = (
-        docs_root() / "reference" / "wallet-inventory-artifacts.md"
+        docs_root() / "reference" / "location-inventory-artifacts.md"
     ).read_text(encoding="utf-8")
 
     for column in provenance_locator_header():
@@ -164,3 +164,34 @@ def test_reconciliation_workspace_docs_mention_cross_source_sidecars() -> None:
         "cross_source_summary.json",
     ):
         assert artifact in text
+
+
+def test_first_upstream_slice_contract_pins_all_retained_compatibility_surfaces() -> (
+    None
+):
+    text = (docs_root() / "reference" / "first-upstream-slice-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    for needle in (
+        "`translation_input_plan.json` content",
+        "`EconomicActivityDraft` ordering and content for evidence in this slice",
+        "`SourceTranslationBatch` content for evidence in this slice",
+        "Retained compatibility projections are part of the slice parity bar.",
+        "legacy readers remain active.",
+    ):
+        assert needle in text
+
+
+def test_first_downstream_slice_contract_pins_fact_csv_projection_parity() -> None:
+    text = (docs_root() / "reference" / "first-downstream-slice-contract.md").read_text(
+        encoding="utf-8"
+    )
+
+    for needle in (
+        "`TransactionFact` and `facts.csv` derived from `EconomicFacts`",
+        "`facts.csv` content for evidence in this slice",
+        "Retained compatibility projections are part of the slice parity bar.",
+        "legacy readers remain active.",
+    ):
+        assert needle in text

@@ -13,7 +13,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Replay a reference workspace from raw captures into a clean workspace "
-            "and compare semantic parity."
+            "and compare meaning parity."
         )
     )
     parser.add_argument("--reference-workspace", required=True)

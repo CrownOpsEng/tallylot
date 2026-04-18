@@ -1,6 +1,6 @@
 ---
 title: "Gaps And Readiness"
-summary: "Owning concept page for the target gap model, review model, readiness model, sidecar rules, and shared `SubjectRef` contracts."
+summary: "Shared gap, review, readiness, sidecar, and `SubjectRef` contracts for the target pipeline."
 doc_type: concept
 audience: human
 owner: repo
@@ -8,29 +8,30 @@ status: active
 nav_order: 45
 ---
 
-Use this page when defining shared blocker, review, readiness, or generic
-subject-reference contracts. This document owns the target cross-stage support
-model.
+Use this page when defining shared gap, review, readiness, or generic
+subject-reference contracts. This page defines the target cross-stage gap,
+review, and readiness model.
 
 Current runtime note:
 
-- the live runtime still uses stage-specific issue and review artifacts such as
+- the live runtime still uses stage-specific issue and review outputs such as
   `IssueRecord` and `NormalizationReviewRecord`
 - those current surfaces remain current-state truth
-- this page defines the target shared support model for later implementation
+- this page defines the target gap, review, and readiness contracts for later
+  implementation
   slices
 
 ## Design Rules
 
-- shared support types stay compact and stage-neutral
-- explanation-heavy payloads belong in sidecars, not in hot-path kernels
+- gap, review, and readiness records stay compact and stage-neutral
+- explanation-heavy detail belongs in sidecars, not in hot-path kernels
 - stage-owned blockers stay explicit; no stage may invent an incompatible
   blocker surface
 - reviews stay advisory and must never become hidden blockers
-- dataset summaries are derived from subject-level or scope-level truth, not
-  stored as the only truth
-- shared support structures help stages interoperate without erasing stage
-  ownership
+- product-scope readiness rollups are derived from subject-level or scope-level
+  truth, not stored as the only truth
+- gap, review, and readiness records plus sidecars help stages interoperate
+  without erasing stage ownership
 
 ## Provenance
 
@@ -39,12 +40,13 @@ Use one typed provenance model across stages.
 Rules:
 
 - provenance stays typed in runtime models
-- flattening happens only at artifact and export boundaries
-- file and member identity stay separate from row, page, or anchor identity
+- flattening happens only at file and export boundaries
+- file and member identity stay separate from row, page, or other locator
+  identity
 - capture identity stays separate from human-readable labels and filesystem
   paths
-- shared support models link to provenance rather than embedding large repeated
-  evidence payloads directly
+- gap, review, and readiness records and sidecars link to provenance rather
+  than embedding large repeated evidence detail directly
 
 ## `SubjectRef`
 
@@ -75,7 +77,7 @@ Supported `subject_kind` values for shared infrastructure:
 - `journal_entry`
 - `posting`
 - `basis_pool`
-- `tax_determinant`
+- `tax_input`
 - `tax_output`
 
 Rules:
@@ -84,7 +86,7 @@ Rules:
 - early-stage gaps and reviews may attach to evidence or claim subjects before
   business identities are fully resolved
 - later-stage gaps and reviews may attach to `journal_entry`, `posting`,
-  `basis_pool`, `tax_determinant`, or `tax_output` when that later-stage
+  `basis_pool`, `tax_input`, or `tax_output` when that later-stage
   record is the truthful shared pointer
 - use `Contract` and `Position` explicitly in business logic and modeling
 - use `SubjectRef` only where shared infrastructure needs a generic pointer
@@ -92,84 +94,93 @@ Rules:
 - `SubjectRef` serializes, sorts, and fingerprints as
   `[subject_kind, subject_id]`
 
-## Non-Subject Scope Identity
+## Non-Subject Scope Ids
 
 Non-subject scopes are allowed only when no narrower truthful subject exists.
 
 Required scope ids:
 
 - `selection_id`
-- `interpretation_scope_id`
+- `claim_scope_id`
 - `continuity_segment_id`
 - `balance_target_id`
-- `checkpoint_candidate_id`
-- `dataset_id`
+- `checkpoint_proposal_id`
+- `product_scope_id`
 
 Rules:
 
 - every non-subject gap or review attachment uses one stable scope id
 - `selection_id` identifies one deterministic evidence-selection
   decision boundary
-- `interpretation_scope_id` identifies one claim-stage semantic decision
-  boundary before bundle selection or subject resolution is final
+- `claim_scope_id` identifies one claim-stage meaning decision
+  boundary before claim-bundle decisions or subject resolution are final
 - `continuity_segment_id` identifies one bounded reconciliation window
 - `balance_target_id` identifies one reconciliation-owned balance assertion
   target when one exact target is the truthful blocker or review scope
-- `checkpoint_candidate_id` identifies one reconciliation-owned checkpoint
-  proposal before acceptance
-- `dataset_id` identifies one shared support attachment scope over one
-  canonical product kernel and is not a substitute for a narrower scope
-- do not attach a gap or review to `dataset` scope when `subject`,
-  `selection`, `interpretation_scope`, `continuity_segment`,
-  `balance_target`, or `checkpoint_candidate` would be truthful
+- `checkpoint_proposal_id` identifies one reconciliation-owned checkpoint
+  proposal record before acceptance
+- `product_scope_id` identifies one shared gap/review/readiness attachment
+  scope over one canonical product kernel and is not a substitute for a
+  narrower scope
+- do not attach a gap or review to `product_scope` when `subject`,
+  `selection`, `claim_scope`, `continuity_segment`,
+  `balance_target`, or `checkpoint_proposal` would be truthful
 
-### `dataset_id`
+### `product_scope_id`
 
-`dataset_id` is defined once for all target support records, projections, and
-sidecars.
+`product_scope_id` is defined once for target gap, review, readiness, rollup,
+view, and sidecar attachments.
 
 Rules:
 
-- `dataset_id` is `<product_kind>:<kernel_fingerprint>`
-- `product_kind` uses the lower-snake-case target product name
+- `product_scope_id` is `<product_slug>:<kernel_fingerprint>`
+- `scope` is the right noun here because this id names a shared attachment
+  boundary over one emitted kernel, not the product identity itself
+- `product_slug` uses the lower-snake-case target product stem
 - `kernel_fingerprint` is the canonical product fingerprint owned by
   [Pipeline Stage Contracts](pipeline-stage-contracts.md)
-- `dataset_id` is derived after canonical kernel fingerprinting and is not a
-  kernel metadata field or a fingerprint input itself
-- `dataset_id` is never a target product id, never an upstream product ref,
-  and never the primary reader key when one product id or narrower record id
+- `product_scope_id` is derived after canonical kernel fingerprinting and is not
+  a product header field or a fingerprint input itself
+- `product_scope_id` is never a target product id, never an upstream product
+  ref, and never the primary reader key when one product id or narrower record
+  id exists
+- `product_scope_id` is used only for shared operator views plus gap/review/
+  readiness sidecar attachment when no narrower truthful subject or scope
   exists
-- `dataset_id` is used only for shared reporting and sidecar attachment when no
-  narrower truthful subject or scope exists
-- `dataset_id` must not replace `selection_id`,
-  `interpretation_scope_id`, `continuity_segment_id`, `balance_target_id`,
-  `checkpoint_candidate_id`, or one record id when those are truthful
+- `product_scope_id` must not replace `selection_id`,
+  `claim_scope_id`, `continuity_segment_id`, `balance_target_id`,
+  `checkpoint_proposal_id`, or one record id when those are truthful
 
 ## Shared Stage Vocabulary
 
-Use one stage vocabulary across gaps, reviews, readiness, checkpoint reuse, and
-downstream reporting.
+Use one stage vocabulary across gap records, review records, readiness
+records, checkpoint-stage reuse, and downstream operator views.
 
 Shared stage vocabulary:
 
 - `evidence`
 - `claim`
-- `economic`
+- `economics`
 - `reconciliation`
 - `checkpoint`
-- `accounting`
+- `journal`
 - `tax`
 
 Rules:
 
 - `owner_stage` and `blocking_stages` use this vocabulary
-- readiness records and projections use this vocabulary
-- do not use alternate labels such as `semantic` once target-stage artifacts
+- readiness records and rollups use this vocabulary
+- keep stage labels on repo-owned noun forms that match the target package and
+  ownership docs
+- do not use alternate labels such as `semantic` once target-stage products
   are emitted
 
 ## Gap Model
 
 The target shared gap model splits compact blocking truth from explanation.
+`GapRecord`, `ReviewRecord`, and `ReadinessRecord` stay short because each one
+names the shared cross-stage business concept directly rather than a local
+helper wrapper.
 
 ### `GapRecord`
 
@@ -196,25 +207,25 @@ Controlled vocabularies:
 - `scope_kind`:
   - `subject`
   - `selection`
-  - `interpretation_scope`
+  - `claim_scope`
   - `continuity_segment`
   - `balance_target`
-  - `checkpoint_candidate`
-  - `dataset`
+  - `checkpoint_proposal`
+  - `product_scope`
 - `gap_kind`:
   - `missing_evidence`
   - `unresolved_identity`
   - `unresolved_linkage`
   - `contradiction`
-  - `policy_required_determination`
-  - `operator_override_required`
+  - `policy_decision_required`
+  - `manual_decision_required`
 - `status`:
   - `open`
   - `resolved`
   - `superseded`
 - `materiality`:
   - `material`
-  - `contextual`
+  - `supporting`
   - `informational`
 - `confidence`:
   - `high`
@@ -257,10 +268,10 @@ Rules:
 - `GapRecord` is the shared blocking truth
 - it stays compact enough for reducers, indexing, and hot-path references
 - it must not absorb large explanatory text blobs
-- `owner_stage` identifies who owns the gap semantics
+- `owner_stage` identifies who owns the gap meaning
 - `blocking_stages` identifies who is blocked by the unresolved condition
 - stages may add stage-local subtyping later, but they must not redefine the
-  shared core out of existence
+  gap, review, and readiness contracts out of existence
 - non-subject scopes must still use stable ids rather than prose labels
 - `resolved` and `superseded` gaps remain valid persisted history; they are not
   deleted in place
@@ -276,10 +287,10 @@ Fields:
 - `gap_id`
 - `known_facts`
 - `missing_inputs`
-- `candidate_interpretations`
+- `possible_meanings`
 - `required_evidence`
-- `allowed_resolution_methods`
-- `recommended_next_action`
+- `resolution_options`
+- `next_action`
 - `provenance_refs`
 
 Ordering:
@@ -312,7 +323,7 @@ Rules:
 
 ## Review Model
 
-The target shared review model carries advisory context without becoming a
+The target shared review model carries advisory detail without becoming a
 hidden blocker surface.
 
 ### `ReviewRecord`
@@ -332,18 +343,18 @@ Kernel fields:
 - `review_key`
 - `status`
 - `confidence`
-- `paired_gap_ids`
+- `gap_ids`
 
 Controlled vocabularies:
 
 - `scope_kind`:
   - `subject`
   - `selection`
-  - `interpretation_scope`
+  - `claim_scope`
   - `continuity_segment`
   - `balance_target`
-  - `checkpoint_candidate`
-  - `dataset`
+  - `checkpoint_proposal`
+  - `product_scope`
 - `status`:
   - `open`
   - `acknowledged`
@@ -370,7 +381,7 @@ Ordering:
 - sort by tuple
   `[owner_stage, scope_kind, subject_ref, scope_id, review_kind, review_id]`
 - use JSON `null` ordering for inactive `subject_ref` and `scope_id` fields
-- sort `paired_gap_ids` lexicographically
+- sort `gap_ids` lexicographically
 
 Serialization:
 
@@ -382,7 +393,7 @@ Fingerprint inputs:
 
 - review records in canonical order
 - `schema_version`
-- sorted `paired_gap_ids`
+- sorted `gap_ids`
 
 Rules:
 
@@ -401,9 +412,9 @@ Purpose:
 Fields:
 
 - `review_id`
-- `summary`
+- `headline`
 - `known_facts`
-- `recommended_follow_up`
+- `follow_up`
 - `provenance_refs`
 
 Ordering:
@@ -430,12 +441,12 @@ Rules:
 
 - explanation belongs in `ReviewExplanation`, not in `ReviewRecord`
 - review explanation may become richer over time without changing the advisory
-  core
+  record
 
 ## Readiness Model
 
-Readiness is subject-first, stage-specific, and reducible into reporting
-projections.
+Readiness is subject-first, stage-specific, and reducible into canonical
+rollups plus operator views.
 
 ### `ReadinessStatus`
 
@@ -448,9 +459,10 @@ Shared status vocabulary:
 
 `partial` means:
 
-- some required interpretations or assertions resolved
+- some required meanings or assertions resolved
 - at least one blocking gap still open
-- the remaining uncertainty is recorded through gap ids, not prose-only summary
+- the remaining uncertainty is recorded through gap ids, not prose-only
+  explanation
 
 ### `ReadinessRecord`
 
@@ -493,86 +505,88 @@ Rules:
 
 - subject readiness is the base truth
 - `evidence` readiness covers deterministic evidence selection and observation
-  completeness before semantic commitment
+  completeness before claim commitment
 - reducers work from subject readiness plus gaps, not from hand-built
-  whole-dataset statuses
+  readiness rollup rows
 - a subject may be ready for one stage and blocked for another
-- readiness points to blocking gap ids rather than hiding blockers in summary
-  text
+- readiness points to blocking gap ids rather than hiding blockers in
+  explanation text
 
-### `ReadinessProjection`
+### `ReadinessRollupRecord`
 
 Purpose:
 
-- derived reporting view over subject readiness
+- derived readiness rollup over subject readiness
 
 Fields:
 
-- `projection_id`
+- `readiness_rollup_id`
 - `stage`
-- `projection_dimension`
-- `projection_key`
+- `rollup_kind`
+- `rollup_key`
 - `status`
 - `blocking_gap_ids`
-- `ready_subject_count`
-- `partial_subject_count`
-- `blocked_subject_count`
-- `not_applicable_subject_count`
+- `ready_count`
+- `partial_count`
+- `blocked_count`
+- `not_applicable_count`
 
-Controlled `projection_dimension` vocabulary:
+Controlled `rollup_kind` vocabulary:
 
-- `source`
 - `location`
 - `instrument`
 - `continuity_segment`
-- `checkpoint_date`
+- `as_of`
 - `tax_year`
-- `dataset`
+- `product_scope`
 
-Projection-key rules:
+Rollup-key rules:
 
-- `source` uses the source string
 - `location` uses one `location_id`
 - `instrument` uses one `instrument_id`
 - `continuity_segment` uses one `continuity_segment_id`
-- `checkpoint_date` uses one canonical `YYYY-MM-DD` date string
+- `as_of` uses one canonical `YYYY-MM-DD` date string
 - `tax_year` uses one integer tax year
-- `dataset` uses one `dataset_id`
+- `product_scope` uses one `product_scope_id`
 
 Stable ids:
 
-- `projection_id` identifies one derived readiness projection
-- `projection_id` uses component array
-  `[stage, projection_dimension, projection_key]`
+- `readiness_rollup_id` identifies one derived readiness rollup record
+- `readiness_rollup_id` uses component array
+  `[stage, rollup_kind, rollup_key]`
 
 Ordering:
 
-- sort by tuple `[stage, projection_dimension, projection_key]`
+- sort by tuple `[stage, rollup_kind, rollup_key]`
 - sort `blocking_gap_ids` lexicographically
 
 Serialization:
 
-- serialize projection records only
+- serialize readiness rollup records only
 - use stable object-key ordering
-- preserve the declared projection order above
+- preserve the declared readiness rollup order above
 
 Fingerprint inputs:
 
-- projection records in canonical order
+- readiness rollup records in canonical order
 - `schema_version`
 - sorted `blocking_gap_ids`
-- the ordered `ReadinessRecord` ids that fed the projection
+- the ordered `ReadinessRecord` ids that fed the rollup
 
 Rules:
 
-- projections are derived output, not the only stored truth
+- readiness rollup rows are derived rollup records, not the only stored truth
 - `partial` requires at least one resolved assertion plus at least one open
   blocking gap id
 - if no required assertion has resolved yet, status is `blocked`, not
   `partial`
 - if no blocker applies, status is `ready`, not `partial`
-- dataset summaries remain reproducible from ordered readiness and gap records
-  without manual status editing
+- product-scope readiness rollups remain reproducible from ordered readiness
+  and gap records without manual status editing
+- canonical rollup kinds stay stage- and domain-oriented rather than grouping
+  by source identity
+- source-grouped views belong in operator views or compatibility
+  views rather than in `ReadinessRollupRecord.rollup_kind`
 - stages use only the dimensions they actually own or can derive safely
 
 ## Bridge Mapping From Issue And Review Records
@@ -582,13 +596,13 @@ The live bridge still emits `IssueRecord` and `NormalizationReviewRecord`.
 Mapping rules:
 
 - a blocking `IssueRecord` maps to one `GapRecord` plus one `GapExplanation`
-  when owner stage, blocking stages, scope, and blocker semantics align
+  when owner stage, blocking stages, scope, and blocker meaning align
 - `IssueRecord.kind`, `severity`, `context_timestamp`, and typed provenance are
   gap inputs, not free text to reinterpret later
 - `NormalizationReviewRecord` maps to one `ReviewRecord` plus one
   `ReviewExplanation` when owner stage, scope, and advisory meaning align
 - when one factual cause produces both a blocker and an advisory review, the
-  blocker lands in `GapRecord` and the review remains keyed sidecar context
+  blocker lands in `GapRecord` and the review remains keyed sidecar detail
 - current bridge ids remain traceable when later stages adopt target-native gap
   or review ids
 
@@ -598,9 +612,10 @@ Copy only when meaning changes.
 
 Meaning:
 
-- one stage owns one semantic payload
+- one stage owns one meaning surface
 - downstream stages reference upstream records by stable ids or product ids
-- `dataset_id` is allowed only for shared reporting and sidecar attachment
+- `product_scope_id` is allowed only for shared operator views and sidecar
+  attachment
   when no narrower truthful product id, scope id, or record id exists
 - downstream stages add stage-owned outputs only
 
@@ -608,16 +623,16 @@ Keep these first-class:
 
 - evidence members
 - evidence observations
-- claims and interpretation bundles
+- claims and claim bundles
 - economic events
 - economic legs
 - valuations
 - identities and refs
 - ownership state
-- settlement and lifecycle state
-- checkpoint assertions
+- settlement status and lifecycle events
+- `CheckpointAssertion` truth
 - postings
-- tax determinants and outputs
+- tax inputs and outputs
 
 Use sidecars only for:
 
@@ -632,21 +647,24 @@ Use sidecars only for:
 Sidecars must never become:
 
 - the only real copy of business meaning
-- a substitute for missing entities
+- a substitute for unresolved business concepts
 - a junk drawer of unresolved text
 
 Performance implication:
 
-- avoiding semantic duplication is also a performance rule
-- repeated full payloads increase read amplification, join cost, and drift risk
+- avoiding meaning duplication is also a performance rule
+- repeated full detail copies increase read amplification, join cost, and drift
+  risk
 - the correct shape is stable ids or product ids plus stage-owned deltas, with
-  `dataset_id` reserved for shared reporting or sidecar attachment only
+  `product_scope_id` reserved for shared operator views or sidecar attachment
+  only
 
 ## Current-To-Target Boundary
 
 - current `IssueRecord` and `NormalizationReviewRecord` remain live bridge
   outputs today
 - later implementation may map current bridge issues and reviews into the
-  target support model where stage ownership and semantics line up
+  shared gap/review/readiness contracts where stage ownership and meaning line
+  up
 - current-state docs keep current issue and review names where accuracy
   requires them

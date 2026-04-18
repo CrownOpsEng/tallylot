@@ -117,7 +117,7 @@ otherwise:
 
 - keep the architecture aligned with
   `docs/concepts/reconciliation-tax-architecture.md`
-- for reconciliation, checkpoint, accounting, tax, or core pipeline work,
+- for reconciliation, checkpoint, journal, tax, or target pipeline work,
   reload the owning roadmap and migration docs before shaping the change:
   `ROADMAP.md` and `docs/status/migration-sequence.md`
 - read the narrow forward-looking roadmap, architecture, migration, or owning
@@ -148,7 +148,7 @@ Before shaping a non-trivial fix, reload the narrow forward-looking guidance
 that owns the change area. Prefer the intended end-state boundary over a local
 temporary patch when the repo already documents the target ownership model.
 
-For reconciliation, checkpoint, accounting, tax, and core pipeline work,
+For reconciliation, checkpoint, journal, tax, and target pipeline work,
 the normal minimum routing set is:
 
 - `docs/concepts/reconciliation-tax-architecture.md`
@@ -486,6 +486,8 @@ Pause feature work and fix the structure first when:
 - a feature already owns a package but new helpers are being left beside it as
   flat sibling modules
 - CoinTracking-specific semantics are drifting into the core domain
+- bridge-era, provider, or asset-class nouns are drifting into forward-looking
+  domain, application, id, ref, record, or directory names
 - an oracle-only artifact is being treated like a required runtime input
 - a quick patch would hide unsupported behavior instead of surfacing it
 

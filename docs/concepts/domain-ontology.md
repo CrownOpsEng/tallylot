@@ -1,6 +1,6 @@
 ---
 title: "Domain Ontology"
-summary: "Owning concept page for the target economic ontology, entity and ref seams, package direction, and bridge-versus-target modeling rules."
+summary: "Target economic ontology, identity seams, ref recipes, package ownership, and bridge-versus-target modeling rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -8,8 +8,8 @@ status: active
 nav_order: 35
 ---
 
-Use this page when shaping the target domain model. This document owns the
-target ontology, entity seams, ref recipes, and forward package direction.
+Use this page when shaping the target domain model. This page defines the
+target ontology, identity seams, ref recipes, and target package ownership.
 
 Current bridge note:
 
@@ -17,9 +17,9 @@ Current bridge note:
   layered bridge classifications, and fact-leg policies
 - those bridge contracts remain current-state runtime truth
 - this page defines the target ontology that later implementation increments
-  should grow toward
+  should implement directly
 
-## Core Business Concepts
+## Target Business Concepts
 
 The target model should use these concepts explicitly:
 
@@ -33,7 +33,7 @@ The target model should use these concepts explicitly:
 - `EconomicEvent`
 - `EconomicLeg`
 - `Valuation`
-- `SettlementState`
+- `SettlementStatus`
 - `LifecycleEvent`
 - `AssertionValue`
 - `CheckpointAssertion`
@@ -44,9 +44,9 @@ These are not interchangeable labels. They represent distinct business
 concepts, and the model should keep them distinct even when one adapter or one
 report happens to collapse them operationally.
 
-## Generic Core Requirements
+## Generic Model Requirements
 
-The target core should remain:
+The target model should remain:
 
 - instrument-agnostic
 - source-agnostic
@@ -58,6 +58,11 @@ Rules:
 - crypto is the current filing scope, not the ontology center
 - CoinTracking is an edge import, export, and oracle input, not a runtime
   dependency
+- source-specific crypto nouns such as `wallet`, `exchange`, `address`,
+  `token`, `chain`, and `tx_hash` may remain in adapter-local,
+  source-evidence, compatibility, or current-state surfaces, but the target
+  ontology should map those ideas to repo-owned domain nouns such as
+  `Location`, `Instrument`, `Position`, or `Contract`
 - persistence implements the model; it does not define the model
 - no wrapper lanes, compatibility shims, or legacy parallel runtime models
   should survive after a clean replacement is ready
@@ -65,7 +70,7 @@ Rules:
   ready
 - tests and parity must be preserved or strengthened through refactors
 
-## Entity And Ref Seams
+## Identity And Ref Seams
 
 The target model uses explicit ref seams rather than one generic identity pool.
 
@@ -95,7 +100,7 @@ Rules:
 - `contract_key` is the stage-owned stable discriminator for one contract
   instance
 - `position_key` is the stage-owned stable discriminator for one economic
-  exposure or holding surface
+  exposure or holding state
 
 ### `ContractRef` Versus `PositionRef`
 
@@ -126,12 +131,12 @@ Rules:
   preserve that explicitly rather than hiding it behind a generic transfer
   label
 - unresolved ownership transitions should remain visible to reconciliation,
-  checkpoint, accounting, or tax as appropriate
+  checkpoint, journal, or tax as appropriate
 
 ## `AssertionValue`
 
 `AssertionValue` is the shared value union reused by reconciliation targets,
-accepted checkpoints, accounting reuse, and downstream tax reasoning.
+accepted checkpoints, journal reuse, and downstream tax reasoning.
 
 Variants:
 
@@ -152,26 +157,28 @@ Variant rules:
   scalar type to stand in for quantity, money, ownership, and location truth
 - assertion ids and fingerprints must treat the value variant and its canonical
   content as semantically relevant
-- the canonical `AssertionValue` fingerprint uses one canonical UTF-8 JSON array
+- the `AssertionValue` fingerprint uses one UTF-8 JSON array
   `[assertion_value_kind, value_content]`
 
 ## `CheckpointAssertion`
 
-`CheckpointAssertion` is the accepted checkpoint-truth record for one subject
-and one as-of point.
+`CheckpointAssertion` is the accepted checkpoint-truth concept for one subject
+and one as-of point. Persisted kernels carry that concept as
+`CheckpointAssertionRecord`.
 
 Rules:
 
-- it is distinct from a reconciliation `CheckpointCandidate`
-- it is distinct from a computed `BalanceSnapshot`
-- it is distinct from a raw `BalanceReference`
+- it is distinct from a reconciliation-stage checkpoint proposal record
+- it is distinct from current bridge balance snapshots
+- it is distinct from current bridge balance references
 - it is distinct from the containing accepted `Checkpoint`
-- downstream stages may consume checkpoint assertions, but they must not
+- downstream stages may consume `CheckpointAssertion` truth, but they must not
   redefine them into incompatible local variants
-- accepted checkpoint truth should be modeled as checkpoint assertions first
-  and checkpoint containers second
-- checkpoint assertions carry one `AssertionValue`, not one untyped convenience
-  payload
+- accepted checkpoint truth should be modeled as `CheckpointAssertion` first
+  and checkpoint records second
+- `CheckpointAssertion` carries one `AssertionValue`, not one untyped
+  convenience
+  blob
 
 ## Valuation
 
@@ -183,7 +190,7 @@ Minimum valuation concerns:
 - currency
 - purpose
 - timestamp
-- source
+- origin
 - confidence
 - provenance
 
@@ -191,20 +198,20 @@ Minimum valuation concerns:
 
 Shared vocabulary:
 
-- `economic_observation`
-- `checkpoint_support`
-- `accounting_measurement`
+- `economic_measurement`
+- `checkpoint_measurement`
+- `journal_measurement`
 - `tax_measurement`
-- `market_reference`
+- `market_measurement`
 
 Rules:
 
 - valuation belongs in the economic model when it changes checkpoint,
-  accounting, or tax behavior
+  journal, or tax behavior
 - valuation purpose must be explicit enough to distinguish economic,
-  checkpoint, accounting, tax, and market-reference jobs
-- valuation should not be hidden only inside renderer metadata or one-off
-  policy blobs
+  checkpoint, journal, tax, and market-measurement jobs
+- valuation should not be hidden only inside renderer detail or one-off policy
+  sidecars
 - missing or uncertain valuation should remain explicit when downstream stages
   still need to reason about it
 
@@ -231,19 +238,19 @@ Rules:
 
 ## Economic Model
 
-The target economic layer centers on durable economic meaning rather than on
+The target economics layer centers on durable economic meaning rather than on
 activity-label expansion.
 
 Modeling rules:
 
 - model accepted economic meaning as `EconomicEvent` plus `EconomicLeg`
-- keep settlement, supersession, and lifecycle state explicit instead of
+- keep settlement status, supersession lineage, and lifecycle events explicit instead of
   flattening them into activity labels
-- keep valuation first-class when it changes downstream accounting,
+- keep valuation first-class when it changes downstream journal,
   checkpoint, or tax behavior
 - let ownership and counterparty state remain explicit where known
 
-The target economic layer must be able to express:
+The target economics layer must be able to express:
 
 - holdings movements
 - cash movements
@@ -268,7 +275,7 @@ Minimum invariant seams:
   withholding, lifecycle restructure, and correction or supersession behavior
 - one stable leg set with signed quantities and explicit leg roles
 - explicit effective time in canonical temporal form
-- explicit settlement and lifecycle state where continuity or later treatment
+- explicit settlement status and lifecycle event where continuity or later treatment
   depends on them
 - explicit supersession lineage for corrections instead of in-place mutation
 - ownership and counterparty refs where they are known and later stages rely on
@@ -276,9 +283,9 @@ Minimum invariant seams:
 - valuation records with explicit purpose where downstream behavior depends on
   them
 
-## `SettlementState`
+## `SettlementStatus`
 
-`SettlementState` remains first-class whenever completeness, continuity, or
+`SettlementStatus` remains first-class whenever completeness, continuity, or
 later treatment depends on it.
 
 Shared vocabulary:
@@ -292,9 +299,9 @@ Shared vocabulary:
 
 Rules:
 
-- settlement state should remain explicit where timing, completeness, or
+- settlement status should remain explicit where timing, completeness, or
   continuity matters
-- settlement state should not be inferred later from one output-specific row
+- settlement status should not be inferred later from one output-specific row
   label when the economic model can carry it directly
 
 ## `LifecycleEvent`
@@ -322,18 +329,18 @@ Rules:
 
 ## First Downstream Slice Restriction
 
-The first bounded downstream slice intentionally uses a narrow `PositionRef`
-surface for Coinbase-held spot balances.
+The first downstream slice intentionally uses a narrow `PositionRef`
+identity shape for the current bounded balance slice.
 
-First-slice rule:
+Slice rule:
 
-- the first downstream slice may use only
-  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "custodial_spot_balance"]`
+- this slice may use only
+  `PositionRef = [beneficial_owner_ref, location_ref, instrument_ref, null, "held_position"]`
 - `beneficial_owner_ref` must resolve to the filing beneficial owner in scope
-- `location_ref` must resolve to the Coinbase-held custodial spot location or
-  sub-location in scope
-- `instrument_ref` must resolve to the in-scope spot asset
-- `contract_ref` stays `null` in the first downstream slice
+- `location_ref` must resolve to the in-scope custodial location or
+  sub-location
+- `instrument_ref` must resolve to the in-scope instrument
+- `contract_ref` stays `null` in this slice
 - later slices may widen `position_key` values and contract participation,
   but they must keep the canonical tuple shape unchanged
 
@@ -347,9 +354,10 @@ Rules:
 - bridge classifications stay valid for the current bridge and for current
   renderer hints
 - bridge classifications do not define the full ontology
-- future support for broader financial instruments should be driven by the core
-  ontology, not by endlessly adding new activity labels
-- output hints and policy hints remain downstream aids, not the primary source
+- future support for broader financial instruments should be driven by the
+  target ontology, not by endlessly adding new activity labels
+- output hints and policy hints remain downstream aids, not the primary
+  authority
   of economic truth
 
 Bridge-specific classification rules live in
@@ -363,6 +371,24 @@ Bridge-specific classification rules live in
 - distinguish concept, ref, and record names explicitly:
   `BasisPool` is a concept, `BasisPoolRef` is an identity seam, and
   `*Record` names belong to persisted kernels
+- keep `journal` aligned across the end-state stage vocabulary, package roots,
+  and product-adjacent prose; reserve `accounting` for broader prose or
+  bridge-local hint families
+- keep `economics` aligned across stage vocabulary, package roots, and
+  product-adjacent prose; reserve `economic` for adjective use inside the
+  owned product family such as `EconomicFacts`
+- prefer explicit family names such as `gap`, `review`, and `readiness` in
+  forward-looking prose when those are the owned sidecars; reserve generic
+  `support` for the intentional shared root or bounded field names such as
+  `support_shape`
+- avoid umbrella package roots such as `entities/` once the owned identity
+  families are already known
+- keep singular concept families on singular package stems such as
+  `assertion/`
+- keep target-layer kind families aligned to the shared domain noun or held
+  truth axis. Prefer `contract` over `contract_term`, and kind families such
+  as `cash_amount`, `basis_amount`, `owner_state`, and `location_state` over
+  mixed or more generic alternates
 - do not bake bridge, legacy, current, or compatibility qualifiers into
   target-layer concept names or helper ids unless the name is intentionally
   current-state or adapter-local
@@ -375,21 +401,24 @@ The target package layout follows stage ownership and is not advisory.
 
 Required domain ownership:
 
-- `domain/entities/` for refs and stable identity seams
+- `domain/instrument/`, `domain/location/`, `domain/ownership/`,
+  `domain/counterparty/`, `domain/contract/`, and `domain/position/` for
+  identity concepts, refs, and stable identity seams
 - `domain/evidence/` for evidence members, observations, and selection
   decisions
-- `domain/claims/` for claims, interpretation scopes, bundles, and compilation
-  decisions
-- `domain/economics/` for events, legs, valuations, settlement state, and
-  lifecycle state
-- `domain/assertions/` for `AssertionValue` and its variants
-- `domain/support/` for gaps, reviews, readiness, and `SubjectRef`
-- `domain/reconciliation/` for continuity segments, links, balance targets, and
-  checkpoint candidates
-- `domain/checkpoints/` for accepted checkpoint truth
-- `domain/accounting/` for journal models
-- `domain/tax/` for determinants, basis transitions, tax-policy contracts,
-  carry-forward state, and outputs
+- `domain/claim/` for claims, claim scopes, claim bundles, and
+  claim-bundle decisions
+- `domain/economics/` for events, legs, valuations, settlement status, and
+  lifecycle events
+- `domain/assertion/` for `AssertionValue` and its variants
+- `domain/support/` as the shared root for nested `gap/`, `review/`, and
+  `readiness/` families plus `SubjectRef`
+- `domain/reconciliation/` for continuity segments, event links, balance
+  targets, and checkpoint proposal records
+- `domain/checkpoint/` for accepted checkpoint truth
+- `domain/journal/` for journal models
+- `domain/tax/` for tax inputs, basis transitions, tax-policy contracts,
+  tax carry-forward records, tax unsupported-input records, and outputs
 
 Required application ownership:
 
@@ -398,26 +427,35 @@ Required application ownership:
   inspection, and timezone review
 - `application/evidence/` for shared statement extraction, evidence selection,
   and provenance locator handling
-- `application/claims/` for evidence-to-claim translation
-- `application/economics/` for claim compilation to economic facts
-- `application/bridge_compat/` for bridge compatibility projections only
+- `application/claim/` for `ClaimSet` construction from evidence
+- `application/economics/` for `EconomicFacts` construction
+- `application/compatibility/` for bridge compatibility views only
 - `application/normalization/` for current-state migration-era orchestration
   while the live bridge still exists
-- `application/reconciliation/` for continuity, linkage, balance-target
-  evaluation, readiness reducers, and checkpoint candidates
-- `application/checkpoints/` for checkpoint evidence assembly, manual balance
-  submission validation, and checkpoint acceptance
-- `application/accounting/` for journal expansion, validation, and summaries
-- `application/tax/` for tax-input assembly, basis transitions, policy
-  selection, and tax-output rendering
-- `application/outputs/` for downstream renderer orchestration
+- `application/reconciliation/` for continuity, linkage, balance target
+  evaluation, and checkpoint proposal records
+- `application/readiness/` for cross-stage gap, review, and readiness
+  reduction plus readiness rollups and operator views
+
+`domain/support/` stays generic only because it is the shared root for the
+nested `gap/`, `review/`, and `readiness/` families plus `SubjectRef`.
+`application/compatibility/` is migration-only and must not become a durable
+application center.
+
+- `application/checkpoint/` for `Checkpoint` acceptance, manual assertion
+  intake, and opening-state adoption
+- `application/journal/` for journal expansion, entry checks, and journal
+  views
+- `application/tax/` for `TaxInputs` construction, basis transitions, policy
+  selection, and `TaxOutputs` generation
+- `application/rendering/` for downstream rendering orchestration
 - `application/workspace/` for workspace resolution and initialization
 
 Boundary rules:
 
 - `application/normalization/` is current-state truth now, but the
   forward-looking target model treats it as migration-era orchestration that
-  splits into `evidence`, `claims`, `economics`, and `bridge_compat`
+  splits into `evidence`, `claim`, `economics`, and `compatibility`
 - `interfaces/` orchestrates services only
 - `infrastructure/` implements ports
 - `application/` depends on domain and ports

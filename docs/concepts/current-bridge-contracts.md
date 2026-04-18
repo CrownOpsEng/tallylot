@@ -1,6 +1,6 @@
 ---
 title: "Current Bridge Contracts"
-summary: "Primary concept page for the live bridge contracts, bridge artifacts, and current schema rules."
+summary: "Live bridge contracts, bridge surfaces, and current schema rules."
 doc_type: concept
 audience: human
 owner: repo
@@ -9,14 +9,15 @@ nav_order: 22
 ---
 
 Use this page when you need the current runtime truth for the bridge that
-exists today. This document owns the live bridge contracts and artifact rules.
+exists today. This page defines the live bridge contracts and bridge-surface
+rules.
 
 The current bridge is real runtime behavior, not a historical footnote. It is
 the active implementation boundary until later bounded increments replace it. At the
 same time, it is not the final architecture center. Future stage contracts live
 in [Pipeline Stage Contracts](pipeline-stage-contracts.md).
 
-During migration, bridge compatibility projections may remain valid runtime
+During migration, bridge compatibility views may remain valid runtime
 surfaces for unmigrated readers, but they are never target contracts.
 
 ## Bridge Purpose And Limits
@@ -40,8 +41,8 @@ That bridge is:
 - raw evidence stays outside the repo
 - normalization and profiling operate on one materialized raw capture root at a
   time
-- planner-enabled adapters provide translation input candidates and the core
-  selects the winning plan
+- planner-enabled adapters provide translation input candidates and the
+  normalization flow selects the winning plan
 - ambiguity blocks fact and balance artifact emission
 - assembled source datasets are the reconciliation input
 - provenance stays typed in runtime models and is flattened only at artifact
@@ -54,7 +55,7 @@ That bridge is:
 - schema-version mismatch is resolved by regeneration, not compatibility
   wrappers
 
-## Current Bridge Contracts
+## Bridge Contract Surfaces
 
 ### `TransactionFact`
 
@@ -224,7 +225,7 @@ Current bridge bundle to preserve:
 `TransactionFact` currently mixes computationally important fields, bridge
 semantics, and bridge envelope detail in one record.
 
-Computational core still carried today:
+Computational kernel still carried today:
 
 - `fact_id`
 - `source`
@@ -264,7 +265,7 @@ Rules:
 
 ### Bridge Fact Replay Fingerprint
 
-For first-slice replay and parity checks, compiled bridge facts use one bridge
+For replay and parity checks on the first upstream slice, compiled bridge facts use one bridge
 replay fingerprint contract.
 
 Rules:
@@ -321,7 +322,7 @@ Rules:
   `working/normalized/captures/<capture_uid>/`
 - assembled source outputs live under `working/normalized/sources/<source>/`
 - source assembly merges accepted captures deterministically, preserves the
-  union of source-backed evidence, collapses exact semantic duplicates, and
+  union of primary evidence, collapses exact semantic duplicates, and
   surfaces semantic conflicts explicitly
 - location inventory and balance evidence provenance reference captures by
   `capture_uid`, with human-readable labels and roots treated as optional
@@ -358,7 +359,7 @@ Required draft responsibilities:
 Rules:
 
 - provider modules translate into drafts only; they do not assemble
-  CoinTracking rows or other output-adapter payloads directly
+  CoinTracking rows or other output-adapter shapes directly
 - shared identifier resolution must succeed to exactly one instrument before
   fact construction
 - unresolved or ambiguous identifier resolution blocks fact emission for the

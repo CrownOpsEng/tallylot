@@ -1,6 +1,6 @@
 ---
-title: "Wallet Inventory Artifacts"
-summary: "Artifact contract for location inventory outputs and evidence rows."
+title: "Location Inventory Outputs"
+summary: "Reference for location inventory outputs and evidence rows."
 doc_type: reference
 audience: human
 owner: repo
@@ -8,16 +8,15 @@ status: active
 nav_order: 30
 ---
 
-The aggregate location inventory is rebuilt from the normalized per-source wallet
-artifacts.
+The aggregate location inventory is rebuilt from normalized per-source outputs.
 
 ## Generated Files
 
 | File | Purpose |
 | ---- | ------- |
-| `location_inventory.csv` | One row per normalized wallet identifier |
+| `location_inventory.csv` | One row per normalized location identifier |
 | `location_inventory_evidence.csv` | Evidence rows showing where each identifier came from through shared flattened locator columns |
-| `location_inventory_issues.csv` | Deterministic review items such as conflicting wallet IDs or missing evidence paths |
+| `location_inventory_issues.csv` | Deterministic review items such as conflicting location IDs or missing evidence paths |
 | `location_inventory_summary.json` | High-level counts for agents and scripts |
 
 ## Rebuild

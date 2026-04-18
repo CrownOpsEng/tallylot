@@ -80,7 +80,7 @@ Write `Why:` and `What:` directly:
 
 Bad `Why:` bullets are diff summaries such as:
 
-- `rename ReadinessSummaryRecord`
+- `rename ReadinessRollupRecord`
 - `update naming docs`
 - `refactor commit wording`
 
@@ -113,9 +113,9 @@ multiple authored commits as merge commits so the reviewed commit history
 remains visible in Git. Use squash merges only for the narrow single-commit
 exception.
 
-Treat the pull request title and description as the primary review record
-for every PR. For the single-commit exception, that same metadata also
-becomes the generated squash commit that lands on `main`.
+Treat the pull request title and description as the review record that governs
+merge and mainline history for every PR. For the single-commit exception, that
+same metadata also becomes the generated squash commit that lands on `main`.
 
 Protected-branch rule:
 

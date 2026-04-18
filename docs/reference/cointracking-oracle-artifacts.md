@@ -19,10 +19,10 @@ These artifacts are useful for development and validation only:
 
 - black-box comparison against internal reconciliation and tax outputs
 - regression checks against the historical portfolio-tracker baseline
-- investigating mismatches that simple source-backed evidence cannot explain
+- investigating mismatches that simple primary evidence cannot explain
 
 They are not production/runtime inputs for reconstruction, checkpoint
-assembly, journaling, or tax computation.
+assembly, journal work, or tax computation.
 
 ## Common Artifact Families
 

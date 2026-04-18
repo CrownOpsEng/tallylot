@@ -1,6 +1,6 @@
 ---
 title: "Unified Adapter Architecture"
-summary: "Forward design for the future adapter manifest, facets, and verification model without re-owning target product contracts."
+summary: "Future adapter manifest, facet, and verification model for the target runtime pipeline."
 doc_type: concept
 audience: human
 owner: repo
@@ -16,23 +16,23 @@ related:
   - docs/concepts/reconciliation-tax-architecture.md
 ---
 
-Read this document before shaping large adapter-design work. Use it as the
-forward design anchor for manifests, facets, and deterministic verification.
-This page does not own target product record families, ids, fingerprints, or
-taxonomy details. Those stay with the owner pages.
+Read this document before shaping large adapter-design work. Use it for the
+future manifest, facet, and deterministic verification model. This page does
+not define target product record families, ids, fingerprints, or taxonomy
+details. Those stay on the contract pages listed below.
 
 ## Scope And Precedence
 
-Owner-page precedence:
+Contract-page precedence:
 
-- [Pipeline Stage Contracts](pipeline-stage-contracts.md) owns target product
+- [Pipeline Stage Contracts](pipeline-stage-contracts.md) defines target product
   kernels, ids, ordering, and fingerprints
-- [Domain Ontology](domain-ontology.md) owns entity and ref seams
-- [Bridge To Target Mapping](bridge-to-target-mapping.md) owns migration
-  cutovers and compatibility projections
+- [Domain Ontology](domain-ontology.md) defines identity seams and ref recipes
+- [Bridge To Target Mapping](bridge-to-target-mapping.md) defines migration
+  cutovers and compatibility views
 - [Reconciliation And Tax Architecture](reconciliation-tax-architecture.md)
-  owns persistence, partitioning, and fast-path rules
-- this page owns only adapter responsibilities, manifest direction, facet
+  defines persistence, partitioning, and fast-path rules
+- this page defines only adapter responsibilities, manifest direction, facet
   design, and adapter verification posture
 
 ## Design Direction
@@ -41,50 +41,50 @@ The future adapter architecture should unify around:
 
 - one manifest model
 - a small set of purpose-defined facets
-- deterministic adapter products that map into the core runtime pipeline
+- deterministic adapter outputs that map into the target runtime pipeline
 - one shared verification model
 
 It should not unify around:
 
 - one monolithic source-adapter interface
 - adapter-local target schemas
-- a second architecture center beside the main runtime pipeline
+- a second architecture center beside the target runtime pipeline
 - indefinite bridge wrappers or dual-contract shims
 
 ## Adapter Responsibility Boundary
 
-Adapters own provider-specific work only.
+Adapters own adapter-local work only.
 
 Reader-side examples:
 
-- recognizing provider-specific evidence kinds
-- parsing provider-specific files and documents
-- mapping provider fields into provider-local claims
-- surfacing provider-local ambiguity, precision, or unsupported cases
+- recognizing adapter-specific evidence kinds
+- parsing adapter-specific files and documents
+- mapping adapter fields into evidence-local claims
+- surfacing evidence-local ambiguity, precision, or unsupported cases
 
 Writer-side examples:
 
-- mapping accepted upstream truth into target-specific row models
+- mapping accepted upstream products into output-specific row models
 - applying target-specific formatting and validation rules
 
-Shared core owns cross-provider workflow:
+Shared runtime owns cross-adapter workflow:
 
 - evidence selection and candidate comparison
 - stable ordering and fingerprints
 - shared issue, review, and readiness conventions
-- claim compilation into economic truth
-- bridge compatibility projection
+- `EconomicFacts` construction
+- bridge compatibility view generation
 - replay and parity verification
-- artifact writing and output packaging
+- output packaging
 
-If two adapters need the same rule and the rule is not provider-specific, it
-belongs in shared core services rather than duplicated adapter logic.
+If two adapters need the same rule and the rule is not adapter-specific, it
+belongs in shared runtime services rather than duplicated adapter logic.
 
 ## Manifest Direction
 
 Every future adapter should publish one manifest that answers:
 
-- what evidence or artifacts it reads or writes
+- what evidence files, compatibility views, or rendered packages it reads or writes
 - which facets it implements
 - which determinism guarantees it provides
 - which compatibility window and schema versions it supports
@@ -99,14 +99,20 @@ Use a small set of purpose-defined facets rather than one giant contract.
 
 | Facet | Purpose |
 | --- | --- |
-| `ProbeFacet` | Recognize evidence and describe route, kind, or confidence hints. |
+| `DiscoveryFacet` | Discover evidence and describe route, kind, or confidence hints. |
 | `EvidenceFacet` | Read selected evidence and emit `EvidenceSet`-aligned outputs. |
 | `StatementFacet` | Recognize and parse statement documents plus statement-specific evidence detail. |
-| `ClaimFacet` | Emit provider-local semantic meaning that maps into `ClaimSet`. |
-| `WriteFacet` | Emit target-specific projections or artifacts from accepted upstream truth. |
+| `ClaimFacet` | Emit evidence-local claim meaning that maps into `ClaimSet`. |
+| `RenderFacet` | Emit rendered files or external packages from accepted upstream products. |
 
 Portfolio behavior is not a separate species. It is evidence-reading behavior
 that emits position or balance meaning instead of activity-heavy claim sets.
+
+Facet names stay short and family-consistent. Avoid mixing one longer alternate
+such as `RenderingFacet` or one unrelated boundary noun such as `OutputFacet`
+into the same facet family when the shorter repo term is already established.
+The repo keeps `RenderFacet` at the executable facet boundary while the broader
+application package remains `application/rendering/`.
 
 ## Deterministic Verification Model
 
@@ -117,29 +123,31 @@ Required verification properties:
 - unchanged inputs preserve declared evidence-kind recognition
 - unchanged inputs preserve declared ordering and fingerprints
 - unsupported or ambiguous cases surface explicitly
-- compatibility projections remain reproducible from authoritative target
+- compatibility views remain reproducible from authoritative target
   kernels during migration
 - output adapters reject unsupported upstream shapes before serialization
 
-Verification should center on adapter products and shared projections, not on
+Verification should center on adapter outputs and shared compatibility views, not on
 adapter-local shell choreography.
 
 ## Migration Posture
 
 The unified adapter redesign remains deferred until the filing-critical path and
-bounded first slices are stable.
+the first upstream slice and first downstream slice are stable.
 
 Rules during the current migration window:
 
-- first-slice adapter work must emit target products through the canonical
-  owner docs, not adapter-local alternate schemas
+- adapter work for the first upstream slice must emit target products
+  through the canonical target contract pages, not adapter-local alternate
+  schemas
 - adapters may emit declared compatibility sidecars for retained legacy
   draft-or-fact reproduction during migration, but canonical target kernels
-  stay semantic-only
+  stay limited to target meaning
 - adapter docs may describe how adapters participate in `EvidenceSet`,
-  `ClaimSet`, and compatibility projections, but they may not redefine those
+  `ClaimSet`, and compatibility views, but they may not redefine those
   products
-- the first bounded slice must not depend on a repo-wide facet migration
+- the first upstream slice must not depend on a repo-wide facet
+  migration
 - `SourceTranslationBatch` remains honest current-state truth until its bounded
   replacement slice lands
 

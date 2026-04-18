@@ -130,6 +130,7 @@ def test_missing_codeowners_entries_reports_missing_patterns() -> None:
     assert ".github/actions/**" in missing
     assert ".github/ISSUE_TEMPLATE/**" in missing
     assert ".github/workflows/**" in missing
+    assert ".gitmessage.txt" in missing
     assert "repo_support/local_autofix.py" in missing
     assert "repo_support/quality_gates.py" in missing
     assert "repo_support/review_verification/**" in missing

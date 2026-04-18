@@ -5,38 +5,37 @@ This file is the forward planning document for the repo.
 - Completed work belongs in [CHANGELOG.md](CHANGELOG.md).
 - The currently implemented runtime surface belongs in
   [`docs/status/current-state.md`](docs/status/current-state.md).
-- Detailed contract ownership lives in:
+- Detailed contract pages live in:
   - [`docs/concepts/current-bridge-contracts.md`](docs/concepts/current-bridge-contracts.md)
   - [`docs/concepts/bridge-to-target-mapping.md`](docs/concepts/bridge-to-target-mapping.md)
   - [`docs/concepts/pipeline-stage-contracts.md`](docs/concepts/pipeline-stage-contracts.md)
   - [`docs/concepts/domain-ontology.md`](docs/concepts/domain-ontology.md)
   - [`docs/concepts/gaps-and-readiness.md`](docs/concepts/gaps-and-readiness.md)
   - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
-  - [`docs/reference/first-slice-contract.md`](docs/reference/first-slice-contract.md)
+  - [`docs/reference/first-upstream-slice-contract.md`](docs/reference/first-upstream-slice-contract.md)
   - [`docs/reference/first-downstream-slice-contract.md`](docs/reference/first-downstream-slice-contract.md)
   - [`docs/status/migration-sequence.md`](docs/status/migration-sequence.md)
 
 This roadmap tracks the implementation program from the current bridge toward
-the target stage-first architecture. The current bridge remains the live runtime
-seam until later slices replace it, but it is not the long-term architecture
-center.
+the target runtime pipeline. The current bridge remains the live runtime seam
+until later slices replace it, but it is not the long-term architecture center.
 
 ## Planning Anchors
 
 These anchors drive sequencing and acceptance criteria:
 
-- reconciliation remains the trust gate before checkpoint adoption, accounting,
-  and tax
-- checkpoint truth is accepted state with explicit acceptance basis
-- source-backed evidence and source-backed checkpoints remain first-class
-- raw-evidence derivation is the supported semantic parity path
-- capture identity is metadata, not path
-- typed provenance stays a runtime model and is flattened only at artifact
-  boundaries
+- reconciliation remains the trust gate before checkpoint adoption, journal
+  emission, and tax
+- accepted checkpoint truth has explicit acceptance basis
+- primary evidence and evidence-backed checkpoints remain first-class
+- raw-evidence derivation is the supported meaning-parity path
+- capture identity is `capture_uid`, not path
+- typed provenance stays a runtime model and is flattened only at file and
+  export boundaries
 - normalization is capture-scoped and reconciliation is source-assembly-scoped
 - current bridge names remain current-state truth until later implementation
   slices replace them
-- CoinTracking remains an edge projection and oracle family, not the core
+- CoinTracking remains an edge adapter and oracle surface, not the runtime
   ledger model
 
 ## Transition Rules
@@ -45,7 +44,7 @@ These anchors drive sequencing and acceptance criteria:
 - avoid freezing the current bridge as the long-term architecture center
 - keep adapters and services shippable at every checkpoint
 - preserve current bridge truth while establishing target product ownership
-- do not let bridge compatibility projections become a second architecture
+- do not let bridge compatibility views become a second architecture
   center
 - do not rename live bridge symbols or repo-only support packages as a docs-only
   side effect
@@ -54,10 +53,10 @@ These anchors drive sequencing and acceptance criteria:
 
 Goal:
 
-- freeze the owner-page contracts that bounded implementation slices need
+- freeze the contract pages that bounded implementation slices need
 - remove architecture ambiguity before broad implementation begins
 
-Broad implementation must not begin until the owner docs freeze these
+Broad implementation must not begin until the contract pages freeze these
 contracts.
 
 Must freeze:
@@ -65,36 +64,76 @@ Must freeze:
 - `EvidenceSet` record families, ids, cardinality, and intentional
   `selection_fingerprint` identity churn
 - critical-path `EvidenceObservationRecord` field tables for
-  `document_identity` and `coinbase_statement_balance_row`
-- `ClaimSet` interpretation-scope, bundle, and bundle-decision model
-- critical-path `ClaimRecord` field tables, `evidence_observation_refs`, and
-  the compatibility-sidecar boundary for retained legacy hint fields
+  `statement_document` and `statement_balance_row`
+- `ClaimSet` claim-scope, claim-bundle, and claim-bundle-decision model
+- critical-path `ClaimRecord` field tables, `observation_refs`, and
+  the compatibility sidecar boundary for retained legacy hint fields
 - `AssertionValue`, `PositionRef`, and `ContractRef`
-- shared support records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`,
-  `ReviewExplanation`, `ReadinessRecord`, `ReadinessProjection`,
-  `SubjectRef`, truthful `interpretation_scope_id` and `balance_target_id`
-  attachments, and the downstream shared-subject seams needed for accounting
+- shared gap, review, and readiness records and sidecars:
+  `GapRecord`, `GapExplanation`, `ReviewRecord`,
+  `ReviewExplanation`, `ReadinessRecord`, `ReadinessRollupRecord`,
+  `SubjectRef`, truthful `claim_scope_id` and `balance_target_id`
+  attachments, and the downstream shared-subject seams needed for journal
   and tax records
 - product ids, upstream product-ref multiplicity, and the rule that product
-  refs use product ids rather than `dataset_id`
+  refs use product ids rather than `product_scope_id`
 - target naming rules that distinguish concepts, refs, ids, records,
-  projections, and sidecars without baking bridge-era qualifiers into
-  canonical target names
-- authoritative persistence model, partition scopes, sidecar rules, and
-  default filesystem placement
-- migration authority rules, compatibility projections, reader cutovers, and
+  views, rollups, reports, and sidecars without baking bridge-era
+  qualifiers or source-specific crypto nouns into shared target names, and
+  that keep stage-local ids explicit once they cross into downstream products,
+  keep stage-owned helper-ref families mirrored across sibling refs,
+  keep product-id component order aligned to product-header order, keep
+  canonical readiness rollups stage- and domain-oriented, use target-owned
+  label pairs such as `location_group_label` and `location_label` when
+  preserving source-provided location labels, keep generic downstream record
+  families stage-owned with names such as `TaxCarryForwardRecord` and
+  `TaxUnsupportedInputRecord`, keep partition-scope labels aligned to the
+  actual identity dimensions they reduce over, describe non-authoritative
+  bridge outputs as derived compatibility views rather than bridge-era
+  compile steps, and prefer direct kind values such as `instrument` over
+  pseudo-type labels
+- child-id and helper-ref naming that freezes `claim_bundle_decision_id`,
+  `checkpoint_proposal_id`, `JournalAccountRef`, and `JournalUnitRef` as the
+  canonical downstream stems instead of shorter or mixed-family alternates
+- balance-target naming that splits observation presence from comparison
+  outcome instead of overloading one status field
+- checkpoint-proposal naming that keeps proposal posture on `status` and models
+  supersession separately through `superseding_proposal_ref`
+- checkpoint-assertion kind naming that keeps quantity, amount, and state
+  stems parallel across sibling values such as `position_quantity`,
+  `cash_amount`, `basis_amount`, `owner_state`, and `location_state`
+- checkpoint acceptance vocabulary that keeps `basis`, `support_shape`, and
+  `continuity_kind` on distinct semantic axes, using reason labels such as
+  `document_support`, `reported_support`, `manual_support`, and
+  `reconciled_continuity`, observation-shape labels such as
+  `document_observation`, `reported_observation`, and `manual_assertion`, and
+  continuity-shape labels such as `observed_continuity`,
+  `reconciled_rollforward`, `opening_rollforward`, and
+  `partial_rollforward`
+- package-root naming that keeps `journal` aligned across stage vocabulary and
+  package ownership, keeps `economics` aligned across stage vocabulary,
+  package ownership, and stage prose, uses singular concept roots such as
+  `assertion/`, avoids umbrella roots such as `entities/` when the identity
+  families are already known, keeps gap/review/readiness roots explicit when
+  the docs mean those families directly, and keeps the shared `support/` root
+  split into concrete nested families
+  such as `gap/`, `review/`, and `readiness/`
+- authoritative persistence model, product-owned directory stems, partition
+  scopes, sidecar rules, and default filesystem placement
+- migration authority rules, compatibility views, reader cutovers, and
   retirement gates
 - package ownership and layer placement for shared functionality
 - explicit no-invention rules for non-critical observation and claim kinds
 
 Deliver:
 
-- aligned owner docs for target products, ontology, support records and sidecars, and
+- aligned contract pages for target products, ontology, gap/review/readiness
+  records and sidecars, and
   persistence rules
 - explicit cutover matrix for bridge-to-target migration
-- one bounded first upstream slice and one bounded first downstream slice
-- explicit package direction for `domain/` and `application/`
-- explicit fast-path rule that reducers read kernels, not explanation payloads
+- one first upstream slice and one first downstream slice
+- explicit package ownership for `domain/` and `application/`
+- explicit fast-path rule that reducers read kernels, not explanation sidecars
 - frozen critical-path field tables and product-id rules that later writing
   work can merge without deciding new structure
 
@@ -102,28 +141,32 @@ Exit criteria:
 
 - no owner concept is defined in two competing places
 - no target product references an undefined record family or ref type
-- no cross-stage support artifact masquerades as a claim kind
-- claim-stage blockers can attach to `interpretation_scope_id` before subject
+- no cross-stage support record or sidecar masquerades as a claim kind
+- claim-stage blockers can attach to `claim_scope_id` before subject
   identity resolves, and later-stage blockers can attach to truthful
-  accounting or tax subjects without collapsing to dataset-only scope
-- no target id or helper id bakes bridge-era naming into canonical target
-  identity
-- no bridge artifact is left without an authority and retirement rule
+  journal or tax subjects without collapsing to product-scope attachment only
+- no target id or helper id bakes bridge-era naming into target identity
+- no canonical target contract keeps source-specific crypto nouns such as
+  `wallet` when a repo-owned domain noun already owns that seam
+- no bridge surface is left without an authority and retirement rule
 - no hot-path field points to an undefined value ref or sidecar
 - every critical-path observation and claim kind has one authoritative kernel
   field table
-- no target product metadata ref uses `dataset_id` where a product id exists
+- no target product ref in a product header uses `product_scope_id` where a
+  product id
+  exists
 - non-critical observation and claim kinds are explicitly deferred rather
   than left implicit
 - implementation placement is mechanical rather than interpretive
-- the first upstream and downstream slices can be implemented without inventing
-  ids, bundles, values, or reader cutovers
+- the first upstream slice and first downstream slice can be implemented
+  without inventing
+  ids, claim bundles, values, or reader cutovers
 
 ## Phase 1. Land `EvidenceSet`
 
 Goal:
 
-- make deterministic evidence selection and source-local observation capture
+- make deterministic evidence selection and typed observation capture
   the formal first pipeline product
 
 Deliver:
@@ -131,14 +174,14 @@ Deliver:
 - capture-scoped `EvidenceSet` emission keyed by `evidence_set_id`
 - deterministic selected, superseded, and blocked evidence membership
 - typed evidence observations that survive beyond intake heuristics, including
-  frozen first-slice field tables for `document_identity` and
-  `coinbase_statement_balance_row`
-- bridge compatibility projection for `translation_input_plan.json`
+  field tables frozen for the first upstream slice for
+  `statement_document` and `statement_balance_row`
+- bridge compatibility view for `translation_input_plan.json`
 
 Exit criteria:
 
-- the runtime can explain why every selected source artifact won and why every
-  superseded or blocked artifact did not
+- the runtime can explain why every selected evidence member won and why every
+  superseded or blocked member did not
 - evidence selection becomes authoritative through `EvidenceSet` for the
   in-scope slice
 
@@ -146,42 +189,44 @@ Exit criteria:
 
 Goal:
 
-- interpose a real semantic layer between evidence capture and final economic
+- interpose a real claim stage between evidence capture and final economic
   truth
 
 Deliver:
 
-- semantic-only `ClaimSet` emission keyed by `claim_set_id`
-- explicit interpretation scopes, mutually exclusive bundles, and
-  bundle-decision records
-- frozen first-slice claim fields plus `evidence_observation_refs`
-- shared support records and sidecars attached to claim scopes where needed
-- declared compatibility projections for `EconomicActivityDraft` and
-  `SourceTranslationBatch`, with legacy hint fields kept outside canonical
-  claims
+- evidence-local `ClaimSet` emission keyed by `claim_set_id`
+- explicit claim scopes, mutually exclusive claim bundles, and
+  claim-bundle-decision records
+- claim fields frozen for the first upstream slice plus
+  `observation_refs`
+- shared gap, review, and readiness records and sidecars attached to claim
+  scopes where needed
+- declared compatibility views for `EconomicActivityDraft` and
+  `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
+  kernels
 
 Exit criteria:
 
 - ambiguous source meaning can remain explicit without being forced into final
   economic meaning
-- claim bundle decisions remain claim-owned and do not carry economic
-  payload
+- claim-bundle decisions remain claim-owned and do not carry economic
+  truth
 
 ## Phase 3. Land `EconomicFacts`
 
 Goal:
 
 - move accepted economic meaning off the bridge fact path and onto the target
-  economic layer
+  economics layer
 
 Deliver:
 
 - `EconomicFacts` kernels keyed by `economic_facts_id` over ordered
   `claim_set_refs`
 - `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
-- selected-bundle-based event identity
-- bridge compatibility projection for `TransactionFact`
-- parity coverage for the first claim-to-economic slice
+- claim-bundle-derived event identity
+- bridge compatibility view for `TransactionFact`
+- parity coverage for the first claim-to-economics slice
 
 Exit criteria:
 
@@ -193,21 +238,21 @@ Exit criteria:
 
 Goal:
 
-- move continuity, linkage, completeness, and checkpoint candidacy onto an
+- move continuity, linkage, completeness, and checkpoint proposal records onto an
   explicit reconciliation product
 
 Deliver:
 
-- `ContinuitySegmentRecord`, `LinkRecord`, `BalanceTargetRecord`, and
-  `CheckpointCandidateRecord`
+- `ContinuitySegmentRecord`, `EventLinkRecord`, `BalanceTargetRecord`, and
+  `CheckpointProposalRecord`
 - direct `AssertionValue` fields for expected and observed balance meaning
 - fixed subject and position identity seams for in-scope reconciliation
-- bridge compatibility projection for `balance_snapshots.csv`
+- bridge compatibility view for `balance_snapshots.csv`
 
 Exit criteria:
 
 - reconciliation is expressed as explicit continuity and completeness decisions
-- exact balance assertions are one reconciliation surface, not the whole
+- exact balance assertions are one reconciliation concern, not the whole
   product
 
 ## Phase 5. Land `Checkpoint`
@@ -219,45 +264,47 @@ Goal:
 Deliver:
 
 - `CheckpointRecord` and `CheckpointAssertionRecord`
-- explicit trust level, acceptance basis, evidence class, and continuity proof
+- explicit trust level, acceptance basis, support kind, and continuity kind
 - direct `AssertionValue` accepted truth
-- bridge compatibility projection for `balance_references.csv`
+- bridge compatibility view for `balance_references.csv`
 
 Exit criteria:
 
-- checkpoint truth is explicit accepted state, not an inferred side effect
-- statement-backed checkpoint acceptance is separated cleanly from operator-only
+- accepted checkpoint truth is explicit, not an inferred side effect
+- statement-backed checkpoint acceptance is separated cleanly from manual-only
   runtime aids
 
 ## Phase 6. Land `Journal`
 
 Goal:
 
-- make accounting expansion and validation a first-class downstream stage
+- make journal expansion and entry checks a first-class downstream stage
 
 Deliver:
 
-- `JournalEntryRecord`, `PostingRecord`, and `ValidationRecord`
-- accounting-owned blockers and validation rules
-- renderer orchestration over accepted upstream truth
+- `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
+- journal-owned blockers and entry-check rules
+- rendering orchestration over accepted upstream products
 
 Exit criteria:
 
-- accounting validates accepted truth without becoming a truth-repair layer
+- `Journal` runs entry checks over accepted truth without becoming a
+  truth-repair layer
 
 ## Phase 7. Land `TaxInputs` And `TaxOutputs`
 
 Goal:
 
-- build policy-ready tax determinants and policy-owned outputs from accepted
-  upstream truth
+- build policy-ready tax inputs and policy-owned outputs from accepted
+  upstream products
 
 Deliver:
 
 - `TaxInputs` contracts
 - selected tax-policy execution over those inputs
-- year partitioning and carry-forward state
-- filing-critical policy outputs derived from accepted runtime truth rather than
+- year partitioning and tax carry-forward records
+- explicit tax unsupported-input records where policy execution cannot proceed
+- filing-critical policy outputs derived from accepted upstream products rather than
   CoinTracking tax reports
 
 Exit criteria:
@@ -270,7 +317,7 @@ Exit criteria:
 
 Goal:
 
-- rename and split the dev-only shared support surface cleanly
+- rename and split the dev-only repo-support boundary cleanly
 
 Deliver:
 
@@ -311,11 +358,11 @@ Exit criteria:
 - the default-branch delivery path is enforced strongly enough that one mistake
   does not silently bypass the intended PR-only workflow
 
-## Phase 10. Post-Core Runtime Expansion
+## Phase 10. Post-Filing Runtime Expansion
 
 Goal:
 
-- expand runtime surfaces only after the filing-critical core is stable
+- expand runtime surfaces only after the filing-critical runtime is stable
 
 Deliver:
 
@@ -328,7 +375,7 @@ Deliver:
 
 Exit criteria:
 
-- post-core expansion layers on top of the filing-capable runtime instead of
+- post-filing expansion layers on top of the filing-capable runtime instead of
   destabilizing it
 
 ## MVP Guardrails
@@ -355,10 +402,10 @@ Rules:
 - expensive reducers must be partitionable by the dimensions the owning stage
   actually uses
 - hot-path calculations should operate on compact kernel records instead of
-  repeatedly joining provenance, review, or renderer payloads
+  repeatedly joining provenance, review, or renderer detail
 - derived snapshots and reusable state should be introduced where replay cost
   becomes material
-- tax work should support tax-year partitioning and carry-forward reuse instead
+- tax work should support tax-year partitioning and tax carry-forward record reuse instead
   of recomputing full acquisition history for every output row
 
 ## Guardrails
@@ -377,9 +424,9 @@ Rules:
 ### Oracle Lane
 
 - keep CoinTracking report readers and comparison tooling under `tools/oracles/`
-- use oracle artifacts for regression, black-box comparison, and historical
-  review only
-- never let oracle files become hidden production dependencies
+- use oracle comparison packages for regression, black-box comparison, and
+  historical review only
+- never let oracle packages or files become hidden production dependencies
 
 ### Adapter Completion
 
@@ -387,17 +434,17 @@ Rules:
   on target-stage products as slices land
 - tighten overlap heuristics, duplicate detection, and file-family signatures
   where capture ownership remains ambiguous
-- extend shared adapter support only where it removes repeated provider-local
+- extend shared adapter support only where it removes repeated adapter-local
   workflow code
 
 ### Verification And Tests
 
 - maintain parser and adapter contract tests
-- expand projection parity tests
-- add replay coverage for target kernels and compatibility projections
+- expand compatibility-view parity tests
+- add replay coverage for target kernels and compatibility views
 - add reconciliation parity and checkpoint continuity tests
-- add journal validation coverage
-- add tax policy coverage with explicit unsupported-item reporting
+- add journal entry-check coverage
+- add tax policy coverage with explicit tax unsupported-input records
 - keep end-to-end smoke workflows for each major slice before removing older
   transition paths
 

@@ -1,6 +1,6 @@
 ---
-title: "Checklists"
-summary: "Repair and import round checklists for mirrored workspace analysis work."
+title: "Round Checklists"
+summary: "Repair and import round checklists for mirrored workspace analysis workflows."
 doc_type: reference
 audience: both
 owner: repo
@@ -34,8 +34,8 @@ status: active
 - [ ] Confirm the export window starts strictly after `2023-08-05 08:34:04`
 - [ ] Save raw source files to `evidence/raw/source/<source>/<capture_label>/`
 - [ ] Generate or refresh `evidence/raw/source/<source>/<capture_label>/manifest.csv`
-- [ ] Run `source profile` and review timezone artifacts
-- [ ] Run `source normalize` and review exception and review artifacts
+- [ ] Run `source profile` and review timezone outputs
+- [ ] Run `source normalize` and review exception and review outputs
 - [ ] Run `source assemble` before reconciliation or candidate rendering
 - [ ] Render `cointracking_candidate.csv` when needed
 - [ ] Run `make oracle ARGS='batch screen'` on the candidate CSV and review the output
@@ -49,7 +49,7 @@ status: active
 - [ ] Export Balance by Exchange
 - [ ] Export Trade Table, Roll Forward, or Double-entry only if needed
 - [ ] Store exports under `working/verification/<round_id>/`
-- [ ] Run `make oracle ARGS='verification compare'` against the prior state and save the comparison artifacts
+- [ ] Run `make oracle ARGS='verification compare'` against the prior state and save the comparison outputs
 - [ ] Review CAD rows in `Current Balance` and `Balance by Exchange` if the source touches fiat rails
 - [ ] Update `analysis/issues/source_inventory.csv`
 - [ ] Update `analysis/issues/issue_log.csv` for any new or changed issues

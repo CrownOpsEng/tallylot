@@ -9,10 +9,10 @@ nav_order: 40
 ---
 
 Use this document to lock the current layered classification vocabulary on the
-fact-path bridge before deeper claim, checkpoint, accounting, and tax work
+fact-path bridge before deeper claim, checkpoint, journal, and tax work
 lands.
 
-This page owns the current bridge classification vocabulary only.
+This page defines the current bridge classification vocabulary only.
 
 Current runtime note:
 
@@ -29,7 +29,8 @@ Target-direction note:
   long-term ontology
 - future target-layer naming and ontology rules belong in
   [Domain Ontology](domain-ontology.md), not here
-- this docs-only slice does not rename the live bridge symbols
+- the retained bridge names on this page are intentional current-state truth,
+  not deferred target naming
 
 Naming convention:
 
@@ -47,7 +48,7 @@ Naming convention:
   safe to say on the current fact path
 - `ProjectionHint`: output projection metadata for concrete renderers
 
-Core behavior should not key primarily on the legacy normalized `category`
+Bridge behavior should not key primarily on the legacy normalized `category`
 string.
 
 ## Support Tiers
@@ -85,7 +86,7 @@ aligned on these values exactly.
   `fee_legs` lane and no first-leg compatibility view on `TransactionFact`
 - leg-level semantics live on the leg through `LegKind`; fact classification
   remains a separate fact-level layer
-- `ProjectionHint` is output metadata, not the long-term core driver of
+- `ProjectionHint` is output metadata, not the long-term driver of
   business behavior
 - output adapters map bridge classifications into concrete external row
   families when they need them
@@ -97,7 +98,7 @@ Require explicit review when:
 - the fact could be either a transfer or a taxable disposition
 - the fact changes beneficial ownership but not obvious tax treatment
 - the economic meaning is safe enough for reconciliation, but tax treatment
-  still depends on later policy-owned determinants
+  still depends on later policy-owned tax inputs
 - a provider row collapses financing, trading, and fee semantics into one
   record
 - a future activity type would require a new bridge classification value
