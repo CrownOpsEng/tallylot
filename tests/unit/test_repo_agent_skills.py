@@ -14,6 +14,7 @@ from repo_support.paths import repo_root
 class ExpectedSkill:
     display_name: str
     required_fragments: tuple[str, ...]
+    short_description_fragments: tuple[str, ...] = ()
 
 
 EXPECTED_SKILLS = {
@@ -31,11 +32,13 @@ EXPECTED_SKILLS = {
             "docs/README.md",
             "docs/status/current-state.md",
             "docs/reference/repository-history.md",
+            "docs/standards/engineering.md",
             "docs/standards/implementation.md",
             "docs/standards/commits.md",
             "tools/docs_maintenance/cli.py",
             "tools/docs_maintenance/metadata.py",
             "make docs-check",
+            "make naming-check",
         ),
     ),
     "implementation-workflow": ExpectedSkill(
@@ -45,6 +48,7 @@ EXPECTED_SKILLS = {
             "docs/standards/implementation.md",
             "docs/standards/commits.md",
             ".claude/commands/implementation-checkpoint.md",
+            "make naming-check",
             "shell-safe commit/PR authoring path",
             "shell-sensitive text",
         ),
@@ -97,9 +101,12 @@ EXPECTED_SKILLS = {
             "docs/concepts/oracle-boundaries.md",
             "docs/concepts/transaction-classification.md",
             "docs/status/migration-sequence.md",
+            "docs/standards/engineering.md",
             ".claude/commands/reconciliation-tax-build.md",
             "ROADMAP.md",
+            "make naming-check",
         ),
+        short_description_fragments=("journal", "target naming"),
     ),
     "round-verification-operations": ExpectedSkill(
         display_name="Round Verification",
@@ -189,6 +196,11 @@ def test_repo_local_skill_metadata_and_bodies_are_lightweight() -> None:
         )
         typed_policy = _nested_yaml_mapping(metadata, "policy", skill_name=skill_name)
         assert typed_interface["display_name"] == expected.display_name
+        short_description = typed_interface.get("short_description")
+        assert isinstance(short_description, str)
+        assert short_description.strip()
+        for fragment in expected.short_description_fragments:
+            assert fragment in short_description
         default_prompt = typed_interface.get("default_prompt")
         assert isinstance(default_prompt, str)
         assert f"${skill_name}" in default_prompt

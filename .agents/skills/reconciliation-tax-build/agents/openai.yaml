@@ -1,7 +1,7 @@
 interface:
   display_name: "Reconciliation And Tax Build"
-  short_description: "Load tallylot's narrow architecture path for reconciliation, checkpoint, accounting, and tax work."
-  default_prompt: "Use $reconciliation-tax-build to load tallylot's architecture path for core reconciliation and tax work."
+  short_description: "Load tallylot's narrow architecture path for reconciliation, checkpoint, journal, tax, and target naming work."
+  default_prompt: "Use $reconciliation-tax-build to load tallylot's architecture path for core reconciliation, journal, tax, and target naming work."
 
 policy:
   allow_implicit_invocation: true

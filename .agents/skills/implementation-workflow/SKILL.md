@@ -34,9 +34,12 @@ work that should be captured as a follow-up issue.
    - `make quality`
    - reserve `make quality-full`
      for the explicit full-suite override when a specific task needs it
-7. After compaction or context loss, reload the same narrow standards before
+7. When forward-looking target names, ids, directory families, titles, or
+   summaries change, run:
+   - `make naming-check`
+8. After compaction or context loss, reload the same narrow standards before
    more edits or commits.
-8. Create the verified checkpoint commit before considering the task done.
+9. Create the verified checkpoint commit before considering the task done.
    Use the shell-safe commit/PR authoring path from
    `docs/standards/commits.md` whenever the structured metadata includes
    backticks, quotes, or other shell-sensitive text.

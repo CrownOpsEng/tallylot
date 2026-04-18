@@ -1,16 +1,17 @@
 # Reconciliation And Tax Build
 
 Use this route for architecture, implementation, or repair work tied to the
-reconciliation, checkpoint, accounting, and tax buildout.
+reconciliation, checkpoint, journal, and tax buildout.
 
 1. Read `docs/concepts/reconciliation-tax-architecture.md` first.
 2. Read these before shaping any non-trivial increment:
    - `ROADMAP.md`
    - `docs/status/migration-sequence.md`
    - `docs/status/current-state.md`
-3. Read these when the task touches boundaries or sequencing:
+3. Read these when the task touches boundaries, naming, or sequencing:
    - `docs/concepts/oracle-boundaries.md`
    - `docs/concepts/transaction-classification.md`
+   - `docs/standards/engineering.md`
    - `docs/standards/implementation.md`
 4. Confirm whether the task changes:
    - `EvidenceSet` or `ClaimSet`
@@ -21,10 +22,12 @@ reconciliation, checkpoint, accounting, and tax buildout.
    - `Journal`
    - `TaxInputs` or `TaxOutputs`
    - CoinTracking oracle parsing
-5. If the task changes architecture or sequencing decisions, update
+5. If the task changes architecture, naming, or sequencing decisions, update
    `docs/concepts/reconciliation-tax-architecture.md` and `ROADMAP.md` in the
    same checkpoint, and update `docs/status/migration-sequence.md` when phase
-   order, bridge rules, or checkpoint criteria changed.
+   order, bridge rules, or checkpoint criteria changed. Run
+   `make naming-check` when forward-looking target names, ids, directory
+   families, titles, or summaries changed.
 6. Keep these boundaries:
    - build reconciliation before tax
    - keep facts provider-neutral before rendering compatibility outputs

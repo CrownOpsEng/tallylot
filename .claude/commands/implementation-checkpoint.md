@@ -46,13 +46,16 @@ Use this route before closing any non-trivial coding task.
    - `ROADMAP.md`
    - `docs/concepts/reconciliation-tax-architecture.md`
    - any boundary, matrix, or migration docs affected
-   - if reconciliation, checkpoint, accounting, tax, or target pipeline
+   - if reconciliation, checkpoint, journal, tax, or target pipeline
      products changed, confirm the narrow routing docs still point to the right
      architecture and sequencing material:
      - `AGENTS.md`
      - `.claude/commands/reconciliation-tax-build.md`
      - `.claude/commands/adapter-authoring.md` when adapter areas are part
        of the same change
+   - if forward-looking target names, ids, directory families, titles, or
+     summaries changed, reload `docs/standards/engineering.md` and run
+     `make naming-check`
    - if standards, docs placement, doc authoring rules, or agent-default enforcement changed, reload:
      - `AGENTS.md`
      - `docs/README.md`

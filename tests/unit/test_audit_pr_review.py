@@ -79,6 +79,17 @@ def test_commit_template_diff_selects_control_plane_checks() -> None:
     assert plan.selected_check_ids == ("docs-maintenance", "standards-guards")
 
 
+def test_target_naming_catalog_diff_stays_control_plane_only() -> None:
+    plan = build_verification_plan(
+        paths=("tools/target_naming_catalog.yaml",),
+        trigger="local",
+        mode="planned",
+    )
+
+    assert plan.surface_report.surface_groups == ("control_plane_text",)
+    assert plan.selected_check_ids == ("docs-maintenance", "target-naming")
+
+
 def test_repo_code_diff_selects_full_quality_suite() -> None:
     plan = build_verification_plan(
         paths=("src/tallylot/application/normalization/normalize_source.py",),
