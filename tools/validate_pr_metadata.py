@@ -9,6 +9,8 @@ from collections.abc import Sequence
 from tools.message_standards import (
     PR_BODY_OPTIONAL_SECTIONS,
     PR_BODY_REQUIRED_SECTIONS,
+    validate_branch_name,
+    validate_durable_metadata_text,
     validate_structured_sections,
     validate_subject_line,
 )
@@ -88,7 +90,10 @@ def _validate_pr_title(title: str) -> tuple[str, ...]:
     stripped = title.strip()
     if stripped == "":
         return ("PR title is required",)
-    return validate_subject_line(stripped)
+    return (
+        *validate_subject_line(stripped),
+        *validate_durable_metadata_text(stripped, label="PR title"),
+    )
 
 
 def _validate_why_entries(entries: tuple[str, ...]) -> tuple[str, ...]:
@@ -161,16 +166,17 @@ def _validate_pr_body(body: str) -> tuple[str, ...]:
     lines = _normalize_body_lines(body)
     if not lines:
         return ("PR body is required",)
-    errors = list(
-        validate_structured_sections(
+    errors = [
+        *validate_durable_metadata_text("\n".join(lines), label="PR body"),
+        *validate_structured_sections(
             ("placeholder", "", *lines),
             required_sections=PR_BODY_REQUIRED_SECTIONS,
             optional_sections=PR_BODY_OPTIONAL_SECTIONS,
             require_body=True,
             label="PR",
             allow_footers=False,
-        )
-    )
+        ),
+    ]
     parsed_sections = _parse_sections(body)
     errors.extend(_validate_why_entries(parsed_sections["Why"]))
     errors.extend(_validate_issue_linkage_entries(parsed_sections["Issue linkage"]))
@@ -213,6 +219,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Validate pull request title and body for the repo merge strategy."
     )
+    parser.add_argument("--branch-name", help="Current branch name.")
     parser.add_argument("--title", required=True, help="Pull request title.")
     parser.add_argument("--body", required=True, help="Pull request body.")
     parser.add_argument(
@@ -227,7 +234,11 @@ def _build_argument_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     args = _build_argument_parser().parse_args(argv)
 
-    errors = [*_validate_pr_title(args.title), *_validate_pr_body(args.body)]
+    errors = [
+        *(() if args.branch_name is None else validate_branch_name(args.branch_name)),
+        *_validate_pr_title(args.title),
+        *_validate_pr_body(args.body),
+    ]
     if args.base_sha and args.head_sha:
         errors.extend(
             _validate_pr_checkpoints(

@@ -6,6 +6,8 @@ import subprocess
 import sys
 from collections.abc import Sequence
 
+from tools.message_standards import validate_branch_name
+
 
 def _run_git(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
@@ -93,13 +95,15 @@ def _load_open_pr_metadata() -> tuple[str, str, str] | None:
 
 
 def _validate_pr_metadata(
-    *, title: str, body: str, base_sha: str, head_sha: str
+    *, branch_name: str, title: str, body: str, base_sha: str, head_sha: str
 ) -> int:
     return subprocess.run(
         [
             sys.executable,
             "-m",
             "tools.validate_pr_metadata",
+            "--branch-name",
+            branch_name,
             "--title",
             title,
             "--body",
@@ -118,16 +122,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     branch = _current_branch()
     if branch is None:
         return 0
-    if _upstream_ref() is None:
-        return 0
 
     try:
+        branch_errors = validate_branch_name(branch)
+        if branch_errors:
+            raise RuntimeError("; ".join(branch_errors))
+        if _upstream_ref() is None:
+            return 0
         metadata = _load_open_pr_metadata()
         if metadata is None:
             return 0
         title, body, base_sha = metadata
         _ensure_commit_available(base_sha)
         return _validate_pr_metadata(
+            branch_name=branch,
             title=title,
             body=body,
             base_sha=base_sha,

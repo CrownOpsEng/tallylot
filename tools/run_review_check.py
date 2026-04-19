@@ -22,6 +22,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--base-sha", help="Base SHA override.")
     parser.add_argument("--head-sha", help="Head SHA override.")
+    parser.add_argument("--branch-name", help="Branch name override.")
     parser.add_argument("--pr-title", help="Pull request title override.")
     parser.add_argument("--pr-body-file", type=Path, help="Pull request body file.")
     return parser.parse_args(argv)
@@ -40,6 +41,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             trigger=args.trigger,
             base_sha=args.base_sha,
             head_sha=args.head_sha,
+            branch_name=args.branch_name,
             pr_title=args.pr_title,
             pr_body=pr_body,
         ),

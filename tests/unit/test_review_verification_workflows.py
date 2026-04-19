@@ -50,6 +50,8 @@ def test_pr_review_workflow_uses_draft_aware_planner_gated_atomic_jobs() -> None
     assert "tools.run_review_check --check-id target-naming" in workflow_text
     assert "tools.run_review_check --check-id docs-audit" in workflow_text
     assert "tools.run_review_check --check-id pytest-full" in workflow_text
+    assert "BRANCH_NAME: ${{ github.event.pull_request.head.ref }}" in workflow_text
+    assert '--branch-name "$BRANCH_NAME" \\' in workflow_text
     assert "needs.build.result == 'success'" in workflow_text
     assert "needs.pytest-full.result == 'success'" in workflow_text
     assert "tools.evaluate_review_results" in workflow_text

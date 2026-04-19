@@ -158,12 +158,56 @@ tests/unit/test_docs_maintenance.py
 tests/unit/test_docs_audit.py -q --no-cov'`
 
 Included checkpoints:
-- `docs(roadmap): clarify planning and state docs`
+- `docs(standards): clarify planning and state docs`
 """
 
     errors = _validate_commit_message_text(message)
 
     assert not errors
+
+
+def test_commit_message_rejects_roadmap_label_in_subject() -> None:
+    message = """\
+docs(roadmap): harden planning guidance
+
+Why:
+- keep durable metadata phase-free
+
+What:
+- tighten the standards text
+
+Checks:
+- make pytest
+"""
+
+    errors = _validate_commit_message_text(message)
+
+    assert errors == (
+        "commit message must not use roadmap/phase labels on durable metadata "
+        "surfaces: roadmap",
+    )
+
+
+def test_commit_message_rejects_phase_label_in_body() -> None:
+    message = """\
+docs(standards): harden planning guidance
+
+Why:
+- keep Phase 2 bookkeeping out of durable metadata
+
+What:
+- tighten the standards text
+
+Checks:
+- make pytest
+"""
+
+    errors = _validate_commit_message_text(message)
+
+    assert errors == (
+        "commit message must not use roadmap/phase labels on durable metadata "
+        "surfaces: Phase 2",
+    )
 
 
 def test_invalid_type_is_rejected() -> None:

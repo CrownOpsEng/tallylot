@@ -41,6 +41,23 @@ def test_resolve_commit_message_command_uses_default_branch_merge_base(
     assert command[-1] == "abc123..def456"
 
 
+def test_resolve_pr_metadata_command_includes_branch_name() -> None:
+    command = resolve_check_command(
+        check_spec("pr-metadata"),
+        context=CheckExecutionContext(
+            trigger="pull_request",
+            base_sha="abc123",
+            head_sha="def456",
+            branch_name="docs/metadata-hardening",
+            pr_title="docs(commits): harden durable metadata policy",
+            pr_body="Why:\n- test\n\nWhat:\n- test\n\nChecks:\n- test\n\nIssue linkage:\n- None: test\n\nIncluded checkpoints:\n- `docs(commits): harden durable metadata policy`\n",
+        ),
+    )
+
+    assert "--branch-name" in command
+    assert "docs/metadata-hardening" in command
+
+
 def test_run_plan_blocks_dependency_when_build_fails(
     monkeypatch: MonkeyPatch,
 ) -> None:

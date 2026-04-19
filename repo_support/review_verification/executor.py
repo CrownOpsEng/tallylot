@@ -24,6 +24,7 @@ class CheckExecutionContext:
     trigger: Literal["pull_request", "push_main", "local"]
     base_sha: str | None = None
     head_sha: str | None = None
+    branch_name: str | None = None
     pr_title: str | None = None
     pr_body: str | None = None
     changed_paths: tuple[str, ...] = ()
@@ -77,6 +78,15 @@ def _resolve_default_base_head(context: CheckExecutionContext) -> tuple[str, str
     except subprocess.CalledProcessError:
         base_sha = f"{head_sha}^"
     return base_sha, head_sha
+
+
+def _resolve_branch_name(context: CheckExecutionContext) -> str:
+    if context.branch_name is not None:
+        return context.branch_name
+    branch_name = _git_stdout("branch", "--show-current")
+    if branch_name == "":
+        raise RuntimeError("branch name is required for PR metadata validation")
+    return branch_name
 
 
 def _load_open_pr_metadata() -> tuple[str, str, str] | None:
@@ -157,6 +167,8 @@ def resolve_check_command(
         replacements["{pr_body}"] = body
         replacements["{base_sha}"] = base_sha
         replacements["{head_sha}"] = head_sha
+    if any("{branch_name}" in part for part in command_parts):
+        replacements["{branch_name}"] = _resolve_branch_name(context)
 
     command = tuple(
         part if not replacements else _replace_placeholders(part, replacements)
