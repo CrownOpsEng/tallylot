@@ -12,6 +12,15 @@ nav_order: 10
 Use this document for code-focused decisions only: placement, typing,
 modularization, and naming.
 
+Document-check ownership is fixed:
+
+- `docs-maintenance` owns generated docs surfaces, metadata, links, and
+  docs-tree hygiene
+- `target-naming` owns naming, locality, vocabulary, title, summary, and
+  identifier policy on enforced target surfaces
+- `docs-audit` owns semantic repo-state document parity and cross-surface
+  correctness that is not already owned by the other two tools
+
 **Current runtime note:** CoinTracking references in this standard describe
 current output-adapter or oracle-local edges, not canonical target naming.
 

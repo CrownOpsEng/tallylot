@@ -30,7 +30,11 @@ def test_docs_only_diff_maps_to_docs_checks() -> None:
     )
 
     assert plan.surface_report.surface_groups == ("human_docs",)
-    assert plan.selected_check_ids == ("docs-maintenance", "markdownlint")
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "markdownlint",
+        "docs-audit",
+    )
     assert plan.nonblocking_check_ids == ()
     assert plan.surface_report.unmapped_paths == ()
 
@@ -62,6 +66,7 @@ def test_control_plane_doc_diff_selects_targeted_control_plane_checks() -> None:
         "docs-maintenance",
         "markdownlint",
         "target-naming",
+        "docs-audit",
         "standards-guards",
         "pr-metadata-validator",
         "commit-message-validator",
@@ -76,7 +81,10 @@ def test_commit_template_diff_selects_control_plane_checks() -> None:
     )
 
     assert plan.surface_report.surface_groups == ("control_plane_text",)
-    assert plan.selected_check_ids == ("docs-maintenance", "standards-guards")
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "standards-guards",
+    )
 
 
 def test_target_naming_catalog_diff_stays_control_plane_only() -> None:
@@ -153,6 +161,7 @@ def test_pull_request_docs_only_diff_stays_change_sensitive() -> None:
         "pr-metadata",
         "docs-maintenance",
         "markdownlint",
+        "docs-audit",
     )
 
 
@@ -168,6 +177,7 @@ def test_forward_looking_target_doc_diff_selects_target_naming() -> None:
         "docs-maintenance",
         "markdownlint",
         "target-naming",
+        "docs-audit",
     )
 
 
@@ -183,6 +193,7 @@ def test_docs_home_diff_selects_target_naming() -> None:
         "docs-maintenance",
         "markdownlint",
         "target-naming",
+        "docs-audit",
     )
 
 
@@ -197,6 +208,7 @@ def test_bridge_local_doc_diff_skips_target_naming() -> None:
     assert plan.selected_check_ids == (
         "docs-maintenance",
         "markdownlint",
+        "docs-audit",
     )
 
 
@@ -214,6 +226,7 @@ def test_pull_request_mode_can_still_force_full_suite() -> None:
         "docs-maintenance",
         "markdownlint",
         "target-naming",
+        "docs-audit",
         "actionlint",
         "ruff",
         "mypy",
@@ -265,7 +278,11 @@ def test_audit_pr_review_can_emit_json(
     report = json.loads(capsys.readouterr().out)
     assert report["surface_groups"] == ["human_docs"]
     assert report["mode"] == "planned"
-    assert report["selected_checks"] == ["docs-maintenance", "markdownlint"]
+    assert report["selected_checks"] == [
+        "docs-maintenance",
+        "markdownlint",
+        "docs-audit",
+    ]
     assert report["manual_red_team_review_required"] is True
 
 

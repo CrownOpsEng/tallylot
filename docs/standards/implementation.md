@@ -111,6 +111,16 @@ When repo-native tooling and tests need shared support:
   under `dev_support/`; do not expand `repo_support/` as if it were the desired
   long-term boundary
 
+Live repo document enforcement stays in script-owned tools, not pytest:
+
+- use `docs-maintenance` for generated sections, metadata, links, and docs-tree
+  hygiene
+- use `target-naming` for naming, locality, vocabulary, and identifier rules
+- use `docs-audit` for semantic repo-state document parity and cross-surface
+  correctness
+- keep pytest coverage for docs tooling on synthetic strings or temp repos
+  instead of the live repo Markdown tree or live control-plane prose
+
 ## Default Coding Expectations
 
 Agents should assume all of these are expected unless the task explicitly says

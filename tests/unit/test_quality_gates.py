@@ -42,13 +42,23 @@ def test_quality_gates_can_select_named_gates() -> None:
     parse_args = getattr(tools.run_quality_gates, "_parse_args")
     run_request = _run_request(
         parse_args(
-            ("--gate", "markdownlint", "--gate", "target-naming", "--gate", "pytest")
+            (
+                "--gate",
+                "markdownlint",
+                "--gate",
+                "target-naming",
+                "--gate",
+                "docs-audit",
+                "--gate",
+                "pytest",
+            )
         )
     )
 
     assert _phase_plan(run_request) == (
         QualityPhase(
-            name="all-at-once", gate_names=("markdownlint", "target-naming", "pytest")
+            name="all-at-once",
+            gate_names=("markdownlint", "target-naming", "docs-audit", "pytest"),
         ),
     )
 
@@ -184,7 +194,7 @@ def test_run_gate_sets_absolute_coverage_config_for_pytest(
 def test_run_phase_executes_gates_concurrently(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    barrier = threading.Barrier(2)
+    barrier = threading.Barrier(3)
 
     def fake_run_gate(gate: QualityGate) -> tools.run_quality_gates.GateResult:
         barrier.wait(timeout=1.0)
@@ -201,14 +211,15 @@ def test_run_phase_executes_gates_concurrently(
 
     phase_result = tools.run_quality_gates._run_phase(
         QualityPhase(
-            name="parallel-check", gate_names=("markdownlint", "target-naming")
+            name="parallel-check",
+            gate_names=("markdownlint", "target-naming", "docs-audit"),
         ),
         available_gates=available_gates,
     )
 
     assert tuple(
         gate_result.gate.name for gate_result in phase_result.gate_results
-    ) == ("markdownlint", "target-naming")
+    ) == ("markdownlint", "target-naming", "docs-audit")
 
 
 def test_pre_commit_config_keeps_hook_validations_without_ruff_duplication() -> None:

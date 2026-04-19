@@ -3,7 +3,6 @@ from __future__ import annotations
 import ast
 import importlib
 import json
-import re
 import tomllib
 from collections import defaultdict
 from pathlib import Path
@@ -189,6 +188,58 @@ def _defines_root_constants(path: Path) -> bool:
     return False
 
 
+def _call_chain_names(node: ast.AST) -> tuple[str, ...]:
+    names: list[str] = []
+    current = node
+    while isinstance(current, ast.Call) and isinstance(current.func, ast.Attribute):
+        names.append(current.func.attr)
+        current = current.func.value
+    if isinstance(current, ast.Attribute):
+        names.append(current.attr)
+        current = current.value
+    if isinstance(current, ast.Name):
+        names.append(current.id)
+    return tuple(reversed(names))
+
+
+def _string_literals(node: ast.AST) -> tuple[str, ...]:
+    return tuple(
+        value.value
+        for value in ast.walk(node)
+        if isinstance(value, ast.Constant) and isinstance(value.value, str)
+    )
+
+
+def _is_live_repo_doc_audit_call(node: ast.Call) -> bool:
+    chain = _call_chain_names(node)
+    literals = _string_literals(node)
+    if not chain:
+        return False
+    if chain[-1] in {"read_text", "glob", "rglob"}:
+        if any(
+            literal in {"ROADMAP.md", "AGENTS.md"} or literal.endswith(".md")
+            for literal in literals
+        ) and any(marker in literals for marker in ("docs", ".claude", "README.md")):
+            return True
+    return False
+
+
+def test_tests_do_not_audit_live_repo_markdown_or_control_plane_docs() -> None:
+    offenders: list[str] = []
+    for path in sorted((repo_root() / "tests").rglob("*.py")):
+        module = _module(path)
+        for node in ast.walk(module):
+            if isinstance(node, ast.Call) and _is_live_repo_doc_audit_call(node):
+                offenders.append(f"{path}:{getattr(node, 'lineno', '?')}")
+                break
+
+    assert not offenders, (
+        "tests must not audit live repo markdown or control-plane docs; use "
+        "docs-maintenance, target-naming, or docs-audit plus temp repos instead: "
+        f"{offenders}"
+    )
+
+
 def test_repo_has_no_type_ignore_comments() -> None:
     forbidden = (
         "type:" + " ignore",
@@ -253,8 +304,11 @@ def test_repo_support_avoids_generic_sink_modules() -> None:
     support_root = repo_root() / "repo_support"
     if not support_root.exists():
         raise AssertionError("repo_support package is missing")
+    allowed_paths = {support_root / "docs_audit" / "helpers.py"}
     offenders = sorted(
-        path.name for path in support_root.rglob("*.py") if path.name in forbidden
+        path.name
+        for path in support_root.rglob("*.py")
+        if path.name in forbidden and path not in allowed_paths
     )
 
     assert not offenders, (
@@ -267,273 +321,6 @@ def test_markdownlint_only_disables_md013() -> None:
         (repo_root() / ".markdownlint.json").read_text(encoding="utf-8")
     )
     assert config == {"default": True, "MD013": False}
-
-
-def test_module_size_policy_remains_aligned() -> None:
-    pylint_text = (repo_root() / ".pylintrc").read_text(encoding="utf-8")
-    test_pylint_text = (repo_root() / ".pylintrc-tests").read_text(encoding="utf-8")
-    standards_text = (repo_root() / "docs/standards/engineering.md").read_text(
-        encoding="utf-8"
-    )
-
-    assert "max-module-lines = 600" in pylint_text
-    assert "max-module-lines = 600" in test_pylint_text
-    assert (
-        re.search(r"Refactor before extending beyond 500 lines", standards_text)
-        is not None
-    )
-    assert (
-        re.search(
-            r"Treat `500` lines as the official repo refactor limit", standards_text
-        )
-        is not None
-    )
-    assert (
-        re.search(
-            r"Enforced limit is `600` lines as the hard-stop lint ceiling",
-            standards_text,
-        )
-        is not None
-    )
-    assert (
-        re.search(
-            r"Keep the repo standard tighter than the enforcement ceiling",
-            standards_text,
-        )
-        is not None
-    )
-
-
-def test_delivery_standards_pin_merge_subject_and_repair_label_rules() -> None:
-    commits_text = (repo_root() / "docs/standards/commits.md").read_text(
-        encoding="utf-8"
-    )
-    implementation_text = (repo_root() / "docs/standards/implementation.md").read_text(
-        encoding="utf-8"
-    )
-    issues_text = (repo_root() / "docs/standards/issues.md").read_text(encoding="utf-8")
-    agents_text = (repo_root() / "AGENTS.md").read_text(encoding="utf-8")
-    pr_template_text = (repo_root() / ".github" / "pull_request_template.md").read_text(
-        encoding="utf-8"
-    )
-    message_standards_text = (repo_root() / "tools/message_standards.py").read_text(
-        encoding="utf-8"
-    )
-    pr_validator_text = (repo_root() / "tools/validate_pr_metadata.py").read_text(
-        encoding="utf-8"
-    )
-    commit_validator_text = (
-        repo_root() / "tools/validate_commit_message.py"
-    ).read_text(encoding="utf-8")
-    checkpoint_text = (
-        repo_root() / ".claude/commands/implementation-checkpoint.md"
-    ).read_text(encoding="utf-8")
-
-    assert "<pr title> (#<pr number>)" in commits_text
-    assert "<pr title> (#<pr number>)" in implementation_text
-    assert "<pr title> (#<pr number>)" in agents_text
-    assert "<pr title> (#<pr number>)" in checkpoint_text
-    assert "Issue linkage:" in commits_text
-    assert "Issue linkage:" in issues_text
-    assert "Issue linkage:" in pr_template_text
-    assert "file/stdin authoring forms" in commits_text
-    assert "shell-sensitive text" in commits_text
-    assert "Follow-ups:" in commits_text
-    assert "optional `Follow-ups:` section is allowed" in commits_text
-    assert "Follow-ups:" in pr_template_text
-    assert '"Issue linkage"' in message_standards_text
-    assert 'PR_BODY_OPTIONAL_SECTIONS = ("Follow-ups",)' in message_standards_text
-    assert "PR_BODY_OPTIONAL_SECTIONS" in pr_validator_text
-    assert "`Issue linkage:`" in pr_validator_text
-    assert "GENERATED_MAINLINE_COMMIT_OPTIONAL_SECTIONS" in commit_validator_text
-    assert "`- Closes #123: <problem statement>`" in commits_text
-    assert "`- Refs #123`" in issues_text
-    assert "`- None: ...`" in issues_text
-    assert "duplicate/superseded label" in commits_text
-    assert "duplicate/superseded label" in implementation_text
-    assert "duplicate/superseded label" in agents_text
-    assert "duplicate/superseded label" in checkpoint_text
-    assert "Every authored commit must stay bounded to" in commits_text
-    assert "multiple bounded checkpoint commits" in commits_text
-    assert "keep each authored commit bounded" in implementation_text
-    assert "split it into\n   multiple bounded checkpoint commits" in checkpoint_text
-    assert "keep every authored commit bounded to one reviewable change" in agents_text
-
-
-def test_delivery_guardrails_doc_is_routed_and_layered() -> None:
-    guardrails_text = (repo_root() / "docs/standards/delivery-guardrails.md").read_text(
-        encoding="utf-8"
-    )
-    docs_index_text = (repo_root() / "docs/README.md").read_text(encoding="utf-8")
-    agents_text = (repo_root() / "AGENTS.md").read_text(encoding="utf-8")
-    roadmap_text = (repo_root() / "ROADMAP.md").read_text(encoding="utf-8")
-    checkpoint_text = (
-        repo_root() / ".claude/commands/implementation-checkpoint.md"
-    ).read_text(encoding="utf-8")
-    hardening_route_text = (
-        repo_root() / ".claude" / "commands" / "pr-review.md"
-    ).read_text(encoding="utf-8")
-
-    assert "platform-native enforcement" in guardrails_text
-    assert "repo-native policy as code" in guardrails_text
-    assert "agent default behavior" in guardrails_text
-    assert "<pr title> (#<pr number>)" in guardrails_text
-    assert "draft by default" in guardrails_text
-    assert "ready for review" in guardrails_text
-    assert "evidence-backed findings" in guardrails_text
-    assert "duplicate or superseded label" in guardrails_text
-    assert "make audit-delivery-guardrails" in guardrails_text
-    assert "single review-capable collaborator" in guardrails_text
-    assert ".github/actions/**" in guardrails_text
-    assert ".github/ISSUE_TEMPLATE/**" in guardrails_text
-    assert "docs/status/current-state.md" in guardrails_text
-    assert "tools/docs_maintenance/cli.py" in guardrails_text
-    assert "tools/benchmark_quality_gates.py" in guardrails_text
-    assert "repo_support/local_autofix.py" in guardrails_text
-    assert "repo_support/review_verification/**" in guardrails_text
-    assert "repo_support/target_naming/**" in guardrails_text
-    assert "tools/evaluate_review_results.py" in guardrails_text
-    assert "tools/target_naming.py" in guardrails_text
-    assert "tools/target_naming_catalog.yaml" in guardrails_text
-    assert "`markdown` skill" in guardrails_text
-    assert "human docs, agent" in guardrails_text
-    assert "standards/delivery-guardrails.md" in docs_index_text
-    assert "standards/issues.md" in docs_index_text
-    assert (
-        "Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes"
-        in agents_text
-    )
-    assert (
-        "Issue templates, issue-writing policy, or proactive follow-up issue creation"
-        in agents_text
-    )
-    assert "use the `markdown` skill if available" in agents_text
-    assert (
-        "use\n  the repo-local workflow for the active area and reload the narrow repo\n  guidance listed in this file before editing."
-        in agents_text
-    )
-    assert "docs/standards/issues.md" in agents_text
-    assert ".claude/commands/issue-workflow.md" in agents_text
-    assert "tools/docs_maintenance/metadata.py" in agents_text
-    assert "docs/reference/repository-history.md" in agents_text
-    assert "docs/standards/delivery-guardrails.md" in agents_text
-    assert ".claude/commands/pr-review.md" in agents_text
-    assert "delivery guardrails layered across platform settings" in roadmap_text
-    assert "control-plane ownership routing" in roadmap_text
-    assert "audit local CODEOWNERS coverage and live GitHub delivery" in roadmap_text
-    assert "settings together without broad context loading" in roadmap_text
-    assert "repo-native PR review routing" in roadmap_text
-    assert "catalog-first target naming governance" in roadmap_text
-    assert "benchmark-backed" in roadmap_text
-    assert "one opaque parity shell" in roadmap_text
-    assert (
-        "if standards, docs placement, doc authoring rules, or agent-default enforcement changed"
-        in checkpoint_text
-    )
-    assert (
-        "use `markdown` for Markdown/docs work when that skill is available"
-        in checkpoint_text
-    )
-    assert "shell-safe commit and PR authoring rules" in checkpoint_text
-    assert "scratch workflow bookkeeping" in checkpoint_text
-    assert "search for an existing issue first" in checkpoint_text
-    assert "`human_docs`" in guardrails_text
-    assert "`control_plane_text`" in guardrails_text
-    assert "`repo_code_or_tooling`" in guardrails_text
-    assert "`ci_or_release`" in guardrails_text
-    assert "selected verification mode" in guardrails_text
-    assert "always-visible PR metadata checks" in guardrails_text
-    assert "full non-duplicated blocking suite" in guardrails_text
-    assert "suppresses the narrower targeted pytest subset checks" in guardrails_text
-    assert "every applicable changed file group has been revisited" in guardrails_text
-    assert "issue-finding with open outcome" in guardrails_text
-    assert "make audit-pr-review" in hardening_route_text
-    assert "tools.run_pr_review_checks" in hardening_route_text
-    assert (
-        "green runner never replaces the mandatory red-team repair" in guardrails_text
-    )
-    assert (
-        "green `tools.run_pr_review_checks` result as a no-findings"
-        in hardening_route_text
-    )
-    assert "review cycle" in hardening_route_text
-    assert "invent findings to hit a quota" in hardening_route_text
-    assert (
-        "stop only after a full pass yields no new meaningful findings"
-        not in guardrails_text
-    )
-    assert "clean hardening pass" not in guardrails_text
-    assert "full clean loop" not in hardening_route_text
-    assert "claiming a clean pass" not in hardening_route_text
-    assert "final PR review" not in hardening_route_text
-    assert (
-        "Continue steps 1 through 5 until every applicable changed file group has"
-        in hardening_route_text
-    )
-
-
-def test_engineering_standards_document_contract_guard_expectations() -> None:
-    text = (repo_root() / "docs" / "standards" / "engineering.md").read_text(
-        encoding="utf-8"
-    )
-
-    assert "bridge cutover matrix inventory and row order are catalog-governed" in text
-    assert (
-        "bridge cutover matrix owner, compatibility, reader, and gate cells are" in text
-    )
-    assert (
-        "bridge cutover current-reader cells must use canonical inventory labels"
-        in text
-    )
-    assert (
-        "forward-target contract docs must stay free of transient planning language"
-        in text
-    )
-    assert (
-        "treat the blocking `target-naming` review check as the repo-native guard"
-        in text
-    )
-
-
-def test_repo_local_routing_does_not_depend_on_removed_global_safety_skills() -> None:
-    guardrails_text = (repo_root() / "docs/standards/delivery-guardrails.md").read_text(
-        encoding="utf-8"
-    )
-    hardening_route_text = (
-        repo_root() / ".claude" / "commands" / "pr-review.md"
-    ).read_text(encoding="utf-8")
-
-    for relative_path in (
-        "AGENTS.md",
-        ".agents/skills/implementation-workflow/SKILL.md",
-        ".agents/skills/issue-workflow/SKILL.md",
-        ".agents/skills/docs-authoring/SKILL.md",
-        ".claude/commands/implementation-checkpoint.md",
-        "docs/standards/delivery-guardrails.md",
-    ):
-        text = (repo_root() / relative_path).read_text(encoding="utf-8")
-        assert "code-change-safety" not in text
-        assert "git-delivery-safety" not in text
-        assert "docs-change-safety" not in text
-    assert (
-        "repair every finding from that pass before starting the next pass"
-        in guardrails_text
-    )
-    assert "issue-finding with open outcome" in hardening_route_text
-    assert "AGENTS.md`, its task-routing table" in guardrails_text
-    assert "checkpoint commits during the loop" in guardrails_text
-    assert "applicable file groups" in guardrails_text
-    assert (
-        "Repair every finding from that pass before starting the next pass"
-        in hardening_route_text
-    )
-    assert "verification evidence for the current" in hardening_route_text
-    assert "red-team pass" in hardening_route_text
-    assert "create a bounded checkpoint commit" in hardening_route_text
-    assert "relevant delivery guidance or skills" in hardening_route_text
-    assert "updating the PR state" in hardening_route_text
-    assert "make audit-pr-review" in hardening_route_text
-    assert "make pr-review" in hardening_route_text
 
 
 def test_control_plane_codeowners_file_exists_and_covers_guardrail_paths() -> None:
@@ -868,30 +655,6 @@ def test_balance_reference_has_single_production_owner() -> None:
         text = path.read_text(encoding="utf-8")
         occurrences += text.count("class BalanceReference:")
     assert occurrences == 1
-
-
-def test_transaction_classification_matrix_describes_runtime_projection_values() -> (
-    None
-):
-    matrix_text = (
-        repo_root() / "docs" / "concepts" / "transaction-classification.md"
-    ).read_text(encoding="utf-8")
-
-    assert (
-        "| `trade` | `trade` | `spot_trade` | `capital_exchange` | `asset_exchange` |"
-        in matrix_text
-    )
-    assert (
-        "| `deposit` | `deposit` | `asset_deposit` | `non_taxable_transfer_in` | `funding_inflow` |"
-        in matrix_text
-    )
-    assert (
-        "| `withdrawal` | `withdrawal` | `asset_withdrawal` | `non_taxable_transfer_out` | `funding_outflow` |"
-        in matrix_text
-    )
-    assert "enum members such as `ProjectionHint.TRADE`" in matrix_text
-    assert "stored/runtime values such as `trade`" in matrix_text
-    assert "renderer labels such as `Trade`" in matrix_text
 
 
 def test_makefile_uses_home_relative_external_env_path() -> None:

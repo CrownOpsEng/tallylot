@@ -39,6 +39,7 @@ RETIRED_REFERENCES = (
     "docs/reference/README.md",
     "docs/operations/ai-session-prompt.md",
 )
+FORBIDDEN_REFERENCE_ARTIFACT_SUFFIXES = {".csv", ".json", ".zip", ".html", ".pdf"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -230,6 +231,22 @@ def _check_retired_references() -> None:
                 raise ValueError(f"{path} still references retired path {reference}")
 
 
+def _check_docs_tree_hygiene() -> None:
+    for path in sorted(docs_root().rglob("*")):
+        if not path.is_file():
+            continue
+        if path.name != "README.md" and path.name != path.name.lower():
+            raise ValueError(f"doc filename is not lowercase: {path}")
+        if (
+            path.is_file()
+            and path.suffix in FORBIDDEN_REFERENCE_ARTIFACT_SUFFIXES
+            and relative_path(path).startswith("docs/reference/")
+        ):
+            raise ValueError(
+                f"repo reference docs should not contain oracle data files: {path}"
+            )
+
+
 def sync_docs_homepage(documents: list[Document], *, check: bool) -> bool:
     docs_readme = docs_root() / "README.md"
     if not docs_readme.exists():
@@ -381,6 +398,7 @@ def run_sync(*, check: bool) -> int:
     validate_markdown_links(repo_markdown_paths())
     validate_uv_examples(repo_markdown_paths())
     _check_retired_references()
+    _check_docs_tree_hygiene()
     sync_docs_homepage(documents, check=check)
     print("docs maintenance sync passed")
     return 0

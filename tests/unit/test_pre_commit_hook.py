@@ -225,6 +225,14 @@ def test_run_staged_verification_uses_planned_checks_for_docs_only(
                     stdout="",
                     stderr="",
                 ),
+                CheckResult(
+                    check_id="docs-audit",
+                    status="passed",
+                    returncode=0,
+                    elapsed=0.0,
+                    stdout="",
+                    stderr="",
+                ),
             )
         )
 
@@ -236,7 +244,7 @@ def test_run_staged_verification_uses_planned_checks_for_docs_only(
         )
         == 0
     )
-    assert seen_plans == [("docs-maintenance", "markdownlint")]
+    assert seen_plans == [("docs-maintenance", "markdownlint", "docs-audit")]
     assert seen_contexts == [
         CheckExecutionContext(
             trigger="local",
@@ -288,6 +296,14 @@ def test_run_staged_verification_adds_target_naming_for_forward_looking_docs(
                     stdout="",
                     stderr="",
                 ),
+                CheckResult(
+                    check_id="docs-audit",
+                    status="passed",
+                    returncode=0,
+                    elapsed=0.0,
+                    stdout="",
+                    stderr="",
+                ),
             )
         )
 
@@ -299,7 +315,9 @@ def test_run_staged_verification_adds_target_naming_for_forward_looking_docs(
         )
         == 0
     )
-    assert seen_plans == [("docs-maintenance", "markdownlint", "target-naming")]
+    assert seen_plans == [
+        ("docs-maintenance", "markdownlint", "target-naming", "docs-audit")
+    ]
     assert seen_contexts == [
         CheckExecutionContext(
             trigger="local",

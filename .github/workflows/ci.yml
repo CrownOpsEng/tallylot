@@ -136,6 +136,19 @@ jobs:
       - name: Run target naming check
         run: uv run python -m tools.run_review_check --check-id target-naming --trigger push_main
 
+  docs-audit:
+    needs: plan-main-ci
+    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'docs-audit') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: ./.github/actions/setup-python-uv
+      - name: Run docs audit
+        run: uv run python -m tools.run_review_check --check-id docs-audit --trigger push_main
+
   actionlint:
     needs: plan-main-ci
     if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'actionlint') }}
@@ -228,19 +241,6 @@ jobs:
       - uses: ./.github/actions/setup-python-uv
       - name: Run standards guards
         run: uv run python -m tools.run_review_check --check-id standards-guards --trigger push_main
-
-  docs-runtime-parity:
-    needs: plan-main-ci
-    if: ${{ contains(fromJSON(needs.plan-main-ci.outputs.selected_checks), 'docs-runtime-parity') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: ./.github/actions/setup-python-uv
-      - name: Run docs runtime parity tests
-        run: uv run python -m tools.run_review_check --check-id docs-runtime-parity --trigger push_main
 
   delivery-guardrails-audit:
     needs: plan-main-ci
@@ -448,6 +448,7 @@ jobs:
       - docs-maintenance
       - markdownlint
       - target-naming
+      - docs-audit
       - actionlint
       - ruff
       - mypy
@@ -455,7 +456,6 @@ jobs:
       - pylint
       - repo-agent-skills
       - standards-guards
-      - docs-runtime-parity
       - delivery-guardrails-audit
       - pr-metadata-validator
       - commit-message-validator

@@ -2051,21 +2051,6 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
 
 
-@pytest.mark.parametrize(
-    "path",
-    [
-        "docs/README.md",
-        "docs/standards/engineering.md",
-        "docs/reference/target-ids-and-refs.md",
-        "docs/concepts/pipeline-stage-contracts.md",
-        "docs/reference/first-downstream-slice-contract.md",
-        "ROADMAP.md",
-    ],
-)
-def test_real_repo_identifier_namespace_audit_passes(path: str) -> None:
-    assert not audit_target_naming(paths=(path,))
-
-
 def test_target_naming_sensitive_path_helper_covers_docs_and_control_plane() -> None:
     assert (
         is_target_naming_sensitive_path("docs/concepts/pipeline-stage-contracts.md")

@@ -155,7 +155,7 @@ standards, and status model
 Checks:
 - `make pytest ARGS='
 tests/unit/test_docs_maintenance.py
-tests/unit/docs_runtime_parity -q --no-cov'`
+tests/unit/test_docs_audit.py -q --no-cov'`
 
 Included checkpoints:
 - `docs(roadmap): clarify planning and state docs`
