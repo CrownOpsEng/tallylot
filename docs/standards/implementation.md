@@ -125,6 +125,25 @@ Live repo document enforcement stays in script-owned tools, not pytest:
 - keep pytest coverage for docs tooling on synthetic strings or temp repos
   instead of the live repo Markdown tree or live control-plane prose
 
+Durable versus planning surfaces:
+
+- planning and forward-looking docs may use roadmap-owned ephemeral tags when
+  that reference convenience belongs to the planning surface itself
+- durable control-plane and delivery surfaces must stay phase-free and
+  roadmap-free:
+  - `docs/standards/**`
+  - `AGENTS.md`
+  - `.claude/commands/**`
+  - `.agents/skills/**`
+  - `.github/pull_request_template.md`
+  - commit messages
+  - PR titles and PR bodies
+  - branch names
+  - code, tooling, tests, filenames, and generated durable examples
+- when a new live-repo docs policy needs enforcement, add it to the owning
+  script instead of adding live-repo Markdown or control-plane prose checks to
+  pytest
+
 ## Default Coding Expectations
 
 Agents should assume all of these are expected unless the task explicitly says
@@ -342,6 +361,9 @@ Expected behavior:
   commands such as `rm -rf`, `git restore`, `git reset`, or `git checkout --`
   unless the user explicitly requests that cleanup in the current thread
 - keep tracked docs, templates, and control-plane artifacts neutral and durable
+- keep durable delivery metadata and ordinary branch names phase-free and
+  roadmap-free; use durable repo-area or behavior wording instead of planning
+  tags
 - keep scratch review notes, temporary review ledgers, and compaction aids
   untracked; recover from deterministic repo facts instead
 
