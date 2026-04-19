@@ -131,6 +131,31 @@ def test_run_pr_review_checks_reads_pr_body_file(
     assert seen_contexts[0].pr_body == "Why:\n- explain\n"
 
 
+def test_run_pr_review_checks_passes_branch_name_override(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(run_pr_review_checks, "changed_paths", _docs_changed_paths)
+    monkeypatch.setattr(run_pr_review_checks, "run_local_autofix", lambda: 0)
+    seen_contexts: list[CheckExecutionContext] = []
+
+    def fake_run_plan(*_args: object, **kwargs: object) -> ExecutionSummary:
+        seen_contexts.append(cast(CheckExecutionContext, kwargs["context"]))
+        return ExecutionSummary(results=())
+
+    monkeypatch.setattr(run_pr_review_checks, "run_plan", fake_run_plan)
+
+    assert (
+        run_pr_review_checks.main(
+            [
+                "--branch-name",
+                "docs/metadata-hardening",
+            ]
+        )
+        == 0
+    )
+    assert seen_contexts[0].branch_name == "docs/metadata-hardening"
+
+
 def test_run_pr_review_checks_can_skip_local_autofix(
     monkeypatch: MonkeyPatch,
 ) -> None:

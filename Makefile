@@ -61,7 +61,7 @@ help:
 		'  make tool TOOL=docs_maintenance ARGS="sync --check"  Run any tools.<module> entrypoint.' \
 		'' \
 		'Individual tools:' \
-		'  make pytest ARGS="tests/unit/test_x.py -q --no-cov"' \
+		'  make pytest ARGS="tests/unit/test_x.py -q"' \
 		'  make ruff ARGS="check ."' \
 		'  make mypy ARGS="src tools repo_support"' \
 		'  make pyright ARGS=""' \
@@ -143,7 +143,7 @@ pylint:
 	pylint $(ARGS)
 
 pytest:
-	pytest $(ARGS)
+	pytest --no-cov $(ARGS)
 
 actionlint:
 	actionlint $(ARGS)

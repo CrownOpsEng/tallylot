@@ -748,6 +748,7 @@ def test_makefile_uses_home_relative_external_env_path() -> None:
 
     assert "PROJECT_ENV ?= $(HOME)/.venvs/tallylot-py312" in makefile_text
     assert "export PATH := $(PROJECT_BIN):$(PATH)" in makefile_text
+    assert "pytest --no-cov $(ARGS)" in makefile_text
     for target in (
         "install-hooks:",
         "docs-check:",

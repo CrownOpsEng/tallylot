@@ -420,7 +420,7 @@ that exact file before treating the checkpoint as closed:
 
 ```bash
 make pylint ARGS='<touched-file>'
-make pytest ARGS='-q --no-cov <touched-test-file>'
+make pytest ARGS='-q <touched-test-file>'
 git show HEAD:<path>
 ```
 

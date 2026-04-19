@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import re
 
-from repo_support.paths import repo_root
-
-from ._common import build_rule
-from ..helpers import (
+from repo_support.docs_audit.helpers import (
     architecture_doc_paths,
     joined,
     repo_text,
 )
+from repo_support.docs_audit.rules._common import build_rule
+from repo_support.paths import repo_root
 
 
 POLICY_ALIGNMENT_RULES = (
@@ -67,7 +66,7 @@ POLICY_ALIGNMENT_RULES = (
             for needle in (
                 "Do not describe `mypy` or `pyright` as covering `pylint` findings.",
                 "make pylint ARGS='<touched-file>'",
-                "make pytest ARGS='-q --no-cov <touched-test-file>'",
+                "make pytest ARGS='-q <touched-test-file>'",
                 "git show HEAD:<path>",
             )
             if needle not in repo_text("docs/standards/commits.md")
