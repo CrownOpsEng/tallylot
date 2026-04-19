@@ -3,6 +3,7 @@ from __future__ import annotations
 DOCS_AUDIT_SUBSTRATE_PREFIXES = (
     "docs/",
     ".claude/commands/",
+    "repo_support/docs_audit/",
     "src/tallylot/interfaces/cli/",
     "tools/oracles/",
 )
@@ -17,6 +18,7 @@ DOCS_AUDIT_SUBSTRATE_EXACT_PATHS = {
     "src/tallylot/domain/transactions/classification.py",
     ".pylintrc",
     ".pylintrc-tests",
+    "tools/audit_docs.py",
     "tools/message_standards.py",
     "tools/validate_commit_message.py",
     "tools/validate_pr_metadata.py",

@@ -200,6 +200,11 @@ Verification selection is deterministic and atomic:
 - live repo document semantics and cross-surface parity select the blocking
   `docs-audit` check for `human_docs`, Markdown `control_plane_text`, and the
   documented docs-audit substrate paths
+- generated docs structure, `docs/README.md` reference-group headings/order,
+  and required `naming_scope` frontmatter/default behavior stay on
+  `docs-maintenance`; they do not move into pytest or `target-naming`
+- bridge cutover matrix semantics and forward-contract completion-gate proof
+  stay on `docs-audit`; they do not split across pytest or `target-naming`
 - pull-request CI is draft-aware:
   - draft and in-progress pull requests always run the always-visible PR metadata checks `commit-messages` and `pr-metadata`, then select the remaining atomic checks from the changed diff
   - once the pull request is no longer draft, `pr-review` switches to the full

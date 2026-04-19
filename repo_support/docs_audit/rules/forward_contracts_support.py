@@ -4,7 +4,6 @@ import re
 from pathlib import Path
 
 from repo_support.paths import repo_root
-from repo_support.target_naming.catalog import load_target_naming_catalog
 
 from ..helpers import (
     canonical_text_value,
@@ -30,17 +29,11 @@ OWNER_DOCS = (
     docs_path("reference/first-upstream-slice-contract.md"),
     docs_path("reference/first-downstream-slice-contract.md"),
 )
-EXPECTED_OWNER_DOCS = (
-    "ROADMAP.md",
-    "docs/status/migration-sequence.md",
-    "docs/concepts/bridge-to-target-mapping.md",
-    "docs/concepts/pipeline-stage-contracts.md",
-    "docs/concepts/domain-ontology.md",
-    "docs/concepts/gaps-and-reviews.md",
-    "docs/concepts/reconciliation-tax-architecture.md",
-    "docs/reference/first-upstream-slice-contract.md",
-    "docs/reference/first-downstream-slice-contract.md",
+EXPECTED_OWNER_DOCS = tuple(
+    path.relative_to(repo_root()).as_posix() for path in OWNER_DOCS
 )
+OWNER_DOC_SET = frozenset(EXPECTED_OWNER_DOCS)
+
 EXPECTED_MATRIX_ROWS = (
     "translation_input_candidates.json",
     "translation_input_plan.json",
@@ -52,12 +45,6 @@ EXPECTED_MATRIX_ROWS = (
     "exceptions.csv and IssueRecord outputs",
     "normalization_reviews.csv and NormalizationReviewRecord outputs",
 )
-HELPER_REF_DOC = docs_path("reference/target-ids-and-refs.md")
-BRIDGE_MATRIX_SPEC = next(
-    spec
-    for spec in load_target_naming_catalog().matrix_specs
-    if spec.path == "docs/concepts/bridge-to-target-mapping.md"
-)
 BRIDGE_MATRIX_HEADER = (
     "Current bridge surface",
     "Target authoritative product(s)",
@@ -68,34 +55,68 @@ BRIDGE_MATRIX_HEADER = (
     "Cutover gate",
     "Retirement gate",
 )
+BRIDGE_MATRIX_REQUIRED_NONEMPTY_COLUMNS = (
+    "Target authoritative product(s)",
+    "Derived compatibility view",
+    "Derived compatibility sidecar",
+    "Current readers",
+    "Target readers after cutover",
+    "Cutover gate",
+    "Retirement gate",
+)
+BRIDGE_MATRIX_ALLOWED_SHAPES = frozenset(
+    {"compatibility view", "compatibility sidecar", "none"}
+)
+BRIDGE_MATRIX_TARGET_READER_PLACEHOLDER_CAPABILITIES = frozenset(
+    {
+        "reader",
+        "readers",
+        "consumer",
+        "consumers",
+        "capability",
+        "capabilities",
+        "target reader",
+        "target readers",
+        "future reader",
+        "future readers",
+        "future consumer",
+        "future consumers",
+        "future capability",
+        "future capabilities",
+        "application surface",
+        "application surfaces",
+        "package root",
+        "package roots",
+        "read model",
+        "read models",
+        "future read model",
+        "future read models",
+    }
+)
+BRIDGE_MATRIX_BANNED_FRAGMENTS = frozenset(
+    {
+        "view or sidecar",
+        "optional planner review view",
+        "planning sidecar",
+        "statement-facing compatibility sidecar",
+        "recognized statement parse outputs and balance rows",
+        "source translation boundary",
+        "current bridge balance reducers",
+        "current bridge balance-reference path",
+        "bridge/output compatibility sidecars",
+        "target products",
+        "target product plus shared gap/review/readiness records",
+        "issue compatibility view",
+        "review compatibility view",
+    }
+)
 COMPLETION_GATE_TABLE_HEADER = (
     "Exit criterion",
     "Authoritative doc section(s)",
     "Automated proof",
 )
-EXPECTED_EXIT_CRITERIA = (
-    "no owner concept is defined in two competing places",
-    "no target product references an undefined record family or ref type",
-    "no cross-stage support record or sidecar masquerades as a claim kind",
-    "claim-stage blockers can attach to `claim_scope_id` before subject identity resolves, and later-stage blockers can attach to truthful journal or tax subjects without collapsing to kernel-scope attachment only",
-    "no target id or helper id bakes bridge-era naming into target identity",
-    "no canonical target contract keeps source-specific crypto nouns such as `wallet` when a repo-owned domain noun already owns that seam",
-    "no bridge surface is left without an authority and retirement rule",
-    "no hot-path field points to an undefined value ref or sidecar",
-    "every critical-path observation and claim kind has one authoritative kernel field table",
-    "no target product ref in a product header uses `kernel_scope_id` where a product id exists",
-    "non-critical observation and claim kinds are explicitly deferred rather than left implicit",
-    "implementation placement is mechanical rather than interpretive",
-    "`TaxOutputs` can land without requiring a separate read-side architecture first",
-    "no shared application assessment center or shared grouped-readiness family is left as the default home for later grouped consumers",
-    "the first upstream slice and first downstream slice can be implemented without inventing ids, claim bundles, values, or reader cutovers",
-    "every active bridge surface has one authoritative target owner",
-    "every active bridge surface has one derived compatibility rule",
-    "every active bridge surface names concrete current readers and concrete target readers",
-    "no Phase 1 or Phase 2 doc claims authority over `TransactionFact`, `facts.csv`, `balance_snapshots.csv`, `balance_references.csv`, or `cointracking_csv`",
-    "`EventLinkRecord` status is aligned between this roadmap and the first downstream slice contract",
-    "the intentional looseness of Phases 6 and later is explicit and is non-blocking for Phase 0 to Phase 5 implementation",
-)
+ALLOWED_PROOF_TOKEN_PREFIXES = frozenset({"docs-audit", "target-naming"})
+
 DEFINED_TARGET_RECORD_FAMILIES = frozenset(
     {
         "EvidenceSelectionRecord",
@@ -145,9 +166,28 @@ ALLOWED_CURRENT_STATE_RECORD_NAMES = frozenset(
     {"IssueRecord", "NormalizationReviewRecord"}
 )
 
+HEADING_PATTERN = re.compile(r"^(#{1,6} .+)$", re.MULTILINE)
+TOKEN_PATTERN = re.compile(r"(?P<fence>`+)(?P<token>.*?)(?P=fence)")
+
 
 def text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def must_freeze_items() -> tuple[str, ...]:
+    return extract_plain_bullets(
+        text(repo_root() / "ROADMAP.md"),
+        "Must freeze:",
+        "Deliver:",
+    )
+
+
+def completion_gate_criteria() -> tuple[str, ...]:
+    return extract_plain_bullets(
+        text(repo_root() / "ROADMAP.md"),
+        "Exit criteria:",
+        "| Exit criterion | Authoritative doc section(s) | Automated proof |",
+    )
 
 
 def completion_gate_rows() -> tuple[tuple[str, str, str], ...]:
@@ -188,7 +228,7 @@ def reader_inventory() -> tuple[str, ...]:
 
 
 def authoritative_contract_text() -> str:
-    return "\n".join(text(path) for path in (*OWNER_DOCS, HELPER_REF_DOC))
+    return "\n".join(text(path) for path in OWNER_DOCS)
 
 
 def used_record_families() -> set[str]:
@@ -207,10 +247,61 @@ def used_ref_types() -> set[str]:
     }
 
 
+def heading_occurrence_count(path_text: str, heading: str) -> int:
+    return sum(
+        1 for match in HEADING_PATTERN.finditer(path_text) if match.group(1) == heading
+    )
+
+
+def authority_entries(authority_cell: str) -> tuple[tuple[str, str], ...]:
+    entries: list[tuple[str, str]] = []
+    for clause in split_matrix_clauses(authority_cell):
+        tokens = tuple(
+            match.group("token").strip() for match in TOKEN_PATTERN.finditer(clause)
+        )
+        if len(tokens) != 2 or TOKEN_PATTERN.sub("", clause).strip():
+            raise AssertionError(
+                "authority cells must use exact semicolon-separated `path` `heading` pairs only"
+            )
+        path, heading = tokens
+        entries.append((path, heading))
+    if not entries:
+        raise AssertionError(
+            "authority cells must list one or more exact owner-doc headings"
+        )
+    return tuple(entries)
+
+
+def proof_tokens(proof_cell: str) -> tuple[str, ...]:
+    tokens: list[str] = []
+    for clause in split_matrix_clauses(proof_cell):
+        clause_tokens = tuple(
+            match.group("token").strip() for match in TOKEN_PATTERN.finditer(clause)
+        )
+        if len(clause_tokens) != 1 or TOKEN_PATTERN.sub("", clause).strip():
+            raise AssertionError(
+                "proof cells must use exact semicolon-separated backticked proof tokens only"
+            )
+        tokens.append(clause_tokens[0])
+    if not tokens:
+        raise AssertionError("proof cells must list one or more proof tokens")
+    return tuple(tokens)
+
+
 def reader_inventory_checks() -> tuple[bool, bool]:
     inventory = reader_inventory()
     return (
-        inventory != BRIDGE_MATRIX_SPEC.current_reader_inventory,
+        inventory
+        != (
+            "source normalize planner review and translation path",
+            "source assemble bridge projection path",
+            "operator review diagnostics",
+            "reconciliation balances inspect",
+            "reconciliation balances check",
+            "reconciliation balances summarize",
+            "cointracking_csv rendering path",
+            "dev-only oracle comparison path",
+        ),
         frozenset(
             label
             for row in bridge_matrix_rows()
@@ -225,28 +316,38 @@ def reader_inventory_checks() -> tuple[bool, bool]:
 
 __all__ = [
     "ALLOWED_CURRENT_STATE_RECORD_NAMES",
-    "BRIDGE_MATRIX_SPEC",
+    "ALLOWED_PROOF_TOKEN_PREFIXES",
+    "BRIDGE_MATRIX_ALLOWED_SHAPES",
+    "BRIDGE_MATRIX_BANNED_FRAGMENTS",
+    "BRIDGE_MATRIX_HEADER",
+    "BRIDGE_MATRIX_REQUIRED_NONEMPTY_COLUMNS",
+    "BRIDGE_MATRIX_TARGET_READER_PLACEHOLDER_CAPABILITIES",
+    "COMPLETION_GATE_TABLE_HEADER",
     "DEFINED_TARGET_RECORD_FAMILIES",
     "DEFINED_TARGET_REF_TYPES",
-    "EXPECTED_EXIT_CRITERIA",
     "EXPECTED_MATRIX_ROWS",
     "EXPECTED_OWNER_DOCS",
-    "HELPER_REF_DOC",
+    "OWNER_DOC_SET",
     "OWNER_DOCS",
+    "authoritative_contract_text",
+    "authority_entries",
     "bridge_matrix_rows",
     "canonical_text_value",
+    "completion_gate_criteria",
     "completion_gate_rows",
     "docs_path",
     "extract_backticked_tokens",
     "extract_code_bullets",
     "extract_labeled_code_bullets",
     "extract_plain_bullets",
+    "heading_occurrence_count",
+    "must_freeze_items",
     "normalized",
     "placeholder_text",
-    "repo_root",
-    "authoritative_contract_text",
+    "proof_tokens",
     "reader_inventory",
     "reader_inventory_checks",
+    "repo_root",
     "section",
     "split_matrix_clauses",
     "text",

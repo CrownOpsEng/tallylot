@@ -45,11 +45,6 @@ title_expectations:
   docs/status/adapter-delivery-plan.md: Adapter Delivery Plan
   docs/status/migration-sequence.md: Migration Sequence
 
-reference_group_headings:
-  - "### Target References"
-  - "### Current-State References"
-  - "### Oracle References"
-
 tooling_paths:
   - Makefile
   - repo_support/quality_gates.py
@@ -504,6 +499,12 @@ vocabularies:
       - ready
       - partial
       - blocked
+    checkpoint_assertion_kind:
+      - position_quantity
+      - cash_amount
+      - basis_amount
+      - owner_state
+      - location_state
     journal_entry_status:
       - expanded
       - blocked
@@ -596,6 +597,11 @@ vocabularies:
       block_type: nested_list
       expected_values: []
     - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: checkpoint_assertion_kind
+      label: CheckpointAssertionRecord.kind
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
       vocabulary: journal_entry_status
       label: JournalEntryRecord.status
       block_type: nested_list
@@ -630,6 +636,12 @@ vocabularies:
       label: CheckpointProposalRecord.status
       block_type: nested_list
       expected_values: []
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: checkpoint_assertion_kind
+      label: CheckpointAssertionRecord.kind
+      block_type: nested_list
+      expected_values:
+        - position_quantity
     - path: docs/concepts/domain-ontology.md
       vocabulary: valuation_purpose
       label: ValuationPurpose
@@ -1079,86 +1091,6 @@ retired_aliases:
     paths:
       - docs/README.md
     allowed_paths: []
-
-matrix_specs:
-  - path: docs/concepts/bridge-to-target-mapping.md
-    required_columns:
-      - Current bridge surface
-      - Target authoritative product(s)
-      - Derived compatibility view
-      - Derived compatibility sidecar
-      - Current readers
-      - Target readers after cutover
-      - Cutover gate
-      - Retirement gate
-    allowed_shape_nouns:
-      - compatibility view
-      - compatibility sidecar
-      - none
-    required_rows:
-      - translation_input_candidates.json
-      - translation_input_plan.json
-      - EconomicActivityDraft
-      - SourceTranslationBatch
-      - TransactionFact and facts.csv
-      - balance_snapshots.csv
-      - balance_references.csv
-      - exceptions.csv and IssueRecord outputs
-      - normalization_reviews.csv and NormalizationReviewRecord outputs
-    required_nonempty_columns:
-      - Target authoritative product(s)
-      - Derived compatibility view
-      - Derived compatibility sidecar
-      - Current readers
-      - Target readers after cutover
-      - Cutover gate
-      - Retirement gate
-    current_reader_inventory:
-      - source normalize planner review and translation path
-      - source assemble bridge projection path
-      - operator review diagnostics
-      - reconciliation balances inspect
-      - reconciliation balances check
-      - reconciliation balances summarize
-      - cointracking_csv rendering path
-      - dev-only oracle comparison path
-    target_reader_placeholder_capabilities:
-      - reader
-      - readers
-      - consumer
-      - consumers
-      - capability
-      - capabilities
-      - target reader
-      - target readers
-      - future reader
-      - future readers
-      - future consumer
-      - future consumers
-      - future capability
-      - future capabilities
-      - application surface
-      - application surfaces
-      - package root
-      - package roots
-      - read model
-      - read models
-      - future read model
-      - future read models
-    banned_fragments:
-      - view or sidecar
-      - optional planner review view
-      - planning sidecar
-      - statement-facing compatibility sidecar
-      - recognized statement parse outputs and balance rows
-      - source translation boundary
-      - current bridge balance reducers
-      - current bridge balance-reference path
-      - bridge/output compatibility sidecars
-      - target products
-      - target product plus shared gap/review/readiness records
-      - issue compatibility view
-      - review compatibility view
 
 exceptions:
   - exception_id: locality.bridge_fields

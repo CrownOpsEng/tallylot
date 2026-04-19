@@ -791,6 +791,87 @@ def test_sync_check_rejects_retired_related_targets(
         docs_maintenance.cli._check_retired_references()
 
 
+def test_sync_check_rewrites_docs_home_reference_group_headings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    reference_root = docs_root / "reference"
+    reference_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    (tmp_path / ".claude" / "commands").mkdir(parents=True)
+
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            ### Current-State And Oracle References
+
+            - Wrong
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+            """
+        ),
+        encoding="utf-8",
+    )
+    (reference_root / "target.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Target"
+            summary: "Target reference."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            nav_order: 10
+            ---
+
+            ## Target
+            """
+        ),
+        encoding="utf-8",
+    )
+    for path in ("README.md", "AGENTS.md", "ROADMAP.md", "CHANGELOG.md"):
+        (tmp_path / path).write_text("# Root\n", encoding="utf-8")
+
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
+
+    assert docs_maintenance.main(["sync", "--check"]) == 1
+
+
 def test_validate_markdown_links_accepts_reference_style_links(tmp_path: Path) -> None:
     guide = tmp_path / "docs" / "guides" / "sample.md"
     guide.parent.mkdir(parents=True)

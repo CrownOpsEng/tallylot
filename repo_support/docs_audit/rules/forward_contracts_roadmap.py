@@ -1,11 +1,83 @@
 from __future__ import annotations
 
-from . import contract_lock_support as support
-from ._common import build_rule
+from repo_support.target_naming import target_naming_rule_ids
 
-CONTRACT_LOCK_ROADMAP_RULES = (
+from . import forward_contracts_support as support
+from ._common import build_rule
+from .forward_contracts_contracts import FORWARD_CONTRACTS_CONTRACT_RULES
+from .forward_contracts_matrix import FORWARD_CONTRACTS_MATRIX_RULES
+from .policy_alignment import POLICY_ALIGNMENT_RULES
+from .routes import ROUTE_RULES
+from .runtime import RUNTIME_RULES
+
+
+def _registered_proof_tokens() -> frozenset[str]:
+    return frozenset(
+        {
+            *(
+                f"docs-audit:{rule.rule_id}"
+                for rules in (
+                    ROUTE_RULES,
+                    RUNTIME_RULES,
+                    POLICY_ALIGNMENT_RULES,
+                    FORWARD_CONTRACTS_MATRIX_RULES,
+                    FORWARD_CONTRACTS_CONTRACT_RULES,
+                    FORWARD_CONTRACTS_ROADMAP_RULES,
+                )
+                for rule in rules
+            ),
+            *(f"target-naming:{rule_id}" for rule_id in target_naming_rule_ids()),
+        }
+    )
+
+
+def _validate_completion_gate_rows() -> None:
+    criteria = support.completion_gate_criteria()
+    rows = support.completion_gate_rows()
+    row_criteria = tuple(row[0] for row in rows)
+    if criteria != row_criteria:
+        raise AssertionError(
+            "completion-gate bullet list and completion-gate table rows must match exactly"
+        )
+    if len(set(row_criteria)) != len(row_criteria):
+        raise AssertionError("completion-gate rows must not duplicate exit criteria")
+
+    registered_tokens = _registered_proof_tokens()
+    for criterion, authority_cell, proof_cell in rows:
+        entries = support.authority_entries(authority_cell)
+        proofs = support.proof_tokens(proof_cell)
+        if len(set(proofs)) != len(proofs):
+            raise AssertionError(
+                f"completion-gate proof tokens must be unique within {criterion!r}"
+            )
+        for proof in proofs:
+            prefix, _, _rule_id = proof.partition(":")
+            if prefix not in support.ALLOWED_PROOF_TOKEN_PREFIXES:
+                raise AssertionError(
+                    f"completion-gate proof token uses unsupported prefix in {criterion!r}: {proof}"
+                )
+            if proof not in registered_tokens:
+                raise AssertionError(
+                    f"completion-gate proof token is not registered for {criterion!r}: {proof}"
+                )
+        for path, heading in entries:
+            if path not in support.OWNER_DOC_SET:
+                raise AssertionError(
+                    f"completion-gate authority must cite owner docs only for {criterion!r}: {path}"
+                )
+            occurrences = support.heading_occurrence_count(
+                support.text(support.repo_root() / path),
+                heading,
+            )
+            if occurrences != 1:
+                raise AssertionError(
+                    f"completion-gate authority heading must exist exactly once for {criterion!r}: {path} {heading}"
+                )
+
+
+FORWARD_CONTRACTS_ROADMAP_RULES = (
     build_rule(
-        "contract_lock.owner_contract_pages_are_exactly_listed_in_roadmap_gate",
+        "forward_contracts.owner_contract_pages_are_exactly_listed_in_completion_gate",
         "ROADMAP.md",
         lambda: (
             None
@@ -16,33 +88,30 @@ CONTRACT_LOCK_ROADMAP_RULES = (
             )
             == support.EXPECTED_OWNER_DOCS
             else (_ for _ in ()).throw(
-                AssertionError("owner docs listed in the Phase 0 gate drifted")
+                AssertionError("owner docs listed in the completion gate drifted")
             )
         ),
     ),
     build_rule(
-        "contract_lock.completion_gate_maps_exit_criteria_to_authoritative_docs_and_automated_proof",
+        "forward_contracts.completion_gate_maps_all_must_freeze_items",
         "ROADMAP.md",
-        lambda: (
-            None
-            if support.extract_plain_bullets(
-                support.text(support.repo_root() / "ROADMAP.md"),
-                "Exit criteria:",
-                "| Exit criterion | Authoritative doc section(s) | Automated proof |",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(
+                    f"Must freeze item is not mapped into the completion gate: {item}"
+                )
             )
-            == support.EXPECTED_EXIT_CRITERIA
-            and all(
-                ":" in proof and not proof.startswith("test_")
-                for _criterion, _sections, proof_cell in support.completion_gate_rows()
-                for proof in support.extract_backticked_tokens(proof_cell)
-            )
-            else (_ for _ in ()).throw(
-                AssertionError("Phase 0 completion gate rows or proof ids drifted")
-            )
-        ),
+            for item in support.must_freeze_items()
+            if item not in frozenset(support.completion_gate_criteria())
+        ],
     ),
     build_rule(
-        "contract_lock.owner_contract_pages_do_not_compete_for_the_same_authority",
+        "forward_contracts.completion_gate_uses_exact_owner_doc_authority_and_registered_proof_tokens",
+        "ROADMAP.md",
+        _validate_completion_gate_rows,
+    ),
+    build_rule(
+        "forward_contracts.owner_contract_pages_do_not_compete_for_the_same_authority",
         "docs/status/migration-sequence.md",
         lambda: [
             (_ for _ in ()).throw(AssertionError("owner contract routing text drifted"))
@@ -76,7 +145,7 @@ CONTRACT_LOCK_ROADMAP_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.early_stage_docs_do_not_claim_authority_over_later_bridge_outputs",
+        "forward_contracts.early_stage_docs_do_not_claim_authority_over_later_bridge_outputs",
         "ROADMAP.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -106,7 +175,7 @@ CONTRACT_LOCK_ROADMAP_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.event_link_scope_is_consistent_across_forward_contracts",
+        "forward_contracts.event_link_scope_is_consistent_across_forward_contracts",
         "docs/reference/first-downstream-slice-contract.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -132,7 +201,7 @@ CONTRACT_LOCK_ROADMAP_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.tax_outputs_contract_does_not_require_general_read_side_activation",
+        "forward_contracts.tax_outputs_contract_does_not_require_general_read_side_activation",
         "ROADMAP.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -161,11 +230,13 @@ CONTRACT_LOCK_ROADMAP_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.later_phase_docs_remain_explicitly_high_level",
+        "forward_contracts.post_filing_expansion_docs_remain_explicitly_high_level",
         "docs/status/migration-sequence.md",
         lambda: [
             (_ for _ in ()).throw(
-                AssertionError("later-phase docs are no longer explicitly high-level")
+                AssertionError(
+                    "post-filing expansion docs are no longer explicitly high-level"
+                )
             )
             for condition in (
                 "Phases 6 and later remain intentionally high-level in this round."

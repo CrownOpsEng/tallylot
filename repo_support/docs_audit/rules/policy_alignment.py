@@ -74,11 +74,11 @@ POLICY_ALIGNMENT_RULES = (
         ],
     ),
     build_rule(
-        "policy_alignment.forward_target_docs_encode_phase_10_default_read_model_activation",
+        "policy_alignment.forward_target_docs_encode_default_read_model_activation_point",
         "ROADMAP.md",
         lambda: [
             (_ for _ in ()).throw(
-                AssertionError("Phase 10 default activation wording is out of sync")
+                AssertionError("default read-model activation wording is out of sync")
             )
             for condition in (
                 "Phase 10" not in repo_text("ROADMAP.md"),
@@ -274,9 +274,9 @@ POLICY_ALIGNMENT_RULES = (
                 )
             )
             for needle in (
-                "bridge cutover matrix inventory and row order are catalog-governed",
-                "bridge cutover matrix owner, compatibility, reader, and gate cells are",
-                "bridge cutover current-reader cells must use canonical inventory labels",
+                "bridge cutover matrix inventory, owner, compatibility, reader, and gate",
+                "`docs/README.md` generated reference-group headings/order are",
+                "required `naming_scope` frontmatter/default behavior is",
                 "forward-target contract docs must stay free of transient planning language",
                 "treat the blocking `target-naming` review check as the repo-native guard",
             )

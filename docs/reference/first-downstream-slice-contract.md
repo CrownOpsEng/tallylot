@@ -244,6 +244,8 @@ Not allowed in this slice:
 
 This slice allows only:
 
+- `CheckpointAssertionRecord.kind`:
+  - `position_quantity`
 - `trust_level`:
   - `analysis_ready`
   - `filing_ready`

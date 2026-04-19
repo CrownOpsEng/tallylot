@@ -15,11 +15,13 @@ modularization, and naming.
 Document-check ownership is fixed:
 
 - `docs-maintenance` owns generated docs surfaces, metadata, links, and
-  docs-tree hygiene
+  docs-tree hygiene, including `docs/README.md` generated reference-group
+  headings/order plus required `naming_scope` frontmatter/default enforcement
 - `target-naming` owns naming, locality, vocabulary, title, summary, and
   identifier policy on enforced target surfaces
 - `docs-audit` owns semantic repo-state document parity and cross-surface
-  correctness that is not already owned by the other two tools
+  correctness that is not already owned by the other two tools, including
+  bridge cutover matrix semantics and forward-contract completion-gate proof
 
 **Current runtime note:** CoinTracking references in this standard describe
 current output-adapter or oracle-local edges, not canonical target naming.
@@ -896,12 +898,12 @@ Rules:
   parallel path lists
 - update every affected detailed contract page, bounded-slice reference,
   roadmap surface, and standards surface in the same patch
-- bridge cutover matrix inventory and row order are catalog-governed
-- bridge cutover matrix owner, compatibility, reader, and gate cells are
-  required
-- bridge cutover current-reader cells must use canonical inventory labels, and
-  target-reader cells must name a concrete capability plus authoritative
-  product
+- bridge cutover matrix inventory, owner, compatibility, reader, and gate
+  semantics are docs-audit-governed rather than target-naming-catalog-governed
+- `docs/README.md` generated reference-group headings/order are
+  docs-maintenance-owned structure, not target-naming rules
+- required `naming_scope` frontmatter/default behavior is
+  docs-maintenance-owned frontmatter validation, not target-naming drift
 - forward-target contract docs must stay free of transient planning language
 - keep frontmatter summaries and generated `docs/README.md` blurbs
   content-first; do not lead with page-role or authority-first labels that
@@ -912,6 +914,8 @@ Rules:
 - run `make naming-check` before landing a naming change, or run
   `python -m tools.target_naming check` only from the repo-managed external
   environment when you need the module form directly
+- treat the blocking `target-naming` review check as the repo-native guard for
+  naming-owned forward-target invariants
 - use `python -m tools.target_naming report --json` when a PR, script, or
   future dashboard needs machine-readable findings
 - treat the blocking `target-naming` review check as the repo-native guard

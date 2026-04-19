@@ -115,9 +115,13 @@ Live repo document enforcement stays in script-owned tools, not pytest:
 
 - use `docs-maintenance` for generated sections, metadata, links, and docs-tree
   hygiene
+  `docs-maintenance` also owns `docs/README.md` generated reference-group
+  headings/order plus required `naming_scope` frontmatter/default enforcement
 - use `target-naming` for naming, locality, vocabulary, and identifier rules
 - use `docs-audit` for semantic repo-state document parity and cross-surface
   correctness
+  `docs-audit` also owns forward-contract proof, owner-doc authority, and
+  bridge cutover matrix semantics
 - keep pytest coverage for docs tooling on synthetic strings or temp repos
   instead of the live repo Markdown tree or live control-plane prose
 

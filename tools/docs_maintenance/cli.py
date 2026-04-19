@@ -31,6 +31,11 @@ from .metadata import (
 from .state import agents_root, docs_root, relative_path, repo_root
 
 SYNCED_SECTIONS = ("concepts", "guides", "reference", "status", "standards")
+REFERENCE_GROUP_HEADINGS = (
+    "### Target References",
+    "### Current-State References",
+    "### Oracle References",
+)
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 RETIRED_REFERENCES = (
     "docs/file-map.md",
@@ -165,15 +170,15 @@ def render_reference_section(documents: list[Document]) -> str:
         if document.frontmatter.get("naming_scope") == "oracle_local"
     ]
     parts = [
-        "### Target References",
+        REFERENCE_GROUP_HEADINGS[0],
         "",
         render_section(target_documents),
         "",
-        "### Current-State References",
+        REFERENCE_GROUP_HEADINGS[1],
         "",
         render_section(current_state_documents),
         "",
-        "### Oracle References",
+        REFERENCE_GROUP_HEADINGS[2],
         "",
         render_section(oracle_documents),
     ]

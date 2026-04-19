@@ -65,10 +65,13 @@ Do not pre-load every repo doc by default.
 - Keep live repo document checks in script-owned verification surfaces, not in
   pytest:
   - `docs-maintenance` owns generated docs sections, metadata, links, and
-    docs-tree hygiene
+    docs-tree hygiene, including `docs/README.md` generated reference-group
+    headings/order and required `naming_scope` frontmatter/default enforcement
   - `target-naming` owns naming, locality, vocabulary, and identifier policy
+    on enforced target surfaces
   - `docs-audit` owns semantic repo-state document parity and cross-surface
-    correctness
+    correctness, including forward-contract proof, owner-doc authority, and
+    bridge cutover matrix semantics
 - Keep pytest coverage for docs tooling on synthetic strings or temp repos, not
   on the live repo Markdown tree or live control-plane prose.
 - Keep tracked docs, templates, and control-plane text neutral and durable.

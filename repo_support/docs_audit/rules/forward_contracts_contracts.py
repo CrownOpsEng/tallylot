@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from . import contract_lock_support as support
+from . import forward_contracts_support as support
 from ._common import build_rule
 
-CONTRACT_LOCK_CONTRACT_RULES = (
+FORWARD_CONTRACTS_CONTRACT_RULES = (
     build_rule(
-        "contract_lock.forward_contracts_do_not_reference_undefined_record_families_or_refs",
+        "forward_contracts.do_not_reference_undefined_record_families_or_refs",
         "docs/concepts/pipeline-stage-contracts.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -29,7 +29,85 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.critical_path_observation_field_tables_are_unique_and_complete",
+        "forward_contracts.evidence_set_contract_and_fingerprint_rules_are_defined",
+        "docs/concepts/pipeline-stage-contracts.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(
+                    "EvidenceSet contract or selection fingerprint rules drifted"
+                )
+            )
+            for needle in (
+                "## `EvidenceSet`",
+                "`selection_fingerprint`",
+                "`EvidenceSelectionRecord`",
+                "`EvidenceMemberRecord`",
+                "`EvidenceObservationRecord`",
+                "the authoritative selection state intentionally produces a new",
+            )
+            if needle
+            not in (
+                support.text(support.docs_path("concepts/pipeline-stage-contracts.md"))
+                + "\n"
+                + support.text(
+                    support.docs_path("reference/first-upstream-slice-contract.md")
+                )
+            )
+        ],
+    ),
+    build_rule(
+        "forward_contracts.evidence_assertion_and_ref_contracts_are_defined",
+        "docs/concepts/domain-ontology.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError("AssertionValue or canonical ref seams drifted")
+            )
+            for needle in (
+                "## `AssertionValue`",
+                "## Identity And Ref Seams",
+                "### Canonical Ref Shapes",
+                "### `ContractRef` Versus `PositionRef`",
+                "`ContractRef`",
+                "`PositionRef`",
+                "assertion ids and fingerprints must treat the value variant and its canonical",
+            )
+            if needle
+            not in (
+                support.text(support.docs_path("concepts/domain-ontology.md"))
+                + "\n"
+                + support.text(
+                    support.docs_path("reference/first-downstream-slice-contract.md")
+                )
+            )
+        ],
+    ),
+    build_rule(
+        "forward_contracts.claim_set_scope_bundle_decision_and_compatibility_boundary_are_defined",
+        "docs/concepts/pipeline-stage-contracts.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(
+                    "ClaimSet scope, bundle, decision, or compatibility boundary drifted"
+                )
+            )
+            for needle in (
+                "## `ClaimSet`",
+                "`ClaimBundleRecord`",
+                "`ClaimBundleDecisionRecord`",
+                "`observation_refs`",
+                "`ClaimBundleDecisionRecord.basis` is a pure reason axis.",
+                "### Derived Compatibility Sidecars",
+                "these bridge-only fields must live only in derived compatibility sidecars",
+                "review markers map to shared gap/review records and sidecars",
+            )
+            if needle
+            not in support.text(
+                support.docs_path("concepts/pipeline-stage-contracts.md")
+            )
+        ],
+    ),
+    build_rule(
+        "forward_contracts.critical_path_observation_field_tables_are_unique_and_complete",
         "docs/reference/first-upstream-slice-contract.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -59,7 +137,7 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.critical_path_claim_field_tables_are_unique_and_complete",
+        "forward_contracts.critical_path_claim_field_tables_are_unique_and_complete",
         "docs/reference/first-upstream-slice-contract.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -90,7 +168,7 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.noncritical_observation_and_claim_work_is_explicitly_deferred",
+        "forward_contracts.noncritical_observation_and_claim_work_is_explicitly_deferred",
         "docs/concepts/pipeline-stage-contracts.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -116,7 +194,7 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.reconciliation_and_checkpoint_hot_path_fields_use_direct_values",
+        "forward_contracts.reconciliation_and_checkpoint_hot_path_fields_use_direct_values",
         "docs/reference/first-downstream-slice-contract.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -142,7 +220,7 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.gap_and_review_attachment_rules_use_truthful_scopes",
+        "forward_contracts.gap_and_review_attachment_rules_use_truthful_scopes",
         "docs/concepts/gaps-and-reviews.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -170,7 +248,30 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.forward_contracts_keep_placement_mechanical",
+        "forward_contracts.gap_review_records_sidecars_and_subject_refs_are_defined",
+        "docs/concepts/gaps-and-reviews.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(
+                    "gap/review record, sidecar, or SubjectRef contracts drifted"
+                )
+            )
+            for needle in (
+                "## `SubjectRef`",
+                "## Non-Subject Scope Ids",
+                "### `GapRecord`",
+                "### `GapExplanation`",
+                "### `ReviewRecord`",
+                "### `ReviewExplanation`",
+                "## Readiness Locality",
+                "## Sidecar Taxonomy",
+            )
+            if needle
+            not in support.text(support.docs_path("concepts/gaps-and-reviews.md"))
+        ],
+    ),
+    build_rule(
+        "forward_contracts.keep_placement_mechanical",
         "docs/concepts/domain-ontology.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -197,7 +298,7 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.product_headers_use_product_ids_not_kernel_scope_id",
+        "forward_contracts.product_headers_use_product_ids_not_kernel_scope_id",
         "docs/concepts/pipeline-stage-contracts.md",
         lambda: [
             (_ for _ in ()).throw(AssertionError("product header ref rules drifted"))
@@ -221,7 +322,7 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.downstream_identity_recipes_do_not_embed_bridge_nouns",
+        "forward_contracts.downstream_identity_recipes_do_not_embed_bridge_nouns",
         "docs/reference/first-upstream-slice-contract.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -245,7 +346,7 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.slice_contracts_freeze_ids_values_and_reader_cutovers",
+        "forward_contracts.slice_contracts_freeze_ids_values_and_reader_cutovers",
         "docs/reference/first-upstream-slice-contract.md",
         lambda: [
             (_ for _ in ()).throw(
@@ -297,7 +398,32 @@ CONTRACT_LOCK_CONTRACT_RULES = (
         ],
     ),
     build_rule(
-        "contract_lock.forward_target_contracts_keep_source_specific_crypto_nouns_out_of_canonical_fields",
+        "forward_contracts.persistence_model_partition_scopes_and_filesystem_layout_are_defined",
+        "docs/concepts/reconciliation-tax-architecture.md",
+        lambda: [
+            (_ for _ in ()).throw(
+                AssertionError(
+                    "authoritative persistence model or filesystem placement drifted"
+                )
+            )
+            for needle in (
+                "## Authoritative Persistence Model",
+                "### Default Partition Scopes",
+                "### Default Filesystem Placement",
+                "product sidecars persist separately from kernels",
+                "target basenames use the owning product or sidecar family directly",
+                "working/products/evidence_sets/<evidence_set_id>/evidence_set.json",
+                "assessment/gap/gap_records.json",
+                "assessment/review/review_records.json",
+            )
+            if needle
+            not in support.text(
+                support.docs_path("concepts/reconciliation-tax-architecture.md")
+            )
+        ],
+    ),
+    build_rule(
+        "forward_contracts.keep_source_specific_crypto_nouns_out_of_canonical_fields",
         "docs/concepts/domain-ontology.md",
         lambda: [
             (_ for _ in ()).throw(

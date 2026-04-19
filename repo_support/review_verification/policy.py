@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Literal
 
+from repo_support.docs_audit import is_docs_audit_substrate_path
 from repo_support.target_naming import is_target_naming_sensitive_path
 
 from .catalog import (
@@ -80,21 +81,6 @@ STANDARDS_GUARD_PREFIXES = (
     "docs/standards/",
     ".claude/commands/",
     "tools/docs_maintenance/",
-)
-DOCS_AUDIT_EXACT_PATHS = {
-    "src/tallylot/infrastructure/workspace/layout.py",
-    "src/tallylot/domain/captures/provenance.py",
-    "src/tallylot/ports/source_profiles.py",
-    "src/tallylot/domain/transactions/classification.py",
-    ".pylintrc",
-    ".pylintrc-tests",
-    "tools/message_standards.py",
-    "tools/validate_commit_message.py",
-    "tools/validate_pr_metadata.py",
-}
-DOCS_AUDIT_PREFIXES = (
-    "src/tallylot/interfaces/cli/",
-    "tools/oracles/",
 )
 DELIVERY_GUARDRAILS_AUDIT_PATHS = {
     ".github/CODEOWNERS",
@@ -180,10 +166,6 @@ def _is_docs_audit_markdown_path(path: str) -> bool:
     )
 
 
-def _is_docs_audit_substrate_path(path: str) -> bool:
-    return path in DOCS_AUDIT_EXACT_PATHS or path.startswith(DOCS_AUDIT_PREFIXES)
-
-
 def _targets_delivery_guardrails_audit(path: str) -> bool:
     return (
         path.startswith(".github/workflows/") or path in DELIVERY_GUARDRAILS_AUDIT_PATHS
@@ -241,7 +223,7 @@ def _path_targeted_check_ids(path: str) -> tuple[str, ...]:
     targeted.extend(_collect_exact_path_checks(path))
     if is_target_naming_sensitive_path(path):
         targeted.append("target-naming")
-    if _is_docs_audit_substrate_path(path):
+    if is_docs_audit_substrate_path(path):
         targeted.append("docs-audit")
     if _targets_ci_tooling(path):
         targeted.append("ci-tooling")

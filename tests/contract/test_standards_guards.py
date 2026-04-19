@@ -411,7 +411,7 @@ def test_oracle_code_is_not_in_production_package() -> None:
         assert "verification compare" not in text
 
 
-def test_future_capability_roots_remain_available_for_next_phase() -> None:
+def test_capability_roots_remain_reserved_for_documented_expansion() -> None:
     src_root = repo_root() / "src" / "tallylot"
 
     required_packages = (
@@ -436,7 +436,7 @@ def test_future_capability_roots_remain_available_for_next_phase() -> None:
     )
 
     for package in required_packages:
-        assert package.is_dir(), f"missing future capability package root: {package}"
+        assert package.is_dir(), f"missing reserved capability package root: {package}"
         assert (package / "__init__.py").exists(), (
             f"missing package marker for {package}"
         )

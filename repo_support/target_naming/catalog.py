@@ -146,7 +146,7 @@ class TargetNamingCatalog:
     matrix_specs: tuple[MatrixSpec, ...]
     exceptions: tuple[ExceptionRule, ...]
     required_markers: tuple[MarkerLabel, ...]
-    reference_group_headings: tuple[str, ...] = ()
+    reference_group_headings: tuple[str, ...]
 
     @property
     def canonical_token_set(self) -> frozenset[str]:
@@ -229,6 +229,16 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
     canonical_families_loaded = _mapping_value(loaded, "canonical_families")
     canonical_tokens_loaded = _mapping_value(loaded, "canonical_tokens")
     vocabularies_loaded = _mapping_value(loaded, "vocabularies")
+    matrix_specs_loaded = (
+        _mapping_sequence_value(loaded, "matrix_specs")
+        if "matrix_specs" in loaded
+        else ()
+    )
+    reference_group_headings_loaded = (
+        _sequence_value(loaded, "reference_group_headings")
+        if "reference_group_headings" in loaded
+        else ()
+    )
     return TargetNamingCatalog(
         version=_int_value(loaded, "version"),
         root_file_scopes={
@@ -305,7 +315,7 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
                     _sequence_value(item, "target_reader_placeholder_capabilities")
                 ),
             )
-            for item in _mapping_sequence_value(loaded, "matrix_specs")
+            for item in matrix_specs_loaded
         ),
         exceptions=tuple(
             ExceptionRule(
@@ -331,9 +341,7 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
             cast(MarkerLabel, value)
             for value in _string_tuple(_sequence_value(loaded, "required_markers"))
         ),
-        reference_group_headings=_string_tuple(
-            _sequence_value(loaded, "reference_group_headings")
-        ),
+        reference_group_headings=_string_tuple(reference_group_headings_loaded),
     )
 
 
