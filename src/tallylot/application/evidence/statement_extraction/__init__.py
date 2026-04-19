@@ -2,11 +2,17 @@
 
 from tallylot.ports.evidence import StatementBalanceReferenceBatch
 
-from .models import PdfBalanceRows
+from .models import (
+    CollectedStatementDocument,
+    PdfBalanceRows,
+    StatementDocumentCollectionResult,
+)
 from .service import StatementExtractionService
 
 __all__ = [
+    "CollectedStatementDocument",
     "PdfBalanceRows",
     "StatementBalanceReferenceBatch",
+    "StatementDocumentCollectionResult",
     "StatementExtractionService",
 ]

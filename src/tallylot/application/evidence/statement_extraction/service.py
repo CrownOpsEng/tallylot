@@ -20,9 +20,10 @@ from .hooks import (
     supports_statement_document_evidence,
     supports_statement_document_parser,
 )
-from .models import PdfBalanceRows
+from .collection import collect_source_statement_documents_from_inventory
+from .models import PdfBalanceRows, StatementDocumentCollectionResult
 from .rows import statement_row_to_pdf_balance_row
-from .source_evidence import extract_source_balance_references_from_inventory
+from .source_evidence import extract_source_balance_references_from_collection
 
 
 class StatementExtractionService:
@@ -54,6 +55,7 @@ class StatementExtractionService:
         profile: SourceProfile,
         raw_dir: Path,
     ) -> StatementBalanceReferenceBatch:
+        collection = self.collect_source_statement_documents(profile, raw_dir)
         adapter = self._registry.source_adapter(str(profile.adapter_id))
         if not supports_statement_document_evidence(adapter):
             return StatementBalanceReferenceBatch(
@@ -62,11 +64,48 @@ class StatementExtractionService:
                 issues=(),
                 reviews=(),
             )
-        return extract_source_balance_references_from_inventory(
+        return extract_source_balance_references_from_collection(
+            cast(StatementDocumentEvidenceAdapter, adapter),
+            profile,
+            collection,
+        )
+
+    def collect_source_statement_documents(
+        self,
+        profile: SourceProfile,
+        raw_dir: Path,
+    ) -> StatementDocumentCollectionResult:
+        adapter = self._registry.source_adapter(str(profile.adapter_id))
+        if not supports_statement_document_evidence(adapter):
+            return StatementDocumentCollectionResult(
+                collected_documents=(),
+                issues=(),
+                reviews=(),
+            )
+        return collect_source_statement_documents_from_inventory(
             cast(StatementDocumentEvidenceAdapter, adapter),
             profile,
             raw_dir,
             extract_pdf_text=_extract_pdf_text,
+        )
+
+    def extract_balance_references_from_collection(
+        self,
+        profile: SourceProfile,
+        collection: StatementDocumentCollectionResult,
+    ) -> StatementBalanceReferenceBatch:
+        adapter = self._registry.source_adapter(str(profile.adapter_id))
+        if not supports_statement_document_evidence(adapter):
+            return StatementBalanceReferenceBatch(
+                balance_references=(),
+                reference_issues=(),
+                issues=collection.issues,
+                reviews=collection.reviews,
+            )
+        return extract_source_balance_references_from_collection(
+            cast(StatementDocumentEvidenceAdapter, adapter),
+            profile,
+            collection,
         )
 
 
