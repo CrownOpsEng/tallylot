@@ -22,7 +22,7 @@ BlockKind = Literal[
     "fence",
 ]
 MarkerLabel = Literal[
-    "Slice-only example",
+    "Contract-local example",
     "Compatibility-only locality",
     "Current runtime note",
     "Anti-example",

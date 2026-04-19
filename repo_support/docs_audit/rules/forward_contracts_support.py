@@ -12,22 +12,20 @@ from ..helpers import (
     extract_code_bullets,
     extract_labeled_code_bullets,
     extract_markdown_table,
-    extract_plain_bullets,
     normalized,
     section,
     split_matrix_clauses,
 )
 
 OWNER_DOCS = (
-    repo_root() / "ROADMAP.md",
     docs_path("status/migration-sequence.md"),
     docs_path("concepts/bridge-to-target-mapping.md"),
     docs_path("concepts/pipeline-stage-contracts.md"),
     docs_path("concepts/domain-ontology.md"),
     docs_path("concepts/gaps-and-reviews.md"),
     docs_path("concepts/reconciliation-tax-architecture.md"),
-    docs_path("reference/first-upstream-slice-contract.md"),
-    docs_path("reference/first-downstream-slice-contract.md"),
+    docs_path("reference/evidence-claim-contract.md"),
+    docs_path("reference/economics-reconciliation-checkpoint-contract.md"),
 )
 EXPECTED_OWNER_DOCS = tuple(
     path.relative_to(repo_root()).as_posix() for path in OWNER_DOCS
@@ -110,12 +108,6 @@ BRIDGE_MATRIX_BANNED_FRAGMENTS = frozenset(
         "review compatibility view",
     }
 )
-COMPLETION_GATE_TABLE_HEADER = (
-    "Exit criterion",
-    "Authoritative doc section(s)",
-    "Automated proof",
-)
-ALLOWED_PROOF_TOKEN_PREFIXES = frozenset({"docs-audit", "target-naming"})
 
 DEFINED_TARGET_RECORD_FAMILIES = frozenset(
     {
@@ -172,33 +164,6 @@ TOKEN_PATTERN = re.compile(r"(?P<fence>`+)(?P<token>.*?)(?P=fence)")
 
 def text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
-
-
-def must_freeze_items() -> tuple[str, ...]:
-    return extract_plain_bullets(
-        text(repo_root() / "ROADMAP.md"),
-        "Must freeze:",
-        "Deliver:",
-    )
-
-
-def completion_gate_criteria() -> tuple[str, ...]:
-    return extract_plain_bullets(
-        text(repo_root() / "ROADMAP.md"),
-        "Exit criteria:",
-        "| Exit criterion | Authoritative doc section(s) | Automated proof |",
-    )
-
-
-def completion_gate_rows() -> tuple[tuple[str, str, str], ...]:
-    header, rows = extract_markdown_table(
-        text(repo_root() / "ROADMAP.md"), "| Exit criterion |"
-    )
-    if header != COMPLETION_GATE_TABLE_HEADER:
-        raise AssertionError("completion gate table header drifted")
-    return tuple(
-        (exit_criterion, sections, proofs) for exit_criterion, sections, proofs in rows
-    )
 
 
 def bridge_matrix_rows() -> tuple[dict[str, str], ...]:
@@ -316,13 +281,11 @@ def reader_inventory_checks() -> tuple[bool, bool]:
 
 __all__ = [
     "ALLOWED_CURRENT_STATE_RECORD_NAMES",
-    "ALLOWED_PROOF_TOKEN_PREFIXES",
     "BRIDGE_MATRIX_ALLOWED_SHAPES",
     "BRIDGE_MATRIX_BANNED_FRAGMENTS",
     "BRIDGE_MATRIX_HEADER",
     "BRIDGE_MATRIX_REQUIRED_NONEMPTY_COLUMNS",
     "BRIDGE_MATRIX_TARGET_READER_PLACEHOLDER_CAPABILITIES",
-    "COMPLETION_GATE_TABLE_HEADER",
     "DEFINED_TARGET_RECORD_FAMILIES",
     "DEFINED_TARGET_REF_TYPES",
     "EXPECTED_MATRIX_ROWS",
@@ -333,15 +296,11 @@ __all__ = [
     "authority_entries",
     "bridge_matrix_rows",
     "canonical_text_value",
-    "completion_gate_criteria",
-    "completion_gate_rows",
     "docs_path",
     "extract_backticked_tokens",
     "extract_code_bullets",
     "extract_labeled_code_bullets",
-    "extract_plain_bullets",
     "heading_occurrence_count",
-    "must_freeze_items",
     "normalized",
     "placeholder_text",
     "proof_tokens",

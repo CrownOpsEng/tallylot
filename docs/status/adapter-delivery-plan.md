@@ -1,6 +1,6 @@
 ---
 title: "Adapter Delivery Plan"
-summary: "Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and the first upstream slice and first downstream slice are stable."
+summary: "Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the Evidence And Claim Contract and the Economics Reconciliation Checkpoint Contract are stable."
 doc_type: status
 audience: human
 owner: repo
@@ -24,10 +24,11 @@ filing-critical window or in the later unified-adapter redesign.
 The repo uses a filing-first adapter strategy:
 
 - harden the current adapter path where it directly reduces filing risk
-- defer the broad unified adapter redesign until the filing path and the first
-  upstream slice and first downstream slice are stable
-- allow only the adapter prep work that the contract-lock pass and the first
-  upstream slice and first downstream slice actually need
+- defer the broad unified adapter redesign until the filing path and the
+  Evidence And Claim Contract and the Economics Reconciliation Checkpoint
+  Contract are stable
+- allow only the adapter prep work that the contract-lock pass and those
+  contract pages actually need
 
 ## Work Tracks
 
@@ -51,20 +52,20 @@ Not allowed now:
 
 ### `prep`
 
-Narrow work that Phase 0 and the first upstream slice and first downstream
-slice need before broad
-adapter redesign begins.
+Narrow work that the contract-lock reset and the Evidence And Claim Contract
+plus the Economics Reconciliation Checkpoint Contract need before broad adapter
+redesign begins.
 
 Allowed prep:
 
-- bridge-to-target mapping needed for the first upstream slice
+- bridge-to-target mapping needed for the evidence/claim contract
 - adapter participation in `EvidenceSet` and `ClaimSet` emission
-- shared determinism and verification helpers that remove drift in the first
-  upstream slice
+- shared determinism and verification helpers that remove drift in the
+  evidence/claim contract
 
 Required prep rule:
 
-- adapter work for the first upstream slice must emit target products
+- adapter work for the evidence/claim contract must emit target products
   through the target contract pages, not adapter-local alternate schemas
 - retained legacy hints needed for current drafts or facts may survive only in
   declared compatibility sidecars, not in `EvidenceSet` or
@@ -73,8 +74,7 @@ Required prep rule:
 ### `roadmap`
 
 Broader unified-manifest and multi-facet migration after the filing path is
-stable and the first upstream slice and first downstream slice have proven the
-contract set.
+stable and those contract pages have proven the contract set.
 
 ## Priority Tiers
 
@@ -93,8 +93,9 @@ in-repo guesswork.
 - prefer shared adapter-foundation extraction over adapter-local workflow drift
 - prefer explicit issues and reviews over guesswork
 - do not widen the current source adapter contract during the filing window
-- do not make the unified adapter redesign a hidden prerequisite for the first
-  upstream slice and first downstream slice
+- do not make the unified adapter redesign a hidden prerequisite for the
+  Evidence And Claim Contract or the Economics Reconciliation Checkpoint
+  Contract
 
 ## Filing-Critical Work To Do Now
 
@@ -120,8 +121,8 @@ Exit criteria for the filing window:
 
 ## Shared-Foundation Prep
 
-Prep work is allowed only when it materially reduces drift in the first
-upstream slice.
+Prep work is allowed only when it materially reduces drift in the evidence/claim
+contract.
 
 Examples:
 
@@ -136,8 +137,7 @@ Prep work must not:
 
 - create a second architecture center in adapter docs
 - redefine target product kernels locally
-- force repo-wide adapter migration before the first upstream slice and first
-  downstream slice land
+- force repo-wide adapter migration before those contract pages land
 
 ## Deferred Redesign
 
@@ -145,7 +145,8 @@ The broader unified adapter redesign stays deferred until:
 
 - the filing path is stable enough to trust
 - the contract-lock pages are frozen
-- the first upstream and first downstream slices have landed cleanly
+- the Evidence And Claim Contract and the Economics Reconciliation Checkpoint
+  Contract have landed cleanly
 
 At that point, use
 [Unified Adapter Architecture](../concepts/unified-adapter-architecture.md) as

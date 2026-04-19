@@ -216,8 +216,8 @@ RUNTIME_RULES = (
         ],
     ),
     build_rule(
-        "runtime.first_upstream_slice_contract_pins_all_retained_compatibility_surfaces",
-        "docs/reference/first-upstream-slice-contract.md",
+        "runtime.evidence_claim_contract_pins_all_retained_compatibility_surfaces",
+        "docs/reference/evidence-claim-contract.md",
         lambda: [
             (_ for _ in ()).throw(
                 AssertionError(f"missing upstream compatibility needle {needle!r}")
@@ -229,12 +229,12 @@ RUNTIME_RULES = (
                 "Retained compatibility views are part of the slice parity bar.",
                 "legacy readers remain active.",
             )
-            if needle not in docs_text("reference/first-upstream-slice-contract.md")
+            if needle not in docs_text("reference/evidence-claim-contract.md")
         ],
     ),
     build_rule(
-        "runtime.first_downstream_slice_contract_pins_fact_csv_projection_parity",
-        "docs/reference/first-downstream-slice-contract.md",
+        "runtime.economics_reconciliation_checkpoint_contract_pins_fact_csv_projection_parity",
+        "docs/reference/economics-reconciliation-checkpoint-contract.md",
         lambda: [
             (_ for _ in ()).throw(
                 AssertionError(f"missing downstream compatibility needle {needle!r}")
@@ -245,7 +245,10 @@ RUNTIME_RULES = (
                 "Retained compatibility views are part of the slice parity bar.",
                 "legacy readers remain active.",
             )
-            if needle not in docs_text("reference/first-downstream-slice-contract.md")
+            if needle
+            not in docs_text(
+                "reference/economics-reconciliation-checkpoint-contract.md"
+            )
         ],
     ),
     build_rule(

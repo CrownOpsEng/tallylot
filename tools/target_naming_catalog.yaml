@@ -1,7 +1,7 @@
 version: 2
 
 root_file_scopes:
-  ROADMAP.md: forward_target
+  ROADMAP.md: repo_policy
   AGENTS.md: repo_policy
   CHANGELOG.md: repo_policy
 
@@ -38,8 +38,8 @@ title_expectations:
   docs/concepts/pipeline-stage-contracts.md: Pipeline Stage Contracts
   docs/concepts/reconciliation-tax-architecture.md: Reconciliation, Checkpoint, Journal, And Tax Architecture
   docs/concepts/unified-adapter-architecture.md: Unified Adapter Architecture
-  docs/reference/first-downstream-slice-contract.md: First Downstream Slice Contract
-  docs/reference/first-upstream-slice-contract.md: First Upstream Slice Contract
+  docs/reference/economics-reconciliation-checkpoint-contract.md: Economics Reconciliation Checkpoint Contract
+  docs/reference/evidence-claim-contract.md: Evidence And Claim Contract
   docs/reference/target-ids-and-refs.md: Target Ids And Refs
   docs/reference/target-persistence-reference.md: Target Persistence Reference
   docs/status/adapter-delivery-plan.md: Adapter Delivery Plan
@@ -199,11 +199,15 @@ canonical_families:
     - application/evidence/
     - application/intake/
     - application/journal/
+    - application/investigation/
     - application/normalization/
+    - application/portfolio/
     - application/profiling/
     - application/reconciliation/
+    - application/reporting/
     - application/rendering/
     - application/tax/
+    - application/visualization/
     - application/workspace/
     - domain/assessment/
     - domain/assertion/
@@ -447,7 +451,7 @@ identifier_context_rules:
     mode: local_short
     canonical_ids:
       - entry_check_id
-  - path: docs/reference/first-downstream-slice-contract.md
+  - path: docs/reference/economics-reconciliation-checkpoint-contract.md
     section_path:
       - Id And Fingerprint Rules
     region_label: Slice-specific rules
@@ -556,20 +560,20 @@ vocabularies:
       label: continuity_kind
       block_type: nested_list
       expected_values: []
-    - path: docs/reference/first-downstream-slice-contract.md
+    - path: docs/reference/economics-reconciliation-checkpoint-contract.md
       vocabulary: basis
       label: basis
       block_type: nested_list
       expected_values:
         - document_support
         - reconciled_continuity
-    - path: docs/reference/first-downstream-slice-contract.md
+    - path: docs/reference/economics-reconciliation-checkpoint-contract.md
       vocabulary: support_shape
       label: support_shape
       block_type: nested_list
       expected_values:
         - document_observation
-    - path: docs/reference/first-downstream-slice-contract.md
+    - path: docs/reference/economics-reconciliation-checkpoint-contract.md
       vocabulary: continuity_kind
       label: continuity_kind
       block_type: nested_list
@@ -616,27 +620,27 @@ vocabularies:
       label: TaxOutputRecord.status
       block_type: nested_list
       expected_values: []
-    - path: docs/reference/first-downstream-slice-contract.md
+    - path: docs/reference/economics-reconciliation-checkpoint-contract.md
       vocabulary: continuity_segment_status
       label: ContinuitySegmentRecord.status
       block_type: nested_list
       expected_values: []
-    - path: docs/reference/first-downstream-slice-contract.md
+    - path: docs/reference/economics-reconciliation-checkpoint-contract.md
       vocabulary: balance_target_observation_status
       label: BalanceTargetRecord.observation_status
       block_type: nested_list
       expected_values: []
-    - path: docs/reference/first-downstream-slice-contract.md
+    - path: docs/reference/economics-reconciliation-checkpoint-contract.md
       vocabulary: balance_target_comparison_outcome
       label: BalanceTargetRecord.comparison_outcome
       block_type: nested_list
       expected_values: []
-    - path: docs/reference/first-downstream-slice-contract.md
+    - path: docs/reference/economics-reconciliation-checkpoint-contract.md
       vocabulary: checkpoint_proposal_status
       label: CheckpointProposalRecord.status
       block_type: nested_list
       expected_values: []
-    - path: docs/reference/first-downstream-slice-contract.md
+    - path: docs/reference/economics-reconciliation-checkpoint-contract.md
       vocabulary: checkpoint_assertion_kind
       label: CheckpointAssertionRecord.kind
       block_type: nested_list
@@ -958,7 +962,7 @@ retired_aliases:
     allowed_scopes: [forward_target, repo_policy]
     paths:
       - docs/concepts/pipeline-stage-contracts.md
-      - docs/reference/first-downstream-slice-contract.md
+      - docs/reference/economics-reconciliation-checkpoint-contract.md
     allowed_paths: []
   - rule_id: vocab.axis.valuation_purpose
     term: market_reference
@@ -976,7 +980,7 @@ retired_aliases:
     allowed_scopes: [forward_target, repo_policy]
     paths:
       - docs/concepts/pipeline-stage-contracts.md
-      - docs/reference/first-downstream-slice-contract.md
+      - docs/reference/economics-reconciliation-checkpoint-contract.md
     allowed_paths: []
   - rule_id: body.subject_ref_slot
     term: subject_id
@@ -1097,7 +1101,7 @@ exceptions:
     allowed_scopes: [forward_target, repo_policy]
     allowed_paths:
       - docs/concepts/pipeline-stage-contracts.md
-      - docs/reference/first-upstream-slice-contract.md
+      - docs/reference/evidence-claim-contract.md
       - docs/reference/target-ids-and-refs.md
       - docs/concepts/bridge-to-target-mapping.md
       - docs/standards/engineering.md
@@ -1117,13 +1121,13 @@ exceptions:
   - exception_id: example.provider_slice_terms
     allowed_scopes: [forward_target]
     allowed_paths:
-      - docs/reference/first-upstream-slice-contract.md
-      - docs/reference/first-downstream-slice-contract.md
+      - docs/reference/evidence-claim-contract.md
+      - docs/reference/economics-reconciliation-checkpoint-contract.md
     allowed_section_labels: []
     allowed_terms:
       - Coinbase
       - custodial
-    required_marker: Slice-only example
+    required_marker: Contract-local example
     required_rationale: true
     notes: Provider and custody terms are slice-bounded examples only.
   - exception_id: locality.current_runtime_cointracking
@@ -1177,7 +1181,7 @@ exceptions:
       - docs/README.md
       - docs/concepts/domain-ontology.md
       - docs/concepts/oracle-boundaries.md
-      - docs/reference/first-upstream-slice-contract.md
+      - docs/reference/evidence-claim-contract.md
     allowed_section_labels: []
     allowed_terms:
       - wallet
@@ -1205,7 +1209,7 @@ exceptions:
     notes: Bridge-only diagnostic records and retained files must stay fenced as compatibility-local surfaces.
 
 required_markers:
-  - Slice-only example
+  - Contract-local example
   - Compatibility-only locality
   - Current runtime note
   - Anti-example

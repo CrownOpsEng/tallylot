@@ -33,13 +33,11 @@ The primary contract pages freeze product ids, product headers, critical-path
 kernel field tables, and the compatibility sidecar boundary for retained legacy
 hint fields.
 
-Broader consumer-facing grouped or query surfaces remain intentionally deferred
-until the trigger ladder in [ROADMAP.md](../../ROADMAP.md) fires. Through the
-tax-first phases, grouped outputs may remain only as tax-output-local derived
-content, narrow rendering-derived content, or compatibility-local derived
-output rather than as a shared application center.
-If no earlier trigger fires, the default activation point for broader
-capability-owned derived read models and projections is `Phase 10`.
+Broader consumer-facing grouped or query surfaces remain intentionally
+deferred. Through the tax-first path, grouped outputs may remain only as
+tax-output-local derived content, narrow rendering-derived content, or
+compatibility-local derived output rather than as a shared application center.
+broader derived read models and projections stay deferred until a later capability-specific increment makes them necessary.
 
 Gap and review remain shared contracts plus persisted shared-assessment
 families. Readiness stays capability-owned derived behavior rather than shared
@@ -71,9 +69,9 @@ These pages define the primary current-state and forward-looking contracts:
 | [Domain Ontology](domain-ontology.md) | identity seams, ref recipes, and package ownership |
 | [Gap, Review, And Shared Attachment](gaps-and-reviews.md) | gap, review, `SubjectRef`, and shared attachment contracts plus readiness locality rules |
 | [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) | reconciliation, checkpoint, journal, and tax trust gates plus persistence, partitioning, and fast-path rules |
-| [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md) | first upstream `EvidenceSet -> ClaimSet` slice |
-| [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md) | first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice |
-| [ROADMAP.md](../../ROADMAP.md) | sequencing, gating, and rollout phases |
+| [Evidence And Claim Contract](../reference/evidence-claim-contract.md) | current bounded `EvidenceSet -> ClaimSet` contract scope |
+| [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md) | current bounded `EconomicFacts -> ReconciliationState -> Checkpoint` contract scope |
+| [ROADMAP.md](../../ROADMAP.md) | planning-only sequencing and later rollout detail |
 | [Current State](../status/current-state.md) | implemented runtime truth and live package layout |
 
 Supporting id, ref, persistence, and workspace references remain under

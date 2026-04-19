@@ -50,7 +50,7 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                 support.text(support.docs_path("concepts/pipeline-stage-contracts.md"))
                 + "\n"
                 + support.text(
-                    support.docs_path("reference/first-upstream-slice-contract.md")
+                    support.docs_path("reference/evidence-claim-contract.md")
                 )
             )
         ],
@@ -76,7 +76,9 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                 support.text(support.docs_path("concepts/domain-ontology.md"))
                 + "\n"
                 + support.text(
-                    support.docs_path("reference/first-downstream-slice-contract.md")
+                    support.docs_path(
+                        "reference/economics-reconciliation-checkpoint-contract.md"
+                    )
                 )
             )
         ],
@@ -108,7 +110,7 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
     ),
     build_rule(
         "forward_contracts.critical_path_observation_field_tables_are_unique_and_complete",
-        "docs/reference/first-upstream-slice-contract.md",
+        "docs/reference/evidence-claim-contract.md",
         lambda: [
             (_ for _ in ()).throw(
                 AssertionError("critical-path observation field tables drifted")
@@ -118,12 +120,12 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                     support.text(
                         support.docs_path("concepts/pipeline-stage-contracts.md")
                     ),
-                    "### First-Slice Critical-Path Observation Kinds",
+                    "### Bounded Evidence-Claim Critical-Path Observation Kinds",
                     "Stable ids:",
                 ),
                 support.section(
                     support.text(
-                        support.docs_path("reference/first-upstream-slice-contract.md")
+                        support.docs_path("reference/evidence-claim-contract.md")
                     ),
                     "Frozen kind-specific observation fields:",
                     "Observation-field rules:",
@@ -138,7 +140,7 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
     ),
     build_rule(
         "forward_contracts.critical_path_claim_field_tables_are_unique_and_complete",
-        "docs/reference/first-upstream-slice-contract.md",
+        "docs/reference/evidence-claim-contract.md",
         lambda: [
             (_ for _ in ()).throw(
                 AssertionError("critical-path claim field tables drifted")
@@ -188,14 +190,14 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                 support.text(support.docs_path("concepts/pipeline-stage-contracts.md"))
                 + "\n"
                 + support.text(
-                    support.docs_path("reference/first-upstream-slice-contract.md")
+                    support.docs_path("reference/evidence-claim-contract.md")
                 )
             )
         ],
     ),
     build_rule(
         "forward_contracts.reconciliation_and_checkpoint_hot_path_fields_use_direct_values",
-        "docs/reference/first-downstream-slice-contract.md",
+        "docs/reference/economics-reconciliation-checkpoint-contract.md",
         lambda: [
             (_ for _ in ()).throw(
                 AssertionError("reconciliation/checkpoint hot-path value rules drifted")
@@ -214,7 +216,9 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                 support.text(support.docs_path("concepts/pipeline-stage-contracts.md"))
                 + "\n"
                 + support.text(
-                    support.docs_path("reference/first-downstream-slice-contract.md")
+                    support.docs_path(
+                        "reference/economics-reconciliation-checkpoint-contract.md"
+                    )
                 )
             )
         ],
@@ -312,7 +316,9 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                 support.text(support.docs_path("concepts/pipeline-stage-contracts.md"))
                 + "\n"
                 + support.text(
-                    support.docs_path("reference/first-downstream-slice-contract.md")
+                    support.docs_path(
+                        "reference/economics-reconciliation-checkpoint-contract.md"
+                    )
                 )
                 + "\n"
                 + support.text(
@@ -323,7 +329,7 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
     ),
     build_rule(
         "forward_contracts.downstream_identity_recipes_do_not_embed_bridge_nouns",
-        "docs/reference/first-upstream-slice-contract.md",
+        "docs/reference/evidence-claim-contract.md",
         lambda: [
             (_ for _ in ()).throw(
                 AssertionError(
@@ -340,14 +346,14 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                 support.text(support.docs_path("concepts/pipeline-stage-contracts.md"))
                 + "\n"
                 + support.text(
-                    support.docs_path("reference/first-upstream-slice-contract.md")
+                    support.docs_path("reference/evidence-claim-contract.md")
                 )
             )
         ],
     ),
     build_rule(
         "forward_contracts.slice_contracts_freeze_ids_values_and_reader_cutovers",
-        "docs/reference/first-upstream-slice-contract.md",
+        "docs/reference/evidence-claim-contract.md",
         lambda: [
             (_ for _ in ()).throw(
                 AssertionError(
@@ -355,8 +361,10 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                 )
             )
             for path in (
-                support.docs_path("reference/first-upstream-slice-contract.md"),
-                support.docs_path("reference/first-downstream-slice-contract.md"),
+                support.docs_path("reference/evidence-claim-contract.md"),
+                support.docs_path(
+                    "reference/economics-reconciliation-checkpoint-contract.md"
+                ),
             )
             if any(
                 heading not in (text := support.text(path))
@@ -382,7 +390,7 @@ FORWARD_CONTRACTS_CONTRACT_RULES = (
                 ).lower()
             )
             or (
-                path.name == "first-upstream-slice-contract.md"
+                path.name == "evidence-claim-contract.md"
                 and any(
                     needle not in text
                     for needle in (

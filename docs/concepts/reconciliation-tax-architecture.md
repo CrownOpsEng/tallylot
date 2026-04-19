@@ -53,8 +53,8 @@ Use these pages for the detailed neighboring contracts:
 
 - [Current Bridge Contracts](current-bridge-contracts.md)
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
-- [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md)
-- [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
+- [Evidence And Claim Contract](../reference/evidence-claim-contract.md)
+- [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md)

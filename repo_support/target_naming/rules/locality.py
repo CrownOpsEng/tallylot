@@ -178,8 +178,8 @@ def _locality_rule_id(rule: ExceptionRule) -> str:
         return "locality.root.exception_rationale"
     if rule.required_marker is None:
         return "locality.section.exception"
-    if rule.required_marker == "Slice-only example":
-        return "locality.example.slice_only"
+    if rule.required_marker == "Contract-local example":
+        return "locality.example.contract_local"
     return "locality.field.exception_restatement"
 
 

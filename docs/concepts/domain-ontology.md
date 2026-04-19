@@ -358,10 +358,10 @@ Rules:
 - lifecycle events belong in the target economic model, not only in adapter
   annotations or tax-policy notes
 
-## First Downstream Slice Restriction
+## Bounded Economics Reconciliation Checkpoint Restriction
 
-The first downstream slice intentionally uses a narrow `PositionRef`
-identity shape for the current held-balance slice.
+The bounded economics/reconciliation/checkpoint contract intentionally uses a
+narrow `PositionRef` identity shape for the current held-balance scope.
 
 Slice rule:
 
@@ -528,7 +528,7 @@ Boundary rules:
 Implementation-shaping rule:
 
 - use this page plus
-  [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
+  [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
   when choosing where new target-stage work lands
 - do not leave package placement to implementation-time judgment once the
   target contract already names the owning stage

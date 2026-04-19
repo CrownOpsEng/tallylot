@@ -11,8 +11,8 @@ related:
   - docs/concepts/current-bridge-contracts.md
   - docs/concepts/pipeline-stage-contracts.md
   - docs/concepts/gaps-and-reviews.md
-  - docs/reference/first-upstream-slice-contract.md
-  - docs/reference/first-downstream-slice-contract.md
+  - docs/reference/evidence-claim-contract.md
+  - docs/reference/economics-reconciliation-checkpoint-contract.md
   - docs/status/migration-sequence.md
   - ROADMAP.md
 ---
@@ -88,13 +88,11 @@ No-dual-center rule:
   migration
 - none of those surfaces may remain a second architecture center once the
   corresponding target product is authoritative for that scope
-- broader grouped consumers stay on authoritative kernels, compatibility views,
-  or tax-output-local and rendering-local derived outputs until the roadmap
-  trigger ladder requires a dedicated capability-owned derived read-model slice;
-  if no earlier trigger fires, that activation defaults to `Phase 10`
-- before the first downstream slice lands, `TransactionFact` and `facts.csv`
-  remain on the live bridge fact path; the first upstream slice may preserve
-  downstream parity only through that existing bridge path and must not
+- broader grouped consumers stay on authoritative kernels, compatibility views, or tax-output-local and rendering-local derived outputs while broader derived read models and projections stay deferred, and they move only when a later capability-specific increment requires a dedicated derived read-model slice
+- before the economics/reconciliation/checkpoint contract lands,
+  `TransactionFact` and `facts.csv` remain on the live bridge fact path; the
+  evidence/claim contract may preserve downstream parity only through that
+  existing bridge path and must not
   introduce a second fact-reducer lane from `ClaimSet`
 
 ## Cutover Matrix
@@ -194,7 +192,7 @@ Diagnostic mapping rules:
 **Compatibility-only locality:** These retained filenames stay here only to
 document the active compatibility window for the first bounded slices.
 
-The first upstream slice and first downstream slice use this page as their
+The bounded evidence/claim and economics/reconciliation/checkpoint contracts use this page as their
 migration authority.
 
 Required cutovers now:
@@ -208,8 +206,8 @@ Required cutovers now:
   `ReconciliationState`
 - `balance_references.csv` becomes a compatibility view from
   `ReconciliationState` and `Checkpoint`
-- the first upstream slice must not introduce a second downstream fact lane
-  before the first downstream slice lands
+- the evidence/claim contract must not introduce a second downstream fact lane
+  before the economics/reconciliation/checkpoint contract lands
 - current balance inspect/check/summarize remains on bridge compatibility
   views until those application surfaces are repointed to target products
 

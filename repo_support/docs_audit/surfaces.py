@@ -11,7 +11,6 @@ DOCS_AUDIT_SUBSTRATE_PREFIXES = (
 DOCS_AUDIT_SUBSTRATE_EXACT_PATHS = {
     "README.md",
     "AGENTS.md",
-    "ROADMAP.md",
     "src/tallylot/infrastructure/workspace/layout.py",
     "src/tallylot/domain/captures/provenance.py",
     "src/tallylot/ports/source_profiles.py",

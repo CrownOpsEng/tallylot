@@ -61,7 +61,6 @@ def claude_text(filename: str) -> str:
 def architecture_doc_paths() -> tuple[Path, ...]:
     return (
         repo_root() / "README.md",
-        repo_root() / "ROADMAP.md",
         docs_root() / "standards" / "engineering.md",
         docs_root() / "concepts" / "reconciliation-tax-architecture.md",
         claude_commands_root() / "source-intake.md",

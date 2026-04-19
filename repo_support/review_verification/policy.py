@@ -161,7 +161,7 @@ def _is_shared_verification_substrate_path(path: str) -> bool:
 def _is_docs_audit_markdown_path(path: str) -> bool:
     return (
         path.startswith("docs/")
-        or path in {"README.md", "AGENTS.md", "ROADMAP.md"}
+        or path in {"README.md", "AGENTS.md"}
         or path.startswith(".claude/commands/")
     )
 
