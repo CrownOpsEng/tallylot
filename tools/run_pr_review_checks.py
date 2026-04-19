@@ -37,6 +37,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="planned",
         help="Verification selection mode.",
     )
+    parser.add_argument("--branch-name", help="Branch name override.")
     parser.add_argument("--pr-title", help="Pull request title override.")
     parser.add_argument("--pr-body-file", help="Pull request body file override.")
     parser.add_argument(
@@ -92,6 +93,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             trigger=args.trigger,
             base_sha=args.base_sha,
             head_sha=args.head_sha,
+            branch_name=args.branch_name,
             pr_title=args.pr_title,
             pr_body=pr_body,
         ),

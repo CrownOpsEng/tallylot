@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pytest import MonkeyPatch
 
+from tools.message_standards import validate_branch_name
 from tools.validate_pr_metadata import (
     _validate_pr_body,
     _validate_pr_checkpoints,
@@ -58,10 +59,90 @@ def test_pr_title_with_generic_summary_is_rejected() -> None:
     )
 
 
+def test_pr_branch_with_standard_root_and_slug_is_valid() -> None:
+    errors = validate_branch_name("docs/standards-skill-hardening")
+
+    assert not errors
+
+
+def test_pr_branch_rejects_non_standard_root() -> None:
+    errors = validate_branch_name("control-plane/standards-hardening")
+
+    assert errors == (
+        "branch root must be one of: docs, chore, ci, build, feat, fix, "
+        "refactor, test, repair",
+    )
+
+
+def test_pr_branch_rejects_nested_tree() -> None:
+    errors = validate_branch_name("docs/standards/skill-hardening")
+
+    assert errors == (
+        "branch name must match `<root>/<slug>` with exactly one approved root "
+        "and one lowercase kebab-case slug",
+    )
+
+
+def test_pr_branch_rejects_missing_root() -> None:
+    errors = validate_branch_name("standards-skill-hardening")
+
+    assert errors == (
+        "branch name must match `<root>/<slug>` with exactly one approved root "
+        "and one lowercase kebab-case slug",
+    )
+
+
+def test_pr_branch_rejects_uppercase_root_or_slug() -> None:
+    root_errors = validate_branch_name("Docs/standards-hardening")
+    slug_errors = validate_branch_name("docs/Standards-hardening")
+
+    assert root_errors == (
+        "branch root must be one of: docs, chore, ci, build, feat, fix, "
+        "refactor, test, repair",
+    )
+    assert slug_errors == ("branch slug must be lowercase kebab-case ASCII",)
+
+
+def test_pr_branch_rejects_phase_label() -> None:
+    errors = validate_branch_name("docs/phase-0-hardening")
+
+    assert errors == (
+        "branch name must not use roadmap/phase labels on durable metadata "
+        "surfaces: phase-0",
+    )
+
+
+def test_pr_branch_rejects_spelled_out_phase_label() -> None:
+    errors = validate_branch_name("docs/phase-zero-hardening")
+
+    assert errors == (
+        "branch name must not use roadmap/phase labels on durable metadata "
+        "surfaces: phase-zero",
+    )
+
+
 def test_pr_body_with_required_sections_is_valid() -> None:
     errors = _validate_pr_body(_body())
 
     assert not errors
+
+
+def test_pr_title_rejects_phase_label() -> None:
+    errors = _validate_pr_title("docs(standards): Phase 2 hardening")
+
+    assert errors == (
+        "PR title must not use roadmap/phase labels on durable metadata "
+        "surfaces: Phase 2",
+    )
+
+
+def test_pr_title_rejects_spelled_out_phase_label() -> None:
+    errors = _validate_pr_title("docs(standards): Phase Zero hardening")
+
+    assert errors == (
+        "PR title must not use roadmap/phase labels on durable metadata "
+        "surfaces: Phase Zero",
+    )
 
 
 def test_pr_body_tolerates_leading_html_comment() -> None:
@@ -90,6 +171,28 @@ Issue linkage:
     errors = _validate_pr_body(body)
 
     assert errors == ("missing `Included checkpoints:` section",)
+
+
+def test_pr_body_rejects_roadmap_label() -> None:
+    errors = _validate_pr_body(
+        _body(why="- keep roadmap references out of PR metadata")
+    )
+
+    assert errors == (
+        "PR body must not use roadmap/phase labels on durable metadata "
+        "surfaces: roadmap",
+    )
+
+
+def test_pr_body_rejects_spelled_out_phase_label() -> None:
+    errors = _validate_pr_body(
+        _body(why="- keep phase-zero references out of PR metadata")
+    )
+
+    assert errors == (
+        "PR body must not use roadmap/phase labels on durable metadata "
+        "surfaces: phase-zero",
+    )
 
 
 def test_pr_body_rejects_missing_issue_linkage_section() -> None:

@@ -33,7 +33,8 @@ Do not pre-load every repo doc by default.
 | ---- | ---- |
 | Code placement, typing, modularization, naming | `docs/standards/engineering.md` |
 | Active implementation execution discipline | `docs/standards/implementation.md`, `docs/standards/commits.md` |
-| Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
+| Repo standards, docs placement, doc authoring rules, or agent-default enforcement changes | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
+| Planning-only repo work, routing design, skill design, docs-check ownership, validator placement, or delivery metadata policy | `AGENTS.md`, `docs/README.md`, `docs/status/current-state.md`, `docs/reference/repository-history.md`, `docs/standards/implementation.md`, `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/docs_maintenance/cli.py`, `tools/docs_maintenance/metadata.py` |
 | Issue templates, issue-writing policy, or proactive follow-up issue creation | `AGENTS.md`, `docs/standards/issues.md`, `docs/standards/implementation.md`, `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `.claude/commands/issue-workflow.md` |
 | Delivery guardrails, protected-branch behavior, or agent-assisted Git operations | `docs/standards/delivery-guardrails.md`, `docs/standards/commits.md`, `tools/audit_delivery_guardrails.py` |
 | PR review or review-loop recovery | `docs/standards/delivery-guardrails.md`, `docs/standards/implementation.md`, `docs/standards/commits.md`, `.claude/commands/pr-review.md` |
@@ -62,6 +63,11 @@ Do not pre-load every repo doc by default.
 - When editing repo standards, automation, or other control-plane files, use
   the repo-local workflow for the active area and reload the narrow repo
   guidance listed in this file before editing.
+- Planning-only repo work should start with the repo-local `planning` skill,
+  then hand execution off to the owning workflow skill.
+- Route phase-tag policy and docs-check-boundary work through the standards
+  path; keep live docs enforcement in the owning script rather than duplicating
+  that policy in pytest.
 - Keep live repo document checks in script-owned verification surfaces, not in
   pytest:
   - `docs-maintenance` owns generated docs sections, metadata, links, and
@@ -75,6 +81,14 @@ Do not pre-load every repo doc by default.
 - Keep pytest coverage for docs tooling on synthetic strings or temp repos, not
   on the live repo Markdown tree or live control-plane prose.
 - Keep tracked docs, templates, and control-plane text neutral and durable.
+- Planning and forward-looking docs may use roadmap-owned ephemeral tags when
+  the planning surface itself owns them, but durable control-plane, delivery
+  metadata, branch names, code, tooling, filenames, and generated durable
+  examples must stay phase-free and roadmap-free.
+- Keep ordinary test names, assertions, and examples phase-free and
+  roadmap-free. Synthetic tooling fixtures may intentionally mention forbidden
+  roadmap or phase labels only when they are exercising validator or audit
+  behavior on synthetic strings or temp repos.
 - Keep current-state docs accurate to the implemented runtime, and keep
   forward-looking docs detailed enough to implement from without inventing
   missing stage structure later.

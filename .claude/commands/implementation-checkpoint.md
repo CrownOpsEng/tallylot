@@ -29,6 +29,9 @@ Use this route before closing any non-trivial coding task.
      coverage
 5. Confirm tracked docs, templates, and control-plane text stayed neutral and
    did not pick up scratch workflow bookkeeping.
+   Confirm durable delivery metadata stayed phase-free and roadmap-free, branch
+   naming uses an approved `<root>/<slug>` root plus slug, and live docs policy
+   enforcement stayed in the owning scripts rather than duplicated in pytest.
 6. Confirm meaningful out-of-scope repo work is not stranded in notes:
    - search for an existing issue first
    - create the follow-up issue immediately when no suitable issue exists
@@ -92,6 +95,9 @@ Use this route before closing any non-trivial coding task.
     closing the older PR; if the user explicitly requested a one-time
     protected-branch repair, verify the remote branch tip afterward and return
     to PR-only flow.
+    For ordinary delivery work, confirm the active branch uses an approved root
+    from `docs/standards/commits.md` and that branch names, commit messages,
+    PR titles, and PR bodies stay phase-free and roadmap-free.
 
 If a needed structural fix is already obvious and bounded, include it in the
 same checkpoint instead of deferring it.

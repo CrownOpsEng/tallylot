@@ -50,6 +50,44 @@ Subject rules:
 - no trailing period
 - do not use generic summaries such as `cleanup`, `misc fixes`, or
   `update branch`
+- do not use roadmap or phase labels on durable delivery metadata surfaces;
+  use durable repo-area or behavior wording instead
+
+## Standard Branch Tree
+
+Ordinary delivery work uses this branch format:
+
+```text
+<root>/<slug>
+```
+
+Rules:
+
+- use exactly one approved top-level root
+- use exactly one lowercase kebab-case slug after the root
+- use lowercase ASCII only
+- do not add extra slash nesting
+- do not use roadmap or phase labels in either segment
+- do not invent new ordinary-work roots such as `control-plane`
+
+Approved roots:
+
+- `docs`
+- `chore`
+- `ci`
+- `build`
+- `feat`
+- `fix`
+- `refactor`
+- `test`
+- `repair`
+
+Notes:
+
+- this policy governs every ordinary delivery branch that will ship through the
+  normal PR flow
+- `backup/*`, `codex/*`, and similar ad hoc roots are not approved ordinary
+  delivery branches
 
 ## Body Template
 
@@ -128,6 +166,8 @@ Protected-branch rule:
 - if a protected-branch repair exception is explicitly requested, limit that
   exception to the exact repair action, verify the remote branch tip
   immediately afterward, and restore PR-only flow before continuing
+- active ordinary-work branch names must match the approved
+  `<root>/<slug>` tree and stay phase-free plus roadmap-free
 
 PR title rules:
 
@@ -136,6 +176,7 @@ PR title rules:
   and, for a single-commit PR, the squash subject becomes
   `<pr title> (#<pr number>)`
 - do not use generic titles such as `update branch`, `cleanup`, or `misc fixes`
+- do not use roadmap or phase labels in the title
 
 PR body rules:
 
@@ -169,6 +210,8 @@ PR body rules:
   issue-closing keywords unless the user explicitly requests otherwise
 - for a one-commit PR, still list that single commit under
   `Included checkpoints:`
+- do not use roadmap or phase labels in PR bodies; keep delivery metadata
+  phrased in durable repo-area and behavior terms
 
 Merge method rules:
 
@@ -288,6 +331,15 @@ make validate-commit-message ARGS='.git/COMMIT_EDITMSG'
 make validate-commit-message ARGS='--rev-range HEAD~3..HEAD'
 ```
 
+Validate branch names and PR metadata with the repo tooling when needed:
+
+```bash
+python -m tools.validate_pr_metadata \
+  --branch-name docs/standards-skill-hardening \
+  --title 'docs(commits): harden durable metadata policy' \
+  --body "$(cat /tmp/pr-body.md)"
+```
+
 When structured commit messages or PR bodies include backticks, quotes, or
 other shell-sensitive text, use file/stdin authoring forms rather than inline
 `-m` or `--body` arguments so the metadata stays literal. In this repo, use the
@@ -336,10 +388,10 @@ changing CI, packaging, release, or other workflow areas where the local
 verification pass should mirror the final non-draft PR suite before handoff.
 Add `--pr-title`
 plus `--pr-body-file` when you also want the full review run to validate the
-current branch PR title, body, and `Included checkpoints:` list against the
-branch history. Treat `tools.run_quality_gates --full-tests` as an explicit
-full-suite escape hatch rather than the normal agent close-out path, and avoid
-it unless there is a specific reason to use the override. Do not run
+current branch name, PR title, body, and `Included checkpoints:` list against
+the branch history. Treat `tools.run_quality_gates --full-tests` as an
+explicit full-suite escape hatch rather than the normal agent close-out path,
+and avoid it unless there is a specific reason to use the override. Do not run
 `tools.run_quality_gates --full-tests`
 immediately before `tools.run_pr_review_checks --mode full`; the full
 PR-review runner already includes the full quality gate pass plus the extra
@@ -369,7 +421,7 @@ that exact file before treating the checkpoint as closed:
 
 ```bash
 make pylint ARGS='<touched-file>'
-make pytest ARGS='-q --no-cov <touched-test-file>'
+make pytest ARGS='-q <touched-test-file>'
 git show HEAD:<path>
 ```
 

@@ -118,6 +118,8 @@ CHECK_SPECS = {
                 "python",
                 "-m",
                 "tools.validate_pr_metadata",
+                "--branch-name",
+                "{branch_name}",
                 "--title",
                 "{pr_title}",
                 "--body",

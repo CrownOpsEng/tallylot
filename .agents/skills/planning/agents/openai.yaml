@@ -1,0 +1,7 @@
+interface:
+  display_name: "Planning"
+  short_description: "Start planning-only repo work with the narrow planning bundle and produce a compaction-safe execution plan."
+  default_prompt: "Use $planning to load tallylot's general planning route before drafting a compaction-safe repo plan or policy change."
+
+policy:
+  allow_implicit_invocation: true

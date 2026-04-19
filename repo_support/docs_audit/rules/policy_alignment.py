@@ -2,14 +2,13 @@ from __future__ import annotations
 
 import re
 
-from repo_support.paths import repo_root
-
-from ._common import build_rule
-from ..helpers import (
+from repo_support.docs_audit.helpers import (
     architecture_doc_paths,
     joined,
     repo_text,
 )
+from repo_support.docs_audit.rules._common import build_rule
+from repo_support.paths import repo_root
 
 
 POLICY_ALIGNMENT_RULES = (
@@ -67,7 +66,7 @@ POLICY_ALIGNMENT_RULES = (
             for needle in (
                 "Do not describe `mypy` or `pyright` as covering `pylint` findings.",
                 "make pylint ARGS='<touched-file>'",
-                "make pytest ARGS='-q --no-cov <touched-test-file>'",
+                "make pytest ARGS='-q <touched-test-file>'",
                 "git show HEAD:<path>",
             )
             if needle not in repo_text("docs/standards/commits.md")
@@ -277,7 +276,8 @@ POLICY_ALIGNMENT_RULES = (
                 "bridge cutover matrix inventory, owner, compatibility, reader, and gate",
                 "`docs/README.md` generated reference-group headings/order are",
                 "required `naming_scope` frontmatter/default behavior is",
-                "forward-target contract docs must stay free of transient planning language",
+                "planning and forward-looking docs may use roadmap-owned ephemeral tags",
+                "delivery metadata surfaces must stay",
                 "treat the blocking `target-naming` review check as the repo-native guard",
             )
             if needle not in repo_text("docs/standards/engineering.md")

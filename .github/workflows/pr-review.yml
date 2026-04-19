@@ -104,6 +104,7 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           uv run python -m tools.run_review_check \
@@ -111,6 +112,7 @@ jobs:
             --trigger pull_request \
             --base-sha "$BASE_SHA" \
             --head-sha "$HEAD_SHA" \
+            --branch-name "$BRANCH_NAME" \
             --pr-title "$PR_TITLE" \
             --pr-body-file pr-body.md
 

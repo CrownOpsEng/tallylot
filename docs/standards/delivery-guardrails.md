@@ -44,6 +44,12 @@ when the higher-layer control is available.
 ## Default Delivery Posture
 
 - protected branches are PR-only branches
+- ordinary delivery branches use the approved `<root>/<slug>` tree from
+  `docs/standards/commits.md`
+- active branch names, commit messages, PR titles, and PR bodies stay
+  phase-free and roadmap-free because they are durable delivery metadata
+- planning and forward-looking docs may still use roadmap-owned ephemeral tags
+  where the planning surface itself owns that reference
 - pull requests open as draft by default
 - a PR becomes ready for review only after the full issue-finding hardening
   loop yields no new meaningful findings
@@ -143,6 +149,13 @@ Encode the repo's delivery rules in versioned artifacts:
 - target naming catalogs and deterministic naming checkers
 - contract tests that pin the standards
 - templates that match the validators
+
+Keep live docs policy ownership split in code as well as prose:
+
+- tests verify tooling logic and code behavior
+- tests do not serve as the live-repo enforcement surface for docs policy
+- add new live-repo docs assertions to the owning script, not to pytest
+- keep pytest coverage for docs tooling synthetic or temp-repo based
 
 When a delivery failure repeats or has high repair cost, add or tighten a
 machine-checkable guard instead of only adding more prose.
@@ -276,11 +289,11 @@ push-to-mainline CI.
 
 - the `commit-messages` PR status validates the branch commit-message range and
   PR metadata on pull requests only
-- the `pr-metadata` PR status validates the pull request title, body, and
-  checkpoint linkage as its own visible required status
+- the `pr-metadata` PR status validates the active branch name, pull request
+  title, body, and checkpoint linkage as its own visible required status
 - the repo-installed `pre-push` hook mirrors `tools.validate_pr_metadata`
-  against the current open pull request before push when `gh pr view` can
-  resolve PR metadata for the branch
+  against the current branch name first, then the current open pull request
+  before push when `gh pr view` can resolve PR metadata for the branch
 - the `plan-pr-review` workflow job audits the diff with
   `tools.audit_pr_review`, publishes the selected checks for transparency, and
   keeps the human review routing visible while choosing planned mode

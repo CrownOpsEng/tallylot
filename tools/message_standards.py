@@ -16,6 +16,18 @@ ALLOWED_TYPES = (
 )
 TYPE_PATTERN = "|".join(ALLOWED_TYPES)
 SCOPE_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
+APPROVED_BRANCH_ROOTS = (
+    "docs",
+    "chore",
+    "ci",
+    "build",
+    "feat",
+    "fix",
+    "refactor",
+    "test",
+    "repair",
+)
+BRANCH_SLUG_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 AUTHORED_COMMIT_REQUIRED_SECTIONS = ("Why", "What", "Checks")
 PR_BODY_REQUIRED_SECTIONS = (
     "Why",
@@ -43,6 +55,36 @@ GENERIC_SUMMARY_PHRASES = frozenset(
         "update branch",
     }
 )
+PHASE_NUMBER_WORDS = (
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+    "twelve",
+    "thirteen",
+    "fourteen",
+    "fifteen",
+    "sixteen",
+    "seventeen",
+    "eighteen",
+    "nineteen",
+    "twenty",
+)
+PHASE_NUMBER_WORD_PATTERN = "|".join(PHASE_NUMBER_WORDS)
+FORBIDDEN_DURABLE_METADATA_PATTERNS = (
+    re.compile(r"\broadmap\b", re.IGNORECASE),
+    re.compile(
+        r"\bphase(?:[ _-]?(?:\d+|" + PHASE_NUMBER_WORD_PATTERN + r"))\b", re.IGNORECASE
+    ),
+)
 
 
 def validate_subject_line(subject: str) -> tuple[str, ...]:
@@ -65,6 +107,55 @@ def validate_subject_line(subject: str) -> tuple[str, ...]:
             "generic summaries such as `cleanup`, `misc fixes`, and "
             "`update branch` are not allowed"
         )
+    return tuple(errors)
+
+
+def _forbidden_durable_metadata_matches(text: str) -> tuple[str, ...]:
+    matches: list[str] = []
+    seen: set[str] = set()
+    for pattern in FORBIDDEN_DURABLE_METADATA_PATTERNS:
+        for match in pattern.finditer(text):
+            found = match.group(0)
+            normalized = found.lower()
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            matches.append(found)
+    return tuple(matches)
+
+
+def validate_durable_metadata_text(text: str, *, label: str) -> tuple[str, ...]:
+    matches = _forbidden_durable_metadata_matches(text)
+    if not matches:
+        return ()
+    found = ", ".join(matches)
+    return (
+        f"{label} must not use roadmap/phase labels on durable metadata surfaces: "
+        f"{found}",
+    )
+
+
+def validate_branch_name(branch_name: str) -> tuple[str, ...]:
+    stripped = branch_name.strip()
+    if stripped == "":
+        return ("branch name is required",)
+
+    errors: list[str] = []
+    parts = stripped.split("/")
+    if len(parts) != 2 or any(part == "" for part in parts):
+        errors.append(
+            "branch name must match `<root>/<slug>` with exactly one approved "
+            "root and one lowercase kebab-case slug"
+        )
+    else:
+        root, slug = parts
+        if root not in APPROVED_BRANCH_ROOTS:
+            approved = ", ".join(APPROVED_BRANCH_ROOTS)
+            errors.append(f"branch root must be one of: {approved}")
+        if re.fullmatch(BRANCH_SLUG_PATTERN, slug) is None:
+            errors.append("branch slug must be lowercase kebab-case ASCII")
+
+    errors.extend(validate_durable_metadata_text(stripped, label="branch name"))
     return tuple(errors)
 
 

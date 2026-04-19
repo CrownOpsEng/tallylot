@@ -30,7 +30,11 @@ Use this skill for repeatable review passes on an active branch or draft PR.
    Do not treat green `tools.run_pr_review_checks` output as a no-findings
    decision by itself; it is only verification evidence for the current
    red-team pass.
-5. Use `issue-workflow`, `docs-authoring`, or `implementation-workflow` when
+5. Review for approved branch-root usage, phase leakage on durable metadata,
+   and docs-policy duplication in pytest.
+6. Use `planning` when a finding points to broader planning rather than a
+   narrow patch.
+7. Use `issue-workflow`, `docs-authoring`, or `implementation-workflow` when
    the repair work moves into those repo-local workflows.
 
 ## Focus

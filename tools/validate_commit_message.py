@@ -11,6 +11,7 @@ from pathlib import Path
 from tools.message_standards import (
     AUTHORED_COMMIT_REQUIRED_SECTIONS,
     GENERATED_MAINLINE_COMMIT_OPTIONAL_SECTIONS,
+    validate_durable_metadata_text,
     validate_structured_sections,
     validate_subject_line,
 )
@@ -56,6 +57,10 @@ def _validate_commit_message_text(message: str) -> tuple[str, ...]:
 
     errors = [
         *validate_subject_line(subject),
+        *validate_durable_metadata_text(
+            "\n".join(lines),
+            label="commit message",
+        ),
         *validate_structured_sections(
             lines,
             required_sections=AUTHORED_COMMIT_REQUIRED_SECTIONS,

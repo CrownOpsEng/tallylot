@@ -20,10 +20,17 @@ Use this route for repeatable review passes on an active branch or draft PR.
 3. Re-check every prior fix first, then inspect the next applicable changed
    file group that has not yet been re-checked in the current full review
    cycle.
+   Pay extra attention to:
+   - non-standard branch roots or nested ordinary-work branch trees
+   - roadmap or phase leakage on durable standards, control-plane, or delivery
+     metadata surfaces
+   - docs-policy duplication in pytest when the owning script should enforce it
 4. Repair every finding from that pass before starting the next pass.
    - reload the narrow repo guidance for each repaired area using `AGENTS.md`,
      its task-routing table, and the owning roadmap, architecture, migration,
      or delivery docs identified by that route or by repo search hints
+   - when a finding implies broader planning rather than a narrow local patch,
+     use the repo-local `planning` skill before picking the execution workflow
    - add or tighten tests, docs, automation, and validation where the fix
      belongs instead of leaving the repair in prose alone
    - when a meaningful finding should stay out of the active PR, search for an
