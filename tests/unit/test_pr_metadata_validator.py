@@ -112,6 +112,15 @@ def test_pr_branch_rejects_phase_label() -> None:
     )
 
 
+def test_pr_branch_rejects_spelled_out_phase_label() -> None:
+    errors = validate_branch_name("docs/phase-zero-hardening")
+
+    assert errors == (
+        "branch name must not use roadmap/phase labels on durable metadata "
+        "surfaces: phase-zero",
+    )
+
+
 def test_pr_body_with_required_sections_is_valid() -> None:
     errors = _validate_pr_body(_body())
 
@@ -124,6 +133,15 @@ def test_pr_title_rejects_phase_label() -> None:
     assert errors == (
         "PR title must not use roadmap/phase labels on durable metadata "
         "surfaces: Phase 2",
+    )
+
+
+def test_pr_title_rejects_spelled_out_phase_label() -> None:
+    errors = _validate_pr_title("docs(standards): Phase Zero hardening")
+
+    assert errors == (
+        "PR title must not use roadmap/phase labels on durable metadata "
+        "surfaces: Phase Zero",
     )
 
 
@@ -163,6 +181,17 @@ def test_pr_body_rejects_roadmap_label() -> None:
     assert errors == (
         "PR body must not use roadmap/phase labels on durable metadata "
         "surfaces: roadmap",
+    )
+
+
+def test_pr_body_rejects_spelled_out_phase_label() -> None:
+    errors = _validate_pr_body(
+        _body(why="- keep phase-zero references out of PR metadata")
+    )
+
+    assert errors == (
+        "PR body must not use roadmap/phase labels on durable metadata "
+        "surfaces: phase-zero",
     )
 
 

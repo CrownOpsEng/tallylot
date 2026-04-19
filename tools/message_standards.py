@@ -55,9 +55,35 @@ GENERIC_SUMMARY_PHRASES = frozenset(
         "update branch",
     }
 )
+PHASE_NUMBER_WORDS = (
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "ten",
+    "eleven",
+    "twelve",
+    "thirteen",
+    "fourteen",
+    "fifteen",
+    "sixteen",
+    "seventeen",
+    "eighteen",
+    "nineteen",
+    "twenty",
+)
+PHASE_NUMBER_WORD_PATTERN = "|".join(PHASE_NUMBER_WORDS)
 FORBIDDEN_DURABLE_METADATA_PATTERNS = (
     re.compile(r"\broadmap\b", re.IGNORECASE),
-    re.compile(r"\bphase(?:[ _-]?\d+)\b", re.IGNORECASE),
+    re.compile(
+        r"\bphase(?:[ _-]?(?:\d+|" + PHASE_NUMBER_WORD_PATTERN + r"))\b", re.IGNORECASE
+    ),
 )
 
 

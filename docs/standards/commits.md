@@ -84,9 +84,10 @@ Approved roots:
 
 Notes:
 
-- this policy governs new ordinary delivery branches
-- existing historical or special local branches such as `backup/*`, `codex/*`,
-  or other one-off repair names are not rewritten by this standard
+- this policy governs every ordinary delivery branch that will ship through the
+  normal PR flow
+- `backup/*`, `codex/*`, and similar ad hoc roots are not approved ordinary
+  delivery branches
 
 ## Body Template
 

@@ -210,6 +210,28 @@ Checks:
     )
 
 
+def test_commit_message_rejects_spelled_out_phase_label_in_body() -> None:
+    message = """\
+docs(standards): harden planning guidance
+
+Why:
+- keep phase-zero bookkeeping out of durable metadata
+
+What:
+- tighten the standards text
+
+Checks:
+- make pytest
+"""
+
+    errors = _validate_commit_message_text(message)
+
+    assert errors == (
+        "commit message must not use roadmap/phase labels on durable metadata "
+        "surfaces: phase-zero",
+    )
+
+
 def test_invalid_type_is_rejected() -> None:
     errors = _validate_commit_message_text(
         """\

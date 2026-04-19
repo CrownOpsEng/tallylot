@@ -139,7 +139,12 @@ Durable versus planning surfaces:
   - commit messages
   - PR titles and PR bodies
   - branch names
-  - code, tooling, tests, filenames, and generated durable examples
+  - code, tooling, filenames, and generated durable examples
+- keep ordinary repo-facing tests and named examples phase-free and
+  roadmap-free
+- synthetic tooling fixtures may intentionally mention forbidden roadmap or
+  phase labels only when they are exercising validator or audit behavior on
+  synthetic strings or temp repos
 - when a new live-repo docs policy needs enforcement, add it to the owning
   script instead of adding live-repo Markdown or control-plane prose checks to
   pytest
