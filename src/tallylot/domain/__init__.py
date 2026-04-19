@@ -10,6 +10,17 @@ from .balances import (
     BalanceTarget,
     assert_balance_targets,
 )
+from .evidence import (
+    EVIDENCE_SET_SCHEMA_VERSION,
+    EvidenceMemberKind,
+    EvidenceMemberRecord,
+    EvidenceMemberStatus,
+    EvidenceObservationKind,
+    EvidenceObservationRecord,
+    EvidenceSelectionBasis,
+    EvidenceSelectionRecord,
+    EvidenceSet,
+)
 from .instruments import (
     InstrumentId,
     InstrumentIdentifierRecord,
@@ -55,6 +66,15 @@ __all__ = [
     "BalanceSnapshot",
     "BalanceTarget",
     "EconomicKind",
+    "EVIDENCE_SET_SCHEMA_VERSION",
+    "EvidenceMemberKind",
+    "EvidenceMemberRecord",
+    "EvidenceMemberStatus",
+    "EvidenceObservationKind",
+    "EvidenceObservationRecord",
+    "EvidenceSelectionBasis",
+    "EvidenceSelectionRecord",
+    "EvidenceSet",
     "FactLegPolicy",
     "InstrumentId",
     "InstrumentIdentifierRecord",
