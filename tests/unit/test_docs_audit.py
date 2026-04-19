@@ -225,6 +225,24 @@ def test_sensitive_docs_audit_tooling_path_triggers_full_repo_sweep(
     )
 
 
+def test_target_naming_catalog_path_triggers_full_repo_sweep(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        docs_audit,
+        "ALL_RULES",
+        (_rule("routes.example"), _rule("forward_contracts.example")),
+    )
+
+    report = docs_audit.run_docs_audit(paths=("tools/target_naming_catalog.yaml",))
+
+    assert report.full_repo is True
+    assert report.evaluated_rule_ids == (
+        "routes.example",
+        "forward_contracts.example",
+    )
+
+
 def test_authority_entries_require_exact_path_heading_pairs() -> None:
     with pytest.raises(
         AssertionError,

@@ -210,18 +210,104 @@ def _string_literals(node: ast.AST) -> tuple[str, ...]:
     )
 
 
+def _normalised_path_literals(node: ast.AST) -> tuple[str, ...]:
+    return tuple(literal.replace("\\", "/") for literal in _string_literals(node))
+
+
+def _has_named_call(node: ast.AST, *names: str) -> bool:
+    return any(
+        isinstance(candidate, ast.Call)
+        and any(_is_named_call(candidate.func, name) for name in names)
+        for candidate in ast.walk(node)
+    )
+
+
+def _is_repo_relative_live_doc_path(path: str) -> bool:
+    return (
+        path in {"README.md", "AGENTS.md", "ROADMAP.md"}
+        or (path.startswith("docs/") or path.startswith(".claude/commands/"))
+        and path.endswith(".md")
+    )
+
+
+def _repo_root_path_literals_reference_live_docs(literals: tuple[str, ...]) -> bool:
+    if any(_is_repo_relative_live_doc_path(literal) for literal in literals):
+        return True
+    return (
+        "docs" in literals and any(literal.endswith(".md") for literal in literals)
+    ) or (
+        ".claude" in literals
+        and "commands" in literals
+        and any(literal.endswith(".md") for literal in literals)
+    )
+
+
 def _is_live_repo_doc_audit_call(node: ast.Call) -> bool:
     chain = _call_chain_names(node)
-    literals = _string_literals(node)
+    literals = _normalised_path_literals(node)
+    if any(
+        _is_named_call(node.func, name)
+        for name in ("repo_text", "docs_text", "claude_text")
+    ):
+        if isinstance(node.func, ast.Name):
+            helper_name = node.func.id
+        elif isinstance(node.func, ast.Attribute):
+            helper_name = node.func.attr
+        else:
+            return False
+        if helper_name == "repo_text":
+            return _repo_root_path_literals_reference_live_docs(literals)
+        return any(literal.endswith(".md") for literal in literals)
     if not chain:
         return False
-    if chain[-1] in {"read_text", "glob", "rglob"}:
-        if any(
-            literal in {"ROADMAP.md", "AGENTS.md"} or literal.endswith(".md")
-            for literal in literals
-        ) and any(marker in literals for marker in ("docs", ".claude", "README.md")):
+    if chain[-1] in {"read_text", "open", "glob", "rglob"}:
+        receiver = node.func.value if isinstance(node.func, ast.Attribute) else None
+        if receiver is None:
+            return False
+        if _has_named_call(receiver, "repo_root"):
+            return _repo_root_path_literals_reference_live_docs(literals)
+        if _has_named_call(receiver, "docs_root", "docs_path", "claude_commands_root"):
+            return any(literal.endswith(".md") for literal in literals)
+        if _has_named_call(receiver, "Path") and any(
+            _is_repo_relative_live_doc_path(literal) for literal in literals
+        ):
             return True
     return False
+
+
+def test_live_repo_doc_guard_catches_helper_wrappers_and_open_calls() -> None:
+    repo_text_call = ast.parse(
+        'repo_text("docs/standards/engineering.md")',
+        mode="eval",
+    ).body
+    docs_text_call = ast.parse('docs_text("status/current-state.md")', mode="eval").body
+    claude_text_call = ast.parse('claude_text("pr-review.md")', mode="eval").body
+    path_open_call = ast.parse(
+        'Path("docs/standards/engineering.md").open()',
+        mode="eval",
+    ).body
+    repo_root_read_text_call = ast.parse(
+        '(repo_root() / "docs" / "standards" / "engineering.md").read_text()',
+        mode="eval",
+    ).body
+    tmp_path_read_text_call = ast.parse(
+        '(tmp_path / "docs" / "example.md").read_text()',
+        mode="eval",
+    ).body
+
+    assert isinstance(repo_text_call, ast.Call)
+    assert isinstance(docs_text_call, ast.Call)
+    assert isinstance(claude_text_call, ast.Call)
+    assert isinstance(path_open_call, ast.Call)
+    assert isinstance(repo_root_read_text_call, ast.Call)
+    assert isinstance(tmp_path_read_text_call, ast.Call)
+
+    assert _is_live_repo_doc_audit_call(repo_text_call) is True
+    assert _is_live_repo_doc_audit_call(docs_text_call) is True
+    assert _is_live_repo_doc_audit_call(claude_text_call) is True
+    assert _is_live_repo_doc_audit_call(path_open_call) is True
+    assert _is_live_repo_doc_audit_call(repo_root_read_text_call) is True
+    assert _is_live_repo_doc_audit_call(tmp_path_read_text_call) is False
 
 
 def test_tests_do_not_audit_live_repo_markdown_or_control_plane_docs() -> None:

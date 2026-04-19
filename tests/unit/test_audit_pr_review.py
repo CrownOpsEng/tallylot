@@ -95,7 +95,11 @@ def test_target_naming_catalog_diff_stays_control_plane_only() -> None:
     )
 
     assert plan.surface_report.surface_groups == ("control_plane_text",)
-    assert plan.selected_check_ids == ("docs-maintenance", "target-naming")
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "target-naming",
+        "docs-audit",
+    )
 
 
 def test_repo_code_diff_selects_full_quality_suite() -> None:

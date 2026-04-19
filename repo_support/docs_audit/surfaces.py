@@ -20,6 +20,7 @@ DOCS_AUDIT_SUBSTRATE_EXACT_PATHS = {
     ".pylintrc-tests",
     "tools/audit_docs.py",
     "tools/message_standards.py",
+    "tools/target_naming_catalog.yaml",
     "tools/validate_commit_message.py",
     "tools/validate_pr_metadata.py",
 }
