@@ -43,8 +43,12 @@ def matrix_findings(
             )
         )
     findings.extend(_required_inventory_findings(document, table.rows, spec))
+    findings.extend(_current_reader_inventory_findings(document, table.rows, spec))
     for row in table.rows:
         findings.extend(_required_cell_findings(document, row, spec))
+        findings.extend(_current_reader_findings(document, row, spec))
+        findings.extend(_authoritative_product_findings(document, row, spec))
+        findings.extend(_target_reader_findings(document, row, spec))
         for cell in row.cells:
             lowered = cell.normalized_text
             for fragment in spec.banned_fragments:
@@ -166,8 +170,252 @@ def _required_cell_findings(
     return tuple(findings)
 
 
+def _current_reader_inventory_findings(
+    document: DocumentModel,
+    rows: tuple[TableRow, ...],
+    spec: MatrixSpec,
+) -> tuple[NamingFinding, ...]:
+    if not spec.current_reader_inventory:
+        return ()
+    column_index = {column: index for index, column in enumerate(spec.required_columns)}
+    readers_index = column_index["Current readers"]
+    used_labels: set[str] = {
+        _canonical_matrix_value(clause)
+        for row in rows
+        if readers_index < len(row.cells)
+        for clause in _split_matrix_clauses(row.cells[readers_index].text)
+    }
+    expected_labels: set[str] = set(spec.current_reader_inventory)
+    if used_labels == expected_labels:
+        return ()
+    span = (
+        rows[0].cells[readers_index].span
+        if rows and readers_index < len(rows[0].cells)
+        else _line_one_span()
+    )
+    return (
+        build_finding(
+            rule_id="matrix.rows.current_readers.inventory",
+            document=document,
+            span=span,
+            message=(
+                "matrix current-reader labels must cover the canonical inventory; "
+                f"expected {sorted(expected_labels)!r}, found {sorted(used_labels)!r}"
+            ),
+            suggestion=(
+                "rewrite current-reader cells to the canonical inventory labels"
+            ),
+        ),
+    )
+
+
+def _current_reader_findings(
+    document: DocumentModel,
+    row: TableRow,
+    spec: MatrixSpec,
+) -> tuple[NamingFinding, ...]:
+    if not spec.current_reader_inventory:
+        return ()
+    column_index = {column: index for index, column in enumerate(spec.required_columns)}
+    readers_index = column_index["Current readers"]
+    if readers_index >= len(row.cells):
+        return ()
+    cell = row.cells[readers_index]
+    allowed_labels = frozenset(spec.current_reader_inventory)
+    findings: list[NamingFinding] = []
+    for clause in _split_matrix_clauses(cell.text):
+        label = _canonical_matrix_value(clause)
+        if not clause.startswith("`") or not clause.endswith("`"):
+            findings.append(
+                build_finding(
+                    rule_id="matrix.rows.current_readers.canonical_label",
+                    document=document,
+                    span=cell.span,
+                    message=(
+                        f"matrix current-reader label {clause!r} must use the "
+                        "canonical backticked inventory form"
+                    ),
+                    suggestion=(
+                        "wrap each current-reader label in backticks and use the "
+                        "canonical inventory label"
+                    ),
+                )
+            )
+            continue
+        if label not in allowed_labels:
+            findings.append(
+                build_finding(
+                    rule_id="matrix.rows.current_readers.canonical_label",
+                    document=document,
+                    span=cell.span,
+                    message=(
+                        f"matrix current-reader label {label!r} is not in the "
+                        "canonical inventory"
+                    ),
+                    suggestion=(
+                        "replace the label with one of the canonical current-reader "
+                        "inventory entries"
+                    ),
+                )
+            )
+    return tuple(findings)
+
+
+def _authoritative_product_findings(
+    document: DocumentModel,
+    row: TableRow,
+    spec: MatrixSpec,
+) -> tuple[NamingFinding, ...]:
+    column_index = {column: index for index, column in enumerate(spec.required_columns)}
+    authoritative_index = column_index["Target authoritative product(s)"]
+    if authoritative_index >= len(row.cells):
+        return ()
+    cell = row.cells[authoritative_index]
+    if not _canonical_matrix_value(cell.text):
+        return ()
+    if _target_reader_terms(cell.text):
+        return ()
+    return (
+        build_finding(
+            rule_id="matrix.rows.authoritative_products.canonical_owner",
+            document=document,
+            span=cell.span,
+            message=(
+                "target-authority cells must name machine-readable authoritative "
+                "products"
+            ),
+            suggestion=(
+                "use backticked authoritative product names or the explicit "
+                "'owning target product' phrase"
+            ),
+        ),
+    )
+
+
+def _target_reader_findings(
+    document: DocumentModel,
+    row: TableRow,
+    spec: MatrixSpec,
+) -> tuple[NamingFinding, ...]:
+    column_index = {column: index for index, column in enumerate(spec.required_columns)}
+    target_readers_index = column_index["Target readers after cutover"]
+    if target_readers_index >= len(row.cells):
+        return ()
+    authoritative_index = column_index["Target authoritative product(s)"]
+    authoritative_terms: set[str] = (
+        _target_reader_terms(row.cells[authoritative_index].text)
+        if authoritative_index < len(row.cells)
+        else set()
+    )
+    placeholder_capabilities = frozenset(
+        item.casefold() for item in spec.target_reader_placeholder_capabilities
+    )
+    cell = row.cells[target_readers_index]
+    findings: list[NamingFinding] = []
+    for clause in _split_matrix_clauses(cell.text):
+        connector = " reading " if " reading " in clause else " from "
+        if connector not in clause:
+            findings.append(
+                build_finding(
+                    rule_id="matrix.rows.target_readers.shape",
+                    document=document,
+                    span=cell.span,
+                    message=(
+                        f"target-reader clause {clause!r} must name a concrete "
+                        "capability plus authoritative product"
+                    ),
+                    suggestion=(
+                        "rewrite each target-reader clause using '<capability> "
+                        "reading <authoritative product>' or '<capability> from "
+                        "<authoritative product>'"
+                    ),
+                )
+            )
+            continue
+        capability_text, target_text = clause.split(connector, 1)
+        capability = _canonical_matrix_value(capability_text)
+        if not capability:
+            findings.append(
+                build_finding(
+                    rule_id="matrix.rows.target_readers.shape",
+                    document=document,
+                    span=cell.span,
+                    message=(
+                        f"target-reader clause {clause!r} is missing a concrete "
+                        "capability"
+                    ),
+                    suggestion=(
+                        "name the target capability before the authoritative "
+                        "product reference"
+                    ),
+                )
+            )
+            continue
+        if capability.casefold() in placeholder_capabilities:
+            findings.append(
+                build_finding(
+                    rule_id="matrix.rows.target_readers.placeholder_capability",
+                    document=document,
+                    span=cell.span,
+                    message=(
+                        f"target-reader capability {capability!r} is still a "
+                        "placeholder, not a concrete capability"
+                    ),
+                    suggestion=(
+                        "replace the placeholder with the concrete post-cutover "
+                        "capability name"
+                    ),
+                )
+            )
+        target_terms: set[str] = _target_reader_terms(target_text)
+        if authoritative_terms and not target_terms.intersection(authoritative_terms):
+            findings.append(
+                build_finding(
+                    rule_id="matrix.rows.target_readers.authoritative_product",
+                    document=document,
+                    span=cell.span,
+                    message=(
+                        f"target-reader clause {clause!r} must name the row's "
+                        "authoritative product"
+                    ),
+                    suggestion=(
+                        "reference the same authoritative product named in the "
+                        "target-authority column"
+                    ),
+                )
+            )
+    return tuple(findings)
+
+
 def _canonical_matrix_value(text: str) -> str:
     return text.replace("`", "").strip()
+
+
+def _split_matrix_clauses(text: str) -> tuple[str, ...]:
+    return tuple(part.strip() for part in text.split(";") if part.strip())
+
+
+def _extract_backticked_tokens(text: str) -> tuple[str, ...]:
+    tokens: list[str] = []
+    token: list[str] = []
+    inside_token = False
+    for character in text:
+        if character == "`":
+            if inside_token:
+                tokens.append("".join(token))
+                token = []
+            inside_token = not inside_token
+            continue
+        if inside_token:
+            token.append(character)
+    return tuple(tokens)
+
+
+def _target_reader_terms(text: str) -> set[str]:
+    terms = set(_extract_backticked_tokens(text))
+    if "owning target product" in text:
+        terms.add("owning target product")
+    return terms
 
 
 def _line_one_span() -> SourceSpan:

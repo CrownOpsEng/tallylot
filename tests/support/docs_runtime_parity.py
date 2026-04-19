@@ -15,6 +15,10 @@ from repo_support.paths import (
     docs_root,
     repo_root,
 )
+from repo_support.target_naming.catalog import load_target_naming_catalog
+from repo_support.target_naming.scope import (
+    parse_frontmatter as parse_naming_frontmatter,
+)
 
 PRODUCTION_COMMAND_ROUTE_PATTERN = re.compile(
     r"make cli ARGS=['\"]"
@@ -75,6 +79,20 @@ def architecture_doc_paths() -> list[Path]:
     ]
 
 
+def forward_target_doc_paths() -> list[Path]:
+    catalog = load_target_naming_catalog()
+    paths = [
+        repo_root() / path
+        for path, scope in sorted(catalog.root_file_scopes.items())
+        if scope == "forward_target"
+    ]
+    for path in sorted(docs_root().rglob("*.md")):
+        frontmatter = parse_naming_frontmatter(path.read_text(encoding="utf-8"))
+        if frontmatter.get("naming_scope") == "forward_target":
+            paths.append(path)
+    return list(dict.fromkeys(paths))
+
+
 def _documented_routes(paths: list[Path], pattern: re.Pattern[str]) -> set[str]:
     routes: set[str] = set()
     for path in paths:
@@ -123,6 +141,7 @@ __all__ = [
     "docs_root",
     "documented_oracle_routes",
     "documented_production_routes",
+    "forward_target_doc_paths",
     "registered_routes",
     "repo_root",
 ]

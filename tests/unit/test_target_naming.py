@@ -200,6 +200,8 @@ def _write_catalog(
                 ],
                 "required_rows": [],
                 "required_nonempty_columns": [],
+                "current_reader_inventory": [],
+                "target_reader_placeholder_capabilities": [],
                 "banned_fragments": ["view or sidecar"],
             }
         ],
@@ -273,6 +275,8 @@ def _matrix_spec(
     path: str = "docs/matrix.md",
     required_rows: Sequence[str] = (),
     required_nonempty_columns: Sequence[str] = (),
+    current_reader_inventory: Sequence[str] = (),
+    target_reader_placeholder_capabilities: Sequence[str] = (),
 ) -> dict[str, object]:
     return {
         "path": path,
@@ -294,6 +298,10 @@ def _matrix_spec(
         "banned_fragments": ["view or sidecar"],
         "required_rows": list(required_rows),
         "required_nonempty_columns": list(required_nonempty_columns),
+        "current_reader_inventory": list(current_reader_inventory),
+        "target_reader_placeholder_capabilities": list(
+            target_reader_placeholder_capabilities
+        ),
     }
 
 
@@ -402,6 +410,8 @@ def test_catalog_loads_bridge_cutover_required_rows(tmp_path: Path) -> None:
                 "Cutover gate",
                 "Retirement gate",
             ),
+            current_reader_inventory=("planner review", "balance check"),
+            target_reader_placeholder_capabilities=("future consumer", "reader"),
         )
     ]
     target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
@@ -421,6 +431,22 @@ def test_catalog_loads_bridge_cutover_required_rows(tmp_path: Path) -> None:
         "Target readers after cutover",
         "Cutover gate",
         "Retirement gate",
+    )
+    assert catalog.matrix_specs[0].current_reader_inventory == (
+        "planner review",
+        "balance check",
+    )
+    assert catalog.matrix_specs[0].target_reader_placeholder_capabilities == (
+        "future consumer",
+        "reader",
+    )
+    assert catalog.matrix_specs[0].current_reader_inventory == (
+        "planner review",
+        "balance check",
+    )
+    assert catalog.matrix_specs[0].target_reader_placeholder_capabilities == (
+        "future consumer",
+        "reader",
     )
 
 
@@ -836,6 +862,96 @@ def test_audit_reports_capitalized_retired_alias_in_summary(tmp_path: Path) -> N
     assert [finding.rule_id for finding in findings] == ["body.compatibility_view_term"]
 
 
+def test_audit_reports_transient_process_term_in_summary(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["banned_phrases"].append(
+        {
+            "rule_id": "body.no_transient_process_term",
+            "term": "implementation plan",
+            "contexts": ["body", "summary"],
+            "allowed_scopes": ["forward_target"],
+            "paths": [],
+        }
+    )
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Implementation plan summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/example.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "body.no_transient_process_term"
+    ]
+
+
+def test_audit_reports_stepwise_handoff_label_in_body(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["banned_phrases"].append(
+        {
+            "rule_id": "body.no_stepwise_handoff_label",
+            "term": "step 1",
+            "contexts": ["body"],
+            "allowed_scopes": ["forward_target"],
+            "paths": [],
+        }
+    )
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            Step 1: hand the work to a later pass.
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/example.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "body.no_stepwise_handoff_label"
+    ]
+
+
 def test_audit_reports_title_drift(tmp_path: Path) -> None:
     _write_catalog(tmp_path)
     _write_doc(
@@ -1098,7 +1214,7 @@ def test_audit_reports_missing_bridge_cutover_row(tmp_path: Path) -> None:
 
             | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
             | --- | --- | --- | --- | --- | --- | --- | --- |
-            | translation_input_plan.json | EvidenceSet | compatibility view | none | planner | target planner | deterministic output | reader retired |
+            | translation_input_plan.json | `EvidenceSet` | compatibility view | none | planner | claim construction from `EvidenceSet` | deterministic output | reader retired |
             """
         ),
     )
@@ -1136,8 +1252,8 @@ def test_audit_reports_extra_bridge_cutover_row(tmp_path: Path) -> None:
 
             | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
             | --- | --- | --- | --- | --- | --- | --- | --- |
-            | translation_input_plan.json | EvidenceSet | compatibility view | none | planner | target planner | deterministic output | reader retired |
-            | unexpected_surface.json | EvidenceSet | compatibility view | none | planner | target planner | deterministic output | reader retired |
+            | translation_input_plan.json | `EvidenceSet` | compatibility view | none | planner | claim construction from `EvidenceSet` | deterministic output | reader retired |
+            | unexpected_surface.json | `EvidenceSet` | compatibility view | none | planner | claim construction from `EvidenceSet` | deterministic output | reader retired |
             """
         ),
     )
@@ -1180,8 +1296,8 @@ def test_audit_reports_out_of_order_bridge_cutover_row(tmp_path: Path) -> None:
 
             | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
             | --- | --- | --- | --- | --- | --- | --- | --- |
-            | TransactionFact and facts.csv | EconomicFacts | compatibility view | none | balances | target balances | parity proven | authority retired |
-            | translation_input_plan.json | EvidenceSet | compatibility view | none | planner | target planner | deterministic output | reader retired |
+            | TransactionFact and facts.csv | `EconomicFacts` | compatibility view | none | balances | balance checks from `EconomicFacts` | parity proven | authority retired |
+            | translation_input_plan.json | `EvidenceSet` | compatibility view | none | planner | claim construction from `EvidenceSet` | deterministic output | reader retired |
             """
         ),
     )
@@ -1217,11 +1333,11 @@ def _assert_blank_required_bridge_cutover_cell_finding(
     target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
     row_values = {
         "Current bridge surface": "translation_input_plan.json",
-        "Target authoritative product(s)": "EvidenceSet",
+        "Target authoritative product(s)": "`EvidenceSet`",
         "Derived compatibility view": "compatibility view",
         "Derived compatibility sidecar": "none",
         "Current readers": "planner",
-        "Target readers after cutover": "target planner",
+        "Target readers after cutover": "claim construction from `EvidenceSet`",
         "Cutover gate": "deterministic output",
         "Retirement gate": "reader retired",
     }
@@ -1296,6 +1412,256 @@ def test_audit_reports_blank_retirement_gate_cell(tmp_path: Path) -> None:
     )
 
 
+def test_audit_reports_unbackticked_current_reader_label(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=("translation_input_plan.json",),
+            current_reader_inventory=("planner review",),
+            required_nonempty_columns=("Current readers",),
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | `EvidenceSet` | compatibility view | none | planner review | claim construction from `EvidenceSet` | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.current_readers.canonical_label"
+    ]
+
+
+def test_audit_reports_unbackticked_authoritative_product_cell(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(required_rows=("translation_input_plan.json",))
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | EvidenceSet | compatibility view | none | planner | claim construction from `EvidenceSet` | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.authoritative_products.canonical_owner"
+    ]
+
+
+def test_audit_reports_missing_current_reader_inventory_label(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=("translation_input_plan.json",),
+            current_reader_inventory=("planner review", "balance check"),
+            required_nonempty_columns=("Current readers",),
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | `EvidenceSet` | compatibility view | none | `planner review` | claim construction from `EvidenceSet` | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.current_readers.inventory"
+    ]
+
+
+def test_audit_reports_placeholder_target_reader_capability(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=("translation_input_plan.json",),
+            current_reader_inventory=("planner review",),
+            target_reader_placeholder_capabilities=("future consumer",),
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | `EvidenceSet` | compatibility view | none | `planner review` | future consumer reading `EvidenceSet` | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.target_readers.placeholder_capability"
+    ]
+
+
+def test_audit_reports_target_reader_missing_authoritative_product(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=("translation_input_plan.json",),
+            current_reader_inventory=("planner review",),
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | `EvidenceSet` | compatibility view | none | `planner review` | claim construction from `ClaimSet` | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.target_readers.authoritative_product"
+    ]
+
+
+def test_audit_reports_target_reader_without_capability_product_shape(
+    tmp_path: Path,
+) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["matrix_specs"] = [
+        _matrix_spec(
+            required_rows=("translation_input_plan.json",),
+            current_reader_inventory=("planner review",),
+        )
+    ]
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | `EvidenceSet` | compatibility view | none | `planner review` | claim construction | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "matrix.rows.target_readers.shape"
+    ]
+
+
 def test_audit_allows_only_canonical_compatibility_shape_terms_in_matrix(
     tmp_path: Path,
 ) -> None:
@@ -1323,7 +1689,7 @@ def test_audit_allows_only_canonical_compatibility_shape_terms_in_matrix(
 
             | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
             | --- | --- | --- | --- | --- | --- | --- | --- |
-            | translation_input_plan.json | EvidenceSet | compatibility projection | none | planner | target planner | deterministic output | reader retired |
+            | translation_input_plan.json | `EvidenceSet` | compatibility projection | none | planner | claim construction from `EvidenceSet` | deterministic output | reader retired |
             """
         ),
     )
@@ -1666,6 +2032,7 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     retired_aliases = {
         alias.term: alias.replacement for alias in catalog.retired_aliases
     }
+    banned_terms = {phrase.term for phrase in catalog.banned_phrases}
     assert retired_aliases["application/readiness/"] == "owning application slice"
     assert retired_aliases["application/assessment/"] == "owning application slice"
     assert (
@@ -1678,6 +2045,8 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     )
     assert retired_aliases["operator view"] == "derived view"
     assert retired_aliases["operator views"] == "derived views"
+    assert "implementation plan" in banned_terms
+    assert "step 1" in banned_terms
     assert "tools/target_naming.py" in catalog.tooling_paths
     assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
 
@@ -1685,6 +2054,7 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
 @pytest.mark.parametrize(
     "path",
     [
+        "docs/README.md",
         "docs/standards/engineering.md",
         "docs/reference/target-ids-and-refs.md",
         "docs/concepts/pipeline-stage-contracts.md",
@@ -1701,7 +2071,12 @@ def test_target_naming_sensitive_path_helper_covers_docs_and_control_plane() -> 
         is_target_naming_sensitive_path("docs/concepts/pipeline-stage-contracts.md")
         is True
     )
+    assert is_target_naming_sensitive_path("docs/README.md") is True
     assert is_target_naming_sensitive_path("docs/standards/engineering.md") is True
     assert is_target_naming_sensitive_path("AGENTS.md") is True
     assert is_target_naming_sensitive_path("tools/target_naming_catalog.yaml") is True
+    assert (
+        is_target_naming_sensitive_path("docs/concepts/transaction-classification.md")
+        is False
+    )
     assert is_target_naming_sensitive_path("docs/guides/source-intake.md") is False

@@ -171,6 +171,35 @@ def test_forward_looking_target_doc_diff_selects_target_naming() -> None:
     )
 
 
+def test_docs_home_diff_selects_target_naming() -> None:
+    plan = build_verification_plan(
+        paths=("docs/README.md",),
+        trigger="local",
+        mode="planned",
+    )
+
+    assert plan.surface_report.surface_groups == ("human_docs",)
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "markdownlint",
+        "target-naming",
+    )
+
+
+def test_bridge_local_doc_diff_skips_target_naming() -> None:
+    plan = build_verification_plan(
+        paths=("docs/concepts/transaction-classification.md",),
+        trigger="local",
+        mode="planned",
+    )
+
+    assert plan.surface_report.surface_groups == ("human_docs",)
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "markdownlint",
+    )
+
+
 def test_pull_request_mode_can_still_force_full_suite() -> None:
     plan = build_verification_plan(
         paths=("docs/guides/source-intake.md",),

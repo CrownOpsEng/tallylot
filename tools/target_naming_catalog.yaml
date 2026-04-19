@@ -808,6 +808,76 @@ banned_phrases:
     contexts: [body, inline_code]
     allowed_scopes: [forward_target]
     paths: []
+  - rule_id: body.no_transient_process_term
+    term: implementation plan
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: execution plan
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: phase log
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: review ledger
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: execution ledger
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: phase ledger
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: handoff prose
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: temporary bookkeeping
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: temporary process bookkeeping
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: compaction aids
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_stepwise_handoff_label
+    term: follow this plan
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_stepwise_handoff_label
+    term: step 1
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_stepwise_handoff_label
+    term: step 2
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_stepwise_handoff_label
+    term: step 3
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
 
 retired_aliases:
   - rule_id: body.compatibility_view_term
@@ -1044,6 +1114,38 @@ matrix_specs:
       - Target readers after cutover
       - Cutover gate
       - Retirement gate
+    current_reader_inventory:
+      - source normalize planner review and translation path
+      - source assemble bridge projection path
+      - operator review diagnostics
+      - reconciliation balances inspect
+      - reconciliation balances check
+      - reconciliation balances summarize
+      - cointracking_csv rendering path
+      - dev-only oracle comparison path
+    target_reader_placeholder_capabilities:
+      - reader
+      - readers
+      - consumer
+      - consumers
+      - capability
+      - capabilities
+      - target reader
+      - target readers
+      - future reader
+      - future readers
+      - future consumer
+      - future consumers
+      - future capability
+      - future capabilities
+      - application surface
+      - application surfaces
+      - package root
+      - package roots
+      - read model
+      - read models
+      - future read model
+      - future read models
     banned_fragments:
       - view or sidecar
       - optional planner review view

@@ -3,7 +3,13 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from tests.support.docs_runtime_parity import docs_root, repo_root
+from repo_support.target_naming.catalog import load_target_naming_catalog
+
+from tests.support.docs_runtime_parity import (
+    docs_root,
+    forward_target_doc_paths,
+    repo_root,
+)
 
 OWNER_DOCS = (
     repo_root() / "ROADMAP.md",
@@ -17,14 +23,8 @@ OWNER_DOCS = (
     docs_root() / "reference" / "first-downstream-slice-contract.md",
 )
 
-FORWARD_TARGET_DEPENDENTS = (
-    docs_root() / "concepts" / "architecture-overview.md",
-    docs_root() / "reference" / "target-ids-and-refs.md",
-    docs_root() / "reference" / "target-persistence-reference.md",
-    docs_root() / "status" / "adapter-delivery-plan.md",
-    docs_root() / "concepts" / "oracle-boundaries.md",
-    docs_root() / "concepts" / "unified-adapter-architecture.md",
-    docs_root() / "concepts" / "transaction-classification.md",
+FORWARD_TARGET_DEPENDENTS = tuple(
+    path for path in forward_target_doc_paths() if path not in OWNER_DOCS
 )
 
 EXPECTED_OWNER_DOCS = (
@@ -52,6 +52,11 @@ EXPECTED_MATRIX_ROWS = (
 )
 
 HELPER_REF_DOC = docs_root() / "reference" / "target-ids-and-refs.md"
+BRIDGE_MATRIX_SPEC = next(
+    spec
+    for spec in load_target_naming_catalog().matrix_specs
+    if spec.path == "docs/concepts/bridge-to-target-mapping.md"
+)
 
 BRIDGE_MATRIX_HEADER = (
     "Current bridge surface",
@@ -431,13 +436,13 @@ def test_owner_contract_pages_do_not_compete_for_the_same_authority() -> None:
 
 def test_bridge_cutover_matrix_matches_declared_reader_inventory() -> None:
     migration_text = _text(docs_root() / "status" / "migration-sequence.md")
-    reader_inventory = frozenset(
-        _extract_labeled_code_bullets(
-            migration_text,
-            "## Canonical Current-Reader Inventory",
-            "## Landing Order",
-        )
+    reader_inventory = _extract_labeled_code_bullets(
+        migration_text,
+        "## Canonical Current-Reader Inventory",
+        "## Landing Order",
     )
+    assert reader_inventory == BRIDGE_MATRIX_SPEC.current_reader_inventory
+    reader_inventory_set = frozenset(reader_inventory)
     used_labels: set[str] = set()
 
     for row in _bridge_matrix_rows():
@@ -458,12 +463,12 @@ def test_bridge_cutover_matrix_matches_declared_reader_inventory() -> None:
                 "current reader cells must use canonical inventory labels, "
                 f"found {clause!r}"
             )
-            assert label in reader_inventory, (
+            assert label in reader_inventory_set, (
                 f"bridge mapping uses undeclared current reader label {label!r}"
             )
         used_labels.update(current_reader_labels)
 
-    assert used_labels == reader_inventory
+    assert used_labels == reader_inventory_set
 
 
 def test_bridge_cutover_matrix_rows_are_complete() -> None:
@@ -491,6 +496,10 @@ def test_bridge_cutover_matrix_rows_are_complete() -> None:
 def test_bridge_cutover_matrix_target_readers_name_capability_and_authoritative_product() -> (
     None
 ):
+    placeholder_capabilities = frozenset(
+        item.casefold()
+        for item in BRIDGE_MATRIX_SPEC.target_reader_placeholder_capabilities
+    )
     for row in _bridge_matrix_rows():
         authoritative_terms = set(
             _extract_backticked_tokens(row["Target authoritative product(s)"])
@@ -513,8 +522,13 @@ def test_bridge_cutover_matrix_target_readers_name_capability_and_authoritative_
                 )
                 capability, target_text = clause.split(" from ", 1)
 
-            assert capability.strip().strip("`"), (
+            capability_name = _canonical_text_value(capability)
+            assert capability_name, (
                 f"target reader clause is missing a concrete capability: {clause!r}"
+            )
+            assert capability_name.casefold() not in placeholder_capabilities, (
+                "target reader clause still uses placeholder capability wording: "
+                f"{clause!r}"
             )
 
             target_terms = set(_extract_backticked_tokens(target_text))

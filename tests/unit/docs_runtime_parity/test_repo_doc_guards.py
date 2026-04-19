@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from tallylot.infrastructure.workspace.layout import SEED_FILES
 
 from tests.support.docs_runtime_parity import (
@@ -9,29 +7,9 @@ from tests.support.docs_runtime_parity import (
     agents_root,
     architecture_doc_paths,
     docs_root,
+    forward_target_doc_paths,
     repo_root,
 )
-
-
-def _forward_target_contract_doc_paths() -> tuple[Path, ...]:
-    return (
-        repo_root() / "ROADMAP.md",
-        docs_root() / "status" / "migration-sequence.md",
-        docs_root() / "concepts" / "bridge-to-target-mapping.md",
-        docs_root() / "concepts" / "pipeline-stage-contracts.md",
-        docs_root() / "concepts" / "domain-ontology.md",
-        docs_root() / "concepts" / "gaps-and-reviews.md",
-        docs_root() / "concepts" / "reconciliation-tax-architecture.md",
-        docs_root() / "reference" / "first-upstream-slice-contract.md",
-        docs_root() / "reference" / "first-downstream-slice-contract.md",
-        docs_root() / "concepts" / "architecture-overview.md",
-        docs_root() / "reference" / "target-ids-and-refs.md",
-        docs_root() / "reference" / "target-persistence-reference.md",
-        docs_root() / "status" / "adapter-delivery-plan.md",
-        docs_root() / "concepts" / "oracle-boundaries.md",
-        docs_root() / "concepts" / "unified-adapter-architecture.md",
-        docs_root() / "concepts" / "transaction-classification.md",
-    )
 
 
 def _joined(*parts: str) -> str:
@@ -434,18 +412,8 @@ def test_forward_target_docs_reserve_specific_read_model_package_names() -> None
 def test_forward_target_docs_retire_operator_views_and_abstract_container_labels() -> (
     None
 ):
-    governed_paths = (
-        repo_root() / "ROADMAP.md",
-        *sorted(docs_root().rglob("*.md")),
-    )
-
-    for path in governed_paths:
+    for path in forward_target_doc_paths():
         text = path.read_text(encoding="utf-8")
-        if (
-            path != repo_root() / "ROADMAP.md"
-            and "naming_scope: forward_target" not in text
-        ):
-            continue
         assert "operator views" not in text, f"{path} still uses operator views"
         assert "operator view" not in text, f"{path} still uses operator view"
         assert "emission root" not in text, f"{path} still uses emission root"
@@ -553,7 +521,7 @@ def test_forward_target_contract_docs_do_not_use_transient_process_terms() -> No
         _joined("compaction", " aids"),
     )
 
-    for path in _forward_target_contract_doc_paths():
+    for path in forward_target_doc_paths():
         text = path.read_text(encoding="utf-8").lower()
         for needle in forbidden:
             assert needle not in text, (
@@ -569,7 +537,7 @@ def test_forward_target_contract_docs_do_not_use_stepwise_handoff_labels() -> No
         _joined("step", " 3"),
     )
 
-    for path in _forward_target_contract_doc_paths():
+    for path in forward_target_doc_paths():
         text = path.read_text(encoding="utf-8").lower()
         for needle in forbidden:
             assert needle not in text, (

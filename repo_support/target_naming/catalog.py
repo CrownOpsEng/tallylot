@@ -113,6 +113,8 @@ class MatrixSpec:
     banned_fragments: tuple[str, ...]
     required_rows: tuple[str, ...]
     required_nonempty_columns: tuple[str, ...]
+    current_reader_inventory: tuple[str, ...]
+    target_reader_placeholder_capabilities: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -296,6 +298,12 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
                 required_nonempty_columns=_string_tuple(
                     _sequence_value(item, "required_nonempty_columns")
                 ),
+                current_reader_inventory=_string_tuple(
+                    _sequence_value(item, "current_reader_inventory")
+                ),
+                target_reader_placeholder_capabilities=_string_tuple(
+                    _sequence_value(item, "target_reader_placeholder_capabilities")
+                ),
             )
             for item in _mapping_sequence_value(loaded, "matrix_specs")
         ),
@@ -431,6 +439,19 @@ def _validate_matrix_specs(catalog: TargetNamingCatalog) -> tuple[str, ...]:
             errors.append("matrix spec required_columns must not contain duplicates")
         if len(set(spec.required_rows)) != len(spec.required_rows):
             errors.append("matrix spec required_rows must not contain duplicates")
+        if len(set(spec.current_reader_inventory)) != len(
+            spec.current_reader_inventory
+        ):
+            errors.append(
+                "matrix spec current_reader_inventory must not contain duplicates"
+            )
+        if len(set(spec.target_reader_placeholder_capabilities)) != len(
+            spec.target_reader_placeholder_capabilities
+        ):
+            errors.append(
+                "matrix spec target_reader_placeholder_capabilities must not "
+                "contain duplicates"
+            )
         known_columns = set(spec.required_columns)
         for column in spec.required_nonempty_columns:
             if column not in known_columns:
