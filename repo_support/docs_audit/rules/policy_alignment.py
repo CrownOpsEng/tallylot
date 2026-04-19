@@ -277,7 +277,8 @@ POLICY_ALIGNMENT_RULES = (
                 "bridge cutover matrix inventory, owner, compatibility, reader, and gate",
                 "`docs/README.md` generated reference-group headings/order are",
                 "required `naming_scope` frontmatter/default behavior is",
-                "forward-target contract docs must stay free of transient planning language",
+                "planning and forward-looking docs may use roadmap-owned ephemeral tags",
+                "delivery metadata surfaces must stay",
                 "treat the blocking `target-naming` review check as the repo-native guard",
             )
             if needle not in repo_text("docs/standards/engineering.md")
