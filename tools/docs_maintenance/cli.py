@@ -31,6 +31,11 @@ from .metadata import (
 from .state import agents_root, docs_root, relative_path, repo_root
 
 SYNCED_SECTIONS = ("concepts", "guides", "reference", "status", "standards")
+REFERENCE_GROUP_HEADINGS = (
+    "### Target References",
+    "### Current-State References",
+    "### Oracle References",
+)
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 RETIRED_REFERENCES = (
     "docs/file-map.md",
@@ -39,6 +44,7 @@ RETIRED_REFERENCES = (
     "docs/reference/README.md",
     "docs/operations/ai-session-prompt.md",
 )
+FORBIDDEN_REFERENCE_ARTIFACT_SUFFIXES = {".csv", ".json", ".zip", ".html", ".pdf"}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -164,15 +170,15 @@ def render_reference_section(documents: list[Document]) -> str:
         if document.frontmatter.get("naming_scope") == "oracle_local"
     ]
     parts = [
-        "### Target References",
+        REFERENCE_GROUP_HEADINGS[0],
         "",
         render_section(target_documents),
         "",
-        "### Current-State References",
+        REFERENCE_GROUP_HEADINGS[1],
         "",
         render_section(current_state_documents),
         "",
-        "### Oracle References",
+        REFERENCE_GROUP_HEADINGS[2],
         "",
         render_section(oracle_documents),
     ]
@@ -228,6 +234,22 @@ def _check_retired_references() -> None:
         for reference in RETIRED_REFERENCES:
             if reference in referenced_paths:
                 raise ValueError(f"{path} still references retired path {reference}")
+
+
+def _check_docs_tree_hygiene() -> None:
+    for path in sorted(docs_root().rglob("*")):
+        if not path.is_file():
+            continue
+        if path.name != "README.md" and path.name != path.name.lower():
+            raise ValueError(f"doc filename is not lowercase: {path}")
+        if (
+            path.is_file()
+            and path.suffix in FORBIDDEN_REFERENCE_ARTIFACT_SUFFIXES
+            and relative_path(path).startswith("docs/reference/")
+        ):
+            raise ValueError(
+                f"repo reference docs should not contain oracle data files: {path}"
+            )
 
 
 def sync_docs_homepage(documents: list[Document], *, check: bool) -> bool:
@@ -381,6 +403,7 @@ def run_sync(*, check: bool) -> int:
     validate_markdown_links(repo_markdown_paths())
     validate_uv_examples(repo_markdown_paths())
     _check_retired_references()
+    _check_docs_tree_hygiene()
     sync_docs_homepage(documents, check=check)
     print("docs maintenance sync passed")
     return 0

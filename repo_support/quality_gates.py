@@ -11,6 +11,7 @@ from repo_support.review_verification import check_spec
 QUALITY_GATE_ORDER = (
     "markdownlint",
     "target-naming",
+    "docs-audit",
     "actionlint",
     "ruff",
     "mypy",
@@ -44,6 +45,10 @@ def available_quality_gates(*, full_tests: bool) -> dict[str, QualityGate]:
         "target-naming": QualityGate(
             name="target-naming",
             command=check_spec("target-naming").command,
+        ),
+        "docs-audit": QualityGate(
+            name="docs-audit",
+            command=check_spec("docs-audit").command,
         ),
         "actionlint": QualityGate(
             name="actionlint",
@@ -88,6 +93,7 @@ def quality_phase_plan(
                 gate_names=(
                     "markdownlint",
                     "target-naming",
+                    "docs-audit",
                     "actionlint",
                     "ruff",
                     "mypy",

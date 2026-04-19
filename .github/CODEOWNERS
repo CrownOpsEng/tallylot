@@ -11,9 +11,11 @@ AGENTS.md @CrownOpsEng
 docs/standards/** @CrownOpsEng
 .claude/commands/** @CrownOpsEng
 repo_support/local_autofix.py @CrownOpsEng
+repo_support/docs_audit/** @CrownOpsEng
 repo_support/quality_gates.py @CrownOpsEng
 repo_support/target_naming/** @CrownOpsEng
 repo_support/review_verification/** @CrownOpsEng
+tools/audit_docs.py @CrownOpsEng
 tools/install_git_hooks.py @CrownOpsEng
 tools/pre_commit_hook.py @CrownOpsEng
 tools/pre_push_hook.py @CrownOpsEng

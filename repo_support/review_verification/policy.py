@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Literal
 
+from repo_support.docs_audit import is_docs_audit_substrate_path
 from repo_support.target_naming import is_target_naming_sensitive_path
 
 from .catalog import (
@@ -25,6 +26,7 @@ FULL_PR_CHECK_IDS = (
     "docs-maintenance",
     "markdownlint",
     "target-naming",
+    "docs-audit",
     "actionlint",
     "ruff",
     "mypy",
@@ -80,6 +82,53 @@ STANDARDS_GUARD_PREFIXES = (
     ".claude/commands/",
     "tools/docs_maintenance/",
 )
+DELIVERY_GUARDRAILS_AUDIT_PATHS = {
+    ".github/CODEOWNERS",
+    "docs/standards/delivery-guardrails.md",
+    "tools/audit_delivery_guardrails.py",
+}
+PR_METADATA_VALIDATOR_PATHS = {
+    ".github/pull_request_template.md",
+    "docs/standards/commits.md",
+    "docs/standards/issues.md",
+    "tools/message_standards.py",
+    "tools/pre_push_hook.py",
+    "tools/validate_pr_metadata.py",
+}
+COMMIT_MESSAGE_VALIDATOR_PATHS = {
+    "docs/standards/commits.md",
+    "tools/message_standards.py",
+    "tools/validate_commit_message.py",
+}
+QUALITY_GATES_TOOLING_PATHS = {
+    "repo_support/quality_gates.py",
+    "tools/run_quality_gates.py",
+}
+PRE_COMMIT_HOOK_TOOLING_PATHS = {
+    ".pre-commit-config.yaml",
+    "repo_support/pytest_commands.py",
+    "tools/pre_commit_hook.py",
+    "tools/pre_push_hook.py",
+    "tools/run_fast_pytest.py",
+}
+AUDIT_PR_REVIEW_PATHS = {
+    "repo_support/review_verification/policy.py",
+    "repo_support/review_verification/surfaces.py",
+    "tools/audit_pr_review.py",
+}
+RUN_PR_REVIEW_CHECKS_PATHS = {
+    "repo_support/review_verification/policy.py",
+    "repo_support/review_verification/catalog.py",
+    "repo_support/review_verification/executor.py",
+    "repo_support/review_verification/surfaces.py",
+    "tools/run_pr_review_checks.py",
+    ".github/workflows/pr-review.yml",
+}
+CI_TOOLING_PATHS = {
+    "tools/evaluate_review_results.py",
+    "tools/run_review_check.py",
+    "tools/verify_built_wheel.py",
+}
 
 
 @dataclass(frozen=True)
@@ -109,6 +158,58 @@ def _is_shared_verification_substrate_path(path: str) -> bool:
     )
 
 
+def _is_docs_audit_markdown_path(path: str) -> bool:
+    return (
+        path.startswith("docs/")
+        or path in {"README.md", "AGENTS.md", "ROADMAP.md"}
+        or path.startswith(".claude/commands/")
+    )
+
+
+def _targets_delivery_guardrails_audit(path: str) -> bool:
+    return (
+        path.startswith(".github/workflows/") or path in DELIVERY_GUARDRAILS_AUDIT_PATHS
+    )
+
+
+def _targets_ci_tooling(path: str) -> bool:
+    return (
+        path.startswith(".github/actions/")
+        or path.startswith(".github/workflows/")
+        or path in CI_TOOLING_PATHS
+    )
+
+
+def _collect_exact_path_checks(path: str) -> tuple[str, ...]:
+    checks: list[str] = []
+    exact_groups = (
+        ("pr-metadata-validator", PR_METADATA_VALIDATOR_PATHS),
+        ("commit-message-validator", COMMIT_MESSAGE_VALIDATOR_PATHS),
+        ("quality-gates-tooling", QUALITY_GATES_TOOLING_PATHS),
+        ("pre-commit-hook-tooling", PRE_COMMIT_HOOK_TOOLING_PATHS),
+        ("audit-pr-review", AUDIT_PR_REVIEW_PATHS),
+        ("run-pr-review-checks", RUN_PR_REVIEW_CHECKS_PATHS),
+    )
+    for check_id, paths in exact_groups:
+        if path in paths:
+            checks.append(check_id)
+    return tuple(checks)
+
+
+def _update_selected_checks_for_path(
+    selected: set[str],
+    path: str,
+) -> None:
+    if _is_markdown_path(path):
+        selected.add("markdownlint")
+    if _is_docs_audit_markdown_path(path):
+        selected.add("docs-audit")
+    if path.startswith(".github/workflows/"):
+        selected.add("actionlint")
+    for check_id in _path_targeted_check_ids(path):
+        selected.add(check_id)
+
+
 def _path_targeted_check_ids(path: str) -> tuple[str, ...]:
     targeted: list[str] = []
     if path.startswith(".agents/skills/"):
@@ -116,69 +217,15 @@ def _path_targeted_check_ids(path: str) -> tuple[str, ...]:
     if path in STANDARDS_GUARD_EXACT_PATHS or path.startswith(STANDARDS_GUARD_PREFIXES):
         targeted.append("standards-guards")
     if path.startswith(".claude/commands/"):
-        targeted.append("docs-runtime-parity")
-    if (
-        path.startswith(".github/workflows/")
-        or path == ".github/CODEOWNERS"
-        or path == "docs/standards/delivery-guardrails.md"
-        or path == "tools/audit_delivery_guardrails.py"
-    ):
+        targeted.append("docs-audit")
+    if _targets_delivery_guardrails_audit(path):
         targeted.append("delivery-guardrails-audit")
-    if path in {
-        ".github/pull_request_template.md",
-        "docs/standards/commits.md",
-        "docs/standards/issues.md",
-        "tools/message_standards.py",
-        "tools/pre_push_hook.py",
-        "tools/validate_pr_metadata.py",
-    }:
-        targeted.append("pr-metadata-validator")
-    if path in {
-        "docs/standards/commits.md",
-        "tools/message_standards.py",
-        "tools/validate_commit_message.py",
-    }:
-        targeted.append("commit-message-validator")
-    if path in {
-        "repo_support/quality_gates.py",
-        "tools/run_quality_gates.py",
-    }:
-        targeted.append("quality-gates-tooling")
-    if path in {
-        ".pre-commit-config.yaml",
-        "repo_support/pytest_commands.py",
-        "tools/pre_commit_hook.py",
-        "tools/pre_push_hook.py",
-        "tools/run_fast_pytest.py",
-    }:
-        targeted.append("pre-commit-hook-tooling")
-    if path in {
-        "repo_support/review_verification/policy.py",
-        "repo_support/review_verification/surfaces.py",
-        "tools/audit_pr_review.py",
-    }:
-        targeted.append("audit-pr-review")
-    if path in {
-        "repo_support/review_verification/policy.py",
-        "repo_support/review_verification/catalog.py",
-        "repo_support/review_verification/executor.py",
-        "repo_support/review_verification/surfaces.py",
-        "tools/run_pr_review_checks.py",
-        ".github/workflows/pr-review.yml",
-    }:
-        targeted.append("run-pr-review-checks")
+    targeted.extend(_collect_exact_path_checks(path))
     if is_target_naming_sensitive_path(path):
         targeted.append("target-naming")
-    if (
-        path.startswith(".github/actions/")
-        or path.startswith(".github/workflows/")
-        or path
-        in {
-            "tools/evaluate_review_results.py",
-            "tools/run_review_check.py",
-            "tools/verify_built_wheel.py",
-        }
-    ):
+    if is_docs_audit_substrate_path(path):
+        targeted.append("docs-audit")
+    if _targets_ci_tooling(path):
         targeted.append("ci-tooling")
     return tuple(dict.fromkeys(targeted))
 
@@ -214,19 +261,15 @@ def _planned_check_ids(surface_report: SurfaceReport) -> tuple[set[str], bool]:
     has_packaging_sensitive = False
     has_shared_verification_substrate = False
 
-    if any(
+    has_docs_or_control_plane = any(
         group in {"human_docs", "control_plane_text"}
         for group in surface_report.surface_groups
-    ):
+    )
+    if has_docs_or_control_plane:
         selected.add("docs-maintenance")
 
     for path in surface_report.changed_paths:
-        if _is_markdown_path(path):
-            selected.add("markdownlint")
-        if path.startswith(".github/workflows/"):
-            selected.add("actionlint")
-        for check_id in _path_targeted_check_ids(path):
-            selected.add(check_id)
+        _update_selected_checks_for_path(selected, path)
         if is_packaging_sensitive_path(path):
             has_packaging_sensitive = True
         if is_production_code_path(path):
@@ -234,10 +277,11 @@ def _planned_check_ids(surface_report: SurfaceReport) -> tuple[set[str], bool]:
         if _is_shared_verification_substrate_path(path):
             has_shared_verification_substrate = True
 
-    if (
+    needs_full_quality = (
         "repo_code_or_tooling" in surface_report.surface_groups
         or has_shared_verification_substrate
-    ):
+    )
+    if needs_full_quality:
         selected.update(FULL_QUALITY_CHECK_IDS)
 
     if "ci_or_release" in surface_report.surface_groups:

@@ -188,35 +188,80 @@ Owner docs that must align before broad implementation begins:
 Exit criteria:
 
 - no owner concept is defined in two competing places
-- no target product references an undefined record family or ref type
-- no cross-stage support record or sidecar masquerades as a claim kind
-- claim-stage blockers can attach to `claim_scope_id` before subject
-  identity resolves, and later-stage blockers can attach to truthful
-  journal or tax subjects without collapsing to kernel-scope attachment only
-- no target id or helper id bakes bridge-era naming into target identity
+- forward contracts do not reference undefined record families or ref types
 - no canonical target contract keeps source-specific crypto nouns such as
   `wallet` when a repo-owned domain noun already owns that seam
-- no bridge surface is left without an authority and retirement rule
 - no hot-path field points to an undefined value ref or sidecar
-- every critical-path observation and claim kind has one authoritative kernel
-  field table
-- no target product ref in a product header uses `kernel_scope_id` where a
-  product id
-  exists
-- non-critical observation and claim kinds are explicitly deferred rather
-  than left implicit
-- implementation placement is mechanical rather than interpretive
-- `TaxOutputs` can land without requiring a separate read-side architecture
-  first
-- no shared application assessment center or shared grouped-readiness family is
-  left as the default home for later grouped consumers
-- the first upstream slice and first downstream slice can be implemented
-  without inventing
-  ids, claim bundles, values, or reader cutovers
-- every active bridge surface has one authoritative target owner
-- every active bridge surface has one derived compatibility rule
-- every active bridge surface names concrete current readers and concrete
-  target readers
+- `EvidenceSet` record families, ids, cardinality, and intentional
+  `selection_fingerprint` identity churn
+- critical-path `EvidenceObservationRecord` field tables for
+  `statement_document` and `statement_balance_row`
+- `ClaimSet` claim-scope, claim-bundle, and claim-bundle-decision model
+- critical-path `ClaimRecord` field tables, `observation_refs`, and the
+  compatibility sidecar boundary for retained legacy hint fields
+- `AssertionValue`, `PositionRef`, and `ContractRef`
+- shared gap and review records and sidecars: `GapRecord`,
+  `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
+  capability-owned readiness-view locality rules,
+  `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id`
+  and `balance_target_id` attachments, and the downstream shared-subject
+  seams needed for journal and tax records
+- product ids, upstream product-ref multiplicity, and the rule that
+  product refs use product ids rather than `kernel_scope_id`
+- short-first canonical stable ids, catalog-declared owner-local short
+  slots, and deterministic boundary checks that require local slots only
+  on declared owner-local surfaces and canonical ids everywhere else
+- claim-bundle decision naming that keeps `outcome` on the posture axis
+  and freezes `ClaimBundleDecisionRecord.basis` to reason-only values
+  such as `single_bundle`, `insufficient_identity`,
+  `insufficient_temporal_precision`, `conflicting_claims`,
+  `upstream_gap`, `policy_decision_required`, and
+  `later_bundle_selected`
+- balance-target naming that splits observation presence from comparison
+  outcome instead of overloading one status field
+- checkpoint-proposal naming that keeps proposal posture on `status` and
+  models supersession separately through `superseding_proposal_ref`
+- checkpoint-assertion kind naming that keeps quantity, amount, and state
+  stems parallel across sibling values such as `position_quantity`,
+  `cash_amount`, `basis_amount`, `owner_state`, and `location_state`
+- checkpoint acceptance vocabulary that keeps `basis`,
+  `support_shape`, and `continuity_kind` on distinct semantic axes,
+  using reason labels such as `document_support`, `reported_support`,
+  `manual_support`, and `reconciled_continuity`,
+  observation-shape labels such as `document_observation`,
+  `reported_observation`, and `manual_assertion`, and
+  continuity-shape labels such as `observed_continuity`,
+  `reconciled_rollforward`, `opening_rollforward`, and
+  `partial_rollforward`
+- package-root naming that keeps `journal` aligned across stage
+  vocabulary and package ownership, keeps `economics` aligned across
+  stage vocabulary, package ownership, and stage prose, uses singular
+  concept roots such as `assertion/`, avoids umbrella roots such as
+  `entities/` when the identity families are already known, keeps
+  gap/review roots explicit when the docs mean those shared families
+  directly, and keeps the shared `assessment/` root split into concrete
+  nested families such as `gap/` and `review/` while keeping readiness
+  views and other assessment behavior in the owning application slice
+- authoritative persistence model, product-owned directory stems,
+  partition scopes, sidecar rules, and default filesystem placement
+- migration authority rules, compatibility views, reader cutovers, and
+  retirement gates
+- package ownership and layer placement that keep shared assessment
+  contracts in `domain/assessment/`, keep the persisted
+  `assessment/gap/`, `assessment/review/` families as storage rules
+  only, and retire shared application assessment behavior until a
+  specific capability-owned derived read-model package is activated
+- defer broader grouped readiness, reporting, portfolio, visualization,
+  and investigation architecture until the trigger ladder below fires,
+  allowing only filing-critical product-local derived outputs, narrow
+  rendering outputs, or migration compatibility views before then
+- catalog-first target naming governance with one machine-readable
+  naming authority and a blocking `target-naming` check on enforced
+  forward-looking docs
+- explicit no-invention rules for non-critical observation and claim
+  kinds
+- no placeholder valuation-measure field family until a real shared
+  taxonomy exists
 - no Phase 1 or Phase 2 doc claims authority over `TransactionFact`,
   `facts.csv`, `balance_snapshots.csv`, `balance_references.csv`, or
   `cointracking_csv`
@@ -224,6 +269,37 @@ Exit criteria:
   downstream slice contract
 - the intentional looseness of Phases 6 and later is explicit and is
   non-blocking for Phase 0 to Phase 5 implementation
+
+| Exit criterion | Authoritative doc section(s) | Automated proof |
+| --- | --- | --- |
+| no owner concept is defined in two competing places | `docs/status/migration-sequence.md` `## Roadmap Ownership`; `docs/concepts/bridge-to-target-mapping.md` `## Scope And Related Contract Pages`; `docs/concepts/reconciliation-tax-architecture.md` `## Related Contract Pages` | `docs-audit:forward_contracts.owner_contract_pages_do_not_compete_for_the_same_authority` |
+| forward contracts do not reference undefined record families or ref types | `docs/concepts/pipeline-stage-contracts.md` `## Shared Contract References`; `docs/concepts/domain-ontology.md` `## Identity And Ref Seams`; `docs/concepts/gaps-and-reviews.md` `` ## `SubjectRef` `` | `docs-audit:forward_contracts.do_not_reference_undefined_record_families_or_refs` |
+| no canonical target contract keeps source-specific crypto nouns such as `wallet` when a repo-owned domain noun already owns that seam | `docs/concepts/domain-ontology.md` `## Generic Model Requirements`; `docs/reference/first-upstream-slice-contract.md` `` ## `EvidenceSet` Coverage `` | `docs-audit:forward_contracts.keep_source_specific_crypto_nouns_out_of_canonical_fields` |
+| no hot-path field points to an undefined value ref or sidecar | `docs/concepts/pipeline-stage-contracts.md` `` ## `ReconciliationState` ``; `docs/concepts/pipeline-stage-contracts.md` `` ## `Checkpoint` ``; `docs/reference/first-downstream-slice-contract.md` `## In-Scope Record Families` | `docs-audit:forward_contracts.reconciliation_and_checkpoint_hot_path_fields_use_direct_values` |
+| `EvidenceSet` record families, ids, cardinality, and intentional `selection_fingerprint` identity churn | `docs/concepts/pipeline-stage-contracts.md` `` ## `EvidenceSet` ``; `docs/reference/first-upstream-slice-contract.md` `` ## `EvidenceSet` Coverage ``; `docs/reference/first-upstream-slice-contract.md` `## Id And Fingerprint Rules` | `docs-audit:forward_contracts.evidence_set_contract_and_fingerprint_rules_are_defined`; `docs-audit:forward_contracts.slice_contracts_freeze_ids_values_and_reader_cutovers` |
+| critical-path `EvidenceObservationRecord` field tables for `statement_document` and `statement_balance_row` | `docs/concepts/pipeline-stage-contracts.md` `### First-Slice Critical-Path Observation Kinds`; `docs/reference/first-upstream-slice-contract.md` ``## `EvidenceSet` Coverage`` | `docs-audit:forward_contracts.critical_path_observation_field_tables_are_unique_and_complete` |
+| `ClaimSet` claim-scope, claim-bundle, and claim-bundle-decision model | `docs/concepts/pipeline-stage-contracts.md` `` ## `ClaimSet` ``; `docs/reference/first-upstream-slice-contract.md` `` ## `ClaimSet` Coverage `` | `docs-audit:forward_contracts.claim_set_scope_bundle_decision_and_compatibility_boundary_are_defined` |
+| critical-path `ClaimRecord` field tables, `observation_refs`, and the compatibility sidecar boundary for retained legacy hint fields | `docs/concepts/pipeline-stage-contracts.md` `### First-Slice Critical-Path Claim Kinds`; `docs/concepts/pipeline-stage-contracts.md` `### Derived Compatibility Sidecars`; `docs/reference/first-upstream-slice-contract.md` ``## `ClaimSet` Coverage`` | `docs-audit:forward_contracts.claim_set_scope_bundle_decision_and_compatibility_boundary_are_defined`; `docs-audit:forward_contracts.critical_path_claim_field_tables_are_unique_and_complete` |
+| `AssertionValue`, `PositionRef`, and `ContractRef` | `docs/concepts/domain-ontology.md` `## Identity And Ref Seams`; `docs/concepts/domain-ontology.md` `` ## `AssertionValue` ``; `docs/reference/first-downstream-slice-contract.md` `## Position And Subject Restrictions` | `docs-audit:forward_contracts.evidence_assertion_and_ref_contracts_are_defined` |
+| shared gap and review records and sidecars: `GapRecord`, `GapExplanation`, `ReviewRecord`, `ReviewExplanation`, capability-owned readiness-view locality rules, `SubjectRef = [subject_kind, subject_key]`, truthful `claim_scope_id` and `balance_target_id` attachments, and the downstream shared-subject seams needed for journal and tax records | `docs/concepts/gaps-and-reviews.md` `` ## `SubjectRef` ``; `docs/concepts/gaps-and-reviews.md` `## Non-Subject Scope Ids`; `docs/concepts/gaps-and-reviews.md` `## Gap Model`; `docs/concepts/gaps-and-reviews.md` `## Review Model`; `docs/concepts/gaps-and-reviews.md` `## Readiness Locality`; `docs/concepts/gaps-and-reviews.md` `## Sidecar Taxonomy` | `docs-audit:forward_contracts.gap_review_records_sidecars_and_subject_refs_are_defined`; `docs-audit:forward_contracts.gap_and_review_attachment_rules_use_truthful_scopes` |
+| product ids, upstream product-ref multiplicity, and the rule that product refs use product ids rather than `kernel_scope_id` | `docs/concepts/pipeline-stage-contracts.md` `### Product Id And Upstream Ref Rules`; `docs/reference/first-downstream-slice-contract.md` `## Product Header And Downstream Inputs`; `docs/concepts/reconciliation-tax-architecture.md` `## Authoritative Persistence Model` | `docs-audit:forward_contracts.product_headers_use_product_ids_not_kernel_scope_id` |
+| short-first canonical stable ids, catalog-declared owner-local short slots, and deterministic boundary checks that require local slots only on declared owner-local surfaces and canonical ids everywhere else | `docs/concepts/pipeline-stage-contracts.md` `### Stable Id Format`; `docs/concepts/pipeline-stage-contracts.md` `` ## `ClaimSet` ``; `docs/concepts/pipeline-stage-contracts.md` `` ## `ReconciliationState` ``; `docs/concepts/pipeline-stage-contracts.md` `` ## `Checkpoint` ``; `docs/concepts/pipeline-stage-contracts.md` `` ## `Journal` ``; `docs/reference/first-downstream-slice-contract.md` `## Id And Fingerprint Rules` | `target-naming:identifier.namespace.local_short_required`; `target-naming:identifier.namespace.canonical_required` |
+| claim-bundle decision naming that keeps `outcome` on the posture axis and freezes `ClaimBundleDecisionRecord.basis` to reason-only values such as `single_bundle`, `insufficient_identity`, `insufficient_temporal_precision`, `conflicting_claims`, `upstream_gap`, `policy_decision_required`, and `later_bundle_selected` | `docs/concepts/pipeline-stage-contracts.md` `` ## `ClaimSet` ``; `docs/concepts/pipeline-stage-contracts.md` `### First-Slice Critical-Path Claim Kinds` | `docs-audit:forward_contracts.claim_set_scope_bundle_decision_and_compatibility_boundary_are_defined`; `target-naming:vocab.axis.claim_bundle_decision_basis` |
+| balance-target naming that splits observation presence from comparison outcome instead of overloading one status field | `docs/concepts/pipeline-stage-contracts.md` `` ## `ReconciliationState` ``; `docs/reference/first-downstream-slice-contract.md` `## In-Scope Reconciliation Vocabulary` | `target-naming:vocab.axis.balance_target` |
+| checkpoint-proposal naming that keeps proposal posture on `status` and models supersession separately through `superseding_proposal_ref` | `docs/concepts/pipeline-stage-contracts.md` `` ## `ReconciliationState` ``; `docs/reference/first-downstream-slice-contract.md` `## In-Scope Reconciliation Vocabulary` | `target-naming:vocab.axis.checkpoint_proposal` |
+| checkpoint-assertion kind naming that keeps quantity, amount, and state stems parallel across sibling values such as `position_quantity`, `cash_amount`, `basis_amount`, `owner_state`, and `location_state` | `docs/concepts/pipeline-stage-contracts.md` `` ## `Checkpoint` ``; `docs/reference/first-downstream-slice-contract.md` `## In-Scope Checkpoint Vocabulary` | `target-naming:vocab.axis.checkpoint_assertion_kind` |
+| checkpoint acceptance vocabulary that keeps `basis`, `support_shape`, and `continuity_kind` on distinct semantic axes, using reason labels such as `document_support`, `reported_support`, `manual_support`, and `reconciled_continuity`, observation-shape labels such as `document_observation`, `reported_observation`, and `manual_assertion`, and continuity-shape labels such as `observed_continuity`, `reconciled_rollforward`, `opening_rollforward`, and `partial_rollforward` | `docs/concepts/pipeline-stage-contracts.md` `` ## `Checkpoint` ``; `docs/reference/first-downstream-slice-contract.md` `## In-Scope Checkpoint Vocabulary` | `target-naming:vocab.axis.basis`; `target-naming:vocab.axis.support_shape`; `target-naming:vocab.axis.continuity_kind` |
+| package-root naming that keeps `journal` aligned across stage vocabulary and package ownership, keeps `economics` aligned across stage vocabulary, package ownership, and stage prose, uses singular concept roots such as `assertion/`, avoids umbrella roots such as `entities/` when the identity families are already known, keeps gap/review roots explicit when the docs mean those shared families directly, and keeps the shared `assessment/` root split into concrete nested families such as `gap/` and `review/` while keeping readiness views and other assessment behavior in the owning application slice | `docs/concepts/domain-ontology.md` `## Required Package Ownership`; `docs/concepts/domain-ontology.md` `### Reserved Future Capability Families`; `docs/concepts/reconciliation-tax-architecture.md` `### Assessment, Product-Local Detail, Compatibility, And Derived Outputs` | `target-naming:family.path.canonical`; `target-naming:body.shared_family_root` |
+| authoritative persistence model, product-owned directory stems, partition scopes, sidecar rules, and default filesystem placement | `docs/concepts/reconciliation-tax-architecture.md` `## Authoritative Persistence Model`; `docs/concepts/reconciliation-tax-architecture.md` `### Default Partition Scopes`; `docs/concepts/reconciliation-tax-architecture.md` `### Default Filesystem Placement` | `docs-audit:forward_contracts.persistence_model_partition_scopes_and_filesystem_layout_are_defined` |
+| migration authority rules, compatibility views, reader cutovers, and retirement gates | `docs/concepts/bridge-to-target-mapping.md` `## Migration Authority Rules`; `docs/concepts/bridge-to-target-mapping.md` `## Cutover Matrix`; `docs/status/migration-sequence.md` `### 4. Reader Cutovers`; `docs/status/migration-sequence.md` `## Bridge Retirement Rules`; `docs/reference/first-upstream-slice-contract.md` `## Bridge Compatibility Views`; `docs/reference/first-downstream-slice-contract.md` `## Bridge Compatibility Views` | `docs-audit:forward_contracts.bridge_cutover_matrix_rows_match_declared_inventory`; `docs-audit:forward_contracts.bridge_cutover_matrix_rows_are_complete_and_non_placeholder`; `docs-audit:forward_contracts.bridge_cutover_matrix_current_reader_labels_are_canonical`; `docs-audit:forward_contracts.bridge_cutover_matrix_target_readers_name_capability_and_authority`; `docs-audit:forward_contracts.bridge_cutover_matrix_compatibility_shapes_and_surface_names_are_canonical`; `docs-audit:forward_contracts.slice_contracts_freeze_ids_values_and_reader_cutovers` |
+| package ownership and layer placement that keep shared assessment contracts in `domain/assessment/`, keep the persisted `assessment/gap/`, `assessment/review/` families as storage rules only, and retire shared application assessment behavior until a specific capability-owned derived read-model package is activated | `docs/concepts/domain-ontology.md` `## Required Package Ownership`; `docs/concepts/gaps-and-reviews.md` `## Readiness Locality`; `docs/concepts/reconciliation-tax-architecture.md` `### Assessment, Product-Local Detail, Compatibility, And Derived Outputs` | `docs-audit:forward_contracts.keep_placement_mechanical` |
+| defer broader grouped readiness, reporting, portfolio, visualization, and investigation architecture until the trigger ladder below fires, allowing only filing-critical product-local derived outputs, narrow rendering outputs, or migration compatibility views before then | `ROADMAP.md` `## Deferred Read-Model Activation Triggers`; `docs/concepts/gaps-and-reviews.md` `## Readiness Locality`; `docs/concepts/reconciliation-tax-architecture.md` `### Assessment, Product-Local Detail, Compatibility, And Derived Outputs` | `docs-audit:forward_contracts.tax_outputs_contract_does_not_require_general_read_side_activation` |
+| catalog-first target naming governance with one machine-readable naming authority and a blocking `target-naming` check on enforced forward-looking docs | `ROADMAP.md` `## Phase 0. Contract Lock And Bounded-Slice Prep`; `docs/status/migration-sequence.md` `## Docs And Control-Plane Updates` | `docs-audit:policy_alignment.engineering_standards_document_contract_guard_expectations` |
+| explicit no-invention rules for non-critical observation and claim kinds | `docs/concepts/pipeline-stage-contracts.md` `### First-Slice Critical-Path Observation Kinds`; `docs/concepts/pipeline-stage-contracts.md` `### First-Slice Critical-Path Claim Kinds`; `docs/reference/first-upstream-slice-contract.md` `## Explicitly Out Of Scope` | `docs-audit:forward_contracts.noncritical_observation_and_claim_work_is_explicitly_deferred` |
+| no placeholder valuation-measure field family until a real shared taxonomy exists | `docs/concepts/pipeline-stage-contracts.md` `### First-Slice Critical-Path Claim Kinds`; `docs/reference/first-upstream-slice-contract.md` `## Explicitly Out Of Scope` | `docs-audit:forward_contracts.noncritical_observation_and_claim_work_is_explicitly_deferred` |
+| no Phase 1 or Phase 2 doc claims authority over `TransactionFact`, `facts.csv`, `balance_snapshots.csv`, `balance_references.csv`, or `cointracking_csv` | `ROADMAP.md` `` ## Phase 1. Land `EvidenceSet` ``; `ROADMAP.md` `` ## Phase 2. Land `ClaimSet` ``; `docs/status/migration-sequence.md` `### 3. First Downstream Slice` | `docs-audit:forward_contracts.early_stage_docs_do_not_claim_authority_over_later_bridge_outputs` |
+| `EventLinkRecord` status is aligned between this roadmap and the first downstream slice contract | `ROADMAP.md` `` ## Phase 4. Land `ReconciliationState` ``; `docs/concepts/pipeline-stage-contracts.md` `` ## `ReconciliationState` ``; `docs/reference/first-downstream-slice-contract.md` `## In-Scope Record Families` | `docs-audit:forward_contracts.event_link_scope_is_consistent_across_forward_contracts` |
+| the intentional looseness of Phases 6 and later is explicit and is non-blocking for Phase 0 to Phase 5 implementation | `ROADMAP.md` `` ## Phase 5. Land `Checkpoint` ``; `docs/status/migration-sequence.md` `### 5. Later Downstream Products` | `docs-audit:forward_contracts.post_filing_expansion_docs_remain_explicitly_high_level` |
 
 ## Deferred Read-Model Activation Triggers
 

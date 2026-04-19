@@ -111,6 +111,10 @@ class MatrixSpec:
     required_columns: tuple[str, ...]
     allowed_shape_nouns: tuple[str, ...]
     banned_fragments: tuple[str, ...]
+    required_rows: tuple[str, ...]
+    required_nonempty_columns: tuple[str, ...]
+    current_reader_inventory: tuple[str, ...]
+    target_reader_placeholder_capabilities: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -142,7 +146,7 @@ class TargetNamingCatalog:
     matrix_specs: tuple[MatrixSpec, ...]
     exceptions: tuple[ExceptionRule, ...]
     required_markers: tuple[MarkerLabel, ...]
-    reference_group_headings: tuple[str, ...] = ()
+    reference_group_headings: tuple[str, ...]
 
     @property
     def canonical_token_set(self) -> frozenset[str]:
@@ -203,6 +207,7 @@ def validate_target_naming_catalog(catalog: TargetNamingCatalog) -> tuple[str, .
     errors.extend(validate_local_id_slots(catalog))
     errors.extend(validate_identifier_context_rules(catalog))
     errors.extend(_validate_rule_contexts(catalog))
+    errors.extend(_validate_matrix_specs(catalog))
     return tuple(errors)
 
 
@@ -224,6 +229,16 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
     canonical_families_loaded = _mapping_value(loaded, "canonical_families")
     canonical_tokens_loaded = _mapping_value(loaded, "canonical_tokens")
     vocabularies_loaded = _mapping_value(loaded, "vocabularies")
+    matrix_specs_loaded = (
+        _mapping_sequence_value(loaded, "matrix_specs")
+        if "matrix_specs" in loaded
+        else ()
+    )
+    reference_group_headings_loaded = (
+        _sequence_value(loaded, "reference_group_headings")
+        if "reference_group_headings" in loaded
+        else ()
+    )
     return TargetNamingCatalog(
         version=_int_value(loaded, "version"),
         root_file_scopes={
@@ -289,8 +304,18 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
                 banned_fragments=_string_tuple(
                     _sequence_value(item, "banned_fragments")
                 ),
+                required_rows=_string_tuple(_sequence_value(item, "required_rows")),
+                required_nonempty_columns=_string_tuple(
+                    _sequence_value(item, "required_nonempty_columns")
+                ),
+                current_reader_inventory=_string_tuple(
+                    _sequence_value(item, "current_reader_inventory")
+                ),
+                target_reader_placeholder_capabilities=_string_tuple(
+                    _sequence_value(item, "target_reader_placeholder_capabilities")
+                ),
             )
-            for item in _mapping_sequence_value(loaded, "matrix_specs")
+            for item in matrix_specs_loaded
         ),
         exceptions=tuple(
             ExceptionRule(
@@ -316,9 +341,7 @@ def _build_catalog(loaded: Mapping[object, object]) -> TargetNamingCatalog:
             cast(MarkerLabel, value)
             for value in _string_tuple(_sequence_value(loaded, "required_markers"))
         ),
-        reference_group_headings=_string_tuple(
-            _sequence_value(loaded, "reference_group_headings")
-        ),
+        reference_group_headings=_string_tuple(reference_group_headings_loaded),
     )
 
 
@@ -414,6 +437,36 @@ def _validate_rule_contexts(catalog: TargetNamingCatalog) -> tuple[str, ...]:
     for alias in catalog.retired_aliases:
         if not alias.contexts:
             errors.append(f"retired alias {alias.term!r} must declare contexts")
+    return tuple(errors)
+
+
+def _validate_matrix_specs(catalog: TargetNamingCatalog) -> tuple[str, ...]:
+    errors: list[str] = []
+    for spec in catalog.matrix_specs:
+        if len(set(spec.required_columns)) != len(spec.required_columns):
+            errors.append("matrix spec required_columns must not contain duplicates")
+        if len(set(spec.required_rows)) != len(spec.required_rows):
+            errors.append("matrix spec required_rows must not contain duplicates")
+        if len(set(spec.current_reader_inventory)) != len(
+            spec.current_reader_inventory
+        ):
+            errors.append(
+                "matrix spec current_reader_inventory must not contain duplicates"
+            )
+        if len(set(spec.target_reader_placeholder_capabilities)) != len(
+            spec.target_reader_placeholder_capabilities
+        ):
+            errors.append(
+                "matrix spec target_reader_placeholder_capabilities must not "
+                "contain duplicates"
+            )
+        known_columns = set(spec.required_columns)
+        for column in spec.required_nonempty_columns:
+            if column not in known_columns:
+                errors.append(
+                    "matrix spec required_nonempty_columns must be declared in "
+                    "required_columns"
+                )
     return tuple(errors)
 
 

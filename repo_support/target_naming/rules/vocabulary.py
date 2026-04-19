@@ -70,6 +70,14 @@ def vocabulary_findings(
     return tuple(findings)
 
 
+def vocabulary_rule_ids(catalog: TargetNamingCatalog) -> frozenset[str]:
+    rule_ids: set[str] = set()
+    for check in catalog.vocabularies.checks:
+        rule_ids.add(f"vocab.block.{check.vocabulary}")
+        rule_ids.add(_vocabulary_rule_id(check.vocabulary))
+    return frozenset(rule_ids)
+
+
 def _extract_values(
     text: str, check: VocabularyCheck
 ) -> tuple[tuple[str, ...] | None, SourceSpan | None]:

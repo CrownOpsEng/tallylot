@@ -17,16 +17,6 @@ def repo_root() -> Path:
     return repo_paths.repo_root()
 
 
-def entrypoint_paths() -> tuple[Path, ...]:
-    return (
-        repo_root() / "README.md",
-        repo_root() / "AGENTS.md",
-        repo_root() / "ROADMAP.md",
-        repo_root() / "CHANGELOG.md",
-        *sorted((repo_root() / ".claude" / "commands").glob("*.md")),
-    )
-
-
 @pytest.fixture(autouse=True)
 def reset_repo_root_state() -> Iterator[None]:
     repo_paths.reset_repo_root()
@@ -56,10 +46,6 @@ def override_active_roots(
         encoding="utf-8",
     )
     repo_paths._set_repo_root(root)
-
-
-def test_docs_maintenance_sync_check_passes() -> None:
-    docs_maintenance.cli._check_retired_references()
 
 
 def test_parse_frontmatter_supports_optional_fields() -> None:
@@ -321,17 +307,57 @@ def test_validate_frontmatter_allows_provider_nouns_in_local_oracle_summary() ->
     docs_maintenance.validate_frontmatter(path, frontmatter)
 
 
-def test_docs_and_agents_pages_have_valid_frontmatter() -> None:
-    paths = (
-        *sorted((repo_root() / "docs").rglob("*.md")),
-        *sorted((repo_root() / "agents").rglob("*.md")),
-    )
-    documents = docs_maintenance.validate_documents()
+def test_render_reference_section_groups_target_current_state_and_oracle_docs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs" / "reference"
+    docs_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    override_active_roots(monkeypatch, tmp_path)
+    for relative_path, title, summary, scope, nav_order in (
+        (
+            "first-upstream-slice-contract.md",
+            "First Upstream Slice Contract",
+            "Upstream target.",
+            "forward_target",
+            10,
+        ),
+        (
+            "manual-balance-submission-artifacts.md",
+            "Manual Balance Submission Packages",
+            "Current state reference.",
+            "current_state",
+            20,
+        ),
+        (
+            "cointracking-oracle-artifacts.md",
+            "CoinTracking Oracle Artifacts",
+            "Oracle reference.",
+            "oracle_local",
+            30,
+        ),
+    ):
+        (docs_root / relative_path).write_text(
+            dedent(
+                f"""\
+                ---
+                title: "{title}"
+                summary: "{summary}"
+                doc_type: reference
+                audience: human
+                owner: repo
+                status: active
+                naming_scope: {scope}
+                nav_order: {nav_order}
+                ---
 
-    assert {document.path for document in documents} == set(paths)
+                ## {title}
+                """
+            ),
+            encoding="utf-8",
+        )
 
-
-def test_render_reference_section_groups_target_current_state_and_oracle_docs() -> None:
     documents = docs_maintenance.cli.section_documents(
         docs_maintenance.validate_documents(), "reference"
     )
@@ -428,13 +454,37 @@ def test_docs_maintenance_root_exports_follow_active_state_roots(
     assert agents_root == docs_maintenance.AGENTS_ROOT
 
 
-def test_entrypoints_do_not_reference_retired_docs_paths() -> None:
-    for path in entrypoint_paths():
-        text = path.read_text(encoding="utf-8")
-        for retired_reference in docs_maintenance.RETIRED_REFERENCES:
-            assert retired_reference not in text, (
-                f"{path.relative_to(repo_root())} still references retired path {retired_reference}"
-            )
+def test_docs_tree_hygiene_rejects_uppercase_doc_filenames(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs" / "reference"
+    docs_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    override_active_roots(monkeypatch, tmp_path)
+
+    (docs_root / "BadName.md").write_text("x\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="doc filename is not lowercase"):
+        docs_maintenance.cli._check_docs_tree_hygiene()
+
+
+def test_docs_tree_hygiene_rejects_reference_artifact_files(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs" / "reference"
+    docs_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    override_active_roots(monkeypatch, tmp_path)
+
+    (docs_root / "artifact.csv").write_text("x\n", encoding="utf-8")
+
+    with pytest.raises(
+        ValueError,
+        match="repo reference docs should not contain oracle data files",
+    ):
+        docs_maintenance.cli._check_docs_tree_hygiene()
 
 
 def test_sync_check_ignores_plain_text_mentions_of_retired_paths(
@@ -739,6 +789,87 @@ def test_sync_check_rejects_retired_related_targets(
         ValueError, match="still references retired path docs/file-map.md"
     ):
         docs_maintenance.cli._check_retired_references()
+
+
+def test_sync_check_rewrites_docs_home_reference_group_headings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    docs_root = tmp_path / "docs"
+    reference_root = docs_root / "reference"
+    reference_root.mkdir(parents=True)
+    (tmp_path / "agents").mkdir()
+    (tmp_path / ".claude" / "commands").mkdir(parents=True)
+
+    (docs_root / "README.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Documentation"
+            summary: "Docs home."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            ## Concepts
+
+            <!-- docs-maintenance:start concepts -->
+            <!-- docs-maintenance:end concepts -->
+
+            ## Guides
+
+            <!-- docs-maintenance:start guides -->
+            <!-- docs-maintenance:end guides -->
+
+            ## Reference
+
+            <!-- docs-maintenance:start reference -->
+            ### Current-State And Oracle References
+
+            - Wrong
+            <!-- docs-maintenance:end reference -->
+
+            ## Status
+
+            <!-- docs-maintenance:start status -->
+            <!-- docs-maintenance:end status -->
+
+            ## Standards
+
+            <!-- docs-maintenance:start standards -->
+            <!-- docs-maintenance:end standards -->
+            """
+        ),
+        encoding="utf-8",
+    )
+    (reference_root / "target.md").write_text(
+        dedent(
+            """\
+            ---
+            title: "Target"
+            summary: "Target reference."
+            doc_type: reference
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            nav_order: 10
+            ---
+
+            ## Target
+            """
+        ),
+        encoding="utf-8",
+    )
+    for path in ("README.md", "AGENTS.md", "ROADMAP.md", "CHANGELOG.md"):
+        (tmp_path / path).write_text("# Root\n", encoding="utf-8")
+
+    override_active_roots(monkeypatch, tmp_path, docs_root=docs_root)
+
+    assert docs_maintenance.main(["sync", "--check"]) == 1
 
 
 def test_validate_markdown_links_accepts_reference_style_links(tmp_path: Path) -> None:

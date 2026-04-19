@@ -47,7 +47,6 @@ def _spec(
 TARGETED_SUBSET_TEST_IDS = (
     "repo-agent-skills",
     "standards-guards",
-    "docs-runtime-parity",
     "delivery-guardrails-audit",
     "pr-metadata-validator",
     "commit-message-validator",
@@ -60,6 +59,7 @@ TARGETED_SUBSET_TEST_IDS = (
 QUALITY_CHECK_IDS = (
     "markdownlint",
     "target-naming",
+    "docs-audit",
     "actionlint",
     "ruff",
     "mypy",
@@ -73,6 +73,7 @@ CHECK_ORDER = (
     "docs-maintenance",
     "markdownlint",
     "target-naming",
+    "docs-audit",
     "actionlint",
     "ruff",
     "mypy",
@@ -80,7 +81,6 @@ CHECK_ORDER = (
     "pylint",
     "repo-agent-skills",
     "standards-guards",
-    "docs-runtime-parity",
     "delivery-guardrails-audit",
     "pr-metadata-validator",
     "commit-message-validator",
@@ -155,6 +155,12 @@ CHECK_SPECS = {
             tags=("docs", "review-tooling"),
         ),
         _spec(
+            "docs-audit",
+            job_name="Docs audit",
+            command=("python", "-m", "tools.audit_docs", "check"),
+            tags=("docs", "review-tooling"),
+        ),
+        _spec(
             "actionlint",
             job_name="Workflow lint",
             command=("actionlint", "-color"),
@@ -204,18 +210,6 @@ CHECK_SPECS = {
                 "--no-cov",
                 "-q",
                 "tests/contract/test_standards_guards.py",
-            ),
-            tags=("review-tooling",),
-            triggers=("pull_request", "push_main", "local"),
-        ),
-        _spec(
-            "docs-runtime-parity",
-            job_name="Docs runtime parity",
-            command=(
-                "pytest",
-                "--no-cov",
-                "-q",
-                "tests/unit/docs_runtime_parity",
             ),
             tags=("review-tooling",),
             triggers=("pull_request", "push_main", "local"),

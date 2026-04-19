@@ -46,6 +46,10 @@ def locality_findings(
     return tuple(dict.fromkeys(findings))
 
 
+def locality_rule_ids(catalog: TargetNamingCatalog) -> frozenset[str]:
+    return frozenset(_locality_rule_id(rule) for rule in catalog.exceptions)
+
+
 def _surface_findings(
     document: DocumentModel,
     *,

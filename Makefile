@@ -12,7 +12,7 @@ export PATH := $(PROJECT_BIN):$(PATH)
 ARGS ?=
 TOOL ?=
 
-.PHONY: help install-hooks workspace-init docs-sync docs-check quality quality-full \
+.PHONY: help install-hooks workspace-init docs-sync docs-check docs-audit quality quality-full \
 	pr-review pr-review-full audit-delivery-guardrails audit-pr-review \
 	test-stress coverage-hotspots benchmark-tests benchmark-quality \
 	sync-pyright-config precommit markdownlint ruff mypy pyright pylint pytest \
@@ -41,6 +41,7 @@ help:
 		'  make docs-sync                        Refresh docs-maintenance generated content.' \
 		'  make docs-check                       Verify docs-maintenance output is current.' \
 		'  make naming-check                    Verify forward-looking target naming is aligned.' \
+		'  make docs-audit                      Verify live repo document semantics and parity.' \
 		'' \
 		'Verification:' \
 		'  make quality [ARGS="..."]            Run the default local quality gates.' \
@@ -85,6 +86,9 @@ docs-sync:
 
 docs-check:
 	python -m tools.docs_maintenance sync --check $(ARGS)
+
+docs-audit:
+	python -m tools.audit_docs check $(ARGS)
 
 quality:
 	python -m tools.run_quality_gates $(ARGS)

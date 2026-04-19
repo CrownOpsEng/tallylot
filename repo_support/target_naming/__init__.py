@@ -31,7 +31,7 @@ from .catalog import (
 from .model import DocumentModel, MarkerBlock, SourceSpan, Table, TextBlock
 from .parser import parse_document
 from .policy import is_target_naming_sensitive_path, validate_summary_style
-from .policy import validate_title_style
+from .policy import target_naming_rule_ids, validate_title_style
 from .scope import (
     ENFORCED_NAMING_SCOPES,
     SUPPORTED_NAMING_SCOPES,
@@ -80,6 +80,7 @@ __all__ = [
     "resolve_naming_scope",
     "run_target_naming_audit",
     "scope_requires_target_naming",
+    "target_naming_rule_ids",
     "validate_summary_style",
     "validate_title_style",
     "validate_target_naming_catalog",

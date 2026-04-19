@@ -249,3 +249,7 @@ Current-state docs stay truthful to implemented behavior. Forward-looking docs
 stay detailed enough that later implementation does not need to invent ids,
 reader cutovers, storage placement, or gap/review/shared-attachment
 boundaries.
+Target naming governance remains catalog-first in this migration path: use one
+machine-readable naming authority and keep the blocking `target-naming` check
+on enforced forward-looking docs instead of re-encoding naming policy in
+pytest or split doc checks.

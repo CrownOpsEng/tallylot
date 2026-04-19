@@ -13,10 +13,9 @@ from .model import AuditReport, DocumentModel, NamingFinding, NamingScope
 from .parser import parse_document
 from .scope import resolve_naming_scope, scope_requires_target_naming
 from .rules.locality import locality_findings
-from .rules.docs_home import docs_home_findings
+from .rules.locality import locality_rule_ids
 from .rules.family_paths import family_path_findings
 from .rules.identifier_namespaces import identifier_namespace_findings
-from .rules.matrix import matrix_findings
 from .rules.phrases import body_phrase_findings
 from .rules.structure import structure_findings
 from .rules.summary import (
@@ -24,7 +23,7 @@ from .rules.summary import (
     validate_summary_text as validate_summary_text_rules,
 )
 from .rules.title import title_findings
-from .rules.vocabulary import vocabulary_findings
+from .rules.vocabulary import vocabulary_findings, vocabulary_rule_ids
 
 
 def run_target_naming_audit(
@@ -113,6 +112,26 @@ def validate_title_style(
     return title_findings(document, loaded)
 
 
+def target_naming_rule_ids(
+    *,
+    catalog: TargetNamingCatalog | None = None,
+) -> frozenset[str]:
+    loaded = catalog or load_target_naming_catalog()
+    return frozenset(
+        {
+            "title.canonical",
+            "structure.flat_support_path",
+            "family.path.canonical",
+            "identifier.namespace.local_short_required",
+            "identifier.namespace.canonical_required",
+            *{rule.rule_id for rule in loaded.banned_phrases},
+            *{rule.rule_id for rule in loaded.retired_aliases},
+            *vocabulary_rule_ids(loaded),
+            *locality_rule_ids(loaded),
+        }
+    )
+
+
 def is_target_naming_sensitive_path(
     path: str,
     *,
@@ -158,10 +177,8 @@ def _document_findings(
     findings.extend(summary_findings(document, catalog))
     findings.extend(body_phrase_findings(document, catalog, profile))
     findings.extend(vocabulary_findings(document, catalog))
-    findings.extend(matrix_findings(document, catalog))
     findings.extend(family_path_findings(document, catalog))
     findings.extend(identifier_namespace_findings(document, catalog))
-    findings.extend(docs_home_findings(document, catalog))
     findings.extend(locality_findings(document, catalog))
     return tuple(findings)
 

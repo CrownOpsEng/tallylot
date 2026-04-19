@@ -62,11 +62,6 @@ def _write_catalog(
             "docs/matrix.md": "Matrix",
             **(extra_title_expectations or {}),
         },
-        "reference_group_headings": [
-            "### Target References",
-            "### Current-State References",
-            "### Oracle References",
-        ],
         "tooling_paths": [],
         "canonical_families": {
             "products": [
@@ -178,27 +173,6 @@ def _write_catalog(
                 "allowed_scopes": ["forward_target", "repo_policy"],
                 "paths": [],
                 "allowed_paths": [],
-            }
-        ],
-        "matrix_specs": [
-            {
-                "path": "docs/matrix.md",
-                "required_columns": [
-                    "Current bridge surface",
-                    "Target authoritative product(s)",
-                    "Derived compatibility view",
-                    "Derived compatibility sidecar",
-                    "Current readers",
-                    "Target readers after cutover",
-                    "Cutover gate",
-                    "Retirement gate",
-                ],
-                "allowed_shape_nouns": [
-                    "compatibility view",
-                    "compatibility sidecar",
-                    "none",
-                ],
-                "banned_fragments": ["view or sidecar"],
             }
         ],
         "exceptions": [
@@ -673,7 +647,7 @@ def test_audit_allows_unmarked_allowed_section_locality_term(tmp_path: Path) -> 
     assert not findings
 
 
-def test_audit_reports_missing_naming_scope_for_repo_docs(tmp_path: Path) -> None:
+def test_audit_does_not_own_missing_naming_scope_for_repo_docs(tmp_path: Path) -> None:
     _write_catalog(tmp_path)
     _write_doc(
         tmp_path,
@@ -697,9 +671,7 @@ def test_audit_reports_missing_naming_scope_for_repo_docs(tmp_path: Path) -> Non
     with override_repo_root(tmp_path):
         findings = audit_target_naming(paths=("docs/example.md",))
 
-    assert [finding.rule_id for finding in findings] == [
-        "structure.missing_naming_scope"
-    ]
+    assert not findings
 
 
 def test_audit_reports_capitalized_retired_alias_in_body(tmp_path: Path) -> None:
@@ -762,6 +734,96 @@ def test_audit_reports_capitalized_retired_alias_in_summary(tmp_path: Path) -> N
         findings = audit_target_naming(paths=("docs/example.md",))
 
     assert [finding.rule_id for finding in findings] == ["body.compatibility_view_term"]
+
+
+def test_audit_reports_transient_process_term_in_summary(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["banned_phrases"].append(
+        {
+            "rule_id": "body.no_transient_process_term",
+            "term": "implementation plan",
+            "contexts": ["body", "summary"],
+            "allowed_scopes": ["forward_target"],
+            "paths": [],
+        }
+    )
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Implementation plan summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/example.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "body.no_transient_process_term"
+    ]
+
+
+def test_audit_reports_stepwise_handoff_label_in_body(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    target_path = tmp_path / "tools" / "target_naming_catalog.yaml"
+    loaded = yaml.safe_load(target_path.read_text(encoding="utf-8"))
+    loaded["banned_phrases"].append(
+        {
+            "rule_id": "body.no_stepwise_handoff_label",
+            "term": "step 1",
+            "contexts": ["body"],
+            "allowed_scopes": ["forward_target"],
+            "paths": [],
+        }
+    )
+    target_path.write_text(yaml.safe_dump(loaded, sort_keys=False), encoding="utf-8")
+    _write_doc(
+        tmp_path,
+        "docs/example.md",
+        dedent(
+            """\
+            ---
+            title: "Example"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            Step 1: hand the work to a later pass.
+
+            - `basis`:
+              - `document_support`
+              - `manual_support`
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/example.md",))
+
+    assert [finding.rule_id for finding in findings] == [
+        "body.no_stepwise_handoff_label"
+    ]
 
 
 def test_audit_reports_title_drift(tmp_path: Path) -> None:
@@ -962,7 +1024,7 @@ def test_audit_checks_catalog_declared_standalone_directory_paths(
     assert [finding.rule_id for finding in findings] == ["family.path.canonical"]
 
 
-def test_audit_reports_docs_home_reference_group_drift(tmp_path: Path) -> None:
+def test_audit_does_not_own_docs_home_reference_group_drift(tmp_path: Path) -> None:
     _write_catalog(tmp_path)
     _write_doc(
         tmp_path,
@@ -993,7 +1055,37 @@ def test_audit_reports_docs_home_reference_group_drift(tmp_path: Path) -> None:
     with override_repo_root(tmp_path):
         findings = audit_target_naming(paths=("docs/README.md",))
 
-    assert {finding.rule_id for finding in findings} == {"docs_home.reference_groups"}
+    assert not findings
+
+
+def test_audit_does_not_own_bridge_cutover_matrix_semantics(tmp_path: Path) -> None:
+    _write_catalog(tmp_path)
+    _write_doc(
+        tmp_path,
+        "docs/matrix.md",
+        dedent(
+            """\
+            ---
+            title: "Matrix"
+            summary: "Clean summary."
+            doc_type: concept
+            audience: human
+            owner: repo
+            status: active
+            naming_scope: forward_target
+            ---
+
+            | Current bridge surface | Target authoritative product(s) | Derived compatibility view | Derived compatibility sidecar | Current readers | Target readers after cutover | Cutover gate | Retirement gate |
+            | --- | --- | --- | --- | --- | --- | --- | --- |
+            | translation_input_plan.json | `EvidenceSet` | compatibility projection | none | future reader | claim construction | deterministic output | reader retired |
+            """
+        ),
+    )
+
+    with override_repo_root(tmp_path):
+        findings = audit_target_naming(paths=("docs/matrix.md",))
+
+    assert not findings
 
 
 def test_identifier_namespace_requires_canonical_ids_by_default(
@@ -1233,24 +1325,9 @@ def test_identifier_namespace_allows_local_short_qualified_field_suffixes(
     assert not findings
 
 
-def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
+def test_real_repo_catalog_loads_core_family_and_identifier_data() -> None:
     catalog = load_target_naming_catalog()
 
-    assert catalog.root_file_scopes == {
-        "ROADMAP.md": "forward_target",
-        "AGENTS.md": "repo_policy",
-        "CHANGELOG.md": "repo_policy",
-    }
-    assert catalog.scope_profiles["forward_target"].enforce_target_naming is True
-    assert catalog.scope_profiles["repo_policy"].allow_anti_examples is True
-    assert (
-        catalog.title_expectations["docs/concepts/gaps-and-reviews.md"]
-        == "Gap, Review, And Shared Attachment"
-    )
-    assert (
-        catalog.title_expectations["docs/concepts/reconciliation-tax-architecture.md"]
-        == "Reconciliation, Checkpoint, Journal, And Tax Architecture"
-    )
     assert catalog.canonical_families.directory_paths == (
         "compatibility/",
         "assessment/gap/",
@@ -1269,11 +1346,6 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
         "assessment/gap/gap_explanations.json",
         "assessment/review/review_records.json",
         "assessment/review/review_explanations.json",
-    )
-    assert catalog.reference_group_headings == (
-        "### Target References",
-        "### Current-State References",
-        "### Oracle References",
     )
     assert catalog.local_id_slot_by_canonical_id == {
         "claim_scope_id": "scope_id",
@@ -1308,6 +1380,7 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     retired_aliases = {
         alias.term: alias.replacement for alias in catalog.retired_aliases
     }
+    banned_terms = {phrase.term for phrase in catalog.banned_phrases}
     assert retired_aliases["application/readiness/"] == "owning application slice"
     assert retired_aliases["application/assessment/"] == "owning application slice"
     assert (
@@ -1320,22 +1393,10 @@ def test_real_repo_catalog_covers_root_scopes_and_tooling_paths() -> None:
     )
     assert retired_aliases["operator view"] == "derived view"
     assert retired_aliases["operator views"] == "derived views"
+    assert "implementation plan" in banned_terms
+    assert "step 1" in banned_terms
     assert "tools/target_naming.py" in catalog.tooling_paths
     assert "tests/unit/test_target_naming_parser.py" in catalog.tooling_paths
-
-
-@pytest.mark.parametrize(
-    "path",
-    [
-        "docs/standards/engineering.md",
-        "docs/reference/target-ids-and-refs.md",
-        "docs/concepts/pipeline-stage-contracts.md",
-        "docs/reference/first-downstream-slice-contract.md",
-        "ROADMAP.md",
-    ],
-)
-def test_real_repo_identifier_namespace_audit_passes(path: str) -> None:
-    assert not audit_target_naming(paths=(path,))
 
 
 def test_target_naming_sensitive_path_helper_covers_docs_and_control_plane() -> None:
@@ -1343,7 +1404,12 @@ def test_target_naming_sensitive_path_helper_covers_docs_and_control_plane() -> 
         is_target_naming_sensitive_path("docs/concepts/pipeline-stage-contracts.md")
         is True
     )
+    assert is_target_naming_sensitive_path("docs/README.md") is True
     assert is_target_naming_sensitive_path("docs/standards/engineering.md") is True
     assert is_target_naming_sensitive_path("AGENTS.md") is True
     assert is_target_naming_sensitive_path("tools/target_naming_catalog.yaml") is True
+    assert (
+        is_target_naming_sensitive_path("docs/concepts/transaction-classification.md")
+        is False
+    )
     assert is_target_naming_sensitive_path("docs/guides/source-intake.md") is False

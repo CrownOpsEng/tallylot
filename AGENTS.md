@@ -62,6 +62,18 @@ Do not pre-load every repo doc by default.
 - When editing repo standards, automation, or other control-plane files, use
   the repo-local workflow for the active area and reload the narrow repo
   guidance listed in this file before editing.
+- Keep live repo document checks in script-owned verification surfaces, not in
+  pytest:
+  - `docs-maintenance` owns generated docs sections, metadata, links, and
+    docs-tree hygiene, including `docs/README.md` generated reference-group
+    headings/order and required `naming_scope` frontmatter/default enforcement
+  - `target-naming` owns naming, locality, vocabulary, and identifier policy
+    on enforced target surfaces
+  - `docs-audit` owns semantic repo-state document parity and cross-surface
+    correctness, including forward-contract proof, owner-doc authority, and
+    bridge cutover matrix semantics
+- Keep pytest coverage for docs tooling on synthetic strings or temp repos, not
+  on the live repo Markdown tree or live control-plane prose.
 - Keep tracked docs, templates, and control-plane text neutral and durable.
 - Keep current-state docs accurate to the implemented runtime, and keep
   forward-looking docs detailed enough to implement from without inventing
@@ -118,6 +130,9 @@ Do not pre-load every repo doc by default.
   parallel quality-gate runner unless you are debugging hook behavior itself.
 - Use `tools.run_quality_gates` as the normal final local verification
   command.
+- Use `make docs-check`, `make naming-check`, or `make docs-audit` for the
+  owning live-doc check instead of adding new live-repo Markdown assertions to
+  pytest.
 - Use `tools.run_pr_review_checks --mode full` when changes touch CI,
   packaging, release, or other workflow areas where the local verification
   pass should mirror the final non-draft PR suite before handoff.

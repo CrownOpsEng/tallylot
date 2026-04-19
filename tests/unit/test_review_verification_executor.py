@@ -115,7 +115,7 @@ def test_run_plan_fail_fast_skips_remaining_checks(monkeypatch: MonkeyPatch) -> 
 def test_run_plan_can_execute_ready_checks_in_parallel(
     monkeypatch: MonkeyPatch,
 ) -> None:
-    barrier = threading.Barrier(2)
+    barrier = threading.Barrier(3)
 
     def fake_run_check(spec: object, *, context: CheckExecutionContext) -> CheckResult:
         del context
@@ -150,6 +150,7 @@ def test_run_plan_can_execute_ready_checks_in_parallel(
     assert tuple(result.check_id for result in summary.results) == (
         "docs-maintenance",
         "markdownlint",
+        "docs-audit",
     )
 
 

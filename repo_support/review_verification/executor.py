@@ -170,7 +170,7 @@ def resolve_check_command(
             "--head-sha",
             context.head_sha,
         )
-    if spec.id == "target-naming" and context.changed_paths:
+    if spec.id in {"target-naming", "docs-audit"} and context.changed_paths:
         return (*command, "--paths", *context.changed_paths)
     return command
 

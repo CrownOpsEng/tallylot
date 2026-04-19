@@ -45,11 +45,6 @@ title_expectations:
   docs/status/adapter-delivery-plan.md: Adapter Delivery Plan
   docs/status/migration-sequence.md: Migration Sequence
 
-reference_group_headings:
-  - "### Target References"
-  - "### Current-State References"
-  - "### Oracle References"
-
 tooling_paths:
   - Makefile
   - repo_support/quality_gates.py
@@ -66,7 +61,6 @@ tooling_paths:
   - .github/workflows/ci.yml
   - .github/workflows/pr-review.yml
   - tests/contract/test_standards_guards.py
-  - tests/unit/docs_runtime_parity/test_repo_doc_guards.py
   - tests/unit/test_audit_pr_review.py
   - tests/unit/test_delivery_guardrails_audit.py
   - tests/unit/test_docs_maintenance.py
@@ -505,6 +499,12 @@ vocabularies:
       - ready
       - partial
       - blocked
+    checkpoint_assertion_kind:
+      - position_quantity
+      - cash_amount
+      - basis_amount
+      - owner_state
+      - location_state
     journal_entry_status:
       - expanded
       - blocked
@@ -597,6 +597,11 @@ vocabularies:
       block_type: nested_list
       expected_values: []
     - path: docs/concepts/pipeline-stage-contracts.md
+      vocabulary: checkpoint_assertion_kind
+      label: CheckpointAssertionRecord.kind
+      block_type: nested_list
+      expected_values: []
+    - path: docs/concepts/pipeline-stage-contracts.md
       vocabulary: journal_entry_status
       label: JournalEntryRecord.status
       block_type: nested_list
@@ -631,6 +636,12 @@ vocabularies:
       label: CheckpointProposalRecord.status
       block_type: nested_list
       expected_values: []
+    - path: docs/reference/first-downstream-slice-contract.md
+      vocabulary: checkpoint_assertion_kind
+      label: CheckpointAssertionRecord.kind
+      block_type: nested_list
+      expected_values:
+        - position_quantity
     - path: docs/concepts/domain-ontology.md
       vocabulary: valuation_purpose
       label: ValuationPurpose
@@ -806,6 +817,76 @@ banned_phrases:
   - rule_id: body.abstract_container_name
     term: root truth container
     contexts: [body, inline_code]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: implementation plan
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: execution plan
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: phase log
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: review ledger
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: execution ledger
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: phase ledger
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: handoff prose
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: temporary bookkeeping
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: temporary process bookkeeping
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_transient_process_term
+    term: compaction aids
+    contexts: [body, summary]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_stepwise_handoff_label
+    term: follow this plan
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_stepwise_handoff_label
+    term: step 1
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_stepwise_handoff_label
+    term: step 2
+    contexts: [body]
+    allowed_scopes: [forward_target]
+    paths: []
+  - rule_id: body.no_stepwise_handoff_label
+    term: step 3
+    contexts: [body]
     allowed_scopes: [forward_target]
     paths: []
 
@@ -1010,36 +1091,6 @@ retired_aliases:
     paths:
       - docs/README.md
     allowed_paths: []
-
-matrix_specs:
-  - path: docs/concepts/bridge-to-target-mapping.md
-    required_columns:
-      - Current bridge surface
-      - Target authoritative product(s)
-      - Derived compatibility view
-      - Derived compatibility sidecar
-      - Current readers
-      - Target readers after cutover
-      - Cutover gate
-      - Retirement gate
-    allowed_shape_nouns:
-      - compatibility view
-      - compatibility sidecar
-      - none
-    banned_fragments:
-      - view or sidecar
-      - optional planner review view
-      - planning sidecar
-      - statement-facing compatibility sidecar
-      - recognized statement parse outputs and balance rows
-      - source translation boundary
-      - current bridge balance reducers
-      - current bridge balance-reference path
-      - bridge/output compatibility sidecars
-      - target products
-      - target product plus shared gap/review/readiness records
-      - issue compatibility view
-      - review compatibility view
 
 exceptions:
   - exception_id: locality.bridge_fields

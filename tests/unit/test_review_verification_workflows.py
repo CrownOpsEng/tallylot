@@ -22,6 +22,7 @@ def test_pr_review_workflow_uses_draft_aware_planner_gated_atomic_jobs() -> None
         "docs-maintenance:",
         "markdownlint:",
         "target-naming:",
+        "docs-audit:",
         "actionlint:",
         "ruff:",
         "mypy:",
@@ -29,7 +30,6 @@ def test_pr_review_workflow_uses_draft_aware_planner_gated_atomic_jobs() -> None
         "pylint:",
         "repo-agent-skills:",
         "standards-guards:",
-        "docs-runtime-parity:",
         "delivery-guardrails-audit:",
         "pr-metadata-validator:",
         "commit-message-validator:",
@@ -48,6 +48,7 @@ def test_pr_review_workflow_uses_draft_aware_planner_gated_atomic_jobs() -> None
         assert job_name in workflow_text
     assert "tools.run_ci_parity_checks" not in workflow_text
     assert "tools.run_review_check --check-id target-naming" in workflow_text
+    assert "tools.run_review_check --check-id docs-audit" in workflow_text
     assert "tools.run_review_check --check-id pytest-full" in workflow_text
     assert "needs.build.result == 'success'" in workflow_text
     assert "needs.pytest-full.result == 'success'" in workflow_text
@@ -79,7 +80,9 @@ def test_main_ci_workflow_uses_planner_gated_atomic_jobs() -> None:
     )
     assert "tools.run_ci_parity_checks" not in workflow_text
     assert "target-naming:" in workflow_text
+    assert "docs-audit:" in workflow_text
     assert "tools.run_review_check --check-id target-naming" in workflow_text
+    assert "tools.run_review_check --check-id docs-audit" in workflow_text
     assert "tools.run_review_check --check-id ci-tooling" in workflow_text
     assert "tools.evaluate_review_results" in workflow_text
     actionlint_job = workflow_text.split("  actionlint:\n", maxsplit=1)[1].split(
