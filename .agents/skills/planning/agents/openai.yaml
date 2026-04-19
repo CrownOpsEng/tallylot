@@ -1,0 +1,7 @@
+interface:
+  display_name: "Planning"
+  short_description: "Start planning-only repo work with the narrow standards and routing bundle."
+  default_prompt: "Use $planning to load tallylot's repo-local planning route before drafting a plan or policy change."
+
+policy:
+  allow_implicit_invocation: true

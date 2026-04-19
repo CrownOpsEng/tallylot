@@ -11,8 +11,8 @@ description: >-
 Use this skill for repo documentation and standards work.
 
 Pair it with `markdown` for syntax and low-churn Markdown editing. Invoke
-`issue-workflow` when the task adds issue templates, issue policy, or
-proactive follow-up issue handling.
+`planning` for planning-only work, and use `issue-workflow` when the task adds
+issue templates, issue policy, or proactive follow-up issue handling.
 
 ## Workflow
 
@@ -31,6 +31,8 @@ proactive follow-up issue handling.
 4. Preserve frontmatter, generated markers, and doc type boundaries.
 5. Keep tracked docs and control-plane text neutral, durable, and free of
    scratch workflow bookkeeping.
+   Keep live docs enforcement script-owned; do not add live-repo Markdown or
+   control-plane policy assertions to pytest.
 6. Validate docs changes with:
    - `make docs-check`
 7. When the change touches forward-looking target docs, titles, summaries, or

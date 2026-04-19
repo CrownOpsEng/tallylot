@@ -11,8 +11,9 @@ description: >-
 Use this skill for the normal repo implementation path.
 
 Pair it with `markdown` only when the task edits Markdown files. Invoke
-`issue-workflow` when implementation uncovers meaningful out-of-scope repo
-work that should be captured as a follow-up issue.
+`planning` for planning-only work, and use `issue-workflow` when
+implementation uncovers meaningful out-of-scope repo work that should be
+captured as a follow-up issue.
 
 ## Workflow
 
@@ -43,6 +44,8 @@ work that should be captured as a follow-up issue.
    Use the shell-safe commit/PR authoring path from
    `docs/standards/commits.md` whenever the structured metadata includes
    backticks, quotes, or other shell-sensitive text.
+10. Keep durable delivery metadata and ordinary branch names phase-free and
+    roadmap-free.
 
 ## Focus
 
