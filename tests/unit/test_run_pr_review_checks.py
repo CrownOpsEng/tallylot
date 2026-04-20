@@ -138,6 +138,7 @@ def test_run_pr_review_checks_reads_pr_body_file(
     )
     assert seen_contexts[0].pr_body == "Why:\n- explain\n"
 
+
 def test_run_pr_review_checks_passes_branch_name_override(
     monkeypatch: MonkeyPatch,
 ) -> None:
@@ -163,7 +164,7 @@ def test_run_pr_review_checks_passes_branch_name_override(
     assert seen_contexts[0].branch_name == "docs/metadata-hardening"
 
 
-def test_run_pr_review_checks_routes_roadmap_only_diff_without_docs_audit(
+def test_run_pr_review_checks_routes_roadmap_only_diff_with_docs_audit(
     monkeypatch: MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(run_pr_review_checks, "changed_paths", _roadmap_changed_paths)
@@ -186,6 +187,7 @@ def test_run_pr_review_checks_routes_roadmap_only_diff_without_docs_audit(
         "docs-maintenance",
         "markdownlint",
         "target-naming",
+        "docs-audit",
         "standards-guards",
     )
 

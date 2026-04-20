@@ -102,3 +102,13 @@ def test_evidence_set_repository_rejects_missing_schema_version(tmp_path: Path) 
         ),
     ):
         FilesystemEvidenceSetRepository().read_evidence_set(path)
+
+
+def test_evidence_set_repository_rejects_non_object_payload(tmp_path: Path) -> None:
+    path = tmp_path / "evidence_set.json"
+    path.write_text('["not", "an", "object"]', encoding="utf-8")
+
+    with pytest.raises(
+        ValueError, match="invalid evidence set payload: expected object"
+    ):
+        FilesystemEvidenceSetRepository().read_evidence_set(path)

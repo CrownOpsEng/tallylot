@@ -31,7 +31,10 @@ class FilesystemEvidenceSetRepository:
         self._artifacts.write_json(path, evidence_set.to_payload())
 
     def read_evidence_set(self, path: Path) -> EvidenceSet:
-        payload = cast(dict[str, object], json.loads(path.read_text(encoding="utf-8")))
+        payload = _required_dict(
+            json.loads(path.read_text(encoding="utf-8")),
+            "payload",
+        )
         schema_version = payload.get("schema_version")
         if schema_version != EVIDENCE_SET_SCHEMA_VERSION:
             rendered = "<missing>" if schema_version in (None, "") else schema_version
