@@ -138,6 +138,41 @@ def test_builder_emits_partial_segment_when_only_economic_activity_exists() -> N
     assert states[0].checkpoint_proposal_records == ()
 
 
+def test_builder_ignores_unaccepted_balance_claim_bundles() -> None:
+    claim_set, evidence_set, economic_facts = _matched_fixture()
+    claim_set = ClaimSet(
+        claim_set_id=claim_set.claim_set_id,
+        evidence_set_ref=claim_set.evidence_set_ref,
+        emitter_id=claim_set.emitter_id,
+        claim_records=claim_set.claim_records,
+        claim_bundle_records=claim_set.claim_bundle_records,
+        claim_bundle_decision_records=(
+            ClaimBundleDecisionRecord(
+                claim_set_id="claim-set-1",
+                scope_id="scope-balance",
+                decision_id="decision-balance",
+                outcome=ClaimBundleDecisionOutcome.BLOCKED,
+                accepted_bundle_ref="",
+                rejected_bundle_refs=("bundle-balance",),
+                deferred_bundle_refs=(),
+                basis=ClaimBundleDecisionBasis.POLICY_DECISION_REQUIRED,
+                blocking_gap_refs=("gap:statement-selection",),
+            ),
+        ),
+    )
+
+    states = build_reconciliation_states(
+        economic_facts=economic_facts,
+        claim_set=claim_set,
+        evidence_set=evidence_set,
+    )
+
+    assert len(states) == 1
+    assert states[0].continuity_segment_records[0].status.value == "partial"
+    assert states[0].balance_target_records == ()
+    assert states[0].checkpoint_proposal_records == ()
+
+
 def _matched_fixture(
     *,
     observed_quantity: str = "1.25",

@@ -8,7 +8,12 @@ from decimal import Decimal
 from typing import NamedTuple
 
 from tallylot.domain.assertion import QuantityValue, SubjectRef
-from tallylot.domain.claim import ClaimKind, ClaimRecord, ClaimSet
+from tallylot.domain.claim import (
+    ClaimBundleDecisionOutcome,
+    ClaimKind,
+    ClaimRecord,
+    ClaimSet,
+)
 from tallylot.domain.economics import EconomicFacts, EconomicLegRecord
 from tallylot.domain.evidence import EvidenceSet
 from tallylot.domain.instruments import InstrumentIdentityClaim, InstrumentKind
@@ -58,9 +63,7 @@ def build_reconciliation_states(
             raise ValueError(f"economic leg {leg.leg_id} references unknown event_id")
         legs_by_subject[leg.subject_ref].append(TimedEconomicLeg(leg, effective_at))
     balance_claims_by_subject: dict[SubjectRef, list[ClaimRecord]] = defaultdict(list)
-    for claim in claim_set.claim_records:
-        if claim.kind is not ClaimKind.BALANCE:
-            continue
+    for claim in _accepted_balance_claims(claim_set):
         subject_ref = _subject_ref_for_balance_claim(claim_set, claim)
         balance_claims_by_subject[subject_ref].append(claim)
     states: list[ReconciliationState] = []
@@ -239,25 +242,56 @@ def _proposal_status(
     return CheckpointProposalStatus.BLOCKED
 
 
+def _accepted_balance_claims(claim_set: ClaimSet) -> tuple[ClaimRecord, ...]:
+    accepted_bundle_refs = {
+        decision.accepted_bundle_ref
+        for decision in claim_set.claim_bundle_decision_records
+        if decision.outcome is ClaimBundleDecisionOutcome.ACCEPTED
+        and decision.accepted_bundle_ref
+    }
+    return tuple(
+        claim
+        for claim in claim_set.claim_records
+        if claim.kind is ClaimKind.BALANCE and claim.bundle_id in accepted_bundle_refs
+    )
+
+
 def _subject_ref_for_balance_claim(
     claim_set: ClaimSet, claim: ClaimRecord
 ) -> SubjectRef:
     bundle_claims = tuple(
         item for item in claim_set.claim_records if item.bundle_id == claim.bundle_id
     )
-    beneficial_owner_ref = next(
-        item.beneficial_owner_ref
-        for item in bundle_claims
-        if item.kind is ClaimKind.BENEFICIAL_OWNER
+    beneficial_owner_claim = next(
+        (item for item in bundle_claims if item.kind is ClaimKind.BENEFICIAL_OWNER),
+        None,
     )
+    if beneficial_owner_claim is None:
+        raise ValueError(
+            f"balance claim bundle {claim.bundle_id} requires beneficial owner claim"
+        )
     location_claim = next(
-        item for item in bundle_claims if item.claim_id == claim.location_claim_ref
+        (item for item in bundle_claims if item.claim_id == claim.location_claim_ref),
+        None,
     )
+    if location_claim is None:
+        raise ValueError(
+            f"balance claim bundle {claim.bundle_id} requires location claim "
+            f"{claim.location_claim_ref!r}"
+        )
     instrument_claim = next(
-        item
-        for item in bundle_claims
-        if item.claim_id == claim.instrument_claim_refs[0]
+        (
+            item
+            for item in bundle_claims
+            if item.claim_id == claim.instrument_claim_refs[0]
+        ),
+        None,
     )
+    if instrument_claim is None:
+        raise ValueError(
+            f"balance claim bundle {claim.bundle_id} requires instrument claim "
+            f"{claim.instrument_claim_refs[0]!r}"
+        )
     resolution = resolve_instrument_identity(
         (
             InstrumentIdentityClaim(
@@ -276,7 +310,7 @@ def _subject_ref_for_balance_claim(
     return (
         "position",
         (
-            (beneficial_owner_ref,),
+            (beneficial_owner_claim.beneficial_owner_ref,),
             (location_claim.location_ref,),
             (str(resolution.instrument.instrument_id),),
             None,

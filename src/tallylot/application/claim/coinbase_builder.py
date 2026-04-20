@@ -141,6 +141,8 @@ def build_coinbase_claim_set(
                 confidence=draft.confidence,
                 status=draft.status,
                 draft_order=draft_order,
+                review_markers=draft.review_markers,
+                adapter_metadata=draft.adapter_metadata,
             )
         )
     statement_claims, statement_bundles, statement_decisions = statement_scope_claims(

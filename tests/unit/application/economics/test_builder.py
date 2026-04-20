@@ -186,6 +186,28 @@ def test_builder_fails_closed_for_unsupported_activity_shape() -> None:
         )
 
 
+def test_builder_fails_closed_for_missing_referenced_location_claim() -> None:
+    claim_set = _activity_claim_set(activity_label="buy")
+    claim_set = ClaimSet(
+        claim_set_id=claim_set.claim_set_id,
+        evidence_set_ref=claim_set.evidence_set_ref,
+        emitter_id=claim_set.emitter_id,
+        claim_records=tuple(
+            claim
+            for claim in claim_set.claim_records
+            if claim.claim_id != "claim-location"
+        ),
+        claim_bundle_records=claim_set.claim_bundle_records,
+        claim_bundle_decision_records=claim_set.claim_bundle_decision_records,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="accepted activity bundle bundle-1 requires location claim 'claim-location'",
+    ):
+        build_economic_facts(claim_set=claim_set)
+
+
 def _activity_claim_set(*, activity_label: str) -> ClaimSet:
     claim_set_id = "claim-set-1"
     scope_id = "scope-1"

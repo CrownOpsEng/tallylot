@@ -150,8 +150,8 @@ def project_compatibility_artifacts_from_economic_facts(
             FactAnnotationRecord(
                 fact_id=fact_id,
                 provenance_refs=activity_claim.provenance_refs,
-                review_markers=(),
-                adapter_metadata=(),
+                review_markers=projection_fields.review_markers,
+                adapter_metadata=projection_fields.adapter_metadata,
             )
         )
     return EconomicFactsCompatibilityArtifacts(

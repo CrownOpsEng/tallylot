@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -34,6 +35,7 @@ from tallylot.domain.types import LocationId
 from tallylot.domain.evidence import EvidenceSet
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.ports.annotations import AdapterMetadata
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import (
     EconomicActivityDraft,
@@ -141,16 +143,39 @@ def test_economic_facts_projection_preserves_fact_annotation_payloads(
     )
 
     selected_batch, claim_build, evidence_set = _claim_build(raw_dir)
+    projection_fields = tuple(
+        replace(
+            record,
+            review_markers=(f"claim-marker-{record.draft_order}",),
+            adapter_metadata=(
+                AdapterMetadata(
+                    namespace="coinbase.claim",
+                    values={"draft_order": record.draft_order},
+                ),
+            ),
+        )
+        for record in claim_build.draft_projection_field_records
+    )
     expected = [
-        record.to_json()
-        for record in annotation_records_from_drafts(selected_batch.drafts)
+        {
+            "fact_id": draft.activity_id,
+            "provenance_refs": list(draft.provenance_refs),
+            "review_markers": [f"claim-marker-{index}"],
+            "adapter_metadata": [
+                {
+                    "namespace": "coinbase.claim",
+                    "values": {"draft_order": index},
+                }
+            ],
+        }
+        for index, draft in enumerate(selected_batch.drafts)
     ]
     economic_facts = build_economic_facts(claim_set=claim_build.claim_set)
     projected = project_compatibility_artifacts_from_economic_facts(
         economic_facts=economic_facts,
         claim_set=claim_build.claim_set,
         evidence_set=evidence_set,
-        draft_projection_field_records=claim_build.draft_projection_field_records,
+        draft_projection_field_records=projection_fields,
     )
 
     assert [record.to_json() for record in projected.fact_annotations] == expected

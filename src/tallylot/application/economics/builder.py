@@ -128,8 +128,16 @@ def _event_and_legs_for_bundle(
             raise ValueError(
                 f"accepted activity bundle {activity_claim.bundle_id} requires instrument claim refs"
             )
-        instrument_claim = instrument_claims[leg_spec.instrument_claim_refs[0]]
-        location_claim = location_claims[leg_spec.location_claim_ref]
+        instrument_claim = _required_instrument_claim(
+            instrument_claims,
+            claim_id=leg_spec.instrument_claim_refs[0],
+            bundle_id=activity_claim.bundle_id,
+        )
+        location_claim = _required_location_claim(
+            location_claims,
+            claim_id=leg_spec.location_claim_ref,
+            bundle_id=activity_claim.bundle_id,
+        )
         instrument_ref = _instrument_ref(instrument_claim)
         location_ref = (location_claim.location_ref,)
         subject_ref = _position_subject_ref(
@@ -211,6 +219,28 @@ def _instrument_ref(instrument_claim: ClaimRecord) -> tuple[str, ...]:
             f"could not resolve instrument claim {instrument_claim.claim_id}"
         )
     return (str(resolution.instrument.instrument_id),)
+
+
+def _required_instrument_claim(
+    instrument_claims: dict[str, ClaimRecord], *, claim_id: str, bundle_id: str
+) -> ClaimRecord:
+    instrument_claim = instrument_claims.get(claim_id)
+    if instrument_claim is None:
+        raise ValueError(
+            f"accepted activity bundle {bundle_id} requires instrument claim {claim_id!r}"
+        )
+    return instrument_claim
+
+
+def _required_location_claim(
+    location_claims: dict[str, ClaimRecord], *, claim_id: str, bundle_id: str
+) -> ClaimRecord:
+    location_claim = location_claims.get(claim_id)
+    if location_claim is None:
+        raise ValueError(
+            f"accepted activity bundle {bundle_id} requires location claim {claim_id!r}"
+        )
+    return location_claim
 
 
 def _position_subject_ref(

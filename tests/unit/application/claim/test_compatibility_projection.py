@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from tallylot.adapters.sources.platforms.coinbase.adapter import _CoinbaseAdapter
@@ -21,6 +22,7 @@ from tallylot.domain.evidence import EvidenceSet
 from tallylot.domain.issues import NormalizationReviewRecord
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
+from tallylot.ports.annotations import AdapterMetadata
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 from tallylot.domain.transactions import TransactionFact
@@ -212,3 +214,50 @@ def test_claim_projection_uses_exact_compatibility_issue_and_review_rows_when_su
 
     assert projected.issues == claim_build.compatibility_issue_records
     assert projected.reviews == (exact_review,)
+
+
+def test_claim_projection_preserves_review_markers_and_adapter_metadata(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\nUser,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+
+    _selected_batch, claim_build, evidence_set = _claim_build(raw_dir)
+    projection_fields = (
+        replace(
+            claim_build.draft_projection_field_records[0],
+            review_markers=("normalized_negative_fee",),
+            adapter_metadata=(
+                AdapterMetadata(
+                    namespace="coinbase.claim",
+                    values={"raw_kind": "buy"},
+                ),
+            ),
+        ),
+    )
+    projected = project_translation_batch_from_claim_set(
+        claim_set=claim_build.claim_set,
+        evidence_set=evidence_set,
+        draft_projection_field_records=projection_fields,
+        gap_records=claim_build.gap_records,
+        gap_explanations=claim_build.gap_explanations,
+        review_records=claim_build.review_records,
+        review_explanations=claim_build.review_explanations,
+        compatibility_issue_records=claim_build.compatibility_issue_records,
+        compatibility_review_records=claim_build.compatibility_review_records,
+    )
+
+    assert projected.drafts[0].review_markers == ("normalized_negative_fee",)
+    assert projected.drafts[0].adapter_metadata == (
+        AdapterMetadata(
+            namespace="coinbase.claim",
+            values={"raw_kind": "buy"},
+        ),
+    )
