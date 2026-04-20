@@ -14,6 +14,7 @@ This file is the forward planning document for the repo.
   - [`docs/concepts/reconciliation-tax-architecture.md`](docs/concepts/reconciliation-tax-architecture.md)
   - [`docs/reference/evidence-claim-contract.md`](docs/reference/evidence-claim-contract.md)
   - [`docs/reference/economics-reconciliation-checkpoint-contract.md`](docs/reference/economics-reconciliation-checkpoint-contract.md)
+  - [`docs/reference/journal-contract.md`](docs/reference/journal-contract.md)
   - [`docs/status/migration-sequence.md`](docs/status/migration-sequence.md)
 
 This roadmap tracks the implementation program from the current bridge toward
@@ -152,19 +153,57 @@ authority and retained compatibility views:
 
 Goal:
 
-- make journal expansion and entry checks a first-class downstream stage
+- make canonical journal expansion, repo-owned entry checks, and backend
+  handoff a first-class downstream stage
 
-Deliver:
+Detailed contract pages:
 
-- `JournalEntryRecord`, `PostingRecord`, and `EntryCheckRecord`
-- journal-owned blockers and entry-check rules
-- rendering orchestration over accepted upstream products that stays narrow and
-  downstream-facing
+- [Journal Contract](docs/reference/journal-contract.md)
+- [Pipeline Stage Contracts](docs/concepts/pipeline-stage-contracts.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](docs/concepts/reconciliation-tax-architecture.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+
+Scope boundary:
+
+- `Journal` consumes authoritative `EconomicFacts` and `Checkpoint` kernels
+  from the bounded downstream slice
+- `Journal` is the authoritative downstream product for
+  `JournalEntryRecord`, `PostingRecord`, `EntryCheckRecord`, journal-owned
+  gaps, and backend-neutral journal detail
+- `ledger_cli` is the first journal backend id, while `ledger-cli` remains a
+  downstream validation and rendering tool only
+- the journal backend seam is intentionally replaceable, and backend
+  invocation plus backend-specific artifacts remain downstream of `Journal`
+- `TaxInputs` and `TaxOutputs` keep identity and kernel meaning anchored to
+  authoritative `Checkpoint` plus `EconomicFacts`; this slice does not add
+  `journal_ref` or backend-derived identity to tax products
+
+Implementation slices:
+
+- land canonical journal expansion, repo-owned entry checks, backend
+  orchestration, and backend-neutral detail generation under
+  `application/journal/`
+- land `ports/journal_backends.py` for the replaceable journal backend seam
+  and `infrastructure/journal_backends/ledger_cli/` for the first
+  subprocess-backed backend implementation
+- persist the journal kernel plus backend-neutral detail at the journal root
+  and keep `ledger_cli` artifacts under
+  `working/products/journals/<journal_id>/backends/ledger_cli/`
+- keep current compatibility renderers and fact-output adapters on their
+  existing compatibility path until their own cutover slices land
 
 Exit criteria:
 
-- `Journal` runs entry checks over accepted truth without becoming a
-  truth-repair layer
+- repeated runs on unchanged upstream products preserve `journal_id`,
+  `entry_id`, `posting_id`, and `entry_check_id`
+- blocked entries emit explicit journal-owned checks or gaps and zero postings
+  instead of silent omission
+- `ledger_cli` validation replays from authoritative `Journal` kernels alone
+  without changing journal authority or repairing data
+- later backends can replace `ledger_cli` without redefining journal ids,
+  journal-owned check outcomes, or tax identity
+- detailed backend artifact, validation-lane, and cutover rules stay on the
+  owner docs rather than in this planning surface
 
 ## Phase 7. Land `TaxInputs` And `TaxOutputs`
 
@@ -173,20 +212,40 @@ Goal:
 - build policy-ready tax inputs and policy-owned outputs from accepted
   upstream products
 
-Deliver:
+Detailed contract pages:
 
-- `TaxInputs` contracts
-- selected tax-policy execution over those inputs
-- year partitioning and tax carry-forward records
-- explicit tax unsupported-input records where policy execution cannot proceed
-- filing-critical policy outputs derived from accepted upstream products rather
-  than CoinTracking tax reports
-- `TaxOutputs` ownership of `policy_summary`, `supporting_schedule`,
-  `filing_form`, policy explanations, limitations, and rendered policy content
-  for the tax-first path
+- [Pipeline Stage Contracts](docs/concepts/pipeline-stage-contracts.md)
+- [Journal Contract](docs/reference/journal-contract.md)
+- [Reconciliation, Checkpoint, Journal, And Tax Architecture](docs/concepts/reconciliation-tax-architecture.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+
+Scope boundary:
+
+- `TaxInputs` remain anchored to authoritative `Checkpoint` plus
+  `EconomicFacts`, not to `Journal`, `journal_ref`, or any backend-generated
+  artifact
+- selected tax policies emit `TaxOutputs`, tax carry-forward rows, and
+  explicit unsupported-input rows from those authoritative upstream products
+- journal outputs and journal-backend findings may inform downstream review
+  posture only as declared non-authoritative detail
+- `TaxOutputs` keep grouped readiness local to the active tax-first path and do
+  not become general reporting storage
+
+Implementation slices:
+
+- define basis-pool and basis-transition construction over accepted upstream
+  truth
+- partition tax work by `tax_year` and carry-forward refs rather than
+  full-history rescans
+- emit filing-critical policy outputs from selected policies without treating
+  CoinTracking tax reports, journal backends, or renderer outputs as peer
+  authorities
 
 Exit criteria:
 
+- `TaxInputs` and `TaxOutputs` replay from authoritative `Checkpoint`,
+  `EconomicFacts`, and selected tax-policy inputs without bridge facts,
+  `journal_ref`, or backend-derived identity
 - `2023` to `2025` outputs can be produced from reconciled economics and
   accepted checkpoint truth without treating CoinTracking tax reports as the
   ledger
