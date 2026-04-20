@@ -138,11 +138,12 @@ adapter-local shell choreography.
 ## Migration Posture
 
 The unified adapter redesign remains deferred until the filing-critical path and
-the first upstream slice and first downstream slice are stable.
+the bounded evidence/claim and economics/reconciliation/checkpoint contracts
+are stable.
 
 Rules during the current migration window:
 
-- adapter work for the first upstream slice must emit target products
+- adapter work for the evidence/claim contract must emit target products
   through the canonical target contract pages, not adapter-local alternate
   schemas
 - adapters may emit declared compatibility sidecars for retained legacy
@@ -151,7 +152,7 @@ Rules during the current migration window:
 - adapter docs may describe how adapters participate in `EvidenceSet`,
   `ClaimSet`, and compatibility views, but they may not redefine those
   products
-- the first upstream slice must not depend on a repo-wide facet
+- the evidence/claim contract must not depend on a repo-wide facet
   migration
 - `SourceTranslationBatch` remains honest current-state truth until its bounded
   replacement slice lands

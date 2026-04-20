@@ -1,6 +1,6 @@
 ---
-title: "First Downstream Slice Contract"
-summary: "Contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views."
+title: "Economics Reconciliation Checkpoint Contract"
+summary: "Contract for the bounded `EconomicFacts -> ReconciliationState -> Checkpoint` increment, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
@@ -8,7 +8,7 @@ status: active
 naming_scope: forward_target
 nav_order: 16
 related:
-  - docs/reference/first-upstream-slice-contract.md
+  - docs/reference/evidence-claim-contract.md
   - docs/concepts/pipeline-stage-contracts.md
   - docs/concepts/domain-ontology.md
   - docs/concepts/reconciliation-tax-architecture.md
@@ -16,22 +16,23 @@ related:
   - ROADMAP.md
 ---
 
-Use this page when implementing or reviewing the first downstream slice after
-the first upstream `EvidenceSet -> ClaimSet` slice. This document
-freezes scope, ids, parity, replay, and allowed drift for the first downstream
+Use this page when implementing or reviewing the bounded economics,
+reconciliation, and checkpoint contract after the bounded
+`EvidenceSet -> ClaimSet` contract. This document freezes scope, ids, parity,
+replay, and allowed drift for the bounded
 `EconomicFacts -> ReconciliationState -> Checkpoint` increment.
 
-**Slice-only example:** This slice still uses Coinbase retail activity and
-recognized Coinbase statement examples only to pin the first downstream parity
-boundary. Those provider names are slice-local examples, not canonical target
-naming.
+**Contract-local example:** This contract still uses Coinbase retail activity
+and recognized Coinbase statement examples only to pin the current parity
+boundary. Those provider names are contract-local examples, not canonical
+target naming.
 
 ## Slice Scope
 
 This slice is:
 
-- the first upstream slice already defined by
-  [First Upstream Slice Contract](first-upstream-slice-contract.md)
+- the evidence-and-claim contract already defined by
+  [Evidence And Claim Contract](evidence-claim-contract.md)
 - accepted `EconomicFacts` emission for supported Coinbase retail activity and
   recognized statement-backed balance observations
 - bounded `ReconciliationState` emission for continuity segments, exact balance
@@ -65,8 +66,8 @@ The slice may emit only these downstream kernel families:
 | `Checkpoint` | `CheckpointRecord` | accepted checkpoint record for assertions in this slice only |
 | `Checkpoint` | `CheckpointAssertionRecord` | only `kind = position_quantity`, with direct `accepted_value` using `AssertionValue` |
 
-`EventLinkRecord` remains out of scope for this slice and may land only in a
-later in-phase reconciliation increment.
+`EventLinkRecord` remains out of scope for this contract and may land only in a
+later reconciliation increment.
 
 ## Position And Subject Restrictions
 
@@ -277,7 +278,7 @@ Not allowed in this slice:
 Retained compatibility views are part of the slice parity bar. Kernel
 parity alone is not sufficient while these legacy readers remain active.
 
-Unchanged inputs from the first upstream slice must preserve all of the
+Unchanged inputs from the bounded evidence-and-claim contract must preserve all of the
 following:
 
 - accepted event ids and ordering
@@ -334,8 +335,8 @@ Allowed only when kernel ids, statuses, and fingerprints stay unchanged:
 This slice does not:
 
 - emit `EventLinkRecord` rows as a required success condition
-- widen beyond the first upstream slice already defined by
-  [First Upstream Slice Contract](first-upstream-slice-contract.md)
+- widen beyond the bounded evidence-and-claim contract already defined by
+  [Evidence And Claim Contract](evidence-claim-contract.md)
 - make manual-only checkpoint acceptance part of the filing path
 - use adopted opening state as an accepted checkpoint basis
 - define runtime `Journal`, `TaxInputs`, or `TaxOutputs`

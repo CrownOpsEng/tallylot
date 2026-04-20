@@ -73,23 +73,21 @@ POLICY_ALIGNMENT_RULES = (
         ],
     ),
     build_rule(
-        "policy_alignment.forward_target_docs_encode_default_read_model_activation_point",
-        "ROADMAP.md",
+        "policy_alignment.forward_target_docs_require_generic_read_model_deferral",
+        "docs/concepts/architecture-overview.md",
         lambda: [
             (_ for _ in ()).throw(
-                AssertionError("default read-model activation wording is out of sync")
+                AssertionError("read-model deferral wording is out of sync")
             )
             for condition in (
-                "Phase 10" not in repo_text("ROADMAP.md"),
-                "Phase 10" not in repo_text("docs/concepts/architecture-overview.md"),
-                "Phase 10" not in repo_text("docs/status/migration-sequence.md"),
-                "Phase 10"
-                not in repo_text("docs/concepts/bridge-to-target-mapping.md"),
-                "default activation point"
+                "Phase 10" in repo_text("docs/concepts/architecture-overview.md"),
+                "Phase 10" in repo_text("docs/status/migration-sequence.md"),
+                "Phase 10" in repo_text("docs/concepts/bridge-to-target-mapping.md"),
+                "broader derived read models and projections stay deferred"
                 not in repo_text("docs/concepts/architecture-overview.md"),
-                "default activation point"
+                "broader derived read models and projections stay deferred"
                 not in repo_text("docs/status/migration-sequence.md"),
-                "activation defaults to `Phase 10`"
+                "broader derived read models and projections stay deferred"
                 not in repo_text("docs/concepts/bridge-to-target-mapping.md"),
             )
             if condition

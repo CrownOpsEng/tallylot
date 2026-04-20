@@ -33,8 +33,8 @@ persistence and migration references, and repo standards.
 - [Domain ontology](concepts/domain-ontology.md)
 - [Gap, review, and shared attachment](concepts/gaps-and-reviews.md)
 - [Reconciliation, checkpoint, journal, and tax architecture](concepts/reconciliation-tax-architecture.md)
-- [First upstream slice contract](reference/first-upstream-slice-contract.md)
-- [First downstream slice contract](reference/first-downstream-slice-contract.md)
+- [Evidence and claim contract](reference/evidence-claim-contract.md)
+- [Economics reconciliation checkpoint contract](reference/economics-reconciliation-checkpoint-contract.md)
 - [Engineering standards](standards/engineering.md)
 - [Workspace model](concepts/workspace-model.md)
 
@@ -80,8 +80,8 @@ canonical target naming.
 <!-- docs-maintenance:start reference -->
 ### Target References
 
-- [First Upstream Slice Contract](reference/first-upstream-slice-contract.md): Contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views.
-- [First Downstream Slice Contract](reference/first-downstream-slice-contract.md): Contract for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint` slice, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views.
+- [Evidence And Claim Contract](reference/evidence-claim-contract.md): Contract for the bounded `EvidenceSet -> ClaimSet` increment, including cardinality, ids, replay gates, and bridge compatibility views.
+- [Economics Reconciliation Checkpoint Contract](reference/economics-reconciliation-checkpoint-contract.md): Contract for the bounded `EconomicFacts -> ReconciliationState -> Checkpoint` increment, including event identity, reconciliation state, checkpoint vocabulary, and bridge compatibility views.
 - [Target Ids And Refs](reference/target-ids-and-refs.md): Reusable target ids and ref tuples that are shared across target contracts.
 - [Target Persistence Reference](reference/target-persistence-reference.md): Target persistence, partition-scope, and compatibility placement reference.
 
@@ -111,7 +111,7 @@ that follows the external workspace layout.
 <!-- docs-maintenance:start status -->
 - [Current State](status/current-state.md): Implemented runtime capabilities, current operational capabilities, and deferred areas.
 - [Migration Sequence](status/migration-sequence.md): Incremental landing and retirement rules for moving from the current bridge to the target pipeline without dual authorities.
-- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the filing path and the first upstream slice and first downstream slice are stable.
+- [Adapter Delivery Plan](status/adapter-delivery-plan.md): Filing-first plan for stabilizing current adapters now and deferring the broad unified adapter redesign until the Evidence And Claim Contract and the Economics Reconciliation Checkpoint Contract are stable.
 <!-- docs-maintenance:end status -->
 
 ## Standards

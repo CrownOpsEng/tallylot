@@ -16,6 +16,7 @@ from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.infrastructure.storage import (
     FilesystemEvidenceRepository,
+    FilesystemEvidenceSetRepository,
     FilesystemFactRepository,
 )
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
@@ -80,6 +81,7 @@ def build_normalization_service(
             profile_use_case=BuildProfileUseCase(runtime_registry, resolved_artifacts),
             facts=FilesystemFactRepository(),
             evidence=FilesystemEvidenceRepository(),
+            evidence_sets=FilesystemEvidenceSetRepository(),
             artifacts=resolved_artifacts,
         )
     )

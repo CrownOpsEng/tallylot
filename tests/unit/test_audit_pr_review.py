@@ -201,6 +201,23 @@ def test_docs_home_diff_selects_target_naming() -> None:
     )
 
 
+def test_roadmap_only_diff_runs_docs_audit() -> None:
+    plan = build_verification_plan(
+        paths=("ROADMAP.md",),
+        trigger="local",
+        mode="planned",
+    )
+
+    assert plan.surface_report.surface_groups == ("control_plane_text",)
+    assert plan.selected_check_ids == (
+        "docs-maintenance",
+        "markdownlint",
+        "target-naming",
+        "docs-audit",
+        "standards-guards",
+    )
+
+
 def test_bridge_local_doc_diff_skips_target_naming() -> None:
     plan = build_verification_plan(
         paths=("docs/concepts/transaction-classification.md",),

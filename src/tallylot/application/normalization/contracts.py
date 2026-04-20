@@ -21,6 +21,8 @@ class NormalizeRequest:
 class NormalizeResponse:
     normalized_output_ref: ResourceRef
     adapter_id: str
+    evidence_set_id: str
+    evidence_set_ref: str
     fact_count: int
     balance_count: int
     issue_count: int

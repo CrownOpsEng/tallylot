@@ -10,6 +10,7 @@ from tallylot.application.normalization.models import (
 from tallylot.domain.issues import IssueRecord
 from tallylot.ports.source_profiles import FileInventoryEntry
 from tallylot.ports.translation_inputs import (
+    TRANSLATION_INPUT_PLANNER_VERSION,
     TranslationInputCandidate,
     TranslationInputPlan,
     TranslationPlanDecision,
@@ -18,7 +19,7 @@ from tallylot.ports.translation_inputs import (
 from .freshness import freshness_precedence, freshness_sort_numeric_value
 from .overlap import MAX_COVERAGE_BOUND, MIN_COVERAGE_BOUND
 
-PLANNER_VERSION = "translation-input-planner-v1"
+PLANNER_VERSION = TRANSLATION_INPUT_PLANNER_VERSION
 
 
 @dataclass(frozen=True)

@@ -7,7 +7,6 @@ import pytest
 import repo_support.docs_audit as docs_audit
 from repo_support.docs_audit.model import DocsAuditFinding, DocsAuditRule
 from repo_support.docs_audit.rules import forward_contracts_matrix
-from repo_support.docs_audit.rules import forward_contracts_roadmap
 from repo_support.docs_audit.rules import forward_contracts_support
 from repo_support.docs_audit.reporting import report_payload
 from tools import audit_docs as audit_docs_tool
@@ -40,14 +39,6 @@ def _bridge_row(
     }
     row.update(overrides)
     return row
-
-
-def _heading_present_once(_text: str, _heading: str) -> int:
-    return 1
-
-
-def _heading_missing(_text: str, _heading: str) -> int:
-    return 0
 
 
 def test_run_docs_audit_full_repo_with_no_findings(
@@ -215,7 +206,7 @@ def test_sensitive_docs_audit_tooling_path_triggers_full_repo_sweep(
     )
 
     report = docs_audit.run_docs_audit(
-        paths=("repo_support/docs_audit/rules/forward_contracts_roadmap.py",)
+        paths=("repo_support/docs_audit/rules/forward_contracts_contracts.py",)
     )
 
     assert report.full_repo is True
@@ -243,6 +234,24 @@ def test_target_naming_catalog_path_triggers_full_repo_sweep(
     )
 
 
+def test_roadmap_path_triggers_full_repo_sweep(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        docs_audit,
+        "ALL_RULES",
+        (_rule("routes.example"), _rule("forward_contracts.example")),
+    )
+
+    report = docs_audit.run_docs_audit(paths=("ROADMAP.md",))
+
+    assert report.full_repo is True
+    assert report.evaluated_rule_ids == (
+        "routes.example",
+        "forward_contracts.example",
+    )
+
+
 def test_authority_entries_require_exact_path_heading_pairs() -> None:
     with pytest.raises(
         AssertionError,
@@ -253,135 +262,36 @@ def test_authority_entries_require_exact_path_heading_pairs() -> None:
         )
 
 
-def test_completion_gate_validation_rejects_non_owner_authority_doc(
+def test_owner_docs_exclude_roadmap_and_use_renamed_contract_pages() -> None:
+    owner_docs = {
+        path.relative_to(forward_contracts_support.repo_root()).as_posix()
+        for path in forward_contracts_support.OWNER_DOCS
+    }
+
+    assert "ROADMAP.md" not in owner_docs
+    assert "docs/reference/evidence-claim-contract.md" in owner_docs
+    assert (
+        "docs/reference/economics-reconciliation-checkpoint-contract.md" in owner_docs
+    )
+
+
+def test_authoritative_contract_text_uses_renamed_contract_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    def fake_text(path: object) -> str:
+        return getattr(path, "name", "")
+
     monkeypatch.setattr(
         forward_contracts_support,
-        "completion_gate_criteria",
-        lambda: ("criterion",),
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "completion_gate_rows",
-        lambda: (
-            (
-                "criterion",
-                "`docs/reference/target-ids-and-refs.md` `## Origin Ref`",
-                "`docs-audit:forward_contracts.example`",
-            ),
-        ),
-    )
-    monkeypatch.setattr(
-        forward_contracts_roadmap,
-        "_registered_proof_tokens",
-        lambda: frozenset({"docs-audit:forward_contracts.example"}),
+        "text",
+        fake_text,
     )
 
-    with pytest.raises(AssertionError, match="owner docs only"):
-        forward_contracts_roadmap._validate_completion_gate_rows()
+    text = forward_contracts_support.authoritative_contract_text()
 
-
-def test_completion_gate_validation_rejects_unknown_proof_prefix(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "completion_gate_criteria",
-        lambda: ("criterion",),
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "completion_gate_rows",
-        lambda: (
-            (
-                "criterion",
-                "`ROADMAP.md` `## Phase 0. Contract Lock And Bounded-Slice Prep`",
-                "`pytest:test_docs_gate`",
-            ),
-        ),
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "heading_occurrence_count",
-        _heading_present_once,
-    )
-    monkeypatch.setattr(
-        forward_contracts_roadmap,
-        "_registered_proof_tokens",
-        lambda: frozenset({"docs-audit:forward_contracts.example"}),
-    )
-
-    with pytest.raises(AssertionError, match="unsupported prefix"):
-        forward_contracts_roadmap._validate_completion_gate_rows()
-
-
-def test_completion_gate_validation_rejects_unregistered_proof_token(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "completion_gate_criteria",
-        lambda: ("criterion",),
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "completion_gate_rows",
-        lambda: (
-            (
-                "criterion",
-                "`ROADMAP.md` `## Phase 0. Contract Lock And Bounded-Slice Prep`",
-                "`docs-audit:forward_contracts.renamed_rule`",
-            ),
-        ),
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "heading_occurrence_count",
-        _heading_present_once,
-    )
-    monkeypatch.setattr(
-        forward_contracts_roadmap,
-        "_registered_proof_tokens",
-        lambda: frozenset({"docs-audit:forward_contracts.example"}),
-    )
-
-    with pytest.raises(AssertionError, match="is not registered"):
-        forward_contracts_roadmap._validate_completion_gate_rows()
-
-
-def test_completion_gate_validation_rejects_missing_authority_heading(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "completion_gate_criteria",
-        lambda: ("criterion",),
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "completion_gate_rows",
-        lambda: (
-            (
-                "criterion",
-                "`ROADMAP.md` `## Missing Heading`",
-                "`docs-audit:forward_contracts.example`",
-            ),
-        ),
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "heading_occurrence_count",
-        _heading_missing,
-    )
-    monkeypatch.setattr(
-        forward_contracts_roadmap,
-        "_registered_proof_tokens",
-        lambda: frozenset({"docs-audit:forward_contracts.example"}),
-    )
-
-    with pytest.raises(AssertionError, match="must exist exactly once"):
-        forward_contracts_roadmap._validate_completion_gate_rows()
+    assert "evidence-claim-contract.md" in text
+    assert "economics-reconciliation-checkpoint-contract.md" in text
+    assert "ROADMAP.md" not in text
 
 
 def test_bridge_cutover_matrix_current_reader_labels_stay_canonical(
@@ -466,32 +376,4 @@ def test_bridge_cutover_matrix_compatibility_shapes_stay_canonical(
     assert findings
     assert findings[0].rule_id == (
         "forward_contracts.bridge_cutover_matrix_compatibility_shapes_and_surface_names_are_canonical"
-    )
-
-
-def test_completion_gate_validation_requires_all_must_freeze_items(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    target_rule = next(
-        rule
-        for rule in forward_contracts_roadmap.FORWARD_CONTRACTS_ROADMAP_RULES
-        if rule.rule_id
-        == "forward_contracts.completion_gate_maps_all_must_freeze_items"
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "must_freeze_items",
-        lambda: ("freeze-a", "freeze-b"),
-    )
-    monkeypatch.setattr(
-        forward_contracts_support,
-        "completion_gate_criteria",
-        lambda: ("freeze-a",),
-    )
-
-    findings = target_rule.run()
-
-    assert findings
-    assert findings[0].rule_id == (
-        "forward_contracts.completion_gate_maps_all_must_freeze_items"
     )

@@ -89,11 +89,14 @@ Shared rules:
 ### Stable Id Format
 
 - every stable id defined on this page uses the format
-  `<kind>:<sha256(lowercase-hex)>`
-- the hash input is one UTF-8 JSON array in declared component order
+  declared by the owning product section on this page
+- every stable-id recipe starts from one UTF-8 JSON component array in declared
+  order
 - component arrays use the owning product's canonical scalar forms exactly as
   emitted; do not add hidden trimming, lowercasing, or resorting outside the
   declared tuple rules
+- the owning product section decides how that declared component array is
+  serialized into the emitted stable-id text
 
 ### Product Id And Upstream Ref Rules
 
@@ -288,10 +291,11 @@ Controlled vocabularies:
 reasons and unresolved selection conditions because the record captures one
 deterministic evidence-selection decision boundary.
 
-### First-Slice Critical-Path Observation Kinds
+### Bounded Evidence-Claim Critical-Path Observation Kinds
 
 The `EvidenceObservationRecord` shell above is required for every observation.
-For the first upstream slice, these kind-specific kernel fields are also
+For the bounded evidence/claim contract, these kind-specific kernel fields are
+also
 required:
 
 | `kind` | Kind-owned kernel fields |
@@ -492,7 +496,7 @@ why that posture was chosen. Use `policy_decision_required` with
 `outcome = deferred` and `later_bundle_selected` with
 `outcome = superseded`.
 
-### First-Slice Critical-Path Claim Kinds
+### Bounded Evidence-Claim Critical-Path Claim Kinds
 
 The `ClaimRecord` shell above is required for every claim. For the first
 bounded slice, these kind-specific kernel fields are also required:
@@ -516,10 +520,10 @@ bounded slice, these kind-specific kernel fields are also required:
 - `subtype`
 - `attributed_to_slot`
 
-First upstream slice linkage rules:
+Bounded evidence/claim linkage rules:
 
 - `activity` claims own the current evidence-local `activity_label` used by
-  the first upstream slice
+  the bounded evidence/claim contract
 - `instrument_kind` uses the shared `InstrumentKind` vocabulary owned by
   [Domain Ontology](domain-ontology.md)
 - `leg_specs` lift ordered leg meaning from the current
@@ -531,7 +535,7 @@ First upstream slice linkage rules:
   cross-stage vocabulary is frozen; do not add a placeholder valuation-measure
   field before then
 - retail claims with `kind = activity` use `member_refs` plus the
-  first upstream slice scope key `[retail_member_id, raw_row_ref]`; they do
+  bounded evidence/claim scope key `[retail_member_id, raw_row_ref]`; they do
   not require a retail-row observation kind in this pass
 - statement-derived claims use both `member_refs` and
   `observation_refs`
@@ -539,7 +543,7 @@ First upstream slice linkage rules:
   `observation_refs` and may also include the paired
   `statement_document` observation id for the same statement document
 - `valuation` claims are defined now but emit zero rows by default in
-  the first upstream slice until a later owner-page pass locks numeric
+  the bounded evidence/claim contract until a later owner-page pass locks numeric
   statement valuation inputs
 - `location` claims use `location_group_label` and `location_label` under the
   same target-contract rules as `statement_balance_row`: preserve the
@@ -558,9 +562,9 @@ Rules:
   `economic_kind`, `projection_hint`, `accounting_intent_hint`,
   `tax_treatment_hint`, `description`, `tx_hash_or_null`,
   `operation_group_id_or_null`, `confidence`, and `status`
-- `activity_label` is retained only as an evidence-local first-upstream-slice
-  field that preserves bridge compatibility; it must not become downstream
-  canonical target naming
+- `activity_label` is retained only as an evidence-local bounded
+  evidence/claim compatibility field that preserves bridge compatibility; it
+  must not become downstream canonical target naming
 - legacy `provider_operation_key` is satisfied by
   `activity_label` on claims with `kind = activity` and must not be duplicated into a
   compatibility sidecar field
@@ -1605,10 +1609,11 @@ locality rules defined elsewhere:
   runtime truth
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) for the primary
   cutover rules and migration authority matrix
-- [First Upstream Slice Contract](../reference/first-upstream-slice-contract.md)
-  for the first upstream replay and parity contract
-- [First Downstream Slice Contract](../reference/first-downstream-slice-contract.md)
-  for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint`
+- [Evidence And Claim Contract](../reference/evidence-claim-contract.md)
+  for the bounded evidence/claim replay and parity contract
+- [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
+  for the bounded
+  `EconomicFacts -> ReconciliationState -> Checkpoint`
   contract
 - [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership

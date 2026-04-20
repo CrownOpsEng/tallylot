@@ -1,5 +1,7 @@
 """Normalization summary assembly."""
 
+# pylint: disable=too-many-arguments
+
 from __future__ import annotations
 
 from collections import Counter
@@ -23,12 +25,16 @@ def build_normalization_summary(
     outputs: NormalizationOutputs,
     window_stats: NormalizationWindowStats,
     translation_metrics: NormalizationTranslationMetrics,
-) -> JsonValue:
+    evidence_set_id: str,
+    evidence_set_ref: str,
+) -> JsonValue:  # pylint: disable=too-many-arguments
     return cast(
         JsonValue,
         {
             "source": request.source,
             "adapter_id": str(profile.adapter_id),
+            "evidence_set_id": evidence_set_id,
+            "evidence_set_ref": evidence_set_ref,
             "fact_count": len(outputs.facts),
             "snapshot_count": len(outputs.balance_snapshots),
             "reference_count": len(outputs.balance_references),

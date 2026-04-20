@@ -10,6 +10,7 @@ from repo_support.review_verification import (
     CheckExecutionContext,
     CheckResult,
     ExecutionSummary,
+    build_verification_plan,
 )
 
 
@@ -18,6 +19,13 @@ def _docs_changed_paths(
 ) -> tuple[str, ...]:
     del base_sha, head_sha
     return ("docs/guides/source-intake.md",)
+
+
+def _roadmap_changed_paths(
+    base_sha: str | None = None, head_sha: str | None = None
+) -> tuple[str, ...]:
+    del base_sha, head_sha
+    return ("ROADMAP.md",)
 
 
 def _unmapped_changed_paths(
@@ -154,6 +162,34 @@ def test_run_pr_review_checks_passes_branch_name_override(
         == 0
     )
     assert seen_contexts[0].branch_name == "docs/metadata-hardening"
+
+
+def test_run_pr_review_checks_routes_roadmap_only_diff_with_docs_audit(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(run_pr_review_checks, "changed_paths", _roadmap_changed_paths)
+    monkeypatch.setattr(run_pr_review_checks, "run_local_autofix", lambda: 0)
+    seen_contexts: list[CheckExecutionContext] = []
+
+    def fake_run_plan(*_args: object, **kwargs: object) -> ExecutionSummary:
+        seen_contexts.append(cast(CheckExecutionContext, kwargs["context"]))
+        return ExecutionSummary(results=())
+
+    monkeypatch.setattr(run_pr_review_checks, "run_plan", fake_run_plan)
+
+    assert run_pr_review_checks.main([]) == 0
+    assert seen_contexts[0].changed_paths == ()
+    assert build_verification_plan(
+        paths=("ROADMAP.md",),
+        trigger="local",
+        mode="planned",
+    ).selected_check_ids == (
+        "docs-maintenance",
+        "markdownlint",
+        "target-naming",
+        "docs-audit",
+        "standards-guards",
+    )
 
 
 def test_run_pr_review_checks_can_skip_local_autofix(

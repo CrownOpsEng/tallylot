@@ -11,13 +11,15 @@ nav_order: 20
 
 Use this page to sequence implementation increments without a big-bang refactor.
 This page keeps migration rules, cutover expectations, and retirement gates in
-one place. It does not redefine target product contracts or recreate roadmap
-phase detail.
+one place. It is the durable owner for sequencing, cutover, and bridge
+retirement rules. It does not redefine target product contracts or recreate
+roadmap phase detail.
 
 ## Roadmap Ownership
 
 [ROADMAP.md](../../ROADMAP.md) is the only numbered implementation program of
-record.
+record. It remains planning-only and is not the durable contract or
+docs-audit authority for sequencing semantics.
 
 Use this page for:
 
@@ -66,9 +68,10 @@ Migration-wide rules:
 - target readers must name a capability plus the authoritative product it reads;
   undocumented future package roots by themselves are not sufficient reader
   labels
-- through the tax-first phases, broader grouped or query surfaces stay on
+- through the tax-first path, broader grouped or query surfaces stay on
   authoritative kernels, declared compatibility views, or tax-output-local and
-  rendering-local derived outputs until the roadmap trigger ladder fires
+  rendering-local derived outputs until a later capability-specific increment
+  requires a dedicated derived read-model slice
 
 The authoritative cutover matrix lives in
 [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md).
@@ -116,10 +119,10 @@ Before broad implementation, freeze:
 Broad parallel implementation must not begin before those contract pages are
 aligned and frozen.
 
-### 2. First Upstream Slice
+### 2. Evidence And Claim Contract
 
-Land the first upstream
-[`EvidenceSet -> ClaimSet`](../reference/first-upstream-slice-contract.md) slice.
+Land the bounded
+[`EvidenceSet -> ClaimSet`](../reference/evidence-claim-contract.md) contract.
 
 Required posture:
 
@@ -127,15 +130,15 @@ Required posture:
 - `ClaimSet` becomes authoritative for in-scope evidence-local meaning
 - `translation_input_plan.json`, `EconomicActivityDraft`, and
   `SourceTranslationBatch` survive only as derived compatibility views
-- downstream bridge outputs remain on the live bridge path until the first
-  downstream slice makes the downstream target products authoritative for that
-  scope
+- downstream bridge outputs remain on the live bridge path until the bounded
+  economics/reconciliation/checkpoint contract makes the downstream target
+  products authoritative for that scope
 
-### 3. First Downstream Slice
+### 3. Economics Reconciliation Checkpoint Contract
 
-Land the first downstream
-[`EconomicFacts -> ReconciliationState -> Checkpoint`](../reference/first-downstream-slice-contract.md)
-slice.
+Land the bounded
+[`EconomicFacts -> ReconciliationState -> Checkpoint`](../reference/economics-reconciliation-checkpoint-contract.md)
+contract.
 
 Required posture:
 
@@ -146,7 +149,7 @@ Required posture:
 - `TransactionFact`, `balance_snapshots.csv`, and `balance_references.csv`
   survive only as derived compatibility views for unmigrated readers
 
-This first downstream slice is therefore the first slice that converts
+This contract is therefore the first increment that converts
 downstream bridge surfaces into target-derived compatibility views.
 
 ### 4. Reader Cutovers
@@ -160,8 +163,8 @@ After those slices land, migrate readers one consumer surface at a time:
 - journal and tax readers move only after their upstream products are
   authoritative and stable
 - broader grouped consumers stay on tax-output-local outputs, narrow rendering
-  outputs, or compatibility views until the roadmap trigger ladder requires a
-  dedicated derived read-model slice
+  outputs, or compatibility views until a later capability-specific increment
+  requires a dedicated derived read-model slice
 
 ### 5. Later Downstream Products
 
@@ -174,16 +177,15 @@ Rules:
 - do not let tax decide source meaning, reconciliation completeness, or
   checkpoint acceptance
 
-Phases 6 and later remain intentionally high-level in this round. They are
-out of scope for this repair and do not block immediate Phase 0 to Phase 5
-implementation once the Phase 0 gate is satisfied.
+Later roadmap steps remain intentionally high-level here. They are out of
+scope for the current contract delivery and do not block near-term
+implementation once the contract lock is satisfied.
 
 ### 6. Triggered Derived Read-Model Activation
 
-The roadmap trigger ladder is the authority for when broader derived read
-models and projections become mandatory.
-If no earlier trigger fires, the default activation point is `Phase 10`
-post-filing expansion.
+The roadmap may still plan later activation detail, but this page keeps the
+durable rule: broader derived read models and projections stay deferred until
+an implemented capability-specific increment actually needs them.
 
 Before a trigger fires:
 
@@ -243,7 +245,7 @@ surface, update these pages together:
 - [Bridge To Target Mapping](../concepts/bridge-to-target-mapping.md)
 - [Current Bridge Contracts](../concepts/current-bridge-contracts.md) if live
   bridge truth changes
-- the owning slice reference page if the bounded slice contract changes
+- the owning contract reference page when its contract changes
 
 Current-state docs stay truthful to implemented behavior. Forward-looking docs
 stay detailed enough that later implementation does not need to invent ids,

@@ -1,5 +1,7 @@
 {
   "adapter_id": "evm_explorer",
+  "evidence_set_id": "",
+  "evidence_set_ref": "",
   "fact_count": 2,
   "facts_outside_normalization_window": 0,
   "issue_count": 0,

@@ -37,6 +37,7 @@ from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.captures import CaptureMetadata
 from tallylot.ports.evidence import EvidenceRepositoryPort, LocationInventoryRecord
+from tallylot.ports.evidence_sets import EvidenceSetRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
 from tallylot.ports.source_adapters import SourceAdapter, SourceAdapterRegistryPort
 from tallylot.ports.source_profiles import SourceProfile
@@ -64,6 +65,7 @@ class NormalizationDependencies:
     profile_use_case: BuildProfileUseCase
     facts: FactRepositoryPort
     evidence: EvidenceRepositoryPort
+    evidence_sets: EvidenceSetRepositoryPort
     artifacts: ArtifactStorePort
     statement_extraction: StatementExtractionService | None = None
 
@@ -74,6 +76,7 @@ class NormalizeSourceUseCase:
         self._profile_use_case = dependencies.profile_use_case
         self._facts = dependencies.facts
         self._evidence = dependencies.evidence
+        self._evidence_sets = dependencies.evidence_sets
         self._artifacts = dependencies.artifacts
         self._statement_extraction = (
             dependencies.statement_extraction
@@ -120,14 +123,20 @@ class NormalizeSourceUseCase:
             raw_dir=raw_dir,
             context=TranslationExecutionContext(
                 output_dir=output_dir,
+                workspace_root=workspace_root,
                 capture_metadata=capture_metadata,
                 artifacts=self._artifacts,
                 evidence=self._evidence,
+                evidence_sets=self._evidence_sets,
+                statement_extraction=self._statement_extraction,
             ),
         )
         result = translation_result.batch
-        statement_result = self._statement_extraction.extract_source_balance_references(
-            profile, raw_dir
+        statement_result = (
+            self._statement_extraction.extract_balance_references_from_collection(
+                profile,
+                translation_result.statement_documents,
+            )
         )
         result = SourceTranslationBatch(
             drafts=result.drafts,
@@ -215,6 +224,8 @@ class NormalizeSourceUseCase:
                     reviews_outside_window=reviews_outside_window,
                 ),
                 translation_metrics=translation_result.metrics,
+                evidence_set_id=translation_result.evidence_set_id,
+                evidence_set_ref=translation_result.evidence_set_ref,
             ),
         )
         append_capture_status_record(
@@ -232,6 +243,8 @@ class NormalizeSourceUseCase:
         return NormalizeResponse(
             normalized_output_ref=request.normalized_output_ref,
             adapter_id=str(profile.adapter_id),
+            evidence_set_id=translation_result.evidence_set_id,
+            evidence_set_ref=translation_result.evidence_set_ref,
             fact_count=len(facts),
             balance_count=len(balance_snapshots),
             issue_count=len(outputs.issues),

@@ -15,9 +15,15 @@ from .ai import ModelGateway, ReviewRequest, ReviewResponse
 from .annotations import AdapterMetadata
 from .artifacts import ArtifactStorePort
 from .evidence import EvidenceRepositoryPort, LocationInventoryRecord
+from .evidence_sets import EvidenceSetRepositoryPort
 from .facts import FactRepositoryPort
 from .intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from .output_adapters import OutputAdapter, OutputAdapterRegistryPort, OutputRenderPolicy, RenderedArtifact
+from .output_adapters import (
+    OutputAdapter,
+    OutputAdapterRegistryPort,
+    OutputRenderPolicy,
+    RenderedArtifact,
+)
 from .source_adapters import SourceAdapter, SourceAdapterRegistryPort
 from .source_profiles import FileInventoryEntry, SourceProfile
 from .source_translation import (
@@ -45,6 +51,7 @@ __all__ = [
     "EconomicActivityDraft",
     "EconomicLegDraft",
     "EvidenceRepositoryPort",
+    "EvidenceSetRepositoryPort",
     "FactLegPolicy",
     "FactRepositoryPort",
     "FileInventoryEntry",

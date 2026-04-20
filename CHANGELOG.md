@@ -7,7 +7,11 @@ milestones on `main`.
 
 ## [Unreleased]
 
-No unreleased entries yet.
+### Docs And Control Plane
+
+- Reset durable contract and sequencing authority onto the owned docs and
+  removed roadmap-coupled semantic docs-audit proof from durable control-plane
+  checks.
 
 ## 2026-04-01
 

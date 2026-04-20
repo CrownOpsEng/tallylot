@@ -20,7 +20,9 @@ def _pack_id(pack: AdapterPack) -> str:
 
 
 @pytest.mark.parametrize("pack", ALL_PACKS, ids=_pack_id)
-def test_adapter_pack_expected_dirs_do_not_contain_unowned_goldens(pack: AdapterPack) -> None:
+def test_adapter_pack_expected_dirs_do_not_contain_unowned_goldens(
+    pack: AdapterPack,
+) -> None:
     expected_files = {path.name for path in pack.expected_dir.glob("*.json")}
     allowed: set[str] = set(_EXPECTED_LOCATION_ARTIFACTS)
     if pack.supports("normalize"):
@@ -29,7 +31,9 @@ def test_adapter_pack_expected_dirs_do_not_contain_unowned_goldens(pack: Adapter
 
 
 @pytest.mark.parametrize("pack", ALL_PACKS, ids=_pack_id)
-def test_adapter_pack_location_outputs_match_expected_goldens(pack: AdapterPack) -> None:
+def test_adapter_pack_location_outputs_match_expected_goldens(
+    pack: AdapterPack,
+) -> None:
     payloads = _collect_pack_outputs(pack)
 
     for artifact_name in _EXPECTED_LOCATION_ARTIFACTS:
@@ -39,7 +43,9 @@ def test_adapter_pack_location_outputs_match_expected_goldens(pack: AdapterPack)
 
 
 @pytest.mark.parametrize("pack", NORMALIZATION_PACKS, ids=_pack_id)
-def test_adapter_pack_normalization_outputs_match_expected_goldens(pack: AdapterPack) -> None:
+def test_adapter_pack_normalization_outputs_match_expected_goldens(
+    pack: AdapterPack,
+) -> None:
     payloads = _collect_pack_outputs(pack)
     normalization_summary = payloads["normalization_summary"]
 

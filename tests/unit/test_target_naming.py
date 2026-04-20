@@ -197,7 +197,7 @@ def _write_catalog(
             },
         ],
         "required_markers": [
-            "Slice-only example",
+            "Contract-local example",
             "Compatibility-only locality",
             "Current runtime note",
             "Anti-example",
@@ -1370,10 +1370,10 @@ def test_real_repo_catalog_loads_core_family_and_identifier_data() -> None:
     assert "ReadinessRecord" not in record_names
     assert "ReadinessRollupRecord" not in record_names
     assert "application/assessment/" not in catalog.canonical_families.package_paths
-    assert "application/reporting/" not in catalog.canonical_families.package_paths
-    assert "application/portfolio/" not in catalog.canonical_families.package_paths
-    assert "application/visualization/" not in catalog.canonical_families.package_paths
-    assert "application/investigation/" not in catalog.canonical_families.package_paths
+    assert "application/reporting/" in catalog.canonical_families.package_paths
+    assert "application/portfolio/" in catalog.canonical_families.package_paths
+    assert "application/visualization/" in catalog.canonical_families.package_paths
+    assert "application/investigation/" in catalog.canonical_families.package_paths
     assert "assessment view" not in catalog.canonical_tokens.phrases
     assert "readiness rollup" not in catalog.canonical_tokens.phrases
     assert "readiness_rollup_id" not in catalog.canonical_tokens.snake

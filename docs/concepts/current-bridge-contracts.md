@@ -266,7 +266,8 @@ Rules:
 
 ### Bridge Fact Replay Fingerprint
 
-For replay and parity checks on the first upstream slice, compiled bridge facts use one bridge
+For replay and parity checks on the bounded evidence-and-claim contract,
+compiled bridge facts use one bridge
 replay fingerprint contract.
 
 Rules:

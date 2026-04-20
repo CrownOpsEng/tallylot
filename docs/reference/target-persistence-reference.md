@@ -10,8 +10,8 @@ nav_order: 18
 related:
   - docs/concepts/pipeline-stage-contracts.md
   - docs/concepts/reconciliation-tax-architecture.md
-  - docs/reference/first-upstream-slice-contract.md
-  - docs/reference/first-downstream-slice-contract.md
+  - docs/reference/evidence-claim-contract.md
+  - docs/reference/economics-reconciliation-checkpoint-contract.md
   - ROADMAP.md
 ---
 
@@ -27,9 +27,9 @@ Use these contract pages first:
 - [Reconciliation, Checkpoint, Journal, And Tax Architecture](../concepts/reconciliation-tax-architecture.md)
   for persistence model, partition scopes, default filesystem placement,
   sidecars, replace rules, caches, and indexes
-- [First Upstream Slice Contract](first-upstream-slice-contract.md) and
-  [First Downstream Slice Contract](first-downstream-slice-contract.md) for
-  bounded-slice persistence and compatibility expectations
+- [Evidence And Claim Contract](evidence-claim-contract.md) and
+  [Economics Reconciliation Checkpoint Contract](economics-reconciliation-checkpoint-contract.md) for
+  bounded-contract persistence and compatibility expectations
 
 ## Persistence Rules
 
@@ -63,8 +63,8 @@ When persisting target products:
   product directory when a contract explicitly allows them, for example
   `working/products/tax_outputs/<tax_outputs_id>/derived/tax_output_grouped_readiness.json`
 - defer a general projections root such as
-  `working/projections/<slice>/<projection_family>/...` until the roadmap
-  trigger ladder activates broader derived read models
+  `working/projections/<capability>/<projection_family>/...` until a later
+  capability-specific increment activates broader derived read models
 - treat shared assessment outputs as declared persisted outputs
 - treat caches and indexes as regenerable accelerators, not as business truth
 

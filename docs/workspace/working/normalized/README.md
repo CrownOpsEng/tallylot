@@ -34,6 +34,18 @@ These folders hold the typed pipeline artifact set for one capture:
 - `location_inventory.csv`
 - `normalization_summary.json`
 
+Planner-enabled capture outputs may also include retained compatibility files
+for current readers:
+
+- `translation_input_candidates.json`
+- `translation_input_plan.json`
+- `translation_input_issues.csv`
+
+For planner-enabled Coinbase normalization, those files remain the current
+reader-facing compatibility layer. The authoritative `EvidenceSet` kernel and
+its product-local compatibility plan live under
+`working/products/evidence_sets/<evidence_set_id>/`.
+
 ## Assembled Source Outputs
 
 Source assembly writes the reconciliation-ready dataset under:

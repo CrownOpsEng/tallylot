@@ -317,8 +317,8 @@ def test_render_reference_section_groups_target_current_state_and_oracle_docs(
     override_active_roots(monkeypatch, tmp_path)
     for relative_path, title, summary, scope, nav_order in (
         (
-            "first-upstream-slice-contract.md",
-            "First Upstream Slice Contract",
+            "evidence-claim-contract.md",
+            "Evidence And Claim Contract",
             "Upstream target.",
             "forward_target",
             10,
@@ -367,7 +367,7 @@ def test_render_reference_section_groups_target_current_state_and_oracle_docs(
     assert rendered.startswith("### Target References\n")
     assert "\n\n### Current-State References\n" in rendered
     assert "\n\n### Oracle References\n" in rendered
-    assert rendered.index("[First Upstream Slice Contract]") < rendered.index(
+    assert rendered.index("[Evidence And Claim Contract]") < rendered.index(
         "### Current-State References"
     )
     assert rendered.index("[Manual Balance Submission Packages]") > rendered.index(

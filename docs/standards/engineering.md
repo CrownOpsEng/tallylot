@@ -294,10 +294,11 @@ application/investigation/, rather than into a generic shared sink.
 - Use `journal` for the end-state downstream stage, package, and
   product-adjacent family noun. Reserve `accounting` for broader prose,
   external schemas, or current bridge hints such as `AccountingIntentHint`.
-- Name bounded-slice references by direction rather than by a bare ordinal.
-  Prefer `First Upstream Slice Contract` and `First Downstream Slice Contract`
+- Name bounded contract references by capability rather than by a bare
+  ordinal.
+  Prefer `Evidence And Claim Contract` and `Economics Reconciliation Checkpoint Contract`
   over a generic `First Slice Contract`, and avoid repeating `current` in
-  forward-looking slice names unless live runtime truth is the subject.
+  forward-looking contract names unless live runtime truth is the subject.
 - When a helper ref belongs to one downstream stage rather than to a shared
   domain identity family, keep the stage noun on the helper type and keep the
   field name concise inside the owning record. Prefer
@@ -699,7 +700,7 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   the stem when the shorter noun would be generic across stages. Prefer
   `EventLinkRecord` or `EntryCheckRecord` over ambiguous cross-stage names such
   as `LinkRecord` or `ValidationRecord`.
-- When owner docs or bounded-slice refs describe a stored record family in
+- When owner docs or bounded contract refs describe a stored record family in
   prose, reuse the stored family noun instead of swapping to a looser nearby
   synonym. Prefer `entry checks` and `checkpoint proposals` when those are the
   persisted families, and use `rollups` only when the owner docs define an
@@ -778,9 +779,10 @@ Stable-id namespaces are catalog-governed, not review-time judgment.
   record names, helper refs, stable ids, or partition labels unless those
   nouns are themselves the persisted concept. Prefer lineage-, origin-, or
   subject-owned names over carry-through source labels in downstream kernels.
-- When a forward-looking contract page needs a provider-scoped or slice-scoped
+- When a forward-looking contract page needs a provider-scoped or
+  contract-scoped
   exception, keep that provider noun in the scope paragraph, example, or
-  bounded-slice section rather than in canonical target record names, helper
+  bounded-contract section rather than in canonical target record names, helper
   refs, stable ids, or directory stems.
 - Apply that same locality rule to titles, frontmatter summaries, and sync-
   managed docs-home blurbs. Forward-looking navigation copy should remain
@@ -877,7 +879,7 @@ family, ref, id, package, or file name.
     axes without overlapping or drifting into synonyms?
 
 When one canonical target name changes, update every primary contract page,
-bounded-slice reference, roadmap phase, contract reference, and control-plane
+bounded contract reference, roadmap planning surface, contract reference, and control-plane
 routing page that uses that family in the same patch. Do not leave competing
 target names alive in parallel.
 
@@ -896,8 +898,8 @@ Rules:
   `canonical_families.directory_families` and derive their directory and
   sidecar paths from that grouped family definition instead of hand-maintaining
   parallel path lists
-- update every affected detailed contract page, bounded-slice reference,
-  roadmap surface, and standards surface in the same patch
+- update every affected detailed contract page, bounded contract reference,
+  roadmap planning surface, and standards surface in the same patch
 - bridge cutover matrix inventory, owner, compatibility, reader, and gate
   semantics are docs-audit-governed rather than target-naming-catalog-governed
 - `docs/README.md` generated reference-group headings/order are

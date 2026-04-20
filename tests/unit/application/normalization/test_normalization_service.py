@@ -9,8 +9,8 @@ from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.csv_io import read_rows
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
-from tests.support.adapter_packs import fixture_raw_dir
 from repo_support.capture_roots import materialize_capture_root
+from tests.support.adapter_packs import fixture_raw_dir
 from tests.support.services import build_normalization_service
 
 
@@ -210,19 +210,30 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
 
 
 @pytest.mark.parametrize(
-    ("source", "raw_dir", "expected_fact_count", "expected_issue_count"),
+    ("source", "raw_dir", "expected"),
     (
-        ("Future Exchange", fixture_raw_dir("coinbase", "retail_buy_renamed"), 1, 0),
-        ("Future Broker", fixture_raw_dir("wealthsimple", "broker_trade"), 1, 0),
-        ("Binance", fixture_raw_dir("binance", "mixed_history"), 5, 1),
+        (
+            "Future Exchange",
+            fixture_raw_dir("coinbase", "retail_buy_renamed"),
+            {"fact_count": 1, "issue_count": 0, "expects_evidence_set": True},
+        ),
+        (
+            "Future Broker",
+            fixture_raw_dir("wealthsimple", "broker_trade"),
+            {"fact_count": 1, "issue_count": 0, "expects_evidence_set": False},
+        ),
+        (
+            "Binance",
+            fixture_raw_dir("binance", "mixed_history"),
+            {"fact_count": 5, "issue_count": 1, "expects_evidence_set": False},
+        ),
     ),
 )
 def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
     tmp_path: Path,
     source: str,
     raw_dir: Path,
-    expected_fact_count: int,
-    expected_issue_count: int,
+    expected: dict[str, int | bool],
 ) -> None:
     raw_dir = materialize_capture_root(tmp_path, source=source, source_dir=raw_dir)
     artifacts = FilesystemArtifactStore()
@@ -239,8 +250,16 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
         )
     )
 
-    assert response.fact_count == expected_fact_count
-    assert response.issue_count == expected_issue_count
+    assert response.fact_count == expected["fact_count"]
+    assert response.issue_count == expected["issue_count"]
+    assert (response.evidence_set_id != "") is expected["expects_evidence_set"]
+    if expected["expects_evidence_set"]:
+        assert response.evidence_set_ref == (
+            "working/products/evidence_sets/"
+            f"{response.evidence_set_id}/evidence_set.json"
+        )
+    else:
+        assert response.evidence_set_ref == ""
     assert (output_dir / "facts.csv").exists()
     assert (
         json.loads(

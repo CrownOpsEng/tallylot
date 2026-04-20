@@ -1,5 +1,7 @@
 {
   "adapter_id": "crypto_com",
+  "evidence_set_id": "",
+  "evidence_set_ref": "",
   "fact_count": 3,
   "facts_outside_normalization_window": 0,
   "issue_count": 0,

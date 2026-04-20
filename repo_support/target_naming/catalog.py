@@ -44,7 +44,7 @@ from .model import MarkerLabel, NamingScope
 
 SUPPORTED_REQUIRED_MARKERS: frozenset[MarkerLabel] = frozenset(
     {
-        "Slice-only example",
+        "Contract-local example",
         "Compatibility-only locality",
         "Current runtime note",
         "Anti-example",

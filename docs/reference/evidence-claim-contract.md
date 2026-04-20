@@ -1,6 +1,6 @@
 ---
-title: "First Upstream Slice Contract"
-summary: "Contract for the first upstream `EvidenceSet -> ClaimSet` slice, including cardinality, ids, replay gates, and bridge compatibility views."
+title: "Evidence And Claim Contract"
+summary: "Contract for the bounded `EvidenceSet -> ClaimSet` increment, including cardinality, ids, replay gates, and bridge compatibility views."
 doc_type: reference
 audience: human
 owner: repo
@@ -16,14 +16,14 @@ related:
   - ROADMAP.md
 ---
 
-Use this page when implementing or reviewing the first upstream slice.
+Use this page when implementing or reviewing the bounded evidence-and-claim contract.
 This document freezes scope, cardinality, ids, parity, replay, and allowed
-drift for the first upstream `EvidenceSet -> ClaimSet` slice.
+drift for the bounded `EvidenceSet -> ClaimSet` increment.
 
-**Slice-only example:** This slice still uses Coinbase retail exports and
-recognized Coinbase statements only as bounded examples for the first upstream
-parity contract. Those provider names are slice-local examples, not canonical
-target naming.
+**Contract-local example:** This contract still uses Coinbase retail exports
+and recognized Coinbase statements only as bounded examples for the current
+parity contract. Those provider names are contract-local examples, not
+canonical target naming.
 
 **Locality rule:** This slice retains evidence-local and compatibility-local
 bridge fields such as `source_slug`, `activity_label`,
@@ -211,7 +211,7 @@ Ownership rules:
 
 ## Bridge Compatibility Views
 
-For evidence in this slice, the first upstream slice changes authority but
+For evidence in this slice, the bounded evidence-and-claim contract changes authority but
 preserves bridge compatibility.
 
 Authoritative products after the slice:

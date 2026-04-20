@@ -13,6 +13,13 @@ from .hooks import StatementDocumentEvidenceAdapter
 from .rows import row_context_timestamp
 
 
+def _entry_identity_label(entry: FileInventoryEntry) -> str:
+    base_path = entry.archive_source_path or entry.relative_path
+    if entry.archive_member_path:
+        return f"{base_path}::{entry.archive_member_path}"
+    return entry.relative_path
+
+
 @dataclass(frozen=True)
 class StatementIssueDetails:
     kind: str
@@ -40,7 +47,7 @@ def statement_issue(
     details: StatementIssueDetails,
 ) -> IssueRecord:
     return IssueRecord(
-        issue_id=f"{profile.source}:{entry.relative_path}:{details.kind}",
+        issue_id=f"{profile.source}:{_entry_identity_label(entry)}:{details.kind}",
         source=str(profile.source),
         adapter_id=str(adapter.manifest.adapter_id),
         severity=details.severity,
@@ -61,7 +68,10 @@ def statement_review(
     details: StatementReviewDetails,
 ) -> NormalizationReviewRecord:
     return NormalizationReviewRecord(
-        review_id=f"{profile.source}:{entry.relative_path}:{details.raw_row_ref}:{details.kind}",
+        review_id=(
+            f"{profile.source}:{_entry_identity_label(entry)}:"
+            f"{details.raw_row_ref}:{details.kind}"
+        ),
         source=str(profile.source),
         adapter_id=str(adapter.manifest.adapter_id),
         scope="balance_reference",

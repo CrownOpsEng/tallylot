@@ -24,7 +24,7 @@ from .scope import parse_frontmatter, repo_relative_path, resolve_naming_scope
 
 NORMALIZED_WHITESPACE_PATTERN = re.compile(r"\s+")
 MARKER_PATTERN = re.compile(
-    r"^\*\*(Slice-only example|Compatibility-only locality|Current runtime note|"
+    r"^\*\*(Contract-local example|Compatibility-only locality|Current runtime note|"
     r"Anti-example|Exception rationale|Migration-only root rationale|"
     r"Locality rule):\*\*"
 )
