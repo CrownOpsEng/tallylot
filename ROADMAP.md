@@ -97,39 +97,17 @@ outputs:
 - [Evidence And Claim Contract](docs/reference/evidence-claim-contract.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
-## Phase 2. Land `ClaimSet`
+## Phase 2. `ClaimSet` Is Complete
 
-Goal:
+Phase 2 is complete. Its implemented runtime truth and durable references now
+live on the owner surfaces that describe the active claim-stage authority and
+the retained bridge compatibility boundary:
 
-- interpose a real claim stage between evidence capture and final economic
-  truth
-
-Deliver:
-
-- evidence-local `ClaimSet` emission keyed by `claim_set_id`
-- explicit claim scopes, mutually exclusive claim bundles, and
-  claim-bundle-decision records
-- claim fields frozen for the first upstream slice plus
-  `observation_refs`
-- shared gap and review outputs attached to claim scopes where needed, with any
-  readiness views staying local to the claim-owning capability
-- declared compatibility views for `EconomicActivityDraft` and
-  `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
-  kernels
-
-Exit criteria:
-
-- ambiguous source meaning can remain explicit without being forced into final
-  economic meaning
-- claim-bundle decisions remain claim-owned and do not carry economic
-  truth
-
-Transition to Phase 3:
-
-- downstream bridge outputs stay on the live bridge path until
-  `EconomicFacts` exists
-- the first downstream slice is the first slice that turns those downstream
-  bridge outputs into target-derived compatibility views
+- [Current State](docs/status/current-state.md)
+- [Evidence And Claim Contract](docs/reference/evidence-claim-contract.md)
+- [Architecture Overview](docs/concepts/architecture-overview.md)
+- [Product Outputs](docs/workspace/working/products/README.md)
+- [CHANGELOG.md](CHANGELOG.md)
 
 ## Phase 3. Land `EconomicFacts`
 

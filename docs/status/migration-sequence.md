@@ -121,10 +121,10 @@ aligned and frozen.
 
 ### 2. Evidence And Claim Contract
 
-Keep the bounded
+The bounded
 [`EvidenceSet -> ClaimSet`](../reference/evidence-claim-contract.md) contract.
 
-Required posture:
+Implemented posture:
 
 - `EvidenceSet` becomes authoritative for in-scope evidence selection
 - `ClaimSet` is the remaining upstream authority slice for in-scope
@@ -134,6 +134,9 @@ Required posture:
 - downstream bridge outputs remain on the live bridge path until the bounded
   economics/reconciliation/checkpoint contract makes the downstream target
   products authoritative for that scope
+
+This evidence-and-claim contract is already implemented for the bounded
+planner-enabled Coinbase slice.
 
 ### 3. Economics Reconciliation Checkpoint Contract
 

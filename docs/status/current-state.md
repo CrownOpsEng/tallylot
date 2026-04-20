@@ -79,6 +79,9 @@ The repo currently ships typed replacements for the current workflow capabilitie
   claim-stage assessment sidecars and
   `compatibility/draft_projection_fields.json`, then derives the current
   `EconomicActivityDraft` bridge outputs from that persisted `ClaimSet`
+- `ClaimSet` is therefore the implemented authority for bounded
+  planner-enabled Coinbase evidence-local meaning, while downstream target
+  products remain future work until a later bounded downstream slice lands
 - downstream bridge authorities for facts, balances, and checkpoints remain
   unchanged until the later target products land
 - source assembly via `source assemble`, producing reconciliation-ready source

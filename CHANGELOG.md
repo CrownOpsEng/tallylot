@@ -14,8 +14,16 @@ milestones on `main`.
   checks.
 - Moved completed `EvidenceSet` delivery truth out of future-tense planning
   language and tightened durable doc checks against ephemeral delivery labels.
-- Added Coinbase `ClaimSet` authority, claim-stage assessment sidecars, and a
-  compatibility view back into the current normalization bridge.
+- Added planner-enabled Coinbase `ClaimSet` authority, deterministic
+  claim-stage gap and review sidecars, and `draft_projection_fields.json`
+  compatibility output under `working/products/claim_sets/`.
+- Added derived `EconomicActivityDraft` and `SourceTranslationBatch`
+  compatibility rebuilding from authoritative `ClaimSet` plus the declared
+  bridge-only claim sidecar fields.
+- Split live repo docs enforcement between `docs-maintenance`,
+  `target-naming`, and `docs-audit` as script-owned checks instead of pytest.
+- Hardened repo-native PR review routing, quality-gate selection, and current
+  runtime delivery guardrails around the rebuilt typed architecture.
 
 ## 2026-04-01
 
