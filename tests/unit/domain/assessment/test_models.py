@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from tallylot.domain.assessment import (
     ASSESSMENT_SCHEMA_VERSION,
     GapConfidence,
@@ -196,3 +198,35 @@ def test_assessment_payload_helpers_preserve_deterministic_empty_arrays() -> Non
     assert gap_explanations_payload(()) == []
     assert review_records_payload(()) == []
     assert review_explanations_payload(()) == []
+
+
+def test_assessment_records_require_non_empty_claim_scope_ref() -> None:
+    with pytest.raises(ValueError, match="claim_scope gap records require scope_ref"):
+        GapRecord(
+            gap_id="gap-1",
+            owner_stage="claim",
+            blocking_stages=("claim",),
+            scope_kind="claim_scope",
+            scope_ref="",
+            subject_ref=None,
+            gap_kind=GapKind.MISSING_EVIDENCE,
+            gap_key="missing",
+            status=GapStatus.OPEN,
+            materiality=GapMateriality.MATERIAL,
+            confidence=GapConfidence.HIGH,
+        )
+    with pytest.raises(
+        ValueError, match="claim_scope review records require scope_ref"
+    ):
+        ReviewRecord(
+            review_id="review-1",
+            owner_stage="claim",
+            scope_kind="claim_scope",
+            scope_ref=None,
+            subject_ref=None,
+            review_kind="mapping",
+            review_key="fee",
+            status=ReviewStatus.OPEN,
+            confidence=ReviewConfidence.HIGH,
+            gap_ids=(),
+        )

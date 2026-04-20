@@ -138,6 +138,14 @@ class ClaimRecord:
         self._validate_kind_fields()
 
     def _validate_kind_fields(self) -> None:
+        if self.effective_at is not None and self.precision is None:
+            raise ValueError("claim effective_at requires precision")
+        if (
+            self.valued_at is not None
+            and self.precision is None
+            and self.kind is not ClaimKind.VALUATION
+        ):
+            raise ValueError("claim valued_at requires precision")
         balance_fields = (
             self.instrument_claim_refs,
             self.balance_kind,
@@ -158,6 +166,12 @@ class ClaimRecord:
         )
         beneficial_owner_fields = (self.beneficial_owner_ref,)
         valuation_fields = (self.purpose, self.amount, self.currency, self.valued_at)
+        if self.kind is ClaimKind.ACTIVITY and not all(
+            (self.activity_label, self.location_claim_ref, self.leg_specs)
+        ):
+            raise ValueError(
+                "activity claims require activity_label, location_claim_ref, and leg_specs"
+            )
         if self.kind is ClaimKind.ACTIVITY and any(
             _is_set(value)
             for value in (
@@ -188,8 +202,12 @@ class ClaimRecord:
             raise ValueError(
                 "instrument claims require scheme, value, and instrument_kind"
             )
-        if self.kind is ClaimKind.LOCATION and not self.location_ref:
-            raise ValueError("location claims require location_ref")
+        if self.kind is ClaimKind.LOCATION and not all(
+            (self.location_ref, self.location_group_label, self.location_label)
+        ):
+            raise ValueError(
+                "location claims require location_ref, location_group_label, and location_label"
+            )
         if self.kind is ClaimKind.BENEFICIAL_OWNER and not self.beneficial_owner_ref:
             raise ValueError("beneficial_owner claims require beneficial_owner_ref")
         if self.kind is ClaimKind.VALUATION and not all(
@@ -198,12 +216,13 @@ class ClaimRecord:
                 self.amount is not None,
                 self.currency,
                 self.valued_at is not None,
+                self.precision is not None,
                 self.location_claim_ref,
                 self.instrument_claim_refs,
             )
         ):
             raise ValueError(
-                "valuation claims require purpose, amount, currency, valued_at, location, and instruments"
+                "valuation claims require purpose, amount, currency, valued_at, precision, location, and instruments"
             )
 
     def semantic_payload(self) -> dict[str, JsonValue]:

@@ -273,7 +273,7 @@ def test_claim_model_supports_zero_row_valuation_and_exact_decision_vocabulary()
         member_refs=("member-1",),
         observation_refs=("observation-1",),
         effective_at=None,
-        precision=None,
+        precision=TemporalPrecision.DATE,
         provenance_refs=(),
         purpose="statement_balance",
         amount=Decimal("2500.00"),
@@ -284,6 +284,7 @@ def test_claim_model_supports_zero_row_valuation_and_exact_decision_vocabulary()
     )
 
     assert valuation.to_payload()["amount"] == "2500"
+    assert valuation.to_payload()["valued_at"] == "2026-03-23"
     assert tuple(item.value for item in ClaimBundleDecisionOutcome) == (
         "accepted",
         "blocked",
@@ -309,8 +310,119 @@ def test_claim_record_rejects_invalid_kind_owned_field_combinations() -> None:
             provenance_refs=(),
             activity_label="buy",
             location_claim_ref="claim-location",
-            leg_specs=(),
+            leg_specs=(
+                ClaimLegSpec(
+                    slot=0,
+                    role="asset_in",
+                    quantity=Decimal("1"),
+                    instrument_claim_refs=("claim-instrument",),
+                    location_claim_ref="claim-location",
+                    subtype="base",
+                ),
+            ),
             quantity=Decimal("1.00"),
             balance_kind="asset_balance",
             observed_at=datetime(2026, 3, 23, tzinfo=UTC),
+        )
+    with pytest.raises(
+        ValueError,
+        match="activity claims require activity_label, location_claim_ref, and leg_specs",
+    ):
+        ClaimRecord(
+            claim_set_id="claim-set-1",
+            scope_id="scope-1",
+            bundle_id="bundle-1",
+            claim_id="claim-activity",
+            kind=ClaimKind.ACTIVITY,
+            status=ClaimRecordStatus.ASSERTED,
+            key=("scope-key", "activity", "0"),
+            member_refs=("member-1",),
+            observation_refs=(),
+            effective_at=datetime(2026, 3, 23, tzinfo=UTC),
+            precision=TemporalPrecision.TIMESTAMP,
+            provenance_refs=(),
+            activity_label="buy",
+            location_claim_ref="",
+            leg_specs=(),
+        )
+    with pytest.raises(
+        ValueError,
+        match="claim effective_at requires precision",
+    ):
+        ClaimRecord(
+            claim_set_id="claim-set-1",
+            scope_id="scope-1",
+            bundle_id="bundle-1",
+            claim_id="claim-activity",
+            kind=ClaimKind.ACTIVITY,
+            status=ClaimRecordStatus.ASSERTED,
+            key=("scope-key", "activity", "0"),
+            member_refs=("member-1",),
+            observation_refs=(),
+            effective_at=datetime(2026, 3, 23, tzinfo=UTC),
+            precision=None,
+            provenance_refs=(),
+            activity_label="buy",
+            location_claim_ref="claim-location",
+            leg_specs=(
+                ClaimLegSpec(
+                    slot=0,
+                    role="asset_in",
+                    quantity=Decimal("1"),
+                    instrument_claim_refs=("claim-instrument",),
+                    location_claim_ref="claim-location",
+                    subtype="base",
+                ),
+            ),
+        )
+    with pytest.raises(
+        ValueError,
+        match=(
+            "valuation claims require purpose, amount, currency, valued_at, "
+            "precision, location, and instruments"
+        ),
+    ):
+        ClaimRecord(
+            claim_set_id="claim-set-1",
+            scope_id="scope-1",
+            bundle_id="bundle-1",
+            claim_id="claim-valuation",
+            kind=ClaimKind.VALUATION,
+            status=ClaimRecordStatus.ASSERTED,
+            key=("scope-key", "valuation", "0"),
+            member_refs=("member-1",),
+            observation_refs=(),
+            effective_at=None,
+            precision=None,
+            provenance_refs=(),
+            purpose="statement_balance",
+            amount=Decimal("100"),
+            currency="USD",
+            valued_at=datetime(2026, 3, 23, tzinfo=UTC),
+            location_claim_ref="claim-location",
+            instrument_claim_refs=("claim-instrument",),
+        )
+    with pytest.raises(
+        ValueError,
+        match=(
+            "location claims require location_ref, location_group_label, and "
+            "location_label"
+        ),
+    ):
+        ClaimRecord(
+            claim_set_id="claim-set-1",
+            scope_id="scope-1",
+            bundle_id="bundle-1",
+            claim_id="claim-location",
+            kind=ClaimKind.LOCATION,
+            status=ClaimRecordStatus.ASSERTED,
+            key=("scope-key", "location", "0"),
+            member_refs=("member-1",),
+            observation_refs=(),
+            effective_at=None,
+            precision=None,
+            provenance_refs=(),
+            location_ref="coinbase:primary",
+            location_group_label="",
+            location_label="Primary",
         )

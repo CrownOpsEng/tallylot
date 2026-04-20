@@ -79,6 +79,8 @@ class GapRecord:
     def __post_init__(self) -> None:
         if self.scope_kind != "claim_scope":
             raise ValueError("this slice supports only scope_kind='claim_scope'")
+        if not self.scope_ref:
+            raise ValueError("claim_scope gap records require scope_ref")
         if self.subject_ref is not None:
             raise ValueError("this slice requires subject_ref=None")
 
@@ -140,6 +142,8 @@ class ReviewRecord:
     def __post_init__(self) -> None:
         if self.scope_kind != "claim_scope":
             raise ValueError("this slice supports only scope_kind='claim_scope'")
+        if not self.scope_ref:
+            raise ValueError("claim_scope review records require scope_ref")
         if self.subject_ref is not None:
             raise ValueError("this slice requires subject_ref=None")
 

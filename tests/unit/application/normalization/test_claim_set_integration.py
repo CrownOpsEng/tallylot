@@ -3,8 +3,26 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from tallylot.application.claim.contracts import CoinbaseClaimBuildResult
 from tallylot.application.normalization import NormalizeRequest
+from tallylot.application.normalization.translation import (
+    _write_claim_assessment_sidecars,
+)
 from tallylot.application.resource_refs import to_resource_ref
+from tallylot.domain.assessment import (
+    GapConfidence,
+    GapExplanation,
+    GapKind,
+    GapMateriality,
+    GapRecord,
+    GapStatus,
+    ReviewConfidence,
+    ReviewExplanation,
+    ReviewRecord,
+    ReviewStatus,
+)
+from tallylot.domain.claim import ClaimSet
+from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from repo_support.capture_roots import materialize_capture_root
 from tests.support.adapter_packs import fixture_raw_dir
 from tests.support.services import build_normalization_service
@@ -119,3 +137,149 @@ def test_non_claim_set_adapter_keeps_empty_claim_fields(tmp_path: Path) -> None:
 
     assert response.claim_set_id == ""
     assert response.claim_set_ref == ""
+
+
+def test_claim_assessment_sidecars_write_in_canonical_order(tmp_path: Path) -> None:
+    _write_claim_assessment_sidecars(
+        artifacts=FilesystemArtifactStore(),
+        workspace_root=tmp_path,
+        claim_set_id="claim-set-1",
+        claim_build=CoinbaseClaimBuildResult(
+            claim_set=ClaimSet(
+                claim_set_id="claim-set-1",
+                evidence_set_ref="working/products/evidence_sets/evidence-set-1/evidence_set.json",
+                emitter_id="coinbase:coinbase:claim",
+                claim_records=(),
+                claim_bundle_records=(),
+                claim_bundle_decision_records=(),
+            ),
+            gap_records=(
+                GapRecord(
+                    gap_id="gap-2",
+                    owner_stage="claim",
+                    blocking_stages=("economics",),
+                    scope_kind="claim_scope",
+                    scope_ref="scope-2",
+                    subject_ref=None,
+                    gap_kind=GapKind.CONTRADICTION,
+                    gap_key="contradiction",
+                    status=GapStatus.OPEN,
+                    materiality=GapMateriality.MATERIAL,
+                    confidence=GapConfidence.LOW,
+                ),
+                GapRecord(
+                    gap_id="gap-1",
+                    owner_stage="claim",
+                    blocking_stages=("claim",),
+                    scope_kind="claim_scope",
+                    scope_ref="scope-1",
+                    subject_ref=None,
+                    gap_kind=GapKind.MISSING_EVIDENCE,
+                    gap_key="missing",
+                    status=GapStatus.OPEN,
+                    materiality=GapMateriality.SUPPORTING,
+                    confidence=GapConfidence.HIGH,
+                ),
+            ),
+            gap_explanations=(
+                GapExplanation(
+                    gap_id="gap-2",
+                    known_facts=("fact-2",),
+                    missing_inputs=(),
+                    possible_meanings=(),
+                    required_evidence=(),
+                    resolution_options=(),
+                    next_action="review",
+                    provenance_refs=("prov-2",),
+                ),
+                GapExplanation(
+                    gap_id="gap-1",
+                    known_facts=("fact-1",),
+                    missing_inputs=(),
+                    possible_meanings=(),
+                    required_evidence=(),
+                    resolution_options=(),
+                    next_action="review",
+                    provenance_refs=("prov-1",),
+                ),
+            ),
+            review_records=(
+                ReviewRecord(
+                    review_id="review-2",
+                    owner_stage="claim",
+                    scope_kind="claim_scope",
+                    scope_ref="scope-2",
+                    subject_ref=None,
+                    review_kind="mapping",
+                    review_key="second",
+                    status=ReviewStatus.OPEN,
+                    confidence=ReviewConfidence.LOW,
+                    gap_ids=(),
+                ),
+                ReviewRecord(
+                    review_id="review-1",
+                    owner_stage="claim",
+                    scope_kind="claim_scope",
+                    scope_ref="scope-1",
+                    subject_ref=None,
+                    review_kind="mapping",
+                    review_key="first",
+                    status=ReviewStatus.ACKNOWLEDGED,
+                    confidence=ReviewConfidence.HIGH,
+                    gap_ids=("gap-b", "gap-a"),
+                ),
+            ),
+            review_explanations=(
+                ReviewExplanation(
+                    review_id="review-2",
+                    headline="Second",
+                    known_facts=("fact-2",),
+                    follow_up=(),
+                    provenance_refs=("prov-2",),
+                ),
+                ReviewExplanation(
+                    review_id="review-1",
+                    headline="First",
+                    known_facts=("fact-1",),
+                    follow_up=(),
+                    provenance_refs=("prov-1",),
+                ),
+            ),
+            draft_projection_field_records=(),
+            compatibility_issue_records=(),
+            compatibility_review_records=(),
+        ),
+    )
+
+    claim_root = tmp_path / "working" / "products" / "claim_sets" / "claim-set-1"
+    gap_records_payload = json.loads(
+        (claim_root / "assessment" / "gap" / "gap_records.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    gap_explanations_payload = json.loads(
+        (claim_root / "assessment" / "gap" / "gap_explanations.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    review_records_payload = json.loads(
+        (claim_root / "assessment" / "review" / "review_records.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    review_explanations_payload = json.loads(
+        (claim_root / "assessment" / "review" / "review_explanations.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert [item["gap_id"] for item in gap_records_payload] == ["gap-1", "gap-2"]
+    assert [item["gap_id"] for item in gap_explanations_payload] == ["gap-1", "gap-2"]
+    assert [item["review_id"] for item in review_records_payload] == [
+        "review-1",
+        "review-2",
+    ]
+    assert [item["review_id"] for item in review_explanations_payload] == [
+        "review-1",
+        "review-2",
+    ]

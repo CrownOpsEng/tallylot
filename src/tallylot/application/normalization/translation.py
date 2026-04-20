@@ -23,6 +23,7 @@ from tallylot.application.compatibility import (
     project_translation_batch_from_claim_set,
     reconstruct_translation_input_plan,
 )
+from tallylot.application.claim.contracts import CoinbaseClaimBuildResult
 from tallylot.application.claim.coinbase_builder import build_coinbase_claim_set
 from tallylot.application.evidence.evidence_sets import build_evidence_set_for_profile
 from tallylot.application.evidence.statement_extraction import (
@@ -38,6 +39,12 @@ from tallylot.application.normalization.translation_inputs.artifacts import (
     TranslationArtifactContext,
     write_translation_input_candidates,
     write_translation_input_issues,
+)
+from tallylot.domain.assessment.models import (
+    gap_explanations_payload,
+    gap_records_payload,
+    review_explanations_payload,
+    review_records_payload,
 )
 from tallylot.ports.evidence_sets import EvidenceSetRepositoryPort
 from tallylot.ports.artifacts import ArtifactStorePort
@@ -206,23 +213,11 @@ def execute_translation(
                 context.workspace_root, claim_set_id
             )
             context.claim_sets.write_claim_set(claim_set_path, claim_build.claim_set)
-            context.artifacts.write_json(
-                claim_set_gap_records_file(context.workspace_root, claim_set_id),
-                [record.to_payload() for record in claim_build.gap_records],
-            )
-            context.artifacts.write_json(
-                claim_set_gap_explanations_file(context.workspace_root, claim_set_id),
-                [record.to_payload() for record in claim_build.gap_explanations],
-            )
-            context.artifacts.write_json(
-                claim_set_review_records_file(context.workspace_root, claim_set_id),
-                [record.to_payload() for record in claim_build.review_records],
-            )
-            context.artifacts.write_json(
-                claim_set_review_explanations_file(
-                    context.workspace_root, claim_set_id
-                ),
-                [record.to_payload() for record in claim_build.review_explanations],
+            _write_claim_assessment_sidecars(
+                artifacts=context.artifacts,
+                workspace_root=context.workspace_root,
+                claim_set_id=claim_set_id,
+                claim_build=claim_build,
             )
             context.artifacts.write_json(
                 claim_set_compatibility_draft_projection_fields_file(
@@ -258,4 +253,29 @@ def execute_translation(
         evidence_set_ref=evidence_set_path_ref,
         claim_set_id=claim_set_id,
         claim_set_ref=claim_set_path_ref,
+    )
+
+
+def _write_claim_assessment_sidecars(
+    *,
+    artifacts: ArtifactStorePort,
+    workspace_root: Path,
+    claim_set_id: str,
+    claim_build: CoinbaseClaimBuildResult,
+) -> None:
+    artifacts.write_json(
+        claim_set_gap_records_file(workspace_root, claim_set_id),
+        cast(JsonValue, gap_records_payload(claim_build.gap_records)),
+    )
+    artifacts.write_json(
+        claim_set_gap_explanations_file(workspace_root, claim_set_id),
+        cast(JsonValue, gap_explanations_payload(claim_build.gap_explanations)),
+    )
+    artifacts.write_json(
+        claim_set_review_records_file(workspace_root, claim_set_id),
+        cast(JsonValue, review_records_payload(claim_build.review_records)),
+    )
+    artifacts.write_json(
+        claim_set_review_explanations_file(workspace_root, claim_set_id),
+        cast(JsonValue, review_explanations_payload(claim_build.review_explanations)),
     )
