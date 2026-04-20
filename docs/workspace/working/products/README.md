@@ -25,8 +25,9 @@ Current runtime surface:
   `assessment/review/` store deterministic claim-stage gap and review sidecars,
   even when those arrays are empty
 - `working/products/claim_sets/<claim_set_id>/compatibility/draft_projection_fields.json`
-  stores the retained bridge-only draft projection fields used to rebuild
-  `EconomicActivityDraft` and `SourceTranslationBatch`
+  stores the retained bridge-only draft projection fields and compatibility
+  annotation payloads used to rebuild `EconomicActivityDraft`,
+  `SourceTranslationBatch`, and downstream compatibility annotations
 - `working/products/economic_facts/<economic_facts_id>/economic_facts.json`
   is the authoritative `EconomicFacts` kernel for the bounded downstream
   Coinbase slice, with `compatibility/facts.csv` and
