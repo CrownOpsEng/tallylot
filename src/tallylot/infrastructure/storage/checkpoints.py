@@ -107,14 +107,23 @@ def _required_assertion_value(
     items = _required_list_object(parts[1], "checkpoint assertion value")
     if kind == "quantity":
         return QuantityValue(
-            quantity=_required_decimal_text(items[0]),
-            subject_ref=_subject_ref_from_payload(items[1]),
+            quantity=_required_decimal_text(
+                _required_list_item(items, 0, "quantity amount")
+            ),
+            subject_ref=_subject_ref_from_payload(
+                _required_list_item(items, 1, "quantity subject_ref")
+            ),
         )
     if kind == "money":
-        currency = items[1]
+        currency = _required_list_item(items, 1, "money currency")
         if not isinstance(currency, str):
             raise ValueError("invalid checkpoint money value")
-        return MoneyValue(amount=_required_decimal_text(items[0]), currency=currency)
+        return MoneyValue(
+            amount=_required_decimal_text(
+                _required_list_item(items, 0, "money amount")
+            ),
+            currency=currency,
+        )
     if kind == "owner":
         return OwnerValue(
             legal_owner_ref=_optional_list_text(items, 0),
@@ -122,7 +131,7 @@ def _required_assertion_value(
             counterparty_ref=_optional_list_text(items, 2),
         )
     if kind == "location":
-        location_ref = items[0]
+        location_ref = _required_list_item(items, 0, "location ref")
         if not isinstance(location_ref, str):
             raise ValueError("invalid checkpoint location value")
         return LocationValue(location_ref=location_ref)
@@ -136,6 +145,12 @@ def _optional_list_text(items: list[object], index: int) -> str:
     if not isinstance(value, str):
         raise ValueError("invalid checkpoint owner value")
     return value
+
+
+def _required_list_item(items: list[object], index: int, label: str) -> object:
+    if index >= len(items):
+        raise ValueError(f"invalid checkpoint assertion value: missing {label}")
+    return items[index]
 
 
 def _required_list_object(value: object, label: str) -> list[object]:

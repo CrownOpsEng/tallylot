@@ -4,6 +4,7 @@ import json
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -20,6 +21,7 @@ from tallylot.domain.reconciliation import (
     ContinuitySegmentStatus,
     ReconciliationState,
 )
+from tallylot.domain.types import JsonValue
 from tallylot.infrastructure.storage import FilesystemReconciliationStateRepository
 
 
@@ -134,5 +136,22 @@ def test_reconciliation_state_repository_rejects_wrong_schema_version(
             "unsupported reconciliation state schema_version: 99; expected "
             f"{RECONCILIATION_STATE_SCHEMA_VERSION}"
         ),
+    ):
+        FilesystemReconciliationStateRepository().read_reconciliation_state(path)
+
+
+def test_reconciliation_state_repository_rejects_truncated_quantity_value(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "reconciliation_state.json"
+    payload = _sample_state().to_payload()
+    balance_target_records = cast(list[JsonValue], payload["balance_target_records"])
+    first_target = cast(dict[str, JsonValue], balance_target_records[0])
+    first_target["expected_value"] = cast(JsonValue, ["quantity", ["1.25"]])
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(
+        ValueError,
+        match="invalid reconciliation assertion value: missing quantity subject_ref",
     ):
         FilesystemReconciliationStateRepository().read_reconciliation_state(path)

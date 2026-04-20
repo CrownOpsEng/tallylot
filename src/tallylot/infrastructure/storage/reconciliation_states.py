@@ -160,15 +160,24 @@ def _assertion_value_from_payload(
     if kind == "quantity":
         items = _required_list_object(value_payload, "quantity assertion value")
         return QuantityValue(
-            quantity=_required_decimal_text(items[0]),
-            subject_ref=_subject_ref_from_payload(items[1]),
+            quantity=_required_decimal_text(
+                _required_list_item(items, 0, "quantity amount")
+            ),
+            subject_ref=_subject_ref_from_payload(
+                _required_list_item(items, 1, "quantity subject_ref")
+            ),
         )
     if kind == "money":
         items = _required_list_object(value_payload, "money assertion value")
-        currency = items[1]
+        currency = _required_list_item(items, 1, "money currency")
         if not isinstance(currency, str):
             raise ValueError("invalid reconciliation money value: expected currency")
-        return MoneyValue(amount=_required_decimal_text(items[0]), currency=currency)
+        return MoneyValue(
+            amount=_required_decimal_text(
+                _required_list_item(items, 0, "money amount")
+            ),
+            currency=currency,
+        )
     if kind == "owner":
         items = _required_list_object(value_payload, "owner assertion value")
         return OwnerValue(
@@ -178,7 +187,7 @@ def _assertion_value_from_payload(
         )
     if kind == "location":
         items = _required_list_object(value_payload, "location assertion value")
-        location_ref = items[0]
+        location_ref = _required_list_item(items, 0, "location ref")
         if not isinstance(location_ref, str):
             raise ValueError("invalid reconciliation location value")
         return LocationValue(location_ref=location_ref)
@@ -192,6 +201,12 @@ def _optional_list_text(items: list[object], index: int) -> str:
     if not isinstance(value, str):
         raise ValueError("invalid reconciliation owner value")
     return value
+
+
+def _required_list_item(items: list[object], index: int, label: str) -> object:
+    if index >= len(items):
+        raise ValueError(f"invalid reconciliation assertion value: missing {label}")
+    return items[index]
 
 
 def _required_list_object(value: object, label: str) -> list[object]:

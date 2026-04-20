@@ -4,6 +4,7 @@ import json
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -19,6 +20,7 @@ from tallylot.domain.checkpoint import (
     CheckpointAssertionValueKind,
     CheckpointRecord,
 )
+from tallylot.domain.types import JsonValue
 from tallylot.infrastructure.storage import FilesystemCheckpointRepository
 
 
@@ -113,5 +115,22 @@ def test_checkpoint_repository_rejects_wrong_schema_version(tmp_path: Path) -> N
             "unsupported checkpoint schema_version: 99; expected "
             f"{CHECKPOINT_SCHEMA_VERSION}"
         ),
+    ):
+        FilesystemCheckpointRepository().read_checkpoint(path)
+
+
+def test_checkpoint_repository_rejects_truncated_quantity_value(tmp_path: Path) -> None:
+    path = tmp_path / "checkpoint.json"
+    payload = _sample_checkpoint().to_payload()
+    checkpoint_assertions = cast(
+        list[JsonValue], payload["checkpoint_assertion_records"]
+    )
+    first_assertion = cast(dict[str, JsonValue], checkpoint_assertions[0])
+    first_assertion["accepted_value"] = cast(JsonValue, ["quantity", ["1.25"]])
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(
+        ValueError,
+        match="invalid checkpoint assertion value: missing quantity subject_ref",
     ):
         FilesystemCheckpointRepository().read_checkpoint(path)
