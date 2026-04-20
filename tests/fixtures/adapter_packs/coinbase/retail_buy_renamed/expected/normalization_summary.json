@@ -1,5 +1,7 @@
 {
   "adapter_id": "coinbase",
+  "evidence_set_id": "Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:56f90c0bc3a8b47b7e3a968de6dbda777c18cc25865cd49a1a8dd7aeda8e48d9",
+  "evidence_set_ref": "working/products/evidence_sets/Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:56f90c0bc3a8b47b7e3a968de6dbda777c18cc25865cd49a1a8dd7aeda8e48d9/evidence_set.json",
   "fact_count": 1,
   "facts_outside_normalization_window": 0,
   "issue_count": 0,

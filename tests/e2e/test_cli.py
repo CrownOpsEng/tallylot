@@ -241,13 +241,28 @@ def test_source_normalize_cli_writes_translation_planner_artifacts_for_coinbase(
     plan = json.loads(
         (output_dir / "translation_input_plan.json").read_text(encoding="utf-8")
     )
+    payload = json.loads(result.stdout)
+    evidence_root = (
+        tmp_path
+        / "workspace"
+        / "working"
+        / "products"
+        / "evidence_sets"
+        / payload["evidence_set_id"]
+    )
 
     assert result.exit_code == 0
     assert {candidate["candidate_id"] for candidate in candidates["candidates"]} == {
         f"coinbase:retail_export:{older_name}",
         f"coinbase:retail_export:{newer_name}",
     }
+    assert payload["evidence_set_id"]
+    assert payload["evidence_set_ref"] == (
+        f"working/products/evidence_sets/{payload['evidence_set_id']}/evidence_set.json"
+    )
     assert plan["selected_candidate_ids"] == [f"coinbase:retail_export:{newer_name}"]
+    assert (evidence_root / "evidence_set.json").exists()
+    assert (evidence_root / "compatibility" / "translation_input_plan.json").exists()
     assert (output_dir / "facts.csv").exists()
 
 
@@ -281,10 +296,24 @@ def test_source_normalize_cli_returns_nonzero_for_blocked_coinbase_plan(
     plan = json.loads(
         (output_dir / "translation_input_plan.json").read_text(encoding="utf-8")
     )
+    evidence_roots = tuple(
+        sorted(
+            (
+                tmp_path / "workspace" / "working" / "products" / "evidence_sets"
+            ).iterdir()
+        )
+    )
 
     assert result.exit_code == 2
     assert "translation input planning blocked normalization" in result.stdout
     assert plan["blocked"] is True
+    assert len(evidence_roots) == 1
+    assert (evidence_roots[0] / "evidence_set.json").exists()
+    assert (
+        evidence_roots[0] / "compatibility" / "translation_input_plan.json"
+    ).exists()
+    assert (output_dir / "translation_input_candidates.json").exists()
+    assert (output_dir / "translation_input_issues.csv").exists()
     assert not (output_dir / "facts.csv").exists()
 
 

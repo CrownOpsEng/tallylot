@@ -1,5 +1,7 @@
 {
   "adapter_id": "coinbase",
+  "evidence_set_id": "coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:5358a9d326cb404ae539239ed0dcd6a7148e07e76c8597bdbe883d273d5f1055",
+  "evidence_set_ref": "working/products/evidence_sets/coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:5358a9d326cb404ae539239ed0dcd6a7148e07e76c8597bdbe883d273d5f1055/evidence_set.json",
   "fact_count": 1,
   "facts_outside_normalization_window": 0,
   "issue_count": 0,
