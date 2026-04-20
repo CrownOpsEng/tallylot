@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from tallylot.application.claim.assessment import (
     map_claim_issue_to_scope,
     map_claim_review_to_scope,
@@ -44,9 +46,11 @@ from tallylot.domain.evidence import (
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
-from tallylot.application.normalization.translation_inputs.models import (
-    TranslationInputPlanningResult,
-)
+
+if TYPE_CHECKING:
+    from tallylot.application.normalization.translation_inputs.models import (
+        TranslationInputPlanningResult,
+    )
 
 
 def build_coinbase_claim_set(

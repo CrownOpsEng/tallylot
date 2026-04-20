@@ -14,6 +14,8 @@ milestones on `main`.
   checks.
 - Moved completed `EvidenceSet` delivery truth out of future-tense planning
   language and tightened durable doc checks against ephemeral delivery labels.
+- Added Coinbase `ClaimSet` authority, claim-stage assessment sidecars, and a
+  compatibility view back into the current normalization bridge.
 
 ## 2026-04-01
 

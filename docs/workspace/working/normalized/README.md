@@ -42,9 +42,14 @@ for current readers:
 - `translation_input_issues.csv`
 
 For planner-enabled Coinbase normalization, those files remain the current
-reader-facing compatibility layer. The authoritative `EvidenceSet` kernel and
-its product-local compatibility plan live under
-`working/products/evidence_sets/<evidence_set_id>/`.
+reader-facing compatibility layer. The authoritative `EvidenceSet` and
+`ClaimSet` kernels live under:
+
+- `working/products/evidence_sets/<evidence_set_id>/`
+- `working/products/claim_sets/<claim_set_id>/`
+
+For successful planner-enabled Coinbase runs, `normalization_summary.json`
+also records `claim_set_id` and `claim_set_ref`.
 
 ## Assembled Source Outputs
 

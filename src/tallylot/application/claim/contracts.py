@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 from tallylot.domain.assessment import (
     GapExplanation,
@@ -42,6 +43,22 @@ class DraftProjectionFieldRecord:
             "status": self.status,
             "draft_order": self.draft_order,
         }
+
+    @classmethod
+    def from_payload(cls, payload: dict[str, object]) -> "DraftProjectionFieldRecord":
+        return cls(
+            claim_bundle_id=str(payload["claim_bundle_id"]),
+            economic_kind=str(payload["economic_kind"]),
+            projection_hint=str(payload["projection_hint"]),
+            accounting_intent_hint=str(payload["accounting_intent_hint"]),
+            tax_treatment_hint=str(payload["tax_treatment_hint"]),
+            description=str(payload["description"]),
+            tx_hash_or_null=str(payload["tx_hash_or_null"]),
+            operation_group_id_or_null=str(payload["operation_group_id_or_null"]),
+            confidence=str(payload["confidence"]),
+            status=str(payload["status"]),
+            draft_order=int(cast(int | str, payload["draft_order"])),
+        )
 
 
 @dataclass(frozen=True)

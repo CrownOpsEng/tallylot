@@ -1,5 +1,7 @@
 {
   "adapter_id": "coinbase",
+  "claim_set_id": "",
+  "claim_set_ref": "",
   "evidence_set_id": "",
   "evidence_set_ref": "",
   "fact_count": 0,

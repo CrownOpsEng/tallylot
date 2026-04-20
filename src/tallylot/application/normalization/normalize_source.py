@@ -131,6 +131,7 @@ class NormalizeSourceUseCase:
                 artifacts=self._artifacts,
                 evidence=self._evidence,
                 evidence_sets=self._evidence_sets,
+                claim_sets=self._claim_sets,
                 statement_extraction=self._statement_extraction,
             ),
         )
@@ -229,6 +230,8 @@ class NormalizeSourceUseCase:
                 translation_metrics=translation_result.metrics,
                 evidence_set_id=translation_result.evidence_set_id,
                 evidence_set_ref=translation_result.evidence_set_ref,
+                claim_set_id=translation_result.claim_set_id,
+                claim_set_ref=translation_result.claim_set_ref,
             ),
         )
         append_capture_status_record(
@@ -248,6 +251,8 @@ class NormalizeSourceUseCase:
             adapter_id=str(profile.adapter_id),
             evidence_set_id=translation_result.evidence_set_id,
             evidence_set_ref=translation_result.evidence_set_ref,
+            claim_set_id=translation_result.claim_set_id,
+            claim_set_ref=translation_result.claim_set_ref,
             fact_count=len(facts),
             balance_count=len(balance_snapshots),
             issue_count=len(outputs.issues),

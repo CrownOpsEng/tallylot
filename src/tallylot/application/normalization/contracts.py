@@ -23,6 +23,8 @@ class NormalizeResponse:
     adapter_id: str
     evidence_set_id: str
     evidence_set_ref: str
+    claim_set_id: str
+    claim_set_ref: str
     fact_count: int
     balance_count: int
     issue_count: int

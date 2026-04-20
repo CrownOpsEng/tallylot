@@ -74,9 +74,13 @@ The repo currently ships typed replacements for the current workflow capabilitie
   statement-observation scope, with
   `working/products/evidence_sets/<evidence_set_id>/compatibility/translation_input_plan.json`
   as the derived compatibility plan
-- the remaining bounded upstream authority gap is `ClaimSet`; downstream bridge
-  authorities for facts, balances, and checkpoints remain unchanged until the
-  later target products land
+- planner-enabled Coinbase normalization also emits
+  `working/products/claim_sets/<claim_set_id>/claim_set.json` plus deterministic
+  claim-stage assessment sidecars and
+  `compatibility/draft_projection_fields.json`, then derives the current
+  `EconomicActivityDraft` bridge outputs from that persisted `ClaimSet`
+- downstream bridge authorities for facts, balances, and checkpoints remain
+  unchanged until the later target products land
 - source assembly via `source assemble`, producing reconciliation-ready source
   datasets under `working/normalized/sources/<source>/` and rewrites its owned
   generated artifact set on rerun

@@ -100,7 +100,7 @@ def map_claim_issue_to_scope(
             required_evidence=(),
             resolution_options=("model the unsupported retail row",),
             next_action="review the unsupported retail row before continuing claim emission",
-            provenance_refs=(),
+            provenance_refs=(retail_member_id,),
         ),
         compatibility_issue=issue,
     )
@@ -153,7 +153,7 @@ def map_claim_review_to_scope(
                 if value
             ),
             follow_up=("review the advisory normalization note during claim emission",),
-            provenance_refs=(),
+            provenance_refs=(retail_member_id,),
         ),
         compatibility_review=review,
     )

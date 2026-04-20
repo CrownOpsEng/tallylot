@@ -38,6 +38,14 @@ def test_coinbase_normalization_writes_evidence_set_product_outputs(
         / "evidence_sets"
         / response.evidence_set_id
     )
+    claim_root = (
+        tmp_path
+        / "workspace"
+        / "working"
+        / "products"
+        / "claim_sets"
+        / response.claim_set_id
+    )
     evidence_payload = json.loads(
         (evidence_root / "evidence_set.json").read_text(encoding="utf-8")
     )
@@ -55,8 +63,12 @@ def test_coinbase_normalization_writes_evidence_set_product_outputs(
     )
 
     assert response.evidence_set_id
+    assert response.claim_set_id
     assert response.evidence_set_ref == (
         f"working/products/evidence_sets/{response.evidence_set_id}/evidence_set.json"
+    )
+    assert response.claim_set_ref == (
+        f"working/products/claim_sets/{response.claim_set_id}/claim_set.json"
     )
     assert evidence_payload["evidence_set_id"] == response.evidence_set_id
     assert (
@@ -72,6 +84,14 @@ def test_coinbase_normalization_writes_evidence_set_product_outputs(
     )
     assert summary_payload["evidence_set_id"] == response.evidence_set_id
     assert summary_payload["evidence_set_ref"] == response.evidence_set_ref
+    assert claim_root.joinpath("claim_set.json").exists()
+    assert claim_root.joinpath("assessment", "gap", "gap_records.json").exists()
+    assert claim_root.joinpath("assessment", "gap", "gap_explanations.json").exists()
+    assert claim_root.joinpath("assessment", "review", "review_records.json").exists()
+    assert claim_root.joinpath(
+        "assessment", "review", "review_explanations.json"
+    ).exists()
+    assert claim_root.joinpath("compatibility", "draft_projection_fields.json").exists()
 
 
 def test_coinbase_blocked_normalization_leaves_evidence_set_product_outputs(
@@ -117,6 +137,7 @@ def test_coinbase_blocked_normalization_leaves_evidence_set_product_outputs(
     assert (output_dir / "translation_input_issues.csv").exists()
     assert not (output_dir / "facts.csv").exists()
     assert not (output_dir / "normalization_summary.json").exists()
+    assert not (tmp_path / "workspace" / "working" / "products" / "claim_sets").exists()
 
 
 def test_coinbase_missing_retail_input_skips_empty_evidence_set_outputs(
@@ -141,8 +162,11 @@ def test_coinbase_missing_retail_input_skips_empty_evidence_set_outputs(
 
     assert response.evidence_set_id == ""
     assert response.evidence_set_ref == ""
+    assert response.claim_set_id == ""
+    assert response.claim_set_ref == ""
     assert response.issue_count == 1
     assert not evidence_root.exists()
+    assert not (tmp_path / "workspace" / "working" / "products" / "claim_sets").exists()
 
 
 def _coinbase_retail_csv() -> str:

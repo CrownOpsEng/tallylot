@@ -72,7 +72,7 @@ def _claim_record_from_payload(payload: object) -> ClaimRecord:
             quantity=_required_decimal(spec, "quantity"),
             instrument_claim_refs=_required_text_tuple(spec, "instrument_claim_refs"),
             location_claim_ref=_required_text(spec, "location_claim_ref"),
-            subtype=_required_text(spec, "subtype"),
+            subtype=_optional_text(spec, "subtype"),
             attributed_to_slot=(
                 None
                 if spec.get("attributed_to_slot") is None
