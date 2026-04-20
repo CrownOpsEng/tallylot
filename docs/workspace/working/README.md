@@ -17,6 +17,8 @@ itself.
 
 Subfolders:
 
+- `products/` for authoritative target-product kernels and product-local
+  compatibility views
 - `supporting_artifacts/` for non-raw derivatives discovered during intake,
   such as calc sheets, draft import workbooks, screenshots, rendered HTML
   saves, and manual balance submission packages
@@ -26,6 +28,9 @@ Subfolders:
   or import round
 
 Nothing here is a raw source of truth.
+
+Use [`products/README.md`](products/README.md) when a workflow has landed an
+authoritative target kernel under `working/products/`.
 
 Some working paths remain source-scoped even though they are not raw evidence.
 When intake needs manual control over those source associations, use

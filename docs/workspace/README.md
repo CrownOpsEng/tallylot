@@ -37,6 +37,8 @@ paths keep them too.
 ## Working
 
 - [`working/README.md`](working/README.md): derived working-file boundaries
+- [`working/products/README.md`](working/products/README.md): authoritative
+  product-kernel guidance
 - [`working/import_batches/README.md`](working/import_batches/README.md): staged
   import batch rules
 - [`working/normalized/README.md`](working/normalized/README.md): normalized
