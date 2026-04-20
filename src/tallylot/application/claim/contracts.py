@@ -1,0 +1,56 @@
+"""Claim-stage builder contracts."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from tallylot.domain.assessment import (
+    GapExplanation,
+    GapRecord,
+    ReviewExplanation,
+    ReviewRecord,
+)
+from tallylot.domain.claim import ClaimSet
+from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+
+
+@dataclass(frozen=True)
+class DraftProjectionFieldRecord:
+    claim_bundle_id: str
+    economic_kind: str
+    projection_hint: str
+    accounting_intent_hint: str
+    tax_treatment_hint: str
+    description: str
+    tx_hash_or_null: str
+    operation_group_id_or_null: str
+    confidence: str
+    status: str
+    draft_order: int
+
+    def to_payload(self) -> dict[str, object]:
+        return {
+            "claim_bundle_id": self.claim_bundle_id,
+            "economic_kind": self.economic_kind,
+            "projection_hint": self.projection_hint,
+            "accounting_intent_hint": self.accounting_intent_hint,
+            "tax_treatment_hint": self.tax_treatment_hint,
+            "description": self.description,
+            "tx_hash_or_null": self.tx_hash_or_null,
+            "operation_group_id_or_null": self.operation_group_id_or_null,
+            "confidence": self.confidence,
+            "status": self.status,
+            "draft_order": self.draft_order,
+        }
+
+
+@dataclass(frozen=True)
+class CoinbaseClaimBuildResult:
+    claim_set: ClaimSet
+    gap_records: tuple[GapRecord, ...]
+    gap_explanations: tuple[GapExplanation, ...]
+    review_records: tuple[ReviewRecord, ...]
+    review_explanations: tuple[ReviewExplanation, ...]
+    draft_projection_field_records: tuple[DraftProjectionFieldRecord, ...]
+    compatibility_issue_records: tuple[IssueRecord, ...]
+    compatibility_review_records: tuple[NormalizationReviewRecord, ...]
