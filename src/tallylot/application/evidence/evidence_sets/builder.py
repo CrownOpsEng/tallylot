@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from tallylot.application.evidence.statement_extraction import (
-    CollectedStatementDocument,
     StatementDocumentCollectionResult,
+)
+from tallylot.application.evidence.evidence_sets.statement_records import (
+    PendingObservation as _PendingObservation,
+    build_statement_records as _statement_records_impl,
 )
 from tallylot.domain.evidence import (
     EvidenceMemberKind,
     EvidenceMemberRecord,
     EvidenceMemberStatus,
-    EvidenceObservationKind,
     EvidenceObservationRecord,
     EvidenceSelectionBasis,
     EvidenceSelectionRecord,
@@ -33,13 +35,6 @@ if TYPE_CHECKING:
     from tallylot.application.normalization.translation_inputs.models import (
         TranslationInputPlanningResult,
     )
-
-
-@dataclass(frozen=True)
-class _PendingObservation:
-    member_kind: EvidenceMemberKind
-    member_locator: tuple[str, ...]
-    record: EvidenceObservationRecord
 
 
 def build_evidence_set_for_profile(
@@ -69,6 +64,8 @@ def build_evidence_set_for_profile(
     )
     all_selections = (*selections, *statement_selections)
     all_members = (*members, *statement_members)
+    if not all_selections or not all_members:
+        return None
     all_pending_observations = statement_observations
     all_observations = tuple(
         observation.record for observation in all_pending_observations
@@ -225,6 +222,8 @@ def build_evidence_set_for_profile(
 def _retail_selection_records(
     planner_result: TranslationInputPlanningResult,
 ) -> tuple[EvidenceSelectionRecord, ...]:
+    if not planner_result.candidates:
+        return ()
     return (
         EvidenceSelectionRecord(
             evidence_set_id="",
@@ -340,139 +339,18 @@ def _statement_records(
     tuple[EvidenceMemberRecord, ...],
     tuple[_PendingObservation, ...],
 ]:
-    selections: list[EvidenceSelectionRecord] = []
-    members: list[EvidenceMemberRecord] = []
-    observations: list[_PendingObservation] = []
-    for document in documents.collected_documents:
-        key = ("statement_document", *document.locator)
-        selections.append(
-            EvidenceSelectionRecord(
-                evidence_set_id="",
-                selection_id="",
-                key=key,
-                fingerprint="",
-                basis=_statement_selection_basis(
-                    document=document, documents=documents
-                ),
-                blocking_gap_refs=_statement_blocking_gap_refs(
-                    document=document,
-                    documents=documents,
-                ),
-            )
-        )
-        members.append(
-            EvidenceMemberRecord(
-                evidence_set_id="",
-                selection_id="",
-                member_id="",
-                source_slug=str(profile.source),
-                adapter_id=str(profile.adapter_id),
-                capture_uid=capture_uid,
-                kind=EvidenceMemberKind.STATEMENT_DOCUMENT_FILE,
-                locator=document.locator,
-                status=document.member_status,
-                capture_manifest_fingerprint=capture_manifest_fingerprint,
-            )
-        )
-        if not document.selected:
-            continue
-        observations.append(
-            _PendingObservation(
-                member_kind=EvidenceMemberKind.STATEMENT_DOCUMENT_FILE,
-                member_locator=document.locator,
-                record=EvidenceObservationRecord(
-                    evidence_set_id="",
-                    member_id="",
-                    observation_id="",
-                    kind=EvidenceObservationKind.STATEMENT_DOCUMENT,
-                    key=("document",),
-                    provenance_refs=(),
-                    statement_kind=str(profile.adapter_id),
-                    document_effective_at=document.parsed.document_effective_at,
-                    document_effective_precision=document.document_effective_precision,
-                    statement_as_of=document.parsed.statement_as_of_at,
-                    statement_as_of_precision=document.statement_as_of_precision,
-                ),
-            )
-        )
-        for index, row in enumerate(document.parsed.rows):
-            row_key = row.raw_row_ref or f"row:{index}"
-            observations.append(
-                _PendingObservation(
-                    member_kind=EvidenceMemberKind.STATEMENT_DOCUMENT_FILE,
-                    member_locator=document.locator,
-                    record=EvidenceObservationRecord(
-                        evidence_set_id="",
-                        member_id="",
-                        observation_id="",
-                        kind=EvidenceObservationKind.STATEMENT_BALANCE_ROW,
-                        key=(row_key,),
-                        observed_at=row.as_of_at,
-                        precision=row.as_of_precision,
-                        provenance_refs=(),
-                        location_group_label=row.account,
-                        location_label=row.wallet,
-                        balance_kind=row.balance_kind,
-                        instrument_symbol=row.asset,
-                        quantity=row.quantity,
-                        notes=row.notes,
-                        staked_quantity_text=row.staked_quantity,
-                        value_amount_text=row.value_amount,
-                        value_currency=row.value_currency,
-                        price_amount_text=row.price_amount,
-                        price_currency=row.price_currency,
-                    ),
-                )
-            )
-    return tuple(selections), tuple(members), tuple(observations)
+    return _statement_records_impl(
+        profile=profile,
+        capture_uid=capture_uid,
+        capture_manifest_fingerprint=capture_manifest_fingerprint,
+        documents=documents,
+    )
 
 
 def member_selection_key(member: EvidenceMemberRecord) -> tuple[str, ...]:
     if member.kind is EvidenceMemberKind.RETAIL_ACTIVITY_EXPORT_FILE:
         return ("retail_activity_export_file",)
     return ("statement_document", *member.locator)
-
-
-def _statement_selection_basis(
-    *,
-    document: CollectedStatementDocument,
-    documents: StatementDocumentCollectionResult,
-) -> EvidenceSelectionBasis:
-    issue_kinds = {
-        issue.kind
-        for issue in documents.issues
-        if issue.raw_file == document.entry.relative_path
-    }
-    if "statement_document_ambiguous" in issue_kinds:
-        return EvidenceSelectionBasis.AMBIGUOUS_OVERLAP
-    if "statement_document_missing_as_of" in issue_kinds:
-        return EvidenceSelectionBasis.UPSTREAM_GAP
-    if document.member_status is EvidenceMemberStatus.SUPERSEDED:
-        return EvidenceSelectionBasis.FRESHNESS
-    if document.selected and any(
-        item.member_status is EvidenceMemberStatus.SUPERSEDED
-        for item in documents.collected_documents
-    ):
-        return EvidenceSelectionBasis.FRESHNESS
-    return EvidenceSelectionBasis.SINGLE_MEMBER
-
-
-def _statement_blocking_gap_refs(
-    *,
-    document: CollectedStatementDocument,
-    documents: StatementDocumentCollectionResult,
-) -> tuple[str, ...]:
-    if document.member_status is not EvidenceMemberStatus.BLOCKED:
-        return ()
-    return tuple(
-        sorted(
-            issue.issue_id
-            for issue in documents.issues
-            if issue.raw_file == document.entry.relative_path
-            and issue.kind
-            in {"statement_document_ambiguous", "statement_document_missing_as_of"}
-        )
-    )
 
 
 def _observation_identity_key(

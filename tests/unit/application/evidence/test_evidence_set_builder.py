@@ -159,9 +159,78 @@ def test_statement_records_preserve_blocking_gap_refs_for_missing_dates() -> Non
     )
 
 
+def test_statement_records_match_gap_refs_to_archive_members() -> None:
+    first_issue = IssueRecord(
+        issue_id="coinbase:archive.zip::first.pdf:statement_document_missing_as_of",
+        source="coinbase",
+        adapter_id="coinbase",
+        severity="high",
+        kind="statement_document_missing_as_of",
+        message="missing first statement date",
+        raw_file="archive.zip",
+        raw_provenance=ProvenanceLocator(
+            capture_uid=CaptureUid("capture-1"),
+            relative_path="archive.zip",
+            archive_member_path="first.pdf",
+            locator_kind="raw_file",
+        ),
+    )
+    second_issue = IssueRecord(
+        issue_id="coinbase:archive.zip::second.pdf:statement_document_missing_as_of",
+        source="coinbase",
+        adapter_id="coinbase",
+        severity="high",
+        kind="statement_document_missing_as_of",
+        message="missing second statement date",
+        raw_file="archive.zip",
+        raw_provenance=ProvenanceLocator(
+            capture_uid=CaptureUid("capture-1"),
+            relative_path="archive.zip",
+            archive_member_path="second.pdf",
+            locator_kind="raw_file",
+        ),
+    )
+
+    selections, _, observations = _statement_records(
+        profile=build_source_profile(adapter_id="coinbase", source="coinbase"),
+        capture_uid="capture-1",
+        capture_manifest_fingerprint="manifest-1",
+        documents=StatementDocumentCollectionResult(
+            collected_documents=(
+                _collected_statement_document(
+                    relative_path="archive.zip",
+                    archive_source_path="archive.zip",
+                    archive_member_path="first.pdf",
+                    statement_as_of_at=None,
+                    member_status=EvidenceMemberStatus.BLOCKED,
+                    selected=False,
+                ),
+                _collected_statement_document(
+                    relative_path="archive.zip",
+                    archive_source_path="archive.zip",
+                    archive_member_path="second.pdf",
+                    statement_as_of_at=None,
+                    member_status=EvidenceMemberStatus.BLOCKED,
+                    selected=False,
+                ),
+            ),
+            issues=(first_issue, second_issue),
+            reviews=(),
+        ),
+    )
+
+    assert not observations
+    assert {selection.key: selection.blocking_gap_refs for selection in selections} == {
+        ("statement_document", "archive.zip", "first.pdf"): (first_issue.issue_id,),
+        ("statement_document", "archive.zip", "second.pdf"): (second_issue.issue_id,),
+    }
+
+
 def _collected_statement_document(
     *,
     relative_path: str,
+    archive_source_path: str = "",
+    archive_member_path: str = "",
     statement_as_of_at: datetime | None,
     member_status: EvidenceMemberStatus,
     selected: bool,
@@ -170,6 +239,8 @@ def _collected_statement_document(
     return CollectedStatementDocument(
         entry=FileInventoryEntry(
             relative_path=relative_path,
+            archive_source_path=archive_source_path,
+            archive_member_path=archive_member_path,
             suffix=".pdf",
             size_bytes=1,
             sha256=f"sha256:{relative_path}",
@@ -180,7 +251,7 @@ def _collected_statement_document(
             statement_as_of_at=statement_as_of_at,
             rows=rows,
         ),
-        locator=(relative_path, ""),
+        locator=(relative_path, archive_member_path),
         member_status=member_status,
         selected=selected,
         statement_as_of_precision=(

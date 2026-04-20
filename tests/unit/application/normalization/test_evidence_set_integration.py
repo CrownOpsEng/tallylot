@@ -8,6 +8,7 @@ import pytest
 from tallylot.application.normalization import NormalizeRequest
 from tallylot.application.resource_refs import to_resource_ref
 from repo_support.capture_roots import materialize_capture_root
+from tests.support.adapter_packs import fixture_raw_dir
 from tests.support.services import build_normalization_service
 
 
@@ -116,6 +117,32 @@ def test_coinbase_blocked_normalization_leaves_evidence_set_product_outputs(
     assert (output_dir / "translation_input_issues.csv").exists()
     assert not (output_dir / "facts.csv").exists()
     assert not (output_dir / "normalization_summary.json").exists()
+
+
+def test_coinbase_missing_retail_input_skips_empty_evidence_set_outputs(
+    tmp_path: Path,
+) -> None:
+    raw_dir = materialize_capture_root(
+        tmp_path,
+        source="coinbase",
+        source_dir=fixture_raw_dir("coinbase", "missing_retail_csv"),
+    )
+    output_dir = tmp_path / "normalized"
+
+    response = build_normalization_service().execute(
+        NormalizeRequest(
+            source="coinbase",
+            raw_capture_ref=to_resource_ref(raw_dir),
+            normalized_output_ref=to_resource_ref(output_dir),
+        )
+    )
+
+    evidence_root = tmp_path / "workspace" / "working" / "products" / "evidence_sets"
+
+    assert response.evidence_set_id == ""
+    assert response.evidence_set_ref == ""
+    assert response.issue_count == 1
+    assert not evidence_root.exists()
 
 
 def _coinbase_retail_csv() -> str:

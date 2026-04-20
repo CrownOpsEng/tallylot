@@ -85,16 +85,16 @@ def collect_source_statement_documents_from_inventory(
             continue
         recognized.append((entry, parsed))
     latest_documents = latest_recognized_documents(recognized)
-    latest_paths = {entry.relative_path for entry, _ in latest_documents}
+    latest_keys = {_entry_identity(entry) for entry, _ in latest_documents}
     collected: list[CollectedStatementDocument] = []
     if not latest_documents:
-        append_missing_as_of_issue(adapter, profile, recognized, issues)
+        append_missing_as_of_issues(adapter, profile, recognized, issues)
         for entry, parsed in recognized:
             collected.append(
                 CollectedStatementDocument(
                     entry=entry,
                     parsed=parsed,
-                    locator=(entry.relative_path, entry.archive_member_path or ""),
+                    locator=_entry_locator(entry),
                     member_status=EvidenceMemberStatus.BLOCKED,
                     selected=False,
                     statement_as_of_precision=statement_as_of_precision(parsed),
@@ -103,7 +103,7 @@ def collect_source_statement_documents_from_inventory(
             )
         return StatementDocumentCollectionResult(
             collected_documents=tuple(
-                sorted(collected, key=lambda item: item.entry.relative_path)
+                sorted(collected, key=lambda item: _entry_sort_key(item.entry))
             ),
             issues=tuple(issues),
             reviews=tuple(reviews),
@@ -115,10 +115,10 @@ def collect_source_statement_documents_from_inventory(
                 CollectedStatementDocument(
                     entry=entry,
                     parsed=parsed,
-                    locator=(entry.relative_path, entry.archive_member_path or ""),
+                    locator=_entry_locator(entry),
                     member_status=(
                         EvidenceMemberStatus.BLOCKED
-                        if entry.relative_path in latest_paths
+                        if _entry_identity(entry) in latest_keys
                         else EvidenceMemberStatus.SUPERSEDED
                     ),
                     selected=False,
@@ -128,7 +128,7 @@ def collect_source_statement_documents_from_inventory(
             )
         return StatementDocumentCollectionResult(
             collected_documents=tuple(
-                sorted(collected, key=lambda item: item.entry.relative_path)
+                sorted(collected, key=lambda item: _entry_sort_key(item.entry))
             ),
             issues=tuple(issues),
             reviews=tuple(reviews),
@@ -136,26 +136,26 @@ def collect_source_statement_documents_from_inventory(
     selected_documents = evidence_documents_for_latest_snapshot(
         recognized, latest_documents
     )
-    selected_paths = {entry.relative_path for entry, _ in selected_documents}
+    selected_keys = {_entry_identity(entry) for entry, _ in selected_documents}
     for entry, parsed in recognized:
         collected.append(
             CollectedStatementDocument(
                 entry=entry,
                 parsed=parsed,
-                locator=(entry.relative_path, entry.archive_member_path or ""),
+                locator=_entry_locator(entry),
                 member_status=(
                     EvidenceMemberStatus.SELECTED
-                    if entry.relative_path in selected_paths
+                    if _entry_identity(entry) in selected_keys
                     else EvidenceMemberStatus.SUPERSEDED
                 ),
-                selected=entry.relative_path in selected_paths,
+                selected=_entry_identity(entry) in selected_keys,
                 statement_as_of_precision=statement_as_of_precision(parsed),
                 document_effective_precision=document_effective_precision(parsed),
             )
         )
     return StatementDocumentCollectionResult(
         collected_documents=tuple(
-            sorted(collected, key=lambda item: item.entry.relative_path)
+            sorted(collected, key=lambda item: _entry_sort_key(item.entry))
         ),
         issues=tuple(issues),
         reviews=tuple(reviews),
@@ -180,7 +180,7 @@ def statement_document_candidates(
         if path is None:
             continue
         candidates.append((entry, path))
-    return tuple(sorted(candidates, key=lambda item: item[0].relative_path))
+    return tuple(sorted(candidates, key=lambda item: _entry_sort_key(item[0])))
 
 
 def inventory_path(raw_dir: Path, entry: FileInventoryEntry) -> Path | None:
@@ -204,6 +204,25 @@ def document_provenance(
         locator_kind="raw_file",
         anchor=anchor,
     )
+
+
+def _entry_locator(entry: FileInventoryEntry) -> tuple[str, str]:
+    return (entry.relative_path, entry.archive_member_path or "")
+
+
+def _entry_identity(entry: FileInventoryEntry) -> tuple[str, str]:
+    return _entry_locator(entry)
+
+
+def _entry_sort_key(entry: FileInventoryEntry) -> tuple[str, str]:
+    return _entry_locator(entry)
+
+
+def _entry_display_path(entry: FileInventoryEntry) -> str:
+    base_path = entry.archive_source_path or entry.relative_path
+    if entry.archive_member_path:
+        return f"{base_path}::{entry.archive_member_path}"
+    return base_path
 
 
 def latest_recognized_documents(
@@ -244,32 +263,30 @@ def latest_recognized_documents(
     )
 
 
-def append_missing_as_of_issue(
+def append_missing_as_of_issues(
     adapter: StatementDocumentEvidenceAdapter,
     profile: SourceProfile,
     recognized: list[tuple[FileInventoryEntry, StatementDocumentParseResult]],
     issues: list[IssueRecord],
 ) -> None:
-    if not recognized:
-        return
-    entry = recognized[0][0]
-    issues.append(
-        statement_issue(
-            adapter,
-            profile,
-            entry,
-            document_provenance(entry),
-            StatementIssueDetails(
-                kind="statement_document_missing_as_of",
-                severity="high",
-                message=(
-                    f"{adapter.manifest.display_name} statement document "
-                    f"{entry.relative_path} was recognized but no statement date "
-                    "could be determined."
+    for entry, _parsed in recognized:
+        issues.append(
+            statement_issue(
+                adapter,
+                profile,
+                entry,
+                document_provenance(entry),
+                StatementIssueDetails(
+                    kind="statement_document_missing_as_of",
+                    severity="high",
+                    message=(
+                        f"{adapter.manifest.display_name} statement document "
+                        f"{entry.relative_path} was recognized but no statement date "
+                        "could be determined."
+                    ),
                 ),
-            ),
+            )
         )
-    )
 
 
 def append_ambiguous_statement_issues(
@@ -280,7 +297,7 @@ def append_ambiguous_statement_issues(
     ],
     issues: list[IssueRecord],
 ) -> None:
-    matched_paths = tuple(entry.relative_path for entry, _ in latest_documents)
+    matched_paths = tuple(_entry_display_path(entry) for entry, _ in latest_documents)
     for entry, _ in latest_documents:
         issues.append(
             ambiguous_statement_issue(
@@ -314,7 +331,7 @@ def evidence_documents_for_latest_snapshot(
             candidates,
             key=lambda item: (
                 document_precedence_value(item[1]),
-                item[0].relative_path,
+                *_entry_sort_key(item[0]),
             ),
             reverse=True,
         )
