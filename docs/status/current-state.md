@@ -68,7 +68,7 @@ The repo currently ships typed replacements for the current workflow capabilitie
   `translation_input_issues.csv` before translation, blocks ambiguous file
   selection, and records translation planner metrics in
   `normalization_summary.json`
-- planner-enabled Coinbase normalization now also emits
+- planner-enabled Coinbase normalization also emits
   `working/products/evidence_sets/<evidence_set_id>/evidence_set.json` as the
   authoritative kernel for the bounded evidence-selection and typed
   statement-observation scope, with
@@ -79,11 +79,18 @@ The repo currently ships typed replacements for the current workflow capabilitie
   claim-stage assessment sidecars and
   `compatibility/draft_projection_fields.json`, then derives the current
   `EconomicActivityDraft` bridge outputs from that persisted `ClaimSet`
-- `ClaimSet` is therefore the implemented authority for bounded
-  planner-enabled Coinbase evidence-local meaning, while downstream target
-  products remain future work until a later bounded downstream slice lands
-- downstream bridge authorities for facts, balances, and checkpoints remain
-  unchanged until the later target products land
+- planner-enabled Coinbase normalization also emits
+  `working/products/economic_facts/<economic_facts_id>/economic_facts.json`,
+  one or more
+  `working/products/reconciliation_states/<reconciliation_state_id>/reconciliation_state.json`,
+  and zero or more
+  `working/products/checkpoints/<checkpoint_id>/checkpoint.json`, each with
+  product-local compatibility facts, snapshots, or references derived from the
+  authoritative downstream kernels
+- `ClaimSet`, `EconomicFacts`, `ReconciliationState`, and `Checkpoint` are
+  therefore implemented authorities for the bounded planner-enabled Coinbase
+  slice, while current readers still consume the mirrored compatibility
+  `facts.csv`, `balance_snapshots.csv`, and `balance_references.csv` outputs
 - source assembly via `source assemble`, producing reconciliation-ready source
   datasets under `working/normalized/sources/<source>/` and rewrites its owned
   generated artifact set on rerun
@@ -135,11 +142,13 @@ The repo currently ships typed replacements for the current workflow capabilitie
   compatibility plan, the mirrored legacy `translation_input_plan.json`, and
   the legacy planner candidates and issues artifacts for operator review.
 - Successful non-planner normalization leaves `evidence_set_id` and
-  `evidence_set_ref` empty in response and summary surfaces.
+  `evidence_set_ref` empty, and out-of-slice normalization also leaves the new
+  downstream product ids and refs empty in response and summary surfaces.
 - For planner-enabled Coinbase normalization,
   `translation_input_plan.json` is a compatibility view derived from the
-  authoritative `EvidenceSet` kernel. Downstream bridge authorities for
-  facts, balances, and checkpoints remain unchanged.
+  authoritative `EvidenceSet` kernel. The mirrored `facts.csv`,
+  `balance_snapshots.csv`, and `balance_references.csv` artifacts are
+  target-derived compatibility views owned by the downstream product kernels.
 - Capture-scoped normalized outputs live under `working/normalized/captures/`.
 - Reconciliation reads assembled source datasets under
   `working/normalized/sources/`.
@@ -182,7 +191,7 @@ The repo currently ships typed replacements for the current workflow capabilitie
 ## Current Migration Notes
 
 - Translation input planning is opt-in per adapter during the first increment.
-- Coinbase is the first planner-enabled adapter and now describes retail CSV
+- Coinbase is the first planner-enabled adapter and describes retail CSV
   candidates instead of choosing one file by path order.
 - Legacy adapters still use the fallback `translate(...)` path until their
   candidate overlap and replacement rules are modeled well enough to migrate

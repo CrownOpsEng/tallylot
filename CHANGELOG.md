@@ -20,6 +20,11 @@ milestones on `main`.
 - Added derived `EconomicActivityDraft` and `SourceTranslationBatch`
   compatibility rebuilding from authoritative `ClaimSet` plus the declared
   bridge-only claim sidecar fields.
+- Added authoritative `EconomicFacts`, `ReconciliationState`, and `Checkpoint`
+  kernels for the bounded planner-enabled Coinbase slice, with normalization
+  persisting those product roots and mirroring target-derived
+  compatibility `facts.csv`, `balance_snapshots.csv`, and
+  `balance_references.csv` back into the existing capture output tree.
 - Split live repo docs enforcement between `docs-maintenance`,
   `target-naming`, and `docs-audit` as script-owned checks instead of pytest.
 - Hardened repo-native PR review routing, quality-gate selection, and current

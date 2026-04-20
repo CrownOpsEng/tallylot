@@ -156,6 +156,10 @@ Required posture:
 This contract is therefore the first increment that converts
 downstream bridge surfaces into target-derived compatibility views.
 
+This contract is implemented for the bounded planner-enabled Coinbase slice.
+Current facts, balance snapshots, and balance references remain on the
+compatibility path for readers until the later reader-cutover work lands.
+
 ### 4. Reader Cutovers
 
 After those slices land, migrate readers one consumer surface at a time:
