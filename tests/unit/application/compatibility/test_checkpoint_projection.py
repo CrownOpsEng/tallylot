@@ -48,7 +48,7 @@ def test_checkpoint_projection_preserves_balance_reference_shape() -> None:
     accepted_value = QuantityValue(quantity=Decimal("1.25"), subject_ref=subject_ref)
     state = ReconciliationState(
         reconciliation_state_id="state-1",
-        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        economic_facts_ref="facts-1",
         continuity_segment_records=(
             ContinuitySegmentRecord(
                 segment_id="segment-1",
@@ -88,9 +88,7 @@ def test_checkpoint_projection_preserves_balance_reference_shape() -> None:
     )
     checkpoint = Checkpoint(
         checkpoint_id="checkpoint-1",
-        reconciliation_state_refs=(
-            "working/products/reconciliation_states/state-1/reconciliation_state.json",
-        ),
+        reconciliation_state_refs=("state-1",),
         as_of=as_of,
         checkpoint_records=(
             CheckpointRecord(
@@ -148,7 +146,7 @@ def test_checkpoint_projection_resolves_observation_ids_to_support_refs() -> Non
     accepted_value = QuantityValue(quantity=Decimal("1.25"), subject_ref=subject_ref)
     state = ReconciliationState(
         reconciliation_state_id="state-1",
-        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        economic_facts_ref="facts-1",
         continuity_segment_records=(
             ContinuitySegmentRecord(
                 segment_id="segment-1",
@@ -188,9 +186,7 @@ def test_checkpoint_projection_resolves_observation_ids_to_support_refs() -> Non
     )
     checkpoint = Checkpoint(
         checkpoint_id="checkpoint-1",
-        reconciliation_state_refs=(
-            "working/products/reconciliation_states/state-1/reconciliation_state.json",
-        ),
+        reconciliation_state_refs=("state-1",),
         as_of=as_of,
         checkpoint_records=(
             CheckpointRecord(

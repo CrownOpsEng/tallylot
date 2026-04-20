@@ -78,9 +78,6 @@ def _build_claim_set(raw_dir: Path) -> ClaimSet:
     result = build_coinbase_claim_set(
         profile=profile,
         evidence_set=evidence_set,
-        evidence_set_ref=(
-            f"working/products/evidence_sets/{evidence_set.evidence_set_id}/evidence_set.json"
-        ),
         planning_result=planning_result,
         batch=batch,
     )
@@ -154,12 +151,11 @@ def test_builder_maps_supported_coinbase_rows_to_declared_events_and_legs(
     raw_dir.mkdir()
     (raw_dir / "retail.csv").write_text(_retail_csv(row_text), encoding="utf-8")
 
-    economic_facts = build_economic_facts(
-        claim_set=_build_claim_set(raw_dir),
-        claim_set_ref="working/products/claim_sets/claim-set-1/claim_set.json",
-    )
+    claim_set = _build_claim_set(raw_dir)
+    economic_facts = build_economic_facts(claim_set=claim_set)
 
     assert len(economic_facts.economic_event_records) == 1
+    assert economic_facts.claim_set_refs == (claim_set.claim_set_id,)
     assert economic_facts.economic_event_records[0].kind is expected_kind
     assert (
         economic_facts.economic_event_records[0].lifecycle_event is expected_lifecycle
@@ -172,10 +168,7 @@ def test_builder_maps_supported_coinbase_rows_to_declared_events_and_legs(
 def test_builder_skips_balance_only_claim_bundles() -> None:
     claim_set = _balance_only_claim_set()
 
-    economic_facts = build_economic_facts(
-        claim_set=claim_set,
-        claim_set_ref="working/products/claim_sets/claim-set-1/claim_set.json",
-    )
+    economic_facts = build_economic_facts(claim_set=claim_set)
 
     assert economic_facts.economic_event_records == ()
     assert economic_facts.economic_leg_records == ()
@@ -190,7 +183,6 @@ def test_builder_fails_closed_for_unsupported_activity_shape() -> None:
     ):
         build_economic_facts(
             claim_set=claim_set,
-            claim_set_ref="working/products/claim_sets/claim-set-1/claim_set.json",
         )
 
 
@@ -226,7 +218,7 @@ def _activity_claim_set(*, activity_label: str) -> ClaimSet:
     )
     return ClaimSet(
         claim_set_id=claim_set_id,
-        evidence_set_ref="working/products/evidence_sets/evidence-1/evidence_set.json",
+        evidence_set_ref="evidence-1",
         emitter_id="coinbase:claim",
         claim_records=(
             activity_claim,
@@ -319,7 +311,7 @@ def _balance_only_claim_set() -> ClaimSet:
     bundle_id = "bundle-balance"
     return ClaimSet(
         claim_set_id=claim_set_id,
-        evidence_set_ref="working/products/evidence_sets/evidence-1/evidence_set.json",
+        evidence_set_ref="evidence-1",
         emitter_id="coinbase:claim",
         claim_records=(
             ClaimRecord(

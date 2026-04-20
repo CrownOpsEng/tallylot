@@ -119,7 +119,6 @@ def _claim_build(
     claim_build = build_coinbase_claim_set(
         profile=profile,
         evidence_set=evidence_set,
-        evidence_set_ref=f"working/products/evidence_sets/{evidence_set.evidence_set_id}/evidence_set.json",
         planning_result=planning_result,
         batch=selected_batch,
     )
@@ -146,12 +145,7 @@ def test_economic_facts_projection_preserves_fact_annotation_payloads(
         record.to_json()
         for record in annotation_records_from_drafts(selected_batch.drafts)
     ]
-    economic_facts = build_economic_facts(
-        claim_set=claim_build.claim_set,
-        claim_set_ref=(
-            f"working/products/claim_sets/{claim_build.claim_set.claim_set_id}/claim_set.json"
-        ),
-    )
+    economic_facts = build_economic_facts(claim_set=claim_build.claim_set)
     projected = project_compatibility_artifacts_from_economic_facts(
         economic_facts=economic_facts,
         claim_set=claim_build.claim_set,

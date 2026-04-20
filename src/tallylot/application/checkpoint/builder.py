@@ -59,7 +59,7 @@ def build_checkpoints(
         reconciliation_state_refs = tuple(
             sorted(
                 {
-                    f"working/products/reconciliation_states/{state.reconciliation_state_id}/reconciliation_state.json"
+                    state.reconciliation_state_id
                     for state, _proposal, _segment, _target in rows
                 }
             )

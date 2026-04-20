@@ -49,6 +49,7 @@ def test_builder_groups_position_segments_and_derives_exact_targets() -> None:
 
     assert len(states) == 1
     state = states[0]
+    assert state.economic_facts_ref == economic_facts.economic_facts_id
     assert state.continuity_segment_records[0].status.value == "complete"
     assert (
         state.balance_target_records[0].comparison_outcome is ComparisonOutcome.MATCHED
@@ -156,7 +157,7 @@ def _matched_fixture(
     observed_at = datetime(2026, 3, 22, 23, 59, 59, tzinfo=UTC)
     claim_set = ClaimSet(
         claim_set_id="claim-set-1",
-        evidence_set_ref="working/products/evidence_sets/evidence-1/evidence_set.json",
+        evidence_set_ref="evidence-1",
         emitter_id="coinbase:claim",
         claim_records=(
             ClaimRecord(
@@ -328,7 +329,7 @@ def _matched_fixture(
     )
     economic_facts = EconomicFacts(
         economic_facts_id="facts-1",
-        claim_set_refs=("working/products/claim_sets/claim-set-1/claim_set.json",),
+        claim_set_refs=("claim-set-1",),
         economic_event_records=(
             EconomicEventRecord(
                 event_id='["bundle-activity",0]',

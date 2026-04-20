@@ -37,7 +37,7 @@ class AcceptedActivityBundle:
     decision_id: str
 
 
-def build_economic_facts(*, claim_set: ClaimSet, claim_set_ref: str) -> EconomicFacts:
+def build_economic_facts(*, claim_set: ClaimSet) -> EconomicFacts:
     accepted_activity_bundles = tuple(_accepted_activity_bundles(claim_set))
     economic_event_records: list[EconomicEventRecord] = []
     economic_leg_records: list[EconomicLegRecord] = []
@@ -46,8 +46,8 @@ def build_economic_facts(*, claim_set: ClaimSet, claim_set_ref: str) -> Economic
         economic_event_records.append(event_record)
         economic_leg_records.extend(leg_records)
     return EconomicFacts(
-        economic_facts_id=stable_economic_facts_id((claim_set_ref,)),
-        claim_set_refs=(claim_set_ref,),
+        economic_facts_id=stable_economic_facts_id((claim_set.claim_set_id,)),
+        claim_set_refs=(claim_set.claim_set_id,),
         economic_event_records=canonical_economic_event_records(
             tuple(economic_event_records)
         ),

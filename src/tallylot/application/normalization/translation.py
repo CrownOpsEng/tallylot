@@ -211,7 +211,6 @@ def execute_translation(
         claim_build = build_coinbase_claim_set(
             profile=profile,
             evidence_set=evidence_set,
-            evidence_set_ref=evidence_set_path_ref,
             planning_result=planning_result,
             batch=selected_batch,
         )

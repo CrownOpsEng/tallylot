@@ -58,7 +58,6 @@ def build_coinbase_claim_set(
     *,
     profile: SourceProfile,
     evidence_set: EvidenceSet | None,
-    evidence_set_ref: str,
     planning_result: TranslationInputPlanningResult,
     batch: SourceTranslationBatch,
 ) -> CoinbaseClaimBuildResult | None:
@@ -192,7 +191,7 @@ def build_coinbase_claim_set(
 
     claim_set = ClaimSet(
         claim_set_id=claim_set_id,
-        evidence_set_ref=evidence_set_ref,
+        evidence_set_ref=evidence_set.evidence_set_id,
         emitter_id=emitter_id,
         claim_records=canonical_claim_records(tuple(claim_records)),
         claim_bundle_records=canonical_claim_bundle_records(tuple(bundle_records)),

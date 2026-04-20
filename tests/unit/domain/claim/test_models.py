@@ -122,7 +122,7 @@ def test_claim_record_payload_preserves_decimal_temporal_precision_and_sorted_re
 def test_claim_set_fingerprint_uses_canonical_ordering() -> None:
     first = ClaimSet(
         claim_set_id="claim-set-1",
-        evidence_set_ref="working/products/evidence_sets/evidence-1/evidence_set.json",
+        evidence_set_ref="evidence-1",
         emitter_id="coinbase:coinbase:claim",
         claim_records=(
             ClaimRecord(

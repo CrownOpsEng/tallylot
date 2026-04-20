@@ -81,7 +81,6 @@ def _build_claim_result(raw_dir: Path) -> CoinbaseClaimBuildResult | None:
         return build_coinbase_claim_set(
             profile=profile,
             evidence_set=evidence_set,
-            evidence_set_ref=f"working/products/evidence_sets/{evidence_set.evidence_set_id}/evidence_set.json",
             planning_result=planning_result,
             batch=batch,
         )
@@ -92,7 +91,6 @@ def _build_claim_result(raw_dir: Path) -> CoinbaseClaimBuildResult | None:
         return build_coinbase_claim_set(
             profile=profile,
             evidence_set=None,
-            evidence_set_ref="",
             planning_result=planning_result,
             batch=batch,
         )
@@ -100,7 +98,6 @@ def _build_claim_result(raw_dir: Path) -> CoinbaseClaimBuildResult | None:
     return build_coinbase_claim_set(
         profile=profile,
         evidence_set=evidence_set,
-        evidence_set_ref=f"working/products/evidence_sets/{evidence_set.evidence_set_id}/evidence_set.json",
         planning_result=planning_result,
         batch=batch,
     )
@@ -125,6 +122,9 @@ def test_buy_row_builds_expected_claim_bundle(tmp_path: Path) -> None:
     result = _build_claim_result(raw_dir)
 
     assert result is not None
+    assert result.claim_set.claim_set_id.startswith(
+        result.claim_set.evidence_set_ref + ":"
+    )
     assert _claim_kinds(result) == (
         "activity",
         "beneficial_owner",
@@ -394,10 +394,6 @@ def test_claim_builder_rejects_unmapped_selected_draft_raw_file(tmp_path: Path) 
         build_coinbase_claim_set(
             profile=profile,
             evidence_set=evidence_set,
-            evidence_set_ref=(
-                f"working/products/evidence_sets/{evidence_set.evidence_set_id}/"
-                "evidence_set.json"
-            ),
             planning_result=planning_result,
             batch=broken_batch,
         )
@@ -483,16 +479,12 @@ def test_inventory_order_changes_do_not_change_claim_payload_or_fingerprint(
     first = build_coinbase_claim_set(
         profile=profile,
         evidence_set=evidence_set,
-        evidence_set_ref=f"working/products/evidence_sets/{evidence_set.evidence_set_id}/evidence_set.json",
         planning_result=planning_result,
         batch=adapter.translate_selected_inputs(profile, raw_dir, planning_result.plan),
     )
     second = build_coinbase_claim_set(
         profile=reversed_profile,
         evidence_set=reversed_evidence_set,
-        evidence_set_ref=(
-            f"working/products/evidence_sets/{reversed_evidence_set.evidence_set_id}/evidence_set.json"
-        ),
         planning_result=reversed_planning_result,
         batch=adapter.translate_selected_inputs(
             reversed_profile,

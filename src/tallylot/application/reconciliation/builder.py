@@ -74,9 +74,7 @@ def build_reconciliation_states(
             continue
         state = _state_for_subject(
             subject_ref=subject_ref,
-            economic_facts_ref=(
-                f"working/products/economic_facts/{economic_facts.economic_facts_id}/economic_facts.json"
-            ),
+            economic_facts_ref=economic_facts.economic_facts_id,
             legs=legs,
             balance_claims=balance_claims,
             valid_observation_refs=valid_observation_refs,

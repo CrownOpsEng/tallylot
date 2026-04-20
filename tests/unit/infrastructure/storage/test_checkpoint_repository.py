@@ -37,9 +37,7 @@ def _sample_checkpoint() -> Checkpoint:
     accepted_value = QuantityValue(quantity=Decimal("1.25"), subject_ref=subject_ref)
     return Checkpoint(
         checkpoint_id="checkpoint-1",
-        reconciliation_state_refs=(
-            "working/products/reconciliation_states/state-1/reconciliation_state.json",
-        ),
+        reconciliation_state_refs=("state-1",),
         as_of=as_of,
         checkpoint_records=(
             CheckpointRecord(

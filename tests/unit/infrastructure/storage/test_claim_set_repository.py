@@ -25,7 +25,7 @@ from tallylot.infrastructure.storage import FilesystemClaimSetRepository
 def _sample_claim_set() -> ClaimSet:
     return ClaimSet(
         claim_set_id="claim-set-1",
-        evidence_set_ref="working/products/evidence_sets/evidence-set-1/evidence_set.json",
+        evidence_set_ref="evidence-set-1",
         emitter_id="coinbase:coinbase:claim",
         claim_records=(
             ClaimRecord(

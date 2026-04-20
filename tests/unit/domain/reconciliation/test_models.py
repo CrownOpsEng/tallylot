@@ -63,10 +63,10 @@ def test_reconciliation_state_payload_shape_and_fingerprint_are_stable() -> None
     )
     state = ReconciliationState(
         reconciliation_state_id=stable_reconciliation_state_id(
-            economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+            economic_facts_ref="facts-1",
             segment_id=segment_id,
         ),
-        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        economic_facts_ref="facts-1",
         continuity_segment_records=(
             ContinuitySegmentRecord(
                 segment_id=segment_id,
@@ -202,12 +202,12 @@ def test_reconciliation_state_ordering_is_canonical() -> None:
 def test_reconciliation_state_product_id_is_path_safe_and_stable() -> None:
     segment_id = "segment-1"
     state_id = stable_reconciliation_state_id(
-        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        economic_facts_ref="facts-1",
         segment_id=segment_id,
     )
 
     assert state_id == stable_reconciliation_state_id(
-        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        economic_facts_ref="facts-1",
         segment_id=segment_id,
     )
     assert len(state_id) == 64

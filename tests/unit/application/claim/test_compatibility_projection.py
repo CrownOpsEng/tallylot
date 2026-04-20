@@ -64,7 +64,6 @@ def _claim_build(
     claim_build = build_coinbase_claim_set(
         profile=profile,
         evidence_set=evidence_set,
-        evidence_set_ref=f"working/products/evidence_sets/{evidence_set.evidence_set_id}/evidence_set.json",
         planning_result=planning_result,
         batch=selected_batch,
     )

@@ -39,16 +39,12 @@ def test_checkpoint_payload_shape_and_fingerprint_are_stable() -> None:
     as_of = datetime(2026, 3, 22, 23, 59, 59, tzinfo=UTC)
     accepted_value = QuantityValue(quantity=Decimal("1.25"), subject_ref=subject_ref)
     checkpoint_id = stable_checkpoint_id(
-        reconciliation_state_refs=(
-            "working/products/reconciliation_states/state-1/reconciliation_state.json",
-        ),
+        reconciliation_state_refs=("state-1",),
         as_of=as_of,
     )
     checkpoint = Checkpoint(
         checkpoint_id=checkpoint_id,
-        reconciliation_state_refs=(
-            "working/products/reconciliation_states/state-1/reconciliation_state.json",
-        ),
+        reconciliation_state_refs=("state-1",),
         as_of=as_of,
         checkpoint_records=(
             CheckpointRecord(
@@ -141,16 +137,16 @@ def test_checkpoint_assertion_ordering_is_canonical() -> None:
 def test_checkpoint_product_id_is_path_safe_and_stable() -> None:
     checkpoint_id = stable_checkpoint_id(
         reconciliation_state_refs=(
-            "working/products/reconciliation_states/state-1/reconciliation_state.json",
-            "working/products/reconciliation_states/state-2/reconciliation_state.json",
+            "state-1",
+            "state-2",
         ),
         as_of=datetime(2026, 3, 22, 23, 59, 59, tzinfo=UTC),
     )
 
     assert checkpoint_id == stable_checkpoint_id(
         reconciliation_state_refs=(
-            "working/products/reconciliation_states/state-2/reconciliation_state.json",
-            "working/products/reconciliation_states/state-1/reconciliation_state.json",
+            "state-2",
+            "state-1",
         ),
         as_of=datetime(2026, 3, 22, 23, 59, 59, tzinfo=UTC),
     )

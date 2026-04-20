@@ -37,7 +37,7 @@ def test_reconciliation_projection_preserves_balance_snapshot_shape() -> None:
     quantity = QuantityValue(quantity=Decimal("1.25"), subject_ref=subject_ref)
     state = ReconciliationState(
         reconciliation_state_id="state-1",
-        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        economic_facts_ref="facts-1",
         continuity_segment_records=(
             ContinuitySegmentRecord(
                 segment_id="segment-1",

@@ -56,8 +56,8 @@ def test_builder_groups_multiple_state_refs_at_one_as_of_into_one_checkpoint() -
 
     assert len(checkpoints) == 1
     assert checkpoints[0].reconciliation_state_refs == (
-        "working/products/reconciliation_states/state-1/reconciliation_state.json",
-        "working/products/reconciliation_states/state-2/reconciliation_state.json",
+        "state-1",
+        "state-2",
     )
 
 
@@ -149,9 +149,7 @@ def test_builder_deduplicates_reconciliation_state_refs_per_checkpoint() -> None
 
     checkpoints = build_checkpoints(reconciliation_states=(state,))
 
-    assert checkpoints[0].reconciliation_state_refs == (
-        "working/products/reconciliation_states/state-1/reconciliation_state.json",
-    )
+    assert checkpoints[0].reconciliation_state_refs == ("state-1",)
 
 
 def _ready_state(
@@ -182,7 +180,7 @@ def _ready_state(
     observed_value = QuantityValue(quantity=Decimal(quantity), subject_ref=subject_ref)
     return ReconciliationState(
         reconciliation_state_id=state_id,
-        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        economic_facts_ref="facts-1",
         continuity_segment_records=(
             ContinuitySegmentRecord(
                 segment_id=f"segment-{state_id}",

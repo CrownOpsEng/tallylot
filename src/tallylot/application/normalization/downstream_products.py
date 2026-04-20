@@ -81,10 +81,7 @@ def build_downstream_normalization_products(
         or translation_result.claim_set_ref == ""
     ):
         return DownstreamNormalizationProducts()
-    economic_facts = build_economic_facts(
-        claim_set=claim_set,
-        claim_set_ref=translation_result.claim_set_ref,
-    )
+    economic_facts = build_economic_facts(claim_set=claim_set)
     dependencies.economic_facts.write_economic_facts(
         economic_facts_product_file(
             workspace_root,

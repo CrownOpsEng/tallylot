@@ -38,7 +38,7 @@ def _sample_state() -> ReconciliationState:
     expected = QuantityValue(quantity=Decimal("1.25"), subject_ref=subject_ref)
     return ReconciliationState(
         reconciliation_state_id="state-1",
-        economic_facts_ref="working/products/economic_facts/facts-1/economic_facts.json",
+        economic_facts_ref="facts-1",
         continuity_segment_records=(
             ContinuitySegmentRecord(
                 segment_id="segment-1",

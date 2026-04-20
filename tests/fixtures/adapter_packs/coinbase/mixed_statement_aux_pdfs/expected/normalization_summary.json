@@ -1,15 +1,15 @@
 {
   "adapter_id": "coinbase",
   "checkpoint_ids": [
-    "ed58f4682b75e3c294cf4e6cbabdf0d1b51e61811f66adc57b47b66fa9f5b8cd"
+    "90b0fd49f8db1cec8c0fd7f419460d4e9ab9c91d3111197f5941fb8066e1d88e"
   ],
   "checkpoint_refs": [
-    "working/products/checkpoints/ed58f4682b75e3c294cf4e6cbabdf0d1b51e61811f66adc57b47b66fa9f5b8cd/checkpoint.json"
+    "working/products/checkpoints/90b0fd49f8db1cec8c0fd7f419460d4e9ab9c91d3111197f5941fb8066e1d88e/checkpoint.json"
   ],
   "claim_set_id": "coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:f84859432a1b4be7c8a1caaa15c66c0ad4ffac7d8be60747ca40670a6aa9a92a:coinbase:coinbase:claim",
   "claim_set_ref": "working/products/claim_sets/coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:f84859432a1b4be7c8a1caaa15c66c0ad4ffac7d8be60747ca40670a6aa9a92a:coinbase:coinbase:claim/claim_set.json",
-  "economic_facts_id": "d4bb883a6224a052e762ef44730bac8dc62836e97547f9867596aa41f2cc3fea",
-  "economic_facts_ref": "working/products/economic_facts/d4bb883a6224a052e762ef44730bac8dc62836e97547f9867596aa41f2cc3fea/economic_facts.json",
+  "economic_facts_id": "2ec5b5edbecec0682b1428d76ae2199f9a8fd8072be919d54d2a13883017324c",
+  "economic_facts_ref": "working/products/economic_facts/2ec5b5edbecec0682b1428d76ae2199f9a8fd8072be919d54d2a13883017324c/economic_facts.json",
   "evidence_set_id": "coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:f84859432a1b4be7c8a1caaa15c66c0ad4ffac7d8be60747ca40670a6aa9a92a",
   "evidence_set_ref": "working/products/evidence_sets/coinbase:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:f84859432a1b4be7c8a1caaa15c66c0ad4ffac7d8be60747ca40670a6aa9a92a/evidence_set.json",
   "fact_count": 1,
@@ -20,16 +20,16 @@
   "normalization_window_end": "",
   "normalization_window_start": "",
   "reconciliation_state_ids": [
-    "6aefd5764fb377139b1d72eecbe90dd836c29f86474d748b316d727c819f9dc1",
-    "9516b02c92b07d70ffc43ba7108a5d5ef87bd86bc162342cea9b2a14cae55349",
-    "506d2b962e07baff7ca584cbec4318712180d7c3ad107b07268495f3327df877",
-    "2d7a6c27d0af61e7b3296fae283d8beefe81d115f05a414e8b99136b1f8ae596"
+    "ed78ae3843afcf30e3a60ec4eaec8cd34b946808a8103f4038e1f95b6ef0ccea",
+    "76b76b61e1f0f88762710919b94a7b90e30d9a9164b9d847e22130aaa03f73c2",
+    "d2a3294175836927e99b46f7e73257aaabab2bb9f870abec5819dabeb20da63f",
+    "53cf6dcf051f9a741229e7b909828822ba21ea9cf349b5d6e52f4b7487f9ec3c"
   ],
   "reconciliation_state_refs": [
-    "working/products/reconciliation_states/6aefd5764fb377139b1d72eecbe90dd836c29f86474d748b316d727c819f9dc1/reconciliation_state.json",
-    "working/products/reconciliation_states/9516b02c92b07d70ffc43ba7108a5d5ef87bd86bc162342cea9b2a14cae55349/reconciliation_state.json",
-    "working/products/reconciliation_states/506d2b962e07baff7ca584cbec4318712180d7c3ad107b07268495f3327df877/reconciliation_state.json",
-    "working/products/reconciliation_states/2d7a6c27d0af61e7b3296fae283d8beefe81d115f05a414e8b99136b1f8ae596/reconciliation_state.json"
+    "working/products/reconciliation_states/ed78ae3843afcf30e3a60ec4eaec8cd34b946808a8103f4038e1f95b6ef0ccea/reconciliation_state.json",
+    "working/products/reconciliation_states/76b76b61e1f0f88762710919b94a7b90e30d9a9164b9d847e22130aaa03f73c2/reconciliation_state.json",
+    "working/products/reconciliation_states/d2a3294175836927e99b46f7e73257aaabab2bb9f870abec5819dabeb20da63f/reconciliation_state.json",
+    "working/products/reconciliation_states/53cf6dcf051f9a741229e7b909828822ba21ea9cf349b5d6e52f4b7487f9ec3c/reconciliation_state.json"
   ],
   "reference_count": 1,
   "reference_issue_count": 0,
