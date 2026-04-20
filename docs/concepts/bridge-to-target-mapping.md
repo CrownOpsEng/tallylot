@@ -13,6 +13,7 @@ related:
   - docs/concepts/gaps-and-reviews.md
   - docs/reference/evidence-claim-contract.md
   - docs/reference/economics-reconciliation-checkpoint-contract.md
+  - docs/reference/journal-contract.md
   - docs/status/migration-sequence.md
   - ROADMAP.md
 ---
@@ -38,6 +39,9 @@ Use these pages for neighboring contracts:
   product kernels, ids, ordering, serialization, and fingerprints for
   `EvidenceSet`, `ClaimSet`, `EconomicFacts`, `ReconciliationState`,
   `Checkpoint`, `Journal`, `TaxInputs`, and `TaxOutputs`.
+- [Journal Contract](../reference/journal-contract.md) defines the bounded
+  `Journal` cutover, backend artifact layout, replay rules, and downstream tax
+  boundary.
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md) defines
   `GapRecord`, `GapExplanation`, `ReviewRecord`, `ReviewExplanation`,
   `SubjectRef`, and `kernel_scope_id`.
@@ -214,6 +218,30 @@ Required cutovers now:
   before the economics/reconciliation/checkpoint contract lands
 - current balance inspect/check/summarize remains on bridge compatibility
   views until those application surfaces are repointed to target products
+
+## Later Downstream Product Cutovers
+
+`Journal`, `TaxInputs`, and `TaxOutputs` introduce new target-native
+downstream authorities rather than replacing one same-scope bridge file. They
+still require explicit reader cutover declarations.
+
+Rules:
+
+- `Journal` becomes authoritative for journal entry expansion, entry checks,
+  journal-owned gaps, and journal-native renderers as soon as it is persisted
+- `ledger_cli` is the first backend surface that reads `Journal` directly and
+  emits declared backend artifacts under `backends/ledger_cli/`
+- downstream readers that need backend findings read the declared backend
+  artifacts for that backend family rather than reconstructing that meaning
+  from bridge facts, checkpoint helpers, or output-local hints
+- `TaxInputs` and `TaxOutputs` become authoritative only for their own
+  stage-owned consumers; they do not retroactively redefine `Checkpoint`,
+  `EconomicFacts`, or journal identity
+- current compatibility renderers such as `cointracking_csv` remain on
+  compatibility outputs until a later increment explicitly repoints them
+- later downstream slices still need cutover gates for authoritative writer,
+  authoritative reader, parity and replay, and current-state docs whenever
+  implemented behavior changes
 
 ## Retirement Discipline
 

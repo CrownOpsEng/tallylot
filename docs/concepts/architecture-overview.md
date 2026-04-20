@@ -87,6 +87,7 @@ These pages define the primary current-state and forward-looking contracts:
 | [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md) | reconciliation, checkpoint, journal, and tax trust gates plus persistence, partitioning, and fast-path rules |
 | [Evidence And Claim Contract](../reference/evidence-claim-contract.md) | current bounded `EvidenceSet -> ClaimSet` contract scope |
 | [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md) | current bounded `EconomicFacts -> ReconciliationState -> Checkpoint` contract scope |
+| [Journal Contract](../reference/journal-contract.md) | current bounded `Journal` contract scope, with `ledger_cli` as the first backend on a replaceable seam |
 | [ROADMAP.md](../../ROADMAP.md) | planning-only sequencing and later rollout detail |
 | [Current State](../status/current-state.md) | implemented runtime truth and live package layout |
 
@@ -101,4 +102,5 @@ Supporting id, ref, persistence, and workspace references remain under
 - [Domain Ontology](domain-ontology.md)
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md)
 - [Reconciliation, Checkpoint, Journal, And Tax Architecture](reconciliation-tax-architecture.md)
+- [Journal Contract](../reference/journal-contract.md)
 - [Current State](../status/current-state.md)

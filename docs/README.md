@@ -35,6 +35,7 @@ persistence and migration references, and repo standards.
 - [Reconciliation, checkpoint, journal, and tax architecture](concepts/reconciliation-tax-architecture.md)
 - [Evidence and claim contract](reference/evidence-claim-contract.md)
 - [Economics reconciliation checkpoint contract](reference/economics-reconciliation-checkpoint-contract.md)
+- [Journal contract](reference/journal-contract.md)
 - [Engineering standards](standards/engineering.md)
 - [Workspace model](concepts/workspace-model.md)
 

@@ -183,22 +183,70 @@ After those slices land, migrate readers one consumer surface at a time:
   outputs, or compatibility views until a later capability-specific increment
   requires a dedicated derived read-model slice
 
-### 5. Later Downstream Products
+### 5. Journal Contract
 
-Land `Journal`, `TaxInputs`, and `TaxOutputs` only after the upstream target
-products they depend on are authoritative for the relevant scope.
+Land the bounded [Journal Contract](../reference/journal-contract.md) only
+after authoritative `EconomicFacts` and `Checkpoint` exist for the relevant
+scope.
+
+Required posture:
+
+- `Journal` becomes authoritative for in-scope journal entry expansion,
+  repo-owned entry-check results, and journal-owned gaps
+- `ledger_cli` is the first backend reader that consumes `Journal` directly
+  through the declared journal backend seam
+- new journal renderers, journal inspection outputs, and `ledger_cli` backend
+  surfaces read `Journal` directly rather than rebuilding postings from
+  compatibility facts or checkpoint helpers
+- `cointracking_csv` and other current compatibility outputs remain on their
+  existing compatibility path until a later cutover names them explicitly
+- `TaxInputs` keep product identity and kernel meaning anchored to
+  authoritative `Checkpoint` plus `EconomicFacts`; `Journal` does not become a
+  hidden upstream product ref for tax
+
+Cutover gates:
+
+- deterministic `journal_id`, `entry_id`, `posting_id`, and `entry_check_id`
+  are frozen for unchanged upstream products
+- blocked journal mappings remain explicit through `EntryCheckRecord` rows,
+  journal-owned gaps, and declared backend-local findings when the backend
+  detects an additional downstream issue
+- canonical journal replay and `ledger_cli` validation replay both run from
+  authoritative `Journal` kernels alone
+- no `journal_ref`, backend file hash, or backend-local id leaks into tax
+  identity
+
+### 6. TaxInputs And TaxOutputs
+
+Land `TaxInputs` and `TaxOutputs` only after the upstream target products they
+depend on are authoritative for the relevant scope and the journal increment
+has stabilized entry-expansion plus entry-check ownership.
 
 Rules:
 
-- do not let `Journal` repair economic or checkpoint truth
-- do not let tax decide source meaning, reconciliation completeness, or
-  checkpoint acceptance
+- `TaxInputs` derive from authoritative `Checkpoint` plus `EconomicFacts`, not
+  bridge facts, compatibility views, `Journal`, or a hidden `journal_ref`
+- journal detail and journal-backend findings may inform downstream review
+  posture only as declared non-authoritative detail
+- `TaxOutputs` own selected-policy outputs, carry-forward rows, explicit
+  unsupported-input rows, and the tax-output-local grouped readiness file for
+  the active tax-first path only
+- do not let tax decide source meaning, reconciliation completeness,
+  checkpoint acceptance, or journal outcomes
+- broader grouped consumers stay on tax-output-local outputs, narrow rendering
+  outputs, or compatibility views until a later capability-specific increment
+  requires a dedicated derived read-model slice
 
-Later planning-document steps remain intentionally high-level here. They are out of
-scope for the current contract delivery and do not block near-term
-implementation once the contract lock is satisfied.
+Cutover gates:
 
-### 6. Triggered Derived Read-Model Activation
+- repeated runs preserve `tax_inputs_id` and `tax_outputs_id` on unchanged
+  authoritative upstream products plus selected tax-policy inputs
+- unsupported tax posture stays explicit through `TaxUnsupportedInputRecord`
+  rows and tax-owned gaps
+- filing-critical tax outputs read `TaxOutputs` directly without bridge facts,
+  CoinTracking tax reports, or journal-backend identity as peer authorities
+
+### 7. Triggered Derived Read-Model Activation
 
 The planning document may still carry later activation detail, but this page keeps the
 durable rule: broader derived read models and projections stay deferred until
