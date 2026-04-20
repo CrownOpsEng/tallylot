@@ -41,6 +41,7 @@ def test_coinbase_retail_only_normalization_writes_downstream_products(
     assert response.reconciliation_state_refs
     assert response.checkpoint_ids == ()
     assert response.checkpoint_refs == ()
+    assert response.fact_count == len(read_rows(output_dir / "facts.csv"))
     assert (workspace_root / response.economic_facts_ref).exists()
     assert all(
         (workspace_root / ref).exists() for ref in response.reconciliation_state_refs
@@ -91,6 +92,7 @@ def test_coinbase_statement_backed_normalization_writes_checkpoint_products(
     assert response.economic_facts_id
     assert response.reconciliation_state_refs
     assert response.checkpoint_refs
+    assert response.fact_count == len(read_rows(output_dir / "facts.csv"))
     assert (workspace_root / response.economic_facts_ref).exists()
     assert all(
         (workspace_root / ref).exists() for ref in response.reconciliation_state_refs

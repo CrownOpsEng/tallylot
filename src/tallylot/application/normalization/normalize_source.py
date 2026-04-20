@@ -299,7 +299,7 @@ class NormalizeSourceUseCase:
             reconciliation_state_refs=downstream_products.reconciliation_state_refs,
             checkpoint_ids=downstream_products.checkpoint_ids,
             checkpoint_refs=downstream_products.checkpoint_refs,
-            fact_count=len(facts),
+            fact_count=len(outputs.facts),
             balance_count=len(outputs.balance_snapshots),
             issue_count=len(outputs.issues),
             review_count=len(review_records),
