@@ -43,6 +43,10 @@ def project_compatibility_artifacts_from_economic_facts(
     evidence_set: EvidenceSet,
     draft_projection_field_records: tuple[DraftProjectionFieldRecord, ...],
 ) -> EconomicFactsCompatibilityArtifacts:
+    if claim_set.claim_set_id not in economic_facts.claim_set_refs:
+        raise ValueError(
+            "economic facts compatibility requires matching claim_set lineage"
+        )
     records_by_bundle_id = {
         record.claim_bundle_id: record for record in draft_projection_field_records
     }
@@ -56,17 +60,32 @@ def project_compatibility_artifacts_from_economic_facts(
         legs_by_event_id.setdefault(leg_record.event_id, []).append(leg_record)
     ordered_events = sorted(
         economic_facts.economic_event_records,
-        key=lambda record: records_by_bundle_id[record.claim_bundle_id].draft_order,
+        key=lambda record: _projection_fields_for_bundle(
+            records_by_bundle_id,
+            claim_bundle_id=record.claim_bundle_id,
+        ).draft_order,
     )
     for event_record in ordered_events:
-        bundle_claims = tuple(claims_by_bundle_id[event_record.claim_bundle_id])
-        activity_claim = next(
-            claim for claim in bundle_claims if claim.kind is ClaimKind.ACTIVITY
+        bundle_claims = tuple(claims_by_bundle_id.get(event_record.claim_bundle_id, ()))
+        if not bundle_claims:
+            raise ValueError(
+                "economic facts compatibility requires claim bundle "
+                f"{event_record.claim_bundle_id!r}"
+            )
+        activity_claim = _require_bundle_claim(
+            bundle_claims,
+            claim_bundle_id=event_record.claim_bundle_id,
+            kind=ClaimKind.ACTIVITY,
         )
-        location_claim = next(
-            claim for claim in bundle_claims if claim.kind is ClaimKind.LOCATION
+        location_claim = _require_bundle_claim(
+            bundle_claims,
+            claim_bundle_id=event_record.claim_bundle_id,
+            kind=ClaimKind.LOCATION,
         )
-        projection_fields = records_by_bundle_id[event_record.claim_bundle_id]
+        projection_fields = _projection_fields_for_bundle(
+            records_by_bundle_id,
+            claim_bundle_id=event_record.claim_bundle_id,
+        )
         instrument_claims = {
             claim.claim_id: claim
             for claim in bundle_claims
@@ -147,10 +166,21 @@ def _compatibility_leg(
     activity_claim: ClaimRecord,
     instrument_claims: dict[str, ClaimRecord],
 ) -> EconomicLeg:
-    matching_spec = activity_claim.leg_specs[
-        _leg_slot_from_id(getattr(leg_record, "leg_id"))
-    ]
-    instrument_claim = instrument_claims[matching_spec.instrument_claim_refs[0]]
+    leg_slot = _leg_slot_from_id(getattr(leg_record, "leg_id"))
+    if leg_slot >= len(activity_claim.leg_specs):
+        raise ValueError(
+            "economic facts compatibility leg slot "
+            f"{leg_slot} exceeds activity leg spec count"
+        )
+    matching_spec = activity_claim.leg_specs[leg_slot]
+    if not matching_spec.instrument_claim_refs:
+        raise ValueError("economic facts compatibility requires instrument claim refs")
+    instrument_claim = instrument_claims.get(matching_spec.instrument_claim_refs[0])
+    if instrument_claim is None:
+        raise ValueError(
+            "economic facts compatibility could not resolve instrument claim "
+            f"{matching_spec.instrument_claim_refs[0]!r}"
+        )
     role = getattr(leg_record, "role")
     return EconomicLeg(
         leg_id=matching_spec.role,
@@ -189,6 +219,35 @@ def _provider_operation_key(activity_label: str) -> str:
     if activity_label == "reward_income":
         return "reward income"
     return activity_label
+
+
+def _projection_fields_for_bundle(
+    records_by_bundle_id: dict[str, DraftProjectionFieldRecord],
+    *,
+    claim_bundle_id: str,
+) -> DraftProjectionFieldRecord:
+    projection_fields = records_by_bundle_id.get(claim_bundle_id)
+    if projection_fields is None:
+        raise ValueError(
+            "economic facts compatibility requires draft projection fields for "
+            f"claim bundle {claim_bundle_id!r}"
+        )
+    return projection_fields
+
+
+def _require_bundle_claim(
+    bundle_claims: tuple[ClaimRecord, ...],
+    *,
+    claim_bundle_id: str,
+    kind: ClaimKind,
+) -> ClaimRecord:
+    for claim in bundle_claims:
+        if claim.kind is kind:
+            return claim
+    raise ValueError(
+        "economic facts compatibility requires "
+        f"{kind.value!r} claim in bundle {claim_bundle_id!r}"
+    )
 
 
 def _activity_id(activity_label: str, raw_row_ref: str) -> str:

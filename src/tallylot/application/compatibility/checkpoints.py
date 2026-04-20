@@ -33,8 +33,20 @@ def project_balance_references_from_checkpoint(
     reconciliation_states: tuple[ReconciliationState, ...],
     observation_details: Mapping[str, ObservationCompatibilityDetail] | None = None,
 ) -> tuple[BalanceReference, ...]:
+    states_by_id = {
+        state.reconciliation_state_id: state for state in reconciliation_states
+    }
+    selected_states: list[ReconciliationState] = []
+    for reconciliation_state_ref in checkpoint.reconciliation_state_refs:
+        state = states_by_id.get(reconciliation_state_ref)
+        if state is None:
+            raise ValueError(
+                "checkpoint compatibility requires referenced reconciliation state "
+                f"{reconciliation_state_ref!r}"
+            )
+        selected_states.append(state)
     support_details = _support_details_by_subject(
-        reconciliation_states,
+        tuple(selected_states),
         observation_details=observation_details or {},
     )
     references: list[BalanceReference] = []
@@ -47,7 +59,12 @@ def project_balance_references_from_checkpoint(
         subject_key = assertion.subject_ref[1]
         location_ref = _subject_ref_text(subject_key, 1)
         instrument_ref = _subject_ref_text(subject_key, 2)
-        detail = support_details[(assertion.subject_ref, assertion.as_of)]
+        detail = support_details.get((assertion.subject_ref, assertion.as_of))
+        if detail is None:
+            raise ValueError(
+                "checkpoint compatibility requires support detail for "
+                f"subject {assertion.subject_ref!r} at {assertion.as_of!s}"
+            )
         references.append(
             BalanceReference(
                 target=BalanceTarget(

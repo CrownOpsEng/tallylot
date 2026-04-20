@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
+
+import pytest
 
 from tallylot.adapters.sources.platforms.coinbase.adapter import _CoinbaseAdapter
 from tallylot.adapters.support.drafts import compile_activity_drafts
@@ -118,3 +121,60 @@ def test_projection_preserves_supported_coinbase_bridge_rows(tmp_path: Path) -> 
             "leg_policy",
         ):
             assert projected_row[key] == expected_row[key]
+
+
+def test_projection_requires_matching_claim_set_lineage(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\nUser,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+
+    _selected_batch, claim_build, evidence_set = _claim_build(raw_dir)
+    economic_facts = replace(
+        build_economic_facts(claim_set=claim_build.claim_set),
+        claim_set_refs=("other-claim-set",),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="economic facts compatibility requires matching claim_set lineage",
+    ):
+        project_compatibility_artifacts_from_economic_facts(
+            economic_facts=economic_facts,
+            claim_set=claim_build.claim_set,
+            evidence_set=evidence_set,
+            draft_projection_field_records=claim_build.draft_projection_field_records,
+        )
+
+
+def test_projection_requires_projection_fields_for_each_claim_bundle(
+    tmp_path: Path,
+) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail.csv").write_text(
+        "Transactions\nUser,Example User,acct\n"
+        "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
+        "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
+        "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,Bought 0.01 BTC\n",
+        encoding="utf-8",
+    )
+
+    _selected_batch, claim_build, evidence_set = _claim_build(raw_dir)
+    economic_facts = build_economic_facts(claim_set=claim_build.claim_set)
+
+    with pytest.raises(
+        ValueError,
+        match="economic facts compatibility requires draft projection fields",
+    ):
+        project_compatibility_artifacts_from_economic_facts(
+            economic_facts=economic_facts,
+            claim_set=claim_build.claim_set,
+            evidence_set=evidence_set,
+            draft_projection_field_records=(),
+        )
