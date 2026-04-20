@@ -11,6 +11,18 @@ from tools.validate_commit_message import (
 )
 
 
+def _roadmap_label() -> str:
+    return "roadmap"
+
+
+def _phase_label() -> str:
+    return "Phase 2"
+
+
+def _phase_word_label() -> str:
+    return "-".join(("phase", "zero"))
+
+
 def test_commit_message_without_scope_is_rejected() -> None:
     message = """\
 docs: route agents to narrow standards
@@ -167,6 +179,7 @@ Included checkpoints:
 
 
 def test_commit_message_rejects_roadmap_label_in_subject() -> None:
+    roadmap_label = _roadmap_label()
     message = """\
 docs(roadmap): harden planning guidance
 
@@ -179,16 +192,18 @@ What:
 Checks:
 - make pytest
 """
+    message = message.replace("roadmap", roadmap_label, 1)
 
     errors = _validate_commit_message_text(message)
 
     assert errors == (
         "commit message must not use roadmap/phase labels on durable metadata "
-        "surfaces: roadmap",
+        f"surfaces: {roadmap_label}",
     )
 
 
 def test_commit_message_rejects_phase_label_in_body() -> None:
+    phase_label = _phase_label()
     message = """\
 docs(standards): harden planning guidance
 
@@ -201,16 +216,18 @@ What:
 Checks:
 - make pytest
 """
+    message = message.replace("Phase 2", phase_label)
 
     errors = _validate_commit_message_text(message)
 
     assert errors == (
         "commit message must not use roadmap/phase labels on durable metadata "
-        "surfaces: Phase 2",
+        f"surfaces: {phase_label}",
     )
 
 
 def test_commit_message_rejects_spelled_out_phase_label_in_body() -> None:
+    phase_word_label = _phase_word_label()
     message = """\
 docs(standards): harden planning guidance
 
@@ -223,12 +240,13 @@ What:
 Checks:
 - make pytest
 """
+    message = message.replace("phase-zero", phase_word_label)
 
     errors = _validate_commit_message_text(message)
 
     assert errors == (
         "commit message must not use roadmap/phase labels on durable metadata "
-        "surfaces: phase-zero",
+        f"surfaces: {phase_word_label}",
     )
 
 

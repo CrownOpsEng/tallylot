@@ -4,14 +4,69 @@ import re
 
 from repo_support.docs_audit.helpers import (
     architecture_doc_paths,
+    finding,
     joined,
     repo_text,
 )
+from repo_support.docs_audit.model import DocsAuditFinding, DocsAuditRule
 from repo_support.docs_audit.rules._common import build_rule
 from repo_support.paths import repo_root
 
+_ROADMAP_LINK_PATTERN = re.compile(r"`?ROADMAP\.md`?(?:\([^)]*\))?")
+_EPHEMERAL_DELIVERY_LABEL_PATTERN = re.compile(
+    r"\b(?:roadmap|phase(?:[ _-]?(?:\d+|zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)))\b",
+    re.IGNORECASE,
+)
+_DURABLE_NON_PLANNING_SURFACE_PATHS = (
+    "CHANGELOG.md",
+    "docs/concepts/architecture-overview.md",
+    "docs/reference/evidence-claim-contract.md",
+    "docs/status/current-state.md",
+    "docs/status/migration-sequence.md",
+    "docs/workspace/working/products/README.md",
+)
+
+
+def _durable_non_planning_surface_texts() -> tuple[tuple[str, str], ...]:
+    return tuple(
+        (path, repo_text(path)) for path in _DURABLE_NON_PLANNING_SURFACE_PATHS
+    )
+
+
+def _masked_ephemeral_delivery_text(text: str) -> str:
+    return _ROADMAP_LINK_PATTERN.sub("", text)
+
+
+def _durable_non_planning_surface_findings() -> tuple[DocsAuditFinding, ...]:
+    findings: list[DocsAuditFinding] = []
+    rule_id = (
+        "policy_alignment."
+        "durable_non_planning_surfaces_do_not_use_ephemeral_delivery_labels"
+    )
+    for path, text in _durable_non_planning_surface_texts():
+        match = _EPHEMERAL_DELIVERY_LABEL_PATTERN.search(
+            _masked_ephemeral_delivery_text(text)
+        )
+        if match is None:
+            continue
+        findings.append(
+            finding(
+                rule_id,
+                path,
+                f"{path} uses forbidden roadmap/phase delivery labels: {match.group(0)}",
+            )
+        )
+    return tuple(findings)
+
 
 POLICY_ALIGNMENT_RULES = (
+    DocsAuditRule(
+        rule_id=(
+            "policy_alignment."
+            "durable_non_planning_surfaces_do_not_use_ephemeral_delivery_labels"
+        ),
+        run=_durable_non_planning_surface_findings,
+    ),
     build_rule(
         "policy_alignment.docs_do_not_reference_retired_service_or_model_buckets",
         "docs/standards/engineering.md",

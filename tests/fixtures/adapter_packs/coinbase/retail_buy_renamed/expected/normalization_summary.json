@@ -1,5 +1,7 @@
 {
   "adapter_id": "coinbase",
+  "claim_set_id": "Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:32df8a8250bc9b25f23791d013f2b14a7868aa1e2f11442a02d659951979c619:Future Exchange:coinbase:claim",
+  "claim_set_ref": "working/products/claim_sets/Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:32df8a8250bc9b25f23791d013f2b14a7868aa1e2f11442a02d659951979c619:Future Exchange:coinbase:claim/claim_set.json",
   "evidence_set_id": "Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:32df8a8250bc9b25f23791d013f2b14a7868aa1e2f11442a02d659951979c619",
   "evidence_set_ref": "working/products/evidence_sets/Future Exchange:coinbase:01HV4A5H7VJH7M3Y5A6B7C8D9E:32df8a8250bc9b25f23791d013f2b14a7868aa1e2f11442a02d659951979c619/evidence_set.json",
   "fact_count": 1,

@@ -29,6 +29,10 @@ The target runtime pipeline is:
 
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
+Within that pipeline, `EvidenceSet` and `ClaimSet` are already the implemented
+authorities for the bounded planner-enabled Coinbase slice. Downstream target
+products remain future work.
+
 The primary contract pages freeze product ids, product headers, critical-path
 kernel field tables, and the compatibility sidecar boundary for retained legacy
 hint fields.
@@ -37,7 +41,8 @@ Broader consumer-facing grouped or query surfaces remain intentionally
 deferred. Through the tax-first path, grouped outputs may remain only as
 tax-output-local derived content, narrow rendering-derived content, or
 compatibility-local derived output rather than as a shared application center.
-broader derived read models and projections stay deferred until a later capability-specific increment makes them necessary.
+broader derived read models and projections stay deferred until a later
+capability-specific increment makes them necessary.
 
 Gap and review remain shared contracts plus persisted shared-assessment
 families. Readiness stays capability-owned derived behavior rather than shared

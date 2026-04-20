@@ -41,6 +41,7 @@ from tallylot.infrastructure.discovery import (
 )
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.infrastructure.storage import (
+    FilesystemClaimSetRepository,
     FilesystemEvidenceRepository,
     FilesystemEvidenceSetRepository,
     FilesystemFactRepository,
@@ -55,6 +56,7 @@ def runtime_dependencies() -> tuple[
     FilesystemFactRepository,
     FilesystemEvidenceRepository,
     FilesystemEvidenceSetRepository,
+    FilesystemClaimSetRepository,
 ]:
     return (
         build_registry(),
@@ -63,21 +65,24 @@ def runtime_dependencies() -> tuple[
         FilesystemFactRepository(),
         FilesystemEvidenceRepository(),
         FilesystemEvidenceSetRepository(),
+        FilesystemClaimSetRepository(),
     )
 
 
 def build_manifest_use_case() -> BuildManifestUseCase:
-    _, _, artifacts, _, _, _ = runtime_dependencies()
+    _, _, artifacts, _, _, _, _ = runtime_dependencies()
     return BuildManifestUseCase(artifacts)
 
 
 def build_profile_use_case() -> BuildProfileUseCase:
-    registry, _, artifacts, _, _, _ = runtime_dependencies()
+    registry, _, artifacts, _, _, _, _ = runtime_dependencies()
     return BuildProfileUseCase(registry, artifacts)
 
 
 def normalize_source_use_case() -> NormalizeSourceUseCase:
-    registry, _, artifacts, facts, evidence, evidence_sets = runtime_dependencies()
+    registry, _, artifacts, facts, evidence, evidence_sets, claim_sets = (
+        runtime_dependencies()
+    )
     return NormalizeSourceUseCase(
         NormalizationDependencies(
             source_registry=registry,
@@ -85,53 +90,54 @@ def normalize_source_use_case() -> NormalizeSourceUseCase:
             facts=facts,
             evidence=evidence,
             evidence_sets=evidence_sets,
+            claim_sets=claim_sets,
             artifacts=artifacts,
         )
     )
 
 
 def assemble_source_use_case() -> AssembleSourceUseCase:
-    _, _, artifacts, _, _, _ = runtime_dependencies()
+    _, _, artifacts, _, _, _, _ = runtime_dependencies()
     return AssembleSourceUseCase(artifacts)
 
 
 def plan_intake_use_case() -> PlanIntakeUseCase:
-    registry, _, artifacts, _, _, _ = runtime_dependencies()
+    registry, _, artifacts, _, _, _, _ = runtime_dependencies()
     return PlanIntakeUseCase(registry, artifacts)
 
 
 def apply_intake_use_case() -> ApplyIntakeUseCase:
-    registry, _, artifacts, _, _, _ = runtime_dependencies()
+    registry, _, artifacts, _, _, _, _ = runtime_dependencies()
     return ApplyIntakeUseCase(registry, artifacts)
 
 
 def render_output_use_case() -> RenderOutputUseCase:
-    registry, _, _, facts, _, _ = runtime_dependencies()
+    registry, _, _, facts, _, _, _ = runtime_dependencies()
     return RenderOutputUseCase(registry, facts)
 
 
 def rebuild_location_inventory_use_case() -> RebuildLocationInventoryUseCase:
-    _, _, artifacts, _, _, _ = runtime_dependencies()
+    _, _, artifacts, _, _, _, _ = runtime_dependencies()
     return RebuildLocationInventoryUseCase(artifacts)
 
 
 def extract_pdf_balances_use_case() -> ExtractPdfBalancesUseCase:
-    registry, _, artifacts, _, _, _ = runtime_dependencies()
+    registry, _, artifacts, _, _, _, _ = runtime_dependencies()
     return ExtractPdfBalancesUseCase(registry, artifacts)
 
 
 def scaffold_balance_submission_use_case() -> ScaffoldBalanceSubmissionUseCase:
-    _, _, artifacts, _, _, _ = runtime_dependencies()
+    _, _, artifacts, _, _, _, _ = runtime_dependencies()
     return ScaffoldBalanceSubmissionUseCase(artifacts)
 
 
 def submit_balances_use_case() -> SubmitBalancesUseCase:
-    _, _, artifacts, _, evidence, _ = runtime_dependencies()
+    _, _, artifacts, _, evidence, _, _ = runtime_dependencies()
     return SubmitBalancesUseCase(evidence, artifacts)
 
 
 def balance_inspect_workflow() -> BalanceInspectWorkflow:
-    _, _, artifacts, facts, evidence, _ = runtime_dependencies()
+    _, _, artifacts, facts, evidence, _, _ = runtime_dependencies()
     return BalanceInspectWorkflow(
         facts=facts,
         evidence=evidence,
@@ -140,7 +146,7 @@ def balance_inspect_workflow() -> BalanceInspectWorkflow:
 
 
 def balance_check_workflow() -> BalanceCheckWorkflow:
-    _, providers, artifacts, facts, evidence, _ = runtime_dependencies()
+    _, providers, artifacts, facts, evidence, _, _ = runtime_dependencies()
     return BalanceCheckWorkflow(
         facts=facts,
         evidence=evidence,
@@ -150,7 +156,7 @@ def balance_check_workflow() -> BalanceCheckWorkflow:
 
 
 def balance_summary_workflow() -> BalanceSummaryWorkflow:
-    _, _, artifacts, _, _, _ = runtime_dependencies()
+    _, _, artifacts, _, _, _, _ = runtime_dependencies()
     return BalanceSummaryWorkflow(artifacts)
 
 

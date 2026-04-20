@@ -86,28 +86,16 @@ ongoing contracts and migration rules:
 Keep detailed completion proof, gate tables, and durable contract semantics on
 those owner docs rather than restating them here.
 
-## Phase 1. Land `EvidenceSet`
+## Phase 1. `EvidenceSet` Is Complete
 
-Goal:
+Phase 1 is complete. Its implemented runtime truth and durable references now
+live on the owner surfaces that describe the active bridge boundary and product
+outputs:
 
-- make deterministic evidence selection and typed observation capture
-  the formal first pipeline product
-
-Deliver:
-
-- capture-scoped `EvidenceSet` emission keyed by `evidence_set_id`
-- deterministic selected, superseded, and blocked evidence membership
-- typed evidence observations that survive beyond intake heuristics, including
-  field tables frozen for the first upstream slice for
-  `statement_document` and `statement_balance_row`
-- bridge compatibility view for `translation_input_plan.json`
-
-Exit criteria:
-
-- the runtime can explain why every selected evidence member won and why every
-  superseded or blocked member did not
-- evidence selection becomes authoritative through `EvidenceSet` for the
-  in-scope slice
+- [Current State](docs/status/current-state.md)
+- [Product Outputs](docs/workspace/working/products/README.md)
+- [Evidence And Claim Contract](docs/reference/evidence-claim-contract.md)
+- [CHANGELOG.md](CHANGELOG.md)
 
 ## Phase 2. Land `ClaimSet`
 

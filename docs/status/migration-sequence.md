@@ -13,9 +13,9 @@ Use this page to sequence implementation increments without a big-bang refactor.
 This page keeps migration rules, cutover expectations, and retirement gates in
 one place. It is the durable owner for sequencing, cutover, and bridge
 retirement rules. It does not redefine target product contracts or recreate
-roadmap phase detail.
+planning-document delivery detail.
 
-## Roadmap Ownership
+## Planning Document Ownership
 
 [ROADMAP.md](../../ROADMAP.md) is the only numbered implementation program of
 record. It remains planning-only and is not the durable contract or
@@ -30,8 +30,8 @@ Use this page for:
 
 Do not use this page for:
 
-- competing phase numbers
-- alternate phase labels
+- competing numbered planning labels
+- alternate planning labels
 - duplicate product-contract definitions
 - duplicate ontology, gap/review/shared-attachment, or persistence contracts
 
@@ -121,13 +121,14 @@ aligned and frozen.
 
 ### 2. Evidence And Claim Contract
 
-Land the bounded
+Keep the bounded
 [`EvidenceSet -> ClaimSet`](../reference/evidence-claim-contract.md) contract.
 
 Required posture:
 
 - `EvidenceSet` becomes authoritative for in-scope evidence selection
-- `ClaimSet` becomes authoritative for in-scope evidence-local meaning
+- `ClaimSet` is the remaining upstream authority slice for in-scope
+  evidence-local meaning
 - `translation_input_plan.json`, `EconomicActivityDraft`, and
   `SourceTranslationBatch` survive only as derived compatibility views
 - downstream bridge outputs remain on the live bridge path until the bounded
@@ -177,13 +178,13 @@ Rules:
 - do not let tax decide source meaning, reconciliation completeness, or
   checkpoint acceptance
 
-Later roadmap steps remain intentionally high-level here. They are out of
+Later planning-document steps remain intentionally high-level here. They are out of
 scope for the current contract delivery and do not block near-term
 implementation once the contract lock is satisfied.
 
 ### 6. Triggered Derived Read-Model Activation
 
-The roadmap may still plan later activation detail, but this page keeps the
+The planning document may still carry later activation detail, but this page keeps the
 durable rule: broader derived read models and projections stay deferred until
 an implemented capability-specific increment actually needs them.
 

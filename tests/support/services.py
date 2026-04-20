@@ -15,6 +15,7 @@ from tallylot.domain.types import AdapterId, JsonValue, SourceId
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization import FilesystemArtifactStore
 from tallylot.infrastructure.storage import (
+    FilesystemClaimSetRepository,
     FilesystemEvidenceRepository,
     FilesystemEvidenceSetRepository,
     FilesystemFactRepository,
@@ -82,6 +83,7 @@ def build_normalization_service(
             facts=FilesystemFactRepository(),
             evidence=FilesystemEvidenceRepository(),
             evidence_sets=FilesystemEvidenceSetRepository(),
+            claim_sets=FilesystemClaimSetRepository(),
             artifacts=resolved_artifacts,
         )
     )

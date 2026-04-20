@@ -18,7 +18,10 @@ related:
 
 Use this page when implementing or reviewing the bounded evidence-and-claim contract.
 This document freezes scope, cardinality, ids, parity, replay, and allowed
-drift for the bounded `EvidenceSet -> ClaimSet` increment.
+drift for the bounded `EvidenceSet -> ClaimSet` increment. The
+`EvidenceSet` side of that contract is already the live runtime authority for
+the in-scope evidence slice; `ClaimSet` is the remaining upstream authority
+slice in this contract.
 
 **Contract-local example:** This contract still uses Coinbase retail exports
 and recognized Coinbase statements only as bounded examples for the current

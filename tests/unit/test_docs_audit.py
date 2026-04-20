@@ -8,6 +8,7 @@ import repo_support.docs_audit as docs_audit
 from repo_support.docs_audit.model import DocsAuditFinding, DocsAuditRule
 from repo_support.docs_audit.rules import forward_contracts_matrix
 from repo_support.docs_audit.rules import forward_contracts_support
+from repo_support.docs_audit.rules import policy_alignment
 from repo_support.docs_audit.reporting import report_payload
 from tools import audit_docs as audit_docs_tool
 
@@ -39,6 +40,14 @@ def _bridge_row(
     }
     row.update(overrides)
     return row
+
+
+def _phase_label() -> str:
+    return " ".join(("Phase", "2"))
+
+
+def _phase_word_label() -> str:
+    return "-".join(("phase", "zero"))
 
 
 def test_run_docs_audit_full_repo_with_no_findings(
@@ -231,6 +240,54 @@ def test_target_naming_catalog_path_triggers_full_repo_sweep(
     assert report.evaluated_rule_ids == (
         "routes.example",
         "forward_contracts.example",
+    )
+
+
+def test_durable_doc_policy_rule_rejects_ephemeral_delivery_labels(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    phase_label = _phase_label()
+    phase_word_label = _phase_word_label()
+    payloads = {
+        "docs/status/current-state.md": f"Current runtime keeps {phase_label} wording out.",
+        "docs/reference/evidence-claim-contract.md": (
+            f"Bounded contract keeps {phase_word_label} wording out."
+        ),
+        "docs/concepts/architecture-overview.md": "This surface only links `ROADMAP.md`.",
+    }
+
+    monkeypatch.setattr(
+        policy_alignment,
+        "_durable_non_planning_surface_texts",
+        lambda: tuple(payloads.items()),
+    )
+
+    findings = next(
+        rule.run()
+        for rule in policy_alignment.POLICY_ALIGNMENT_RULES
+        if rule.rule_id
+        == "policy_alignment.durable_non_planning_surfaces_do_not_use_ephemeral_delivery_labels"
+    )
+
+    assert findings == (
+        DocsAuditFinding(
+            "policy_alignment.durable_non_planning_surfaces_do_not_use_ephemeral_delivery_labels",
+            "docs/status/current-state.md",
+            (
+                "docs/status/current-state.md uses forbidden roadmap/phase delivery labels: "
+                f"{phase_label}"
+            ),
+            None,
+        ),
+        DocsAuditFinding(
+            "policy_alignment.durable_non_planning_surfaces_do_not_use_ephemeral_delivery_labels",
+            "docs/reference/evidence-claim-contract.md",
+            (
+                "docs/reference/evidence-claim-contract.md uses forbidden "
+                f"roadmap/phase delivery labels: {phase_word_label}"
+            ),
+            None,
+        ),
     )
 
 

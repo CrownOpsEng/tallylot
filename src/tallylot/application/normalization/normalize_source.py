@@ -36,6 +36,7 @@ from tallylot.domain.issues import IssueRecord
 from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.captures import CaptureMetadata
+from tallylot.ports.claim_sets import ClaimSetRepositoryPort
 from tallylot.ports.evidence import EvidenceRepositoryPort, LocationInventoryRecord
 from tallylot.ports.evidence_sets import EvidenceSetRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
@@ -66,6 +67,7 @@ class NormalizationDependencies:
     facts: FactRepositoryPort
     evidence: EvidenceRepositoryPort
     evidence_sets: EvidenceSetRepositoryPort
+    claim_sets: ClaimSetRepositoryPort
     artifacts: ArtifactStorePort
     statement_extraction: StatementExtractionService | None = None
 
@@ -77,6 +79,7 @@ class NormalizeSourceUseCase:
         self._facts = dependencies.facts
         self._evidence = dependencies.evidence
         self._evidence_sets = dependencies.evidence_sets
+        self._claim_sets = dependencies.claim_sets
         self._artifacts = dependencies.artifacts
         self._statement_extraction = (
             dependencies.statement_extraction
@@ -128,6 +131,7 @@ class NormalizeSourceUseCase:
                 artifacts=self._artifacts,
                 evidence=self._evidence,
                 evidence_sets=self._evidence_sets,
+                claim_sets=self._claim_sets,
                 statement_extraction=self._statement_extraction,
             ),
         )
@@ -226,6 +230,8 @@ class NormalizeSourceUseCase:
                 translation_metrics=translation_result.metrics,
                 evidence_set_id=translation_result.evidence_set_id,
                 evidence_set_ref=translation_result.evidence_set_ref,
+                claim_set_id=translation_result.claim_set_id,
+                claim_set_ref=translation_result.claim_set_ref,
             ),
         )
         append_capture_status_record(
@@ -245,6 +251,8 @@ class NormalizeSourceUseCase:
             adapter_id=str(profile.adapter_id),
             evidence_set_id=translation_result.evidence_set_id,
             evidence_set_ref=translation_result.evidence_set_ref,
+            claim_set_id=translation_result.claim_set_id,
+            claim_set_ref=translation_result.claim_set_ref,
             fact_count=len(facts),
             balance_count=len(balance_snapshots),
             issue_count=len(outputs.issues),

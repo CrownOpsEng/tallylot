@@ -215,17 +215,32 @@ def test_normalization_service_rewrites_stale_output_profile_with_live_adapter_s
         (
             "Future Exchange",
             fixture_raw_dir("coinbase", "retail_buy_renamed"),
-            {"fact_count": 1, "issue_count": 0, "expects_evidence_set": True},
+            {
+                "fact_count": 1,
+                "issue_count": 0,
+                "expects_evidence_set": True,
+                "expects_claim_set": True,
+            },
         ),
         (
             "Future Broker",
             fixture_raw_dir("wealthsimple", "broker_trade"),
-            {"fact_count": 1, "issue_count": 0, "expects_evidence_set": False},
+            {
+                "fact_count": 1,
+                "issue_count": 0,
+                "expects_evidence_set": False,
+                "expects_claim_set": False,
+            },
         ),
         (
             "Binance",
             fixture_raw_dir("binance", "mixed_history"),
-            {"fact_count": 5, "issue_count": 1, "expects_evidence_set": False},
+            {
+                "fact_count": 5,
+                "issue_count": 1,
+                "expects_evidence_set": False,
+                "expects_claim_set": False,
+            },
         ),
     ),
 )
@@ -253,6 +268,7 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
     assert response.fact_count == expected["fact_count"]
     assert response.issue_count == expected["issue_count"]
     assert (response.evidence_set_id != "") is expected["expects_evidence_set"]
+    assert (response.claim_set_id != "") is expected["expects_claim_set"]
     if expected["expects_evidence_set"]:
         assert response.evidence_set_ref == (
             "working/products/evidence_sets/"
@@ -260,6 +276,12 @@ def test_normalization_service_supports_explicit_windows_for_fixture_adapters(
         )
     else:
         assert response.evidence_set_ref == ""
+    if expected["expects_claim_set"]:
+        assert response.claim_set_ref == (
+            f"working/products/claim_sets/{response.claim_set_id}/claim_set.json"
+        )
+    else:
+        assert response.claim_set_ref == ""
     assert (output_dir / "facts.csv").exists()
     assert (
         json.loads(
