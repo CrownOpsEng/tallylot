@@ -117,6 +117,68 @@ def evidence_set_ref(workspace_root: Path, evidence_set_id: str) -> str:
     )
 
 
+def claim_set_product_root(workspace_root: Path, claim_set_id: str) -> Path:
+    return workspace_root / "working" / "products" / "claim_sets" / claim_set_id
+
+
+def claim_set_product_file(workspace_root: Path, claim_set_id: str) -> Path:
+    return claim_set_product_root(workspace_root, claim_set_id) / "claim_set.json"
+
+
+def claim_set_gap_records_file(workspace_root: Path, claim_set_id: str) -> Path:
+    return (
+        claim_set_product_root(workspace_root, claim_set_id)
+        / "assessment"
+        / "gap"
+        / "gap_records.json"
+    )
+
+
+def claim_set_gap_explanations_file(workspace_root: Path, claim_set_id: str) -> Path:
+    return (
+        claim_set_product_root(workspace_root, claim_set_id)
+        / "assessment"
+        / "gap"
+        / "gap_explanations.json"
+    )
+
+
+def claim_set_review_records_file(workspace_root: Path, claim_set_id: str) -> Path:
+    return (
+        claim_set_product_root(workspace_root, claim_set_id)
+        / "assessment"
+        / "review"
+        / "review_records.json"
+    )
+
+
+def claim_set_review_explanations_file(workspace_root: Path, claim_set_id: str) -> Path:
+    return (
+        claim_set_product_root(workspace_root, claim_set_id)
+        / "assessment"
+        / "review"
+        / "review_explanations.json"
+    )
+
+
+def claim_set_compatibility_draft_projection_fields_file(
+    workspace_root: Path, claim_set_id: str
+) -> Path:
+    return (
+        claim_set_product_root(workspace_root, claim_set_id)
+        / "compatibility"
+        / "draft_projection_fields.json"
+    )
+
+
+def claim_set_ref(workspace_root: Path, claim_set_id: str) -> str:
+    return (
+        claim_set_product_file(workspace_root, claim_set_id)
+        .relative_to(workspace_root)
+        .as_posix()
+    )
+
+
 def default_capture_normalized_root(capture_root: Path) -> Path:
     context = require_capture_root(capture_root)
     return capture_normalized_root(

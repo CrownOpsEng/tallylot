@@ -36,6 +36,7 @@ from tallylot.domain.issues import IssueRecord
 from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.captures import CaptureMetadata
+from tallylot.ports.claim_sets import ClaimSetRepositoryPort
 from tallylot.ports.evidence import EvidenceRepositoryPort, LocationInventoryRecord
 from tallylot.ports.evidence_sets import EvidenceSetRepositoryPort
 from tallylot.ports.facts import FactRepositoryPort
@@ -66,6 +67,7 @@ class NormalizationDependencies:
     facts: FactRepositoryPort
     evidence: EvidenceRepositoryPort
     evidence_sets: EvidenceSetRepositoryPort
+    claim_sets: ClaimSetRepositoryPort
     artifacts: ArtifactStorePort
     statement_extraction: StatementExtractionService | None = None
 
@@ -77,6 +79,7 @@ class NormalizeSourceUseCase:
         self._facts = dependencies.facts
         self._evidence = dependencies.evidence
         self._evidence_sets = dependencies.evidence_sets
+        self._claim_sets = dependencies.claim_sets
         self._artifacts = dependencies.artifacts
         self._statement_extraction = (
             dependencies.statement_extraction

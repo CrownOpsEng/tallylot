@@ -14,6 +14,7 @@ from .adapter_contracts import AdapterCapability, AdapterManifest
 from .ai import ModelGateway, ReviewRequest, ReviewResponse
 from .annotations import AdapterMetadata
 from .artifacts import ArtifactStorePort
+from .claim_sets import ClaimSetRepositoryPort
 from .evidence import EvidenceRepositoryPort, LocationInventoryRecord
 from .evidence_sets import EvidenceSetRepositoryPort
 from .facts import FactRepositoryPort
@@ -48,6 +49,7 @@ __all__ = [
     "AdapterManifest",
     "AdapterMetadata",
     "ArtifactStorePort",
+    "ClaimSetRepositoryPort",
     "EconomicActivityDraft",
     "EconomicLegDraft",
     "EvidenceRepositoryPort",
