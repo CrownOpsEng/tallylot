@@ -34,6 +34,16 @@ authorities for the bounded planner-enabled Coinbase slice. `EconomicFacts`,
 `ReconciliationState`, and `Checkpoint` are authorities for the bounded
 downstream Coinbase slice, while direct reader cutovers remain later work.
 
+For that implemented downstream slice,
+[Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
+holds the detailed downstream contract,
+[Migration Sequence](../status/migration-sequence.md) owns current cutover and
+retirement rules, and
+[Product Outputs](../workspace/working/products/README.md) owns current
+workspace placement of authoritative kernels plus retained compatibility
+views. [Current State](../status/current-state.md) remains the live runtime
+truth page.
+
 The primary contract pages freeze product ids, product headers, critical-path
 kernel field tables, and the compatibility sidecar boundary for retained legacy
 hint fields.

@@ -42,4 +42,8 @@ Current runtime surface:
 
 The normalized capture output under `working/normalized/captures/<capture_uid>/`
 may still mirror retained compatibility files for current readers, but the
-authoritative kernel lives here when a product is authoritative.
+authoritative kernel lives here when a product is authoritative. For the
+bounded planner-enabled Coinbase slice, `EconomicFacts`,
+`ReconciliationState`, and `Checkpoint` now live here as the authoritative
+downstream product directories, while current readers may still consume
+capture-scoped compatibility files derived from those kernels.

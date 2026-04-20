@@ -27,6 +27,27 @@ and recognized Coinbase statement examples only to pin the current parity
 boundary. Those provider names are contract-local examples, not canonical
 target naming.
 
+## Implemented Slice Ownership
+
+This bounded downstream slice is now implemented for the planner-enabled
+Coinbase normalization path.
+
+Use these documents together when updating that implemented slice:
+
+- [Current State](../status/current-state.md) for live runtime truth and the
+  current package layout
+- [Architecture Overview](../concepts/architecture-overview.md) for
+  system-level routing of downstream authority and retained compatibility
+  views
+- [Migration Sequence](../status/migration-sequence.md) for reader cutover and
+  bridge-retirement rules
+- [Product Outputs](../workspace/working/products/README.md) for current
+  workspace placement of authoritative kernels and retained compatibility views
+
+Keep future changes to implemented economics, reconciliation, or checkpoint
+authority on those documents rather than re-expanding planning-only downstream
+notes elsewhere.
+
 ## Slice Scope
 
 This slice is:

@@ -160,6 +160,15 @@ This contract is implemented for the bounded planner-enabled Coinbase slice.
 Current facts, balance snapshots, and balance references remain on the
 compatibility path for readers until the later reader-cutover work lands.
 
+For that implemented downstream slice,
+[Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
+holds the detailed downstream contract,
+[Product Outputs](../workspace/working/products/README.md) owns current
+workspace placement of authoritative kernels plus retained compatibility
+views, and [Current State](current-state.md) owns the live runtime truth
+statement. Keep future implemented-slice updates on those documents rather
+than re-expanding completed downstream planning elsewhere.
+
 ### 4. Reader Cutovers
 
 After those slices land, migrate readers one consumer surface at a time:
