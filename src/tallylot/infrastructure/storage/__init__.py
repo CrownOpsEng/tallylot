@@ -4,6 +4,7 @@ from .claim_sets import FilesystemClaimSetRepository
 from .economic_facts import FilesystemEconomicFactsRepository
 from .evidence_sets import FilesystemEvidenceSetRepository
 from .filesystem import FilesystemEvidenceRepository, FilesystemFactRepository
+from .reconciliation_states import FilesystemReconciliationStateRepository
 from .sqlite_stub import SqliteStorageStub
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     "FilesystemEvidenceRepository",
     "FilesystemEvidenceSetRepository",
     "FilesystemFactRepository",
+    "FilesystemReconciliationStateRepository",
     "SqliteStorageStub",
 ]

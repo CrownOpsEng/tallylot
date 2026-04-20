@@ -220,6 +220,45 @@ def economic_facts_compatibility_fact_annotations_file(
     )
 
 
+def reconciliation_state_product_root(
+    workspace_root: Path, reconciliation_state_id: str
+) -> Path:
+    return (
+        workspace_root
+        / "working"
+        / "products"
+        / "reconciliation_states"
+        / reconciliation_state_id
+    )
+
+
+def reconciliation_state_product_file(
+    workspace_root: Path, reconciliation_state_id: str
+) -> Path:
+    return (
+        reconciliation_state_product_root(workspace_root, reconciliation_state_id)
+        / "reconciliation_state.json"
+    )
+
+
+def reconciliation_state_ref(workspace_root: Path, reconciliation_state_id: str) -> str:
+    return (
+        reconciliation_state_product_file(workspace_root, reconciliation_state_id)
+        .relative_to(workspace_root)
+        .as_posix()
+    )
+
+
+def reconciliation_state_compatibility_snapshots_file(
+    workspace_root: Path, reconciliation_state_id: str
+) -> Path:
+    return (
+        reconciliation_state_product_root(workspace_root, reconciliation_state_id)
+        / "compatibility"
+        / "balance_snapshots.csv"
+    )
+
+
 def default_capture_normalized_root(capture_root: Path) -> Path:
     context = require_capture_root(capture_root)
     return capture_normalized_root(

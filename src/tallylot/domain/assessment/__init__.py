@@ -12,6 +12,7 @@ from .models import (
     ReviewExplanation,
     ReviewRecord,
     ReviewStatus,
+    ScopeKind,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "ReviewExplanation",
     "ReviewRecord",
     "ReviewStatus",
+    "ScopeKind",
 ]

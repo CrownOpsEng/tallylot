@@ -14,6 +14,7 @@ from tallylot.domain.assessment import (
     ReviewExplanation,
     ReviewRecord,
     ReviewStatus,
+    ScopeKind,
 )
 from tallylot.domain.assessment.models import (
     canonical_gap_records,
@@ -230,3 +231,69 @@ def test_assessment_records_require_non_empty_claim_scope_ref() -> None:
             confidence=ReviewConfidence.HIGH,
             gap_ids=(),
         )
+
+
+def test_assessment_models_allow_declared_scope_kinds_without_changing_claim_scope_ids() -> (
+    None
+):
+    subject_gap = GapRecord(
+        gap_id=stable_gap_id(
+            owner_stage="reconciliation",
+            scope_kind="subject",
+            scope_ref="",
+            gap_kind=GapKind.CONTRADICTION,
+            gap_key="subject-gap",
+        ),
+        owner_stage="reconciliation",
+        blocking_stages=("checkpoint",),
+        scope_kind=ScopeKind.SUBJECT,
+        scope_ref=None,
+        subject_ref=("position", "btc"),
+        gap_kind=GapKind.CONTRADICTION,
+        gap_key="subject-gap",
+        status=GapStatus.OPEN,
+        materiality=GapMateriality.MATERIAL,
+        confidence=GapConfidence.HIGH,
+    )
+    target_review = ReviewRecord(
+        review_id=stable_review_id(
+            owner_stage="reconciliation",
+            scope_kind="balance_target",
+            scope_ref="target-1",
+            review_kind="manual_check",
+            review_key="quantity",
+        ),
+        owner_stage="reconciliation",
+        scope_kind=ScopeKind.BALANCE_TARGET,
+        scope_ref="target-1",
+        subject_ref=None,
+        review_kind="manual_check",
+        review_key="quantity",
+        status=ReviewStatus.OPEN,
+        confidence=ReviewConfidence.HIGH,
+        gap_ids=(),
+    )
+    claim_gap = GapRecord(
+        gap_id=stable_gap_id(
+            owner_stage="claim",
+            scope_kind="claim_scope",
+            scope_ref="scope-1",
+            gap_kind=GapKind.MISSING_EVIDENCE,
+            gap_key="missing",
+        ),
+        owner_stage="claim",
+        blocking_stages=("claim",),
+        scope_kind=ScopeKind.CLAIM_SCOPE,
+        scope_ref="scope-1",
+        subject_ref=None,
+        gap_kind=GapKind.MISSING_EVIDENCE,
+        gap_key="missing",
+        status=GapStatus.OPEN,
+        materiality=GapMateriality.MATERIAL,
+        confidence=GapConfidence.HIGH,
+    )
+
+    assert subject_gap.to_payload()["scope_kind"] == "subject"
+    assert subject_gap.to_payload()["scope_ref"] is None
+    assert target_review.to_payload()["scope_kind"] == "balance_target"
+    assert claim_gap.gap_id == "claim:claim_scope:scope-1:missing_evidence:missing"
