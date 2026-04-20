@@ -20,7 +20,9 @@ def test_ensure_directory_creates_nested_path_and_returns_it(tmp_path: Path) -> 
     assert path.is_dir()
 
 
-def test_ensure_output_not_within_input_tree_rejects_nested_outputs(tmp_path: Path) -> None:
+def test_ensure_output_not_within_input_tree_rejects_nested_outputs(
+    tmp_path: Path,
+) -> None:
     input_root = tmp_path / "raw"
     output_path = input_root / "normalized" / "facts.csv"
     input_root.mkdir()

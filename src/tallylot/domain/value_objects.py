@@ -42,11 +42,15 @@ def require_utc_datetime(value: datetime, *, label: str) -> datetime:
 
 
 def format_timestamp(value: datetime) -> str:
-    return require_utc_datetime(value, label="timestamp").strftime(CANONICAL_TIMESTAMP_FORMAT)
+    return require_utc_datetime(value, label="timestamp").strftime(
+        CANONICAL_TIMESTAMP_FORMAT
+    )
 
 
 def parse_timestamp(value: str) -> datetime:
-    return datetime.strptime(value.strip(), CANONICAL_TIMESTAMP_FORMAT).replace(tzinfo=UTC)
+    return datetime.strptime(value.strip(), CANONICAL_TIMESTAMP_FORMAT).replace(
+        tzinfo=UTC
+    )
 
 
 def require_temporal_datetime(
@@ -61,7 +65,9 @@ def require_temporal_datetime(
     return normalized
 
 
-def format_temporal_value(value: datetime, *, precision: TemporalPrecision, label: str) -> str:
+def format_temporal_value(
+    value: datetime, *, precision: TemporalPrecision, label: str
+) -> str:
     normalized = require_temporal_datetime(value, precision=precision, label=label)
     if precision is TemporalPrecision.TIMESTAMP:
         return normalized.strftime(CANONICAL_TIMESTAMP_FORMAT)

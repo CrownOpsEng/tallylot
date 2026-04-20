@@ -7,7 +7,13 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
-from tallylot.adapters.support import CsvRowContext, IssueSpec, issue_record, location_id_from_parts, read_csv_header
+from tallylot.adapters.support import (
+    CsvRowContext,
+    IssueSpec,
+    issue_record,
+    location_id_from_parts,
+    read_csv_header,
+)
 from tallylot.adapters.support.drafts import (
     TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
     EconomicActivityDraft,
@@ -117,7 +123,10 @@ def normalize_row(
             )
         )
     provider_operation_key = f"{activity_type.lower()}:{activity_sub_type.upper()}"
-    if activity_type.lower() == "trade" and activity_sub_type.upper() in {"BUY", "SELL"}:
+    if activity_type.lower() == "trade" and activity_sub_type.upper() in {
+        "BUY",
+        "SELL",
+    }:
         return _trade_draft_or_issue(
             profile=profile,
             row_context=row_context,
@@ -214,7 +223,9 @@ def _trade_draft_or_issue(
             tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
         ),
         effective_at=context.effective_at,
-        effective_precision=TemporalPrecision.DATE if context.effective_at is not None else None,
+        effective_precision=TemporalPrecision.DATE
+        if context.effective_at is not None
+        else None,
         leg_policy=_trade_policy(context.commission),
         description=f"Wealthsimple Crypto {trade_side_lower}",
         raw_file=row_context.raw_file,
@@ -236,7 +247,9 @@ def _trade_draft_or_issue(
             *_charge_legs(
                 context.commission,
                 context.currency,
-                attributed_to_leg_id="primary_out" if trade_side == "BUY" else "primary_in",
+                attributed_to_leg_id="primary_out"
+                if trade_side == "BUY"
+                else "primary_in",
                 leg_id="charge",
             ),
         ),

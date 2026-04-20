@@ -28,7 +28,9 @@ def test_verification_compare_service_writes_summary(
     assert (output_dir / "verification_summary.json").exists()
 
 
-def test_verification_compare_service_detects_new_issues_and_balance_changes(tmp_path: Path) -> None:
+def test_verification_compare_service_detects_new_issues_and_balance_changes(
+    tmp_path: Path,
+) -> None:
     previous_dir = tmp_path / "previous"
     current_dir = tmp_path / "current"
     output_dir = tmp_path / "verification"
@@ -57,7 +59,13 @@ def test_verification_compare_service_detects_new_issues_and_balance_changes(tmp
             ),
             duplicate_rows=(),
             current_balance_rows=(
-                {"Ticker": "BTC", "Name": "Bitcoin", "Type": "Coin", "Amount": "1.00000000", "Value in CAD": "10.0"},
+                {
+                    "Ticker": "BTC",
+                    "Name": "Bitcoin",
+                    "Type": "Coin",
+                    "Amount": "1.00000000",
+                    "Value in CAD": "10.0",
+                },
                 {
                     "Ticker": "CAD",
                     "Name": "Canadian Dollar",
@@ -113,7 +121,13 @@ def test_verification_compare_service_detects_new_issues_and_balance_changes(tmp
                 },
             ),
             current_balance_rows=(
-                {"Ticker": "BTC", "Name": "Bitcoin", "Type": "Coin", "Amount": "2.50000000", "Value in CAD": "25.0"},
+                {
+                    "Ticker": "BTC",
+                    "Name": "Bitcoin",
+                    "Type": "Coin",
+                    "Amount": "2.50000000",
+                    "Value in CAD": "25.0",
+                },
                 {
                     "Ticker": "CAD",
                     "Name": "Canadian Dollar",
@@ -149,9 +163,15 @@ def test_verification_compare_service_detects_new_issues_and_balance_changes(tmp
         ),
     )
 
-    summary = json.loads((output_dir / "verification_summary.json").read_text(encoding="utf-8"))
-    duplicate_rows = FilesystemArtifactStore().read_rows(output_dir / "current_duplicate_transaction_rows.csv")
-    delta_rows = FilesystemArtifactStore().read_rows(output_dir / "current_balance_deltas.csv")
+    summary = json.loads(
+        (output_dir / "verification_summary.json").read_text(encoding="utf-8")
+    )
+    duplicate_rows = FilesystemArtifactStore().read_rows(
+        output_dir / "current_duplicate_transaction_rows.csv"
+    )
+    delta_rows = FilesystemArtifactStore().read_rows(
+        output_dir / "current_balance_deltas.csv"
+    )
 
     assert response.changed_reports == 4
     assert response.gate_suggestion == "hold"
@@ -163,7 +183,9 @@ def test_verification_compare_service_detects_new_issues_and_balance_changes(tmp
     assert {row["ticker"] for row in delta_rows} == {"BTC", "CAD"}
 
 
-def test_verification_compare_service_detects_resolved_rows_without_new_issues(tmp_path: Path) -> None:
+def test_verification_compare_service_detects_resolved_rows_without_new_issues(
+    tmp_path: Path,
+) -> None:
     previous_dir = tmp_path / "previous"
     current_dir = tmp_path / "current"
     output_dir = tmp_path / "verification"
@@ -192,7 +214,13 @@ def test_verification_compare_service_detects_resolved_rows_without_new_issues(t
             ),
             duplicate_rows=(),
             current_balance_rows=(
-                {"Ticker": "BTC", "Name": "Bitcoin", "Type": "Coin", "Amount": "1.00000000", "Value in CAD": "10.0"},
+                {
+                    "Ticker": "BTC",
+                    "Name": "Bitcoin",
+                    "Type": "Coin",
+                    "Amount": "1.00000000",
+                    "Value in CAD": "10.0",
+                },
             ),
             exchange_rows=(
                 {
@@ -212,7 +240,13 @@ def test_verification_compare_service_detects_resolved_rows_without_new_issues(t
             missing_rows=(),
             duplicate_rows=(),
             current_balance_rows=(
-                {"Ticker": "BTC", "Name": "Bitcoin", "Type": "Coin", "Amount": "1.00000000", "Value in CAD": "10.0"},
+                {
+                    "Ticker": "BTC",
+                    "Name": "Bitcoin",
+                    "Type": "Coin",
+                    "Amount": "1.00000000",
+                    "Value in CAD": "10.0",
+                },
             ),
             exchange_rows=(
                 {
@@ -234,8 +268,12 @@ def test_verification_compare_service_detects_resolved_rows_without_new_issues(t
         ),
     )
 
-    summary = json.loads((output_dir / "verification_summary.json").read_text(encoding="utf-8"))
-    resolved_missing_rows = FilesystemArtifactStore().read_rows(output_dir / "resolved_missing_transaction_rows.csv")
+    summary = json.loads(
+        (output_dir / "verification_summary.json").read_text(encoding="utf-8")
+    )
+    resolved_missing_rows = FilesystemArtifactStore().read_rows(
+        output_dir / "resolved_missing_transaction_rows.csv"
+    )
 
     assert response.changed_reports == 2
     assert response.gate_suggestion == "review_balance_changes"

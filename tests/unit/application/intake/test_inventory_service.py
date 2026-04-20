@@ -13,7 +13,9 @@ def test_resolve_inventory_route_skips_non_wallet_sources(tmp_path: Path) -> Non
         artifacts=FilesystemArtifactStore(),
         workspace_root=tmp_path,
         source_folder="coinbase",
-        facts=IntakeFileFacts(scope_tokens=("evm:0x1111111111111111111111111111111111111111",)),
+        facts=IntakeFileFacts(
+            scope_tokens=("evm:0x1111111111111111111111111111111111111111",)
+        ),
     )
 
     assert decision.source_folder == "coinbase"
@@ -28,7 +30,9 @@ def test_resolve_inventory_route_requires_inventory_artifacts(tmp_path: Path) ->
         artifacts=FilesystemArtifactStore(),
         workspace_root=workspace_root,
         source_folder="evm_wallet",
-        facts=IntakeFileFacts(scope_tokens=("evm:0x1111111111111111111111111111111111111111",)),
+        facts=IntakeFileFacts(
+            scope_tokens=("evm:0x1111111111111111111111111111111111111111",)
+        ),
     )
 
     assert decision.inventory_match_status == "unmatched"
@@ -60,7 +64,9 @@ def test_resolve_inventory_route_requires_evm_identifiers(tmp_path: Path) -> Non
     assert decision.inventory_match_status == "unmatched"
 
 
-def test_resolve_inventory_route_uses_single_matching_existing_source(tmp_path: Path) -> None:
+def test_resolve_inventory_route_uses_single_matching_existing_source(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
     artifacts = FilesystemArtifactStore()
     FilesystemWorkspaceRepository().initialize(workspace_root)
@@ -80,14 +86,18 @@ def test_resolve_inventory_route_uses_single_matching_existing_source(tmp_path: 
         artifacts=artifacts,
         workspace_root=workspace_root,
         source_folder="evm_wallet",
-        facts=IntakeFileFacts(scope_tokens=("evm:0x1111111111111111111111111111111111111111",)),
+        facts=IntakeFileFacts(
+            scope_tokens=("evm:0x1111111111111111111111111111111111111111",)
+        ),
     )
 
     assert decision.source_folder == "evm_explorer"
     assert decision.inventory_match_status == "inventory_source_match"
 
 
-def test_resolve_inventory_route_marks_ambiguous_wallet_matches_for_review(tmp_path: Path) -> None:
+def test_resolve_inventory_route_marks_ambiguous_wallet_matches_for_review(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
     artifacts = FilesystemArtifactStore()
     FilesystemWorkspaceRepository().initialize(workspace_root)
@@ -114,7 +124,9 @@ def test_resolve_inventory_route_marks_ambiguous_wallet_matches_for_review(tmp_p
         artifacts=artifacts,
         workspace_root=workspace_root,
         source_folder="evm_wallet",
-        facts=IntakeFileFacts(scope_tokens=("evm:0x1111111111111111111111111111111111111111",)),
+        facts=IntakeFileFacts(
+            scope_tokens=("evm:0x1111111111111111111111111111111111111111",)
+        ),
     )
 
     assert decision.source_folder == "wallet-export-unassigned"
@@ -125,7 +137,9 @@ def test_resolve_inventory_route_marks_ambiguous_wallet_matches_for_review(tmp_p
     assert "evm_wallet" in decision.review_reason
 
 
-def test_resolve_inventory_route_uses_generic_scope_folder_for_unknown_wallet(tmp_path: Path) -> None:
+def test_resolve_inventory_route_uses_generic_scope_folder_for_unknown_wallet(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
     artifacts = FilesystemArtifactStore()
     FilesystemWorkspaceRepository().initialize(workspace_root)
@@ -144,7 +158,9 @@ def test_resolve_inventory_route_uses_generic_scope_folder_for_unknown_wallet(tm
     assert decision.inventory_match_status == "generic_scope_routing"
 
 
-def test_resolve_inventory_route_uses_generic_scope_folder_when_inventory_rows_do_not_match(tmp_path: Path) -> None:
+def test_resolve_inventory_route_uses_generic_scope_folder_when_inventory_rows_do_not_match(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
     artifacts = FilesystemArtifactStore()
     FilesystemWorkspaceRepository().initialize(workspace_root)
@@ -174,11 +190,15 @@ def test_resolve_inventory_route_uses_generic_scope_folder_when_inventory_rows_d
     assert decision.inventory_match_status == "generic_scope_routing"
 
 
-def test_resolve_inventory_route_reloads_inventory_after_file_changes(tmp_path: Path) -> None:
+def test_resolve_inventory_route_reloads_inventory_after_file_changes(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
     artifacts = FilesystemArtifactStore()
     FilesystemWorkspaceRepository().initialize(workspace_root)
-    facts = IntakeFileFacts(scope_tokens=("evm:0x1111111111111111111111111111111111111111",))
+    facts = IntakeFileFacts(
+        scope_tokens=("evm:0x1111111111111111111111111111111111111111",)
+    )
 
     _write_inventory_rows(
         artifacts,

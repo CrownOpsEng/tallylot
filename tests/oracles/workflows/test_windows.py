@@ -4,7 +4,10 @@ import json
 from pathlib import Path
 
 from tallylot.infrastructure.serialization.csv_io import write_rows
-from tools.oracles.staging.windows import count_candidate_rows_outside_window, resolve_normalization_window
+from tools.oracles.staging.windows import (
+    count_candidate_rows_outside_window,
+    resolve_normalization_window,
+)
 
 
 def test_resolve_normalization_window_uses_baseline_cutoff_plus_one_second(
@@ -12,7 +15,9 @@ def test_resolve_normalization_window_uses_baseline_cutoff_plus_one_second(
     tmp_path: Path,
 ) -> None:
     candidate_path = tmp_path / "candidate.csv"
-    candidate_path.write_text("Type,Date\nTrade,2023-08-06 00:00:00\n", encoding="utf-8")
+    candidate_path.write_text(
+        "Type,Date\nTrade,2023-08-06 00:00:00\n", encoding="utf-8"
+    )
 
     window_start, window_end, normalization_summary = resolve_normalization_window(
         candidate=candidate_path,
@@ -32,7 +37,9 @@ def test_resolve_normalization_window_uses_explicit_overrides(
     tmp_path: Path,
 ) -> None:
     candidate_path = tmp_path / "candidate.csv"
-    candidate_path.write_text("Type,Date\nTrade,2023-08-06 00:00:00\n", encoding="utf-8")
+    candidate_path.write_text(
+        "Type,Date\nTrade,2023-08-06 00:00:00\n", encoding="utf-8"
+    )
 
     window_start, window_end, _ = resolve_normalization_window(
         candidate=candidate_path,
@@ -51,7 +58,9 @@ def test_resolve_normalization_window_reads_sibling_summary_when_present(
     tmp_path: Path,
 ) -> None:
     candidate_path = tmp_path / "candidate.csv"
-    candidate_path.write_text("Type,Date\nTrade,2023-08-06 00:00:00\n", encoding="utf-8")
+    candidate_path.write_text(
+        "Type,Date\nTrade,2023-08-06 00:00:00\n", encoding="utf-8"
+    )
     summary_path = tmp_path / "normalization_summary.json"
     summary_path.write_text(
         json.dumps(
@@ -76,7 +85,9 @@ def test_resolve_normalization_window_reads_sibling_summary_when_present(
     assert normalization_summary.endswith("normalization_summary.json")
 
 
-def test_count_candidate_rows_outside_window_counts_only_out_of_range_rows(tmp_path: Path) -> None:
+def test_count_candidate_rows_outside_window_counts_only_out_of_range_rows(
+    tmp_path: Path,
+) -> None:
     candidate_path = tmp_path / "candidate.csv"
     write_rows(
         candidate_path,

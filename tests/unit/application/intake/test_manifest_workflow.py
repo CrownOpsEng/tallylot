@@ -8,7 +8,9 @@ from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
-def test_manifest_service_writes_manifest(structured_source_dir: Path, tmp_path: Path) -> None:
+def test_manifest_service_writes_manifest(
+    structured_source_dir: Path, tmp_path: Path
+) -> None:
     output_path = tmp_path / "manifest.csv"
 
     response = BuildManifestUseCase(FilesystemArtifactStore()).execute(

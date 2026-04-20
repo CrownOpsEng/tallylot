@@ -7,8 +7,20 @@ from tempfile import mkdtemp
 from typing import Final
 from zipfile import ZIP_BZIP2, ZIP_DEFLATED, ZIP_LZMA, ZIP_STORED
 
-from .models import ArchiveBudget, ArchiveScanSettings, ArchiveScanState, ScanIssue, ScannedFile, ScannedTree
-from .support import add_unsupported_archive_issue, filesystem_file, has_unsupported_archive_suffix, resolve_path
+from .models import (
+    ArchiveBudget,
+    ArchiveScanSettings,
+    ArchiveScanState,
+    ScanIssue,
+    ScannedFile,
+    ScannedTree,
+)
+from .support import (
+    add_unsupported_archive_issue,
+    filesystem_file,
+    has_unsupported_archive_suffix,
+    resolve_path,
+)
 from .zip_scan import scan_zip_file
 
 MAX_ARCHIVE_FILE_SIZE_BYTES: Final[int] = 512 * 1024 * 1024
@@ -16,7 +28,9 @@ MAX_ARCHIVE_TOTAL_EXPANDED_BYTES: Final[int] = 2 * 1024 * 1024 * 1024
 MAX_ARCHIVE_MEMBER_SIZE_BYTES: Final[int] = 256 * 1024 * 1024
 MAX_ARCHIVE_MEMBER_COUNT: Final[int] = 10_000
 MAX_ARCHIVE_DEPTH: Final[int] = 3
-SUPPORTED_ZIP_COMPRESSIONS: Final[frozenset[int]] = frozenset({ZIP_STORED, ZIP_DEFLATED, ZIP_BZIP2, ZIP_LZMA})
+SUPPORTED_ZIP_COMPRESSIONS: Final[frozenset[int]] = frozenset(
+    {ZIP_STORED, ZIP_DEFLATED, ZIP_BZIP2, ZIP_LZMA}
+)
 SUPPORTED_ARCHIVE_SUFFIXES: Final[frozenset[str]] = frozenset({".zip"})
 UNSUPPORTED_ARCHIVE_SUFFIXES: Final[frozenset[str]] = frozenset(
     {".tar", ".gz", ".tgz", ".tar.gz", ".bz2", ".xz", ".7z", ".rar"}
@@ -29,7 +43,9 @@ def scanned_tree_files(
     exclude_paths: tuple[Path, ...] = (),
     inspect_archives: bool = True,
 ) -> ScannedTree:
-    extracted_root = Path(mkdtemp(prefix="tallylot-archive-scan-")) if inspect_archives else None
+    extracted_root = (
+        Path(mkdtemp(prefix="tallylot-archive-scan-")) if inspect_archives else None
+    )
     tree = ScannedTree(extracted_root)
     files: list[ScannedFile] = []
     issues: list[ScanIssue] = []
@@ -69,7 +85,9 @@ def scanned_tree_files(
             )
             continue
         if has_unsupported_archive_suffix(candidate.name, settings):
-            add_unsupported_archive_issue(state, relative_path=relative_path, name=candidate.name)
+            add_unsupported_archive_issue(
+                state, relative_path=relative_path, name=candidate.name
+            )
 
     tree.files = tuple(files)
     tree.issues = tuple(issues)

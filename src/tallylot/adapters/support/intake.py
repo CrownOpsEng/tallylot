@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import cast
 
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
 
 
 def match_intake_by_path_or_header(

@@ -35,7 +35,9 @@ def test_scanned_tree_files_inspects_nested_zip_members(tmp_path: Path) -> None:
     assert "bundle.zip::nested.zip::nested.csv" in relative_paths
 
 
-def test_scanned_tree_files_surfaces_unsafe_archive_member_paths(tmp_path: Path) -> None:
+def test_scanned_tree_files_surfaces_unsafe_archive_member_paths(
+    tmp_path: Path,
+) -> None:
     source_dir = tmp_path / "source"
     source_dir.mkdir()
     archive_path = source_dir / "bundle.zip"
@@ -48,7 +50,9 @@ def test_scanned_tree_files_surfaces_unsafe_archive_member_paths(tmp_path: Path)
     assert "unsafe_archive_member_path" in issue_kinds
 
 
-def test_manifest_service_can_opt_out_of_archive_member_inspection(tmp_path: Path) -> None:
+def test_manifest_service_can_opt_out_of_archive_member_inspection(
+    tmp_path: Path,
+) -> None:
     source_dir = tmp_path / "source"
     source_dir.mkdir()
     archive_path = source_dir / "bundle.zip"
@@ -97,7 +101,9 @@ def test_scanned_tree_files_flags_unsupported_archive_suffixes(tmp_path: Path) -
     assert "unsupported_archive_type" in issue_kinds
 
 
-def test_scanned_tree_files_skips_duplicate_archive_member_paths(tmp_path: Path) -> None:
+def test_scanned_tree_files_skips_duplicate_archive_member_paths(
+    tmp_path: Path,
+) -> None:
     source_dir = tmp_path / "source"
     source_dir.mkdir()
     archive_path = source_dir / "bundle.zip"
@@ -108,7 +114,11 @@ def test_scanned_tree_files_skips_duplicate_archive_member_paths(tmp_path: Path)
 
     with scanned_tree_files(source_dir) as scanned_tree:
         issue_kinds = {issue.kind for issue in scanned_tree.issues}
-        inner_members = [item for item in scanned_tree.files if item.relative_path == "bundle.zip::inner.csv"]
+        inner_members = [
+            item
+            for item in scanned_tree.files
+            if item.relative_path == "bundle.zip::inner.csv"
+        ]
 
     assert "duplicate_archive_member_path" in issue_kinds
     assert len(inner_members) == 1

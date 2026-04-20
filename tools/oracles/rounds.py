@@ -49,7 +49,9 @@ class RoundScaffoldingService:
                 encoding="utf-8",
             )
         round_log_path = request.workspace_root / "outputs" / "logs" / "round_log.csv"
-        existing_rows = self._artifacts.read_rows(round_log_path) if round_log_path.exists() else []
+        existing_rows = (
+            self._artifacts.read_rows(round_log_path) if round_log_path.exists() else []
+        )
         seeded = not any(row["round_id"] == round_id for row in existing_rows)
         rows = [row for row in existing_rows if row.get("round_id") != round_id]
         rows.append(_create_round_log_entry(request, round_dir, today))
@@ -102,7 +104,9 @@ def _create_round_log_entry(
     verification_dir: Path,
     today: date,
 ) -> dict[str, str]:
-    goal = _PHASE_GOALS.get(request.phase, "Capture fresh verification exports for review")
+    goal = _PHASE_GOALS.get(
+        request.phase, "Capture fresh verification exports for review"
+    )
     return {
         "round_id": request.round_id,
         "phase": request.phase,

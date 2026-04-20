@@ -9,8 +9,16 @@ from tallylot.domain.issues import IssueRecord
 from tallylot.domain.types import AdapterId, JsonValue
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.evidence import LocationInventoryRecord
-from tallylot.ports.intake_routing import IntakeFileFacts, IntakeRoute, IntakeRoutingRequest
-from tallylot.ports.source_profiles import FileFamilyClaim, FileInventoryEntry, SourceProfile
+from tallylot.ports.intake_routing import (
+    IntakeFileFacts,
+    IntakeRoute,
+    IntakeRoutingRequest,
+)
+from tallylot.ports.source_profiles import (
+    FileFamilyClaim,
+    FileInventoryEntry,
+    SourceProfile,
+)
 from tallylot.ports.source_translation import SourceTranslationBatch
 
 from .contracts import REQUIRED_HEADER
@@ -22,14 +30,21 @@ class _StructuredCsvSourceAdapter:
         adapter_id=AdapterId("structured_csv"),
         display_name="Structured CSV",
         version="1.0.0",
-        capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY}),
+        capabilities=frozenset(
+            {AdapterCapability.SOURCE_TRANSLATE, AdapterCapability.LOCATION_INVENTORY}
+        ),
         description="Normalizes a strongly typed structured CSV source capture.",
     )
 
-    def match(self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]) -> int:
+    def match(
+        self, source: str, raw_dir: Path, inventory: tuple[FileInventoryEntry, ...]
+    ) -> int:
         del source, raw_dir
         for item in inventory:
-            if item.relative_path == "transactions.csv" and item.header == REQUIRED_HEADER:
+            if (
+                item.relative_path == "transactions.csv"
+                and item.header == REQUIRED_HEADER
+            ):
                 return 100
         return 0
 
@@ -47,7 +62,8 @@ class _StructuredCsvSourceAdapter:
                 family_id="structured_transactions",
             )
             for item in inventory
-            if item.relative_path == "transactions.csv" and item.header == REQUIRED_HEADER
+            if item.relative_path == "transactions.csv"
+            and item.header == REQUIRED_HEADER
         )
 
     def match_intake(self, relative_path: str, facts: IntakeFileFacts) -> int:
@@ -81,7 +97,9 @@ class _StructuredCsvSourceAdapter:
         result = self.translate(profile, Path(profile.raw_dir))
         return result.location_inventory, ()
 
-    def translate(self, profile: SourceProfile, raw_dir: Path) -> SourceTranslationBatch:
+    def translate(
+        self, profile: SourceProfile, raw_dir: Path
+    ) -> SourceTranslationBatch:
         return translate_structured_csv(
             profile,
             raw_dir,

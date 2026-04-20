@@ -14,7 +14,11 @@ def fixture_raw_dir(adapter: str, pack: str) -> Path:
     return adapter_packs_root() / adapter / pack / "raw"
 
 
-def profile_and_adapter(source: str, raw_dir: Path) -> tuple[SourceProfile, SourceAdapter]:
+def profile_and_adapter(
+    source: str, raw_dir: Path
+) -> tuple[SourceProfile, SourceAdapter]:
     registry = build_registry()
-    profile = BuildProfileUseCase(registry, FilesystemArtifactStore()).create_profile(source, raw_dir)
+    profile = BuildProfileUseCase(registry, FilesystemArtifactStore()).create_profile(
+        source, raw_dir
+    )
     return profile, registry.source_adapter(str(profile.adapter_id))

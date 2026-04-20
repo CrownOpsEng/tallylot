@@ -89,8 +89,18 @@ def test_compare_balances_reports_asset_deltas() -> None:
             {"Amount": "0.50000000", "Currency": "ETH", "Exchange": "Coinbase"},
         ],
         [
-            {"source": "Coinbase", "balance_kind": "asset_balance", "asset": "BTC", "quantity": "1.00000000"},
-            {"source": "Coinbase", "balance_kind": "asset_balance", "asset": "ETH", "quantity": "0.40000000"},
+            {
+                "source": "Coinbase",
+                "balance_kind": "asset_balance",
+                "asset": "BTC",
+                "quantity": "1.00000000",
+            },
+            {
+                "source": "Coinbase",
+                "balance_kind": "asset_balance",
+                "asset": "ETH",
+                "quantity": "0.40000000",
+            },
         ],
         "Coinbase",
     )

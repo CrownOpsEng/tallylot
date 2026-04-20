@@ -13,7 +13,12 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
     symbol_claim,
 )
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 
@@ -27,22 +32,45 @@ def normalize_asset_migration(
     rows: list[dict[str, str]],
 ) -> EconomicActivityDraft:
     if len(rows) != 2:
-        raise ValueError(f"Expected 2 asset-migration rows at {timestamp}, found {len(rows)}")
+        raise ValueError(
+            f"Expected 2 asset-migration rows at {timestamp}, found {len(rows)}"
+        )
     negatives = [
-        row for row in rows if (parse_decimal((row.get("Quantity Transacted") or "").strip()) or Decimal("0")) < 0
+        row
+        for row in rows
+        if (
+            parse_decimal((row.get("Quantity Transacted") or "").strip())
+            or Decimal("0")
+        )
+        < 0
     ]
     positives = [
-        row for row in rows if (parse_decimal((row.get("Quantity Transacted") or "").strip()) or Decimal("0")) > 0
+        row
+        for row in rows
+        if (
+            parse_decimal((row.get("Quantity Transacted") or "").strip())
+            or Decimal("0")
+        )
+        > 0
     ]
     if len(negatives) != 1 or len(positives) != 1:
-        raise ValueError(f"Asset-migration rows at {timestamp} do not form one positive and one negative leg")
+        raise ValueError(
+            f"Asset-migration rows at {timestamp} do not form one positive and one negative leg"
+        )
 
     sold_row = negatives[0]
     bought_row = positives[0]
-    sold_quantity = abs(parse_decimal((sold_row.get("Quantity Transacted") or "").strip()) or Decimal("0"))
-    bought_quantity = parse_decimal((bought_row.get("Quantity Transacted") or "").strip())
+    sold_quantity = abs(
+        parse_decimal((sold_row.get("Quantity Transacted") or "").strip())
+        or Decimal("0")
+    )
+    bought_quantity = parse_decimal(
+        (bought_row.get("Quantity Transacted") or "").strip()
+    )
     if bought_quantity is None or sold_quantity <= Decimal("0"):
-        raise ValueError(f"Asset-migration rows at {timestamp} are missing transacted quantities")
+        raise ValueError(
+            f"Asset-migration rows at {timestamp} are missing transacted quantities"
+        )
     sold_id = (sold_row.get("ID") or "").strip()
     bought_id = (bought_row.get("ID") or "").strip()
     return EconomicActivityDraft(
@@ -67,13 +95,17 @@ def normalize_asset_migration(
                 leg_id="asset_in",
                 kind=LegKind.PRIMARY,
                 quantity=bought_quantity,
-                instrument=symbol_claim((bought_row.get("Asset") or "").strip().upper(), venue="coinbase"),
+                instrument=symbol_claim(
+                    (bought_row.get("Asset") or "").strip().upper(), venue="coinbase"
+                ),
             ),
             economic_leg(
                 leg_id="asset_out",
                 kind=LegKind.PRIMARY,
                 quantity=-sold_quantity,
-                instrument=symbol_claim((sold_row.get("Asset") or "").strip().upper(), venue="coinbase"),
+                instrument=symbol_claim(
+                    (sold_row.get("Asset") or "").strip().upper(), venue="coinbase"
+                ),
             ),
         ),
     )

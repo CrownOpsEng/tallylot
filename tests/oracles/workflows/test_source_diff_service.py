@@ -9,7 +9,9 @@ from tools.oracles.contracts import SourceDiffRequest
 from tools.oracles.source_diff import SourceDiffService
 
 
-def test_source_reconciliation_service_writes_candidate_and_reference_diffs(tmp_path: Path) -> None:
+def test_source_reconciliation_service_writes_candidate_and_reference_diffs(
+    tmp_path: Path,
+) -> None:
     candidate_path = tmp_path / "candidate.csv"
     reference_path = tmp_path / "reference.csv"
     header = ("Type", "Date", "Tx-ID")
@@ -32,7 +34,11 @@ def test_source_reconciliation_service_writes_candidate_and_reference_diffs(tmp_
     output_dir = tmp_path / "reconcile"
 
     response = SourceDiffService(FilesystemArtifactStore()).execute(
-        SourceDiffRequest(candidate_path=candidate_path, reference_path=reference_path, output_dir=output_dir)
+        SourceDiffRequest(
+            candidate_path=candidate_path,
+            reference_path=reference_path,
+            output_dir=output_dir,
+        )
     )
 
     summary = json.loads((output_dir / "diff_summary.json").read_text(encoding="utf-8"))
@@ -45,7 +51,9 @@ def test_source_reconciliation_service_writes_candidate_and_reference_diffs(tmp_
     assert (output_dir / "reference_only.csv").exists()
 
 
-def test_source_reconciliation_service_preserves_duplicate_row_multiplicity(tmp_path: Path) -> None:
+def test_source_reconciliation_service_preserves_duplicate_row_multiplicity(
+    tmp_path: Path,
+) -> None:
     candidate_path = tmp_path / "candidate.csv"
     reference_path = tmp_path / "reference.csv"
     output_dir = tmp_path / "reconcile"
@@ -55,10 +63,16 @@ def test_source_reconciliation_service_preserves_duplicate_row_multiplicity(tmp_
     write_rows(reference_path, header, (duplicate_row,))
 
     response = SourceDiffService(FilesystemArtifactStore()).execute(
-        SourceDiffRequest(candidate_path=candidate_path, reference_path=reference_path, output_dir=output_dir)
+        SourceDiffRequest(
+            candidate_path=candidate_path,
+            reference_path=reference_path,
+            output_dir=output_dir,
+        )
     )
 
-    candidate_only_rows = FilesystemArtifactStore().read_rows(output_dir / "candidate_only.csv")
+    candidate_only_rows = FilesystemArtifactStore().read_rows(
+        output_dir / "candidate_only.csv"
+    )
 
     assert response.candidate_only_count == 1
     assert response.reference_only_count == 0
@@ -66,22 +80,41 @@ def test_source_reconciliation_service_preserves_duplicate_row_multiplicity(tmp_
     assert candidate_only_rows == [duplicate_row]
 
 
-def test_source_reconciliation_service_handles_mismatched_candidate_and_reference_headers(tmp_path: Path) -> None:
+def test_source_reconciliation_service_handles_mismatched_candidate_and_reference_headers(
+    tmp_path: Path,
+) -> None:
     candidate_path = tmp_path / "candidate.csv"
     reference_path = tmp_path / "reference.csv"
     output_dir = tmp_path / "reconcile"
-    write_rows(candidate_path, ("Type", "Date", "Tx-ID"), ({"Type": "trade", "Date": "2024-01-01", "Tx-ID": "tx-1"},))
+    write_rows(
+        candidate_path,
+        ("Type", "Date", "Tx-ID"),
+        ({"Type": "trade", "Date": "2024-01-01", "Tx-ID": "tx-1"},),
+    )
     write_rows(
         reference_path,
         ("Type", "Trade Date", "Trade Group", "Tx Hash"),
-        ({"Type": "trade", "Trade Date": "2024-01-01", "Trade Group": "spot", "Tx Hash": "hash-1"},),
+        (
+            {
+                "Type": "trade",
+                "Trade Date": "2024-01-01",
+                "Trade Group": "spot",
+                "Tx Hash": "hash-1",
+            },
+        ),
     )
 
     response = SourceDiffService(FilesystemArtifactStore()).execute(
-        SourceDiffRequest(candidate_path=candidate_path, reference_path=reference_path, output_dir=output_dir)
+        SourceDiffRequest(
+            candidate_path=candidate_path,
+            reference_path=reference_path,
+            output_dir=output_dir,
+        )
     )
 
-    reference_only_rows = FilesystemArtifactStore().read_rows(output_dir / "reference_only.csv")
+    reference_only_rows = FilesystemArtifactStore().read_rows(
+        output_dir / "reference_only.csv"
+    )
 
     assert response.candidate_only_count == 1
     assert response.reference_only_count == 1

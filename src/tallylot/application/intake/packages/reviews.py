@@ -22,7 +22,9 @@ def apply_default_decisions(
                 "package_primary_bundle_id": package.bundle_id,
                 "package_related_bundles": "",
                 "package_cycle_status": "mixed_cycle",
-                "package_scope_status": "scope_unknown" if not package.scope_tokens else "single_scope_present",
+                "package_scope_status": "scope_unknown"
+                if not package.scope_tokens
+                else "single_scope_present",
                 "package_decision_reason": "bundle contains files from multiple export-cycle days",
             }
             continue
@@ -30,8 +32,12 @@ def apply_default_decisions(
             "package_status": "primary",
             "package_primary_bundle_id": package.bundle_id,
             "package_related_bundles": "",
-            "package_cycle_status": "single_cycle" if package.cycle_day else "cycle_unknown",
-            "package_scope_status": "scope_unknown" if not package.scope_tokens else "single_scope_present",
+            "package_cycle_status": "single_cycle"
+            if package.cycle_day
+            else "cycle_unknown",
+            "package_scope_status": "scope_unknown"
+            if not package.scope_tokens
+            else "single_scope_present",
             "package_decision_reason": "kept primary package",
         }
     return mixed_cycle_packages
@@ -41,7 +47,11 @@ def apply_overlap_review_decisions(
     ordered: list[BundlePackage],
     decisions: dict[tuple[str, str, str, str], dict[str, str]],
 ) -> None:
-    unresolved = [package for package in ordered if decisions[package_key(package)]["package_status"] == "primary"]
+    unresolved = [
+        package
+        for package in ordered
+        if decisions[package_key(package)]["package_status"] == "primary"
+    ]
     for index, left in enumerate(unresolved):
         if left.mixed_cycle:
             continue
@@ -64,12 +74,16 @@ def set_overlap_decision(
             "package_status": "overlap_partial_review",
             "package_primary_bundle_id": package.bundle_id,
             "package_related_bundles": related.bundle_id,
-            "package_cycle_status": "single_cycle" if package.cycle_day else "cycle_unknown",
+            "package_cycle_status": "single_cycle"
+            if package.cycle_day
+            else "cycle_unknown",
             "package_scope_status": resolved_scope_status,
             "package_decision_reason": overlap_reason(resolved_scope_status),
         }
         return
-    current["package_related_bundles"] = merge_related_bundles(current["package_related_bundles"], related.bundle_id)
+    current["package_related_bundles"] = merge_related_bundles(
+        current["package_related_bundles"], related.bundle_id
+    )
 
 
 def merge_related_bundles(existing: str, bundle_id: str) -> str:

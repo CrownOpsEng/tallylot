@@ -21,7 +21,10 @@ class DecimalPrecisionExpectation:
             raise ValueError(
                 "decimal precision expectation requires exactly one of minimum_fraction_digits or exact_fraction_digits"
             )
-        if self.minimum_fraction_digits is not None and self.minimum_fraction_digits < 0:
+        if (
+            self.minimum_fraction_digits is not None
+            and self.minimum_fraction_digits < 0
+        ):
             raise ValueError("minimum_fraction_digits must be non-negative")
         if self.exact_fraction_digits is not None and self.exact_fraction_digits < 0:
             raise ValueError("exact_fraction_digits must be non-negative")

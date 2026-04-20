@@ -6,9 +6,37 @@ from tallylot.ports.source_profiles import FileInventoryEntry
 
 SPOT_HEADER = ("Time", "Pair", "Side", "Price", "Executed", "Amount", "Fee")
 DEPOSIT_HEADER = ("Time", "Coin", "Network", "Amount", "Address", "TXID", "Status")
-WITHDRAW_HEADER = ("Time", "Coin", "Network", "Amount", "Fee", "Address", "TXID", "Status")
-TRANSACTION_HEADER = ("User ID", "Time", "Account", "Operation", "Coin", "Change", "Remark")
-CONVERT_HEADER = ("Time", "Wallet", "Pair", "Type", "Sell", "Buy", "Price", "Inverse Price", "Date Updated", "Status")
+WITHDRAW_HEADER = (
+    "Time",
+    "Coin",
+    "Network",
+    "Amount",
+    "Fee",
+    "Address",
+    "TXID",
+    "Status",
+)
+TRANSACTION_HEADER = (
+    "User ID",
+    "Time",
+    "Account",
+    "Operation",
+    "Coin",
+    "Change",
+    "Remark",
+)
+CONVERT_HEADER = (
+    "Time",
+    "Wallet",
+    "Pair",
+    "Type",
+    "Sell",
+    "Buy",
+    "Price",
+    "Inverse Price",
+    "Date Updated",
+    "Status",
+)
 C2C_HEADER = (
     "Order Number",
     "Created Time",
@@ -33,7 +61,9 @@ KNOWN_HEADERS = frozenset(
 )
 
 
-def match_binance_inventory(source: str, inventory: tuple[FileInventoryEntry, ...]) -> int:
+def match_binance_inventory(
+    source: str, inventory: tuple[FileInventoryEntry, ...]
+) -> int:
     """Return the adapter score for a source label and profiled inventory."""
     if "binance" in source.lower():
         return 100

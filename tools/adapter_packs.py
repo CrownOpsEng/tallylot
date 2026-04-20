@@ -42,7 +42,9 @@ def _load_adapter_packs(
     pack_root: Path | None = None,
     capability: str | None = None,
 ) -> tuple[AdapterPack, ...]:
-    resolved_pack_root = adapter_packs_root() if pack_root is None else pack_root.resolve()
+    resolved_pack_root = (
+        adapter_packs_root() if pack_root is None else pack_root.resolve()
+    )
     packs: list[AdapterPack] = []
     for manifest in sorted(resolved_pack_root.glob("*/*/pack.json")):
         pack = _load_adapter_pack(manifest)
@@ -75,16 +77,24 @@ def _load_adapter_pack(manifest_path: Path) -> AdapterPack:
     raw_dir = root / "raw"
     expected_dir = root / "expected"
     if not raw_dir.is_dir():
-        raise ValueError(f"adapter pack is missing required raw/ directory: {manifest_path}")
+        raise ValueError(
+            f"adapter pack is missing required raw/ directory: {manifest_path}"
+        )
     if not expected_dir.is_dir():
-        raise ValueError(f"adapter pack is missing required expected/ directory: {manifest_path}")
+        raise ValueError(
+            f"adapter pack is missing required expected/ directory: {manifest_path}"
+        )
     adapter = payload.get("adapter", root.parent.name)
     source = payload.get("source")
     if not isinstance(source, str) or not source.strip():
-        raise ValueError(f"adapter pack manifest is missing a valid source: {manifest_path}")
+        raise ValueError(
+            f"adapter pack manifest is missing a valid source: {manifest_path}"
+        )
     expected_adapter = payload.get("expected_adapter", adapter)
     if not isinstance(expected_adapter, str) or not str(expected_adapter).strip():
-        raise ValueError(f"adapter pack manifest is missing a valid expected_adapter: {manifest_path}")
+        raise ValueError(
+            f"adapter pack manifest is missing a valid expected_adapter: {manifest_path}"
+        )
     return AdapterPack(
         adapter=str(adapter),
         name=root.name,
@@ -92,7 +102,9 @@ def _load_adapter_pack(manifest_path: Path) -> AdapterPack:
         source=source.strip(),
         capabilities=_capabilities_for_payload(payload),
         expected_adapter=str(expected_adapter),
-        expected_timezone_status=_payload_str(payload, "expected_timezone_status", "passed"),
+        expected_timezone_status=_payload_str(
+            payload, "expected_timezone_status", "passed"
+        ),
         expected_normalization_status=_payload_str(
             payload,
             "expected_normalization_status",
@@ -135,5 +147,7 @@ def _optional_payload_str(payload: dict[str, object], key: str) -> str | None:
 def _manifest_payload(manifest_path: Path) -> dict[str, object]:
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise ValueError(f"adapter pack manifest must be a JSON object: {manifest_path}")
+        raise ValueError(
+            f"adapter pack manifest must be a JSON object: {manifest_path}"
+        )
     return cast(dict[str, object], payload)

@@ -6,7 +6,13 @@ from pathlib import Path
 
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.domain.temporal import TemporalPrecision
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, LegKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    LegKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 
 
@@ -42,7 +48,9 @@ def test_wealthsimple_fixture_exercises_supported_and_unsupported_rows() -> None
     assert "Staking/REWARD" in result.issues[0].message
 
 
-def test_wealthsimple_adapter_uses_broker_activity_family_without_filename_dependency() -> None:
+def test_wealthsimple_adapter_uses_broker_activity_family_without_filename_dependency() -> (
+    None
+):
     raw_dir = fixture_raw_dir("wealthsimple", "broker_trade")
 
     profile, adapter = profile_and_adapter("Future Broker", raw_dir)
@@ -102,7 +110,9 @@ def test_wealthsimple_adapter_ignores_unrecognized_csv_files(tmp_path: Path) -> 
     assert not result.issues
 
 
-def test_wealthsimple_adapter_normalizes_sell_rows_with_negative_source_quantity(tmp_path: Path) -> None:
+def test_wealthsimple_adapter_normalizes_sell_rows_with_negative_source_quantity(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path
     (raw_dir / "activities-export.csv").write_text(
         ",".join(

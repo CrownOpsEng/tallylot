@@ -15,7 +15,9 @@ def resolve_archive_member(
 ) -> ResolvedArchiveMember | None:
     member_path = sanitize_archive_member_path(member.filename)
     member_relative_path = (
-        f"{context.archive_relative_path}::{member_path}" if member_path is not None else context.archive_relative_path
+        f"{context.archive_relative_path}::{member_path}"
+        if member_path is not None
+        else context.archive_relative_path
     )
     if member_path is None:
         context.state.add_issue(

@@ -9,7 +9,17 @@ from tallylot.domain.value_objects import parse_decimal
 
 
 def split_pair(pair: str) -> tuple[str, str]:
-    quote_candidates = ("USDT", "USDC", "BUSD", "BTC", "ETH", "BNB", "EUR", "USD", "CAD")
+    quote_candidates = (
+        "USDT",
+        "USDC",
+        "BUSD",
+        "BTC",
+        "ETH",
+        "BNB",
+        "EUR",
+        "USD",
+        "CAD",
+    )
     for quote in quote_candidates:
         if pair.endswith(quote) and len(pair) > len(quote):
             return pair[: -len(quote)], quote

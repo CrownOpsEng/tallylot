@@ -8,13 +8,21 @@ from pathlib import PurePosixPath
 
 from .models import BundlePackage, PlannedPackageItem
 
-COMPACT_TIMESTAMP_14 = re.compile(r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)")
+COMPACT_TIMESTAMP_14 = re.compile(
+    r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)"
+)
 COMPACT_TIMESTAMP_12 = re.compile(r"(?<!\d)(20\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?!\d)")
 DASHED_DATE = re.compile(r"(?<!\d)(20\d{2})[-_](\d{2})[-_](\d{2})(?!\d)")
 
 
-def material_indexes(items: list[PlannedPackageItem], indexes: list[int]) -> tuple[int, ...]:
-    content_indexes = [index for index in indexes if not items[index].bundle_relative_path.startswith("archive/")]
+def material_indexes(
+    items: list[PlannedPackageItem], indexes: list[int]
+) -> tuple[int, ...]:
+    content_indexes = [
+        index
+        for index in indexes
+        if not items[index].bundle_relative_path.startswith("archive/")
+    ]
     return tuple(content_indexes or indexes)
 
 
@@ -30,7 +38,9 @@ def _extract_datetimes(text: str) -> list[datetime]:
     values: list[datetime] = []
     for match in COMPACT_TIMESTAMP_14.finditer(text):
         try:
-            values.append(datetime.strptime(match.group(0), "%Y%m%d%H%M%S").replace(tzinfo=UTC))
+            values.append(
+                datetime.strptime(match.group(0), "%Y%m%d%H%M%S").replace(tzinfo=UTC)
+            )
         except ValueError:
             continue
     for match in COMPACT_TIMESTAMP_12.finditer(text):
@@ -43,7 +53,11 @@ def _extract_datetimes(text: str) -> list[datetime]:
             continue
     for match in DASHED_DATE.finditer(text):
         try:
-            values.append(datetime.strptime(match.group(0).replace("_", "-"), "%Y-%m-%d").replace(tzinfo=UTC))
+            values.append(
+                datetime.strptime(match.group(0).replace("_", "-"), "%Y-%m-%d").replace(
+                    tzinfo=UTC
+                )
+            )
         except ValueError:
             continue
     return values
@@ -51,14 +65,23 @@ def _extract_datetimes(text: str) -> list[datetime]:
 
 def row_marker(item: PlannedPackageItem) -> datetime | None:
     markers: list[datetime] = []
-    for field in (item.relative_path, item.archive_source_path, item.path, item.bundle_id):
+    for field in (
+        item.relative_path,
+        item.archive_source_path,
+        item.path,
+        item.bundle_id,
+    ):
         if field:
             markers.extend(_extract_datetimes(field))
     return max(markers) if markers else None
 
 
 def package_sort_key(package: BundlePackage) -> tuple[int, str, int, str]:
-    timestamp = int(package.latest_marker.strftime("%Y%m%d%H%M%S")) if package.latest_marker is not None else -1
+    timestamp = (
+        int(package.latest_marker.strftime("%Y%m%d%H%M%S"))
+        if package.latest_marker is not None
+        else -1
+    )
     cycle_day = package.cycle_day.isoformat() if package.cycle_day is not None else ""
     return (timestamp, cycle_day, package.material_count, package.bundle_id)
 

@@ -65,7 +65,9 @@ class InstrumentIdentityClaim:
         if not self.value.strip():
             raise ValueError("instrument identity claim value must not be blank")
         if self.precision_hint is not None and self.precision_hint < 0:
-            raise ValueError("instrument identity claim precision_hint must be non-negative")
+            raise ValueError(
+                "instrument identity claim precision_hint must be non-negative"
+            )
 
 
 def _validate_identifier_scheme(value: str) -> None:

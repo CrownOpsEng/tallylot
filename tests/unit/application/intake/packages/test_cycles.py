@@ -33,7 +33,11 @@ def test_apply_package_rules_keeps_different_cycle_exports_separate() -> None:
     ]
 
     resolved, summary = apply_package_rules(items)
-    statuses = {item.bundle_id: item.package_status for item in resolved if item.bundle_relative_path == "borrow.csv"}
+    statuses = {
+        item.bundle_id: item.package_status
+        for item in resolved
+        if item.bundle_relative_path == "borrow.csv"
+    }
 
     assert summary.overlap_packages == 2
     assert statuses["202203301830-export"] == "overlap_partial_review"
@@ -63,7 +67,9 @@ def test_apply_package_rules_flags_mixed_cycle_bundles() -> None:
     assert resolved[1].package_cycle_status == "mixed_cycle"
 
 
-def test_apply_package_rules_does_not_treat_single_range_filename_as_mixed_cycle() -> None:
+def test_apply_package_rules_does_not_treat_single_range_filename_as_mixed_cycle() -> (
+    None
+):
     items = [
         package_item(
             bundle_id="range-bundle",
@@ -79,7 +85,9 @@ def test_apply_package_rules_does_not_treat_single_range_filename_as_mixed_cycle
     assert resolved[0].package_cycle_status == "single_cycle"
 
 
-def test_apply_package_rules_keeps_same_end_day_range_files_in_single_cycle_bundle() -> None:
+def test_apply_package_rules_keeps_same_end_day_range_files_in_single_cycle_bundle() -> (
+    None
+):
     items = [
         package_item(
             bundle_id="range-bundle",
@@ -123,7 +131,9 @@ def test_apply_package_rules_flags_bundle_when_range_end_days_disagree() -> None
     assert resolved[0].package_status == "mixed_cycle_review"
 
 
-def test_apply_package_rules_does_not_merge_single_cycle_with_mixed_cycle_bundle() -> None:
+def test_apply_package_rules_does_not_merge_single_cycle_with_mixed_cycle_bundle() -> (
+    None
+):
     items = [
         package_item(
             bundle_id="mixed",
@@ -152,7 +162,11 @@ def test_apply_package_rules_does_not_merge_single_cycle_with_mixed_cycle_bundle
     ]
 
     resolved, _ = apply_package_rules(items)
-    by_bundle = {item.bundle_id: item for item in resolved if item.bundle_relative_path == "borrow.csv"}
+    by_bundle = {
+        item.bundle_id: item
+        for item in resolved
+        if item.bundle_relative_path == "borrow.csv"
+    }
 
     assert by_bundle["mixed"].package_status == "mixed_cycle_review"
     assert by_bundle["single"].package_status == "primary"

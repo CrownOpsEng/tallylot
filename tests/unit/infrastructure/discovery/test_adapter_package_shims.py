@@ -19,8 +19,12 @@ def _adapter_package_roots() -> tuple[Path, ...]:
 def test_adapter_package_init_files_are_docstring_only() -> None:
     for package_root in _adapter_package_roots():
         package_init = package_root / "__init__.py"
-        module = ast.parse(package_init.read_text(encoding="utf-8"), filename=str(package_init))
+        module = ast.parse(
+            package_init.read_text(encoding="utf-8"), filename=str(package_init)
+        )
         assert ast.get_docstring(module) is not None, package_init
 
-        executable_statements = module.body[1:] if ast.get_docstring(module) is not None else module.body
+        executable_statements = (
+            module.body[1:] if ast.get_docstring(module) is not None else module.body
+        )
         assert not executable_statements, package_init

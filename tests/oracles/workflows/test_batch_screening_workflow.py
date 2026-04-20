@@ -58,13 +58,22 @@ def test_batch_screening_writes_overlap_artifacts_for_review_required_candidates
         )
     )
 
-    overlap_summary = json.loads((output_dir / "overlap_check" / "overlap_summary.json").read_text(encoding="utf-8"))
-    overlap_rows = artifacts.read_rows(output_dir / "overlap_check" / "overlap_flagged_rows.csv")
+    overlap_summary = json.loads(
+        (output_dir / "overlap_check" / "overlap_summary.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    overlap_rows = artifacts.read_rows(
+        output_dir / "overlap_check" / "overlap_flagged_rows.csv"
+    )
 
     assert response.passed is False
     assert response.overlap_rows_flagged == 1
     assert overlap_summary["status"] == "review_required"
-    assert overlap_rows[0]["reasons"] == "on_or_before_cutoff;baseline_tx_id_match;baseline_economic_signature_match"
+    assert (
+        overlap_rows[0]["reasons"]
+        == "on_or_before_cutoff;baseline_tx_id_match;baseline_economic_signature_match"
+    )
 
 
 def test_batch_screening_surfaces_missing_required_candidate_fields(

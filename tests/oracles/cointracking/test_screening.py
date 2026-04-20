@@ -32,13 +32,31 @@ def test_find_trade_table_rejects_ambiguous_file(tmp_path: Path) -> None:
 
 
 def test_parse_overlap_datetime_accepts_both_supported_formats() -> None:
-    assert parse_overlap_datetime("2023-08-05 08:34:04").strftime("%Y-%m-%d %H:%M:%S") == "2023-08-05 08:34:04"
-    assert parse_overlap_datetime("05.08.2023 08:34:04").strftime("%Y-%m-%d %H:%M:%S") == "2023-08-05 08:34:04"
+    assert (
+        parse_overlap_datetime("2023-08-05 08:34:04").strftime("%Y-%m-%d %H:%M:%S")
+        == "2023-08-05 08:34:04"
+    )
+    assert (
+        parse_overlap_datetime("05.08.2023 08:34:04").strftime("%Y-%m-%d %H:%M:%S")
+        == "2023-08-05 08:34:04"
+    )
 
 
 def test_build_cointracking_column_map_accepts_alternate_headers() -> None:
     columns = _build_cointracking_column_map(
-        ["Type", "Buy", "Cur.", "Sell", "Cur.", "Fee", "Cur.", "Exchange", "Trade Group", "Trade Date", "Trade ID"]
+        [
+            "Type",
+            "Buy",
+            "Cur.",
+            "Sell",
+            "Cur.",
+            "Fee",
+            "Cur.",
+            "Exchange",
+            "Trade Group",
+            "Trade Date",
+            "Trade ID",
+        ]
     )
 
     assert columns["group"] == 8
@@ -46,7 +64,9 @@ def test_build_cointracking_column_map_accepts_alternate_headers() -> None:
     assert columns["tx_id"] == 10
 
 
-def test_candidate_validation_accepts_legacy_duplicate_currency_headers(tmp_path: Path) -> None:
+def test_candidate_validation_accepts_legacy_duplicate_currency_headers(
+    tmp_path: Path,
+) -> None:
     candidate_path = tmp_path / "candidate.csv"
     candidate_path.write_text(
         "Type,Buy,Cur.,Sell,Cur.,Fee,Cur.,Exchange,Group,Comment,Date,Tx-ID\n"
@@ -134,7 +154,10 @@ def test_summarize_candidate_overlap_flags_blank_and_unparseable_dates(
 
     assert result.summary["rows_with_blank_date"] == 1
     assert result.summary["rows_with_unparseable_date"] == 1
-    assert [row["reasons"] for row in result.flagged_rows] == ["blank_date", "unparseable_date"]
+    assert [row["reasons"] for row in result.flagged_rows] == [
+        "blank_date",
+        "unparseable_date",
+    ]
 
 
 def test_write_overlap_artifacts_writes_summary_and_csv(tmp_path: Path) -> None:
@@ -159,9 +182,13 @@ def test_write_overlap_artifacts_writes_summary_and_csv(tmp_path: Path) -> None:
     )
     output_dir = tmp_path / "overlap"
 
-    write_overlap_artifacts(output_dir, result, write_json=write_json, write_rows=write_rows)
+    write_overlap_artifacts(
+        output_dir, result, write_json=write_json, write_rows=write_rows
+    )
 
-    summary = json.loads((output_dir / "overlap_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (output_dir / "overlap_summary.json").read_text(encoding="utf-8")
+    )
 
     assert summary["status"] == "review_required"
     assert (output_dir / "overlap_flagged_rows.csv").exists()

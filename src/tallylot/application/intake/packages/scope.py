@@ -19,9 +19,17 @@ def scope_status(primary: BundlePackage, candidate: BundlePackage) -> str:
     primary_material_scope = _material_scope_tokens(primary.scope_tokens)
     candidate_material_scope = _material_scope_tokens(candidate.scope_tokens)
     if primary_material_scope and candidate_material_scope:
-        return "matched_scope" if primary_material_scope & candidate_material_scope else "incompatible_scope"
+        return (
+            "matched_scope"
+            if primary_material_scope & candidate_material_scope
+            else "incompatible_scope"
+        )
     if primary.scope_tokens and candidate.scope_tokens:
-        return "matched_scope" if primary.scope_tokens & candidate.scope_tokens else "incompatible_scope"
+        return (
+            "matched_scope"
+            if primary.scope_tokens & candidate.scope_tokens
+            else "incompatible_scope"
+        )
     if primary.scope_tokens or candidate.scope_tokens:
         return "partial_scope"
     return "scope_unknown"

@@ -29,28 +29,50 @@ from tallylot.ports.source_profiles import SourceProfile
 from .timestamps import parse_retail_timestamp
 
 SUPPORTED_RETAIL_TRANSACTION_TYPES = frozenset(
-    {"buy", "sell", "reward income", "receive", "deposit", "send", "withdrawal", "withdraw"}
+    {
+        "buy",
+        "sell",
+        "reward income",
+        "receive",
+        "deposit",
+        "send",
+        "withdrawal",
+        "withdraw",
+    }
 )
 
 
-def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, str]) -> EconomicActivityDraft:
+def normalize_retail_row(
+    profile: SourceProfile, raw_file: str, row: dict[str, str]
+) -> EconomicActivityDraft:
     row_id = (row.get("ID") or "").strip()
     tx_type = (row.get("Transaction Type") or "").strip().lower()
     asset = (row.get("Asset") or "").strip().upper()
     quantity = parse_decimal((row.get("Quantity Transacted") or "").strip())
     price_currency = (row.get("Price Currency") or "").strip().upper()
     subtotal_amount = _money_decimal(row.get("Subtotal", ""))
-    total_amount = _money_decimal(row.get("Total (inclusive of fees and/or spread)", ""))
+    total_amount = _money_decimal(
+        row.get("Total (inclusive of fees and/or spread)", "")
+    )
     fee_amount = _money_decimal(row.get("Fees and/or Spread", ""))
-    description = coinbase_description(tx_type, row.get("Notes", ""), asset, quantity, total_amount)
+    description = coinbase_description(
+        tx_type, row.get("Notes", ""), asset, quantity, total_amount
+    )
     timestamp = parse_retail_timestamp((row.get("Timestamp") or "").strip())
     transaction_id = f"coinbase-retail-{row_id}"
     if quantity is None and tx_type not in SUPPORTED_RETAIL_TRANSACTION_TYPES:
-        raise ValueError(f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}")
+        raise ValueError(
+            f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}"
+        )
     if (
         tx_type == "buy"
         and quantity is not None
-        and (cash_amount := _retail_cash_amount(tx_type, subtotal_amount, total_amount, fee_amount)) is not None
+        and (
+            cash_amount := _retail_cash_amount(
+                tx_type, subtotal_amount, total_amount, fee_amount
+            )
+        )
+        is not None
     ):
         return _draft(
             profile=profile,
@@ -89,7 +111,12 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
     if (
         tx_type == "sell"
         and quantity is not None
-        and (cash_amount := _retail_cash_amount(tx_type, subtotal_amount, total_amount, fee_amount)) is not None
+        and (
+            cash_amount := _retail_cash_amount(
+                tx_type, subtotal_amount, total_amount, fee_amount
+            )
+        )
+        is not None
     ):
         return _draft(
             profile=profile,
@@ -194,7 +221,9 @@ def normalize_retail_row(profile: SourceProfile, raw_file: str, row: dict[str, s
                 ),
             ),
         )
-    raise ValueError(f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}")
+    raise ValueError(
+        f"Unsupported Coinbase retail transaction type: {row.get('Transaction Type', '').strip()}"
+    )
 
 
 def _draft(
@@ -259,7 +288,9 @@ def _retail_cash_amount(
         return None
     if fee_amount is None or fee_amount <= Decimal("0"):
         return total_amount
-    cash_amount = total_amount - fee_amount if tx_type == "buy" else total_amount + fee_amount
+    cash_amount = (
+        total_amount - fee_amount if tx_type == "buy" else total_amount + fee_amount
+    )
     return cash_amount if cash_amount > Decimal("0") else None
 
 
@@ -302,7 +333,11 @@ def coinbase_description(
 ) -> str:
     note = notes.strip()
     if note:
-        return note.replace("  ", " ").replace(" for ", " for $", 1) if tx_type == "buy" and "$" not in note else note
+        return (
+            note.replace("  ", " ").replace(" for ", " for $", 1)
+            if tx_type == "buy" and "$" not in note
+            else note
+        )
     if tx_type == "buy" and quantity is not None and quote_amount is not None:
         return f"Bought {quantity} {asset} for {quote_amount}"
     return f"Coinbase {tx_type or 'transaction'}"

@@ -27,7 +27,9 @@ from tallylot.application.intake.archive.support import (
 )
 
 
-def test_archive_support_helpers_normalize_paths_and_persist_extracted_payloads(tmp_path: Path) -> None:
+def test_archive_support_helpers_normalize_paths_and_persist_extracted_payloads(
+    tmp_path: Path,
+) -> None:
     payload = b"fixture-data"
     file_path = tmp_path / "wallet.csv"
     file_path.write_bytes(payload)
@@ -35,7 +37,9 @@ def test_archive_support_helpers_normalize_paths_and_persist_extracted_payloads(
     extracted_root.mkdir()
 
     scanned = filesystem_file(file_path, relative_path="incoming/wallet.csv")
-    extracted = write_extracted_file(extracted_root, relative_path="archive.zip::wallet.csv", payload=payload)
+    extracted = write_extracted_file(
+        extracted_root, relative_path="archive.zip::wallet.csv", payload=payload
+    )
     extracted_again = write_extracted_file(
         extracted_root,
         relative_path="archive.zip::wallet.csv",
@@ -60,10 +64,15 @@ def test_sha256sum_path_hashes_file_contents(tmp_path: Path) -> None:
     path = tmp_path / "fixture.txt"
     path.write_text("tallylot\n", encoding="utf-8")
 
-    assert _sha256sum_path(path) == "16efcbae8e8a960455cc5c2e1b24382e77ac932460fda23fdc1c0e8688dbee9e"
+    assert (
+        _sha256sum_path(path)
+        == "16efcbae8e8a960455cc5c2e1b24382e77ac932460fda23fdc1c0e8688dbee9e"
+    )
 
 
-def test_resolve_archive_member_reports_unsafe_and_duplicate_paths(tmp_path: Path) -> None:
+def test_resolve_archive_member_reports_unsafe_and_duplicate_paths(
+    tmp_path: Path,
+) -> None:
     context = _context(tmp_path)
     unsafe = ZipInfo("../escape.csv")
     duplicate = ZipInfo("safe.csv")
@@ -86,7 +95,9 @@ def test_handle_archive_member_limits_emits_expected_issues(tmp_path: Path) -> N
     resolved = _resolved_member(context)
 
     context.state.budget.member_count = context.settings.max_archive_member_count
-    assert handle_archive_member_limits(ZipInfo("limit.csv"), context, resolved) is False
+    assert (
+        handle_archive_member_limits(ZipInfo("limit.csv"), context, resolved) is False
+    )
 
     encrypted = ZipInfo("encrypted.csv")
     encrypted.flag_bits = 0x1
@@ -94,7 +105,9 @@ def test_handle_archive_member_limits_emits_expected_issues(tmp_path: Path) -> N
 
     unsupported = ZipInfo("unsupported.csv")
     unsupported.compress_type = 999
-    assert handle_archive_member_limits(unsupported, _context(tmp_path), resolved) is True
+    assert (
+        handle_archive_member_limits(unsupported, _context(tmp_path), resolved) is True
+    )
 
     symlink = ZipInfo("symlink.csv")
     symlink.external_attr = 0o120000 << 16
@@ -105,7 +118,9 @@ def test_handle_archive_member_limits_emits_expected_issues(tmp_path: Path) -> N
     assert handle_archive_member_limits(too_large, _context(tmp_path), resolved) is True
 
 
-def test_record_archive_member_requires_extracted_root_and_records_payload(tmp_path: Path) -> None:
+def test_record_archive_member_requires_extracted_root_and_records_payload(
+    tmp_path: Path,
+) -> None:
     context = _context(tmp_path)
     assert context.state.extracted_root is not None
     context.state.extracted_root.mkdir()
@@ -144,7 +159,9 @@ def test_record_archive_member_requires_extracted_root_and_records_payload(tmp_p
     except ValueError as error:
         assert "extracted_root" in str(error)
     else:
-        raise AssertionError("expected record_archive_member to reject missing extracted_root")
+        raise AssertionError(
+            "expected record_archive_member to reject missing extracted_root"
+        )
 
 
 def test_add_unsupported_archive_issue_records_zip_only_warning(tmp_path: Path) -> None:

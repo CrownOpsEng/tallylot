@@ -23,28 +23,36 @@ def apply_merge_decisions(
         if primary_key in consumed:
             continue
         component_hashes = Counter(primary.material_hashes)
-        component_logical_hashes = {key: Counter(value) for key, value in primary.logical_hashes.items()}
+        component_logical_hashes = {
+            key: Counter(value) for key, value in primary.logical_hashes.items()
+        }
         merged_members: list[BundlePackage] = []
         consumed.add(primary_key)
         for candidate in remaining:
             candidate_key = package_key(candidate)
             if candidate_key in consumed or candidate.bundle_id == primary.bundle_id:
                 continue
-            mergeable, superseded_indexes, kept_hashes, kept_logical_hashes = evaluate_merge(
-                primary,
-                candidate,
-                component_hashes,
-                component_logical_hashes,
-                items,
+            mergeable, superseded_indexes, kept_hashes, kept_logical_hashes = (
+                evaluate_merge(
+                    primary,
+                    candidate,
+                    component_hashes,
+                    component_logical_hashes,
+                    items,
+                )
             )
             if not mergeable:
                 continue
             merged_members.append(candidate)
             consumed.add(candidate_key)
-            apply_merge_member_row_actions(row_actions, candidate, superseded_indexes, primary.bundle_id)
+            apply_merge_member_row_actions(
+                row_actions, candidate, superseded_indexes, primary.bundle_id
+            )
             component_hashes.update(kept_hashes)
             for candidate_logical_key, counter in kept_logical_hashes.items():
-                component_logical_hashes.setdefault(candidate_logical_key, Counter()).update(counter)
+                component_logical_hashes.setdefault(
+                    candidate_logical_key, Counter()
+                ).update(counter)
 
         if not merged_members:
             continue
@@ -52,9 +60,15 @@ def apply_merge_decisions(
         decisions[primary_key] = {
             "package_status": "merge_primary",
             "package_primary_bundle_id": primary.bundle_id,
-            "package_related_bundles": "; ".join(sorted(member.bundle_id for member in merged_members)),
-            "package_cycle_status": "single_cycle" if primary.cycle_day else "cycle_unknown",
-            "package_scope_status": "matched_scope" if primary.scope_tokens else "scope_unknown",
+            "package_related_bundles": "; ".join(
+                sorted(member.bundle_id for member in merged_members)
+            ),
+            "package_cycle_status": "single_cycle"
+            if primary.cycle_day
+            else "cycle_unknown",
+            "package_scope_status": "matched_scope"
+            if primary.scope_tokens
+            else "scope_unknown",
             "package_decision_reason": "same-cycle additive package merge",
         }
         for member in merged_members:
@@ -63,7 +77,9 @@ def apply_merge_decisions(
                 "package_status": "merge_member",
                 "package_primary_bundle_id": primary.bundle_id,
                 "package_related_bundles": primary.bundle_id,
-                "package_cycle_status": "single_cycle" if member.cycle_day else "cycle_unknown",
+                "package_cycle_status": "single_cycle"
+                if member.cycle_day
+                else "cycle_unknown",
                 "package_scope_status": scope_status(member, primary),
                 "package_decision_reason": "same-cycle additive package merge member",
             }
@@ -91,7 +107,11 @@ def evaluate_merge(
     for candidate_logical_key, candidate_hashes in candidate.logical_hashes.items():
         existing_hashes = component_logical_hashes.get(candidate_logical_key, Counter())
         extra_hashes = Counter(
-            {hash_value: count for hash_value, count in candidate_hashes.items() if hash_value not in existing_hashes}
+            {
+                hash_value: count
+                for hash_value, count in candidate_hashes.items()
+                if hash_value not in existing_hashes
+            }
         )
         if extra_hashes and existing_hashes and not can_supersede(primary, candidate):
             return False, set(), Counter(), {}

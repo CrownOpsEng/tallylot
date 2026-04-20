@@ -17,7 +17,12 @@ from .cli import (
     validate_nav_order_uniqueness,
     write_scaffold,
 )
-from .links import bare_uv_examples, repo_markdown_paths, validate_markdown_links, validate_uv_examples
+from .links import (
+    bare_uv_examples,
+    repo_markdown_paths,
+    validate_markdown_links,
+    validate_uv_examples,
+)
 from .metadata import (
     Document,
     parse_frontmatter,

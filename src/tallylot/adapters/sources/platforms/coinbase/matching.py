@@ -30,7 +30,10 @@ def match_coinbase_inventory(
 ) -> int:
     if "coinbase" in source.lower():
         return 100
-    if any(item.relative_path.endswith(".csv") and item.header == RETAIL_HEADER for item in inventory):
+    if any(
+        item.relative_path.endswith(".csv") and item.header == RETAIL_HEADER
+        for item in inventory
+    ):
         return 100
     if any(header_for_path(path) == RETAIL_HEADER for path in raw_dir.rglob("*.csv")):
         return 100

@@ -64,7 +64,9 @@ def _validate_optional_non_negative_count(value: int | None, *, label: str) -> N
     validate_non_negative_count(value, label=label)
 
 
-def _validate_optional_within_max(value: int | None, *, label: str, max_count: int) -> None:
+def _validate_optional_within_max(
+    value: int | None, *, label: str, max_count: int
+) -> None:
     if value is None:
         return
     if value > max_count:
@@ -85,14 +87,30 @@ def _validate_optional_min_max(
 
 
 def validate_leg_shape_counts(limit: _LegShapeLimitLike) -> None:
-    _validate_optional_non_negative_count(limit.min_positive_count, label="min_positive_count")
-    _validate_optional_non_negative_count(limit.max_positive_count, label="max_positive_count")
-    _validate_optional_non_negative_count(limit.min_negative_count, label="min_negative_count")
-    _validate_optional_non_negative_count(limit.max_negative_count, label="max_negative_count")
-    _validate_optional_within_max(limit.min_positive_count, label="min_positive_count", max_count=limit.max_count)
-    _validate_optional_within_max(limit.max_positive_count, label="max_positive_count", max_count=limit.max_count)
-    _validate_optional_within_max(limit.min_negative_count, label="min_negative_count", max_count=limit.max_count)
-    _validate_optional_within_max(limit.max_negative_count, label="max_negative_count", max_count=limit.max_count)
+    _validate_optional_non_negative_count(
+        limit.min_positive_count, label="min_positive_count"
+    )
+    _validate_optional_non_negative_count(
+        limit.max_positive_count, label="max_positive_count"
+    )
+    _validate_optional_non_negative_count(
+        limit.min_negative_count, label="min_negative_count"
+    )
+    _validate_optional_non_negative_count(
+        limit.max_negative_count, label="max_negative_count"
+    )
+    _validate_optional_within_max(
+        limit.min_positive_count, label="min_positive_count", max_count=limit.max_count
+    )
+    _validate_optional_within_max(
+        limit.max_positive_count, label="max_positive_count", max_count=limit.max_count
+    )
+    _validate_optional_within_max(
+        limit.min_negative_count, label="min_negative_count", max_count=limit.max_count
+    )
+    _validate_optional_within_max(
+        limit.max_negative_count, label="max_negative_count", max_count=limit.max_count
+    )
     _validate_optional_min_max(
         limit.min_positive_count,
         limit.max_positive_count,
@@ -108,7 +126,9 @@ def validate_leg_shape_counts(limit: _LegShapeLimitLike) -> None:
     if limit.min_positive_count is None or limit.min_negative_count is None:
         return
     if limit.min_positive_count + limit.min_negative_count > limit.max_count:
-        raise ValueError("leg shape limit signed minimum counts must not exceed max_count")
+        raise ValueError(
+            "leg shape limit signed minimum counts must not exceed max_count"
+        )
 
 
 def fact_leg_counts(
@@ -141,7 +161,9 @@ def fact_leg_counts(
 def _validate_policy_kind_allowed(policy: _FactLegPolicyLike, kind_value: str) -> None:
     if any(limit.kind.value == kind_value for limit in policy.limits):
         return
-    raise ValueError(f"transaction fact leg kind {kind_value} is not allowed by declared leg policy")
+    raise ValueError(
+        f"transaction fact leg kind {kind_value} is not allowed by declared leg policy"
+    )
 
 
 def validate_fact_counts(
@@ -152,25 +174,43 @@ def validate_fact_counts(
     for limit in policy.limits:
         kind_key = limit.kind.value
         _validate_fact_total_count(limit, counts_by_kind.get(kind_key, 0))
-        _validate_fact_signed_count(limit, "positive", signed_counts.get((kind_key, "positive"), 0))
-        _validate_fact_signed_count(limit, "negative", signed_counts.get((kind_key, "negative"), 0))
+        _validate_fact_signed_count(
+            limit, "positive", signed_counts.get((kind_key, "positive"), 0)
+        )
+        _validate_fact_signed_count(
+            limit, "negative", signed_counts.get((kind_key, "negative"), 0)
+        )
 
 
 def _validate_fact_total_count(limit: _LegShapeLimitLike, total_count: int) -> None:
     if total_count < limit.min_count:
-        raise ValueError(f"transaction fact {limit.kind.value} legs fall below declared leg policy")
+        raise ValueError(
+            f"transaction fact {limit.kind.value} legs fall below declared leg policy"
+        )
     if total_count > limit.max_count:
-        raise ValueError(f"transaction fact {limit.kind.value} legs exceed declared leg policy")
+        raise ValueError(
+            f"transaction fact {limit.kind.value} legs exceed declared leg policy"
+        )
 
 
-def _validate_fact_signed_count(limit: _LegShapeLimitLike, sign: str, count: int) -> None:
-    min_count = limit.min_positive_count if sign == "positive" else limit.min_negative_count
-    max_count = limit.max_positive_count if sign == "positive" else limit.max_negative_count
+def _validate_fact_signed_count(
+    limit: _LegShapeLimitLike, sign: str, count: int
+) -> None:
+    min_count = (
+        limit.min_positive_count if sign == "positive" else limit.min_negative_count
+    )
+    max_count = (
+        limit.max_positive_count if sign == "positive" else limit.max_negative_count
+    )
     sign_label = "positive" if sign == "positive" else "negative"
     if min_count is not None and count < min_count:
-        raise ValueError(f"transaction fact {sign_label} {limit.kind.value} legs fall below declared leg policy")
+        raise ValueError(
+            f"transaction fact {sign_label} {limit.kind.value} legs fall below declared leg policy"
+        )
     if max_count is not None and count > max_count:
-        raise ValueError(f"transaction fact {sign_label} {limit.kind.value} legs exceed declared leg policy")
+        raise ValueError(
+            f"transaction fact {sign_label} {limit.kind.value} legs exceed declared leg policy"
+        )
 
 
 def validate_fact_leg_attribution(
@@ -181,4 +221,6 @@ def validate_fact_leg_attribution(
         if leg.attributed_to_leg_id is None:
             continue
         if leg.attributed_to_leg_id not in leg_ids_by_kind:
-            raise ValueError("transaction fact attributed_to_leg_id must reference one primary leg in the same fact")
+            raise ValueError(
+                "transaction fact attributed_to_leg_id must reference one primary leg in the same fact"
+            )

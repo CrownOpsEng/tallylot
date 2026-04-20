@@ -21,7 +21,9 @@ def match_candidate(candidate_path: Path, artifacts: ArtifactStorePort) -> int:
     return 100
 
 
-def candidate_validation_issues(candidate_path: Path) -> tuple[list[IssueRecord], int, list[dict[str, str]]]:
+def candidate_validation_issues(
+    candidate_path: Path,
+) -> tuple[list[IssueRecord], int, list[dict[str, str]]]:
     issues: list[IssueRecord] = []
     try:
         _, rows, columns = load_cointracking_rows(candidate_path)
@@ -43,10 +45,24 @@ def candidate_validation_issues(candidate_path: Path) -> tuple[list[IssueRecord]
         date_value = cell(row, columns["date"])
         tx_id = cell(row, columns["tx_id"])
         if not date_value:
-            issues.append(issue(candidate_path, index, "missing_date", "Candidate rows must include Date."))
+            issues.append(
+                issue(
+                    candidate_path,
+                    index,
+                    "missing_date",
+                    "Candidate rows must include Date.",
+                )
+            )
             continue
         if not tx_id:
-            issues.append(issue(candidate_path, index, "missing_tx_id", "Candidate rows must include Tx-ID."))
+            issues.append(
+                issue(
+                    candidate_path,
+                    index,
+                    "missing_tx_id",
+                    "Candidate rows must include Tx-ID.",
+                )
+            )
             continue
         try:
             parse_timestamp(date_value)
@@ -77,7 +93,9 @@ def issue(candidate_path: Path, row_ref: int, kind: str, message: str) -> IssueR
     )
 
 
-def _canonical_candidate_row(row: list[str], columns: dict[str, int | None]) -> dict[str, str]:
+def _canonical_candidate_row(
+    row: list[str], columns: dict[str, int | None]
+) -> dict[str, str]:
     return {
         header_name: cell(row, column_index)
         for header_name, column_index in zip(

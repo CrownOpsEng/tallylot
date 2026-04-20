@@ -33,7 +33,9 @@ def analyze_profile_families(
     adapters: tuple[SourceAdapter, ...],
 ) -> ProfileFamilyAnalysis:
     claims = tuple(
-        claim for adapter in adapters for claim in adapter.classify_profile_families(source, raw_dir, inventory)
+        claim
+        for adapter in adapters
+        for claim in adapter.classify_profile_families(source, raw_dir, inventory)
     )
     inventory_with_families = _apply_family_claims(inventory, claims)
     recognized_adapter_ids = tuple(sorted({str(claim.adapter_id) for claim in claims}))
@@ -42,7 +44,9 @@ def analyze_profile_families(
             inventory=inventory_with_families,
             issues=(),
             supported=True,
-            selected_adapter_id=recognized_adapter_ids[0] if recognized_adapter_ids else None,
+            selected_adapter_id=recognized_adapter_ids[0]
+            if recognized_adapter_ids
+            else None,
             recognized_adapter_ids=recognized_adapter_ids,
         )
     return ProfileFamilyAnalysis(
@@ -64,8 +68,14 @@ def analyze_profile_families(
     )
 
 
-def has_family_for_adapter(inventory: tuple[FileInventoryEntry, ...], adapter_id: str) -> bool:
-    return any(claim_adapter_id == adapter_id for entry in inventory for claim_adapter_id, _ in family_claims(entry))
+def has_family_for_adapter(
+    inventory: tuple[FileInventoryEntry, ...], adapter_id: str
+) -> bool:
+    return any(
+        claim_adapter_id == adapter_id
+        for entry in inventory
+        for claim_adapter_id, _ in family_claims(entry)
+    )
 
 
 def family_claims(entry: FileInventoryEntry) -> tuple[tuple[str, str], ...]:
@@ -78,13 +88,20 @@ def _apply_family_claims(
 ) -> tuple[FileInventoryEntry, ...]:
     claims_by_path: dict[str, set[str]] = defaultdict(set)
     for claim in claims:
-        claims_by_path[claim.relative_path].add(family_claim_token(str(claim.adapter_id), claim.family_id))
+        claims_by_path[claim.relative_path].add(
+            family_claim_token(str(claim.adapter_id), claim.family_id)
+        )
     return tuple(
-        replace(entry, family="; ".join(sorted(claims_by_path.get(entry.relative_path, ())))) for entry in inventory
+        replace(
+            entry, family="; ".join(sorted(claims_by_path.get(entry.relative_path, ())))
+        )
+        for entry in inventory
     )
 
 
-def _selected_adapter_id(recognized_adapter_ids: tuple[str, ...], claims: tuple[FileFamilyClaim, ...]) -> str:
+def _selected_adapter_id(
+    recognized_adapter_ids: tuple[str, ...], claims: tuple[FileFamilyClaim, ...]
+) -> str:
     counts = Counter(str(claim.adapter_id) for claim in claims)
     return sorted(recognized_adapter_ids, key=lambda item: (-counts[item], item))[0]
 

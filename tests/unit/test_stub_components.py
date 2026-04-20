@@ -7,7 +7,9 @@ import pytest
 from tallylot.adapters.outputs.cointracking_api import _CoinTrackingApiStubAdapter
 from tallylot.adapters.outputs.generic_http import _GenericHttpOutputStubAdapter
 from tallylot.adapters.sources.stubs.blockchain.stub import _BlockchainSourceStubAdapter
-from tallylot.adapters.sources.stubs.platform_api.stub import _PlatformApiSourceStubAdapter
+from tallylot.adapters.sources.stubs.platform_api.stub import (
+    _PlatformApiSourceStubAdapter,
+)
 from tallylot.domain.types import AdapterId, SourceId
 from tallylot.infrastructure.ai import LocalStubModelGateway, NullModelGateway
 from tallylot.infrastructure.storage.sqlite_stub import SqliteStorageStub
