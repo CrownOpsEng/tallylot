@@ -55,6 +55,7 @@ Use these pages for the detailed neighboring contracts:
 - [Bridge To Target Mapping](bridge-to-target-mapping.md)
 - [Evidence And Claim Contract](../reference/evidence-claim-contract.md)
 - [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
+- [Journal Contract](../reference/journal-contract.md)
 - [Pipeline Stage Contracts](pipeline-stage-contracts.md)
 - [Domain Ontology](domain-ontology.md)
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md)
@@ -87,6 +88,23 @@ Trust and ownership rules:
   dashboards, portfolio views, visualization datasets, or investigation
   workflows
 
+### Journal And Tax Rollout Posture
+
+- the repo lands `Journal` before `TaxInputs` so canonical journal expansion,
+  repo-owned entry checks, and backend posture stabilize before tax-specific
+  planning widens
+- `ledger_cli` is the first journal backend id, while `ledger-cli` remains the
+  first downstream validation and rendering tool only
+- the journal backend seam is intentionally replaceable, so later repo-owned
+  code or another backend may replace `ledger_cli` without redefining
+  authoritative `Journal` meaning
+- `Journal` becomes authoritative for journal-native renderers, journal
+  inspection, repo-owned entry checks, and journal-owned gaps only; it does
+  not become a required upstream product ref for tax
+- `TaxInputs` and `TaxOutputs` may inspect declared journal detail or backend
+  findings only as non-authoritative downstream detail; they do not add
+  `journal_ref`, backend file hashes, or backend-local ids to tax identity
+
 ## Source, Output, Oracle, And Persistence Boundaries
 
 ### Source Boundaries
@@ -107,6 +125,10 @@ Trust and ownership rules:
 - renderers consume downstream-owned products or approved compatibility
   views
 - renderer-specific constraints stay at the edge
+- `ledger_cli` stays a downstream journal backend that validates and renders
+  over generated `Journal` artifacts
+- journal-backend findings stay backend-local and do not redefine canonical
+  `Journal` semantics
 - CoinTracking row rules remain output-adapter concerns only
 
 ### Oracle Boundaries
@@ -233,6 +255,12 @@ Use these paths in forward-looking docs and later implementation work:
 - `working/products/reconciliation_states/<reconciliation_state_id>/reconciliation_state.json`
 - `working/products/checkpoints/<checkpoint_id>/checkpoint.json`
 - `working/products/journals/<journal_id>/journal.json`
+- `working/products/journals/<journal_id>/journal_posting_explanations.json`
+- `working/products/journals/<journal_id>/journal_entry_check_reports.json`
+- `working/products/journals/<journal_id>/backends/ledger_cli/journal.ledger`
+- `working/products/journals/<journal_id>/backends/ledger_cli/validation_findings.json`
+- `working/products/journals/<journal_id>/backends/ledger_cli/report.xml`
+  when the first backend emits a machine-readable report export
 - `working/products/tax_inputs/<tax_inputs_id>/tax_inputs.json`
 - `working/products/tax_outputs/<tax_outputs_id>/tax_outputs.json`
 - stage-owned shared assessment sidecars live beside the authoritative kernel
@@ -259,6 +287,11 @@ Rules:
   files
 - authoritative target kernels use product-owned directory stems rather than
   migration-era source or checkpoint containers
+- product-local detail files stay beside the authoritative kernel using
+  explicit owning-product basenames
+- journal backend artifacts stay under `backends/<backend_id>/`, and
+  `backends/` is allowed only because it splits immediately into backend-id
+  families such as `ledger_cli/`
 - source-scoped or checkpoint-scoped workspace groupings remain valid only for
   current-state surfaces, compatibility views, or genuinely source-owned
   or checkpoint-owned packages

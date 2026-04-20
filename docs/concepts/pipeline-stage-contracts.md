@@ -1207,7 +1207,7 @@ Record families:
   - `side`
   - `origin_ref`
 - `EntryCheckRecord`
-  - `check_id`
+  - `entry_check_id`
   - `entry_id`
   - `kind`
   - `status`
@@ -1243,6 +1243,7 @@ Sidecar content may include:
 
 - posting explanation
 - entry-check notes
+- journal backend validation detail
 - renderer-facing annotations
 - journal-owned gap sidecars
 
@@ -1274,7 +1275,7 @@ Ordering:
 - `JournalEntryRecord` rows sort by `[effective_at, kind, entry_id]`
 - `PostingRecord` rows sort by
   `[entry_id, side, account_ref, unit_ref, origin_ref, posting_id]`
-- `EntryCheckRecord` rows sort by `[entry_id, kind, check_id]`
+- `EntryCheckRecord` rows sort by `[entry_id, kind, entry_check_id]`
 
 Serialization:
 
@@ -1298,6 +1299,8 @@ Must guarantee:
 - explicit entry checks
 - explicit unsupported journal mapping
 - posting fields required for entry checks remain part of the kernel
+- posting fields required for declared journal backend validation stay on the
+  kernel or on declared journal-owned detail files
 
 Must not:
 
@@ -1309,8 +1312,11 @@ Handoff to downstream renderers:
 
 - `Journal` provides journal-owned postings, entry-check results, and
   journal-owned blockers
-- renderer-specific row shapes stay at output boundaries rather than becoming
-  part of the shared journal contract
+- renderer-specific and backend-specific rendering or validation shapes stay at
+  output boundaries rather than becoming part of the shared journal contract
+- `TaxInputs` may share the same authoritative `Checkpoint` and
+  `EconomicFacts` truth, but `Journal` does not become a required upstream
+  product ref or product-header component for tax kernels
 
 ## `TaxInputs`
 
@@ -1615,6 +1621,8 @@ locality rules defined elsewhere:
   for the bounded
   `EconomicFacts -> ReconciliationState -> Checkpoint`
   contract
+- [Journal Contract](../reference/journal-contract.md) for the bounded
+  `Journal` replay, backend, and downstream handoff contract
 - [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership
 - [Gap, Review, And Shared Attachment](gaps-and-reviews.md) for `GapRecord`,
