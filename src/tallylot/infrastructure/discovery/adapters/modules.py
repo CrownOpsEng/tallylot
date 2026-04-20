@@ -47,4 +47,7 @@ def iter_adapter_package_modules(package_name: str) -> tuple[ModuleType, ...]:
 
 def is_ignored_discovery_name(module_name: str) -> bool:
     parts = module_name.split(".")
-    return any(part in IGNORED_DISCOVERY_PARTS or part.startswith(("test_", "_")) for part in parts)
+    return any(
+        part in IGNORED_DISCOVERY_PARTS or part.startswith(("test_", "_"))
+        for part in parts
+    )

@@ -11,7 +11,9 @@ from tools.oracles.export_files import (
 )
 
 
-def test_find_matching_csv_files_returns_sorted_csv_matches_only(tmp_path: Path) -> None:
+def test_find_matching_csv_files_returns_sorted_csv_matches_only(
+    tmp_path: Path,
+) -> None:
     export_dir = tmp_path / "exports"
     export_dir.mkdir()
     (export_dir / "b Trade Table.csv").write_text("x\n", encoding="utf-8")
@@ -23,8 +25,12 @@ def test_find_matching_csv_files_returns_sorted_csv_matches_only(tmp_path: Path)
     assert [path.name for path in matches] == ["a trade table.csv", "b Trade Table.csv"]
 
 
-def test_find_required_csv_export_rejects_missing_required_export(tmp_path: Path) -> None:
-    with pytest.raises(FileNotFoundError, match="expected exactly one export containing"):
+def test_find_required_csv_export_rejects_missing_required_export(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(
+        FileNotFoundError, match="expected exactly one export containing"
+    ):
         find_required_csv_export(tmp_path, "Trade Table")
 
 

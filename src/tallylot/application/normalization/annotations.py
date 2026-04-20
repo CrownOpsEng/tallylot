@@ -22,7 +22,9 @@ class FactAnnotationRecord:
             "fact_id": self.fact_id,
             "provenance_refs": list(self.provenance_refs),
             "review_markers": list(self.review_markers),
-            "adapter_metadata": [metadata_to_json(item) for item in self.adapter_metadata],
+            "adapter_metadata": [
+                metadata_to_json(item) for item in self.adapter_metadata
+            ],
         }
 
 
@@ -34,7 +36,9 @@ class LocationAnnotationRecord:
     def to_json(self) -> dict[str, JsonValue]:
         return {
             "location_id": self.location_id,
-            "adapter_metadata": [metadata_to_json(item) for item in self.adapter_metadata],
+            "adapter_metadata": [
+                metadata_to_json(item) for item in self.adapter_metadata
+            ],
         }
 
 

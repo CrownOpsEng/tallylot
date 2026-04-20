@@ -7,7 +7,11 @@ from pathlib import Path
 from typing import cast
 
 from tallylot.domain.types import JsonValue
-from tools.oracles.contracts import ScreenBatchRequest, StageBatchRequest, StageBatchResponse
+from tools.oracles.contracts import (
+    ScreenBatchRequest,
+    StageBatchRequest,
+    StageBatchResponse,
+)
 
 from .constants import NORMALIZED_TIMEZONE, OUTPUT_IMPORT_TIMEZONE
 from .screening import BatchScreeningService
@@ -69,7 +73,9 @@ class BatchStagingService:
                     "normalized_timezone": NORMALIZED_TIMEZONE,
                     "output_import_timezone": OUTPUT_IMPORT_TIMEZONE,
                     "staged_path": "" if staged_path is None else str(staged_path),
-                    "import_ready_copy_path": "" if import_ready_copy_path is None else str(import_ready_copy_path),
+                    "import_ready_copy_path": ""
+                    if import_ready_copy_path is None
+                    else str(import_ready_copy_path),
                     "blocked_reason_codes": blocked_reason_codes,
                 },
             ),

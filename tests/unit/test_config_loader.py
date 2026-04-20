@@ -29,7 +29,9 @@ def test_load_app_config_prefers_environment_override(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config_path = tmp_path / "tallylot.toml"
-    config_path.write_text("[workspace]\nroot = '~/Documents/ignored'\n", encoding="utf-8")
+    config_path.write_text(
+        "[workspace]\nroot = '~/Documents/ignored'\n", encoding="utf-8"
+    )
     override = tmp_path / "external-workspace"
     monkeypatch.setenv("CRYPTO_RECON_WORKSPACE_ROOT", str(override))
 

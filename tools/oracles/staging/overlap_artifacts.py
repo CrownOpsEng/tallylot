@@ -25,4 +25,8 @@ def write_overlap_artifacts(
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     write_json(output_dir / "overlap_summary.json", result.summary)
-    write_rows(output_dir / "overlap_flagged_rows.csv", OVERLAP_FLAGGED_HEADER, result.flagged_rows)
+    write_rows(
+        output_dir / "overlap_flagged_rows.csv",
+        OVERLAP_FLAGGED_HEADER,
+        result.flagged_rows,
+    )

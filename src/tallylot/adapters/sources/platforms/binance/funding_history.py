@@ -16,7 +16,12 @@ from tallylot.adapters.support.drafts import (
     economic_leg,
     symbol_claim,
 )
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.domain.value_objects import parse_decimal
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.source_translation import EconomicLegDraft
@@ -27,7 +32,9 @@ from .timestamps import parse_export_timestamp
 SUPPORTED_FUNDING_EXPORTS = frozenset({"deposit", "withdrawal"})
 
 
-def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[EconomicActivityDraft]:
+def normalize_deposit_rows(
+    profile: SourceProfile, path: Path
+) -> list[EconomicActivityDraft]:
     drafts: list[EconomicActivityDraft] = []
     for index, row in enumerate(read_rows(path), start=2):
         if (row.get("Status") or "").strip().lower() != "completed":
@@ -40,8 +47,12 @@ def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[EconomicA
                 activity_id=f"binance:{path.name}:row:{index}",
                 source=str(profile.source),
                 adapter_id="binance",
-                location_id=location_id_from_parts(str(profile.source), "binance", "funding"),
-                timestamp=parse_export_timestamp((row.get("Time") or "").strip(), path.name),
+                location_id=location_id_from_parts(
+                    str(profile.source), "binance", "funding"
+                ),
+                timestamp=parse_export_timestamp(
+                    (row.get("Time") or "").strip(), path.name
+                ),
                 classification=classification(
                     economic_kind=EconomicKind.ASSET_DEPOSIT,
                     projection_hint=ProjectionHint.DEPOSIT,
@@ -59,7 +70,9 @@ def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[EconomicA
                         leg_id="primary_in",
                         kind=LegKind.PRIMARY,
                         quantity=amount,
-                        instrument=symbol_claim((row.get("Coin") or "").strip().upper(), venue="binance"),
+                        instrument=symbol_claim(
+                            (row.get("Coin") or "").strip().upper(), venue="binance"
+                        ),
                     ),
                 ),
             )
@@ -67,7 +80,9 @@ def normalize_deposit_rows(profile: SourceProfile, path: Path) -> list[EconomicA
     return drafts
 
 
-def normalize_withdraw_rows(profile: SourceProfile, path: Path) -> list[EconomicActivityDraft]:
+def normalize_withdraw_rows(
+    profile: SourceProfile, path: Path
+) -> list[EconomicActivityDraft]:
     drafts: list[EconomicActivityDraft] = []
     for index, row in enumerate(read_rows(path), start=2):
         if (row.get("Status") or "").strip().lower() != "completed":
@@ -82,8 +97,12 @@ def normalize_withdraw_rows(profile: SourceProfile, path: Path) -> list[Economic
                 activity_id=f"binance:{path.name}:row:{index}",
                 source=str(profile.source),
                 adapter_id="binance",
-                location_id=location_id_from_parts(str(profile.source), "binance", "funding"),
-                timestamp=parse_export_timestamp((row.get("Time") or "").strip(), path.name),
+                location_id=location_id_from_parts(
+                    str(profile.source), "binance", "funding"
+                ),
+                timestamp=parse_export_timestamp(
+                    (row.get("Time") or "").strip(), path.name
+                ),
                 classification=classification(
                     economic_kind=EconomicKind.ASSET_WITHDRAWAL,
                     projection_hint=ProjectionHint.WITHDRAWAL,
@@ -115,13 +134,25 @@ def _withdrawal_policy(fee: Decimal | None) -> FactLegPolicy:
         return SINGLE_PRIMARY_ACTIVITY_POLICY
     return FactLegPolicy(
         limits=(
-            LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1, max_negative_count=1),
-            LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+            LegShapeLimit(
+                kind=LegKind.PRIMARY,
+                max_count=1,
+                max_positive_count=1,
+                max_negative_count=1,
+            ),
+            LegShapeLimit(
+                kind=LegKind.CHARGE,
+                max_count=1,
+                max_positive_count=0,
+                max_negative_count=1,
+            ),
         )
     )
 
 
-def _charge_legs(fee: Decimal | None, coin: str, *, attributed_to_leg_id: str) -> tuple[EconomicLegDraft, ...]:
+def _charge_legs(
+    fee: Decimal | None, coin: str, *, attributed_to_leg_id: str
+) -> tuple[EconomicLegDraft, ...]:
     if fee is None or fee <= Decimal("0"):
         return ()
     return (

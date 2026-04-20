@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from tallylot.ports.output_adapters import OutputAdapter
 from tallylot.ports.source_adapters import SourceAdapter
 
-from .contracts import validate_output_adapter_contract, validate_source_adapter_contract, validate_unique_ids
+from .contracts import (
+    validate_output_adapter_contract,
+    validate_source_adapter_contract,
+    validate_unique_ids,
+)
 from .modules import iter_discoverable_modules
 
 

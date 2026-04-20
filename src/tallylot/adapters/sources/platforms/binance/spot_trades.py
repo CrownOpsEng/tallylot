@@ -32,7 +32,9 @@ from .timestamps import parse_export_timestamp
 SUPPORTED_SPOT_SIDES = frozenset({"SELL", "BUY"})
 
 
-def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActivityDraft]:
+def normalize_spot_rows(
+    profile: SourceProfile, path: Path
+) -> list[EconomicActivityDraft]:
     drafts: list[EconomicActivityDraft] = []
     for index, row in enumerate(read_rows(path), start=2):
         side = (row.get("Side") or "").strip().upper()
@@ -68,7 +70,9 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                             leg_id="primary_out",
                             kind=LegKind.PRIMARY,
                             quantity=-executed_amount,
-                            instrument=symbol_claim(base_asset or executed_asset, venue="binance"),
+                            instrument=symbol_claim(
+                                base_asset or executed_asset, venue="binance"
+                            ),
                         ),
                         economic_leg(
                             leg_id="primary_in",
@@ -76,7 +80,9 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                             quantity=quote_amount,
                             instrument=symbol_claim(quote_asset, venue="binance"),
                         ),
-                        *_charge_legs(fee_amount, fee_asset, attributed_to_leg_id="primary_in"),
+                        *_charge_legs(
+                            fee_amount, fee_asset, attributed_to_leg_id="primary_in"
+                        ),
                     ),
                 )
             )
@@ -104,7 +110,9 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                             leg_id="primary_in",
                             kind=LegKind.PRIMARY,
                             quantity=executed_amount,
-                            instrument=symbol_claim(base_asset or executed_asset, venue="binance"),
+                            instrument=symbol_claim(
+                                base_asset or executed_asset, venue="binance"
+                            ),
                         ),
                         economic_leg(
                             leg_id="primary_out",
@@ -112,7 +120,9 @@ def normalize_spot_rows(profile: SourceProfile, path: Path) -> list[EconomicActi
                             quantity=-quote_amount,
                             instrument=symbol_claim(quote_asset, venue="binance"),
                         ),
-                        *_charge_legs(fee_amount, fee_asset, attributed_to_leg_id="primary_out"),
+                        *_charge_legs(
+                            fee_amount, fee_asset, attributed_to_leg_id="primary_out"
+                        ),
                     ),
                 )
             )

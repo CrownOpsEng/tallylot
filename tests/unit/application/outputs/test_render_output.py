@@ -26,7 +26,11 @@ from tallylot.domain.transactions import (
 from tallylot.domain.types import AdapterId, LocationId, SourceId, TransactionId
 from tallylot.infrastructure.storage import FilesystemFactRepository
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
-from tallylot.ports.output_adapters import OutputAdapter, OutputRenderPolicy, RenderedArtifact
+from tallylot.ports.output_adapters import (
+    OutputAdapter,
+    OutputRenderPolicy,
+    RenderedArtifact,
+)
 
 
 @dataclass(frozen=True)
@@ -44,7 +48,9 @@ class FakeOutputRegistry:
 
 
 class FakeOutputAdapter:
-    def __init__(self, *, supported: bool, capabilities: frozenset[AdapterCapability]) -> None:
+    def __init__(
+        self, *, supported: bool, capabilities: frozenset[AdapterCapability]
+    ) -> None:
         self.manifest = AdapterManifest(
             adapter_id=AdapterId("cointracking_csv"),
             display_name="CoinTracking CSV",
@@ -55,19 +61,35 @@ class FakeOutputAdapter:
         self.render_policy = OutputRenderPolicy(
             shape_policy=FactLegPolicy(
                 limits=(
-                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_positive_count=0, max_negative_count=0),
-                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+                    LegShapeLimit(
+                        kind=LegKind.PRIMARY,
+                        max_count=0,
+                        max_positive_count=0,
+                        max_negative_count=0,
+                    ),
+                    LegShapeLimit(
+                        kind=LegKind.CHARGE,
+                        max_count=1,
+                        max_positive_count=0,
+                        max_negative_count=1,
+                    ),
                 )
             ),
             requires_projection_hint=False,
         )
 
-    def render(self, facts: tuple[TransactionFact, ...], output_path: Path) -> RenderedArtifact:
+    def render(
+        self, facts: tuple[TransactionFact, ...], output_path: Path
+    ) -> RenderedArtifact:
         del facts, output_path
-        raise AssertionError("render should not be called when adapter validation fails")
+        raise AssertionError(
+            "render should not be called when adapter validation fails"
+        )
 
 
-def test_output_projection_service_rejects_unsupported_output_adapters(tmp_path: Path) -> None:
+def test_output_projection_service_rejects_unsupported_output_adapters(
+    tmp_path: Path,
+) -> None:
     facts_path = _write_facts(tmp_path)
     service = RenderOutputUseCase(
         FakeOutputRegistry(
@@ -89,7 +111,9 @@ def test_output_projection_service_rejects_unsupported_output_adapters(tmp_path:
         )
 
 
-def test_output_projection_service_rejects_adapters_without_render_capability(tmp_path: Path) -> None:
+def test_output_projection_service_rejects_adapters_without_render_capability(
+    tmp_path: Path,
+) -> None:
     facts_path = _write_facts(tmp_path)
     service = RenderOutputUseCase(
         FakeOutputRegistry(
@@ -111,7 +135,9 @@ def test_output_projection_service_rejects_adapters_without_render_capability(tm
         )
 
 
-def test_output_projection_service_rejects_facts_outside_render_policy(tmp_path: Path) -> None:
+def test_output_projection_service_rejects_facts_outside_render_policy(
+    tmp_path: Path,
+) -> None:
     facts_path = _write_facts(tmp_path)
     service = RenderOutputUseCase(
         FakeOutputRegistry(
@@ -123,7 +149,9 @@ def test_output_projection_service_rejects_facts_outside_render_policy(tmp_path:
         FilesystemFactRepository(),
     )
 
-    with pytest.raises(ValueError, match="exceeds cointracking_csv render policy for primary legs"):
+    with pytest.raises(
+        ValueError, match="exceeds cointracking_csv render policy for primary legs"
+    ):
         service.execute(
             RenderOutputRequest(
                 output_adapter="cointracking_csv",

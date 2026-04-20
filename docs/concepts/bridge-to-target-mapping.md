@@ -89,11 +89,15 @@ No-dual-center rule:
 - none of those surfaces may remain a second architecture center once the
   corresponding target product is authoritative for that scope
 - broader grouped consumers stay on authoritative kernels, compatibility views, or tax-output-local and rendering-local derived outputs while broader derived read models and projections stay deferred, and they move only when a later capability-specific increment requires a dedicated derived read-model slice
-- before the economics/reconciliation/checkpoint contract lands,
-  `TransactionFact` and `facts.csv` remain on the live bridge fact path; the
-  evidence/claim contract may preserve downstream parity only through that
-  existing bridge path and must not
-  introduce a second fact-reducer lane from `ClaimSet`
+- the bounded economics/reconciliation/checkpoint contract is now implemented
+  for planner-enabled Coinbase normalization, so `TransactionFact`,
+  `facts.csv`, `balance_snapshots.csv`, and `balance_references.csv` are
+  target-derived compatibility views for the current readers that still depend
+  on those bridge-local surfaces
+- the evidence/claim contract still does not authorize a second independent
+  fact-reducer lane from `ClaimSet`; downstream parity now flows through the
+  authoritative `EconomicFacts`, `ReconciliationState`, and `Checkpoint`
+  kernels instead
 
 ## Cutover Matrix
 

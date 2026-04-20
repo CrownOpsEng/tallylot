@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from tallylot.application.resource_refs import path_from_ref, workspace_paths_from_paths
-from tallylot.application.workspace.contracts import WorkspaceInitRequest, WorkspaceInitResponse
+from tallylot.application.workspace.contracts import (
+    WorkspaceInitRequest,
+    WorkspaceInitResponse,
+)
 from tallylot.ports.workspace import WorkspaceRepository
 
 

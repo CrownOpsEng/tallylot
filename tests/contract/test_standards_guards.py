@@ -20,6 +20,36 @@ CLASSIFICATION_KEYWORDS = frozenset(
         "tax_treatment_hint",
     }
 )
+_FORBIDDEN_TARGET_ROOT_TOKENS = frozenset(
+    {
+        "coinbase",
+        "binance",
+        "wealthsimple",
+        "shakepay",
+        "cointracking",
+        "source_slug",
+        "activity_label",
+        "provider_operation_key",
+        "projection_hint",
+        "accounting_intent_hint",
+        "tax_treatment_hint",
+        "raw_file",
+        "raw_row_ref",
+        "tx_hash",
+    }
+)
+_TARGET_ROOT_GUARD_PATHS = (
+    "src/tallylot/domain/assertion",
+    "src/tallylot/domain/economics",
+    "src/tallylot/domain/reconciliation",
+    "src/tallylot/domain/checkpoint",
+    "src/tallylot/application/economics",
+    "src/tallylot/application/reconciliation",
+    "src/tallylot/application/checkpoint",
+    "src/tallylot/ports/economic_facts.py",
+    "src/tallylot/ports/reconciliation_states.py",
+    "src/tallylot/ports/checkpoints.py",
+)
 
 
 def _module(path: Path) -> ast.Module:
@@ -57,6 +87,25 @@ def _repo_side_python_files() -> tuple[Path, ...]:
 
 def _production_python_files(root: Path) -> tuple[Path, ...]:
     return tuple(path for path in _python_files(root) if "tests" not in path.parts)
+
+
+def _target_root_guard_hits(
+    *,
+    repo_root_path: Path,
+    guarded_paths: tuple[str, ...] = _TARGET_ROOT_GUARD_PATHS,
+) -> list[str]:
+    offenders: list[str] = []
+    for relative_path in guarded_paths:
+        root = repo_root_path / relative_path
+        if not root.exists():
+            continue
+        files = (root,) if root.is_file() else _python_files(root)
+        for path in files:
+            text = path.read_text(encoding="utf-8").lower()
+            for token in _FORBIDDEN_TARGET_ROOT_TOKENS:
+                if token in text:
+                    offenders.append(f"{path}:{token}")
+    return offenders
 
 
 def _is_named_call(node: ast.expr, name: str) -> bool:
@@ -623,6 +672,34 @@ def test_ports_modules_do_not_import_implementation_layers() -> None:
             "tallylot.infrastructure",
             "tallylot.interfaces",
         ),
+    )
+
+
+def test_target_root_guard_only_scans_new_target_surfaces(tmp_path: Path) -> None:
+    guarded_root = tmp_path / "src" / "tallylot" / "domain" / "economics"
+    guarded_root.mkdir(parents=True)
+    (guarded_root / "models.py").write_text(
+        'FIELD = "provider_operation_key"\n',
+        encoding="utf-8",
+    )
+    exempt_root = tmp_path / "src" / "tallylot" / "application" / "compatibility"
+    exempt_root.mkdir(parents=True)
+    (exempt_root / "economic_facts.py").write_text(
+        'FIELD = "provider_operation_key"\n',
+        encoding="utf-8",
+    )
+
+    offenders = _target_root_guard_hits(repo_root_path=tmp_path)
+
+    assert offenders == [f"{guarded_root / 'models.py'}:provider_operation_key"]
+
+
+def test_new_target_roots_and_ports_reject_provider_and_bridge_leakage() -> None:
+    offenders = _target_root_guard_hits(repo_root_path=repo_root())
+
+    assert not offenders, (
+        "new target roots and new target ports must stay provider-neutral and "
+        f"must not copy bridge-only field names: {offenders}"
     )
 
 

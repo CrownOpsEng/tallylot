@@ -59,7 +59,9 @@ def test_batch_staging_uses_normalization_summary_window_and_import_ready_copy(
         encoding="utf-8",
     )
 
-    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
+    response = BatchStagingService(
+        BatchScreeningService(FilesystemArtifactStore())
+    ).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,
@@ -69,7 +71,9 @@ def test_batch_staging_uses_normalization_summary_window_and_import_ready_copy(
         ),
     )
 
-    summary = json.loads((tmp_path / "batch" / "stage_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (tmp_path / "batch" / "stage_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.staged is True
     assert response.staged_path == tmp_path / "batch" / "approved.csv"
@@ -128,7 +132,9 @@ def test_batch_staging_explicit_window_overrides_normalization_summary(
         encoding="utf-8",
     )
 
-    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
+    response = BatchStagingService(
+        BatchScreeningService(FilesystemArtifactStore())
+    ).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,
@@ -138,7 +144,9 @@ def test_batch_staging_explicit_window_overrides_normalization_summary(
         ),
     )
 
-    summary = json.loads((tmp_path / "batch" / "stage_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (tmp_path / "batch" / "stage_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.staged is True
     assert summary["normalization_window_end"] == "2024-12-31 23:59:59"
@@ -184,7 +192,9 @@ def test_batch_staging_blocks_candidates_outside_normalization_window(
         ),
     )
 
-    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
+    response = BatchStagingService(
+        BatchScreeningService(FilesystemArtifactStore())
+    ).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,
@@ -192,7 +202,9 @@ def test_batch_staging_blocks_candidates_outside_normalization_window(
         ),
     )
 
-    summary = json.loads((tmp_path / "batch" / "stage_summary.json").read_text(encoding="utf-8"))
+    summary = json.loads(
+        (tmp_path / "batch" / "stage_summary.json").read_text(encoding="utf-8")
+    )
 
     assert response.staged is False
     assert "normalization_window_mismatch" in response.blocked_reason_codes
@@ -210,7 +222,9 @@ def test_batch_staging_accepts_legacy_cointracking_currency_headers(
         encoding="utf-8",
     )
 
-    response = BatchStagingService(BatchScreeningService(FilesystemArtifactStore())).execute(
+    response = BatchStagingService(
+        BatchScreeningService(FilesystemArtifactStore())
+    ).execute(
         StageBatchRequest(
             candidate_path=candidate_path,
             baseline_export_dir=baseline_export_dir,

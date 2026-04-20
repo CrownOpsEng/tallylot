@@ -14,7 +14,12 @@ from tallylot.domain.transactions import (
     TaxTreatmentHint,
 )
 from tallylot.domain.types import LocationId
-from tallylot.ports.source_translation import EconomicActivityDraft, classification, economic_leg, symbol_claim
+from tallylot.ports.source_translation import (
+    EconomicActivityDraft,
+    classification,
+    economic_leg,
+    symbol_claim,
+)
 
 
 def test_compile_activity_drafts_with_feedback_emits_fact_for_resolved_claims() -> None:
@@ -36,7 +41,9 @@ def test_compile_activity_drafts_with_feedback_emits_fact_for_resolved_claims() 
                     economic_leg(
                         leg_id="primary_btc",
                         kind=LegKind.PRIMARY,
-                        instrument=symbol_claim("BTC", venue="coinbase", kind_hint=InstrumentKind.CRYPTO),
+                        instrument=symbol_claim(
+                            "BTC", venue="coinbase", kind_hint=InstrumentKind.CRYPTO
+                        ),
                         quantity=Decimal("1"),
                     ),
                 ),
@@ -51,7 +58,9 @@ def test_compile_activity_drafts_with_feedback_emits_fact_for_resolved_claims() 
     assert str(result.facts[0].legs[0].instrument_id) == "symbol:BTC@coinbase"
 
 
-def test_compile_activity_drafts_with_feedback_blocks_ambiguous_instrument_claims() -> None:
+def test_compile_activity_drafts_with_feedback_blocks_ambiguous_instrument_claims() -> (
+    None
+):
     result = compile_activity_drafts_with_feedback(
         (
             EconomicActivityDraft(
@@ -72,7 +81,9 @@ def test_compile_activity_drafts_with_feedback_blocks_ambiguous_instrument_claim
                         kind=LegKind.PRIMARY,
                         instrument=(
                             symbol_claim("BTC", kind_hint=InstrumentKind.CRYPTO),
-                            symbol_claim("BTC", venue="coinbase", kind_hint=InstrumentKind.CRYPTO),
+                            symbol_claim(
+                                "BTC", venue="coinbase", kind_hint=InstrumentKind.CRYPTO
+                            ),
                         ),
                         quantity=Decimal("1"),
                     ),

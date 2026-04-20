@@ -13,7 +13,9 @@ def build_balance_map(rows: list[dict[str, str]]) -> dict[str, Decimal]:
     return dict(amounts)
 
 
-def build_exchange_balance_map(rows: list[dict[str, str]]) -> dict[tuple[str, str], Decimal]:
+def build_exchange_balance_map(
+    rows: list[dict[str, str]],
+) -> dict[tuple[str, str], Decimal]:
     amounts: dict[tuple[str, str], Decimal] = defaultdict(lambda: Decimal("0"))
     for row in rows:
         amounts[(row["Exchange"], row["Currency"])] += Decimal(row["Amount"])

@@ -21,4 +21,6 @@ class AdapterMetadata:
 
     def __post_init__(self) -> None:
         if not _NAMESPACE_PATTERN.fullmatch(self.namespace):
-            raise ValueError("adapter metadata namespace must be lowercase dot-separated snake_case")
+            raise ValueError(
+                "adapter metadata namespace must be lowercase dot-separated snake_case"
+            )

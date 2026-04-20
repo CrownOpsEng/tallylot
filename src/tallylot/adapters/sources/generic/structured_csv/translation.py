@@ -40,13 +40,19 @@ def translate_row(
     *,
     validator: StructuredCsvRowValidator,
 ) -> tuple[EconomicActivityDraft, tuple[NormalizationReviewRecord, ...]]:
-    amount_out, amount_out_review = validator.normalize_outbound_amount(index, "amount_out", row["amount_out"])
+    amount_out, amount_out_review = validator.normalize_outbound_amount(
+        index, "amount_out", row["amount_out"]
+    )
     charge_amount, charge_amount_review = validator.normalize_outbound_amount(
         index,
         "charge_amount",
         row["charge_amount"],
     )
-    reviews = tuple(review for review in (amount_out_review, charge_amount_review) if review is not None)
+    reviews = tuple(
+        review
+        for review in (amount_out_review, charge_amount_review)
+        if review is not None
+    )
     account = row["account"].strip()
     wallet = row["wallet"].strip()
     legs: list[EconomicLegDraft] = []
@@ -78,7 +84,10 @@ def translate_row(
                 attributed_to_leg_id=_side_value(row["charge_side"]),
             )
         )
-    if row["rebate_asset"] and (rebate_amount := parse_decimal(row["rebate_amount"])) is not None:
+    if (
+        row["rebate_asset"]
+        and (rebate_amount := parse_decimal(row["rebate_amount"])) is not None
+    ):
         legs.append(
             economic_leg(
                 leg_id="rebate",
@@ -118,11 +127,32 @@ def policy_for_row(row: dict[str, str]) -> FactLegPolicy:
     if (has_in ^ has_out) and not has_charge and not has_rebate:
         return SINGLE_PRIMARY_ACTIVITY_POLICY
 
-    limits = [LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_positive_count=1, max_negative_count=1)]
+    limits = [
+        LegShapeLimit(
+            kind=LegKind.PRIMARY,
+            max_count=2,
+            max_positive_count=1,
+            max_negative_count=1,
+        )
+    ]
     if has_charge:
-        limits.append(LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1))
+        limits.append(
+            LegShapeLimit(
+                kind=LegKind.CHARGE,
+                max_count=1,
+                max_positive_count=0,
+                max_negative_count=1,
+            )
+        )
     if has_rebate:
-        limits.append(LegShapeLimit(kind=LegKind.REBATE, max_count=1, max_positive_count=1, max_negative_count=0))
+        limits.append(
+            LegShapeLimit(
+                kind=LegKind.REBATE,
+                max_count=1,
+                max_positive_count=1,
+                max_negative_count=0,
+            )
+        )
     return FactLegPolicy(limits=tuple(limits))
 
 
@@ -136,7 +166,9 @@ def _side_value(raw_value: str) -> str | None:
 
 
 def classification_for_category(category: StructuredCategory) -> ActivityClassification:
-    mapping: dict[str, tuple[EconomicKind, ProjectionHint, AccountingIntentHint, TaxTreatmentHint]] = {
+    mapping: dict[
+        str, tuple[EconomicKind, ProjectionHint, AccountingIntentHint, TaxTreatmentHint]
+    ] = {
         "trade": (
             EconomicKind.SPOT_TRADE,
             ProjectionHint.TRADE,
@@ -198,7 +230,9 @@ def classification_for_category(category: StructuredCategory) -> ActivityClassif
             TaxTreatmentHint.DERIVATIVE_REALIZED_LOSS,
         ),
     }
-    economic_kind, projection_hint, accounting_intent_hint, tax_treatment_hint = mapping[category]
+    economic_kind, projection_hint, accounting_intent_hint, tax_treatment_hint = (
+        mapping[category]
+    )
     return classification(
         economic_kind=economic_kind,
         projection_hint=projection_hint,

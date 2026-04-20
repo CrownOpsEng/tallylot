@@ -43,7 +43,9 @@ def write_extracted_file(
 
 def has_unsupported_archive_suffix(name: str, settings: ArchiveScanSettings) -> bool:
     lower_name = name.lower()
-    return any(lower_name.endswith(suffix) for suffix in settings.unsupported_archive_suffixes)
+    return any(
+        lower_name.endswith(suffix) for suffix in settings.unsupported_archive_suffixes
+    )
 
 
 def resolve_path(path: Path) -> Path:
@@ -71,5 +73,7 @@ def add_unsupported_archive_issue(
     state.add_issue(
         relative_path=relative_path,
         kind="unsupported_archive_type",
-        message=(f"Archive inspection supports ZIP only in this phase; skipping archive-style file {name!r}."),
+        message=(
+            f"Archive inspection supports ZIP only in this phase; skipping archive-style file {name!r}."
+        ),
     )

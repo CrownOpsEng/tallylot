@@ -39,7 +39,9 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
         del package_name
         return (cast(ModuleType, module),)
 
-    monkeypatch.setattr(registry, "iter_discoverable_modules", fake_iter_discoverable_modules)
+    monkeypatch.setattr(
+        registry, "iter_discoverable_modules", fake_iter_discoverable_modules
+    )
 
     with pytest.raises(
         ValueError,
@@ -48,7 +50,9 @@ def test_source_adapter_discovery_rejects_invalid_contracts(
         registry._collect_source_adapters("fixture.sources")
 
 
-def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_output_adapter_discovery_rejects_duplicate_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     source_module = AdapterModule("fixture.source")
     output_module = AdapterModule("fixture.output")
 
@@ -60,7 +64,9 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
             capabilities=frozenset({AdapterCapability.SOURCE_TRANSLATE}),
         )
 
-        def match(self, source: str, raw_dir: object, inventory: tuple[object, ...]) -> int:
+        def match(
+            self, source: str, raw_dir: object, inventory: tuple[object, ...]
+        ) -> int:
             del source, raw_dir, inventory
             return 100
 
@@ -72,7 +78,9 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
             del request
             return None
 
-        def validate_profile_timezones(self, profile: object) -> tuple[dict[str, object], tuple[object, ...]]:
+        def validate_profile_timezones(
+            self, profile: object
+        ) -> tuple[dict[str, object], tuple[object, ...]]:
             del profile
             return {}, ()
 
@@ -104,16 +112,24 @@ def test_output_adapter_discovery_rejects_duplicate_ids(monkeypatch: pytest.Monk
     source_module.ADAPTER = SourceAdapterFixture()  # pylint: disable=invalid-name
     output_module.ADAPTER = OutputAdapterFixture()  # pylint: disable=invalid-name
 
-    def fake_collect_source_adapters(package_name: str) -> tuple[SourceAdapterFixture, ...]:
+    def fake_collect_source_adapters(
+        package_name: str,
+    ) -> tuple[SourceAdapterFixture, ...]:
         del package_name
         return (cast(SourceAdapterFixture, source_module.ADAPTER),)
 
-    def fake_collect_output_adapters(package_name: str) -> tuple[OutputAdapterFixture, ...]:
+    def fake_collect_output_adapters(
+        package_name: str,
+    ) -> tuple[OutputAdapterFixture, ...]:
         del package_name
         return (cast(OutputAdapterFixture, output_module.ADAPTER),)
 
-    monkeypatch.setattr(registry, "_collect_source_adapters", fake_collect_source_adapters)
-    monkeypatch.setattr(registry, "_collect_output_adapters", fake_collect_output_adapters)
+    monkeypatch.setattr(
+        registry, "_collect_source_adapters", fake_collect_source_adapters
+    )
+    monkeypatch.setattr(
+        registry, "_collect_output_adapters", fake_collect_output_adapters
+    )
 
     with pytest.raises(ValueError, match="duplicate adapter_id"):
         registry.build_registry()
@@ -125,7 +141,9 @@ def test_iter_modules_supports_package_style_adapters_without_loading_tests(
     package_root = tmp_path / "fixture_adapters"
     package_root.mkdir()
     (package_root / "__init__.py").write_text("", encoding="utf-8")
-    (package_root / "flat_adapter.py").write_text("ADAPTER = object()\n", encoding="utf-8")
+    (package_root / "flat_adapter.py").write_text(
+        "ADAPTER = object()\n", encoding="utf-8"
+    )
     categorized = package_root / "platforms"
     categorized.mkdir()
     (categorized / "__init__.py").write_text("", encoding="utf-8")
@@ -133,8 +151,12 @@ def test_iter_modules_supports_package_style_adapters_without_loading_tests(
     packaged.mkdir()
     (packaged / "__init__.py").write_text("ADAPTER = object()\n", encoding="utf-8")
     (packaged / "adapter.py").write_text("ADAPTER = object()\n", encoding="utf-8")
-    (packaged / "tests.py").write_text("raise RuntimeError('should not import tests')\n", encoding="utf-8")
-    (package_root / "_helper.py").write_text("raise RuntimeError('should not import helpers')\n", encoding="utf-8")
+    (packaged / "tests.py").write_text(
+        "raise RuntimeError('should not import tests')\n", encoding="utf-8"
+    )
+    (package_root / "_helper.py").write_text(
+        "raise RuntimeError('should not import helpers')\n", encoding="utf-8"
+    )
 
     sys.path.insert(0, str(tmp_path))
     importlib.invalidate_caches()

@@ -40,7 +40,9 @@ def summarize_candidate_overlap(
 ) -> OverlapResult:
     trade_table_path = find_trade_table(baseline_export_dir)
     _, baseline_rows, baseline_columns = load_cointracking_rows(trade_table_path)
-    candidate_header, candidate_rows, candidate_columns = load_cointracking_rows(candidate_path)
+    candidate_header, candidate_rows, candidate_columns = load_cointracking_rows(
+        candidate_path
+    )
 
     baseline_dates = [
         parse_overlap_datetime(cell(row, baseline_columns["date"]))
@@ -52,9 +54,13 @@ def summarize_candidate_overlap(
     cutoff = max(baseline_dates)
 
     baseline_tx_ids = {
-        cell(row, baseline_columns["tx_id"]) for row in baseline_rows if cell(row, baseline_columns["tx_id"])
+        cell(row, baseline_columns["tx_id"])
+        for row in baseline_rows
+        if cell(row, baseline_columns["tx_id"])
     }
-    baseline_signatures = Counter(overlap_signature(row, baseline_columns) for row in baseline_rows)
+    baseline_signatures = Counter(
+        overlap_signature(row, baseline_columns) for row in baseline_rows
+    )
 
     flagged_rows: list[dict[str, str]] = []
     before_or_at_cutoff_rows = 0
@@ -139,7 +145,11 @@ def write_overlap_artifacts(
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     write_json(output_dir / "overlap_summary.json", result.summary)
-    write_rows(output_dir / "overlap_flagged_rows.csv", OVERLAP_FLAGGED_HEADER, result.flagged_rows)
+    write_rows(
+        output_dir / "overlap_flagged_rows.csv",
+        OVERLAP_FLAGGED_HEADER,
+        result.flagged_rows,
+    )
 
 
 def parse_overlap_datetime(value: str) -> datetime:
@@ -152,10 +162,16 @@ def parse_overlap_datetime(value: str) -> datetime:
 
 
 def find_trade_table(export_dir: Path) -> Path:
-    matches = sorted(path for path in export_dir.glob("*.csv") if "trade table" in path.name.lower())
+    matches = sorted(
+        path for path in export_dir.glob("*.csv") if "trade table" in path.name.lower()
+    )
     if not matches:
-        raise FileNotFoundError(f"Missing required export containing 'Trade Table' in {export_dir}")
+        raise FileNotFoundError(
+            f"Missing required export containing 'Trade Table' in {export_dir}"
+        )
     if len(matches) > 1:
         candidates = ", ".join(path.name for path in matches)
-        raise ValueError(f"Ambiguous export for 'Trade Table' in {export_dir}: {candidates}")
+        raise ValueError(
+            f"Ambiguous export for 'Trade Table' in {export_dir}: {candidates}"
+        )
     return matches[0]

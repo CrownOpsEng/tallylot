@@ -123,7 +123,9 @@ def test_fact_leg_rejects_invalid_leg_metadata() -> None:
     with pytest.raises(ValueError, match="fact leg_id must be lowercase snake_case"):
         _leg("PrimaryBTC", "symbol:BTC", "1")
 
-    with pytest.raises(ValueError, match="fact leg attributed_to_leg_id must be lowercase snake_case"):
+    with pytest.raises(
+        ValueError, match="fact leg attributed_to_leg_id must be lowercase snake_case"
+    ):
         EconomicLeg(
             leg_id="fee_cad",
             kind=LegKind.CHARGE,
@@ -143,14 +145,36 @@ def test_fact_leg_policy_rejects_invalid_limits() -> None:
     with pytest.raises(ValueError, match="min_count must not exceed max_count"):
         LegShapeLimit(kind=LegKind.PRIMARY, min_count=2, max_count=1)
 
-    with pytest.raises(ValueError, match="min_positive_count must not exceed max_positive_count"):
-        LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, min_positive_count=2, max_positive_count=1)
+    with pytest.raises(
+        ValueError, match="min_positive_count must not exceed max_positive_count"
+    ):
+        LegShapeLimit(
+            kind=LegKind.PRIMARY,
+            max_count=2,
+            min_positive_count=2,
+            max_positive_count=1,
+        )
 
-    with pytest.raises(ValueError, match="min_negative_count must not exceed max_negative_count"):
-        LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, min_negative_count=2, max_negative_count=1)
+    with pytest.raises(
+        ValueError, match="min_negative_count must not exceed max_negative_count"
+    ):
+        LegShapeLimit(
+            kind=LegKind.PRIMARY,
+            max_count=2,
+            min_negative_count=2,
+            max_negative_count=1,
+        )
 
-    with pytest.raises(ValueError, match="signed minimum counts must not exceed max_count"):
-        LegShapeLimit(kind=LegKind.PRIMARY, min_count=0, max_count=1, min_positive_count=1, min_negative_count=1)
+    with pytest.raises(
+        ValueError, match="signed minimum counts must not exceed max_count"
+    ):
+        LegShapeLimit(
+            kind=LegKind.PRIMARY,
+            min_count=0,
+            max_count=1,
+            min_positive_count=1,
+            min_negative_count=1,
+        )
 
     with pytest.raises(ValueError, match="duplicates kind primary"):
         FactLegPolicy(
@@ -162,14 +186,23 @@ def test_fact_leg_policy_rejects_invalid_limits() -> None:
 
 
 def test_transaction_fact_rejects_legs_that_exceed_declared_policy() -> None:
-    with pytest.raises(ValueError, match="positive primary legs exceed declared leg policy"):
+    with pytest.raises(
+        ValueError, match="positive primary legs exceed declared leg policy"
+    ):
         _build_fact(
             legs=(
                 _leg("primary_btc", "symbol:BTC", "1"),
                 _leg("primary_eth", "symbol:ETH", "2"),
             ),
             leg_policy=FactLegPolicy(
-                limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_positive_count=1, max_negative_count=1),)
+                limits=(
+                    LegShapeLimit(
+                        kind=LegKind.PRIMARY,
+                        max_count=2,
+                        max_positive_count=1,
+                        max_negative_count=1,
+                    ),
+                )
             ),
         )
 
@@ -188,13 +221,35 @@ def test_transaction_fact_rejects_legs_that_exceed_declared_policy() -> None:
             ),
             legs=(
                 _leg("rebate_btc", "symbol:BTC", "0.5"),
-                _leg("fee_cad", "symbol:CAD", "-1", kind=LegKind.CHARGE, attributed_to_leg_id="rebate_btc"),
-                _leg("fee_usd", "symbol:USD", "-2", kind=LegKind.CHARGE, attributed_to_leg_id="rebate_btc"),
+                _leg(
+                    "fee_cad",
+                    "symbol:CAD",
+                    "-1",
+                    kind=LegKind.CHARGE,
+                    attributed_to_leg_id="rebate_btc",
+                ),
+                _leg(
+                    "fee_usd",
+                    "symbol:USD",
+                    "-2",
+                    kind=LegKind.CHARGE,
+                    attributed_to_leg_id="rebate_btc",
+                ),
             ),
             leg_policy=FactLegPolicy(
                 limits=(
-                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=1, max_positive_count=1, max_negative_count=1),
-                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+                    LegShapeLimit(
+                        kind=LegKind.PRIMARY,
+                        max_count=1,
+                        max_positive_count=1,
+                        max_negative_count=1,
+                    ),
+                    LegShapeLimit(
+                        kind=LegKind.CHARGE,
+                        max_count=1,
+                        max_positive_count=0,
+                        max_negative_count=1,
+                    ),
                 )
             ),
         )
@@ -203,11 +258,21 @@ def test_transaction_fact_rejects_legs_that_exceed_declared_policy() -> None:
 def test_transaction_fact_rejects_legs_that_fall_below_declared_policy() -> None:
     with pytest.raises(ValueError, match="primary legs fall below declared leg policy"):
         _build_fact(
-            legs=(_leg("fee_cad", "symbol:CAD", "-1", kind=LegKind.CHARGE, attributed_to_leg_id="primary_btc"),),
+            legs=(
+                _leg(
+                    "fee_cad",
+                    "symbol:CAD",
+                    "-1",
+                    kind=LegKind.CHARGE,
+                    attributed_to_leg_id="primary_btc",
+                ),
+            ),
             leg_policy=TWO_SIDED_PRIMARY_EXCHANGE_WITH_SINGLE_CHARGE_POLICY,
         )
 
-    with pytest.raises(ValueError, match="negative primary legs fall below declared leg policy"):
+    with pytest.raises(
+        ValueError, match="negative primary legs fall below declared leg policy"
+    ):
         _build_fact(
             legs=(_leg("primary_btc", "symbol:BTC", "1"),),
             leg_policy=FactLegPolicy(
@@ -225,7 +290,9 @@ def test_transaction_fact_rejects_legs_that_fall_below_declared_policy() -> None
         )
 
 
-def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requirement() -> None:
+def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requirement() -> (
+    None
+):
     fact = TransactionFact(
         fact_id=TransactionId("fact-2"),
         source=SourceId("fixture"),
@@ -245,8 +312,18 @@ def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requ
         ),
         leg_policy=FactLegPolicy(
             limits=(
-                LegShapeLimit(kind=LegKind.REBATE, max_count=2, max_positive_count=2, max_negative_count=0),
-                LegShapeLimit(kind=LegKind.WITHHOLDING, max_count=1, max_positive_count=0, max_negative_count=1),
+                LegShapeLimit(
+                    kind=LegKind.REBATE,
+                    max_count=2,
+                    max_positive_count=2,
+                    max_negative_count=0,
+                ),
+                LegShapeLimit(
+                    kind=LegKind.WITHHOLDING,
+                    max_count=1,
+                    max_positive_count=0,
+                    max_negative_count=1,
+                ),
             )
         ),
     )
@@ -256,7 +333,9 @@ def test_transaction_fact_accepts_explicit_multi_leg_policy_without_primary_requ
 
 
 def test_transaction_fact_requires_utc_timestamp() -> None:
-    with pytest.raises(ValueError, match="transaction fact timestamp must be timezone-aware UTC"):
+    with pytest.raises(
+        ValueError, match="transaction fact timestamp must be timezone-aware UTC"
+    ):
         TransactionFact(
             fact_id=TransactionId("fact-utc"),
             source=SourceId("fixture"),
@@ -275,7 +354,10 @@ def test_transaction_fact_requires_utc_timestamp() -> None:
 
 
 def test_transaction_fact_rejects_ambiguous_attributed_to_leg_id() -> None:
-    with pytest.raises(ValueError, match="attributed_to_leg_id must reference one primary leg in the same fact"):
+    with pytest.raises(
+        ValueError,
+        match="attributed_to_leg_id must reference one primary leg in the same fact",
+    ):
         TransactionFact(
             fact_id=TransactionId("fact-3"),
             source=SourceId("fixture"),
@@ -291,12 +373,28 @@ def test_transaction_fact_rejects_ambiguous_attributed_to_leg_id() -> None:
             legs=(
                 _leg("primary_btc", "symbol:BTC", "1"),
                 _leg("primary_eth", "symbol:ETH", "2"),
-                _leg("fee_cad", "symbol:CAD", "-10", kind=LegKind.CHARGE, attributed_to_leg_id="missing_leg"),
+                _leg(
+                    "fee_cad",
+                    "symbol:CAD",
+                    "-10",
+                    kind=LegKind.CHARGE,
+                    attributed_to_leg_id="missing_leg",
+                ),
             ),
             leg_policy=FactLegPolicy(
                 limits=(
-                    LegShapeLimit(kind=LegKind.PRIMARY, max_count=2, max_positive_count=2, max_negative_count=0),
-                    LegShapeLimit(kind=LegKind.CHARGE, max_count=1, max_positive_count=0, max_negative_count=1),
+                    LegShapeLimit(
+                        kind=LegKind.PRIMARY,
+                        max_count=2,
+                        max_positive_count=2,
+                        max_negative_count=0,
+                    ),
+                    LegShapeLimit(
+                        kind=LegKind.CHARGE,
+                        max_count=1,
+                        max_positive_count=0,
+                        max_negative_count=1,
+                    ),
                 )
             ),
         )

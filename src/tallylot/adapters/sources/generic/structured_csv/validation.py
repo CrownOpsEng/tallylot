@@ -98,7 +98,11 @@ class StructuredCsvRowValidator:
                     "incomplete_amount_pair",
                     f"{asset_field} and {amount_field} must both be present or both be blank.",
                 )
-            if side_field is not None and (row.get(side_field) or "").strip() and not asset_value:
+            if (
+                side_field is not None
+                and (row.get(side_field) or "").strip()
+                and not asset_value
+            ):
                 return self.feedback.issue(
                     index,
                     "incomplete_amount_pair",

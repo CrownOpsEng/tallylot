@@ -18,6 +18,16 @@ _STAGE_ORDER = {
 }
 
 
+class ScopeKind(StrEnum):
+    SUBJECT = "subject"
+    SELECTION = "selection"
+    CLAIM_SCOPE = "claim_scope"
+    CONTINUITY_SEGMENT = "continuity_segment"
+    BALANCE_TARGET = "balance_target"
+    CHECKPOINT_PROPOSAL = "checkpoint_proposal"
+    KERNEL_SCOPE = "kernel_scope"
+
+
 class GapKind(StrEnum):
     MISSING_EVIDENCE = "missing_evidence"
     UNRESOLVED_IDENTITY = "unresolved_identity"
@@ -62,12 +72,16 @@ def _stage_sort_key(stage: str) -> tuple[int, str]:
     return (_STAGE_ORDER.get(stage, len(_STAGE_ORDER)), stage)
 
 
+def _scope_kind_enum(value: str | ScopeKind) -> ScopeKind:
+    return value if isinstance(value, ScopeKind) else ScopeKind(value)
+
+
 @dataclass(frozen=True)
 class GapRecord:
     gap_id: str
     owner_stage: str
     blocking_stages: tuple[str, ...]
-    scope_kind: str
+    scope_kind: str | ScopeKind
     scope_ref: str | None
     subject_ref: tuple[str, ...] | None
     gap_kind: GapKind
@@ -77,12 +91,22 @@ class GapRecord:
     confidence: GapConfidence
 
     def __post_init__(self) -> None:
-        if self.scope_kind != "claim_scope":
-            raise ValueError("this slice supports only scope_kind='claim_scope'")
-        if not self.scope_ref:
-            raise ValueError("claim_scope gap records require scope_ref")
-        if self.subject_ref is not None:
-            raise ValueError("this slice requires subject_ref=None")
+        normalized_scope_kind = _scope_kind_enum(self.scope_kind)
+        object.__setattr__(self, "scope_kind", normalized_scope_kind)
+        if normalized_scope_kind is ScopeKind.SUBJECT:
+            if self.subject_ref is None:
+                raise ValueError("subject gap records require subject_ref")
+            if self.scope_ref not in (None, ""):
+                raise ValueError("subject gap records require scope_ref=None")
+        else:
+            if not self.scope_ref:
+                raise ValueError(
+                    f"{normalized_scope_kind.value} gap records require scope_ref"
+                )
+            if self.subject_ref is not None:
+                raise ValueError(
+                    f"{normalized_scope_kind.value} gap records require subject_ref=None"
+                )
 
     def to_payload(self) -> dict[str, JsonValue]:
         return {
@@ -91,9 +115,9 @@ class GapRecord:
             "blocking_stages": list(
                 stage for stage in sorted(self.blocking_stages, key=_stage_sort_key)
             ),
-            "scope_kind": self.scope_kind,
+            "scope_kind": _scope_kind_enum(self.scope_kind).value,
             "scope_ref": self.scope_ref,
-            "subject_ref": None,
+            "subject_ref": None if self.subject_ref is None else list(self.subject_ref),
             "gap_kind": self.gap_kind.value,
             "gap_key": self.gap_key,
             "status": self.status.value,
@@ -130,7 +154,7 @@ class GapExplanation:
 class ReviewRecord:
     review_id: str
     owner_stage: str
-    scope_kind: str
+    scope_kind: str | ScopeKind
     scope_ref: str | None
     subject_ref: tuple[str, ...] | None
     review_kind: str
@@ -140,20 +164,30 @@ class ReviewRecord:
     gap_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if self.scope_kind != "claim_scope":
-            raise ValueError("this slice supports only scope_kind='claim_scope'")
-        if not self.scope_ref:
-            raise ValueError("claim_scope review records require scope_ref")
-        if self.subject_ref is not None:
-            raise ValueError("this slice requires subject_ref=None")
+        normalized_scope_kind = _scope_kind_enum(self.scope_kind)
+        object.__setattr__(self, "scope_kind", normalized_scope_kind)
+        if normalized_scope_kind is ScopeKind.SUBJECT:
+            if self.subject_ref is None:
+                raise ValueError("subject review records require subject_ref")
+            if self.scope_ref not in (None, ""):
+                raise ValueError("subject review records require scope_ref=None")
+        else:
+            if not self.scope_ref:
+                raise ValueError(
+                    f"{normalized_scope_kind.value} review records require scope_ref"
+                )
+            if self.subject_ref is not None:
+                raise ValueError(
+                    f"{normalized_scope_kind.value} review records require subject_ref=None"
+                )
 
     def to_payload(self) -> dict[str, JsonValue]:
         return {
             "review_id": self.review_id,
             "owner_stage": self.owner_stage,
-            "scope_kind": self.scope_kind,
+            "scope_kind": _scope_kind_enum(self.scope_kind).value,
             "scope_ref": self.scope_ref,
-            "subject_ref": None,
+            "subject_ref": None if self.subject_ref is None else list(self.subject_ref),
             "review_kind": self.review_kind,
             "review_key": self.review_key,
             "status": self.status.value,
@@ -208,7 +242,7 @@ def canonical_gap_records(records: tuple[GapRecord, ...]) -> tuple[GapRecord, ..
             records,
             key=lambda item: (
                 item.owner_stage,
-                item.scope_kind,
+                _scope_kind_enum(item.scope_kind).value,
                 item.subject_ref or (),
                 item.scope_ref or "",
                 item.gap_kind.value,
@@ -226,7 +260,7 @@ def canonical_review_records(
             records,
             key=lambda item: (
                 item.owner_stage,
-                item.scope_kind,
+                _scope_kind_enum(item.scope_kind).value,
                 item.subject_ref or (),
                 item.scope_ref or "",
                 item.review_kind,

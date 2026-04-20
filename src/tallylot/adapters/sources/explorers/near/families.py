@@ -50,11 +50,26 @@ def family_id_for_header(header: tuple[str, ...]) -> str:
         return "base_transactions"
     if {"Receipt", "Txn Hash", "Method", "Deposit Value"}.issubset(header_fields):
         return "receipts"
-    if {"Txn Hash", "Method", "Affected", "Involved", "Direction", "Quantity", "Token", "Contract"}.issubset(
-        header_fields
-    ):
+    if {
+        "Txn Hash",
+        "Method",
+        "Affected",
+        "Involved",
+        "Direction",
+        "Quantity",
+        "Token",
+        "Contract",
+    }.issubset(header_fields):
         return "ft_transactions"
-    if {"Txn Hash", "Method", "Affected", "Involved", "Direction", "Token ID", "Contract"}.issubset(header_fields):
+    if {
+        "Txn Hash",
+        "Method",
+        "Affected",
+        "Involved",
+        "Direction",
+        "Token ID",
+        "Contract",
+    }.issubset(header_fields):
         return "nft_transactions"
     return ""
 
@@ -80,4 +95,6 @@ def near_account_for_path(path: Path) -> str:
     )
     prefix = name.split(marker, 1)[0] if marker else ""
     candidate = prefix.rsplit(" - ", 1)[-1].strip()
-    return next((item.group(0) for item in _NEAR_ACCOUNT_PATTERN.finditer(candidate)), "")
+    return next(
+        (item.group(0) for item in _NEAR_ACCOUNT_PATTERN.finditer(candidate)), ""
+    )

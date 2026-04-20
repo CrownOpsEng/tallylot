@@ -194,6 +194,8 @@ def _draft_from_projection_record(
         provider_operation_key=_provider_operation_key(activity_claim.activity_label),
         operation_group_id=record.operation_group_id_or_null,
         provenance_refs=activity_claim.provenance_refs,
+        review_markers=record.review_markers,
+        adapter_metadata=record.adapter_metadata,
         confidence=record.confidence,
         status=record.status,
     )

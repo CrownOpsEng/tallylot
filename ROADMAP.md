@@ -70,7 +70,7 @@ These anchors drive sequencing and acceptance criteria:
 
 ## Phase 0. Contract Lock And Bounded-Slice Prep
 
-Phase 0 is complete. Its durable outputs now live on the owner docs that carry
+Phase 0 is complete. Its durable outputs live on the owner docs that carry
 ongoing contracts and migration rules:
 
 - [Bridge To Target Mapping](docs/concepts/bridge-to-target-mapping.md)
@@ -88,7 +88,7 @@ those owner docs rather than restating them here.
 
 ## Phase 1. `EvidenceSet` Is Complete
 
-Phase 1 is complete. Its implemented runtime truth and durable references now
+Phase 1 is complete. Its implemented runtime truth and durable references
 live on the owner surfaces that describe the active bridge boundary and product
 outputs:
 
@@ -97,107 +97,56 @@ outputs:
 - [Evidence And Claim Contract](docs/reference/evidence-claim-contract.md)
 - [CHANGELOG.md](CHANGELOG.md)
 
-## Phase 2. Land `ClaimSet`
+## Phase 2. `ClaimSet` Is Complete
 
-Goal:
+Phase 2 is complete. Its implemented runtime truth and durable references
+live on the owner surfaces that describe the active claim-stage authority and
+the retained bridge compatibility boundary:
 
-- interpose a real claim stage between evidence capture and final economic
-  truth
+- [Current State](docs/status/current-state.md)
+- [Evidence And Claim Contract](docs/reference/evidence-claim-contract.md)
+- [Architecture Overview](docs/concepts/architecture-overview.md)
+- [Product Outputs](docs/workspace/working/products/README.md)
+- [CHANGELOG.md](CHANGELOG.md)
 
-Deliver:
+## Phase 3. `EconomicFacts` Is Complete
 
-- evidence-local `ClaimSet` emission keyed by `claim_set_id`
-- explicit claim scopes, mutually exclusive claim bundles, and
-  claim-bundle-decision records
-- claim fields frozen for the first upstream slice plus
-  `observation_refs`
-- shared gap and review outputs attached to claim scopes where needed, with any
-  readiness views staying local to the claim-owning capability
-- declared compatibility views for `EconomicActivityDraft` and
-  `SourceTranslationBatch`, with legacy hint fields kept outside `ClaimSet`
-  kernels
+Phase 3 is complete. Its implemented runtime truth and durable references
+live on the owner surfaces that describe the active downstream economics
+authority and retained compatibility views:
 
-Exit criteria:
+- [Current State](docs/status/current-state.md)
+- [Architecture Overview](docs/concepts/architecture-overview.md)
+- [Economics Reconciliation Checkpoint Contract](docs/reference/economics-reconciliation-checkpoint-contract.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+- [Product Outputs](docs/workspace/working/products/README.md)
+- [CHANGELOG.md](CHANGELOG.md)
 
-- ambiguous source meaning can remain explicit without being forced into final
-  economic meaning
-- claim-bundle decisions remain claim-owned and do not carry economic
-  truth
+## Phase 4. `ReconciliationState` Is Complete
 
-Transition to Phase 3:
+Phase 4 is complete. Its implemented runtime truth and durable references
+live on the owner surfaces that describe the active downstream reconciliation
+authority and retained compatibility views:
 
-- downstream bridge outputs stay on the live bridge path until
-  `EconomicFacts` exists
-- the first downstream slice is the first slice that turns those downstream
-  bridge outputs into target-derived compatibility views
+- [Current State](docs/status/current-state.md)
+- [Architecture Overview](docs/concepts/architecture-overview.md)
+- [Economics Reconciliation Checkpoint Contract](docs/reference/economics-reconciliation-checkpoint-contract.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+- [Product Outputs](docs/workspace/working/products/README.md)
+- [CHANGELOG.md](CHANGELOG.md)
 
-## Phase 3. Land `EconomicFacts`
+## Phase 5. `Checkpoint` Is Complete
 
-Goal:
+Phase 5 is complete. Its implemented runtime truth and durable references
+live on the owner surfaces that describe the active downstream checkpoint
+authority and retained compatibility views:
 
-- move accepted economic meaning off the bridge fact path and onto the target
-  economics layer
-
-Deliver:
-
-- `EconomicFacts` kernels keyed by `economic_facts_id` over ordered
-  `claim_set_refs`
-- `EconomicEventRecord`, `EconomicLegRecord`, and `ValuationRecord`
-- claim-bundle-derived event identity
-- bridge compatibility view for `TransactionFact`
-- parity coverage for the first claim-to-economics slice
-
-Exit criteria:
-
-- accepted economic meaning is no longer constrained by bridge activity labels
-- at least one bounded slice proves target economic modeling without wrapper
-  lanes
-
-## Phase 4. Land `ReconciliationState`
-
-Goal:
-
-- move continuity, linkage, completeness, and checkpoint proposal records onto an
-  explicit reconciliation product
-
-Deliver:
-
-- `ContinuitySegmentRecord`, `BalanceTargetRecord`, and
-  `CheckpointProposalRecord` for the first downstream slice
-- `EventLinkRecord` when a later in-phase reconciliation increment needs
-  explicit event linkage rather than inferred continuity alone
-- direct `AssertionValue` fields for expected and observed balance meaning
-- fixed subject and position identity seams for in-scope reconciliation
-- bridge compatibility view for `balance_snapshots.csv`
-
-Exit criteria:
-
-- reconciliation is expressed as explicit continuity and completeness decisions
-- exact balance assertions are one reconciliation concern, not the whole
-  product
-
-## Phase 5. Land `Checkpoint`
-
-Goal:
-
-- make accepted checkpoint truth and acceptance basis explicit
-
-Deliver:
-
-- `CheckpointRecord` and `CheckpointAssertionRecord`
-- explicit trust level, acceptance basis, support kind, and continuity kind
-- direct `AssertionValue` accepted truth
-- bridge compatibility view for `balance_references.csv`
-
-Exit criteria:
-
-- accepted checkpoint truth is explicit, not an inferred side effect
-- statement-backed checkpoint acceptance is separated cleanly from manual-only
-  runtime aids
-
-Phases 6 and later remain intentionally high-level in this round. This roadmap
-repair makes Phase 0 to Phase 5 implementation decision-complete without
-defining bounded slices for later downstream products yet.
+- [Current State](docs/status/current-state.md)
+- [Architecture Overview](docs/concepts/architecture-overview.md)
+- [Economics Reconciliation Checkpoint Contract](docs/reference/economics-reconciliation-checkpoint-contract.md)
+- [Migration Sequence](docs/status/migration-sequence.md)
+- [Product Outputs](docs/workspace/working/products/README.md)
+- [CHANGELOG.md](CHANGELOG.md)
 
 ## Phase 6. Land `Journal`
 

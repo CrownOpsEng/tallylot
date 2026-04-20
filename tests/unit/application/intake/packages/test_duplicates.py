@@ -24,7 +24,9 @@ def test_apply_package_rules_marks_identical_older_package_as_duplicate() -> Non
     by_bundle = {item.bundle_id: item for item in resolved}
 
     assert summary.duplicate_packages == 1
-    assert by_bundle["202203291730-export"].package_status == "duplicate_package_identical"
+    assert (
+        by_bundle["202203291730-export"].package_status == "duplicate_package_identical"
+    )
     assert by_bundle["202203291730-export"].action == "skip"
     assert by_bundle["202203291830-export"].package_status == "primary"
 
@@ -82,7 +84,9 @@ def test_apply_package_rules_breaks_identical_unknown_cycle_ties_by_bundle_id() 
     assert by_bundle["bundle-b"].package_status == "primary"
 
 
-def test_apply_package_rules_compares_archive_only_packages_when_no_contents_exist() -> None:
+def test_apply_package_rules_compares_archive_only_packages_when_no_contents_exist() -> (
+    None
+):
     items = [
         archive_item(
             bundle_id="202203291730-export",
@@ -102,5 +106,7 @@ def test_apply_package_rules_compares_archive_only_packages_when_no_contents_exi
     by_bundle = {item.bundle_id: item for item in resolved}
 
     assert summary.duplicate_packages == 1
-    assert by_bundle["202203291730-export"].package_status == "duplicate_package_identical"
+    assert (
+        by_bundle["202203291730-export"].package_status == "duplicate_package_identical"
+    )
     assert by_bundle["202203291830-export"].package_status == "primary"

@@ -5,7 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile, ZipInfo
 
-from .members import handle_archive_member_limits, record_archive_member, resolve_archive_member
+from .members import (
+    handle_archive_member_limits,
+    record_archive_member,
+    resolve_archive_member,
+)
 from .models import ArchiveMemberContext, ArchiveScanState, ResolvedArchiveMember
 from .support import write_extracted_file
 
@@ -122,7 +126,9 @@ def scan_zip_handle(
             return
 
 
-def scan_zip_member(handle: ZipFile, member: ZipInfo, context: ArchiveMemberContext) -> bool:
+def scan_zip_member(
+    handle: ZipFile, member: ZipInfo, context: ArchiveMemberContext
+) -> bool:
     resolved_member = resolve_archive_member(member, context)
     if resolved_member is None:
         return True
@@ -170,7 +176,10 @@ def read_archive_member(
         payload=payload,
     )
     context.state.add_file(scanned_member)
-    if scanned_member.file_path.suffix.lower() in context.settings.supported_archive_suffixes:
+    if (
+        scanned_member.file_path.suffix.lower()
+        in context.settings.supported_archive_suffixes
+    ):
         scan_nested_zip_bytes(
             payload,
             relative_path=resolved_member.relative_path,

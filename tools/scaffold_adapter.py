@@ -50,7 +50,9 @@ class _AdapterScaffoldSpec:
 
 
 def _module_parts(kind: str, module_name: str) -> tuple[str, ...]:
-    parts = tuple(part for part in re.split(r"[/.]", module_name.replace("-", "_")) if part)
+    parts = tuple(
+        part for part in re.split(r"[/.]", module_name.replace("-", "_")) if part
+    )
     if not parts or any(not part.isidentifier() for part in parts):
         raise ValueError(f"invalid adapter module path: {module_name!r}")
     if kind == "source" and len(parts) < 2:
@@ -165,7 +167,11 @@ def _adapter_template(
             from tallylot.ports.source_translation import SourceTranslationBatch
             """
         )
-        + ("from .translation import translate_source_batches\n\n" if spec.kind == "source" else "\n")
+        + (
+            "from .translation import translate_source_batches\n\n"
+            if spec.kind == "source"
+            else "\n"
+        )
         + dedent(
             f"""
 
@@ -333,14 +339,18 @@ def _contract_test_template(*, kind: str, module_parts: tuple[str, ...]) -> str:
 
 def _write_file(path: Path, content: str, *, force: bool) -> Path:
     if path.exists() and not force:
-        raise FileExistsError(f"refusing to overwrite existing scaffold file without --force: {path}")
+        raise FileExistsError(
+            f"refusing to overwrite existing scaffold file without --force: {path}"
+        )
     path.write_text(content, encoding="utf-8")
     return path
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_argument_parser().parse_args(argv)
-    resolved_repo_root = active_repo_root() if args.repo_root is None else args.repo_root.resolve()
+    resolved_repo_root = (
+        active_repo_root() if args.repo_root is None else args.repo_root.resolve()
+    )
     created = _scaffold_adapter(
         spec=_AdapterScaffoldSpec(
             repo_root=resolved_repo_root,

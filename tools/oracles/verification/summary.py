@@ -79,7 +79,9 @@ def summarize_verification_exports(
     }
     gate_suggestion = (
         "hold"
-        if gate_flags["has_duplicate_rows"] or gate_flags["has_new_validate_rows"] or gate_flags["has_new_missing_rows"]
+        if gate_flags["has_duplicate_rows"]
+        or gate_flags["has_new_validate_rows"]
+        or gate_flags["has_new_missing_rows"]
         else "review_balance_changes"
     )
     changed_reports = sum(

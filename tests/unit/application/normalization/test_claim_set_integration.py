@@ -147,7 +147,7 @@ def test_claim_assessment_sidecars_write_in_canonical_order(tmp_path: Path) -> N
         claim_build=CoinbaseClaimBuildResult(
             claim_set=ClaimSet(
                 claim_set_id="claim-set-1",
-                evidence_set_ref="working/products/evidence_sets/evidence-set-1/evidence_set.json",
+                evidence_set_ref="evidence-set-1",
                 emitter_id="coinbase:coinbase:claim",
                 claim_records=(),
                 claim_bundle_records=(),

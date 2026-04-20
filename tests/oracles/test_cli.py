@@ -51,11 +51,22 @@ def test_round_scaffold_uses_configured_root_when_option_is_omitted(
         return StubRoundScaffoldingService()
 
     monkeypatch.setattr(oracle_cli, "configured_workspace_root", configured_root_stub)
-    monkeypatch.setattr(oracle_cli, "_round_scaffolding_service", round_scaffolding_service_stub)
+    monkeypatch.setattr(
+        oracle_cli, "_round_scaffolding_service", round_scaffolding_service_stub
+    )
 
     result = runner.invoke(
         oracle_cli.app,
-        ["round", "scaffold", "--round-id", "post_import_fixture_01", "--phase", "post_import", "--source", "fixture"],
+        [
+            "round",
+            "scaffold",
+            "--round-id",
+            "post_import_fixture_01",
+            "--phase",
+            "post_import",
+            "--source",
+            "fixture",
+        ],
     )
 
     assert result.exit_code == 0
@@ -191,8 +202,12 @@ def test_round_scaffold_cli(tmp_path: Path) -> None:
 def test_source_diff_cli(tmp_path: Path) -> None:
     candidate_path = tmp_path / "candidate.csv"
     reference_path = tmp_path / "reference.csv"
-    candidate_path.write_text("Type,Date,Tx-ID\nTrade,2023-08-06 10:00:00,tx-1\n", encoding="utf-8")
-    reference_path.write_text("Type,Date,Tx-ID\nTrade,2023-08-07 10:00:00,tx-2\n", encoding="utf-8")
+    candidate_path.write_text(
+        "Type,Date,Tx-ID\nTrade,2023-08-06 10:00:00,tx-1\n", encoding="utf-8"
+    )
+    reference_path.write_text(
+        "Type,Date,Tx-ID\nTrade,2023-08-07 10:00:00,tx-2\n", encoding="utf-8"
+    )
     output_dir = tmp_path / "diff"
 
     result = runner.invoke(

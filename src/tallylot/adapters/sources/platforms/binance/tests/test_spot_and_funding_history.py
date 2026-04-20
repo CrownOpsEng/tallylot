@@ -22,10 +22,18 @@ def test_binance_spot_rows_normalize_buy_and_sell_trades(tmp_path: Path) -> None
         encoding="utf-8",
     )
 
-    events = compile_activity_drafts(tuple(normalize_spot_rows(build_source_profile(adapter_id="binance"), path)))
+    events = compile_activity_drafts(
+        tuple(normalize_spot_rows(build_source_profile(adapter_id="binance"), path))
+    )
 
-    assert [event.economic_kind for event in events] == [EconomicKind.SPOT_TRADE, EconomicKind.SPOT_TRADE]
-    assert [event.projection_hint for event in events] == [ProjectionHint.TRADE, ProjectionHint.TRADE]
+    assert [event.economic_kind for event in events] == [
+        EconomicKind.SPOT_TRADE,
+        EconomicKind.SPOT_TRADE,
+    ]
+    assert [event.projection_hint for event in events] == [
+        ProjectionHint.TRADE,
+        ProjectionHint.TRADE,
+    ]
     assert str(events[0].legs[0].instrument_id) == "symbol:BTC@binance"
     assert str(events[0].legs[1].instrument_id) == "symbol:USDT@binance"
     assert str(events[1].legs[0].instrument_id) == "symbol:ETH@binance"
@@ -38,7 +46,9 @@ def test_binance_spot_rows_normalize_buy_and_sell_trades(tmp_path: Path) -> None
     assert str(events[1].location_id) == "fixture:spot"
 
 
-def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Path) -> None:
+def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(
+    tmp_path: Path,
+) -> None:
     deposit_path = tmp_path / "Binance-Deposit-History-202603230411(UTC--6)_abcd.csv"
     deposit_path.write_text(
         "Time,Coin,Network,Amount,Address,TXID,Status\n"
@@ -63,7 +73,11 @@ def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Pat
         )
     )
     withdrawals = compile_activity_drafts(
-        tuple(normalize_withdraw_rows(build_source_profile(adapter_id="binance"), withdraw_path))
+        tuple(
+            normalize_withdraw_rows(
+                build_source_profile(adapter_id="binance"), withdraw_path
+            )
+        )
     )
 
     assert len(deposits) == 1
@@ -77,7 +91,9 @@ def test_binance_deposit_and_withdraw_rows_skip_incomplete_entries(tmp_path: Pat
     assert withdrawals[0].projection_hint == ProjectionHint.WITHDRAWAL
     assert str(withdrawals[0].legs[0].instrument_id) == "symbol:ETH@binance"
     assert withdrawals[0].legs[0].quantity == Decimal("-1.5")
-    charge_legs = tuple(leg for leg in withdrawals[0].legs if leg.kind is LegKind.CHARGE)
+    charge_legs = tuple(
+        leg for leg in withdrawals[0].legs if leg.kind is LegKind.CHARGE
+    )
     assert str(charge_legs[0].instrument_id) == "symbol:ETH@binance"
     assert charge_legs[0].quantity == Decimal("-0.01")
     assert withdrawals[0].tx_hash == "withdraw-tx"
@@ -96,5 +112,9 @@ def test_binance_deposit_and_withdraw_rows_skip_blank_amounts(tmp_path: Path) ->
         encoding="utf-8",
     )
 
-    assert not normalize_deposit_rows(build_source_profile(adapter_id="binance"), deposit_path)
-    assert not normalize_withdraw_rows(build_source_profile(adapter_id="binance"), withdraw_path)
+    assert not normalize_deposit_rows(
+        build_source_profile(adapter_id="binance"), deposit_path
+    )
+    assert not normalize_withdraw_rows(
+        build_source_profile(adapter_id="binance"), withdraw_path
+    )

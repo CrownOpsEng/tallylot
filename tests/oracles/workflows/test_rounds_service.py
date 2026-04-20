@@ -57,7 +57,9 @@ def test_create_round_log_entry_uses_phase_specific_goal() -> None:
     assert entry["exports_captured"] == "working/verification/round_02"
 
 
-def test_round_scaffolding_service_creates_round_dir_readme_and_log_entry(tmp_path: Path) -> None:
+def test_round_scaffolding_service_creates_round_dir_readme_and_log_entry(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
     FilesystemWorkspaceRepository().initialize(workspace_root)
     artifacts = FilesystemArtifactStore()
@@ -93,7 +95,9 @@ def test_round_scaffolding_service_creates_round_dir_readme_and_log_entry(tmp_pa
     ]
 
 
-def test_round_scaffolding_service_is_idempotent_for_existing_round_id(tmp_path: Path) -> None:
+def test_round_scaffolding_service_is_idempotent_for_existing_round_id(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
     FilesystemWorkspaceRepository().initialize(workspace_root)
     artifacts = FilesystemArtifactStore()
@@ -115,7 +119,9 @@ def test_round_scaffolding_service_is_idempotent_for_existing_round_id(tmp_path:
     assert len(rows) == 1
 
 
-def test_round_scaffolding_service_preserves_existing_round_log_rows(tmp_path: Path) -> None:
+def test_round_scaffolding_service_preserves_existing_round_log_rows(
+    tmp_path: Path,
+) -> None:
     workspace_root = tmp_path / "workspace"
     FilesystemWorkspaceRepository().initialize(workspace_root)
     artifacts = FilesystemArtifactStore()

@@ -11,7 +11,9 @@ from tallylot.domain.value_objects import format_decimal, parse_decimal
 BALANCE_LINE = re.compile(r"\b([A-Z]{2,10})\b\s+(-?\d[\d,]*(?:\.\d+)?)\b")
 
 
-def parse_balance_lines(text: str, statement_kind: str, pdf_file: str) -> list[dict[str, str]]:
+def parse_balance_lines(
+    text: str, statement_kind: str, pdf_file: str
+) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for line in text.splitlines():
         match = BALANCE_LINE.search(line.strip())
@@ -36,7 +38,9 @@ def parse_balance_lines(text: str, statement_kind: str, pdf_file: str) -> list[d
             }
         )
     if not rows:
-        raise ValueError(f"no balance rows were extracted from the {statement_kind} PDF")
+        raise ValueError(
+            f"no balance rows were extracted from the {statement_kind} PDF"
+        )
     return rows
 
 
@@ -54,4 +58,8 @@ def decimal_text(value: str, *, places: str | None = None) -> str:
 
 
 def format_utc_timestamp(value: str, time_format: str) -> str:
-    return datetime.strptime(value, time_format).replace(tzinfo=UTC).strftime("%Y-%m-%d %H:%M:%S")
+    return (
+        datetime.strptime(value, time_format)
+        .replace(tzinfo=UTC)
+        .strftime("%Y-%m-%d %H:%M:%S")
+    )

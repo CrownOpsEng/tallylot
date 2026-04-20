@@ -24,6 +24,7 @@ from tallylot.application.compatibility import (
     reconstruct_translation_input_plan,
 )
 from tallylot.application.claim.contracts import CoinbaseClaimBuildResult
+from tallylot.application.claim.contracts import DraftProjectionFieldRecord
 from tallylot.application.claim.coinbase_builder import build_coinbase_claim_set
 from tallylot.application.evidence.evidence_sets import build_evidence_set_for_profile
 from tallylot.application.evidence.statement_extraction import (
@@ -46,6 +47,8 @@ from tallylot.domain.assessment.models import (
     review_explanations_payload,
     review_records_payload,
 )
+from tallylot.domain.claim import ClaimSet
+from tallylot.domain.evidence import EvidenceSet
 from tallylot.ports.evidence_sets import EvidenceSetRepositoryPort
 from tallylot.ports.artifacts import ArtifactStorePort
 from tallylot.ports.captures import CaptureMetadata
@@ -67,6 +70,9 @@ class TranslationExecutionResult:
     evidence_set_ref: str = ""
     claim_set_id: str = ""
     claim_set_ref: str = ""
+    evidence_set: EvidenceSet | None = None
+    claim_set: ClaimSet | None = None
+    draft_projection_field_records: tuple[DraftProjectionFieldRecord, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -88,6 +94,8 @@ def execute_translation(
     raw_dir: Path,
     context: TranslationExecutionContext,
 ) -> TranslationExecutionResult:
+    claim_build: CoinbaseClaimBuildResult | None = None
+    persisted_claim_set: ClaimSet | None = None
     statement_documents = (
         context.statement_extraction.collect_source_statement_documents(
             profile, raw_dir
@@ -203,7 +211,6 @@ def execute_translation(
         claim_build = build_coinbase_claim_set(
             profile=profile,
             evidence_set=evidence_set,
-            evidence_set_ref=evidence_set_path_ref,
             planning_result=planning_result,
             batch=selected_batch,
         )
@@ -253,6 +260,11 @@ def execute_translation(
         evidence_set_ref=evidence_set_path_ref,
         claim_set_id=claim_set_id,
         claim_set_ref=claim_set_path_ref,
+        evidence_set=evidence_set,
+        claim_set=persisted_claim_set,
+        draft_projection_field_records=(
+            () if claim_build is None else claim_build.draft_projection_field_records
+        ),
     )
 
 

@@ -4,16 +4,24 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from tallylot.application.intake import ManifestRequest
-from tallylot.application.intake.build_manifest import BuildManifestUseCase, _sha256sum_from_text
+from tallylot.application.intake.build_manifest import (
+    BuildManifestUseCase,
+    _sha256sum_from_text,
+)
 from tallylot.application.resource_refs import to_resource_ref
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 
 
 def test_sha256sum_from_text_matches_hashlib_stability() -> None:
-    assert _sha256sum_from_text("alpha") == "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8"
+    assert (
+        _sha256sum_from_text("alpha")
+        == "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8"
+    )
 
 
-def test_manifest_service_excludes_output_and_issue_artifacts_from_scan(tmp_path: Path) -> None:
+def test_manifest_service_excludes_output_and_issue_artifacts_from_scan(
+    tmp_path: Path,
+) -> None:
     source_dir = tmp_path / "source"
     source_dir.mkdir()
     (source_dir / "transactions.csv").write_text("a,b\n1,2\n", encoding="utf-8")

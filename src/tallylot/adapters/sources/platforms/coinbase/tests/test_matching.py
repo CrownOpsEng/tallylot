@@ -6,7 +6,9 @@ from pathlib import Path
 from repo_support.paths import adapter_packs_root
 from tallylot.adapters.sources.platforms.coinbase.adapter import _CoinbaseAdapter
 from tallylot.adapters.sources.platforms.coinbase.matching import RETAIL_HEADER
-from tallylot.adapters.sources.platforms.coinbase.timestamps import parse_retail_timestamp
+from tallylot.adapters.sources.platforms.coinbase.timestamps import (
+    parse_retail_timestamp,
+)
 from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.application.profiling import BuildProfileUseCase
 from tallylot.domain.transactions import LegKind, ProjectionHint
@@ -16,9 +18,13 @@ from tallylot.ports.source_adapters import SourceAdapter
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 
 
-def _profile_and_adapter(source: str, raw_dir: Path) -> tuple[SourceProfile, SourceAdapter]:
+def _profile_and_adapter(
+    source: str, raw_dir: Path
+) -> tuple[SourceProfile, SourceAdapter]:
     registry = build_registry()
-    profile = BuildProfileUseCase(registry, FilesystemArtifactStore()).create_profile(source, raw_dir)
+    profile = BuildProfileUseCase(registry, FilesystemArtifactStore()).create_profile(
+        source, raw_dir
+    )
     return profile, registry.source_adapter(str(profile.adapter_id))
 
 
@@ -34,7 +40,9 @@ def test_parse_retail_timestamp_accepts_fractional_second_z_suffix() -> None:
     assert parsed.strftime("%Y-%m-%d %H:%M:%S") == "2021-05-10 02:37:18"
 
 
-def test_coinbase_adapter_matches_retail_header_without_source_label(tmp_path: Path) -> None:
+def test_coinbase_adapter_matches_retail_header_without_source_label(
+    tmp_path: Path,
+) -> None:
     inventory = (
         FileInventoryEntry(
             relative_path="retail-export.csv",

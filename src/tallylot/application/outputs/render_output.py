@@ -4,16 +4,25 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from tallylot.application.outputs.contracts import RenderOutputRequest, RenderOutputResponse
+from tallylot.application.outputs.contracts import (
+    RenderOutputRequest,
+    RenderOutputResponse,
+)
 from tallylot.application.resource_refs import path_from_ref, to_resource_ref
 from tallylot.domain.transactions import LegKind, LegShapeLimit, TransactionFact
 from tallylot.ports.adapter_contracts import AdapterCapability
 from tallylot.ports.facts import FactRepositoryPort
-from tallylot.ports.output_adapters import OutputAdapter, OutputAdapterRegistryPort, OutputRenderPolicy
+from tallylot.ports.output_adapters import (
+    OutputAdapter,
+    OutputAdapterRegistryPort,
+    OutputRenderPolicy,
+)
 
 
 class RenderOutputUseCase:
-    def __init__(self, registry: OutputAdapterRegistryPort, facts: FactRepositoryPort) -> None:
+    def __init__(
+        self, registry: OutputAdapterRegistryPort, facts: FactRepositoryPort
+    ) -> None:
         self._registry = registry
         self._facts = facts
 
@@ -21,26 +30,38 @@ class RenderOutputUseCase:
         facts = self._facts.read_facts(path_from_ref(request.facts_ref))
         adapter = self._registry.output_adapter(request.output_adapter)
         if not adapter.manifest.supported:
-            raise ValueError(f"output adapter {adapter.manifest.adapter_id} is not supported for rendering")
+            raise ValueError(
+                f"output adapter {adapter.manifest.adapter_id} is not supported for rendering"
+            )
         if AdapterCapability.OUTPUT_RENDER not in adapter.manifest.capabilities:
-            raise ValueError(f"output adapter {adapter.manifest.adapter_id} does not declare render capability")
+            raise ValueError(
+                f"output adapter {adapter.manifest.adapter_id} does not declare render capability"
+            )
         _validate_render_policy(facts, adapter=adapter)
         artifact = adapter.render(facts, path_from_ref(request.output_ref))
-        return RenderOutputResponse(output_ref=to_resource_ref(artifact.path), row_count=artifact.row_count)
+        return RenderOutputResponse(
+            output_ref=to_resource_ref(artifact.path), row_count=artifact.row_count
+        )
 
 
-def _validate_render_policy(facts: tuple[TransactionFact, ...], *, adapter: OutputAdapter) -> None:
+def _validate_render_policy(
+    facts: tuple[TransactionFact, ...], *, adapter: OutputAdapter
+) -> None:
     adapter_id = str(adapter.manifest.adapter_id)
     policy = adapter.render_policy
     for fact in facts:
         if policy.requires_projection_hint and fact.projection_hint is None:
-            raise ValueError(f"fact {fact.fact_id} is missing required {adapter_id} projection metadata")
+            raise ValueError(
+                f"fact {fact.fact_id} is missing required {adapter_id} projection metadata"
+            )
         counts_by_kind: dict[LegKind, int] = {}
         signed_counts: dict[tuple[LegKind, str], int] = {}
         for leg in fact.legs:
             counts_by_kind[leg.kind] = counts_by_kind.get(leg.kind, 0) + 1
             sign_key = "positive" if leg.quantity > Decimal("0") else "negative"
-            signed_counts[(leg.kind, sign_key)] = signed_counts.get((leg.kind, sign_key), 0) + 1
+            signed_counts[(leg.kind, sign_key)] = (
+                signed_counts.get((leg.kind, sign_key), 0) + 1
+            )
         _validate_fact_shape(
             fact=fact,
             policy=policy,
@@ -60,7 +81,9 @@ def _validate_fact_shape(
 ) -> None:
     for kind in counts_by_kind:
         if policy.shape_policy.limit_for(kind) is None:
-            raise ValueError(f"fact {fact.fact_id} has unsupported {adapter_id} render leg kind: {kind.value}")
+            raise ValueError(
+                f"fact {fact.fact_id} has unsupported {adapter_id} render leg kind: {kind.value}"
+            )
     for kind in counts_by_kind:
         limit = policy.shape_policy.limit_for(kind)
         if limit is None:
@@ -104,9 +127,13 @@ def _validate_render_total_count(
     limit: LegShapeLimit,
 ) -> None:
     if total_count < limit.min_count:
-        raise ValueError(f"fact {fact.fact_id} falls below {adapter_id} render policy for {kind.value} legs")
+        raise ValueError(
+            f"fact {fact.fact_id} falls below {adapter_id} render policy for {kind.value} legs"
+        )
     if total_count > limit.max_count:
-        raise ValueError(f"fact {fact.fact_id} exceeds {adapter_id} render policy for {kind.value} legs")
+        raise ValueError(
+            f"fact {fact.fact_id} exceeds {adapter_id} render policy for {kind.value} legs"
+        )
 
 
 def _validate_render_signed_count(
@@ -118,8 +145,12 @@ def _validate_render_signed_count(
     count: int,
 ) -> None:
     sign_label = "positive" if sign == "positive" else "negative"
-    minimum = limit.min_positive_count if sign == "positive" else limit.min_negative_count
-    maximum = limit.max_positive_count if sign == "positive" else limit.max_negative_count
+    minimum = (
+        limit.min_positive_count if sign == "positive" else limit.min_negative_count
+    )
+    maximum = (
+        limit.max_positive_count if sign == "positive" else limit.max_negative_count
+    )
     if minimum is not None and count < minimum:
         raise ValueError(
             f"fact {fact.fact_id} falls below {adapter_id} render policy for {sign_label} {limit.kind.value} legs"
@@ -140,7 +171,9 @@ def _validate_absent_render_kind(
     if is_present:
         return
     if limit.min_count > 0:
-        raise ValueError(f"fact {fact.fact_id} falls below {adapter_id} render policy for {limit.kind.value} legs")
+        raise ValueError(
+            f"fact {fact.fact_id} falls below {adapter_id} render policy for {limit.kind.value} legs"
+        )
     if limit.min_positive_count not in (None, 0):
         raise ValueError(
             f"fact {fact.fact_id} falls below {adapter_id} render policy for positive {limit.kind.value} legs"

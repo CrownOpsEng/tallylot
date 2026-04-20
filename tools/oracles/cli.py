@@ -103,7 +103,9 @@ def _batch_stage(
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
     *,  # pylint: disable=too-many-arguments,too-many-positional-arguments
     staged_name: Annotated[str | None, typer.Option()] = None,
-    import_ready_dir: Annotated[Path | None, typer.Option(dir_okay=True, file_okay=False)] = None,
+    import_ready_dir: Annotated[
+        Path | None, typer.Option(dir_okay=True, file_okay=False)
+    ] = None,
     normalization_summary_path: Annotated[
         Path | None,
         typer.Option(dir_okay=False, file_okay=True),
@@ -133,7 +135,9 @@ def _round_scaffold(
     round_id: Annotated[str, typer.Option()],
     phase: Annotated[str, typer.Option()],
     source: Annotated[str, typer.Option()],
-    workspace_root: Annotated[Path | None, typer.Option(dir_okay=True, file_okay=False)] = None,
+    workspace_root: Annotated[
+        Path | None, typer.Option(dir_okay=True, file_okay=False)
+    ] = None,
 ) -> None:
     response = _round_scaffolding_service().execute(
         RoundScaffoldRequest(
@@ -153,7 +157,9 @@ def _source_diff(
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
     response = _source_diff_service().execute(
-        SourceDiffRequest(candidate_path=candidate, reference_path=reference, output_dir=output_dir),
+        SourceDiffRequest(
+            candidate_path=candidate, reference_path=reference, output_dir=output_dir
+        ),
     )
     _emit_response(response.__dict__)
 
@@ -165,7 +171,9 @@ def _verification_compare(
     output_dir: Annotated[Path, typer.Option(dir_okay=True, file_okay=False)],
 ) -> None:
     response = _verification_compare_service().execute(
-        VerificationCompareRequest(previous_dir=previous_dir, current_dir=current_dir, output_dir=output_dir),
+        VerificationCompareRequest(
+            previous_dir=previous_dir, current_dir=current_dir, output_dir=output_dir
+        ),
     )
     _emit_response(response.__dict__)
 

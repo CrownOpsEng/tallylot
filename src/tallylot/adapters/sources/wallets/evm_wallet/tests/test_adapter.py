@@ -16,7 +16,9 @@ from tests.support.adapter_packs import fixture_raw_dir, profile_and_adapter
 from tests.support.services import build_source_profile
 
 
-def test_evm_wallet_adapter_extracts_chain_scoped_evm_and_snap_accounts(tmp_path: Path) -> None:
+def test_evm_wallet_adapter_extracts_chain_scoped_evm_and_snap_accounts(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "wallet-state.json").write_text(
@@ -29,7 +31,10 @@ def test_evm_wallet_adapter_extracts_chain_scoped_evm_and_snap_accounts(tmp_path
                                 "address": "0x1111111111111111111111111111111111111111",
                                 "type": "eip155:eoa",
                                 "scopes": ["eip155:1"],
-                                "metadata": {"name": "Primary", "keyring": {"type": "HD Key Tree"}},
+                                "metadata": {
+                                    "name": "Primary",
+                                    "keyring": {"type": "HD Key Tree"},
+                                },
                             },
                             "two": {
                                 "address": "Taaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -52,18 +57,25 @@ def test_evm_wallet_adapter_extracts_chain_scoped_evm_and_snap_accounts(tmp_path
     records, issues = _EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
-        build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
+        build_source_profile(
+            adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)
+        ),
     )
 
     assert not issues
-    assert {record.identifier_kind for record in records} == {"evm_address", "tron_address"}
+    assert {record.identifier_kind for record in records} == {
+        "evm_address",
+        "tron_address",
+    }
     assert {str(record.location_id) for record in records} == {
         "evm:ethereum:0x1111111111111111111111111111111111111111",
         "tron:Taaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     }
 
 
-def test_evm_wallet_adapter_reads_metamask_wrapped_state_for_bitcoin_snap_and_polygon_account(tmp_path: Path) -> None:
+def test_evm_wallet_adapter_reads_metamask_wrapped_state_for_bitcoin_snap_and_polygon_account(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "wallet-state.json").write_text(
@@ -76,7 +88,10 @@ def test_evm_wallet_adapter_reads_metamask_wrapped_state_for_bitcoin_snap_and_po
                                 "address": "0x1111111111111111111111111111111111111111",
                                 "type": "eip155:eoa",
                                 "scopes": ["eip155:137"],
-                                "metadata": {"name": "Primary", "keyring": {"type": "Ledger Hardware"}},
+                                "metadata": {
+                                    "name": "Primary",
+                                    "keyring": {"type": "Ledger Hardware"},
+                                },
                             },
                             "two": {
                                 "address": "bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -99,18 +114,25 @@ def test_evm_wallet_adapter_reads_metamask_wrapped_state_for_bitcoin_snap_and_po
     records, issues = _EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
-        build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
+        build_source_profile(
+            adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)
+        ),
     )
 
     assert not issues
-    assert {record.identifier_kind for record in records} == {"evm_address", "btc_address"}
+    assert {record.identifier_kind for record in records} == {
+        "evm_address",
+        "btc_address",
+    }
     assert {str(record.location_id) for record in records} == {
         "evm:polygon:0x1111111111111111111111111111111111111111",
         "bitcoin:bc1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     }
 
 
-def test_evm_wallet_adapter_marks_generic_evm_accounts_as_ambiguous(tmp_path: Path) -> None:
+def test_evm_wallet_adapter_marks_generic_evm_accounts_as_ambiguous(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "wallet-state.json").write_text(
@@ -121,7 +143,10 @@ def test_evm_wallet_adapter_marks_generic_evm_accounts_as_ambiguous(tmp_path: Pa
                         "accounts": {
                             "one": {
                                 "address": "0x1111111111111111111111111111111111111111",
-                                "metadata": {"name": "Primary", "keyring": {"type": "HD Key Tree"}},
+                                "metadata": {
+                                    "name": "Primary",
+                                    "keyring": {"type": "HD Key Tree"},
+                                },
                             }
                         }
                     }
@@ -134,11 +159,16 @@ def test_evm_wallet_adapter_marks_generic_evm_accounts_as_ambiguous(tmp_path: Pa
     records, issues = _EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
-        build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
+        build_source_profile(
+            adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)
+        ),
     )
 
     assert not records
-    assert {issue.kind for issue in issues} == {"ambiguous_wallet_identifier", "missing_identifier"}
+    assert {issue.kind for issue in issues} == {
+        "ambiguous_wallet_identifier",
+        "missing_identifier",
+    }
 
 
 def test_evm_wallet_adapter_matches_state_json_inventory_without_source_label() -> None:
@@ -159,13 +189,19 @@ def test_evm_wallet_adapter_matches_state_json_inventory_without_source_label() 
     assert score == 80
 
 
-def test_evm_wallet_adapter_normalize_returns_location_inventory_and_missing_identifier_issue(tmp_path: Path) -> None:
+def test_evm_wallet_adapter_normalize_returns_location_inventory_and_missing_identifier_issue(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
-    (raw_dir / "wallet-state.json").write_text(json.dumps({"wallet_state": {}}), encoding="utf-8")
+    (raw_dir / "wallet-state.json").write_text(
+        json.dumps({"wallet_state": {}}), encoding="utf-8"
+    )
 
     result = _EvmWalletAdapter().translate(
-        build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
+        build_source_profile(
+            adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)
+        ),
         raw_dir,
     )
 
@@ -175,7 +211,9 @@ def test_evm_wallet_adapter_normalize_returns_location_inventory_and_missing_ide
     assert result.issues[0].kind == "missing_identifier"
 
 
-def test_evm_wallet_adapter_extracts_solana_identity_and_surfaces_unknown_identifier(tmp_path: Path) -> None:
+def test_evm_wallet_adapter_extracts_solana_identity_and_surfaces_unknown_identifier(
+    tmp_path: Path,
+) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "wallet-state.json").write_text(
@@ -209,7 +247,9 @@ def test_evm_wallet_adapter_extracts_solana_identity_and_surfaces_unknown_identi
     records, issues = _EvmWalletAdapter().extract_location_inventory(
         "evm-wallets",
         raw_dir,
-        build_source_profile(adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)),
+        build_source_profile(
+            adapter_id="evm_wallet", source="evm-wallets", raw_dir=str(raw_dir)
+        ),
     )
 
     assert len(issues) == 1
@@ -219,7 +259,9 @@ def test_evm_wallet_adapter_extracts_solana_identity_and_surfaces_unknown_identi
 
 
 def test_evm_wallet_adapter_validate_profile_timezones_is_trivially_passed() -> None:
-    summary, issues = _EvmWalletAdapter().validate_profile_timezones(build_source_profile(adapter_id="evm_wallet"))
+    summary, issues = _EvmWalletAdapter().validate_profile_timezones(
+        build_source_profile(adapter_id="evm_wallet")
+    )
 
     assert summary == {
         "status": "passed",
@@ -232,7 +274,9 @@ def test_evm_wallet_adapter_validate_profile_timezones_is_trivially_passed() -> 
 
 def test_account_records_skip_non_wallet_state_shapes() -> None:
     assert _account_records("wallets", "state.json", {}) == ([], [])
-    assert _account_records("wallets", "state.json", {"wallet_state": {"internalAccounts": []}}) == ([], [])
+    assert _account_records(
+        "wallets", "state.json", {"wallet_state": {"internalAccounts": []}}
+    ) == ([], [])
     assert _account_records(
         "wallets",
         "state.json",
@@ -265,7 +309,9 @@ def test_metamask_empty_state_fixture_reports_missing_identifier() -> None:
     raw_dir = fixture_raw_dir("evm_wallet", "missing_state")
 
     profile, adapter = profile_and_adapter("EVM wallet", raw_dir)
-    evidence, issues = adapter.extract_location_inventory("EVM wallet", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory(
+        "EVM wallet", raw_dir, profile
+    )
 
     assert str(profile.adapter_id) == "evm_wallet"
     assert evidence == ()
@@ -273,11 +319,15 @@ def test_metamask_empty_state_fixture_reports_missing_identifier() -> None:
     assert issues[0].kind == "missing_identifier"
 
 
-def test_metamask_location_inventory_uses_internal_accounts_without_filename_dependency() -> None:
+def test_metamask_location_inventory_uses_internal_accounts_without_filename_dependency() -> (
+    None
+):
     raw_dir = fixture_raw_dir("evm_wallet", "wallets")
 
     profile, adapter = profile_and_adapter("Unknown Wallet", raw_dir)
-    evidence, issues = adapter.extract_location_inventory("Unknown Wallet", raw_dir, profile)
+    evidence, issues = adapter.extract_location_inventory(
+        "Unknown Wallet", raw_dir, profile
+    )
 
     assert str(profile.adapter_id) == "evm_wallet"
     assert issues == ()

@@ -19,7 +19,9 @@ def write_verification_set(
     directory: Path,
     fixture_set: VerificationFixtureSet,
 ) -> None:
-    write_rows(directory / "Validate Transactions.csv", ("Issue",), fixture_set.validate_rows)
+    write_rows(
+        directory / "Validate Transactions.csv", ("Issue",), fixture_set.validate_rows
+    )
     write_rows(
         directory / "Missing Transactions.csv",
         (
@@ -41,7 +43,18 @@ def write_verification_set(
     )
     write_rows(
         directory / "Duplicate Transactions.csv",
-        ("", "# of duplicates", "Type", "Exchange", "Exchange ID", "Buy", "Sell", "Trade Group", "Tx ID", "Tx Date"),
+        (
+            "",
+            "# of duplicates",
+            "Type",
+            "Exchange",
+            "Exchange ID",
+            "Buy",
+            "Sell",
+            "Trade Group",
+            "Tx ID",
+            "Tx Date",
+        ),
         fixture_set.duplicate_rows,
     )
     write_rows(
@@ -51,6 +64,12 @@ def write_verification_set(
     )
     write_rows(
         directory / "Balance by Exchange.csv",
-        ("Amount", "Currency", "Current value in CAD", "Current value in BTC", "Exchange"),
+        (
+            "Amount",
+            "Currency",
+            "Current value in CAD",
+            "Current value in BTC",
+            "Exchange",
+        ),
         fixture_set.exchange_rows,
     )

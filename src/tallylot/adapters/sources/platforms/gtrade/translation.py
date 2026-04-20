@@ -24,7 +24,12 @@ from tallylot.adapters.support.drafts import (
     symbol_claim,
 )
 from tallylot.domain.issues import IssueRecord
-from tallylot.domain.transactions import AccountingIntentHint, EconomicKind, ProjectionHint, TaxTreatmentHint
+from tallylot.domain.transactions import (
+    AccountingIntentHint,
+    EconomicKind,
+    ProjectionHint,
+    TaxTreatmentHint,
+)
 from tallylot.ports.source_profiles import SourceProfile
 
 

@@ -179,6 +179,112 @@ def claim_set_ref(workspace_root: Path, claim_set_id: str) -> str:
     )
 
 
+def economic_facts_product_root(workspace_root: Path, economic_facts_id: str) -> Path:
+    return (
+        workspace_root / "working" / "products" / "economic_facts" / economic_facts_id
+    )
+
+
+def economic_facts_product_file(workspace_root: Path, economic_facts_id: str) -> Path:
+    return (
+        economic_facts_product_root(workspace_root, economic_facts_id)
+        / "economic_facts.json"
+    )
+
+
+def economic_facts_ref(workspace_root: Path, economic_facts_id: str) -> str:
+    return (
+        economic_facts_product_file(workspace_root, economic_facts_id)
+        .relative_to(workspace_root)
+        .as_posix()
+    )
+
+
+def economic_facts_compatibility_facts_file(
+    workspace_root: Path, economic_facts_id: str
+) -> Path:
+    return (
+        economic_facts_product_root(workspace_root, economic_facts_id)
+        / "compatibility"
+        / "facts.csv"
+    )
+
+
+def economic_facts_compatibility_fact_annotations_file(
+    workspace_root: Path, economic_facts_id: str
+) -> Path:
+    return (
+        economic_facts_product_root(workspace_root, economic_facts_id)
+        / "compatibility"
+        / "fact_annotations.json"
+    )
+
+
+def reconciliation_state_product_root(
+    workspace_root: Path, reconciliation_state_id: str
+) -> Path:
+    return (
+        workspace_root
+        / "working"
+        / "products"
+        / "reconciliation_states"
+        / reconciliation_state_id
+    )
+
+
+def reconciliation_state_product_file(
+    workspace_root: Path, reconciliation_state_id: str
+) -> Path:
+    return (
+        reconciliation_state_product_root(workspace_root, reconciliation_state_id)
+        / "reconciliation_state.json"
+    )
+
+
+def reconciliation_state_ref(workspace_root: Path, reconciliation_state_id: str) -> str:
+    return (
+        reconciliation_state_product_file(workspace_root, reconciliation_state_id)
+        .relative_to(workspace_root)
+        .as_posix()
+    )
+
+
+def reconciliation_state_compatibility_snapshots_file(
+    workspace_root: Path, reconciliation_state_id: str
+) -> Path:
+    return (
+        reconciliation_state_product_root(workspace_root, reconciliation_state_id)
+        / "compatibility"
+        / "balance_snapshots.csv"
+    )
+
+
+def checkpoint_product_root(workspace_root: Path, checkpoint_id: str) -> Path:
+    return workspace_root / "working" / "products" / "checkpoints" / checkpoint_id
+
+
+def checkpoint_product_file(workspace_root: Path, checkpoint_id: str) -> Path:
+    return checkpoint_product_root(workspace_root, checkpoint_id) / "checkpoint.json"
+
+
+def checkpoint_ref(workspace_root: Path, checkpoint_id: str) -> str:
+    return (
+        checkpoint_product_file(workspace_root, checkpoint_id)
+        .relative_to(workspace_root)
+        .as_posix()
+    )
+
+
+def checkpoint_compatibility_references_file(
+    workspace_root: Path, checkpoint_id: str
+) -> Path:
+    return (
+        checkpoint_product_root(workspace_root, checkpoint_id)
+        / "compatibility"
+        / "balance_references.csv"
+    )
+
+
 def default_capture_normalized_root(capture_root: Path) -> Path:
     context = require_capture_root(capture_root)
     return capture_normalized_root(

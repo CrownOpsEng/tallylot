@@ -11,8 +11,10 @@ from tallylot.domain.assessment import (
     ReviewExplanation,
     ReviewRecord,
 )
+from tallylot.domain.types import JsonValue
 from tallylot.domain.claim import ClaimSet
 from tallylot.domain.issues import IssueRecord, NormalizationReviewRecord
+from tallylot.ports.annotations import AdapterMetadata
 
 
 @dataclass(frozen=True)
@@ -28,6 +30,8 @@ class DraftProjectionFieldRecord:
     confidence: str
     status: str
     draft_order: int
+    review_markers: tuple[str, ...] = ()
+    adapter_metadata: tuple[AdapterMetadata, ...] = ()
 
     def to_payload(self) -> dict[str, object]:
         return {
@@ -42,6 +46,14 @@ class DraftProjectionFieldRecord:
             "confidence": self.confidence,
             "status": self.status,
             "draft_order": self.draft_order,
+            "review_markers": list(self.review_markers),
+            "adapter_metadata": [
+                {
+                    "namespace": metadata.namespace,
+                    "values": metadata.values,
+                }
+                for metadata in self.adapter_metadata
+            ],
         }
 
     @classmethod
@@ -58,6 +70,20 @@ class DraftProjectionFieldRecord:
             confidence=str(payload["confidence"]),
             status=str(payload["status"]),
             draft_order=int(cast(int | str, payload["draft_order"])),
+            review_markers=tuple(
+                str(item)
+                for item in cast(list[object], payload.get("review_markers", []))
+            ),
+            adapter_metadata=tuple(
+                AdapterMetadata(
+                    namespace=str(item["namespace"]),
+                    values=cast(dict[str, JsonValue], item["values"]),
+                )
+                for item in cast(
+                    list[dict[str, object]],
+                    payload.get("adapter_metadata", []),
+                )
+            ),
         )
 
 

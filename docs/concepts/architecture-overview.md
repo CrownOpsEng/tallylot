@@ -30,8 +30,9 @@ The target runtime pipeline is:
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
 Within that pipeline, `EvidenceSet` and `ClaimSet` are already the implemented
-authorities for the bounded planner-enabled Coinbase slice. Downstream target
-products remain future work.
+authorities for the bounded planner-enabled Coinbase slice. `EconomicFacts`,
+`ReconciliationState`, and `Checkpoint` are authorities for the bounded
+downstream Coinbase slice, while direct reader cutovers remain later work.
 
 The primary contract pages freeze product ids, product headers, critical-path
 kernel field tables, and the compatibility sidecar boundary for retained legacy

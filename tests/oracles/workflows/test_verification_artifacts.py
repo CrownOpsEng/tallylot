@@ -43,7 +43,9 @@ def test_summary_headers_expand_dynamic_columns() -> None:
     assert headers == ("Issue", "Reason", "trade ID")
 
 
-def test_verification_compare_service_writes_duplicate_rows_with_dynamic_headers(tmp_path: Path) -> None:
+def test_verification_compare_service_writes_duplicate_rows_with_dynamic_headers(
+    tmp_path: Path,
+) -> None:
     previous_dir = tmp_path / "previous"
     current_dir = tmp_path / "current"
     output_dir = tmp_path / "verification"
@@ -68,10 +70,14 @@ def test_verification_compare_service_writes_duplicate_rows_with_dynamic_headers
     )
 
     VerificationCompareService(FilesystemArtifactStore()).execute(
-        VerificationCompareRequest(previous_dir=previous_dir, current_dir=current_dir, output_dir=output_dir)
+        VerificationCompareRequest(
+            previous_dir=previous_dir, current_dir=current_dir, output_dir=output_dir
+        )
     )
 
-    rows = FilesystemArtifactStore().read_rows(output_dir / "current_duplicate_transaction_rows.csv")
+    rows = FilesystemArtifactStore().read_rows(
+        output_dir / "current_duplicate_transaction_rows.csv"
+    )
 
     assert rows == [
         {"Issue": "duplicate", "Reason": "", "trade ID": "tx-1"},

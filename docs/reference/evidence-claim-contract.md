@@ -41,7 +41,8 @@ This slice is:
 - recognized Coinbase statement document selection
 - statement-backed balance-row observations under selected statement documents
 - bounded `EvidenceSet` emission for that slice
-- bounded `ClaimSet` emission for that slice
+- bounded `ClaimSet` emission for that slice, which is now implemented for the
+  planner-enabled Coinbase slice
 - continued compatibility with current `translation_input_plan.json`,
   `EconomicActivityDraft`, and `SourceTranslationBatch`
 
@@ -49,7 +50,8 @@ The slice is not:
 
 - the actual filing adapter inventory for `2023` to `2025`
 - a repo-wide claim migration
-- a replacement for `EconomicFacts`, `ReconciliationState`, or `Checkpoint`
+- a replacement for already-separated downstream `EconomicFacts`,
+  `ReconciliationState`, or `Checkpoint` authorities
 - a broad unified-adapter facet rollout
 
 ## `EvidenceSet` Coverage

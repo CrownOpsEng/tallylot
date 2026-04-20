@@ -11,7 +11,7 @@ naming_scope: workspace_reference
 Use this subtree for authoritative target-product kernels and any product-local
 compatibility views that are derived from those kernels.
 
-Current implemented runtime surface:
+Current runtime surface:
 
 - `working/products/evidence_sets/<evidence_set_id>/evidence_set.json` is the
   authoritative `EvidenceSet` kernel for the bounded evidence-selection and
@@ -25,9 +25,21 @@ Current implemented runtime surface:
   `assessment/review/` store deterministic claim-stage gap and review sidecars,
   even when those arrays are empty
 - `working/products/claim_sets/<claim_set_id>/compatibility/draft_projection_fields.json`
-  stores the retained bridge-only draft projection fields used to rebuild
-  `EconomicActivityDraft` and `SourceTranslationBatch`
+  stores the retained bridge-only draft projection fields and compatibility
+  annotation payloads used to rebuild `EconomicActivityDraft`,
+  `SourceTranslationBatch`, and downstream compatibility annotations
+- `working/products/economic_facts/<economic_facts_id>/economic_facts.json`
+  is the authoritative `EconomicFacts` kernel for the bounded downstream
+  Coinbase slice, with `compatibility/facts.csv` and
+  `compatibility/fact_annotations.json` derived from that kernel
+- `working/products/reconciliation_states/<reconciliation_state_id>/reconciliation_state.json`
+  is the authoritative `ReconciliationState` kernel for one bounded continuity
+  segment in that slice, with `compatibility/balance_snapshots.csv` derived
+  from that kernel
+- `working/products/checkpoints/<checkpoint_id>/checkpoint.json` is the
+  authoritative `Checkpoint` kernel for one accepted as-of point in that
+  slice, with `compatibility/balance_references.csv` derived from that kernel
 
 The normalized capture output under `working/normalized/captures/<capture_uid>/`
 may still mirror retained compatibility files for current readers, but the
-authoritative kernel lives here once a product has landed.
+authoritative kernel lives here when a product is authoritative.

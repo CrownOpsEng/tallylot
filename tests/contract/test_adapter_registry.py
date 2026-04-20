@@ -6,8 +6,12 @@ from tallylot.infrastructure.discovery import build_registry
 def test_adapter_registry_discovers_expected_adapters() -> None:
     registry = build_registry()
 
-    source_ids = {str(adapter.manifest.adapter_id) for adapter in registry.source_adapters}
-    output_ids = {str(adapter.manifest.adapter_id) for adapter in registry.output_adapters}
+    source_ids = {
+        str(adapter.manifest.adapter_id) for adapter in registry.source_adapters
+    }
+    output_ids = {
+        str(adapter.manifest.adapter_id) for adapter in registry.output_adapters
+    }
 
     assert "structured_csv" in source_ids
     assert "coinbase" in source_ids

@@ -5,7 +5,9 @@ from tools.oracles.contracts import OverlapResult, ScreeningResult
 
 
 def test_screening_result_passes_when_no_issues_duplicates_or_overlap() -> None:
-    result = ScreeningResult(candidate_rows=1, issues=(), duplicate_count=0, has_time_overlap=False)
+    result = ScreeningResult(
+        candidate_rows=1, issues=(), duplicate_count=0, has_time_overlap=False
+    )
 
     assert result.passed is True
     assert not result.blocked_reason_codes

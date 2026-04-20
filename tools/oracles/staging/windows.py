@@ -24,13 +24,17 @@ def resolve_normalization_window(
 ) -> tuple[str, str, str]:
     baseline_trade_table = find_required_csv_export(baseline_export_dir, "Trade Table")
     baseline_rows = read_candidate_rows(baseline_trade_table)
-    baseline_cutoff = max(parse_timestamp(row["Date"]) for row in baseline_rows if row.get("Date"))
+    baseline_cutoff = max(
+        parse_timestamp(row["Date"]) for row in baseline_rows if row.get("Date")
+    )
     effective_window_start = (
         window_start
         if window_start is not None
         else (baseline_cutoff + timedelta(seconds=1)).strftime("%Y-%m-%d %H:%M:%S")
     )
-    effective_window_end = DEFAULT_NORMALIZATION_WINDOW_END if window_end is None else window_end
+    effective_window_end = (
+        DEFAULT_NORMALIZATION_WINDOW_END if window_end is None else window_end
+    )
     summary_path = normalization_summary
     if summary_path is None:
         sibling_path = candidate.parent / "normalization_summary.json"

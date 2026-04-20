@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tallylot.domain.transactions import FactLegPolicy, LegKind, LegShapeLimit, TransactionFact
+from tallylot.domain.transactions import (
+    FactLegPolicy,
+    LegKind,
+    LegShapeLimit,
+    TransactionFact,
+)
 from tallylot.domain.types import AdapterId
 from tallylot.ports.adapter_contracts import AdapterCapability, AdapterManifest
 from tallylot.ports.output_adapters import OutputRenderPolicy, RenderedArtifact
@@ -21,12 +26,21 @@ class _CoinTrackingApiStubAdapter:
     )
     render_policy = OutputRenderPolicy(
         shape_policy=FactLegPolicy(
-            limits=(LegShapeLimit(kind=LegKind.PRIMARY, max_count=0, max_positive_count=0, max_negative_count=0),)
+            limits=(
+                LegShapeLimit(
+                    kind=LegKind.PRIMARY,
+                    max_count=0,
+                    max_positive_count=0,
+                    max_negative_count=0,
+                ),
+            )
         ),
         requires_projection_hint=False,
     )
 
-    def render(self, facts: tuple[TransactionFact, ...], output_path: Path) -> RenderedArtifact:
+    def render(
+        self, facts: tuple[TransactionFact, ...], output_path: Path
+    ) -> RenderedArtifact:
         del facts, output_path
         raise NotImplementedError(
             "CoinTracking API integration is intentionally stubbed in this phase.",

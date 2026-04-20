@@ -23,7 +23,9 @@ def compare_transactions(
             (
                 index
                 for index, actual in enumerate(remaining_actual)
-                if _transactions_match(actual, expected, allowed_exchanges=allowed_exchanges)
+                if _transactions_match(
+                    actual, expected, allowed_exchanges=allowed_exchanges
+                )
             ),
             None,
         )
@@ -49,13 +51,17 @@ def compare_balances(
     for row in actual_rows:
         if (row.get("Exchange") or "").strip() != source:
             continue
-        actual_by_asset[(row.get("Currency") or "").strip()] += _decimal_or_zero(row.get("Amount", ""))
+        actual_by_asset[(row.get("Currency") or "").strip()] += _decimal_or_zero(
+            row.get("Amount", "")
+        )
     for row in expected_rows:
         if (row.get("source") or "").strip() != source:
             continue
         if (row.get("balance_kind") or "").strip() != "asset_balance":
             continue
-        expected_by_asset[(row.get("asset") or "").strip()] += _decimal_or_zero(row.get("quantity", ""))
+        expected_by_asset[(row.get("asset") or "").strip()] += _decimal_or_zero(
+            row.get("quantity", "")
+        )
     rows: list[dict[str, str]] = []
     for asset in sorted(set(actual_by_asset) | set(expected_by_asset)):
         actual_amount = actual_by_asset.get(asset, Decimal("0"))
@@ -98,9 +104,12 @@ def _type_matches(actual: dict[str, str], expected: dict[str, str]) -> bool:
     return not expected_types or actual_type in expected_types
 
 
-def _core_transaction_fields_match(actual: dict[str, str], expected: dict[str, str]) -> bool:
+def _core_transaction_fields_match(
+    actual: dict[str, str], expected: dict[str, str]
+) -> bool:
     return all(
-        (actual.get(actual_key) or "").strip() == (expected.get(expected_key) or "").strip()
+        (actual.get(actual_key) or "").strip()
+        == (expected.get(expected_key) or "").strip()
         for actual_key, expected_key in (
             ("Buy", "Buy"),
             ("Buy Cur.", "Buy Cur."),
@@ -114,11 +123,15 @@ def _core_transaction_fields_match(actual: dict[str, str], expected: dict[str, s
 def _comment_matches(actual: dict[str, str], expected: dict[str, str]) -> bool:
     if expected.get("render_comment_mode") != "exact":
         return True
-    return (actual.get("Comment") or "").strip() == (expected.get("Comment") or "").strip()
+    return (actual.get("Comment") or "").strip() == (
+        expected.get("Comment") or ""
+    ).strip()
 
 
 def _allowed_types(expected: dict[str, str]) -> set[str]:
-    raw_types = (expected.get("render_allowed_types") or expected.get("Type") or "").strip()
+    raw_types = (
+        expected.get("render_allowed_types") or expected.get("Type") or ""
+    ).strip()
     if not raw_types:
         return set()
     return {part.strip() for part in raw_types.split(",") if part.strip()}
@@ -151,12 +164,19 @@ def _timestamp_matches(actual: dict[str, str], expected: dict[str, str]) -> bool
     expected_timestamp = _parse_maybe_timestamp(expected.get("Date", ""))
     if actual_timestamp is None or expected_timestamp is None:
         return actual_timestamp == expected_timestamp
-    tolerance_seconds = int((expected.get("render_match_window_seconds") or "0").strip() or "0")
-    return abs((actual_timestamp - expected_timestamp).total_seconds()) <= tolerance_seconds
+    tolerance_seconds = int(
+        (expected.get("render_match_window_seconds") or "0").strip() or "0"
+    )
+    return (
+        abs((actual_timestamp - expected_timestamp).total_seconds())
+        <= tolerance_seconds
+    )
 
 
 def _fee_matches(actual: dict[str, str], expected: dict[str, str]) -> bool:
-    if (actual.get("Fee Cur.") or "").strip() != (expected.get("Fee Cur.") or "").strip():
+    if (actual.get("Fee Cur.") or "").strip() != (
+        expected.get("Fee Cur.") or ""
+    ).strip():
         return False
     actual_fee = _decimal_or_zero(actual.get("Fee", ""))
     expected_fee = _decimal_or_zero(expected.get("Fee", ""))
