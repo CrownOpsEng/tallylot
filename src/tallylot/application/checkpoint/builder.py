@@ -58,8 +58,10 @@ def build_checkpoints(
     for as_of, rows in sorted(ready_rows_by_as_of.items()):
         reconciliation_state_refs = tuple(
             sorted(
-                f"working/products/reconciliation_states/{state.reconciliation_state_id}/reconciliation_state.json"
-                for state, _proposal, _segment, _target in rows
+                {
+                    f"working/products/reconciliation_states/{state.reconciliation_state_id}/reconciliation_state.json"
+                    for state, _proposal, _segment, _target in rows
+                }
             )
         )
         checkpoint_id = stable_checkpoint_id(
@@ -72,6 +74,10 @@ def build_checkpoints(
             if not isinstance(target.observed_value, QuantityValue):
                 raise ValueError(
                     "ready checkpoint proposals require observed QuantityValue"
+                )
+            if not isinstance(target.expected_value, QuantityValue):
+                raise ValueError(
+                    "ready checkpoint proposals require expected QuantityValue"
                 )
             if target.observation_status is not BalanceTargetObservationStatus.OBSERVED:
                 raise ValueError(
@@ -98,7 +104,11 @@ def build_checkpoints(
                     trust_level=CheckpointAssertionTrustLevel.FILING_READY,
                     basis=CheckpointAssertionBasis.DOCUMENT_SUPPORT,
                     support_shape=CheckpointAssertionSupportShape.DOCUMENT_OBSERVATION,
-                    continuity_kind=_continuity_kind(segment.segment_start_at, as_of),
+                    continuity_kind=_continuity_kind(
+                        segment=segment,
+                        expected_value=target.expected_value,
+                        as_of=as_of,
+                    ),
                 )
             )
         ordered_assertions = canonical_checkpoint_assertion_records(tuple(assertions))
@@ -124,8 +134,11 @@ def build_checkpoints(
 
 
 def _continuity_kind(
-    segment_start_at: datetime, as_of: datetime
+    *,
+    segment: ContinuitySegmentRecord,
+    expected_value: QuantityValue,
+    as_of: datetime,
 ) -> CheckpointAssertionContinuityKind:
-    if segment_start_at < as_of:
+    if segment.segment_start_at < as_of or expected_value.quantity != 0:
         return CheckpointAssertionContinuityKind.RECONCILED_ROLLFORWARD
     return CheckpointAssertionContinuityKind.OBSERVED_CONTINUITY

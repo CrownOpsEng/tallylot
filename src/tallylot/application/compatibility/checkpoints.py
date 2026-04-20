@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import cast
 
 from tallylot.domain.assertion import QuantityValue
@@ -21,8 +22,12 @@ def project_balance_references_from_checkpoint(
     *,
     checkpoint: Checkpoint,
     reconciliation_states: tuple[ReconciliationState, ...],
+    observation_support_refs: Mapping[str, str] | None = None,
 ) -> tuple[BalanceReference, ...]:
-    support_refs = _support_refs_by_subject(reconciliation_states)
+    support_refs = _support_refs_by_subject(
+        reconciliation_states,
+        observation_support_refs=observation_support_refs or {},
+    )
     references: list[BalanceReference] = []
     for assertion in checkpoint.checkpoint_assertion_records:
         accepted_value = assertion.accepted_value
@@ -67,6 +72,8 @@ def project_balance_references_from_checkpoint(
 
 def _support_refs_by_subject(
     reconciliation_states: tuple[ReconciliationState, ...],
+    *,
+    observation_support_refs: Mapping[str, str],
 ) -> dict[tuple[object, object], str]:
     values: dict[tuple[object, object], str] = {}
     for state in reconciliation_states:
@@ -77,8 +84,25 @@ def _support_refs_by_subject(
             if not proposal.target_refs or not proposal.evidence_refs:
                 continue
             target = targets_by_id[proposal.target_refs[0]]
-            values[(target.subject_ref, target.as_of)] = proposal.evidence_refs[0]
+            values[(target.subject_ref, target.as_of)] = _support_ref_for_evidence_refs(
+                proposal.evidence_refs,
+                observation_support_refs=observation_support_refs,
+            )
     return values
+
+
+def _support_ref_for_evidence_refs(
+    evidence_refs: tuple[str, ...],
+    *,
+    observation_support_refs: Mapping[str, str],
+) -> str:
+    resolved_support_refs = tuple(
+        observation_support_refs.get(ref, ref) for ref in evidence_refs
+    )
+    anchored_refs = tuple(ref for ref in resolved_support_refs if "#" in ref)
+    if anchored_refs:
+        return sorted(anchored_refs)[0]
+    return sorted(resolved_support_refs)[0]
 
 
 def _subject_ref_text(subject_key: tuple[object, ...], index: int) -> str:

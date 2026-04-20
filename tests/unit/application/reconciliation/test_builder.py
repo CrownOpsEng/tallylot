@@ -92,6 +92,24 @@ def test_builder_marks_missing_observation_support_as_partial() -> None:
     )
 
 
+def test_builder_ignores_unknown_observation_refs() -> None:
+    claim_set, evidence_set, economic_facts = _matched_fixture(
+        observation_refs=("missing-observation",)
+    )
+
+    states = build_reconciliation_states(
+        economic_facts=economic_facts,
+        claim_set=claim_set,
+        evidence_set=evidence_set,
+    )
+
+    assert states[0].checkpoint_proposal_records[0].evidence_refs == ()
+    assert (
+        states[0].checkpoint_proposal_records[0].status
+        is CheckpointProposalStatus.PARTIAL
+    )
+
+
 def test_builder_emits_partial_segment_when_only_economic_activity_exists() -> None:
     claim_set, evidence_set, economic_facts = _matched_fixture()
     claim_set = ClaimSet(
@@ -123,6 +141,7 @@ def _matched_fixture(
     *,
     observed_quantity: str = "1.25",
     with_observation_refs: bool = True,
+    observation_refs: tuple[str, ...] | None = None,
 ) -> tuple[ClaimSet, EvidenceSet, EconomicFacts]:
     subject_ref = (
         "position",
@@ -150,9 +169,13 @@ def _matched_fixture(
                 key=("balance",),
                 member_refs=("member-statement",),
                 observation_refs=(
-                    ("observation-document", "observation-row")
-                    if with_observation_refs
-                    else ()
+                    observation_refs
+                    if observation_refs is not None
+                    else (
+                        ("observation-document", "observation-row")
+                        if with_observation_refs
+                        else ()
+                    )
                 ),
                 effective_at=None,
                 precision=TemporalPrecision.TIMESTAMP,

@@ -41,7 +41,10 @@ def build_reconciliation_states(
     claim_set: ClaimSet,
     evidence_set: EvidenceSet,
 ) -> tuple[ReconciliationState, ...]:
-    del evidence_set
+    valid_observation_refs = {
+        observation.observation_id
+        for observation in evidence_set.evidence_observation_records
+    }
     event_times = {
         event.event_id: event.effective_at
         for event in economic_facts.economic_event_records
@@ -74,6 +77,7 @@ def build_reconciliation_states(
             ),
             legs=legs,
             balance_claims=balance_claims,
+            valid_observation_refs=valid_observation_refs,
         )
         states.append(state)
     return tuple(states)
@@ -85,6 +89,7 @@ def _state_for_subject(
     economic_facts_ref: str,
     legs: tuple[TimedEconomicLeg, ...],
     balance_claims: tuple[ClaimRecord, ...],
+    valid_observation_refs: set[str],
 ) -> ReconciliationState:
     segment_start_at, segment_end_at = _segment_bounds(legs, balance_claims)
     segment_id = stable_continuity_segment_id(
@@ -145,6 +150,11 @@ def _state_for_subject(
             comparison_outcome=comparison_outcome,
         )
         target_records.append(target_record)
+        evidence_refs = tuple(
+            sorted(
+                ref for ref in claim.observation_refs if ref in valid_observation_refs
+            )
+        )
         proposal_records.append(
             CheckpointProposalRecord(
                 proposal_id=stable_checkpoint_proposal_id(
@@ -156,10 +166,10 @@ def _state_for_subject(
                 segment_id=segment_id,
                 subject_ref=subject_ref,
                 as_of=as_of,
-                status=_proposal_status(target_record, claim),
+                status=_proposal_status(target_record, evidence_refs),
                 superseding_proposal_ref="",
                 target_refs=(target_id,),
-                evidence_refs=tuple(sorted(claim.observation_refs)),
+                evidence_refs=evidence_refs,
             )
         )
     state_id = stable_reconciliation_state_id(
@@ -216,14 +226,14 @@ def _expected_quantity(
 
 
 def _proposal_status(
-    target_record: BalanceTargetRecord, claim: ClaimRecord
+    target_record: BalanceTargetRecord, evidence_refs: tuple[str, ...]
 ) -> CheckpointProposalStatus:
     if target_record.observation_status is not BalanceTargetObservationStatus.OBSERVED:
         return CheckpointProposalStatus.PARTIAL
     if target_record.comparison_outcome is ComparisonOutcome.MATCHED:
         return (
             CheckpointProposalStatus.READY
-            if claim.observation_refs
+            if evidence_refs
             else CheckpointProposalStatus.PARTIAL
         )
     return CheckpointProposalStatus.BLOCKED
