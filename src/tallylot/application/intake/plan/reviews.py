@@ -39,7 +39,9 @@ def planned_review_reason(item: PlannedItem, package_item: PlannedPackageItem) -
     extra_reason = ""
     if package_item.package_status == "overlap_partial_review":
         extra_reason = (
-            f"Package overlap with {package_item.package_related_bundles}; {package_item.package_decision_reason}"
+            "Package overlap with "
+            f"{package_item.package_related_bundles}; "
+            f"{package_item.package_decision_reason}"
         )
     elif package_item.package_status == "mixed_cycle_review":
         extra_reason = package_item.package_decision_reason
