@@ -562,9 +562,9 @@ Rules:
   `economic_kind`, `projection_hint`, `accounting_intent_hint`,
   `tax_treatment_hint`, `description`, `tx_hash_or_null`,
   `operation_group_id_or_null`, `confidence`, and `status`
-- `activity_label` is retained only as an evidence-local first-upstream-slice
-  field that preserves bridge compatibility; it must not become downstream
-  canonical target naming
+- `activity_label` is retained only as an evidence-local bounded
+  evidence/claim compatibility field that preserves bridge compatibility; it
+  must not become downstream canonical target naming
 - legacy `provider_operation_key` is satisfied by
   `activity_label` on claims with `kind = activity` and must not be duplicated into a
   compatibility sidecar field
@@ -1610,9 +1610,10 @@ locality rules defined elsewhere:
 - [Bridge To Target Mapping](bridge-to-target-mapping.md) for the primary
   cutover rules and migration authority matrix
 - [Evidence And Claim Contract](../reference/evidence-claim-contract.md)
-  for the first upstream replay and parity contract
+  for the bounded evidence/claim replay and parity contract
 - [Economics Reconciliation Checkpoint Contract](../reference/economics-reconciliation-checkpoint-contract.md)
-  for the first downstream `EconomicFacts -> ReconciliationState -> Checkpoint`
+  for the bounded
+  `EconomicFacts -> ReconciliationState -> Checkpoint`
   contract
 - [Domain Ontology](domain-ontology.md) for identity seams, refs,
   `AssertionValue`, and package ownership

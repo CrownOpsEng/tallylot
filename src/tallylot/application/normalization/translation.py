@@ -90,6 +90,16 @@ def execute_translation(
         candidates=candidates,
         capture_metadata=context.capture_metadata,
     )
+    capture_uid = (
+        ""
+        if context.capture_metadata is None
+        else str(context.capture_metadata.capture_uid)
+    )
+    capture_manifest_fingerprint = (
+        ""
+        if context.capture_metadata is None
+        else context.capture_metadata.manifest_fingerprint
+    )
     artifact_context = TranslationArtifactContext(
         output_dir=context.output_dir,
         profile=profile,
@@ -102,12 +112,8 @@ def execute_translation(
     )
     evidence_set = build_evidence_set_for_profile(
         profile=profile,
-        capture_uid=(
-            ""
-            if context.capture_metadata is None
-            else str(context.capture_metadata.capture_uid)
-        ),
-        capture_manifest_fingerprint=profile.manifest_fingerprint,
+        capture_uid=capture_uid,
+        capture_manifest_fingerprint=capture_manifest_fingerprint,
         planner_result=planning_result,
         statement_documents=statement_documents,
     )
@@ -127,11 +133,7 @@ def execute_translation(
         )
         compatibility_payload = build_translation_input_plan_payload(
             adapter_id=str(profile.adapter_id),
-            capture_uid=(
-                ""
-                if context.capture_metadata is None
-                else str(context.capture_metadata.capture_uid)
-            ),
+            capture_uid=capture_uid,
             plan=compatibility_plan,
         )
         context.artifacts.write_json(
@@ -152,11 +154,7 @@ def execute_translation(
             context.output_dir / "translation_input_plan.json",
             build_translation_input_plan_payload(
                 adapter_id=str(profile.adapter_id),
-                capture_uid=(
-                    ""
-                    if context.capture_metadata is None
-                    else str(context.capture_metadata.capture_uid)
-                ),
+                capture_uid=capture_uid,
                 plan=planning_result.plan,
             ),
         )

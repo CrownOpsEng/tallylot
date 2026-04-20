@@ -268,7 +268,7 @@ def _retail_selection_basis(
             if decision.status == "selected"
         ]
         if len(selected) > 1:
-            basis = EvidenceSelectionBasis.SINGLE_MEMBER
+            basis = EvidenceSelectionBasis.COVERAGE
         elif selected and selected[0].replaces_candidate_ids:
             basis = EvidenceSelectionBasis.FRESHNESS
         elif selected:

@@ -60,6 +60,8 @@ def extract_source_balance_references_from_collection(
     profile: SourceProfile,
     collection: StatementDocumentCollectionResult,
 ) -> StatementBalanceReferenceBatch:
+    issues = list(collection.issues)
+    reviews = list(collection.reviews)
     selected_documents = tuple(
         sorted(
             (
@@ -85,14 +87,14 @@ def extract_source_balance_references_from_collection(
         adapter,
         profile,
         selected_documents,
-        issues=list(collection.issues),
-        reviews=list(collection.reviews),
+        issues=issues,
+        reviews=reviews,
     )
     return StatementBalanceReferenceBatch(
         balance_references=references,
         reference_issues=(),
-        issues=collection.issues,
-        reviews=collection.reviews,
+        issues=tuple(issues),
+        reviews=tuple(reviews),
     )
 
 

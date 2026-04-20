@@ -40,10 +40,14 @@ def test_coinbase_normalization_writes_evidence_set_product_outputs(
     evidence_payload = json.loads(
         (evidence_root / "evidence_set.json").read_text(encoding="utf-8")
     )
+    capture_payload = json.loads((raw_dir / "capture.json").read_text(encoding="utf-8"))
     compatibility_payload = json.loads(
         (evidence_root / "compatibility" / "translation_input_plan.json").read_text(
             encoding="utf-8"
         )
+    )
+    profile_payload = json.loads(
+        (output_dir / "profile.json").read_text(encoding="utf-8")
     )
     summary_payload = json.loads(
         (output_dir / "normalization_summary.json").read_text(encoding="utf-8")
@@ -54,6 +58,14 @@ def test_coinbase_normalization_writes_evidence_set_product_outputs(
         f"working/products/evidence_sets/{response.evidence_set_id}/evidence_set.json"
     )
     assert evidence_payload["evidence_set_id"] == response.evidence_set_id
+    assert (
+        evidence_payload["capture_manifest_fingerprint"]
+        == (capture_payload["manifest_fingerprint"])
+    )
+    assert (
+        evidence_payload["capture_manifest_fingerprint"]
+        != (profile_payload["manifest_fingerprint"])
+    )
     assert compatibility_payload == json.loads(
         (output_dir / "translation_input_plan.json").read_text(encoding="utf-8")
     )

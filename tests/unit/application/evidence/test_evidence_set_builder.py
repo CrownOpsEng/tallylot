@@ -3,10 +3,16 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from tallylot.application.evidence.evidence_sets.builder import _statement_records
+from tallylot.application.evidence.evidence_sets.builder import (
+    _retail_selection_basis,
+    _statement_records,
+)
 from tallylot.application.evidence.statement_extraction import (
     CollectedStatementDocument,
     StatementDocumentCollectionResult,
+)
+from tallylot.application.normalization.translation_inputs.models import (
+    TranslationInputPlanningResult,
 )
 from tallylot.domain.captures import ProvenanceLocator
 from tallylot.domain.evidence import (
@@ -20,8 +26,37 @@ from tallylot.ports.evidence import (
     StatementDocumentBalanceRow,
     StatementDocumentParseResult,
 )
+from tallylot.ports.translation_inputs import (
+    TranslationInputPlan,
+    TranslationPlanDecision,
+)
 from tallylot.ports.source_profiles import FileInventoryEntry
 from tests.support.services import build_source_profile
+
+
+def test_retail_selection_basis_uses_coverage_for_multi_member_selection() -> None:
+    planner_result = TranslationInputPlanningResult(
+        candidates=(),
+        plan=TranslationInputPlan(
+            selected_candidate_ids=("segment-a", "segment-b"),
+            decisions=(
+                TranslationPlanDecision(
+                    candidate_id="segment-a",
+                    status="selected",
+                    reason="candidate is disjoint within its selection group",
+                ),
+                TranslationPlanDecision(
+                    candidate_id="segment-b",
+                    status="selected",
+                    reason="candidate is disjoint within its selection group",
+                ),
+            ),
+            blocked=False,
+        ),
+        issues=(),
+    )
+
+    assert _retail_selection_basis(planner_result) is EvidenceSelectionBasis.COVERAGE
 
 
 def test_statement_records_use_contract_observation_keys() -> None:
