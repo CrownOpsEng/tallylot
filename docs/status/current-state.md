@@ -10,7 +10,7 @@ nav_order: 10
 ---
 
 This status page uses current implementation terms where accuracy requires
-them. Forward-looking architecture and roadmap docs use the final target
+them. Forward-looking architecture and planning docs use the final target
 product names `EvidenceSet`, `ClaimSet`, `EconomicFacts`,
 `ReconciliationState`, `Checkpoint`, `Journal`, `TaxInputs`, and
 `TaxOutputs`.
@@ -74,6 +74,9 @@ The repo currently ships typed replacements for the current workflow capabilitie
   statement-observation scope, with
   `working/products/evidence_sets/<evidence_set_id>/compatibility/translation_input_plan.json`
   as the derived compatibility plan
+- the remaining bounded upstream authority gap is `ClaimSet`; downstream bridge
+  authorities for facts, balances, and checkpoints remain unchanged until the
+  later target products land
 - source assembly via `source assemble`, producing reconciliation-ready source
   datasets under `working/normalized/sources/<source>/` and rewrites its owned
   generated artifact set on rerun

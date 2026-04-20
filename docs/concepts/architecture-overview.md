@@ -29,6 +29,10 @@ The target runtime pipeline is:
 
 `EvidenceSet -> ClaimSet -> EconomicFacts -> ReconciliationState -> Checkpoint -> Journal -> TaxInputs -> TaxOutputs`
 
+Within that pipeline, `EvidenceSet` is already the implemented authority for
+the bounded Coinbase evidence-selection slice, while `ClaimSet` is the next
+upstream authority slice still to land.
+
 The primary contract pages freeze product ids, product headers, critical-path
 kernel field tables, and the compatibility sidecar boundary for retained legacy
 hint fields.

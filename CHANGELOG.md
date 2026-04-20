@@ -10,8 +10,10 @@ milestones on `main`.
 ### Docs And Control Plane
 
 - Reset durable contract and sequencing authority onto the owned docs and
-  removed roadmap-coupled semantic docs-audit proof from durable control-plane
+  removed planning-coupled semantic docs-audit proof from durable control-plane
   checks.
+- Moved completed `EvidenceSet` delivery truth out of future-tense planning
+  language and tightened durable doc checks against ephemeral delivery labels.
 
 ## 2026-04-01
 

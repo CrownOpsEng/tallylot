@@ -18,6 +18,8 @@ Current implemented runtime surface:
   typed statement-observation scope in planner-enabled Coinbase normalization
 - `working/products/evidence_sets/<evidence_set_id>/compatibility/translation_input_plan.json`
   is the legacy planning view derived from that kernel
+- `working/products/claim_sets/` is reserved for the next bounded upstream
+  authority slice and is not emitted yet
 
 The normalized capture output under `working/normalized/captures/<capture_uid>/`
 may still mirror retained compatibility files for current readers, but the
