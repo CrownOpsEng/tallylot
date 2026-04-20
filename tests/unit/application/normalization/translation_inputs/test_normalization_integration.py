@@ -248,6 +248,8 @@ def test_normalization_uses_legacy_translate_fallback_when_planner_is_absent(
     )
 
     assert adapter.translate_called is True
+    assert response.evidence_set_id == ""
+    assert response.evidence_set_ref == ""
     assert response.translation_planner_used is False
     assert response.translation_candidate_count == 0
     assert not (output_dir / "translation_input_plan.json").exists()

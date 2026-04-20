@@ -15,6 +15,8 @@ from tallylot.domain.value_objects import parse_timestamp, require_utc_datetime
 from tallylot.ports.source_profiles import FileInventoryEntry, SourceProfile
 from tallylot.ports.source_translation import SourceTranslationBatch
 
+TRANSLATION_INPUT_PLANNER_VERSION = "translation-input-planner-v1"
+
 
 class TranslationCoverageMode(StrEnum):
     BOUNDED = "bounded"

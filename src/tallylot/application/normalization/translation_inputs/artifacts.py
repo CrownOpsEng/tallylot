@@ -11,6 +11,7 @@ from tallylot.application.normalization.translation_inputs.models import (
     PLANNER_VERSION,
     TranslationInputPlanningResult,
 )
+from tallylot.domain.issues import IssueRecord
 from tallylot.domain.value_objects import format_timestamp
 from tallylot.domain.types import JsonValue
 from tallylot.ports.artifacts import ArtifactStorePort
@@ -19,6 +20,7 @@ from tallylot.ports.evidence import EvidenceRepositoryPort
 from tallylot.ports.source_profiles import SourceProfile
 from tallylot.ports.translation_inputs import (
     TranslationInputCandidate,
+    TranslationInputPlan,
     TranslationPlanDecision,
 )
 
@@ -37,6 +39,29 @@ def write_translation_input_artifacts(
     context: TranslationArtifactContext,
     result: TranslationInputPlanningResult,
 ) -> None:
+    write_translation_input_candidates(
+        artifacts=artifacts,
+        context=context,
+        candidates=result.candidates,
+    )
+    write_translation_input_plan(
+        artifacts=artifacts,
+        context=context,
+        plan=result.plan,
+    )
+    write_translation_input_issues(
+        evidence=evidence,
+        context=context,
+        issues=result.issues,
+    )
+
+
+def write_translation_input_candidates(
+    *,
+    artifacts: ArtifactStorePort,
+    context: TranslationArtifactContext,
+    candidates: tuple[TranslationInputCandidate, ...],
+) -> None:
     artifacts.write_json(
         context.output_dir / "translation_input_candidates.json",
         cast(
@@ -49,11 +74,19 @@ def write_translation_input_artifacts(
                     context.capture_metadata,
                 ),
                 "candidates": [
-                    _candidate_to_json(candidate) for candidate in result.candidates
+                    _candidate_to_json(candidate) for candidate in candidates
                 ],
             },
         ),
     )
+
+
+def write_translation_input_plan(
+    *,
+    artifacts: ArtifactStorePort,
+    context: TranslationArtifactContext,
+    plan: TranslationInputPlan,
+) -> None:
     artifacts.write_json(
         context.output_dir / "translation_input_plan.json",
         cast(
@@ -65,17 +98,25 @@ def write_translation_input_artifacts(
                     context.profile,
                     context.capture_metadata,
                 ),
-                "selected_candidate_ids": list(result.plan.selected_candidate_ids),
+                "selected_candidate_ids": list(plan.selected_candidate_ids),
                 "decisions": [
-                    _decision_to_json(decision) for decision in result.plan.decisions
+                    _decision_to_json(decision) for decision in plan.decisions
                 ],
-                "blocked": result.plan.blocked,
+                "blocked": plan.blocked,
             },
         ),
     )
+
+
+def write_translation_input_issues(
+    *,
+    evidence: EvidenceRepositoryPort,
+    context: TranslationArtifactContext,
+    issues: tuple[IssueRecord, ...],
+) -> None:
     evidence.write_issue_records(
         context.output_dir / "translation_input_issues.csv",
-        result.issues,
+        issues,
     )
 
 

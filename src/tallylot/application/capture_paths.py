@@ -89,6 +89,34 @@ def source_assembled_root(workspace_root: Path, source: str) -> Path:
     return workspace_root / "working" / "normalized" / "sources" / source
 
 
+def evidence_set_product_root(workspace_root: Path, evidence_set_id: str) -> Path:
+    return workspace_root / "working" / "products" / "evidence_sets" / evidence_set_id
+
+
+def evidence_set_product_file(workspace_root: Path, evidence_set_id: str) -> Path:
+    return (
+        evidence_set_product_root(workspace_root, evidence_set_id) / "evidence_set.json"
+    )
+
+
+def evidence_set_compatibility_plan_file(
+    workspace_root: Path, evidence_set_id: str
+) -> Path:
+    return (
+        evidence_set_product_root(workspace_root, evidence_set_id)
+        / "compatibility"
+        / "translation_input_plan.json"
+    )
+
+
+def evidence_set_ref(workspace_root: Path, evidence_set_id: str) -> str:
+    return (
+        evidence_set_product_file(workspace_root, evidence_set_id)
+        .relative_to(workspace_root)
+        .as_posix()
+    )
+
+
 def default_capture_normalized_root(capture_root: Path) -> Path:
     context = require_capture_root(capture_root)
     return capture_normalized_root(

@@ -240,31 +240,40 @@ def _retail_selection_records(
 def _retail_selection_basis(
     planner_result: TranslationInputPlanningResult,
 ) -> EvidenceSelectionBasis:
-    selected = [
-        decision
-        for decision in planner_result.plan.decisions
-        if decision.status == "selected"
-    ]
-    if selected and not selected[0].replaces_candidate_ids:
-        return EvidenceSelectionBasis.SINGLE_MEMBER
-    if any(
-        decision.status == "superseded_identical"
-        for decision in planner_result.plan.decisions
-    ):
-        return EvidenceSelectionBasis.DUPLICATE
-    if any(
-        decision.status == "superseded_replaced"
-        for decision in planner_result.plan.decisions
-    ):
-        return EvidenceSelectionBasis.COVERAGE
-    if selected:
-        return EvidenceSelectionBasis.FRESHNESS
+    basis = EvidenceSelectionBasis.UPSTREAM_GAP
     if any(
         decision.status in {"blocked_partial_overlap", "blocked_ambiguous_freshness"}
         for decision in planner_result.plan.decisions
     ):
-        return EvidenceSelectionBasis.AMBIGUOUS_OVERLAP
-    return EvidenceSelectionBasis.UPSTREAM_GAP
+        basis = EvidenceSelectionBasis.AMBIGUOUS_OVERLAP
+    elif any(
+        decision.status.startswith("blocked")
+        for decision in planner_result.plan.decisions
+    ):
+        basis = EvidenceSelectionBasis.UPSTREAM_GAP
+    elif any(
+        decision.status == "superseded_identical"
+        for decision in planner_result.plan.decisions
+    ):
+        basis = EvidenceSelectionBasis.DUPLICATE
+    elif any(
+        decision.status == "superseded_replaced"
+        for decision in planner_result.plan.decisions
+    ):
+        basis = EvidenceSelectionBasis.COVERAGE
+    else:
+        selected = [
+            decision
+            for decision in planner_result.plan.decisions
+            if decision.status == "selected"
+        ]
+        if len(selected) > 1:
+            basis = EvidenceSelectionBasis.SINGLE_MEMBER
+        elif selected and selected[0].replaces_candidate_ids:
+            basis = EvidenceSelectionBasis.FRESHNESS
+        elif selected:
+            basis = EvidenceSelectionBasis.SINGLE_MEMBER
+    return basis
 
 
 def _retail_selection_gap_refs(
