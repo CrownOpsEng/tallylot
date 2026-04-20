@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import PurePath
 
 from tallylot.adapters.support.drafts import economic_leg, symbol_claim
 from tallylot.application.claim.contracts import DraftProjectionFieldRecord
@@ -57,6 +58,8 @@ def project_translation_batch_from_claim_set(
     gap_explanations: tuple[GapExplanation, ...],
     review_records: tuple[ReviewRecord, ...],
     review_explanations: tuple[ReviewExplanation, ...],
+    compatibility_issue_records: tuple[IssueRecord, ...] | None = None,
+    compatibility_review_records: tuple[NormalizationReviewRecord, ...] | None = None,
 ) -> SourceTranslationBatch:
     artifacts = project_compatibility_artifacts_from_claim_set(
         claim_set=claim_set,
@@ -66,6 +69,8 @@ def project_translation_batch_from_claim_set(
         gap_explanations=gap_explanations,
         review_records=review_records,
         review_explanations=review_explanations,
+        compatibility_issue_records=compatibility_issue_records,
+        compatibility_review_records=compatibility_review_records,
     )
     return SourceTranslationBatch(
         drafts=artifacts.drafts,
@@ -86,6 +91,8 @@ def project_compatibility_artifacts_from_claim_set(
     gap_explanations: tuple[GapExplanation, ...],
     review_records: tuple[ReviewRecord, ...],
     review_explanations: tuple[ReviewExplanation, ...],
+    compatibility_issue_records: tuple[IssueRecord, ...] | None = None,
+    compatibility_review_records: tuple[NormalizationReviewRecord, ...] | None = None,
 ) -> ClaimSetCompatibilityArtifacts:
     drafts = tuple(
         _draft_from_projection_record(
@@ -99,15 +106,23 @@ def project_compatibility_artifacts_from_claim_set(
     )
     return ClaimSetCompatibilityArtifacts(
         drafts=drafts,
-        issues=_issues_from_claim_assessment(
-            evidence_set=evidence_set,
-            gap_records=gap_records,
-            gap_explanations=gap_explanations,
+        issues=(
+            compatibility_issue_records
+            if compatibility_issue_records is not None
+            else _issues_from_claim_assessment(
+                evidence_set=evidence_set,
+                gap_records=gap_records,
+                gap_explanations=gap_explanations,
+            )
         ),
-        reviews=_reviews_from_claim_assessment(
-            evidence_set=evidence_set,
-            review_records=review_records,
-            review_explanations=review_explanations,
+        reviews=(
+            compatibility_review_records
+            if compatibility_review_records is not None
+            else _reviews_from_claim_assessment(
+                evidence_set=evidence_set,
+                review_records=review_records,
+                review_explanations=review_explanations,
+            )
         ),
     )
 
@@ -156,7 +171,7 @@ def _draft_from_projection_record(
     )
     return EconomicActivityDraft(
         activity_id=_activity_id(activity_claim.activity_label, raw_row_ref),
-        source=_source_slug_from_claim_set_id(claim_set.claim_set_id),
+        source=_source_slug_for_member_id(evidence_set, activity_claim.member_refs[0]),
         adapter_id="coinbase",
         timestamp=_activity_timestamp(activity_claim),
         location_id=LocationId(location_claim.location_ref),
@@ -265,17 +280,29 @@ def _reviews_from_claim_assessment(
 
 
 def _raw_file_for_member_id(evidence_set: EvidenceSet, member_id: str) -> str:
+    if member_id == "":
+        return ""
     for member in evidence_set.evidence_member_records:
         if (
             member.member_id == member_id
             and member.kind is EvidenceMemberKind.RETAIL_ACTIVITY_EXPORT_FILE
         ):
-            return member.locator[0]
-    return ""
+            return PurePath(member.locator[0]).name
+    raise ValueError(
+        f"claim compatibility projection could not resolve member_id {member_id!r}"
+    )
 
 
-def _source_slug_from_claim_set_id(claim_set_id: str) -> str:
-    return claim_set_id.split(":", 1)[0]
+def _source_slug_for_member_id(evidence_set: EvidenceSet, member_id: str) -> str:
+    for member in evidence_set.evidence_member_records:
+        if (
+            member.member_id == member_id
+            and member.kind is EvidenceMemberKind.RETAIL_ACTIVITY_EXPORT_FILE
+        ):
+            return member.source_slug
+    raise ValueError(
+        f"claim compatibility projection could not resolve member_id {member_id!r}"
+    )
 
 
 def _provider_operation_key(activity_label: str) -> str:

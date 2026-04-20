@@ -246,6 +246,8 @@ def execute_translation(
                 gap_explanations=claim_build.gap_explanations,
                 review_records=claim_build.review_records,
                 review_explanations=claim_build.review_explanations,
+                compatibility_issue_records=claim_build.compatibility_issue_records,
+                compatibility_review_records=claim_build.compatibility_review_records,
             )
             claim_set_path_ref = claim_set_ref(context.workspace_root, claim_set_id)
     return TranslationExecutionResult(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import PurePath
 from typing import TYPE_CHECKING
 
 from tallylot.application.claim.assessment import (
@@ -83,14 +84,13 @@ def build_coinbase_claim_set(
     compatibility_reviews: list[NormalizationReviewRecord] = []
     projection_fields: list[DraftProjectionFieldRecord] = []
 
-    retail_member_ids = _selected_retail_members(evidence_set)
-    retail_member_id_by_file = {
-        member.locator[0]: member.member_id for member in retail_member_ids
-    }
+    retail_member_id_by_raw_file = _selected_retail_member_ids_by_raw_file(evidence_set)
     for draft_order, draft in enumerate(batch.drafts):
-        retail_member_id = retail_member_id_by_file.get(draft.raw_file)
-        if retail_member_id is None:
-            continue
+        retail_member_id = _require_selected_retail_member_id(
+            retail_member_id_by_raw_file,
+            draft.raw_file,
+            label="draft",
+        )
         scope_key = (retail_member_id, draft.raw_row_ref)
         scope_id = stable_claim_scope_id(claim_set_id=claim_set_id, scope_key=scope_key)
         bundle_id = stable_claim_bundle_id(scope_id=scope_id, key="default")
@@ -153,25 +153,39 @@ def build_coinbase_claim_set(
     decision_records.extend(statement_decisions)
 
     for issue in batch.issues:
+        if issue.kind != "unsupported_row" or not issue.raw_row_ref:
+            continue
         mapping = map_claim_issue_to_scope(
             issue=issue,
             claim_set_id=claim_set_id,
-            retail_member_id=retail_member_id_by_file.get(issue.raw_file, ""),
+            retail_member_id=_require_selected_retail_member_id(
+                retail_member_id_by_raw_file,
+                issue.raw_file,
+                label="issue",
+            ),
         )
         if mapping is None:
-            continue
+            raise AssertionError(
+                "unsupported-row issue mapping unexpectedly returned None"
+            )
         decision_records.append(mapping.bundle_decision)
         gap_records.append(mapping.gap_record)
         gap_explanations.append(mapping.gap_explanation)
         compatibility_issues.append(mapping.compatibility_issue)
     for review in batch.reviews:
+        if not review.raw_row_ref:
+            continue
         review_mapping = map_claim_review_to_scope(
             review=review,
             claim_set_id=claim_set_id,
-            retail_member_id=retail_member_id_by_file.get(review.raw_file, ""),
+            retail_member_id=_require_selected_retail_member_id(
+                retail_member_id_by_raw_file,
+                review.raw_file,
+                label="review",
+            ),
         )
         if review_mapping is None:
-            continue
+            raise AssertionError("claim review mapping unexpectedly returned None")
         review_records.append(review_mapping.review_record)
         review_explanations.append(review_mapping.review_explanation)
         compatibility_reviews.append(review_mapping.compatibility_review)
@@ -209,3 +223,34 @@ def _selected_retail_members(
         if member.kind is EvidenceMemberKind.RETAIL_ACTIVITY_EXPORT_FILE
         and member.status is EvidenceMemberStatus.SELECTED
     )
+
+
+def _selected_retail_member_ids_by_raw_file(
+    evidence_set: EvidenceSet,
+) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for member in _selected_retail_members(evidence_set):
+        raw_file = PurePath(member.locator[0]).name
+        existing = mapping.get(raw_file)
+        if existing is not None and existing != member.member_id:
+            raise ValueError(
+                "claim builder found multiple selected retail members for "
+                f"raw_file {raw_file!r}"
+            )
+        mapping[raw_file] = member.member_id
+    return mapping
+
+
+def _require_selected_retail_member_id(
+    member_id_by_raw_file: dict[str, str],
+    raw_file: str,
+    *,
+    label: str,
+) -> str:
+    member_id = member_id_by_raw_file.get(raw_file)
+    if member_id is None:
+        raise ValueError(
+            f"claim builder could not map {label} raw_file {raw_file!r} "
+            "to the selected retail evidence member"
+        )
+    return member_id

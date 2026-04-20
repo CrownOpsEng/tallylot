@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+import pytest
 from reportlab.pdfgen import canvas
 
 from tallylot.adapters.sources.platforms.coinbase.adapter import _CoinbaseAdapter
@@ -329,6 +330,76 @@ def test_no_selected_candidate_yields_no_claim_set(tmp_path: Path) -> None:
     raw_dir.mkdir()
 
     assert _build_claim_result(raw_dir) is None
+
+
+def test_nested_selected_retail_file_still_builds_claims(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    nested_dir = raw_dir / "nested"
+    nested_dir.mkdir(parents=True)
+    (nested_dir / "retail.csv").write_text(
+        _retail_csv(
+            "tx-1,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+            "Bought 0.01 BTC for 610 CAD\n"
+        ),
+        encoding="utf-8",
+    )
+
+    result = _build_claim_result(raw_dir)
+
+    assert result is not None
+    assert any(
+        claim.kind is ClaimKind.ACTIVITY for claim in result.claim_set.claim_records
+    )
+
+
+def test_claim_builder_rejects_unmapped_selected_draft_raw_file(tmp_path: Path) -> None:
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    (raw_dir / "retail.csv").write_text(
+        _retail_csv(
+            "tx-1,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,"
+            "Bought 0.01 BTC for 610 CAD\n"
+        ),
+        encoding="utf-8",
+    )
+    registry = build_registry()
+    adapter = _CoinbaseAdapter()
+    profile = _coinbase_profile(raw_dir)
+    planning_result = plan_translation_inputs(
+        profile=profile,
+        candidates=adapter.describe_translation_inputs(profile, raw_dir),
+    )
+    statement_documents = StatementExtractionService(
+        registry
+    ).collect_source_statement_documents(profile, raw_dir)
+    evidence_set = build_evidence_set_for_profile(
+        profile=profile,
+        capture_uid="capture-1",
+        capture_manifest_fingerprint="manifest-1",
+        planner_result=planning_result,
+        statement_documents=statement_documents,
+    )
+    assert evidence_set is not None
+    batch = adapter.translate_selected_inputs(profile, raw_dir, planning_result.plan)
+    broken_batch = replace(
+        batch,
+        drafts=(replace(batch.drafts[0], raw_file="missing-retail.csv"),),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="claim builder could not map draft raw_file 'missing-retail.csv'",
+    ):
+        build_coinbase_claim_set(
+            profile=profile,
+            evidence_set=evidence_set,
+            evidence_set_ref=(
+                f"working/products/evidence_sets/{evidence_set.evidence_set_id}/"
+                "evidence_set.json"
+            ),
+            planning_result=planning_result,
+            batch=broken_batch,
+        )
 
 
 def test_replay_with_unchanged_evidence_preserves_payload_and_fingerprint(
