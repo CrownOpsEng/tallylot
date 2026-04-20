@@ -179,6 +179,47 @@ def claim_set_ref(workspace_root: Path, claim_set_id: str) -> str:
     )
 
 
+def economic_facts_product_root(workspace_root: Path, economic_facts_id: str) -> Path:
+    return (
+        workspace_root / "working" / "products" / "economic_facts" / economic_facts_id
+    )
+
+
+def economic_facts_product_file(workspace_root: Path, economic_facts_id: str) -> Path:
+    return (
+        economic_facts_product_root(workspace_root, economic_facts_id)
+        / "economic_facts.json"
+    )
+
+
+def economic_facts_ref(workspace_root: Path, economic_facts_id: str) -> str:
+    return (
+        economic_facts_product_file(workspace_root, economic_facts_id)
+        .relative_to(workspace_root)
+        .as_posix()
+    )
+
+
+def economic_facts_compatibility_facts_file(
+    workspace_root: Path, economic_facts_id: str
+) -> Path:
+    return (
+        economic_facts_product_root(workspace_root, economic_facts_id)
+        / "compatibility"
+        / "facts.csv"
+    )
+
+
+def economic_facts_compatibility_fact_annotations_file(
+    workspace_root: Path, economic_facts_id: str
+) -> Path:
+    return (
+        economic_facts_product_root(workspace_root, economic_facts_id)
+        / "compatibility"
+        / "fact_annotations.json"
+    )
+
+
 def default_capture_normalized_root(capture_root: Path) -> Path:
     context = require_capture_root(capture_root)
     return capture_normalized_root(

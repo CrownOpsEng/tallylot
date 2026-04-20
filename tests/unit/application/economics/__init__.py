@@ -1,0 +1,1 @@
+"""EconomicFacts application tests."""

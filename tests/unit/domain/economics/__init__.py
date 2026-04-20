@@ -1,0 +1,1 @@
+"""EconomicFacts domain tests."""

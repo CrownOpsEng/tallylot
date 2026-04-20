@@ -1,13 +1,9 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from decimal import Decimal
 from pathlib import Path
 
-from tallylot.application.normalization.annotations import (
-    annotation_records_from_drafts,
-)
 from tallylot.adapters.sources.platforms.coinbase.adapter import _CoinbaseAdapter
+from tallylot.adapters.support.drafts import compile_activity_drafts
 from tallylot.application.claim import build_coinbase_claim_set
 from tallylot.application.claim.contracts import CoinbaseClaimBuildResult
 from tallylot.application.compatibility.economic_facts import (
@@ -22,82 +18,30 @@ from tallylot.application.normalization.translation_inputs import (
     plan_translation_inputs,
 )
 from tallylot.application.profiling import BuildProfileUseCase
-from tallylot.domain.transactions import (
-    SINGLE_PRIMARY_ACTIVITY_POLICY,
-    AccountingIntentHint,
-    EconomicKind,
-    LegKind,
-    ProjectionHint,
-    TaxTreatmentHint,
-)
-from tallylot.domain.types import LocationId
 from tallylot.domain.evidence import EvidenceSet
 from tallylot.infrastructure.discovery import build_registry
 from tallylot.infrastructure.serialization.filesystem import FilesystemArtifactStore
 from tallylot.ports.source_profiles import SourceProfile
-from tallylot.ports.source_translation import (
-    EconomicActivityDraft,
-    SourceTranslationBatch,
-    classification,
-    economic_leg,
-)
+from tallylot.ports.source_translation import SourceTranslationBatch
 
 
-def test_annotation_records_preserve_draft_provenance_and_review_markers() -> None:
-    records = annotation_records_from_drafts(
-        (
-            EconomicActivityDraft(
-                activity_id="txn-1",
-                source="fixture",
-                adapter_id="fixture",
-                timestamp=datetime(2025, 1, 1, tzinfo=UTC),
-                location_id=LocationId("fixture:primary"),
-                classification=classification(
-                    economic_kind=EconomicKind.SPOT_TRADE,
-                    projection_hint=ProjectionHint.TRADE,
-                    accounting_intent_hint=AccountingIntentHint.ASSET_EXCHANGE,
-                    tax_treatment_hint=TaxTreatmentHint.CAPITAL_EXCHANGE,
-                ),
-                legs=(
-                    economic_leg(
-                        leg_id="primary_btc",
-                        kind=LegKind.PRIMARY,
-                        instrument="BTC",
-                        quantity=Decimal("1"),
-                    ),
-                ),
-                leg_policy=SINGLE_PRIMARY_ACTIVITY_POLICY,
-                provenance_refs=("file:row:2", "statement:page:1"),
-                review_markers=("normalized_negative_fee",),
-            ),
-        )
-    )
-
-    assert [record.to_json() for record in records] == [
-        {
-            "fact_id": "txn-1",
-            "provenance_refs": ["file:row:2", "statement:page:1"],
-            "review_markers": ["normalized_negative_fee"],
-            "adapter_metadata": [],
-        }
-    ]
-
-
-def _coinbase_profile(raw_dir: Path) -> SourceProfile:
+def _coinbase_profile(raw_dir: Path, *, source: str = "coinbase") -> SourceProfile:
     return BuildProfileUseCase(
         build_registry(), FilesystemArtifactStore()
     ).create_profile(
-        "coinbase",
+        source,
         raw_dir,
     )
 
 
 def _claim_build(
     raw_dir: Path,
+    *,
+    source: str = "coinbase",
 ) -> tuple[SourceTranslationBatch, CoinbaseClaimBuildResult, EvidenceSet]:
     registry = build_registry()
     adapter = _CoinbaseAdapter()
-    profile = _coinbase_profile(raw_dir)
+    profile = _coinbase_profile(raw_dir, source=source)
     planning_result = plan_translation_inputs(
         profile=profile,
         candidates=adapter.describe_translation_inputs(profile, raw_dir),
@@ -127,9 +71,7 @@ def _claim_build(
     return selected_batch, claim_build, evidence_set
 
 
-def test_economic_facts_projection_preserves_fact_annotation_payloads(
-    tmp_path: Path,
-) -> None:
+def test_projection_preserves_supported_coinbase_bridge_rows(tmp_path: Path) -> None:
     raw_dir = tmp_path / "raw"
     raw_dir.mkdir()
     (raw_dir / "retail.csv").write_text(
@@ -137,15 +79,17 @@ def test_economic_facts_projection_preserves_fact_annotation_payloads(
         "ID,Timestamp,Transaction Type,Asset,Quantity Transacted,Price Currency,Price at Transaction,"
         "Subtotal,Total (inclusive of fees and/or spread),Fees and/or Spread,Notes\n"
         "tx-buy,2024-02-08 16:31:22 UTC,Buy,BTC,0.01000000,CAD,$60000.00,$600.00,$610.00,$10.00,Bought 0.01 BTC\n"
-        "tx-receive,2024-02-09 10:00:00 UTC,Receive,ETH,1.50000000,CAD,$0.00,$0.00,$0.00,$0.00,Received ETH\n",
+        "tx-sell,2024-02-08 16:31:22 UTC,Sell,BTC,0.01000000,CAD,$60000.00,$600.00,$590.00,$10.00,Sold 0.01 BTC\n"
+        "reward-1,2023-03-18 01:28:49 UTC,Reward Income,ADA,0.000021,CAD,$0.48,$0.00,$0.00,$0.00,Received ADA\n"
+        "tx-receive,2024-02-09 10:00:00 UTC,Receive,ETH,1.50000000,CAD,$0.00,$0.00,$0.00,$0.00,Received ETH\n"
+        "tx-send,2024-02-08 17:31:22 UTC,Send,ETH,-0.50000000,CAD,$0.00,$0.00,$0.00,$0.00,Sent ETH\n"
+        "migration-neg,2025-10-17 13:38:17 UTC,Asset Migration,MATIC,-1.65526374,CAD,$0.25,-$0.42,-$0.42,$0.00,\n"
+        "migration-pos,2025-10-17 13:38:17 UTC,Asset Migration,POL,1.65526374,CAD,$0.25,$0.42,$0.42,$0.00,\n",
         encoding="utf-8",
     )
 
     selected_batch, claim_build, evidence_set = _claim_build(raw_dir)
-    expected = [
-        record.to_json()
-        for record in annotation_records_from_drafts(selected_batch.drafts)
-    ]
+    expected = compile_activity_drafts(selected_batch.drafts)
     economic_facts = build_economic_facts(
         claim_set=claim_build.claim_set,
         claim_set_ref=(
@@ -159,4 +103,24 @@ def test_economic_facts_projection_preserves_fact_annotation_payloads(
         draft_projection_field_records=claim_build.draft_projection_field_records,
     )
 
-    assert [record.to_json() for record in projected.fact_annotations] == expected
+    for projected_fact, expected_fact in zip(projected.facts, expected, strict=True):
+        projected_row = projected_fact.to_row()
+        expected_row = expected_fact.to_row()
+        for key in (
+            "fact_id",
+            "timestamp",
+            "location_id",
+            "economic_kind",
+            "projection_hint",
+            "accounting_intent_hint",
+            "tax_treatment_hint",
+            "description",
+            "provider_operation_key",
+            "operation_group_id",
+            "tx_hash",
+            "raw_file",
+            "raw_row_ref",
+            "legs",
+            "leg_policy",
+        ):
+            assert projected_row[key] == expected_row[key]
